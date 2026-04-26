@@ -3,6 +3,20 @@
 Pipeline: **global trends → AI draft → Reddit publisher**, with SQLite logging,
 rate limiting, and a dry-run mode.
 
+## One-click deploys
+
+| Click | What it deploys | Needs credentials? |
+|-------|----------------|--------------------|
+| [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fwiggjamie9-afk%2Fjamie-wigg&root-directory=web&project-name=pulse&repository-name=jamie-wigg) | **Pulse landing page** (web/) | No — goes live in 60s as `*.vercel.app` |
+| [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new) | **The bot** (root) — uses `railway.toml` config | Yes — Anthropic + Reddit env vars |
+
+For the Vercel button: click → log in with GitHub → click Deploy. Done.
+You can add a custom domain later from the Vercel dashboard.
+
+For the Railway button: click → import this repo → paste env vars (see the
+table at the bottom of `railway.toml`). Or run `npm run setup` locally first
+to generate them step-by-step.
+
 ## What it does
 
 1. **Aggregates trends** from four free sources (no auth needed for fetching):
@@ -20,18 +34,22 @@ rate limiting, and a dry-run mode.
 5. **Logs everything** to `data/trendbot.db` (SQLite): trends seen, drafts
    produced, posts made (real and dry-run).
 
-## Quick start
+## Quick start (local)
 
 ```bash
 npm install
-cp .env.example .env
-# edit .env -- minimum: ANTHROPIC_API_KEY for drafting
+npm run setup      # interactive wizard: walks you through every credential
+                   # tests Anthropic + Reddit before saving
 
 npm run trends     # just print global trends, no AI, no posting
 npm run dry-run    # fetch + draft + show what it WOULD post (safe)
 npm run live       # fetch + draft + actually post to Reddit (needs creds)
-npm run loop       # live mode in a loop (default every 30 min)
+npm run loop       # live mode in a loop (default every 60 min)
 ```
+
+The setup wizard creates `.env` for you. Skip any field with [Enter] to keep
+its current value. Each credential is tested with a real API call before
+the wizard closes — you'll know immediately if a key is wrong.
 
 ## What you need to set up
 
