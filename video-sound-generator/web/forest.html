@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Forest Clip Generator</title>
+<style>
+  :root {
+    --bg: #0b0b14;
+    --card: #15152a;
+    --border: #2a2a48;
+    --text: #f3f3fa;
+    --soft: #c7c7d6;
+    --muted: #8a8aa3;
+    --green: #22c55e;
+    --red: #ff1f5a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  h1 {
+    margin: 0 0 6px 0;
+    font-size: 26px;
+    background: linear-gradient(135deg, #4ade80, #f59e0b);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); margin: 0 0 20px 0; font-size: 14px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  canvas { width: 100%; border-radius: 10px; background: #0d1408; display: block; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  label { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  input[type="number"], select {
+    background: #0e0e1c; border: 1px solid var(--border); color: var(--text);
+    padding: 8px 10px; border-radius: 8px; font-size: 14px; font-family: inherit;
+    width: 110px;
+  }
+  button {
+    background: linear-gradient(135deg, #4ade80, #f59e0b);
+    color: #0a1408; border: none; border-radius: 8px;
+    padding: 10px 18px; font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: all .2s;
+  }
+  button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(74,222,128,.35); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--soft); font-weight: 600; }
+  .status { font-size: 13px; color: var(--muted); }
+  .status.rec { color: var(--red); }
+  .status.ok { color: var(--green); }
+  a { color: #a78bfa; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Forest Clip Generator</h1>
+  <p class="sub">Renders a short silent video of a sun-dappled forest with swaying trees, drifting leaves, and a passing bird. Save it, then drop it into <a href="./index.html">the sound generator</a>.</p>
+
+  <div class="card">
+    <canvas id="cv" width="960" height="540"></canvas>
+    <div class="row">
+      <label for="dur">Duration (s)</label>
+      <input type="number" id="dur" min="2" max="22" value="8" />
+      <label for="mood">Mood</label>
+      <select id="mood">
+        <option value="day">Sunny day</option>
+        <option value="dusk">Golden dusk</option>
+        <option value="rain">Rainy</option>
+        <option value="night">Moonlit night</option>
+      </select>
+      <label for="fmt">Format</label>
+      <select id="fmt">
+        <option value="webm">WebM</option>
+        <option value="mp4">MP4 (Safari)</option>
+      </select>
+      <button id="rec">Record &amp; Download</button>
+      <button id="play" class="ghost">Just Preview</button>
+      <span id="status" class="status">Idle.</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const cv = document.getElementById("cv");
+  const ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height;
+  const status = document.getElementById("status");
+
+  const moodSel = document.getElementById("mood");
+
+  const PALETTES = {
+    day:   { skyTop: "#9fd6ff", skyBot: "#fef3c7", ground: "#5a8a3a", trunk: "#5b3a1c", leaves: "#3f7c2c", leavesAlt: "#5fa83a", fog: "rgba(255,255,255,0.18)", lightShafts: 0.18 },
+    dusk:  { skyTop: "#f59e0b", skyBot: "#7c2d12", ground: "#3f5a26", trunk: "#3a230f", leaves: "#234d1a", leavesAlt: "#4a7a2a", fog: "rgba(255,180,90,0.18)", lightShafts: 0.28 },
+    rain:  { skyTop: "#3b465c", skyBot: "#6b7a8c", ground: "#2f4a23", trunk: "#3a2613", leaves: "#2a5022", leavesAlt: "#3d6a2c", fog: "rgba(180,200,210,0.22)", lightShafts: 0.06 },
+    night: { skyTop: "#0a1a3a", skyBot: "#0f2247", ground: "#0c2010", trunk: "#1a0f06", leaves: "#0f2a18", leavesAlt: "#1c3d24", fog: "rgba(120,160,200,0.12)", lightShafts: 0.10 },
+  };
+
+  function rand(seed) {
+    let s = seed | 0;
+    return () => {
+      s = (s * 1664525 + 1013904223) | 0;
+      return ((s >>> 0) % 100000) / 100000;
+    };
+  }
+
+  const layers = [];
+  function buildLayers() {
+    layers.length = 0;
+    const treesPerLayer = [10, 14, 22];
+    const depths = [0.35, 0.55, 0.85];
+    for (let li = 0; li < 3; li++) {
+      const r = rand(7 + li * 31);
+      const trees = [];
+      for (let i = 0; i < treesPerLayer[li]; i++) {
+        trees.push({
+          x: r() * W,
+          baseScale: 0.6 + r() * 0.6,
+          phase: r() * Math.PI * 2,
+          sway: 0.01 + r() * 0.02,
+          tilt: (r() - 0.5) * 0.06,
+        });
+      }
+      layers.push({ depth: depths[li], trees });
+    }
+  }
+  buildLayers();
+
+  const leaves = [];
+  for (let i = 0; i < 28; i++) {
+    leaves.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: 30 + Math.random() * 40,
+      vy: 18 + Math.random() * 22,
+      r: 3 + Math.random() * 3,
+      hueShift: Math.random(),
+      spin: Math.random() * Math.PI * 2,
+      spinV: (Math.random() - 0.5) * 4,
+    });
+  }
+
+  const drops = [];
+  for (let i = 0; i < 220; i++) {
+    drops.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      v: 700 + Math.random() * 500,
+      len: 8 + Math.random() * 10,
+    });
+  }
+
+  function bgSky(p, t) {
+    const g = ctx.createLinearGradient(0, 0, 0, H * 0.72);
+    g.addColorStop(0, p.skyTop);
+    g.addColorStop(1, p.skyBot);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H * 0.72);
+
+    if (moodSel.value === "night") {
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      for (let i = 0; i < 80; i++) {
+        const seed = i * 9301 + 49297;
+        const x = ((seed % 233280) / 233280) * W;
+        const y = (((seed * 7) % 233280) / 233280) * H * 0.55;
+        const a = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.5 + i));
+        ctx.globalAlpha = a;
+        ctx.fillRect(x, y, 1.5, 1.5);
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#f8f4d8";
+      ctx.beginPath();
+      ctx.arc(W * 0.78, H * 0.18, 36, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(248,244,216,0.18)";
+      ctx.beginPath();
+      ctx.arc(W * 0.78, H * 0.18, 70, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (moodSel.value === "day" || moodSel.value === "dusk") {
+      ctx.fillStyle = moodSel.value === "dusk" ? "#fff1c4" : "#fffbe5";
+      ctx.beginPath();
+      ctx.arc(W * 0.82, H * (moodSel.value === "dusk" ? 0.42 : 0.22), 38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = moodSel.value === "dusk" ? "rgba(245,158,11,0.18)" : "rgba(255,255,180,0.16)";
+      ctx.beginPath();
+      ctx.arc(W * 0.82, H * (moodSel.value === "dusk" ? 0.42 : 0.22), 90, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawTree(x, baseY, scale, sway, p, depth) {
+    const trunkH = 220 * scale;
+    const trunkW = 18 * scale;
+    ctx.save();
+    ctx.translate(x, baseY);
+    ctx.rotate(sway);
+
+    ctx.fillStyle = p.trunk;
+    ctx.beginPath();
+    ctx.moveTo(-trunkW / 2, 0);
+    ctx.lineTo(trunkW / 2, 0);
+    ctx.lineTo(trunkW / 3, -trunkH);
+    ctx.lineTo(-trunkW / 3, -trunkH);
+    ctx.closePath();
+    ctx.fill();
+
+    const canopy = 110 * scale;
+    const cy = -trunkH;
+    ctx.fillStyle = p.leaves;
+    ctx.beginPath();
+    ctx.arc(0, cy, canopy, 0, Math.PI * 2);
+    ctx.arc(-canopy * 0.55, cy + 10, canopy * 0.7, 0, Math.PI * 2);
+    ctx.arc(canopy * 0.55, cy + 10, canopy * 0.7, 0, Math.PI * 2);
+    ctx.arc(0, cy - canopy * 0.5, canopy * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = p.leavesAlt;
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.arc(-canopy * 0.3, cy - canopy * 0.2, canopy * 0.45, 0, Math.PI * 2);
+    ctx.arc(canopy * 0.4, cy - canopy * 0.1, canopy * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+  }
+
+  function drawGround(p) {
+    const g = ctx.createLinearGradient(0, H * 0.7, 0, H);
+    g.addColorStop(0, p.ground);
+    g.addColorStop(1, "#1a2810");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, H * 0.7, W, H * 0.3);
+
+    ctx.strokeStyle = "rgba(0,0,0,0.18)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 50; i++) {
+      const seed = i * 1237 + 11;
+      const x = ((seed % 233280) / 233280) * W;
+      const y = H * 0.72 + ((seed * 3) % 100) / 100 * H * 0.25;
+      const len = 6 + (seed % 8);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 1, y - len);
+      ctx.stroke();
+    }
+  }
+
+  let bird = { x: -100, y: H * 0.25, scheduled: 5 + Math.random() * 6 };
+
+  function drawBird(t) {
+    if (t < bird.scheduled) return;
+    if (bird.x > W + 100) {
+      bird.x = -100;
+      bird.y = H * (0.15 + Math.random() * 0.25);
+      bird.scheduled = t + 4 + Math.random() * 4;
+      return;
+    }
+    bird.x += 2.4;
+    const flap = Math.sin(t * 14);
+    ctx.save();
+    ctx.translate(bird.x, bird.y);
+    ctx.strokeStyle = moodSel.value === "night" ? "#cbd5e1" : "#1f2937";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-14, 0);
+    ctx.quadraticCurveTo(-7, -10 - flap * 6, 0, 0);
+    ctx.quadraticCurveTo(7, -10 - flap * 6, 14, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLightShafts(p, t) {
+    if (!p.lightShafts) return;
+    ctx.save();
+    ctx.globalAlpha = p.lightShafts;
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 5; i++) {
+      const x = (i / 5) * W + Math.sin(t * 0.4 + i) * 18;
+      const grd = ctx.createLinearGradient(x, 0, x + 90, H);
+      grd.addColorStop(0, "rgba(255,240,180,0.25)");
+      grd.addColorStop(1, "rgba(255,240,180,0)");
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + 60, 0);
+      ctx.lineTo(x + 200, H);
+      ctx.lineTo(x + 140, H);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawLeaves(t, dt) {
+    for (const lf of leaves) {
+      lf.x += lf.vx * dt + Math.sin(t * 1.5 + lf.spin) * 0.5;
+      lf.y += lf.vy * dt + Math.cos(t * 2 + lf.spin) * 0.4;
+      lf.spin += lf.spinV * dt;
+      if (lf.x > W + 10) lf.x = -10;
+      if (lf.y > H * 0.78) { lf.y = -10; lf.x = Math.random() * W; }
+      ctx.save();
+      ctx.translate(lf.x, lf.y);
+      ctx.rotate(lf.spin);
+      ctx.fillStyle = lf.hueShift > 0.5 ? "#d97706" : "#84cc16";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, lf.r, lf.r * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawRain(dt) {
+    ctx.strokeStyle = "rgba(180,210,230,0.55)";
+    ctx.lineWidth = 1.2;
+    for (const d of drops) {
+      d.y += d.v * dt;
+      d.x += d.v * dt * 0.15;
+      if (d.y > H) { d.y = -10; d.x = Math.random() * W; }
+      ctx.beginPath();
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x - d.len * 0.2, d.y - d.len);
+      ctx.stroke();
+    }
+  }
+
+  function drawFog(p) {
+    ctx.fillStyle = p.fog;
+    ctx.fillRect(0, H * 0.55, W, H * 0.18);
+  }
+
+  let lastT = 0, t0 = performance.now();
+  let recording = false, previewing = false;
+
+  function frame(now) {
+    const t = (now - t0) / 1000;
+    const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016);
+    lastT = now;
+
+    const p = PALETTES[moodSel.value];
+
+    bgSky(p, t);
+    drawGround(p);
+    drawFog(p);
+
+    for (let li = 0; li < layers.length; li++) {
+      const layer = layers[li];
+      const baseY = H * (0.78 - (1 - layer.depth) * 0.05);
+      for (const tr of layer.trees) {
+        const sway = Math.sin(t * 0.9 + tr.phase) * tr.sway + tr.tilt;
+        const drift = Math.sin(t * 0.05 + li) * 6 * (li === 2 ? 1 : 0.4);
+        drawTree(tr.x + drift, baseY, tr.baseScale * (0.5 + layer.depth * 0.7), sway, p, layer.depth);
+      }
+    }
+
+    drawLightShafts(p, t);
+    drawLeaves(t, dt);
+    if (moodSel.value === "rain") drawRain(dt);
+    drawBird(t);
+
+    if (moodSel.value === "night") {
+      ctx.fillStyle = "rgba(8,12,30,0.35)";
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    if (recording || previewing) requestAnimationFrame(frame);
+  }
+
+  function startLoop() {
+    t0 = performance.now();
+    lastT = 0;
+    bird = { x: -100, y: H * 0.25, scheduled: 4 + Math.random() * 4 };
+    requestAnimationFrame(frame);
+  }
+
+  document.getElementById("play").addEventListener("click", () => {
+    if (previewing) return;
+    previewing = true;
+    startLoop();
+    setTimeout(() => { previewing = false; }, 8000);
+  });
+
+  function pickMime(fmt) {
+    const candidates = fmt === "mp4"
+      ? ["video/mp4;codecs=avc1.42E01E", "video/mp4"]
+      : ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported(c)) return c;
+    }
+    return "";
+  }
+
+  document.getElementById("rec").addEventListener("click", () => {
+    if (recording) return;
+    const dur = Math.max(2, Math.min(22, parseInt(document.getElementById("dur").value, 10) || 8));
+    const fmt = document.getElementById("fmt").value;
+    const mime = pickMime(fmt);
+    if (!mime) {
+      status.textContent = "This browser can't record " + fmt + ". Try the other format.";
+      status.className = "status";
+      return;
+    }
+    const stream = cv.captureStream(30);
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4_000_000 });
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: mime });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `forest_${moodSel.value}.${fmt === "mp4" ? "mp4" : "webm"}`;
+      a.click();
+      status.textContent = "Saved! Drop it into the sound generator.";
+      status.className = "status ok";
+      recording = false;
+    };
+
+    recording = true;
+    startLoop();
+    rec.start();
+    status.textContent = `Recording ${dur}s…`;
+    status.className = "status rec";
+    setTimeout(() => rec.stop(), dur * 1000);
+  });
+
+  moodSel.addEventListener("change", () => {
+    const p = PALETTES[moodSel.value];
+    bgSky(p, 0);
+    drawGround(p);
+    drawFog(p);
+  });
+
+  const p0 = PALETTES.day;
+  bgSky(p0, 0);
+  drawGround(p0);
+  drawFog(p0);
+  for (const layer of layers) {
+    const baseY = H * (0.78 - (1 - layer.depth) * 0.05);
+    for (const tr of layer.trees) drawTree(tr.x, baseY, tr.baseScale * (0.5 + layer.depth * 0.7), tr.tilt, p0, layer.depth);
+  }
+</script>
+</body>
+</html>

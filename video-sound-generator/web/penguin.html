@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Penguin Clip Generator</title>
+<style>
+  :root {
+    --bg: #0b0b14;
+    --card: #15152a;
+    --border: #2a2a48;
+    --text: #f3f3fa;
+    --soft: #c7c7d6;
+    --muted: #8a8aa3;
+    --red: #ff1f5a;
+    --purple: #7c3aed;
+    --green: #22c55e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  h1 {
+    margin: 0 0 6px 0;
+    font-size: 26px;
+    background: linear-gradient(135deg, #38bdf8, #a78bfa);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); margin: 0 0 20px 0; font-size: 14px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  canvas { width: 100%; border-radius: 10px; background: #051019; display: block; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  label { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  input[type="number"], select {
+    background: #0e0e1c; border: 1px solid var(--border); color: var(--text);
+    padding: 8px 10px; border-radius: 8px; font-size: 14px; font-family: inherit;
+    width: 90px;
+  }
+  button {
+    background: linear-gradient(135deg, #38bdf8, #7c3aed);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all .2s;
+  }
+  button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(124,58,237,.4); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--soft); }
+  .status { font-size: 13px; color: var(--muted); }
+  .status.rec { color: var(--red); }
+  .status.ok { color: var(--green); }
+  a { color: #a78bfa; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Penguin Clip Generator</h1>
+  <p class="sub">Renders a short silent video of a waddling penguin. Save it, then drop it into <a href="./index.html">the sound generator</a>.</p>
+
+  <div class="card">
+    <canvas id="cv" width="960" height="540"></canvas>
+    <div class="row">
+      <label for="dur">Duration (s)</label>
+      <input type="number" id="dur" min="2" max="22" value="8" />
+      <label for="fmt">Format</label>
+      <select id="fmt">
+        <option value="webm">WebM (best compatibility)</option>
+        <option value="mp4">MP4 (Safari)</option>
+      </select>
+      <button id="rec">Record &amp; Download</button>
+      <button id="play" class="ghost">Just Preview</button>
+      <span id="status" class="status">Idle.</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const cv = document.getElementById("cv");
+  const ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height;
+  const status = document.getElementById("status");
+
+  let t0 = performance.now();
+  let recording = false;
+  let previewing = false;
+
+  function bg(t) {
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.7);
+    sky.addColorStop(0, "#0a1d3a");
+    sky.addColorStop(0.6, "#1d4d8c");
+    sky.addColorStop(1, "#5aa9d6");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    for (let i = 0; i < 90; i++) {
+      const seed = i * 9301 + 49297;
+      const sx = (seed % 233280) / 233280;
+      const sy = ((seed * 1.7) % 233280) / 233280;
+      const x = (sx * W + t * (10 + (i % 5) * 4)) % W;
+      const y = (sy * H * 0.85 + t * 30 + i * 7) % (H * 0.85);
+      const r = 1 + (i % 3);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "#cfe9f5";
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.78);
+    for (let x = 0; x <= W; x += 20) {
+      const y = H * 0.78 + Math.sin((x + t * 30) * 0.01) * 6;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.82);
+    for (let x = 0; x <= W; x += 20) {
+      const y = H * 0.82 + Math.sin((x - t * 60) * 0.013 + 1.2) * 4;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.beginPath(); ctx.ellipse(W * 0.15, H * 0.85, 70, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(W * 0.7, H * 0.92, 110, 10, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawPenguin(cx, cy, t, facing = 1) {
+    const waddle = Math.sin(t * 6) * 0.18;
+    const bob = Math.abs(Math.sin(t * 6)) * 6;
+    const blink = (Math.sin(t * 1.7) > 0.97) ? 0.1 : 1;
+
+    ctx.save();
+    ctx.translate(cx, cy - bob);
+    ctx.rotate(waddle * 0.3);
+    ctx.scale(facing, 1);
+
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.beginPath();
+    ctx.ellipse(0, 95, 60, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const legY = 80 + Math.sin(t * 6) * 4;
+    const legY2 = 80 - Math.sin(t * 6) * 4;
+    ctx.fillStyle = "#f5a623";
+    ctx.beginPath();
+    ctx.ellipse(-15, legY, 14, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(15, legY2, 14, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#15151c";
+    ctx.beginPath();
+    ctx.ellipse(0, 30, 50, 60, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#fafafa";
+    ctx.beginPath();
+    ctx.ellipse(0, 40, 32, 45, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#15151c";
+    ctx.beginPath();
+    ctx.ellipse(0, -30, 36, 40, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#fafafa";
+    ctx.beginPath();
+    ctx.ellipse(0, -18, 22, 24, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const flapAngle = Math.sin(t * 6) * 0.4;
+    ctx.save();
+    ctx.translate(-46, 10);
+    ctx.rotate(-0.2 + flapAngle);
+    ctx.fillStyle = "#15151c";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 12, 40, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(46, 10);
+    ctx.rotate(0.2 - flapAngle);
+    ctx.fillStyle = "#15151c";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 12, 40, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = "#fafafa";
+    ctx.beginPath();
+    ctx.arc(-10, -32, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(10, -32, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#15151c";
+    ctx.beginPath();
+    ctx.ellipse(-10, -32, 2.5, 4 * blink, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(10, -32, 2.5, 4 * blink, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#f5a623";
+    ctx.beginPath();
+    ctx.moveTo(-7, -22);
+    ctx.lineTo(7, -22);
+    ctx.lineTo(0, -12);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  let walkT = 0;
+  let dir = 1;
+  let px = W * 0.2;
+
+  function frame(now) {
+    const t = (now - t0) / 1000;
+    bg(t);
+
+    walkT += 0.016;
+    px += dir * 1.6;
+    if (px > W * 0.8) dir = -1;
+    if (px < W * 0.2) dir = 1;
+    drawPenguin(px, H * 0.72, walkT, dir);
+
+    if (recording || previewing) requestAnimationFrame(frame);
+  }
+
+  document.getElementById("play").addEventListener("click", () => {
+    if (previewing) return;
+    previewing = true;
+    t0 = performance.now();
+    requestAnimationFrame(frame);
+    setTimeout(() => { previewing = false; }, 8000);
+  });
+
+  function pickMime(fmt) {
+    const candidates = fmt === "mp4"
+      ? ["video/mp4;codecs=avc1.42E01E", "video/mp4"]
+      : ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported(c)) return c;
+    }
+    return "";
+  }
+
+  document.getElementById("rec").addEventListener("click", async () => {
+    if (recording) return;
+    const dur = Math.max(2, Math.min(22, parseInt(document.getElementById("dur").value, 10) || 8));
+    const fmt = document.getElementById("fmt").value;
+    const mime = pickMime(fmt);
+    if (!mime) {
+      status.textContent = "This browser can't record " + fmt + ". Try the other format.";
+      status.className = "status";
+      return;
+    }
+    const stream = cv.captureStream(30);
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4_000_000 });
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: mime });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `penguin.${fmt === "mp4" ? "mp4" : "webm"}`;
+      a.click();
+      status.textContent = "Saved! Drop it into the sound generator.";
+      status.className = "status ok";
+      recording = false;
+    };
+
+    recording = true;
+    t0 = performance.now();
+    rec.start();
+    status.textContent = `Recording ${dur}s…`;
+    status.className = "status rec";
+    requestAnimationFrame(frame);
+    setTimeout(() => rec.stop(), dur * 1000);
+  });
+
+  bg(0);
+  drawPenguin(W * 0.4, H * 0.72, 0, 1);
+</script>
+</body>
+</html>

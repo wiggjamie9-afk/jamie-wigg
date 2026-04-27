@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AI Video Sound Generator</title>
+<style>
+  :root {
+    --bg: #0b0b14;
+    --card: #15152a;
+    --border: #2a2a48;
+    --text: #f3f3fa;
+    --soft: #c7c7d6;
+    --muted: #8a8aa3;
+    --red: #ff1f5a;
+    --purple: #7c3aed;
+    --green: #22c55e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  h1 {
+    margin: 0 0 6px 0;
+    font-size: 28px;
+    background: linear-gradient(135deg, var(--red), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sub { color: var(--muted); margin: 0 0 24px 0; font-size: 14px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+  input[type="text"], input[type="password"], textarea, select {
+    width: 100%;
+    padding: 10px 12px;
+    background: #0e0e1c;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+  .drop {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 36px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    color: var(--muted);
+  }
+  .drop:hover, .drop.over { border-color: var(--red); color: var(--text); background: rgba(255,31,90,.04); }
+  button {
+    background: linear-gradient(135deg, var(--red), var(--purple));
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(255,31,90,.4); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--soft); }
+  button.ghost:hover:not(:disabled) { border-color: var(--soft); box-shadow: none; }
+  .log {
+    background: #07070f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    color: var(--soft);
+    white-space: pre-wrap;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .log .err { color: #ff7a8a; }
+  .log .ok { color: var(--green); }
+  .log .step { color: var(--purple); }
+  .preview {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  video { width: 100%; border-radius: 8px; background: #000; }
+  audio { width: 100%; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    background: rgba(124,58,237,.15);
+    color: #a78bfa;
+    text-transform: uppercase;
+  }
+  a { color: #a78bfa; }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>AI Video Sound Generator</h1>
+  <p class="sub">Drop a silent video, get matching AI-generated sound. Uses Gemini (vision) + ElevenLabs (sound effects).</p>
+
+  <div class="card">
+    <label>API Keys <span class="pill">stored in your browser only</span></label>
+    <div class="row">
+      <div>
+        <label for="geminiKey">Gemini API Key</label>
+        <input type="password" id="geminiKey" placeholder="AI..." autocomplete="off" />
+        <div class="hint">Free at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></div>
+      </div>
+      <div>
+        <label for="elevenKey">ElevenLabs API Key</label>
+        <input type="password" id="elevenKey" placeholder="sk_..." autocomplete="off" />
+        <div class="hint">Free at <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">elevenlabs.io</a> (Sound Effects API)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Video</label>
+    <div class="drop" id="drop">
+      <div style="font-size:28px;margin-bottom:8px">🎬</div>
+      <div><strong>Click or drop</strong> a silent video here</div>
+      <div class="hint">mp4, mov, webm — up to ~50&nbsp;MB works best</div>
+      <input type="file" id="file" accept="video/*" hidden />
+    </div>
+    <div id="filename" class="hint" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <label for="prompt">Sound Description <span class="pill">optional</span></label>
+    <textarea id="prompt" placeholder="Leave empty to auto-describe from the video. Or write your own, e.g. 'rain on tin roof, distant thunder'"></textarea>
+
+    <details>
+      <summary>Advanced</summary>
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label for="duration">Duration (sec, max 22)</label>
+          <input type="text" id="duration" placeholder="auto from video" />
+        </div>
+        <div>
+          <label for="frames">Frames analyzed</label>
+          <select id="frames">
+            <option value="3">3 (fast)</option>
+            <option value="5" selected>5 (balanced)</option>
+            <option value="8">8 (thorough)</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button id="run" disabled>Generate Sound</button>
+      <button id="describe" class="ghost" disabled>Describe Only</button>
+      <button id="reset" class="ghost">Reset</button>
+    </div>
+  </div>
+
+  <div class="card" id="logCard" style="display:none">
+    <label>Status</label>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="card preview" id="previewCard" style="display:none">
+    <div>
+      <label>Video (muted) + Generated Audio</label>
+      <video id="vid" controls muted></video>
+    </div>
+    <div>
+      <audio id="aud" controls></audio>
+    </div>
+    <div class="actions">
+      <button id="playSync">Play together</button>
+      <button id="dlAudio" class="ghost">Download audio</button>
+      <button id="dlMuxed" class="ghost">Download merged MP4</button>
+    </div>
+    <div class="hint" id="muxHint">Merged MP4 uses ffmpeg.wasm — first click loads ~30 MB.</div>
+  </div>
+
+</div>
+
+<script type="module">
+  const $ = (id) => document.getElementById(id);
+  const log = $("log");
+  const logCard = $("logCard");
+  const fileInput = $("file");
+  const drop = $("drop");
+  const runBtn = $("run");
+  const describeBtn = $("describe");
+  const resetBtn = $("reset");
+  const filenameEl = $("filename");
+  const previewCard = $("previewCard");
+  const vid = $("vid");
+  const aud = $("aud");
+
+  const KEY_GEMINI = "vsg.geminiKey";
+  const KEY_ELEVEN = "vsg.elevenKey";
+  const KEY_PROMPT = "vsg.prompt";
+
+  $("geminiKey").value = localStorage.getItem(KEY_GEMINI) || "";
+  $("elevenKey").value = localStorage.getItem(KEY_ELEVEN) || "";
+  $("prompt").value = localStorage.getItem(KEY_PROMPT) || "";
+  $("geminiKey").addEventListener("change", e => localStorage.setItem(KEY_GEMINI, e.target.value));
+  $("elevenKey").addEventListener("change", e => localStorage.setItem(KEY_ELEVEN, e.target.value));
+  $("prompt").addEventListener("change", e => localStorage.setItem(KEY_PROMPT, e.target.value));
+
+  let videoFile = null;
+  let audioBlob = null;
+
+  const say = (msg, cls = "") => {
+    logCard.style.display = "block";
+    const span = document.createElement("div");
+    if (cls) span.className = cls;
+    span.textContent = msg;
+    log.appendChild(span);
+    log.scrollTop = log.scrollHeight;
+  };
+
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", e => {
+    e.preventDefault();
+    drop.classList.remove("over");
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener("change", e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(f) {
+    if (!f.type.startsWith("video/")) { say("Not a video file: " + f.type, "err"); return; }
+    videoFile = f;
+    filenameEl.textContent = `${f.name} — ${(f.size / 1e6).toFixed(1)} MB`;
+    vid.src = URL.createObjectURL(f);
+    runBtn.disabled = false;
+    describeBtn.disabled = false;
+    previewCard.style.display = "block";
+  }
+
+  resetBtn.addEventListener("click", () => {
+    videoFile = null;
+    audioBlob = null;
+    fileInput.value = "";
+    filenameEl.textContent = "";
+    log.innerHTML = "";
+    logCard.style.display = "none";
+    previewCard.style.display = "none";
+    vid.src = "";
+    aud.src = "";
+    runBtn.disabled = true;
+    describeBtn.disabled = true;
+  });
+
+  async function extractFrames(file, count) {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    v.src = url;
+    v.muted = true;
+    v.playsInline = true;
+    await new Promise((res, rej) => {
+      v.onloadedmetadata = res;
+      v.onerror = () => rej(new Error("Could not load video metadata"));
+    });
+    const duration = v.duration;
+    const w = Math.min(v.videoWidth, 768);
+    const scale = w / v.videoWidth;
+    const h = Math.round(v.videoHeight * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    const times = [];
+    for (let i = 0; i < count; i++) {
+      times.push(((i + 0.5) / count) * duration);
+    }
+    const frames = [];
+    for (const t of times) {
+      await new Promise((res, rej) => {
+        v.onseeked = res;
+        v.onerror = () => rej(new Error("Seek failed"));
+        v.currentTime = Math.min(t, Math.max(0, duration - 0.05));
+      });
+      ctx.drawImage(v, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      frames.push(dataUrl.split(",")[1]);
+    }
+    URL.revokeObjectURL(url);
+    return { frames, duration };
+  }
+
+  async function describeWithGemini(frames, apiKey) {
+    const parts = [
+      { text: "You are designing sound effects for a short silent video. Look at these sequential frames and write ONE concise sound effects prompt (one sentence, under 30 words) describing the audio that should accompany the scene. Focus on concrete sounds — ambience, foley, mechanical or natural noises. Do NOT include music, speech, or narration. Do NOT prefix with explanations; just output the prompt." }
+    ];
+    for (const b64 of frames) {
+      parts.push({ inline_data: { mime_type: "image/jpeg", data: b64 } });
+    }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts }] }),
+    });
+    if (!resp.ok) {
+      const t = await resp.text();
+      throw new Error(`Gemini error ${resp.status}: ${t.slice(0, 400)}`);
+    }
+    const data = await resp.json();
+    const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join(" ").trim();
+    if (!text) throw new Error("Gemini returned no description");
+    return text;
+  }
+
+  async function generateSound(prompt, durationSec, apiKey) {
+    const body = { text: prompt };
+    if (durationSec) body.duration_seconds = Math.max(0.5, Math.min(22, durationSec));
+    const resp = await fetch("https://api.elevenlabs.io/v1/sound-generation", {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      const t = await resp.text();
+      throw new Error(`ElevenLabs error ${resp.status}: ${t.slice(0, 400)}`);
+    }
+    return await resp.blob();
+  }
+
+  describeBtn.addEventListener("click", async () => {
+    const geminiKey = $("geminiKey").value.trim();
+    if (!geminiKey) { say("Add your Gemini API key first.", "err"); return; }
+    if (!videoFile) { say("Select a video first.", "err"); return; }
+    describeBtn.disabled = true;
+    runBtn.disabled = true;
+    try {
+      const frameCount = parseInt($("frames").value, 10);
+      say(`Extracting ${frameCount} frames…`, "step");
+      const { frames } = await extractFrames(videoFile, frameCount);
+      say("Asking Gemini to describe the sound…", "step");
+      const desc = await describeWithGemini(frames, geminiKey);
+      $("prompt").value = desc;
+      localStorage.setItem(KEY_PROMPT, desc);
+      say("Description: " + desc, "ok");
+    } catch (e) {
+      say(e.message, "err");
+    } finally {
+      describeBtn.disabled = false;
+      runBtn.disabled = false;
+    }
+  });
+
+  runBtn.addEventListener("click", async () => {
+    const geminiKey = $("geminiKey").value.trim();
+    const elevenKey = $("elevenKey").value.trim();
+    if (!elevenKey) { say("Add your ElevenLabs API key first.", "err"); return; }
+    if (!videoFile) { say("Select a video first.", "err"); return; }
+
+    runBtn.disabled = true;
+    describeBtn.disabled = true;
+    try {
+      const frameCount = parseInt($("frames").value, 10);
+      let prompt = $("prompt").value.trim();
+      let duration = parseFloat($("duration").value);
+
+      say(`Extracting ${frameCount} frames…`, "step");
+      const { frames, duration: vidDur } = await extractFrames(videoFile, frameCount);
+      if (!duration || isNaN(duration)) duration = Math.min(22, Math.max(1, vidDur));
+
+      if (!prompt) {
+        if (!geminiKey) throw new Error("No prompt and no Gemini key — add a key or write a prompt.");
+        say("Asking Gemini to describe the sound…", "step");
+        prompt = await describeWithGemini(frames, geminiKey);
+        $("prompt").value = prompt;
+        localStorage.setItem(KEY_PROMPT, prompt);
+        say("Description: " + prompt, "ok");
+      }
+
+      say(`Generating ${duration.toFixed(1)}s of sound with ElevenLabs…`, "step");
+      audioBlob = await generateSound(prompt, duration, elevenKey);
+      const audioUrl = URL.createObjectURL(audioBlob);
+      aud.src = audioUrl;
+      previewCard.style.display = "block";
+      say("Done! Press 'Play together' to preview.", "ok");
+    } catch (e) {
+      say(e.message, "err");
+    } finally {
+      runBtn.disabled = false;
+      describeBtn.disabled = false;
+    }
+  });
+
+  $("playSync").addEventListener("click", () => {
+    vid.currentTime = 0;
+    aud.currentTime = 0;
+    vid.play();
+    aud.play();
+  });
+
+  $("dlAudio").addEventListener("click", () => {
+    if (!audioBlob) { say("Generate audio first.", "err"); return; }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(audioBlob);
+    a.download = (videoFile?.name?.replace(/\.[^.]+$/, "") || "audio") + ".mp3";
+    a.click();
+  });
+
+  let ffmpeg = null;
+  $("dlMuxed").addEventListener("click", async () => {
+    if (!videoFile || !audioBlob) { say("Generate audio first.", "err"); return; }
+    try {
+      if (!ffmpeg) {
+        say("Loading ffmpeg.wasm (first time only)…", "step");
+        const ff = await import("https://esm.sh/@ffmpeg/ffmpeg@0.12.10");
+        const util = await import("https://esm.sh/@ffmpeg/util@0.12.1");
+        ffmpeg = new ff.FFmpeg();
+        ffmpeg.on("log", ({ message }) => console.log("[ffmpeg]", message));
+        await ffmpeg.load({
+          coreURL: "https://esm.sh/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js",
+          wasmURL: "https://esm.sh/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm",
+        });
+        window.__ffUtil = util;
+      }
+      const util = window.__ffUtil;
+      say("Muxing video + audio…", "step");
+      await ffmpeg.writeFile("in.mp4", await util.fetchFile(videoFile));
+      await ffmpeg.writeFile("in.mp3", await util.fetchFile(audioBlob));
+      await ffmpeg.exec([
+        "-i", "in.mp4",
+        "-i", "in.mp3",
+        "-c:v", "copy",
+        "-c:a", "aac",
+        "-shortest",
+        "-map", "0:v:0",
+        "-map", "1:a:0",
+        "out.mp4",
+      ]);
+      const data = await ffmpeg.readFile("out.mp4");
+      const blob = new Blob([data.buffer], { type: "video/mp4" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = (videoFile.name.replace(/\.[^.]+$/, "") || "video") + "_with_sound.mp4";
+      a.click();
+      say("Saved merged MP4.", "ok");
+    } catch (e) {
+      say("Mux failed: " + e.message, "err");
+    }
+  });
+</script>
+</body>
+</html>
