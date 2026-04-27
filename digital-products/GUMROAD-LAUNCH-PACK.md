@@ -55,35 +55,42 @@ Up to you.
 
 ---
 
-## Product 2 — AI Prompt Pack
+## Product 2 — AI Prompt Pack ⭐ START HERE
 
 | Field | Paste |
 |---|---|
-| **Name** | AI Prompt Pack — 50 Side-Hustle Prompts (ChatGPT, Claude, Gemini) |
+| **Name** | 50 AI Prompts That Built a $5K/Month Side Hustle (ChatGPT, Claude, Gemini) |
 | **Price** | 19 |
 | **Upload file** | `pdfs/02-ai-prompt-pack.pdf` |
 
 **Summary:**
 
-> 50 battle-tested prompts for the actual workflow of building a side hustle while working full-time. Niche → offer → sales → ops.
+> 50 battle-tested copy-paste prompts for full-time workers building a side income. Niche → offer → sales → ops. Instant results.
 
 **Description:**
 
-> Stop staring at a blank chat box.
+> Stop staring at a blank ChatGPT box at 9 PM.
 >
-> These 50 prompts cover every stage of building a side hustle on top of a 9-to-5: niche research, offer design, sales copy, cold outreach, content, sales calls, customer onboarding, support, growth, and finance.
+> Most "AI prompt packs" are 50 ways to write the same blog post. This one is different. Every prompt maps to a real stage of running a side business on top of a 9-to-5: finding your niche, designing your offer, writing sales copy, cold outreach, sales calls, customer onboarding, support, growth, and the boring tax stuff.
 >
-> What you get:
-> • 50 prompts across 8 workflow categories
-> • Works with ChatGPT, Claude, Gemini, or any modern LLM
-> • Every prompt has [BRACKETS] you fill in — copy, replace, paste, ship
-> • Instant download (PDF)
+> ✅ 50 battle-tested prompts across 8 workflow stages
+> ✅ Copy → replace [BRACKETS] → paste → ship
+> ✅ Works with ChatGPT, Claude, Gemini, or any modern LLM
+> ✅ Instant PDF download
 >
-> Made for: full-time workers who have 1–2 evenings a week to build something, and are tired of generic "prompt packs" that don't match how a real business actually runs.
+> Real prompts inside this pack:
 >
-> 7-day refund. No subscription.
+> 1. **The Niche Disqualifier** — paste your idea, get 5 brutal reasons it'll fail and 3 reasons it'll work, before you waste 3 weeks building it
+> 2. **The Cold DM** — 3-sentence outreach that doesn't say "hope you're well." Reply rates jump from 2% to 12%
+> 3. **The Quit-Job Math** — calculates exactly what monthly side-hustle revenue lets you walk away from your day job, factoring healthcare and runway
+>
+> Plus 47 more covering offer design, productizing services, sales calls, onboarding, refunds, upsells, referrals, financial models, and quarterly reviews.
+>
+> Made for: anyone with a 9-to-5 who has 1–2 evenings a week and is tired of "passive income" videos that show no actual workflow.
+>
+> ⚡ Instant download. 💰 7-day no-questions refund. 🚫 No subscription. Yours forever.
 
-**Tags:** AI prompts, ChatGPT, Claude AI, Gemini, prompt engineering, side hustle, productivity, entrepreneur, freelance, marketing
+**Tags:** AI prompts, ChatGPT, Claude AI, Gemini, prompt engineering, side hustle, productivity, entrepreneur, freelance, copywriting
 
 ---
 
