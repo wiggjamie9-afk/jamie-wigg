@@ -10,11 +10,9 @@ Landing-page fragments for **RHYTHMIX**, an AI music-creator platform. Content i
 
 The `.txt` extensions are misleading — these are HTML. Treat them as such when editing.
 
-## Design tokens (used throughout)
+## Design system
 
-CSS variables: `--card`, `--border`, `--muted`, `--soft`, `--text`, `--red` (#ff1f5a), `--purple` (#7c3aed), `--cyan` (#00d8ff), `--green` (#00e887), `--gold` (#f5c000). Font vars: `--fm` (mono), `--fs` (sans display), `--fb` (sans body).
-
-Brand gradient: `linear-gradient(135deg, var(--red), var(--purple))`.
+Full brand system — colors, typography, components, voice, breakpoints — lives in `DESIGN.md`. Read it before generating new sections, copy, or styles. Don't invent new tokens; reuse what's there.
 
 ## Working style
 
