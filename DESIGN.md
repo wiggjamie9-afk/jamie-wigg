@@ -1,6 +1,6 @@
 # RHYTHMIX Design System
 
-The brand system already living in `text.txt` / `text 3.txt`. When generating new sections, components, or marketing collateral, follow this — don't invent new tokens.
+The brand system already living in `landing.html` / `sections.html`. When generating new sections, components, or marketing collateral, follow this — don't invent new tokens.
 
 ## Brand identity
 

@@ -4,11 +4,10 @@ Landing-page fragments for **RHYTHMIX**, an AI music-creator platform. Content i
 
 ## Files
 
-- `text.txt` — full landing page (CSS + sections: features, testimonials, pricing, marquee, stats).
-- `text 2.txt` — near-duplicate of `text.txt`. Verify with `diff` before assuming they're identical.
-- `text 3.txt` — section-only HTML (features grid, testimonials).
+- `landing.html` — main landing-page chunk: `<style>` block, nav, hero, marquee, stats section, plus the pricing/lifetime/FAQ/email/footer styles.
+- `sections.html` — features grid and testimonials sections (HTML only, no styles — it relies on `landing.html` for CSS variables and class definitions).
 
-The `.txt` extensions are misleading — these are HTML. Treat them as such when editing.
+Both are **fragments**, not standalone pages. They reference CSS variables (`--red`, `--card`, `--fs`, etc.) and animations (`orbit`, `pulse`, `reveal`) that aren't defined inside these files — the `:root { ... }` block and keyframes live somewhere else (not yet in this repo). To preview, the fragments need to be wrapped in a real `<!DOCTYPE html>` document with the missing token definitions.
 
 ## Design system
 
