@@ -14,6 +14,10 @@ The `.txt` extensions are misleading — these are HTML. Treat them as such when
 
 Full brand system — colors, typography, components, voice, breakpoints — lives in `DESIGN.md`. Read it before generating new sections, copy, or styles. Don't invent new tokens; reuse what's there.
 
+## Copy prompts
+
+Reusable sales-copy prompts (headlines, value prop, problem section, positioning) live in `prompts/sales-copy.md`. Pre-loaded with RHYTHMIX context.
+
 ## Working style
 
 - Skip preambles. No "great question" or "here's what I'll do." Start with the answer.
