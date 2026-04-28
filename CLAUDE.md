@@ -15,10 +15,12 @@ Full brand system — colors, typography, components, voice, breakpoints — liv
 
 ## Prompt library
 
-- `prompts/brand-positioning.md` — strategic Purple Cow prompts (slogan, salient idea, signature surprise, story, symbol). Run once, lock answers.
-- `prompts/sales-copy.md` — tactical landing-page prompts (headlines, value prop, problem section, "for you if"). Run per launch or rewrite.
+Two slash commands wrap the prompt files:
 
-Both pre-loaded with RHYTHMIX context.
+- `/brand <name>` — strategic Purple Cow prompts. Names: `symbol`, `slogan`, `surprise`, `salient`, `story`. Run with no argument to list. Source: `prompts/brand-positioning.md`.
+- `/copy <name>` — tactical landing-page prompts. Names: `headlines`, `value-prop`, `problem`, `for-you-if`, `positioning`, `not-for-you-if`. Run with no argument to list. Source: `prompts/sales-copy.md`.
+
+Both pre-loaded with RHYTHMIX context (audience, metrics, voice).
 
 ## Working style
 
