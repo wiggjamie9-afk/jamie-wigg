@@ -134,6 +134,24 @@ npm install -g @tobilu/qmd @marp-team/marp-cli
 The Obsidian-side tooling (Web Clipper, Dataview, Marp plugin, graph
 view) is installed inside Obsidian, not from this repo.
 
+### qmd as an MCP server
+
+A project-scoped `.mcp.json` is included so Claude Code spawns `qmd` as
+a native MCP server when run from this repo. After `./tools/install.sh`
+and a one-time index build, the agent can call `qmd`'s `query`, `get`,
+`multi_get`, and `status` tools directly instead of shelling out.
+
+Register the two collections once (run from the repo root):
+
+```bash
+qmd collection add ./raw-sources --name raw-sources
+qmd collection add ./wiki        --name wiki
+qmd embed
+```
+
+Re-scan after large ingests with `qmd update`. See the
+[qmd README](https://github.com/tobi/qmd) for full options.
+
 ## Why this works
 
 Maintaining a wiki by hand is bookkeeping, not thinking — and the
