@@ -6,11 +6,11 @@ in; you read, summarize, integrate, and keep the wiki coherent over time.
 
 ## Layers
 
-1. **`sources/`** — raw source documents (articles, papers, transcripts, notes).
+1. **`raw-sources/`** — raw source documents (articles, papers, transcripts, notes).
    - **Immutable.** Read from these; never modify them.
    - Filenames should be descriptive: `2025-03-eu-ai-act-summary.pdf`,
      `lex-fridman-2024-12-anthropic.txt`. If renaming helps, do it on ingest.
-   - Include a `sources/index.md` listing every source with a one-line gloss
+   - Include a `raw-sources/index.md` listing every source with a one-line gloss
      and a link to its summary page in the wiki.
 
 2. **`wiki/`** — the LLM-maintained knowledge base. You own this layer.
@@ -81,11 +81,29 @@ When summarising image-heavy sources, note which figures you actually
 inspected vs. which you only read captions for. Don't fabricate
 descriptions of images you haven't looked at.
 
+## Bootstrap (empty wiki)
+
+Empty directories are where this pattern stalls. If `raw-sources/` is
+empty when a session starts, your first job is to get material into it,
+not to philosophise about structure. Push the user to:
+
+- **Dump existing material verbatim.** Saved articles, Kindle highlights,
+  podcast notes, meeting transcripts, project docs, old research,
+  postmortems, screenshots. Copy-paste into `.md` / `.txt` files. **Do
+  not rename, clean up, or curate.** Just get it in.
+- **If they have nothing,** offer to talk for ~20 minutes about their
+  work, goals, what they're building, what they're figuring out — and
+  save the transcript as `raw-sources/memory.md`. That single file is
+  enough to make the next session feel grounded.
+
+The vault doesn't need to be complete to be useful. It needs to be real.
+Don't let an empty `raw-sources/` block the first ingest.
+
 ## Operations
 
 ### Ingest
 
-When the user adds a file to `sources/` and asks you to ingest it:
+When the user adds a file to `raw-sources/` and asks you to ingest it:
 
 1. **Read the source.** Skim first, then re-read the parts that matter.
 2. **Discuss key takeaways with the user** before writing. Confirm framing,
@@ -100,7 +118,7 @@ When the user adds a file to `sources/` and asks you to ingest it:
    under their sections. The index should always be a complete catalog.
 6. **Append a log entry** to `wiki/log.md` (top of file, log format above)
    listing pages created and updated.
-7. **Update `sources/index.md`** with the new source and link.
+7. **Update `raw-sources/index.md`** with the new source and link.
 
 ### Query
 
@@ -110,7 +128,7 @@ When the user asks a question:
    pages, then drill in. If a search tool (e.g. `qmd`) is configured for
    this repo, use it for larger wikis.
 2. **Read relevant pages.** You've already done the analysis work — reuse
-   it. Only fall back to raw sources in `sources/` when the wiki is thin
+   it. Only fall back to raw sources in `raw-sources/` when the wiki is thin
    on the question.
 3. **Synthesise with citations.** Link to the wiki pages and (transitively)
    the sources backing each claim.

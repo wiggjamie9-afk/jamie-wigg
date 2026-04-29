@@ -2,17 +2,18 @@
 
 A personal knowledge base maintained by an LLM agent.
 
-You drop sources into `sources/`. The agent reads them, writes summaries,
-maintains entity and concept pages, flags contradictions, and keeps the
-whole thing cross-linked and coherent over time. You browse the result
-in Obsidian (or any markdown viewer) while the agent edits.
+You drop sources into `raw-sources/`. The agent reads them, writes
+summaries, maintains entity and concept pages, flags contradictions,
+and keeps the whole thing cross-linked and coherent over time. You
+browse the result in Obsidian (or any markdown viewer) while the agent
+edits.
 
 ## Layout
 
 ```
-sources/      raw source documents — immutable, you curate these
+raw-sources/  raw source documents — immutable, you curate these
 wiki/         LLM-maintained markdown — the agent owns this
-  index.md      home page / map of the wiki
+  index.md      catalog of every page, grouped by category
   log.md        chronological log of ingests, queries, lint passes
   summaries/    one page per source
   entities/     people, organisations, products, places
@@ -21,15 +22,38 @@ wiki/         LLM-maintained markdown — the agent owns this
 CLAUDE.md     schema + workflow the agent follows
 ```
 
+## Getting started — don't stare at an empty folder
+
+This is where most people stall: they create the folders, then sit
+looking at an empty directory wondering what counts as "good enough"
+to ingest. Skip that. Dump everything you already have:
+
+- Articles you saved and never re-read
+- Kindle highlights, podcast notes, YouTube rabbit-hole notes
+- Meeting transcripts, project docs, old decision memos
+- Postmortems, retros, lessons-learned
+- Screenshots of things you wanted to remember
+
+Copy-paste into `.md` or `.txt` files in `raw-sources/`. Don't rename.
+Don't clean up. Just get it in. The agent will sort it on ingest.
+
+**No existing material?** Open a chat with the agent, talk for
+~20 minutes about your work, your goals, what you're building, what
+you're figuring out. Save the transcript as `raw-sources/memory.md`.
+That single file is enough to make the next session feel like the
+agent already knows you.
+
+The vault doesn't need to be complete to be useful. It needs to be real.
+
 ## Usage
 
 1. **Open this directory in Obsidian** (point Obsidian at the repo root).
    `[[wiki-links]]` and the graph view will work out of the box.
 2. **Open Claude Code (or your agent of choice) alongside it.** The agent
    reads `CLAUDE.md` and follows its conventions.
-3. **Drop a source into `sources/`** and ask the agent to ingest it.
-4. **Ask questions.** The agent searches the wiki first, falls back to
-   raw sources only when needed, and offers to file insights back.
+3. **Drop a source into `raw-sources/`** and ask the agent to ingest it.
+4. **Ask questions.** The agent reads `wiki/index.md` first, falls back
+   to raw sources only when needed, and offers to file insights back.
 5. **Periodically ask for a lint pass** to catch contradictions, stale
    claims, orphan pages, and gaps.
 
@@ -45,9 +69,9 @@ All optional — the wiki works as plain markdown without any of this.
 
 - **[Obsidian Web Clipper](https://obsidian.md/clipper)** — browser
   extension that converts web articles to markdown. Drop the output into
-  `sources/`.
+  `raw-sources/`.
 - **Image attachments.** In Obsidian: *Settings → Files and links →
-  Attachment folder path* set to `sources/assets/`, then bind
+  Attachment folder path* set to `raw-sources/assets/`, then bind
   *Download attachments for current file* to a hotkey. Lets the agent
   load images locally instead of relying on URLs.
 - **Graph view** in Obsidian — best way to see the wiki's shape, find
