@@ -116,6 +116,24 @@ All optional — the wiki works as plain markdown without any of this.
   (BM25 + vectors + LLM rerank). Useful once the wiki gets bigger than
   the index file can comfortably catalog. Has both CLI and MCP server.
 
+### Installing the CLI tools
+
+`qmd` and `marp-cli` are both npm packages. Install them with the
+included script (Node.js >= 22 required):
+
+```bash
+./tools/install.sh
+```
+
+Or by hand:
+
+```bash
+npm install -g @tobilu/qmd @marp-team/marp-cli
+```
+
+The Obsidian-side tooling (Web Clipper, Dataview, Marp plugin, graph
+view) is installed inside Obsidian, not from this repo.
+
 ## Why this works
 
 Maintaining a wiki by hand is bookkeeping, not thinking — and the
