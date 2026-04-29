@@ -45,6 +45,37 @@ agent already knows you.
 
 The vault doesn't need to be complete to be useful. It needs to be real.
 
+## First run — kickstart the wiki
+
+Once `raw-sources/` has at least one file in it, run a single batch
+pass to bootstrap the wiki. From the repo root:
+
+```bash
+claude -p "Read everything in raw-sources/. Compile a wiki in wiki/ \
+following the rules in CLAUDE.md. Update wiki/index.md to catalog \
+every page, write one summary per source under wiki/summaries/, and \
+extract entities and concepts into wiki/entities/ and wiki/concepts/. \
+Link related pages with [[page-name]]. Append a single ingest entry \
+to wiki/log.md covering the batch." \
+  --allowedTools Bash,Write,Read,Edit
+```
+
+Then walk away. When it's done you'll have summaries of things you
+forgot you saved, entity and concept pages connecting them, and an
+index that catalogs the lot. The starter `wiki/index.md` and
+`wiki/log.md` will be populated, not replaced.
+
+After the kickstart, switch to the steady-state workflow below: drop
+new sources in one at a time and ingest interactively.
+
+## Side-by-side workflow
+
+Open Obsidian on one side and Claude Code on the other. The agent
+makes edits and you browse the results in real time — following links,
+checking the graph view, reading updated pages.
+
+> Obsidian is the IDE. The agent is the programmer. The wiki is the codebase.
+
 ## Usage
 
 1. **Open this directory in Obsidian** (point Obsidian at the repo root).
