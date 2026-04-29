@@ -38,3 +38,34 @@ CLAUDE.md     schema + workflow the agent follows
 The conventions in `CLAUDE.md` are a starting point — adapt them to your
 domain (research, reading log, business intel, journaling, etc.). The
 agent will help you co-evolve the schema as you learn what works.
+
+## Optional tooling
+
+All optional — the wiki works as plain markdown without any of this.
+
+- **[Obsidian Web Clipper](https://obsidian.md/clipper)** — browser
+  extension that converts web articles to markdown. Drop the output into
+  `sources/`.
+- **Image attachments.** In Obsidian: *Settings → Files and links →
+  Attachment folder path* set to `sources/assets/`, then bind
+  *Download attachments for current file* to a hotkey. Lets the agent
+  load images locally instead of relying on URLs.
+- **Graph view** in Obsidian — best way to see the wiki's shape, find
+  hubs, and spot orphans.
+- **[Marp](https://marp.app/)** — markdown-to-slide-deck. Ask the agent
+  to file an analysis as a Marp deck in `wiki/syntheses/`.
+- **[Dataview](https://blacksmithgu.github.io/obsidian-dataview/)** —
+  Obsidian plugin that runs queries over page frontmatter. The schema's
+  `type:` / `created:` / `sources:` fields are designed for this.
+- **[qmd](https://github.com/tobi/qmd)** — local markdown search engine
+  (BM25 + vectors + LLM rerank). Useful once the wiki gets bigger than
+  the index file can comfortably catalog. Has both CLI and MCP server.
+
+## Why this works
+
+Maintaining a wiki by hand is bookkeeping, not thinking — and the
+bookkeeping cost grows faster than the value, which is why human-run
+wikis stall. LLMs don't get bored, don't forget cross-references, and
+can touch fifteen pages in one pass. The wiki stays maintained because
+maintenance is near-free. You curate sources and ask good questions;
+the agent does the rest.

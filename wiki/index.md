@@ -8,20 +8,29 @@ sources: []
 
 # Wiki Index
 
-The home page of this LLM-maintained knowledge base. Sections grow as
-sources are ingested.
+A complete catalog of every page in this wiki, grouped by category. The
+agent reads this first when answering queries and updates it on every
+ingest. Each entry is `[[link]] — one-line gloss`.
 
-## Sections
+## Summaries
 
-_(empty — add a source to `sources/` and ask the agent to ingest it)_
+_(none yet)_
+
+## Entities
+
+_(none yet)_
+
+## Concepts
+
+_(none yet)_
+
+## Syntheses
+
+_(none yet)_
 
 ## Navigation
 
-- [[log]] — chronological history of every ingest, query, and lint pass
-- `summaries/` — one page per source
-- `entities/` — people, organisations, products, places
-- `concepts/` — ideas, frameworks, themes
-- `syntheses/` — comparisons, analyses, filed-back answers
+- [[log]] — chronological activity log
 
 ## Open threads
 

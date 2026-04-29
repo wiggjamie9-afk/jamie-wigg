@@ -8,23 +8,20 @@ sources: []
 
 # Log
 
-Chronological record of wiki activity. Newest first.
+Chronological record of wiki activity. **Newest entries at the top.**
 
-Entries follow the shape:
+Every entry uses this exact heading shape so the log stays greppable:
 
 ```
-## YYYY-MM-DD — <action> — <subject>
-
-- **Source:** <source-slug> (or N/A for queries / lint)
-- **Pages touched:** [[page-1]], [[page-2]], ...
-- **Notes:** brief context, contradictions raised, follow-ups
+## [YYYY-MM-DD] <action> | <subject>
 ```
 
-Actions: `ingest`, `query-filed-back`, `lint`, `schema-change`.
+- `<action>`: `ingest` | `query` | `lint` | `schema`
+- Quick recent-activity peek: `grep "^## \[" wiki/log.md | head -10`
 
 ---
 
-## 2026-04-29 — schema-change — initial scaffold
+## [2026-04-29] schema | initial scaffold
 
 - **Source:** N/A
 - **Pages touched:** [[index]], [[log]], `CLAUDE.md`, `README.md`

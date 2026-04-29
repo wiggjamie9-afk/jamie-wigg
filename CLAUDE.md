@@ -14,8 +14,12 @@ in; you read, summarize, integrate, and keep the wiki coherent over time.
      and a link to its summary page in the wiki.
 
 2. **`wiki/`** — the LLM-maintained knowledge base. You own this layer.
-   - `wiki/index.md` — the home page. Top-level map of the wiki.
-   - `wiki/log.md` — chronological log of every ingest, query-filed-back, and lint pass.
+   - `wiki/index.md` — **content-oriented catalog.** Every page in the wiki,
+     grouped by category, each with a link and one-line gloss. This is the
+     first thing you read when answering a query — find candidate pages
+     here, then drill in. Update on every ingest.
+   - `wiki/log.md` — **chronological, append-only.** Ingests, queries
+     filed back, lint passes. See *Log format* below.
    - `wiki/summaries/` — one page per ingested source (`summary-<source-slug>.md`).
    - `wiki/entities/` — pages for people, organisations, products, places.
    - `wiki/concepts/` — pages for ideas, frameworks, themes, terms.
@@ -47,6 +51,36 @@ in; you read, summarize, integrate, and keep the wiki coherent over time.
 - **Date-stamp claims that may go stale.** "As of 2025-Q3 …" is better than
   bare assertions for things that change.
 
+## Log format
+
+Every entry in `wiki/log.md` starts with this exact heading shape so the
+log is greppable with plain unix tools:
+
+```
+## [YYYY-MM-DD] <action> | <subject>
+```
+
+- `<action>` is one of: `ingest`, `query`, `lint`, `schema`.
+- `<subject>` is a short human label (source title, question summary, etc).
+- Newest entries go at the top.
+
+`grep "^## \[" wiki/log.md | head -10` should always give a clean
+recent-activity feed. Don't break this format.
+
+## Working with images
+
+LLMs (including you) usually can't read a markdown file with inline
+images in one pass — you read the text, but the images come back as
+references. The workflow is:
+
+1. Read the markdown text first.
+2. Identify which images matter for the current task.
+3. Load and view those images explicitly with the Read tool.
+
+When summarising image-heavy sources, note which figures you actually
+inspected vs. which you only read captions for. Don't fabricate
+descriptions of images you haven't looked at.
+
 ## Operations
 
 ### Ingest
@@ -61,24 +95,30 @@ When the user adds a file to `sources/` and asks you to ingest it:
 4. **Update touched entity & concept pages.** A single source typically
    touches 5–15 wiki pages. Create new ones as needed; update existing ones
    in place. Always preserve and extend the `sources:` frontmatter list.
-5. **Update `wiki/index.md`** if the new material warrants a new section
-   or top-level link.
-6. **Append a log entry** to `wiki/log.md` with date, source, and a
-   short list of pages created/updated.
+5. **Update `wiki/index.md`** — add the new summary under its category,
+   create a new category if needed, and link any new entity/concept pages
+   under their sections. The index should always be a complete catalog.
+6. **Append a log entry** to `wiki/log.md` (top of file, log format above)
+   listing pages created and updated.
 7. **Update `sources/index.md`** with the new source and link.
 
 ### Query
 
 When the user asks a question:
 
-1. **Search the wiki first.** Read relevant pages — you've already done the
-   work; use it. Only fall back to raw sources when the wiki is thin.
-2. **Synthesise with citations.** Link to the wiki pages and (transitively)
+1. **Read `wiki/index.md` first.** That's the catalog — find candidate
+   pages, then drill in. If a search tool (e.g. `qmd`) is configured for
+   this repo, use it for larger wikis.
+2. **Read relevant pages.** You've already done the analysis work — reuse
+   it. Only fall back to raw sources in `sources/` when the wiki is thin
+   on the question.
+3. **Synthesise with citations.** Link to the wiki pages and (transitively)
    the sources backing each claim.
-3. **Offer to file the answer back.** If the question produced a comparison,
+4. **Offer to file the answer back.** If the question produced a comparison,
    analysis, or new connection that didn't exist before, propose creating
    `wiki/syntheses/<topic>.md` so the insight compounds rather than
-   evaporating into chat history.
+   evaporating into chat history. Log query-filed-back actions with
+   action `query` in `wiki/log.md`.
 
 ### Lint
 
@@ -108,3 +148,12 @@ let the user decide what to act on.
   rich and interlinked, not a sprawl of one-paragraph stubs.
 - **Keep this file alive.** When you and the user discover a convention
   that works (or one that doesn't), update `CLAUDE.md`.
+
+## This schema is a starting point
+
+The structure above is a default, not a prescription. It will likely
+need to bend to the user's domain — a reading log, a research wiki, a
+journal, a competitive-intel base all have different shapes. When the
+user tells you the conventions don't fit, propose changes to this file
+and apply them across existing pages. Modularity beats fidelity to the
+template.
