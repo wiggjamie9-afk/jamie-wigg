@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>graphify - graphify-out/graph.html</title>
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: flex; height: 100vh; overflow: hidden; }
+  #graph { flex: 1; }
+  #sidebar { width: 280px; background: #1a1a2e; border-left: 1px solid #2a2a4e; display: flex; flex-direction: column; overflow: hidden; }
+  #search-wrap { padding: 12px; border-bottom: 1px solid #2a2a4e; }
+  #search { width: 100%; background: #0f0f1a; border: 1px solid #3a3a5e; color: #e0e0e0; padding: 7px 10px; border-radius: 6px; font-size: 13px; outline: none; }
+  #search:focus { border-color: #4E79A7; }
+  #search-results { max-height: 140px; overflow-y: auto; padding: 4px 12px; border-bottom: 1px solid #2a2a4e; display: none; }
+  .search-item { padding: 4px 6px; cursor: pointer; border-radius: 4px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .search-item:hover { background: #2a2a4e; }
+  #info-panel { padding: 14px; border-bottom: 1px solid #2a2a4e; min-height: 140px; }
+  #info-panel h3 { font-size: 13px; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  #info-content { font-size: 13px; color: #ccc; line-height: 1.6; }
+  #info-content .field { margin-bottom: 5px; }
+  #info-content .field b { color: #e0e0e0; }
+  #info-content .empty { color: #555; font-style: italic; }
+  .neighbor-link { display: block; padding: 2px 6px; margin: 2px 0; border-radius: 3px; cursor: pointer; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 3px solid #333; }
+  .neighbor-link:hover { background: #2a2a4e; }
+  #neighbors-list { max-height: 160px; overflow-y: auto; margin-top: 4px; }
+  #legend-wrap { flex: 1; overflow-y: auto; padding: 12px; }
+  #legend-wrap h3 { font-size: 13px; color: #aaa; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; border-radius: 4px; font-size: 12px; }
+  .legend-item:hover { background: #2a2a4e; padding-left: 4px; }
+  .legend-item.dimmed { opacity: 0.35; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-count { color: #666; font-size: 11px; }
+  #stats { padding: 10px 14px; border-top: 1px solid #2a2a4e; font-size: 11px; color: #555; }
+  #legend-controls { display: flex; gap: 6px; margin-bottom: 8px; }
+  #legend-controls button { flex: 1; background: #0f0f1a; border: 1px solid #3a3a5e; color: #aaa; padding: 4px 0; border-radius: 4px; font-size: 11px; cursor: pointer; }
+  #legend-controls button:hover { border-color: #4E79A7; color: #e0e0e0; }
+</style>
+</head>
+<body>
+<div id="graph"></div>
+<div id="sidebar">
+  <div id="search-wrap">
+    <input id="search" type="text" placeholder="Search nodes..." autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+  <div id="info-panel">
+    <h3>Node Info</h3>
+    <div id="info-content"><span class="empty">Click a node to inspect it</span></div>
+  </div>
+  <div id="legend-wrap">
+    <h3>Communities</h3>
+    <div id="legend-controls">
+      <button onclick="toggleAllCommunities(false)">Show All</button>
+      <button onclick="toggleAllCommunities(true)">Hide All</button>
+    </div>
+    <div id="legend"></div>
+  </div>
+  <div id="stats">29 nodes &middot; 23 edges &middot; 10 communities</div>
+</div>
+<script>
+const RAW_NODES = [{"id": "remotion_config_ts", "label": "remotion.config.ts", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "remotion.config.ts", "community": 6, "community_name": "Remotion Config", "source_file": "remotion.config.ts", "file_type": "code", "degree": 0}, {"id": "eslint_config_mjs", "label": "eslint.config.mjs", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "eslint.config.mjs", "community": 7, "community_name": "ESLint Config File", "source_file": "eslint.config.mjs", "file_type": "code", "degree": 0}, {"id": "src_composition_tsx", "label": "Composition.tsx", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Composition.tsx", "community": 4, "community_name": "Composition Module", "source_file": "src/Composition.tsx", "file_type": "code", "degree": 1}, {"id": "src_composition_mycomposition", "label": "MyComposition()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "MyComposition()", "community": 4, "community_name": "Composition Module", "source_file": "src/Composition.tsx", "file_type": "code", "degree": 1}, {"id": "src_index_ts", "label": "index.ts", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "index.ts", "community": 8, "community_name": "Entrypoint Module", "source_file": "src/index.ts", "file_type": "code", "degree": 0}, {"id": "src_root_tsx", "label": "Root.tsx", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Root.tsx", "community": 5, "community_name": "Root Component", "source_file": "src/Root.tsx", "file_type": "code", "degree": 1}, {"id": "src_root_remotionroot", "label": "RemotionRoot()", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RemotionRoot()", "community": 5, "community_name": "Root Component", "source_file": "src/Root.tsx", "file_type": "code", "degree": 1}, {"id": "remotion_config", "label": "Remotion Config", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Remotion Config", "community": 2, "community_name": "Remotion Project Setup", "source_file": "video/remotion.config.ts", "file_type": "code", "degree": 2}, {"id": "remotion_config_tailwind", "label": "Tailwind Webpack Override", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Tailwind Webpack Override", "community": 2, "community_name": "Remotion Project Setup", "source_file": "video/remotion.config.ts", "file_type": "code", "degree": 2}, {"id": "composition_mycomposition", "label": "MyComposition Component", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "MyComposition Component", "community": 0, "community_name": "RHYTHMIX Landing Pages", "source_file": "video/src/Composition.tsx", "file_type": "code", "degree": 2}, {"id": "index_registerroot_call", "label": "index.ts registerRoot Entrypoint", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "index.ts registerRoot Entrypoint", "community": 2, "community_name": "Remotion Project Setup", "source_file": "video/src/index.ts", "file_type": "code", "degree": 1}, {"id": "root_remotionroot", "label": "RemotionRoot Component", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 34.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RemotionRoot Component", "community": 2, "community_name": "Remotion Project Setup", "source_file": "video/src/Root.tsx", "file_type": "code", "degree": 4}, {"id": "root_mycomp_composition", "label": "MyComp Composition Definition", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "MyComp Composition Definition", "community": 0, "community_name": "RHYTHMIX Landing Pages", "source_file": "video/src/Root.tsx", "file_type": "code", "degree": 2}, {"id": "text_rhythmix_landing", "label": "RHYTHMIX Landing Page (Hero+Stats)", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 34.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RHYTHMIX Landing Page (Hero+Stats)", "community": 0, "community_name": "RHYTHMIX Landing Pages", "source_file": "text.txt", "file_type": "document", "degree": 4}, {"id": "text2_rhythmix_landing", "label": "RHYTHMIX Landing Page Duplicate", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RHYTHMIX Landing Page Duplicate", "community": 0, "community_name": "RHYTHMIX Landing Pages", "source_file": "text 2.txt", "file_type": "document", "degree": 1}, {"id": "text3_rhythmix_pricing_faq", "label": "RHYTHMIX Features/Pricing/FAQ Sections", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RHYTHMIX Features/Pricing/FAQ Sections", "community": 0, "community_name": "RHYTHMIX Landing Pages", "source_file": "text 3.txt", "file_type": "document", "degree": 1}, {"id": "text_rhythmix_brand", "label": "RHYTHMIX Product (AI Music Platform)", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 28.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RHYTHMIX Product (AI Music Platform)", "community": 0, "community_name": "RHYTHMIX Landing Pages", "source_file": "text.txt", "file_type": "document", "degree": 3}, {"id": "text3_rhythmix_pricing_tiers", "label": "RHYTHMIX Pricing Tiers", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RHYTHMIX Pricing Tiers", "community": 3, "community_name": "RHYTHMIX Pricing & Offers", "source_file": "text 3.txt", "file_type": "document", "degree": 2}, {"id": "text3_rhythmix_lifetime_deal", "label": "RHYTHMIX Lifetime Access Deal $149", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RHYTHMIX Lifetime Access Deal $149", "community": 3, "community_name": "RHYTHMIX Pricing & Offers", "source_file": "text 3.txt", "file_type": "document", "degree": 2}, {"id": "text3_rhythmix_14_features", "label": "RHYTHMIX 14 Core AI Features", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RHYTHMIX 14 Core AI Features", "community": 3, "community_name": "RHYTHMIX Pricing & Offers", "source_file": "text 3.txt", "file_type": "document", "degree": 2}, {"id": "text3_rhythmix_testimonials", "label": "RHYTHMIX Creator Testimonials", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 40.0, "font": {"size": 12, "color": "#ffffff"}, "title": "RHYTHMIX Creator Testimonials", "community": 1, "community_name": "AI Music Competitors", "source_file": "text 3.txt", "file_type": "document", "degree": 5}, {"id": "text3_competitor_suno", "label": "Suno (Competitor)", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Suno (Competitor)", "community": 1, "community_name": "AI Music Competitors", "source_file": "text 3.txt", "file_type": "document", "degree": 1}, {"id": "text3_competitor_udio", "label": "Udio (Competitor)", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Udio (Competitor)", "community": 1, "community_name": "AI Music Competitors", "source_file": "text 3.txt", "file_type": "document", "degree": 1}, {"id": "text3_competitor_landr", "label": "LANDR (Competitor)", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "LANDR (Competitor)", "community": 1, "community_name": "AI Music Competitors", "source_file": "text 3.txt", "file_type": "document", "degree": 1}, {"id": "text3_distribution_spotify", "label": "Spotify Distribution", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Spotify Distribution", "community": 1, "community_name": "AI Music Competitors", "source_file": "text 3.txt", "file_type": "document", "degree": 1}, {"id": "text3_sync_appletv", "label": "Apple TV+ Sync Placement", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 16.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Apple TV+ Sync Placement", "community": 1, "community_name": "AI Music Competitors", "source_file": "text 3.txt", "file_type": "document", "degree": 1}, {"id": "text_gumroad_cta", "label": "Gumroad CTA Link", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Gumroad CTA Link", "community": 3, "community_name": "RHYTHMIX Pricing & Offers", "source_file": "text.txt", "file_type": "document", "degree": 2}, {"id": "readme_remotion_video", "label": "Remotion Video README", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 22.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Remotion Video README", "community": 2, "community_name": "Remotion Project Setup", "source_file": "video/README.md", "file_type": "document", "degree": 2}, {"id": "eslint_config", "label": "Remotion ESLint Flat Config", "color": {"background": "#BAB0AC", "border": "#BAB0AC", "highlight": {"background": "#ffffff", "border": "#BAB0AC"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "Remotion ESLint Flat Config", "community": 9, "community_name": "ESLint Flat Config", "source_file": "video/eslint.config.mjs", "file_type": "code", "degree": 0}];
+const RAW_EDGES = [{"from": "src_composition_tsx", "to": "src_composition_mycomposition", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_root_tsx", "to": "src_root_remotionroot", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "remotion_config", "to": "remotion_config_tailwind", "label": "implements", "title": "implements [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "remotion_config", "to": "readme_remotion_video", "label": "references", "title": "references [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "remotion_config_tailwind", "to": "root_remotionroot", "label": "shares_data_with", "title": "shares_data_with [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "composition_mycomposition", "to": "root_mycomp_composition", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "composition_mycomposition", "to": "text_rhythmix_brand", "label": "semantically_similar_to", "title": "semantically_similar_to [AMBIGUOUS]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "AMBIGUOUS"}, {"from": "index_registerroot_call", "to": "root_remotionroot", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "root_remotionroot", "to": "root_mycomp_composition", "label": "implements", "title": "implements [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "root_remotionroot", "to": "readme_remotion_video", "label": "references", "title": "references [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "text_rhythmix_landing", "to": "text_rhythmix_brand", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text_rhythmix_landing", "to": "text2_rhythmix_landing", "label": "semantically_similar_to", "title": "semantically_similar_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "text_rhythmix_landing", "to": "text3_rhythmix_pricing_faq", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "text_rhythmix_landing", "to": "text_gumroad_cta", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text_rhythmix_brand", "to": "text3_rhythmix_14_features", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text3_rhythmix_pricing_tiers", "to": "text3_rhythmix_lifetime_deal", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "text3_rhythmix_pricing_tiers", "to": "text3_rhythmix_14_features", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text3_rhythmix_lifetime_deal", "to": "text_gumroad_cta", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text3_rhythmix_testimonials", "to": "text3_competitor_suno", "label": "cites", "title": "cites [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text3_rhythmix_testimonials", "to": "text3_competitor_udio", "label": "cites", "title": "cites [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text3_rhythmix_testimonials", "to": "text3_competitor_landr", "label": "cites", "title": "cites [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text3_rhythmix_testimonials", "to": "text3_sync_appletv", "label": "cites", "title": "cites [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "text3_rhythmix_testimonials", "to": "text3_distribution_spotify", "label": "cites", "title": "cites [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}];
+const LEGEND = [{"cid": 0, "color": "#4E79A7", "label": "RHYTHMIX Landing Pages", "count": 6}, {"cid": 1, "color": "#F28E2B", "label": "AI Music Competitors", "count": 6}, {"cid": 2, "color": "#E15759", "label": "Remotion Project Setup", "count": 5}, {"cid": 3, "color": "#76B7B2", "label": "RHYTHMIX Pricing &amp; Offers", "count": 4}, {"cid": 4, "color": "#59A14F", "label": "Composition Module", "count": 2}, {"cid": 5, "color": "#EDC948", "label": "Root Component", "count": 2}, {"cid": 6, "color": "#B07AA1", "label": "Remotion Config", "count": 1}, {"cid": 7, "color": "#FF9DA7", "label": "ESLint Config File", "count": 1}, {"cid": 8, "color": "#9C755F", "label": "Entrypoint Module", "count": 1}, {"cid": 9, "color": "#BAB0AC", "label": "ESLint Flat Config", "count": 1}];
+
+// HTML-escape helper — prevents XSS when injecting graph data into innerHTML
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Build vis datasets
+const nodesDS = new vis.DataSet(RAW_NODES.map(n => ({
+  id: n.id, label: n.label, color: n.color, size: n.size,
+  font: n.font, title: n.title,
+  _community: n.community, _community_name: n.community_name,
+  _source_file: n.source_file, _file_type: n.file_type, _degree: n.degree,
+})));
+
+const edgesDS = new vis.DataSet(RAW_EDGES.map((e, i) => ({
+  id: i, from: e.from, to: e.to,
+  label: '',
+  title: e.title,
+  dashes: e.dashes,
+  width: e.width,
+  color: e.color,
+  arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+})));
+
+const container = document.getElementById('graph');
+const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
+  physics: {
+    enabled: true,
+    solver: 'forceAtlas2Based',
+    forceAtlas2Based: {
+      gravitationalConstant: -60,
+      centralGravity: 0.005,
+      springLength: 120,
+      springConstant: 0.08,
+      damping: 0.4,
+      avoidOverlap: 0.8,
+    },
+    stabilization: { iterations: 200, fit: true },
+  },
+  interaction: {
+    hover: true,
+    tooltipDelay: 100,
+    hideEdgesOnDrag: true,
+    navigationButtons: false,
+    keyboard: false,
+  },
+  nodes: { shape: 'dot', borderWidth: 1.5 },
+  edges: { smooth: { type: 'continuous', roundness: 0.2 }, selectionWidth: 3 },
+});
+
+network.once('stabilizationIterationsDone', () => {
+  network.setOptions({ physics: { enabled: false } });
+});
+
+function showInfo(nodeId) {
+  const n = nodesDS.get(nodeId);
+  if (!n) return;
+  const neighborIds = network.getConnectedNodes(nodeId);
+  const neighborItems = neighborIds.map(nid => {
+    const nb = nodesDS.get(nid);
+    const color = nb ? nb.color.background : '#555';
+    return `<span class="neighbor-link" style="border-left-color:${esc(color)}" onclick="focusNode(${JSON.stringify(nid)})">${esc(nb ? nb.label : nid)}</span>`;
+  }).join('');
+  document.getElementById('info-content').innerHTML = `
+    <div class="field"><b>${esc(n.label)}</b></div>
+    <div class="field">Type: ${esc(n._file_type || 'unknown')}</div>
+    <div class="field">Community: ${esc(n._community_name)}</div>
+    <div class="field">Source: ${esc(n._source_file || '-')}</div>
+    <div class="field">Degree: ${n._degree}</div>
+    ${neighborIds.length ? `<div class="field" style="margin-top:8px;color:#aaa;font-size:11px">Neighbors (${neighborIds.length})</div><div id="neighbors-list">${neighborItems}</div>` : ''}
+  `;
+}
+
+function focusNode(nodeId) {
+  network.focus(nodeId, { scale: 1.4, animation: true });
+  network.selectNodes([nodeId]);
+  showInfo(nodeId);
+}
+
+// Track hovered node — hover detection is more reliable than click params
+let hoveredNodeId = null;
+network.on('hoverNode', params => {
+  hoveredNodeId = params.node;
+  container.style.cursor = 'pointer';
+});
+network.on('blurNode', () => {
+  hoveredNodeId = null;
+  container.style.cursor = 'default';
+});
+container.addEventListener('click', () => {
+  if (hoveredNodeId !== null) {
+    showInfo(hoveredNodeId);
+    network.selectNodes([hoveredNodeId]);
+  }
+});
+network.on('click', params => {
+  if (params.nodes.length > 0) {
+    showInfo(params.nodes[0]);
+  } else if (hoveredNodeId === null) {
+    document.getElementById('info-content').innerHTML = '<span class="empty">Click a node to inspect it</span>';
+  }
+});
+
+const searchInput = document.getElementById('search');
+const searchResults = document.getElementById('search-results');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  searchResults.innerHTML = '';
+  if (!q) { searchResults.style.display = 'none'; return; }
+  const matches = RAW_NODES.filter(n => n.label.toLowerCase().includes(q)).slice(0, 20);
+  if (!matches.length) { searchResults.style.display = 'none'; return; }
+  searchResults.style.display = 'block';
+  matches.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'search-item';
+    el.textContent = n.label;
+    el.style.borderLeft = `3px solid ${n.color.background}`;
+    el.style.paddingLeft = '8px';
+    el.onclick = () => {
+      network.focus(n.id, { scale: 1.5, animation: true });
+      network.selectNodes([n.id]);
+      showInfo(n.id);
+      searchResults.style.display = 'none';
+      searchInput.value = '';
+    };
+    searchResults.appendChild(el);
+  });
+});
+document.addEventListener('click', e => {
+  if (!searchResults.contains(e.target) && e.target !== searchInput)
+    searchResults.style.display = 'none';
+});
+
+const hiddenCommunities = new Set();
+
+function toggleAllCommunities(hide) {
+  document.querySelectorAll('.legend-item').forEach(item => {
+    hide ? item.classList.add('dimmed') : item.classList.remove('dimmed');
+  });
+  LEGEND.forEach(c => {
+    if (hide) hiddenCommunities.add(c.cid); else hiddenCommunities.delete(c.cid);
+  });
+  const updates = RAW_NODES.map(n => ({ id: n.id, hidden: hide }));
+  nodesDS.update(updates);
+}
+
+const legendEl = document.getElementById('legend');
+LEGEND.forEach(c => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<div class="legend-dot" style="background:${c.color}"></div>
+    <span class="legend-label">${c.label}</span>
+    <span class="legend-count">${c.count}</span>`;
+  item.onclick = () => {
+    if (hiddenCommunities.has(c.cid)) {
+      hiddenCommunities.delete(c.cid);
+      item.classList.remove('dimmed');
+    } else {
+      hiddenCommunities.add(c.cid);
+      item.classList.add('dimmed');
+    }
+    const updates = RAW_NODES
+      .filter(n => n.community === c.cid)
+      .map(n => ({ id: n.id, hidden: hiddenCommunities.has(c.cid) }));
+    nodesDS.update(updates);
+  };
+  legendEl.appendChild(item);
+});
+</script>
+<script>
+// Render hyperedges as shaded regions
+const hyperedges = [{"id": "remotion_video_pipeline", "label": "Remotion Video Registration Flow", "nodes": ["index_registerroot_call", "root_remotionroot", "root_mycomp_composition", "composition_mycomposition"], "relation": "participate_in", "confidence": "EXTRACTED", "confidence_score": 0.95, "source_file": "video/src/index.ts"}, {"id": "rhythmix_marketing_funnel", "label": "RHYTHMIX Marketing Page Funnel", "nodes": ["text_rhythmix_brand", "text3_rhythmix_14_features", "text3_rhythmix_testimonials", "text3_rhythmix_pricing_tiers", "text3_rhythmix_lifetime_deal"], "relation": "form", "confidence": "INFERRED", "confidence_score": 0.9, "source_file": "text 3.txt"}, {"id": "rhythmix_competitor_set", "label": "RHYTHMIX Competitor Comparison Set", "nodes": ["text3_competitor_suno", "text3_competitor_udio", "text3_competitor_landr", "text_rhythmix_brand"], "relation": "participate_in", "confidence": "EXTRACTED", "confidence_score": 0.85, "source_file": "text 3.txt"}];
+// afterDrawing passes ctx already transformed to network coordinate space.
+// Draw node positions raw — no manual pan/zoom/DPR math needed.
+network.on('afterDrawing', function(ctx) {
+    hyperedges.forEach(h => {
+        const positions = h.nodes
+            .map(nid => network.getPositions([nid])[nid])
+            .filter(p => p !== undefined);
+        if (positions.length < 2) return;
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        ctx.fillStyle = '#6366f1';
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Centroid and expanded hull in network coordinates
+        const cx = positions.reduce((s, p) => s + p.x, 0) / positions.length;
+        const cy = positions.reduce((s, p) => s + p.y, 0) / positions.length;
+        const expanded = positions.map(p => ({
+            x: cx + (p.x - cx) * 1.15,
+            y: cy + (p.y - cy) * 1.15
+        }));
+        ctx.moveTo(expanded[0].x, expanded[0].y);
+        expanded.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.4;
+        ctx.stroke();
+        // Label
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#4f46e5';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(h.label, cx, cy - 5);
+        ctx.restore();
+    });
+});
+</script>
+</body>
+</html>
