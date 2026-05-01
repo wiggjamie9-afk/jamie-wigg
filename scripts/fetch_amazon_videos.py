@@ -12,17 +12,14 @@ import csv
 import json
 import os
 import sys
-from urllib.parse import urlencode
-from urllib.request import urlopen
 
-ENDPOINT = "https://serpapi.com/search.json"
+import serpapi
 
 
 def fetch_videos(asin: str, api_key: str) -> list[dict]:
-    params = {"engine": "amazon_product", "asin": asin, "api_key": api_key}
-    with urlopen(f"{ENDPOINT}?{urlencode(params)}") as resp:
-        payload = json.load(resp)
-    return payload.get("videos", [])
+    client = serpapi.Client(api_key=api_key)
+    payload = client.search(engine="amazon_product", asin=asin)
+    return payload.get("videos", []) or []
 
 
 def main() -> int:
