@@ -7,6 +7,7 @@ import { polarEnvSchema } from './payment/polar/env'
 import { demoAiAppEnvSchema } from './demo-ai-app/env'
 import { fileUploadEnvSchema } from './file-upload/env'
 import { plausibleEnvSchema, googleAnalyticsEnvSchema } from './analytics/env'
+import { amazonVideosEnvSchema } from './amazonVideos/env'
 
 // Wasp merges this schema with its built-in env var validations and uses it
 // to validate `process.env` at server startup. Access the validated env vars
@@ -24,4 +25,5 @@ export const serverEnvValidationSchema = defineEnvValidationSchema(
     .merge(fileUploadEnvSchema)
     .merge(plausibleEnvSchema)
     .merge(googleAnalyticsEnvSchema)
+    .merge(amazonVideosEnvSchema)
 )
