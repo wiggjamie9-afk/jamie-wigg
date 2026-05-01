@@ -1,9 +1,11 @@
 import {
   AbsoluteFill,
+  Audio,
   Sequence,
   interpolate,
   interpolateColors,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -510,9 +512,29 @@ const EndScene: React.FC = () => {
   );
 };
 
+const Soundtrack: React.FC = () => {
+  const { durationInFrames, fps } = useVideoConfig();
+  const fadeIn = Math.round(fps * 1.5);
+  const fadeOut = Math.round(fps * 2);
+  return (
+    <Audio
+      src={staticFile("music.mp3")}
+      volume={(f) =>
+        interpolate(
+          f,
+          [0, fadeIn, durationInFrames - fadeOut, durationInFrames],
+          [0, 0.6, 0.6, 0],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        )
+      }
+    />
+  );
+};
+
 export const DuckMovie: React.FC = () => {
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
+      <Soundtrack />
       <Sky />
       <Sun />
       <Clouds />
