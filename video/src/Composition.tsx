@@ -2,6 +2,7 @@ import { AbsoluteFill, Audio, Sequence, staticFile, useVideoConfig } from "remot
 import { AUDIO_FILENAME, LYRICS } from "./lyrics";
 import { Background } from "./scenes/Background";
 import { LyricLine } from "./scenes/LyricLine";
+import { CinematicOverlay } from "./scenes/CinematicOverlay";
 
 export const MyComposition: React.FC<{ hasAudio: boolean }> = ({ hasAudio }) => {
   const { fps } = useVideoConfig();
@@ -19,6 +20,7 @@ export const MyComposition: React.FC<{ hasAudio: boolean }> = ({ hasAudio }) => 
           <LyricLine text={line.text} section={line.section} />
         </Sequence>
       ))}
+      <CinematicOverlay />
       {hasAudio && <Audio src={staticFile(AUDIO_FILENAME)} />}
     </AbsoluteFill>
   );

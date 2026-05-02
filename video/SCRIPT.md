@@ -1,106 +1,129 @@
-# "We Rise" — Music Video Script
+# "We Rise" — Music Video Script (Cinematic Cut)
 
-**Style:** dreamy sunrise — drifting pastel gradients (indigo → violet → coral → cream), a glowing sun that rises through the choruses, soft white/cream serif typography (Playfair Display), gentle parallax, no live action.
-**Aspect ratio:** 1920×1080 @ 30 fps
-**Estimated runtime:** 3:30 (placeholder — locked once audio file is in place)
-**Visual through-line:** night → dawn → full daylight, mirroring "we rise like the sun." Each chorus = sun higher in frame, sky warmer.
+**Runtime:** 3:20 (200 seconds)
+**Aspect ratio:** 1920×1080 rendered, 2.35:1 cinematic letterbox (black bars top + bottom)
+**Frame rate:** 30 fps
+**Audio:** **not embedded in render** — layer the song in CapCut over the silent visual track
+**Look:** night → dawn → full sunrise. Slow Ken Burns push through every scene. Film grain, vignette, lens flares in choruses, light-leak transitions between sections. Soft serif typography (Playfair Display fallback to Georgia).
+
+> **CapCut layering note**: this video assumes your song's first vocal line lands at ~0:08. If your song starts differently, you can either trim the front of the visual track, or tell me the actual vocal-entry timestamp and I'll re-time the lyric scenes.
 
 ---
 
 ## Scene 1 — Intro (0:00 – 0:08)
 
-- **Sky:** pure black → slow fade up to deep indigo (#0a1037).
-- **Horizon:** a faint band of lighter blue forms two-thirds down the frame.
-- **Element:** a single point of light (the future sun) appears at the horizon and pulses softly.
-- **Stars:** 30–40 small particles drift slowly upward.
-- **Text:** none.
-- **Feel:** still, anticipatory.
+- Pure black with letterbox bars already in place.
+- Slow fade up to deep indigo (#0a1037) over 4 s.
+- A faint horizon band forms two-thirds down the frame.
+- A single point of light appears at the horizon and pulses softly.
+- Star particles drift slowly upward.
+- Film grain on top of everything (subtle).
+- **No lyrics.**
 
-## Scene 2 — Verse 1 (0:08 – 0:38)
+## Scene 2 — Verse 1 (0:08 – 0:36)
 
-- **Sky:** indigo (#0a1037) → violet (#2a1a5e) over the verse.
-- **Sun seed:** the horizon point glows brighter, casting a soft vertical column.
-- **Particles:** stars drift faster, a few fireflies cross the frame at different depths (parallax).
-- **Lyrics** (lower-third, soft serif, 64 px, white at 90% opacity, fade in 0.4 s, hold, slide up 30 px and fade out as next line starts):
-
+- Sky deepens: indigo → violet (#2a1a5e). Slow Ken Burns push (1.0× → 1.04× scale).
+- Stars drift faster; a few pass close to camera (parallax).
+- Lyrics fade in lower-third, soft cream serif, 64 px:
   - 0:08 – 0:15 · "In the heart of the night, we find our way,"
-  - 0:15 – 0:23 · "Chasing the glow, where the dreamers play."
-  - 0:23 – 0:31 · "Every heartbeat's a pulse, a call to ignite,"
-  - 0:31 – 0:38 · "Together we rise, reaching higher in flight."
+  - 0:15 – 0:22 · "Chasing the glow, where the dreamers play."
+  - 0:22 – 0:29 · "Every heartbeat's a pulse, a call to ignite,"
+  - 0:29 – 0:36 · "Together we rise, reaching higher in flight."
+- Each line replaces the previous with a soft 30 px upward rise + fade.
 
-## Scene 3 — Bridge 1 (0:38 – 0:50)
+## Scene 3 — Bridge 1 (0:36 – 0:48)
 
-- **Sky:** violet warms slightly toward magenta on the horizon.
-- **Element:** the horizon glow blooms outward in a slow radial pulse (3 pulses over the bridge).
-- **Lyrics** (centered, 80 px, scale up gently 0.96 → 1.00, slightly brighter):
+- Sky warms toward magenta (#3d1f6e) on the horizon.
+- Horizon glow blooms outward in three slow radial pulses.
+- Light-leak transition (warm orange flash, 0.6 s) at 0:36 to mark the bridge.
+- Centered lyrics, 80 px, scale gently 0.96 → 1.00:
+  - 0:36 – 0:42 · "Let the lights guide our souls,"
+  - 0:42 – 0:48 · "Together we'll break the mold."
 
-  - 0:38 – 0:44 · "Let the lights guide our souls,"
-  - 0:44 – 0:50 · "Together we'll break the mold."
+## Scene 4 — Chorus 1 (0:48 – 1:16)
 
-## Scene 4 — Chorus 1 (0:50 – 1:20)
+- **Light leak transition** (white-gold flash) at 0:48 — climax beat.
+- Sky shifts rapidly: magenta → coral (#ff7a59) → peach (#ffb27a).
+- Sun lifts off the horizon to roughly ⅓ from the bottom of frame; soft halo + lens flare streak.
+- Subtle 1.02× scale pulse on the sun every assumed downbeat (4-on-the-floor).
+- Vignette tightens slightly to focus eye on the centre.
+- Ken Burns continues — slow zoom in toward the sun.
+- Lyrics centred upper-third, 96 px, warm cream:
+  - 0:48 – 0:55 · "We rise like the sun, we rise like the tide,"
+  - 0:55 – 1:02 · "Hand in hand, we're on this ride."
+  - 1:02 – 1:09 · "Love is the anthem, hope leads the way,"
+  - 1:09 – 1:16 · "Together forever, we'll dance and we'll sway."
 
-- **Sky:** rapid warm shift — violet → magenta → coral (#ff7a59) → peach (#ffb27a).
-- **Sun:** lifts off the horizon, climbs to ~⅓ from the bottom of frame; soft glow halo.
-- **Beat reactivity:** subtle 1.02× scale pulse on the sun every downbeat (assumed 4-on-the-floor).
-- **Lyrics** (centered upper-third, 96 px, warm cream #fff4e5, paired stanzas with two lines visible at once on the last beat):
+## Scene 5 — Verse 2 (1:16 – 1:44)
 
-  - 0:50 – 0:58 · "We rise like the sun, we rise like the tide,"
-  - 0:58 – 1:05 · "Hand in hand, we're on this ride."
-  - 1:05 – 1:12 · "Love is the anthem, hope leads the way,"
-  - 1:12 – 1:20 · "Together forever, we'll dance and we'll sway."
+- Light leak transition (soft pink) at 1:16.
+- Sky softens: peach → cream/lavender (#f4e5ff over peach).
+- Sun holds at mid-sky, less intense.
+- Painterly brush-stroke shapes (5–7) drift across the frame, low opacity, varying scale for depth.
+- Ken Burns slowly pans right, suggesting movement.
+- Lyrics back to lower-third, 64 px, **dark plum (#3a2640) on the lighter sky** for contrast:
+  - 1:16 – 1:23 · "With every whisper, together we stand,"
+  - 1:23 – 1:30 · "Taking our dreams, painting the land."
+  - 1:30 – 1:37 · "No more shadows, we light up the skies,"
+  - 1:37 – 1:44 · "With voices united, our hopes will arise."
 
-## Scene 5 — Verse 2 (1:20 – 1:50)
+## Scene 6 — Bridge 2 (1:44 – 1:56)
 
-- **Sky:** peach softens to cream/lavender (#f4e5ff over a peach base).
-- **Sun:** holds at mid-sky.
-- **Element:** painterly brush-stroke shapes (5–7) drift slowly across the frame, low opacity, varying scale for depth.
-- **Lyrics** (lower-third again, returning to verse style):
+- Sky holds; warm bloom pulses outward from the sun on each beat (stronger than Bridge 1).
+- Soft beat-synced opacity pulse on the lyric type.
+- Centred, 80 px, dark plum:
+  - 1:44 – 1:50 · "Feel the rhythm, hear it loud,"
+  - 1:50 – 1:56 · "This is our moment, let's make it proud."
 
-  - 1:20 – 1:28 · "With every whisper, together we stand,"
-  - 1:28 – 1:35 · "Taking our dreams, painting the land."
-  - 1:35 – 1:42 · "No more shadows, we light up the skies,"
-  - 1:42 – 1:50 · "With voices united, our hopes will arise."
+## Scene 7 — Chorus 2 (1:56 – 2:24)
 
-## Scene 6 — Bridge 2 (1:50 – 2:02)
+- **Big light-leak transition** (full-frame gold flash) at 1:56 — emotional peak.
+- Sky goes full sunrise — coral, gold (#ffd479), cream.
+- Sun rises to centre frame; lens flare lengthens.
+- God-rays / soft light streamers emanate outward, slowly rotating.
+- Letterbox bars get a barely-perceptible bloom at the edges (filmic).
+- Ken Burns slowly zooms out, opening up the sky.
+- Lyrics centred, 104 px, **dark plum** (heavy weight):
+  - 1:56 – 2:03 · "We rise like the sun, we rise like the tide,"
+  - 2:03 – 2:10 · "Hand in hand, we're on this ride."
+  - 2:10 – 2:17 · "Love is the anthem, hope leads the way,"
+  - 2:17 – 2:24 · "Together forever, we'll dance and we'll sway."
 
-- **Sky:** holds, but a warm bloom pulses outward from the sun on each beat (stronger than Bridge 1).
-- **Lyrics** (centered, 80 px, slight beat-synced opacity pulse):
+## Scene 8 — Final Hold (2:24 – 3:00)
 
-  - 1:50 – 1:56 · "Feel the rhythm, hear it loud,"
-  - 1:56 – 2:02 · "This is our moment, let's make it proud."
+- Sky fully radiant; sun has climbed past centre; god-rays at maximum.
+- Lyrics held longer, growing slightly each line:
+  - 2:24 – 2:38 · "Hands in the air, we're shining bright,"  *(14 s, scale 96→104 px)*
+  - 2:38 – 3:00 · "We rise together into the night."  *(22 s, scale 104→112 px, slow rise)*
 
-## Scene 7 — Chorus 2 + Outro (2:02 – 3:30)
+## Scene 9 — Outro (3:00 – 3:20)
 
-- **Sky:** full sunrise — coral, gold (#ffd479), cream — sky fills with warm light.
-- **Sun:** rises to centre frame, then beyond; the whole frame becomes radiant.
-- **Element:** light streamers / soft god-rays emanate outward.
-- **Lyrics** (centered, 104 px chorus / 88 px outro, building):
-
-  - 2:02 – 2:10 · "We rise like the sun, we rise like the tide,"
-  - 2:10 – 2:18 · "Hand in hand, we're on this ride."
-  - 2:18 – 2:26 · "Love is the anthem, hope leads the way,"
-  - 2:26 – 2:34 · "Together forever, we'll dance and we'll sway."
-  - 2:34 – 2:48 · "Hands in the air, we're shining bright," *(extended hold)*
-  - 2:48 – 3:05 · "We rise together into the night." *(longest hold, max scale)*
-- **Outro (3:05 – 3:30):** lyrics fade out; the sky slowly fades to white; horizon line dissolves; final hold on a glowing white frame for 1.5 s before cut.
+- Lyrics fade out at 3:00.
+- Sky slowly washes to white over 12 seconds.
+- Sun's glow consumes the frame; horizon line dissolves.
+- Final 8 seconds: hold on a near-pure-white frame with the faintest warm glow at centre, letterbox bars still visible.
+- Cut to black at 3:20 (one frame).
 
 ---
 
-## Asset / dependency checklist
+## CapCut workflow (after I deliver the mp4)
 
-- [ ] `video/public/song.mp3` — the master audio (user provides; filename can be different — tell me)
-- [ ] Confirm visual direction (or redirect)
-- [ ] Real lyric timings (replace placeholders above) — needed once audio is in place
+1. Drop the rendered mp4 into a CapCut project.
+2. Add your audio track on a new layer beneath it.
+3. Align your song's first vocal lyric to the visual lyric at **0:08**. If they don't match, either:
+   - Trim the start of the visual track, or
+   - Tell me the actual time your first vocal lyric lands and I'll re-render with corrected timings.
+4. Export as you normally would.
 
-## Section colour palette (for `theme.ts`)
+## Section colour palette (`theme.ts`)
 
-| Section   | Sky base    | Accent     | Lyric colour |
-| --------- | ----------- | ---------- | ------------ |
-| Intro     | `#0a1037`   | `#ffffff`  | —            |
-| Verse 1   | `#2a1a5e`   | `#a4b3ff`  | `#ffffffe6`  |
-| Bridge 1  | `#3d1f6e`   | `#ff8fb1`  | `#fff4e5`    |
-| Chorus 1  | `#ff7a59`   | `#ffd479`  | `#fff4e5`    |
-| Verse 2   | `#f4e5ff`   | `#ffb27a`  | `#3a2640`    |
-| Bridge 2  | `#ffb27a`   | `#ff7a59`  | `#3a2640`    |
-| Chorus 2  | `#ffd479`   | `#ffffff`  | `#3a2640`    |
-| Outro     | `#ffffff`   | —          | —            |
+| Section   | Sky base (top → bot) | Lyric colour | Lyric size | Position |
+| --------- | -------------------- | ------------ | ---------- | -------- |
+| Intro     | `#0a1037 → #1a1f5e`  | —            | —          | —        |
+| Verse 1   | `#2a1a5e → #4a2a8e`  | `#fffffff2`  | 64 px      | lower-third |
+| Bridge 1  | `#3d1f6e → #6d3fae`  | `#fff4e5`    | 80 px      | centre |
+| Chorus 1  | `#ff7a59 → #ffb27a`  | `#fff4e5`    | 96 px      | centre |
+| Verse 2   | `#f4e5ff → #ffd479`  | `#3a2640`    | 64 px      | lower-third |
+| Bridge 2  | `#ffb27a → #ffd479`  | `#3a2640`    | 80 px      | centre |
+| Chorus 2  | `#ffd479 → #ffffff`  | `#3a2640`    | 104 px     | centre |
+| Outro     | `#ffffff`            | `#3a2640`    | 88 px      | centre |
