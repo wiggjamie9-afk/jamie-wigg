@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Loopback — your AI writes, another AI reviews</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-soft: #12121a;
+      --card: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f5f5f7;
+      --muted: #8a8a96;
+      --accent: #ff6b35;
+      --accent-2: #7c3aed;
+      --green: #10b981;
+      --fs: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --fm: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--fs);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Animated gradient mesh background */
+    .mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .mesh::before, .mesh::after {
+      content: '';
+      position: absolute;
+      width: 60vw;
+      height: 60vw;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.35;
+      animation: float 20s ease-in-out infinite;
+    }
+    .mesh::before {
+      background: var(--accent);
+      top: -20vw;
+      left: -10vw;
+    }
+    .mesh::after {
+      background: var(--accent-2);
+      bottom: -20vw;
+      right: -10vw;
+      animation-delay: -10s;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(5vw, 5vw) scale(1.15); }
+    }
+
+    main { position: relative; z-index: 1; }
+
+    /* Nav */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 48px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .logo {
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+    .logo-mark {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 6px;
+      margin-right: 8px;
+      vertical-align: -6px;
+    }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--text);
+      color: var(--bg);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 30px -10px rgba(255,255,255,0.3); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+    }
+
+    /* Hero */
+    .hero {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 80px 48px 120px;
+      text-align: center;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 12px;
+      font-family: var(--fm);
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+    .pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    h1 {
+      font-size: clamp(48px, 7vw, 88px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      margin-bottom: 24px;
+    }
+    h1 .grad {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .lede {
+      font-size: 20px;
+      color: var(--muted);
+      max-width: 620px;
+      margin: 0 auto 40px;
+    }
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Loop demo */
+    .demo {
+      max-width: 920px;
+      margin: 80px auto 0;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px -30px rgba(0,0,0,0.5);
+    }
+    .demo-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid var(--border);
+    }
+    .demo-header .traffic {
+      display: flex;
+      gap: 6px;
+    }
+    .demo-header .traffic span {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .demo-header .traffic span:nth-child(1) { background: #ff5f57; }
+    .demo-header .traffic span:nth-child(2) { background: #febc2e; }
+    .demo-header .traffic span:nth-child(3) { background: #28c840; }
+    .demo-header .title {
+      flex: 1;
+      text-align: center;
+      font-family: var(--fm);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .demo-body {
+      padding: 32px;
+      min-height: 320px;
+      font-family: var(--fm);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 12px 0;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .step.visible { opacity: 1; transform: translateY(0); }
+    .step-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+      min-width: 90px;
+      text-align: center;
+    }
+    .tag-gen { background: rgba(124,58,237,0.15); color: #a78bfa; }
+    .tag-rev { background: rgba(255,107,53,0.15); color: var(--accent); }
+    .tag-app { background: rgba(16,185,129,0.15); color: var(--green); }
+    .step-text { color: var(--text); }
+    .step-text .muted { color: var(--muted); }
+
+    /* Features */
+    section.features {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 120px 48px;
+    }
+    .section-title {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .section-title h2 {
+      font-size: clamp(32px, 5vw, 48px);
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .section-title p {
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      padding: 28px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      transition: transform 0.2s, border-color 0.2s, background 0.2s;
+      cursor: default;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255,107,53,0.3);
+      background: rgba(255,255,255,0.06);
+    }
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(255,107,53,0.15), rgba(124,58,237,0.15));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+    .card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .card p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Pricing */
+    .pricing {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 80px 48px 120px;
+    }
+    .price-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .price-card {
+      padding: 32px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      position: relative;
+    }
+    .price-card.featured {
+      border-color: rgba(255,107,53,0.4);
+      background: linear-gradient(180deg, rgba(255,107,53,0.06), transparent);
+    }
+    .price-card .badge {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 100px;
+      letter-spacing: 0.05em;
+    }
+    .price-card h4 { font-size: 14px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+    .price-card .amount {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .price-card .period { color: var(--muted); font-size: 14px; margin-bottom: 24px; display: block; }
+    .price-card ul { list-style: none; margin-bottom: 24px; }
+    .price-card li {
+      padding: 8px 0;
+      color: var(--muted);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .price-card li::before {
+      content: '✓';
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    footer {
+      padding: 40px 48px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .hero, section.features, .pricing { padding-left: 20px; padding-right: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mesh"></div>
+  <main>
+    <nav>
+      <div class="logo"><span class="logo-mark"></span>Loopback</div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#" class="btn">Sign in</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="pill"><span class="dot"></span>Now in beta · 14 day free trial</div>
+      <h1>Your AI writes.<br /><span class="grad">Another AI reviews.</span></h1>
+      <p class="lede">Loopback runs a generate → review → revise loop on every output, so what reaches your customers is the third draft, not the first.</p>
+      <div class="cta-row">
+        <a href="#" class="btn btn-primary">Start free trial</a>
+        <a href="#demo" class="btn">Watch the loop ↓</a>
+      </div>
+
+      <div class="demo" id="demo">
+        <div class="demo-header">
+          <div class="traffic"><span></span><span></span><span></span></div>
+          <div class="title">loopback › agent.run("explain accuracy vs precision")</div>
+        </div>
+        <div class="demo-body" id="demo-body">
+          <!-- Steps populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="section-title">
+        <h2>One loop. Every output. Better.</h2>
+        <p>Three primitives. No agent framework jargon to learn.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">✍️</div>
+          <h3>Generate node</h3>
+          <p>Drafts your content using any model. Sees previous feedback on revision passes.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔍</div>
+          <h3>Review node</h3>
+          <p>Strict editor model returns APPROVED or REVISE plus actionable line-level feedback.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔁</div>
+          <h3>Conditional edge</h3>
+          <p>Loops back to generate or exits. Hard-capped iterations so a strict reviewer can't stall.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <h3>Streaming output</h3>
+          <p>See every node fire in real time. Stop early or steer the loop with one API call.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔌</div>
+          <h3>Provider agnostic</h3>
+          <p>Claude, GPT, open-source — swap models per node. Mix and match for cost vs quality.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <h3>Observability</h3>
+          <p>Every iteration logged. Audit which drafts got rejected, why, and how the final version got there.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+      <div class="section-title">
+        <h2>Pay per loop, not per token.</h2>
+        <p>The first 1,000 loops are on us.</p>
+      </div>
+      <div class="price-grid">
+        <div class="price-card">
+          <h4>Hobby</h4>
+          <div class="amount">$0</div>
+          <span class="period">forever</span>
+          <ul>
+            <li>1,000 loops/month</li>
+            <li>Sonnet 4.6 default</li>
+            <li>Community support</li>
+          </ul>
+          <a href="#" class="btn" style="width: 100%; text-align: center;">Get started</a>
+        </div>
+        <div class="price-card featured">
+          <span class="badge">MOST POPULAR</span>
+          <h4>Pro</h4>
+          <div class="amount">$29</div>
+          <span class="period">per month</span>
+          <ul>
+            <li>50,000 loops/month</li>
+            <li>Any model, any node</li>
+            <li>Streaming + webhooks</li>
+            <li>Priority support</li>
+          </ul>
+          <a href="#" class="btn btn-primary" style="width: 100%; text-align: center;">Start free trial</a>
+        </div>
+        <div class="price-card">
+          <h4>Team</h4>
+          <div class="amount">$99</div>
+          <span class="period">per month</span>
+          <ul>
+            <li>Unlimited loops</li>
+            <li>Custom reviewer prompts</li>
+            <li>SSO & audit logs</li>
+            <li>Dedicated Slack</li>
+          </ul>
+          <a href="#" class="btn" style="width: 100%; text-align: center;">Talk to us</a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>© 2026 Loopback · Demo page built by Claude in one shot · No real product (yet)</p>
+    </footer>
+  </main>
+
+  <script>
+    // Animated demo of the generate -> review -> approve loop
+    const steps = [
+      { tag: 'GENERATE', cls: 'tag-gen', text: '<span class="muted">iter 1 →</span> Accuracy is closeness to the true value. Precision is closeness of repeated measurements.' },
+      { tag: 'REVIEW',   cls: 'tag-rev', text: '<span class="muted">verdict →</span> REVISE — too terse, add a dartboard analogy and explain why both matter.' },
+      { tag: 'GENERATE', cls: 'tag-gen', text: '<span class="muted">iter 2 →</span> Imagine a dartboard. Tight cluster on the bullseye = both. Off-center cluster = precise but not accurate. Spread around bullseye = accurate but not precise. Both matter — precision without accuracy is a reliable wrong answer.' },
+      { tag: 'REVIEW',   cls: 'tag-app', text: '<span class="muted">verdict →</span> APPROVED ✓ — clear, well-illustrated, ships.' },
+    ];
+
+    const body = document.getElementById('demo-body');
+    function renderSteps() {
+      body.innerHTML = '';
+      steps.forEach((s, i) => {
+        const el = document.createElement('div');
+        el.className = 'step';
+        el.innerHTML = `<span class="step-tag ${s.cls}">${s.tag}</span><div class="step-text">${s.text}</div>`;
+        body.appendChild(el);
+        setTimeout(() => el.classList.add('visible'), 300 + i * 900);
+      });
+    }
+
+    // Trigger on scroll into view, and replay on demand
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          renderSteps();
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    observer.observe(document.getElementById('demo'));
+
+    // Replay button (click on the demo title bar)
+    document.querySelector('.demo-header').addEventListener('click', renderSteps);
+    document.querySelector('.demo-header').style.cursor = 'pointer';
+    document.querySelector('.demo-header').title = 'Click to replay';
+  </script>
+</body>
+</html>
