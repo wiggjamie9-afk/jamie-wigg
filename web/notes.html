@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>Loopback Notes — markdown notes that just work</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-soft: #12121a;
+      --panel: #16161f;
+      --border: rgba(255,255,255,0.08);
+      --text: #f5f5f7;
+      --muted: #6a6a76;
+      --accent: #ff6b35;
+      --accent-2: #7c3aed;
+      --green: #10b981;
+      --fs: 'Inter', system-ui, sans-serif;
+      --fm: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overscroll-behavior: none; }
+    body {
+      font-family: var(--fs);
+      background: radial-gradient(ellipse at top, #1a1025 0%, var(--bg) 70%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .mark {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 7px;
+      box-shadow: 0 0 24px rgba(255,107,53,0.35);
+    }
+    .brand h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand h1 span { color: var(--muted); font-weight: 500; margin-left: 6px; font-size: 12px; }
+    .saved {
+      font-family: var(--fm);
+      font-size: 11px;
+      color: var(--muted);
+      transition: opacity 0.3s;
+    }
+    .saved.hidden { opacity: 0; }
+    .saved.ok { color: var(--green); }
+
+    main { flex: 1; display: flex; min-height: 0; }
+
+    aside {
+      width: 280px;
+      border-right: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .side-actions {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 6px;
+    }
+    .btn {
+      padding: 8px 12px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--fs);
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      touch-action: manipulation;
+      min-height: 36px;
+    }
+    .btn:hover { background: rgba(255,255,255,0.06); }
+    .btn:active { transform: scale(0.96); }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      color: white;
+    }
+    .btn.danger:hover { color: #ff5f57; border-color: rgba(255,95,87,0.3); }
+    .btn.full { width: 100%; justify-content: center; }
+
+    .note-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .note-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 2px;
+      transition: background 0.1s;
+      border: 1px solid transparent;
+    }
+    .note-item:hover { background: rgba(255,255,255,0.04); }
+    .note-item.active {
+      background: rgba(255,107,53,0.08);
+      border-color: rgba(255,107,53,0.3);
+    }
+    .note-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .note-preview {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .empty-list {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .editor-bar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+    .title-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--fs);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .title-input::placeholder { color: var(--muted); }
+    .toggle {
+      display: flex;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 2px;
+    }
+    .toggle button {
+      padding: 6px 10px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: var(--fs);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .toggle button.active {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .editor {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr;
+      min-height: 0;
+    }
+    .editor.split { grid-template-columns: 1fr 1fr; }
+    textarea.body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--fm);
+      font-size: 14px;
+      line-height: 1.7;
+      padding: 24px;
+      resize: none;
+    }
+    .preview {
+      padding: 24px;
+      overflow-y: auto;
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .preview.hidden { display: none; }
+    .preview h1 { font-size: 28px; margin: 16px 0 12px; font-weight: 800; letter-spacing: -0.02em; }
+    .preview h2 { font-size: 22px; margin: 16px 0 10px; font-weight: 700; }
+    .preview h3 { font-size: 18px; margin: 14px 0 8px; font-weight: 700; }
+    .preview p { margin: 8px 0; }
+    .preview ul, .preview ol { padding-left: 24px; margin: 8px 0; }
+    .preview li { margin: 4px 0; }
+    .preview a { color: var(--accent); }
+    .preview code {
+      font-family: var(--fm);
+      font-size: 12px;
+      background: var(--panel);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    .preview pre {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+    .preview pre code { background: none; border: none; padding: 0; }
+    .preview blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 4px 14px;
+      color: var(--muted);
+      margin: 10px 0;
+    }
+    .preview hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+    .preview strong { font-weight: 700; }
+    .preview em { font-style: italic; }
+    .preview img { max-width: 100%; border-radius: 8px; }
+    .preview input[type=checkbox] { margin-right: 6px; }
+
+    .empty-editor {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 40px;
+    }
+
+    /* Mobile */
+    @media (max-width: 720px) {
+      aside { width: 100%; height: 100%; position: absolute; z-index: 10; transform: translateX(-100%); transition: transform 0.25s; }
+      aside.open { transform: translateX(0); }
+      .editor.split { grid-template-columns: 1fr; }
+      .preview.split-only { display: none; }
+      .menu-btn { display: inline-flex; }
+      textarea.body, .preview { padding: 16px; font-size: 13px; }
+    }
+    .menu-btn { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <button class="btn menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+      <div class="mark"></div>
+      <h1>Loopback Notes<span>markdown · autosave · local-only</span></h1>
+    </div>
+    <span class="saved hidden" id="saved">Saved</span>
+  </header>
+
+  <main>
+    <aside id="sidebar">
+      <div class="side-actions">
+        <button class="btn primary full" id="newBtn">＋ New note</button>
+      </div>
+      <div class="note-list" id="noteList"></div>
+    </aside>
+
+    <div class="editor-pane">
+      <div class="editor-bar" id="editorBar" style="display:none;">
+        <input class="title-input" id="titleInput" placeholder="Untitled" />
+        <div class="toggle" id="viewToggle">
+          <button data-mode="edit" class="active">Edit</button>
+          <button data-mode="split">Split</button>
+          <button data-mode="preview">Preview</button>
+        </div>
+        <button class="btn" id="exportBtn" title="Download as .md">⬇</button>
+        <button class="btn danger" id="deleteBtn" title="Delete note">✕</button>
+      </div>
+      <div class="editor" id="editor">
+        <textarea class="body" id="bodyInput" placeholder="Start writing markdown… (# Heading, **bold**, - lists, ```code```)"></textarea>
+        <div class="preview hidden" id="preview"></div>
+      </div>
+      <div class="empty-editor" id="emptyEditor">
+        Select a note or create a new one.
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const STORE_KEY = 'loopback.notes.v1';
+    let notes = []; // [{id, title, body, updated}]
+    let activeId = null;
+    let mode = 'edit';
+
+    function load() {
+      try { notes = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch { notes = []; }
+      if (notes.length === 0) {
+        notes.push({
+          id: id(),
+          title: 'Welcome',
+          body: '# Welcome to Loopback Notes\n\nNotes are saved automatically to your browser. Nothing leaves this device.\n\n## Markdown\n\n- **bold**, *italic*, `code`\n- Lists, [links](https://example.com), images\n- ```code blocks```\n- > quotes\n\nClick the ＋ to create a note. Click ✕ to delete this one.',
+          updated: Date.now(),
+        });
+        save();
+      }
+      activeId = notes[0]?.id || null;
+    }
+    function id() { return Math.random().toString(36).slice(2, 10); }
+    function save() {
+      localStorage.setItem(STORE_KEY, JSON.stringify(notes));
+      flashSaved();
+    }
+    let savedTimer;
+    function flashSaved() {
+      const el = document.getElementById('saved');
+      el.textContent = 'Saved';
+      el.classList.remove('hidden');
+      el.classList.add('ok');
+      clearTimeout(savedTimer);
+      savedTimer = setTimeout(() => el.classList.add('hidden'), 1200);
+    }
+
+    // ---------- Markdown rendering (small, dependency-free) ----------
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function renderMd(src) {
+      const lines = src.split('\n');
+      const out = [];
+      let i = 0;
+      const inlineFmt = (s) => {
+        s = escapeHtml(s);
+        // code spans
+        s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // bold
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        // italics
+        s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        s = s.replace(/_([^_]+)_/g, '<em>$1</em>');
+        // images
+        s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" />');
+        // links
+        s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+        return s;
+      };
+      while (i < lines.length) {
+        const ln = lines[i];
+        if (/^```/.test(ln)) {
+          const buf = [];
+          i++;
+          while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+          i++;
+          out.push('<pre><code>' + escapeHtml(buf.join('\n')) + '</code></pre>');
+          continue;
+        }
+        let m;
+        if ((m = ln.match(/^(#{1,6})\s+(.*)/))) {
+          const lvl = m[1].length;
+          out.push(`<h${lvl}>${inlineFmt(m[2])}</h${lvl}>`);
+          i++; continue;
+        }
+        if (/^\s*---\s*$/.test(ln)) { out.push('<hr/>'); i++; continue; }
+        if (/^>\s?/.test(ln)) {
+          const buf = [];
+          while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ''));
+          out.push('<blockquote>' + buf.map(inlineFmt).join('<br/>') + '</blockquote>');
+          continue;
+        }
+        if (/^\s*[-*+]\s+/.test(ln)) {
+          const buf = [];
+          while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
+            const item = lines[i].replace(/^\s*[-*+]\s+/, '');
+            const tm = item.match(/^\[( |x|X)\]\s+(.*)/);
+            if (tm) buf.push(`<li><input type="checkbox"${tm[1] !== ' ' ? ' checked' : ''} disabled />${inlineFmt(tm[2])}</li>`);
+            else buf.push('<li>' + inlineFmt(item) + '</li>');
+            i++;
+          }
+          out.push('<ul>' + buf.join('') + '</ul>');
+          continue;
+        }
+        if (/^\s*\d+\.\s+/.test(ln)) {
+          const buf = [];
+          while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+            buf.push('<li>' + inlineFmt(lines[i].replace(/^\s*\d+\.\s+/, '')) + '</li>');
+            i++;
+          }
+          out.push('<ol>' + buf.join('') + '</ol>');
+          continue;
+        }
+        if (ln.trim() === '') { i++; continue; }
+        // paragraph: collect contiguous non-empty non-block lines
+        const buf = [];
+        while (i < lines.length && lines[i].trim() !== '' && !/^(#|>|\s*[-*+]\s|\s*\d+\.\s|```|---)/.test(lines[i])) {
+          buf.push(lines[i++]);
+        }
+        out.push('<p>' + buf.map(inlineFmt).join('<br/>') + '</p>');
+      }
+      return out.join('\n');
+    }
+
+    // ---------- Rendering ----------
+    function renderList() {
+      const list = document.getElementById('noteList');
+      if (notes.length === 0) {
+        list.innerHTML = '<div class="empty-list">No notes yet</div>';
+        return;
+      }
+      const sorted = [...notes].sort((a, b) => b.updated - a.updated);
+      list.innerHTML = sorted.map(n => {
+        const preview = (n.body || '').replace(/[#*`>\-_\[\]]/g, '').replace(/\n/g, ' ').trim().slice(0, 80) || 'Empty note';
+        return `<div class="note-item${n.id === activeId ? ' active' : ''}" data-id="${n.id}">
+          <div class="note-title">${escapeHtml(n.title || 'Untitled')}</div>
+          <div class="note-preview">${escapeHtml(preview)}</div>
+        </div>`;
+      }).join('');
+      list.querySelectorAll('.note-item').forEach(el => {
+        el.onclick = () => {
+          activeId = el.dataset.id;
+          renderList(); renderEditor();
+          document.getElementById('sidebar').classList.remove('open');
+        };
+      });
+    }
+    function renderEditor() {
+      const note = notes.find(n => n.id === activeId);
+      const bar = document.getElementById('editorBar');
+      const editor = document.getElementById('editor');
+      const empty = document.getElementById('emptyEditor');
+      if (!note) {
+        bar.style.display = 'none';
+        editor.style.display = 'none';
+        empty.style.display = 'flex';
+        return;
+      }
+      bar.style.display = 'flex';
+      editor.style.display = 'grid';
+      empty.style.display = 'none';
+      document.getElementById('titleInput').value = note.title;
+      document.getElementById('bodyInput').value = note.body;
+      updatePreview();
+      applyMode();
+    }
+    function updatePreview() {
+      const note = notes.find(n => n.id === activeId);
+      if (!note) return;
+      document.getElementById('preview').innerHTML = renderMd(note.body || '');
+    }
+    function applyMode() {
+      const editor = document.getElementById('editor');
+      const ta = document.getElementById('bodyInput');
+      const pv = document.getElementById('preview');
+      editor.classList.toggle('split', mode === 'split');
+      ta.style.display = (mode === 'preview') ? 'none' : 'block';
+      pv.classList.toggle('hidden', mode === 'edit');
+      document.querySelectorAll('#viewToggle button').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+      });
+    }
+
+    // ---------- Wiring ----------
+    document.getElementById('newBtn').onclick = () => {
+      const n = { id: id(), title: 'Untitled', body: '', updated: Date.now() };
+      notes.push(n);
+      activeId = n.id;
+      save(); renderList(); renderEditor();
+      document.getElementById('titleInput').focus();
+      document.getElementById('sidebar').classList.remove('open');
+    };
+    document.getElementById('deleteBtn').onclick = () => {
+      const note = notes.find(n => n.id === activeId);
+      if (!note) return;
+      if (!confirm(`Delete "${note.title || 'Untitled'}"?`)) return;
+      notes = notes.filter(n => n.id !== activeId);
+      activeId = notes[0]?.id || null;
+      save(); renderList(); renderEditor();
+    };
+    document.getElementById('exportBtn').onclick = () => {
+      const note = notes.find(n => n.id === activeId);
+      if (!note) return;
+      const blob = new Blob([note.body], { type: 'text/markdown' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (note.title || 'untitled').replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.md';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+    let saveTimer;
+    function debouncedSave() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => { save(); renderList(); }, 300);
+    }
+    document.getElementById('titleInput').oninput = e => {
+      const note = notes.find(n => n.id === activeId);
+      if (!note) return;
+      note.title = e.target.value;
+      note.updated = Date.now();
+      debouncedSave();
+    };
+    document.getElementById('bodyInput').oninput = e => {
+      const note = notes.find(n => n.id === activeId);
+      if (!note) return;
+      note.body = e.target.value;
+      note.updated = Date.now();
+      updatePreview();
+      debouncedSave();
+    };
+    document.querySelectorAll('#viewToggle button').forEach(b => {
+      b.onclick = () => { mode = b.dataset.mode; applyMode(); };
+    });
+    document.getElementById('menuBtn').onclick = () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    };
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') { e.preventDefault(); document.getElementById('newBtn').click(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); renderList(); }
+    });
+
+    load();
+    renderList();
+    renderEditor();
+  </script>
+</body>
+</html>

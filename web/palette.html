@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>Loopback Palette — color palette generator for designers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-soft: #12121a;
+      --panel: #16161f;
+      --border: rgba(255,255,255,0.08);
+      --text: #f5f5f7;
+      --muted: #6a6a76;
+      --accent: #ff6b35;
+      --accent-2: #7c3aed;
+      --green: #10b981;
+      --fs: 'Inter', system-ui, sans-serif;
+      --fm: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { overscroll-behavior: none; }
+    body {
+      font-family: var(--fs);
+      background: radial-gradient(ellipse at top, #1a1025 0%, var(--bg) 70%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .mark {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 7px;
+      box-shadow: 0 0 24px rgba(255,107,53,0.35);
+    }
+    .brand h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand h1 span { color: var(--muted); font-weight: 500; margin-left: 6px; font-size: 12px; }
+
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .swatch-input {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .swatch-input .pick {
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .swatch-input .pick input {
+      position: absolute; inset: -10px;
+      width: calc(100% + 20px); height: calc(100% + 20px);
+      opacity: 0; cursor: pointer;
+    }
+    .hex-input {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--fm);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 14px;
+      border-radius: 10px;
+      width: 110px;
+      text-transform: uppercase;
+      outline: none;
+    }
+    .hex-input:focus { border-color: rgba(255,107,53,0.5); }
+
+    .scheme-select {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      flex-wrap: wrap;
+    }
+    .scheme-select button {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: var(--fs);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .scheme-select button.active { background: var(--bg); color: var(--text); }
+
+    .btn {
+      padding: 11px 16px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--fs);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      touch-action: manipulation;
+      min-height: 42px;
+    }
+    .btn:hover { background: rgba(255,255,255,0.06); }
+    .btn:active { transform: scale(0.96); }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      color: white;
+    }
+
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .swatch {
+      aspect-ratio: 4/5;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .swatch:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(0,0,0,0.4); }
+    .swatch:active { transform: scale(0.98); }
+    .swatch .hex {
+      font-family: var(--fm);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-bottom: 4px;
+    }
+    .swatch .meta {
+      font-family: var(--fm);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      opacity: 0.75;
+    }
+    .swatch .copied {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.4);
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .swatch.copied-flash .copied { opacity: 1; }
+
+    .saved-section {
+      margin-top: 24px;
+    }
+    .section-title {
+      font-family: var(--fm);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .saved-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .saved-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .saved-row .strip {
+      flex: 1;
+      display: flex;
+      height: 32px;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .saved-row .strip > div { flex: 1; }
+    .saved-row .del {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .saved-row .del:hover { color: #ff5f57; background: rgba(255,95,87,0.08); }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.2,0.9,0.3,1.2);
+      z-index: 100;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.ok { border-color: rgba(16,185,129,0.4); }
+
+    .empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 720px) {
+      .controls { grid-template-columns: 1fr; }
+      .palette { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+      .swatch { padding: 12px; }
+      .swatch .hex { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="mark"></div>
+        <h1>Loopback Palette<span>color schemes for designers</span></h1>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="swatch-input">
+        <label class="pick" id="pickWrap" style="background:#ff6b35">
+          <input type="color" id="pick" value="#ff6b35" />
+        </label>
+        <input class="hex-input" id="hex" value="#FF6B35" maxlength="7" />
+      </div>
+      <div class="scheme-select" id="schemes">
+        <button data-scheme="analogous" class="active">Analogous</button>
+        <button data-scheme="complementary">Complement</button>
+        <button data-scheme="triadic">Triadic</button>
+        <button data-scheme="tetradic">Tetradic</button>
+        <button data-scheme="monochrome">Mono</button>
+        <button data-scheme="shades">Shades</button>
+      </div>
+      <button class="btn" id="randomBtn">🎲 Random</button>
+      <button class="btn primary" id="saveBtn">★ Save</button>
+    </div>
+
+    <div class="palette" id="palette"></div>
+
+    <div style="display:flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+      <button class="btn" id="copyAllBtn">Copy all hex</button>
+      <button class="btn" id="cssBtn">Copy as CSS</button>
+      <button class="btn" id="jsonBtn">Download JSON</button>
+    </div>
+
+    <div class="saved-section">
+      <div class="section-title">Saved palettes</div>
+      <div class="saved-list" id="savedList"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORE = 'loopback.palette.v1';
+    let saved = [];
+    let scheme = 'analogous';
+    let base = '#FF6B35';
+
+    function loadStore() {
+      try { saved = JSON.parse(localStorage.getItem(STORE) || '[]'); } catch { saved = []; }
+    }
+    function saveStore() { localStorage.setItem(STORE, JSON.stringify(saved)); }
+
+    // ---------- Color math ----------
+    function hexToRgb(h) {
+      h = h.replace('#', '');
+      if (h.length === 3) h = h.split('').map(c => c + c).join('');
+      const n = parseInt(h, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+    function rgbToHex([r, g, b]) {
+      const c = n => Math.round(Math.max(0, Math.min(255, n))).toString(16).padStart(2, '0');
+      return ('#' + c(r) + c(g) + c(b)).toUpperCase();
+    }
+    function rgbToHsl([r, g, b]) {
+      r /= 255; g /= 255; b /= 255;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      let h = 0, s = 0, l = (mx + mn) / 2;
+      if (mx !== mn) {
+        const d = mx - mn;
+        s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+        switch (mx) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60;
+      }
+      return [h, s, l];
+    }
+    function hslToRgb([h, s, l]) {
+      h = ((h % 360) + 360) % 360;
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      const m = l - c / 2;
+      let r1, g1, b1;
+      if (h < 60) [r1, g1, b1] = [c, x, 0];
+      else if (h < 120) [r1, g1, b1] = [x, c, 0];
+      else if (h < 180) [r1, g1, b1] = [0, c, x];
+      else if (h < 240) [r1, g1, b1] = [0, x, c];
+      else if (h < 300) [r1, g1, b1] = [x, 0, c];
+      else [r1, g1, b1] = [c, 0, x];
+      return [(r1 + m) * 255, (g1 + m) * 255, (b1 + m) * 255];
+    }
+    function hexToHsl(h) { return rgbToHsl(hexToRgb(h)); }
+    function hslToHex(h) { return rgbToHex(hslToRgb(h)); }
+    function relLuminance([r, g, b]) {
+      const c = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+      return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b);
+    }
+
+    // ---------- Schemes ----------
+    function generate(baseHex, scheme) {
+      const [h, s, l] = hexToHsl(baseHex);
+      const make = (offsets) => offsets.map(([dh, ds = 0, dl = 0]) =>
+        hslToHex([h + dh, Math.max(0, Math.min(1, s + ds)), Math.max(0.05, Math.min(0.95, l + dl))])
+      );
+      switch (scheme) {
+        case 'analogous':     return make([[-30], [-15], [0], [15], [30]]);
+        case 'complementary': return make([[0, 0, -0.15], [0], [180], [180, 0, 0.15]]);
+        case 'triadic':       return make([[0], [120], [240]]);
+        case 'tetradic':      return make([[0], [90], [180], [270]]);
+        case 'monochrome':    return make([[0, 0, -0.3], [0, 0, -0.15], [0], [0, 0, 0.15], [0, 0, 0.3]]);
+        case 'shades':        return [0.15, 0.3, 0.45, 0.6, 0.75].map(L => hslToHex([h, s, L]));
+        default: return [baseHex];
+      }
+    }
+
+    // ---------- Render ----------
+    function setBase(hex, fromInput = false) {
+      hex = normalizeHex(hex);
+      if (!hex) return;
+      base = hex;
+      document.getElementById('pickWrap').style.background = base;
+      document.getElementById('pick').value = base.toLowerCase();
+      if (!fromInput) document.getElementById('hex').value = base;
+      renderPalette();
+    }
+    function normalizeHex(h) {
+      if (!h) return null;
+      h = h.trim().toUpperCase();
+      if (!h.startsWith('#')) h = '#' + h;
+      if (/^#[0-9A-F]{3}$/.test(h)) h = '#' + h.slice(1).split('').map(c => c + c).join('');
+      if (!/^#[0-9A-F]{6}$/.test(h)) return null;
+      return h;
+    }
+    function renderPalette() {
+      const cols = generate(base, scheme);
+      const root = document.getElementById('palette');
+      root.innerHTML = '';
+      cols.forEach((hex) => {
+        const lum = relLuminance(hexToRgb(hex));
+        const fg = lum > 0.45 ? '#0a0a0f' : '#ffffff';
+        const div = document.createElement('div');
+        div.className = 'swatch';
+        div.style.background = hex;
+        div.style.color = fg;
+        const [h, s, l] = hexToHsl(hex);
+        div.innerHTML = `
+          <div class="hex">${hex}</div>
+          <div class="meta">H ${Math.round(h)}°  S ${Math.round(s*100)}%  L ${Math.round(l*100)}%</div>
+          <div class="copied">COPIED</div>
+        `;
+        div.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(hex);
+            div.classList.add('copied-flash');
+            setTimeout(() => div.classList.remove('copied-flash'), 700);
+          } catch {
+            toast(`Copy this: ${hex}`);
+          }
+        };
+        root.appendChild(div);
+      });
+    }
+    function renderSaved() {
+      const list = document.getElementById('savedList');
+      if (saved.length === 0) {
+        list.innerHTML = '<div class="empty">Saved palettes appear here. Click ★ Save to keep one.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      saved.forEach((p, idx) => {
+        const row = document.createElement('div');
+        row.className = 'saved-row';
+        const strip = document.createElement('div');
+        strip.className = 'strip';
+        strip.title = 'Click to load';
+        p.colors.forEach(c => {
+          const seg = document.createElement('div');
+          seg.style.background = c;
+          strip.appendChild(seg);
+        });
+        strip.onclick = () => {
+          base = p.base;
+          scheme = p.scheme;
+          document.querySelectorAll('#schemes button').forEach(b => b.classList.toggle('active', b.dataset.scheme === scheme));
+          setBase(base);
+        };
+        const del = document.createElement('button');
+        del.className = 'del';
+        del.textContent = '✕';
+        del.onclick = () => {
+          if (!confirm('Delete this palette?')) return;
+          saved.splice(idx, 1);
+          saveStore(); renderSaved();
+        };
+        row.appendChild(strip);
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+    }
+
+    // ---------- Toast ----------
+    let toastTimer;
+    function toast(msg, ok = false) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.toggle('ok', ok);
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    function getCurrentPalette() { return generate(base, scheme); }
+
+    // ---------- Wiring ----------
+    document.getElementById('pick').oninput = e => setBase(e.target.value);
+    document.getElementById('hex').oninput = e => setBase(e.target.value, true);
+    document.querySelectorAll('#schemes button').forEach(b => {
+      b.onclick = () => {
+        document.querySelectorAll('#schemes button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        scheme = b.dataset.scheme;
+        renderPalette();
+      };
+    });
+    document.getElementById('randomBtn').onclick = () => {
+      const h = Math.floor(Math.random() * 360);
+      const s = 0.55 + Math.random() * 0.4;
+      const l = 0.4 + Math.random() * 0.3;
+      setBase(hslToHex([h, s, l]));
+    };
+    document.getElementById('saveBtn').onclick = () => {
+      const colors = getCurrentPalette();
+      saved.unshift({ id: Date.now(), base, scheme, colors });
+      if (saved.length > 30) saved.pop();
+      saveStore(); renderSaved();
+      toast('Palette saved', true);
+    };
+    document.getElementById('copyAllBtn').onclick = async () => {
+      const txt = getCurrentPalette().join('\n');
+      try { await navigator.clipboard.writeText(txt); toast('Hex codes copied', true); }
+      catch { toast('Copy failed'); }
+    };
+    document.getElementById('cssBtn').onclick = async () => {
+      const cols = getCurrentPalette();
+      const css = ':root {\n' + cols.map((c, i) => `  --color-${i + 1}: ${c};`).join('\n') + '\n}';
+      try { await navigator.clipboard.writeText(css); toast('CSS copied', true); }
+      catch { toast('Copy failed'); }
+    };
+    document.getElementById('jsonBtn').onclick = () => {
+      const data = { base, scheme, colors: getCurrentPalette() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `palette-${base.slice(1).toLowerCase()}-${scheme}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+
+    loadStore();
+    setBase(base);
+    renderSaved();
+  </script>
+</body>
+</html>

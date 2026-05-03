@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>Loopback Focus — pomodoro timer that respects your time</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-soft: #12121a;
+      --panel: #16161f;
+      --border: rgba(255,255,255,0.08);
+      --text: #f5f5f7;
+      --muted: #6a6a76;
+      --accent: #ff6b35;
+      --accent-2: #7c3aed;
+      --green: #10b981;
+      --blue: #3b82f6;
+      --fs: 'Inter', system-ui, sans-serif;
+      --fm: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overscroll-behavior: none; }
+    body {
+      font-family: var(--fs);
+      background: radial-gradient(ellipse at top, #1a1025 0%, var(--bg) 70%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.6s;
+    }
+    body.break {
+      background: radial-gradient(ellipse at top, #0a2520 0%, var(--bg) 70%);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .mark {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 7px;
+      box-shadow: 0 0 24px rgba(255,107,53,0.35);
+      transition: background 0.6s;
+    }
+    body.break .mark { background: linear-gradient(135deg, var(--green), var(--blue)); box-shadow: 0 0 24px rgba(16,185,129,0.35); }
+    .brand h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand h1 span { color: var(--muted); font-weight: 500; margin-left: 6px; font-size: 12px; }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      font-family: var(--fm);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+    .stats b { color: var(--text); font-weight: 700; margin-left: 6px; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .phase-tag {
+      font-family: var(--fm);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      margin-bottom: 20px;
+      padding: 6px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+    }
+    .phase-tag.focus { color: var(--accent); border-color: rgba(255,107,53,0.3); }
+    .phase-tag.short { color: var(--green); border-color: rgba(16,185,129,0.3); }
+    .phase-tag.long  { color: var(--blue); border-color: rgba(59,130,246,0.3); }
+
+    .ring-wrap {
+      position: relative;
+      width: min(80vw, 380px);
+      aspect-ratio: 1;
+    }
+    svg.ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+    .ring-fg {
+      fill: none;
+      stroke: url(#grad);
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s linear, stroke 0.6s;
+      filter: drop-shadow(0 0 12px rgba(255,107,53,0.5));
+    }
+    .time {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .time .digits {
+      font-family: var(--fm);
+      font-size: clamp(56px, 14vw, 96px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .time .session {
+      margin-top: 8px;
+      font-family: var(--fm);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 32px;
+    }
+    .btn {
+      padding: 14px 28px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--fs);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      touch-action: manipulation;
+      min-height: 50px;
+      min-width: 110px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:hover { background: rgba(255,255,255,0.06); }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 0 30px rgba(255,107,53,0.35);
+    }
+    body.break .btn.primary {
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      box-shadow: 0 0 30px rgba(16,185,129,0.35);
+    }
+
+    .settings {
+      margin-top: 36px;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .setting {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .setting label {
+      font-family: var(--fm);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+    }
+    .setting .num {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 8px;
+    }
+    .setting .num button {
+      width: 30px; height: 30px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .setting .num button:active { transform: scale(0.92); }
+    .setting .num span {
+      min-width: 32px;
+      text-align: center;
+      font-family: var(--fm);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    footer kbd {
+      font-family: var(--fm);
+      padding: 2px 5px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 10px;
+    }
+
+    .dots {
+      display: flex;
+      gap: 6px;
+      margin-top: 16px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+    }
+    .dot.done { background: var(--accent); border-color: transparent; box-shadow: 0 0 8px rgba(255,107,53,0.5); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="mark"></div>
+      <h1>Loopback Focus<span>pomodoro · stays local</span></h1>
+    </div>
+    <div class="stats">
+      <span>TODAY <b id="todayCount">0</b></span>
+      <span>STREAK <b id="streakCount">0</b></span>
+    </div>
+  </header>
+
+  <main>
+    <div class="phase-tag focus" id="phaseTag">FOCUS</div>
+    <div class="ring-wrap">
+      <svg class="ring" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#ff6b35"/>
+            <stop offset="100%" stop-color="#7c3aed"/>
+          </linearGradient>
+          <linearGradient id="gradBreak" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#10b981"/>
+            <stop offset="100%" stop-color="#3b82f6"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="50" cy="50" r="46" />
+        <circle class="ring-fg" id="ring" cx="50" cy="50" r="46" stroke-dasharray="289" stroke-dashoffset="0" />
+      </svg>
+      <div class="time">
+        <div class="digits" id="digits">25:00</div>
+        <div class="session" id="sessionLabel">SESSION 1 / 4</div>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+
+    <div class="controls">
+      <button class="btn primary" id="startBtn">START</button>
+      <button class="btn" id="resetBtn">Reset</button>
+      <button class="btn" id="skipBtn">Skip ›</button>
+    </div>
+
+    <div class="settings">
+      <div class="setting">
+        <label>FOCUS MIN</label>
+        <div class="num">
+          <button data-k="focus" data-d="-1">−</button>
+          <span id="focusMin">25</span>
+          <button data-k="focus" data-d="1">+</button>
+        </div>
+      </div>
+      <div class="setting">
+        <label>SHORT BREAK</label>
+        <div class="num">
+          <button data-k="short" data-d="-1">−</button>
+          <span id="shortMin">5</span>
+          <button data-k="short" data-d="1">+</button>
+        </div>
+      </div>
+      <div class="setting">
+        <label>LONG BREAK</label>
+        <div class="num">
+          <button data-k="long" data-d="-1">−</button>
+          <span id="longMin">15</span>
+          <button data-k="long" data-d="1">+</button>
+        </div>
+      </div>
+      <div class="setting">
+        <label>ROUNDS</label>
+        <div class="num">
+          <button data-k="rounds" data-d="-1">−</button>
+          <span id="roundsNum">4</span>
+          <button data-k="rounds" data-d="1">+</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <kbd>Space</kbd> start/pause · <kbd>R</kbd> reset · <kbd>S</kbd> skip · sound when phase changes
+  </footer>
+
+  <script>
+    const STORE = 'loopback.focus.v1';
+    const RING_C = 2 * Math.PI * 46;
+
+    let cfg = { focus: 25, short: 5, long: 15, rounds: 4 };
+    let stats = { todayCount: 0, lastDay: '', streak: 0, lastDoneDay: '' };
+
+    let phase = 'focus'; // 'focus' | 'short' | 'long'
+    let session = 1; // 1..rounds
+    let remaining = cfg.focus * 60;
+    let total = cfg.focus * 60;
+    let running = false;
+    let lastTick = 0;
+    let raf = 0;
+
+    function todayKey() {
+      const d = new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    }
+    function loadStore() {
+      try {
+        const s = JSON.parse(localStorage.getItem(STORE) || 'null');
+        if (s) { cfg = { ...cfg, ...(s.cfg || {}) }; stats = { ...stats, ...(s.stats || {}) }; }
+      } catch {}
+      // reset today count if new day
+      if (stats.lastDay !== todayKey()) { stats.todayCount = 0; stats.lastDay = todayKey(); }
+      // streak: increments if completed yesterday or today; else 0
+      if (stats.lastDoneDay) {
+        const last = new Date(stats.lastDoneDay).setHours(0,0,0,0);
+        const today = new Date().setHours(0,0,0,0);
+        const diff = (today - last) / 86400000;
+        if (diff > 1) stats.streak = 0;
+      }
+    }
+    function saveStore() { localStorage.setItem(STORE, JSON.stringify({ cfg, stats })); }
+
+    // ---------- Audio cue ----------
+    let audioCtx = null;
+    function beep(freq = 880, dur = 0.3) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = freq;
+        o.type = 'sine';
+        const t = audioCtx.currentTime;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.3, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + dur + 0.05);
+      } catch {}
+    }
+    function ding() {
+      // Pleasant 3-note arpeggio
+      [880, 1100, 1320].forEach((f, i) => setTimeout(() => beep(f, 0.25), i * 120));
+    }
+
+    // ---------- Timer ----------
+    function setPhase(p) {
+      phase = p;
+      const mins = cfg[p] || cfg.focus;
+      total = mins * 60;
+      remaining = total;
+      render();
+    }
+    function start() {
+      if (running) return;
+      running = true;
+      lastTick = performance.now();
+      document.getElementById('startBtn').textContent = 'PAUSE';
+      tick();
+    }
+    function pause() {
+      if (!running) return;
+      running = false;
+      cancelAnimationFrame(raf);
+      document.getElementById('startBtn').textContent = 'RESUME';
+    }
+    function toggle() { running ? pause() : start(); }
+    function reset() {
+      pause();
+      remaining = total;
+      document.getElementById('startBtn').textContent = 'START';
+      render();
+    }
+    function skip() {
+      pause();
+      advancePhase();
+    }
+    function advancePhase() {
+      if (phase === 'focus') {
+        // completed a focus session
+        stats.todayCount++;
+        const today = todayKey();
+        if (stats.lastDoneDay !== today) {
+          // first completion today; check yesterday
+          if (stats.lastDoneDay) {
+            const diff = (new Date(today).setHours(0,0,0,0) - new Date(stats.lastDoneDay).setHours(0,0,0,0)) / 86400000;
+            stats.streak = diff === 1 ? stats.streak + 1 : 1;
+          } else {
+            stats.streak = 1;
+          }
+          stats.lastDoneDay = today;
+        }
+        saveStore();
+        renderStats();
+        const next = (session % cfg.rounds === 0) ? 'long' : 'short';
+        setPhase(next);
+        document.body.classList.add('break');
+        document.getElementById('startBtn').textContent = 'START';
+        ding();
+      } else {
+        // break ended
+        if (phase === 'long' || session % cfg.rounds === 0) {
+          session = 1;
+        } else {
+          session++;
+        }
+        setPhase('focus');
+        document.body.classList.remove('break');
+        document.getElementById('startBtn').textContent = 'START';
+        ding();
+      }
+    }
+    function tick() {
+      if (!running) return;
+      const now = performance.now();
+      const dt = (now - lastTick) / 1000;
+      lastTick = now;
+      remaining -= dt;
+      if (remaining <= 0) {
+        remaining = 0;
+        render();
+        running = false;
+        cancelAnimationFrame(raf);
+        advancePhase();
+        return;
+      }
+      render();
+      raf = requestAnimationFrame(tick);
+    }
+
+    // ---------- Render ----------
+    function fmt(s) {
+      const m = Math.floor(s / 60);
+      const r = Math.floor(s % 60);
+      return `${m.toString().padStart(2,'0')}:${r.toString().padStart(2,'0')}`;
+    }
+    function render() {
+      document.getElementById('digits').textContent = fmt(remaining);
+      document.title = `${fmt(remaining)} · ${phase === 'focus' ? 'Focus' : 'Break'} — Loopback`;
+      const offset = RING_C * (1 - remaining / total);
+      const ring = document.getElementById('ring');
+      ring.style.strokeDashoffset = offset;
+      ring.setAttribute('stroke', phase === 'focus' ? 'url(#grad)' : 'url(#gradBreak)');
+      const tag = document.getElementById('phaseTag');
+      tag.className = 'phase-tag ' + phase;
+      tag.textContent = phase === 'focus' ? 'FOCUS' : (phase === 'short' ? 'SHORT BREAK' : 'LONG BREAK');
+      document.getElementById('sessionLabel').textContent = `SESSION ${session} / ${cfg.rounds}`;
+      // Dots
+      const dots = document.getElementById('dots');
+      dots.innerHTML = '';
+      for (let i = 1; i <= cfg.rounds; i++) {
+        const d = document.createElement('div');
+        d.className = 'dot' + (i < session || (i === session && phase !== 'focus') ? ' done' : '');
+        dots.appendChild(d);
+      }
+    }
+    function renderStats() {
+      document.getElementById('todayCount').textContent = stats.todayCount;
+      document.getElementById('streakCount').textContent = stats.streak;
+    }
+    function renderCfg() {
+      document.getElementById('focusMin').textContent = cfg.focus;
+      document.getElementById('shortMin').textContent = cfg.short;
+      document.getElementById('longMin').textContent = cfg.long;
+      document.getElementById('roundsNum').textContent = cfg.rounds;
+    }
+
+    // ---------- Wiring ----------
+    document.getElementById('startBtn').onclick = toggle;
+    document.getElementById('resetBtn').onclick = reset;
+    document.getElementById('skipBtn').onclick = skip;
+    document.querySelectorAll('.num button').forEach(b => {
+      b.onclick = () => {
+        const k = b.dataset.k, d = +b.dataset.d;
+        const lim = { focus: [1, 90], short: [1, 30], long: [1, 60], rounds: [1, 8] };
+        cfg[k] = Math.min(lim[k][1], Math.max(lim[k][0], cfg[k] + d));
+        renderCfg();
+        saveStore();
+        if (k === phase || (k === 'focus' && phase === 'focus') || (k === 'short' && phase === 'short') || (k === 'long' && phase === 'long')) {
+          if (!running) { total = cfg[phase] * 60; remaining = total; render(); }
+        }
+        if (k === 'rounds') render();
+      };
+    });
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.code === 'Space') { e.preventDefault(); toggle(); }
+      else if (e.key === 'r' || e.key === 'R') reset();
+      else if (e.key === 's' || e.key === 'S') skip();
+    });
+
+    // ---------- Boot ----------
+    loadStore();
+    renderCfg();
+    renderStats();
+    setPhase('focus');
+  </script>
+</body>
+</html>
