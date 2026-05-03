@@ -22,6 +22,15 @@ Run from `video/`:
 Skill maintenance (run from repo root):
 - `skills-lock.json` is the source of truth. If you edit a skill in `.agents/skills/`, the lock hash will drift — that's expected for local edits, but real upstream sync should go through the skill installer.
 
+## Project slash commands
+
+Defined in `.claude/commands/`:
+
+- `/lint` — runs `cd video && npm run lint`, reports failures verbatim.
+- `/render-check` — delegates to the `render-validator` subagent. Proves the project will render without producing an mp4.
+- `/sync-skills [name]` — copies edits from `.agents/skills/` into `~/.claude/skills/` so changes take effect this session. Omit the name to sync everything in `skills-lock.json`.
+- `/design [style]` — scaffold a `DESIGN.md` so the hyperframes Visual Identity Gate stops asking three questions on every new composition.
+
 ## Conventions
 
 - Develop on the branch named in the session prompt (e.g. `claude/new-session-XXXXX`). Never push to `main` directly.
