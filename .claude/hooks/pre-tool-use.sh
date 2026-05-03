@@ -21,9 +21,13 @@ block() {
   exit 2
 }
 
-# 1. Don't write into generated dirs.
+# 1. Don't write into generated dirs. Match both absolute and relative paths.
 case "$path" in
-  */graphify-out/*|*/video/.remotion/*|*/node_modules/*|*/video/out/*)
+  graphify-out/*|*/graphify-out/*|\
+  video/.remotion/*|*/video/.remotion/*|\
+  node_modules/*|*/node_modules/*|\
+  video/out/*|*/video/out/*|\
+  video/node_modules/*|*/video/node_modules/*)
     block "writing inside a generated/cache dir is not allowed: $path"
     ;;
 esac

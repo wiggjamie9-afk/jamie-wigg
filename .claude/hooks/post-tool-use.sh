@@ -12,7 +12,7 @@ else
 fi
 
 case "$path" in
-  */video/src/*.ts|*/video/src/*.tsx)
+  video/src/*.ts|video/src/*.tsx|*/video/src/*.ts|*/video/src/*.tsx)
     echo "[post-tool-use] Edited $path — run: (cd video && npm run lint) before considering done."
     ;;
 esac
