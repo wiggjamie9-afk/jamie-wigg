@@ -62,6 +62,22 @@ import self_review_agent  # noqa: E402
 
 self_review_agent.llm = FakeLLM()
 
+def streamed_demo(topic: str) -> None:
+    agent = self_review_agent.build_graph()
+    initial = {"topic": topic, "iterations": 0, "draft": "", "feedback": "", "approved": False}
+
+    print(f"TOPIC: {topic}\n")
+    for step in agent.stream(initial):
+        for node, state in step.items():
+            print(f"--- node: {node} ---")
+            if "draft" in state:
+                print(f"draft (iter {state.get('iterations', '?')}):\n{state['draft']}\n")
+            if "feedback" in state:
+                verdict = "APPROVED" if state.get("approved") else "REVISE"
+                print(f"reviewer verdict: {verdict}")
+                print(f"reviewer notes:\n{state['feedback']}\n")
+
+
 if __name__ == "__main__":
-    sys.argv = ["mock_demo.py", "the difference between accuracy and precision"]
-    sys.exit(self_review_agent.main())
+    topic = " ".join(sys.argv[1:]).strip() or "the difference between accuracy and precision"
+    streamed_demo(topic)
