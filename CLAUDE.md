@@ -2,194 +2,66 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Repository Overview
 
-**Movie Harmony Finder** - A Letterboxd watchlist analyzer that finds common movies across multiple users' watchlists to help groups decide what to watch together. The application scrapes Letterboxd profiles, caches data, and uses a priority-based algorithm to rank movies by group relevance.
+This is a workspace combining a Remotion video starter, HyperFrames-related skills, and HTML/CSS landing-page drafts for **RHYTHMIX** (an AI music platform). Layout:
 
-## Architecture
+- `video/` — Remotion 4 + React 19 + Tailwind v4 video project (currently a starter; `MyComposition` returns `null`).
+- `text.txt`, `text 2.txt`, `text 3.txt` — RHYTHMIX landing page HTML/CSS fragments (hero, features, pricing, testimonials, FAQ).
+- `.agents/skills/` — Source-of-truth skill bundles (hyperframes, hyperframes-cli, hyperframes-registry, remotion-to-hyperframes, website-to-hyperframes, gsap).
+- `.claude/skills/` — Mostly symlinks into `.agents/skills/` plus a local `remotion` skill.
+- `skills-lock.json` — Tracks upstream commit hashes for skills sourced from `heygen-com/hyperframes`.
+- `graphify-out/` — Generated knowledge-graph artifacts (`graph.html`, `graph.json`, `GRAPH_REPORT.md`). Regenerated output, not hand-edited.
+- `.graphifyignore` — Excludes `node_modules/`, `.git/`, `video/node_modules/`, `video/.remotion/`, and `graphify-out/` itself.
 
-Three-tier containerized application:
+## Remotion Video Project (`video/`)
 
-- **Frontend**: React 18 + TypeScript + Vite + TailwindCSS (served via Nginx)
-- **Backend**: Node.js Express API with web scraping (Cheerio + Axios)
-- **Database**: MongoDB 7.0 for caching watchlists and storing user groups
+### Stack
+- Remotion `4.0.454` with `@remotion/cli`, `@remotion/tailwind-v4`
+- React `19.2.3`, TypeScript `5.9.3`
+- Tailwind v4 enabled via `Config.overrideWebpackConfig(enableTailwind)` in `remotion.config.ts`
 
-## Development Commands
-
-### Docker Compose (Recommended for local development)
-
+### Commands (run from `video/`)
 ```bash
-# Start all services
-docker-compose up -d --build
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-
-# Access:
-# - Frontend: http://localhost:5173
-# - Backend API: http://localhost:3000
-# - MongoDB: localhost:27017
+npm i                    # install
+npm run dev              # remotion studio (preview)
+npm run build            # remotion bundle
+npm run lint             # eslint src && tsc
+npx remotion render      # render video
+npx remotion upgrade     # upgrade remotion
 ```
 
-### Kubernetes Deployment
+### Entry points
+- `video/src/index.ts` — calls `registerRoot(RemotionRoot)`.
+- `video/src/Root.tsx` — registers a single `Composition` with id `MyComp`, 60 frames @ 30 fps, 1280×720.
+- `video/src/Composition.tsx` — `MyComposition` returns `null` (placeholder).
+- `video/src/index.css` — Tailwind entry.
+- `video/remotion.config.ts` — sets jpeg image format, overwrite output, enables Tailwind via webpack override.
 
-```bash
-# Using minikube
-minikube start
-eval $(minikube docker-env)
+When extending: add new `<Composition>` registrations in `Root.tsx` and implement components in `src/`. Use Remotion hooks (`useCurrentFrame`, `interpolate`, `spring`, `Sequence`, `AbsoluteFill`) directly — see the `remotion` skill in `.claude/skills/remotion/`.
 
-# Build images (required when using minikube)
-docker build -t letterboxd-analyzer-backend:latest ./backend
-docker build -t letterboxd-analyzer-frontend:latest ./frontend
+## Skills
 
-# Deploy all resources
-kubectl apply -f k8s/
+Skills are consumed by the Claude Code harness via `.claude/skills/`. Most are symlinks pointing into `.agents/skills/`, which is the editable copy. `skills-lock.json` records the upstream `heygen-com/hyperframes` commit hash for each — do **not** hand-edit synced skills; update via the upstream source and re-record the hash.
 
-# Check status
-kubectl get pods
-kubectl get services
+Available skills:
+- `hyperframes`, `hyperframes-cli`, `hyperframes-registry` — HyperFrames HTML video composition workflow.
+- `remotion`, `remotion-to-hyperframes` — Remotion authoring + Remotion→HyperFrames porting.
+- `website-to-hyperframes` — capture a website into a HyperFrames video.
+- `gsap` — GSAP animation reference for HyperFrames compositions.
 
-# Access frontend
-minikube service frontend --url
-# Or via NodePort: http://<node-ip>:30090
+If the user asks for HTML-based video, captions/subtitles, audio-reactive visuals, scene transitions, TTS, or website→video flows, reach for the HyperFrames skills rather than Remotion.
 
-# View logs
-kubectl logs -l app=backend
-kubectl logs -l app=frontend
+## RHYTHMIX Landing Page Drafts
 
-# Cleanup
-kubectl delete -f k8s/
-```
+`text.txt`, `text 2.txt`, `text 3.txt` are standalone HTML/CSS sections for a RHYTHMIX (AI music) marketing site — hero/stats, features, pricing tiers (including a $149 lifetime deal), creator testimonials, competitor positioning vs Suno/Udio/LANDR, and FAQ. They are not wired into the Remotion build. Treat them as design source for landing pages or as input to `website-to-hyperframes`.
 
-### Local Development (without Docker)
+## Graphify Output
 
-**Backend:**
-```bash
-cd backend
-npm install
-npm run dev          # Development with nodemon
-npm start            # Production mode
-```
+`graphify-out/` contains a generated knowledge-graph snapshot of the repo (29 nodes, 23 edges across 5 communities — Remotion setup, RHYTHMIX pages, AI music competitors, pricing, ESLint config). Useful as a navigation aid; regenerated by the graphify tool — don't edit by hand.
 
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev          # Development server (Vite)
-npm run build        # TypeScript compile + production build
-npm run preview      # Preview production build
-```
+## Conventions
 
-## Key Technical Details
-
-### Backend Services Architecture
-
-The backend is structured around two core services in `backend/src/services/`:
-
-1. **letterboxdService.js** - Web scraping layer
-   - Scrapes user profiles, watchlists, and watched films from Letterboxd
-   - Implements 1-second rate limiting between requests (`REQUEST_DELAY`)
-   - Uses Cheerio to parse HTML and extract film data (id, slug, title, posterUrl)
-   - 24-hour cache TTL (`CACHE_TTL = 24 * 60 * 60 * 1000`)
-   - User-Agent spoofing to avoid being blocked
-
-2. **analyzeService.js** - Movie ranking algorithm
-   - Calculates common movies across multiple users' watchlists
-   - Implements a 6-tier priority system based on watchlist ratio and watched ratio
-   - Priority 1 (highest): All users have it on watchlist, none watched
-   - Priority 6 (lowest): Low watchlist ratio or already watched by many
-
-### API Endpoints
-
-All endpoints are in `backend/src/index.js`:
-
-- `POST /api/analyze` - Analyze multiple users' watchlists
-- `GET /api/users/:username/validate` - Check if Letterboxd user exists
-- `GET /api/groups` - List all saved groups
-- `POST /api/groups` - Create a new group
-- `GET /api/groups/:id` - Get specific group
-- `DELETE /api/groups/:id` - Delete a group
-- `POST /api/groups/:id/analyze` - Analyze an existing group
-- `GET /health` - Health check endpoint
-
-### Data Models
-
-**MongoDB Collections:**
-
-1. `users` - Cached Letterboxd data
-   - `_id`: Letterboxd username (string)
-   - `watchlist`: Array of movie objects
-   - `watched`: Array of film IDs (strings)
-   - `updatedAt`: Timestamp for cache invalidation
-
-2. `groups` - Saved user groups
-   - `_id`: MongoDB ObjectId
-   - `name`: Group name (string)
-   - `users`: Array of Letterboxd usernames
-   - `createdAt`: Timestamp
-
-### Frontend Structure
-
-- **Pages** (`frontend/src/pages/`):
-  - `Home.tsx` - Group list and dashboard
-  - `CreateGroup.tsx` - Form to create new analysis/group
-  - `Results.tsx` - Movie results with grid/list view toggle
-
-- **Components** (`frontend/src/components/`):
-  - `UserInputField.tsx` - Username input with real-time validation
-  - `GroupList.tsx` - Display saved groups
-  - `MovieCard.tsx` - Grid view film card with poster
-  - `MovieList.tsx` - Table view with detailed stats
-  - `StatsBar.tsx` - Analysis statistics display
-  - `LoadingSpinner.tsx` - Loading indicator
-
-- **Services** (`frontend/src/services/`):
-  - `api.ts` - Axios client for backend communication
-
-### Environment Variables
-
-**Backend** (via `k8s/backend-configmap.yaml` or `docker-compose.yml`):
-- `MONGODB_URI`: MongoDB connection string (default: `mongodb://mongodb:27017`)
-- `PORT`: API server port (default: `3000`)
-
-**Frontend** (build-time):
-- `VITE_API_URL`: Backend API URL (default: `http://localhost:3000`)
-
-### Kubernetes Resources
-
-- **MongoDB**: 1Gi PersistentVolume, ClusterIP service (internal only)
-- **Backend**: 2 replicas with liveness/readiness probes on `/health`, ClusterIP service
-- **Frontend**: 2 replicas, NodePort service on port 30090
-- Nginx reverse proxy in frontend container routes `/api` to backend service
-
-### Movie Priority Algorithm
-
-The sorting algorithm in `analyzeService.js` uses a 6-tier priority system:
-
-| Priority | Watchlist Ratio | Watched Ratio | Description |
-|----------|----------------|---------------|-------------|
-| 1 | 100% (1.0) | 0% | Everyone wants it, nobody watched |
-| 2 | ≥60% (≥0.6) | 0% | Majority wants it, nobody watched |
-| 3 | ≥30% (≥0.3) | 0% | Some want it, nobody watched |
-| 4 | 100% (1.0) | >0% | Everyone wants it, some watched |
-| 5 | ≥60% (≥0.6) | >0% | Majority wants it, some watched |
-| 6 | Other | Other | Everything else |
-
-Within each priority tier, movies are further sorted by watchlist count (descending) then watched count (ascending).
-
-## Important Development Notes
-
-### Rate Limiting
-Letterboxd scraping includes a 1-second delay between requests. Do NOT reduce `REQUEST_DELAY` in `letterboxdService.js` as this may trigger rate limiting or IP blocking by Letterboxd.
-
-### Cache Behavior
-User watchlists are cached for 24 hours. The backend gracefully handles MongoDB connection failures by running in "validation-only mode" (no caching/groups, but user validation still works).
-
-### TypeScript Types
-All shared types are defined in `frontend/src/types/index.ts` (Movie, Group, AnalysisResult interfaces).
-
-### Nginx Configuration
-The frontend uses a custom `nginx.conf` that proxies `/api` requests to the backend service, enabling single-origin requests from the browser.
+- Don't reduce the dependency lockfile churn — keep `video/package-lock.json` in sync with `package.json`.
+- Don't commit `node_modules/`, `.remotion/`, or `graphify-out/cache/` (already covered by `.gitignore` / `.graphifyignore`).
+- Skill edits go in `.agents/skills/<name>/` (the symlink target), never in the `.claude/skills/` symlink path.
