@@ -17,7 +17,15 @@ Run from `video/`:
 - `npm run dev` — Remotion studio (preview)
 - `npm run lint` — `eslint src && tsc` (ALWAYS run after editing `.tsx` in `video/src/`)
 - `npm run build` — bundle
-- `npx remotion render` — render to mp4
+- `npx remotion render MyComp --browser-executable="$(cat /tmp/.remotion-chrome-path)" out/<name>.mp4` — render to mp4 (the `--browser-executable` flag is required in this sandbox; see Render setup below)
+
+For HyperFrames projects (in any directory): `hyperframes init <name>`, then `npm install`, then `npm run render`.
+
+## Render setup (one-time per session)
+
+Run `bash .claude/scripts/render-setup.sh` once at session start. It installs hyperframes CLI, ffmpeg, and downloads a headless Chrome that both hyperframes AND Remotion can use. The Chrome path is saved to `/tmp/.remotion-chrome-path`.
+
+Verified working: this script renders both pipelines in this sandbox. HyperFrames produces mp4 directly; Remotion needs `--browser-executable` because the sandbox firewall blocks remotion.media's chromium download.
 
 Skill maintenance (run from repo root):
 - `skills-lock.json` is the source of truth. If you edit a skill in `.agents/skills/`, the lock hash will drift — that's expected for local edits, but real upstream sync should go through the skill installer.

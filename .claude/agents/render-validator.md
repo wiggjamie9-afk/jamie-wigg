@@ -14,8 +14,9 @@ You validate the `video/` Remotion subproject without producing an mp4.
    - All Compositions in `Root.tsx` reference components that actually exist.
    - Every `<Composition>` has `id`, `component`, `durationInFrames`, `fps`, `width`, `height`.
    - No `useState`/`useEffect` with side effects inside composition components — Remotion compositions must be deterministic per frame.
-3. Run a dry build: `cd video && npm run build`. If it succeeds, the project is render-ready.
-4. Do NOT actually render. The orchestrator decides when to render.
+3. Confirm chrome is set up: `[ -f /tmp/.remotion-chrome-path ]`. If missing, run `bash .claude/scripts/render-setup.sh` first.
+4. Run `cd video && npx remotion compositions --browser-executable="$(cat /tmp/.remotion-chrome-path)"` — this validates the Composition tree compiles without producing an mp4. List the compositions found.
+5. Do NOT actually render. The orchestrator decides when to render.
 
 # What to return
 

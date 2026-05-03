@@ -51,4 +51,30 @@ Sessions push to `claude/new-session-XXXXX` (the value comes from the session pr
 
 ## Render output location
 
-`npx remotion render` defaults to `video/out/<composition>.mp4`. Don't commit it — `out/` is not in `.gitignore` yet, so move/delete renders before committing or add `video/out/` to `.gitignore` first.
+`npx remotion render` defaults to `video/out/<composition>.mp4`. `video/out/` is already gitignored by `video/.gitignore`, so renders won't accidentally commit.
+
+## Render runtime (sandbox-specific)
+
+This sandbox's `chromium-browser` is a snap stub and Remotion's chromium download is firewalled. Both pipelines work via a downloaded headless Chrome at `/root/.cache/hyperframes/chrome/...`.
+
+Bootstrap once per session:
+
+```bash
+bash .claude/scripts/render-setup.sh
+```
+
+This installs `hyperframes` (npm), `ffmpeg` (apt), removes the snap stub, and saves the Chrome path to `/tmp/.remotion-chrome-path`.
+
+Render with:
+
+```bash
+# HyperFrames
+cd <hf-project> && npm run render
+
+# Remotion
+cd video && npx remotion render MyComp \
+  --browser-executable="$(cat /tmp/.remotion-chrome-path)" \
+  out/<name>.mp4
+```
+
+Note: GSAP CDN (`cdn.jsdelivr.net/npm/gsap`) is firewalled too. Bundle GSAP locally in HyperFrames compositions instead of relying on the CDN.
