@@ -12,7 +12,15 @@ No metrics, no testimonials, no pricing — brand reveal + "join the waitlist fo
 
 5-scene narrative: hook → 4 pillars → 3-step process → audience → waitlist CTA.
 
-**📝 Voiceover script: [SCRIPT.md](SCRIPT.md)** — timed scene-by-scene, ready to record.
+**📝 Voiceover script: [SCRIPT.md](SCRIPT.md)** — timed scene-by-scene, ready to record in your own voice.
+
+#### 🔊 With AI voiceover (af_nova) — ready to post
+
+https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-with-voiceover.mp4
+
+**[⬇ Download teaser-coming-soon-60s-with-voiceover.mp4](videos/teaser-coming-soon-60s-with-voiceover.mp4)** &nbsp;·&nbsp; 1080×1920 · 9:16 · 60s · with voice + brand visuals
+
+#### 🔇 Silent (record your own voice over it)
 
 https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s.mp4
 
