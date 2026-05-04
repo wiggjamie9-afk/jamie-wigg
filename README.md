@@ -14,11 +14,23 @@ No metrics, no testimonials, no pricing — brand reveal + "join the waitlist fo
 
 **📝 Voiceover script: [SCRIPT.md](SCRIPT.md)** — timed scene-by-scene, ready to record in your own voice.
 
-#### 🔊 With AI voiceover (af_nova) — ready to post
+#### 🔊 With AI voiceover — pick a voice
 
-https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-with-voiceover.mp4
+| Voice | Style | File |
+|---|---|---|
+| **Nova** (US 🇺🇸 female) | Warm, modern | [⬇ teaser-coming-soon-60s-with-voiceover.mp4](videos/teaser-coming-soon-60s-with-voiceover.mp4) |
+| **Adam** (US 🇺🇸 male) | Confident, friendly | [⬇ teaser-coming-soon-60s-adam.mp4](videos/teaser-coming-soon-60s-adam.mp4) |
+| **Michael** (US 🇺🇸 male) | Deeper, measured | [⬇ teaser-coming-soon-60s-michael.mp4](videos/teaser-coming-soon-60s-michael.mp4) |
+| **Emma** (UK 🇬🇧 female) | Crisp British | [⬇ teaser-coming-soon-60s-emma.mp4](videos/teaser-coming-soon-60s-emma.mp4) |
 
-**[⬇ Download teaser-coming-soon-60s-with-voiceover.mp4](videos/teaser-coming-soon-60s-with-voiceover.mp4)** &nbsp;·&nbsp; 1080×1920 · 9:16 · 60s · with voice + brand visuals
+All four are 1080×1920 · 9:16 · 60s, each fitted to the video.
+
+Preview links (tap to play in browser):
+
+- Nova: https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-with-voiceover.mp4
+- Adam: https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-adam.mp4
+- Michael: https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-michael.mp4
+- Emma: https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-emma.mp4
 
 #### 🔇 Silent (record your own voice over it)
 
