@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #04020a;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        color: #ffffff;
+      }
+
+      /* ===== Shared scene shell ===== */
+      .scene { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+      .scene-inner {
+        position: absolute; inset: 0;
+        background: #04020a;
+        overflow: hidden;
+      }
+
+      /* Cosmic backdrop — radial nebulas + stars + slow drift */
+      .cosmos {
+        position: absolute; inset: -10%;
+        background:
+          radial-gradient(640px 720px at 28% 32%, rgba(124, 58, 237, 0.55), transparent 62%),
+          radial-gradient(720px 820px at 78% 70%, rgba(255, 43, 214, 0.42), transparent 65%),
+          radial-gradient(900px 960px at 50% 100%, rgba(138, 246, 255, 0.18), transparent 70%),
+          radial-gradient(1200px 1200px at 50% 50%, rgba(8, 4, 16, 0) 30%, rgba(4, 2, 10, 0.85) 75%);
+      }
+      .stars {
+        position: absolute; inset: 0;
+        background-image:
+          radial-gradient(1.5px 1.5px at 12% 18%, #ffffff 50%, transparent 60%),
+          radial-gradient(1px 1px at 37% 9%, #ffffff 50%, transparent 60%),
+          radial-gradient(1.5px 1.5px at 71% 13%, #d4caff 50%, transparent 60%),
+          radial-gradient(1px 1px at 88% 27%, #ffffff 50%, transparent 60%),
+          radial-gradient(2px 2px at 6% 41%, #ffe7ff 50%, transparent 60%),
+          radial-gradient(1px 1px at 22% 53%, #ffffff 50%, transparent 60%),
+          radial-gradient(1.5px 1.5px at 49% 61%, #ffffff 50%, transparent 60%),
+          radial-gradient(1px 1px at 64% 47%, #ffd0f1 50%, transparent 60%),
+          radial-gradient(1px 1px at 81% 58%, #ffffff 50%, transparent 60%),
+          radial-gradient(2px 2px at 14% 78%, #ffffff 50%, transparent 60%),
+          radial-gradient(1px 1px at 41% 88%, #ffffff 50%, transparent 60%),
+          radial-gradient(1.5px 1.5px at 73% 84%, #d4caff 50%, transparent 60%),
+          radial-gradient(1px 1px at 92% 92%, #ffffff 50%, transparent 60%),
+          radial-gradient(1.5px 1.5px at 28% 28%, #ffffff 50%, transparent 60%),
+          radial-gradient(1px 1px at 56% 18%, #ffffff 50%, transparent 60%);
+        background-repeat: no-repeat;
+        opacity: 0.85;
+      }
+      .vignette {
+        position: absolute; inset: 0;
+        background: radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(0,0,0,0.65) 100%);
+        pointer-events: none;
+      }
+      .grain {
+        position: absolute; inset: 0;
+        background-image:
+          radial-gradient(1px 1px at 7% 12%, rgba(255,255,255,0.04), transparent 60%),
+          radial-gradient(1px 1px at 23% 47%, rgba(255,255,255,0.03), transparent 60%),
+          radial-gradient(1px 1px at 67% 31%, rgba(255,255,255,0.04), transparent 60%),
+          radial-gradient(1px 1px at 91% 81%, rgba(255,255,255,0.03), transparent 60%);
+        mix-blend-mode: screen;
+        opacity: 0.7;
+        pointer-events: none;
+      }
+
+      /* Anamorphic lens flare bar */
+      .lens-flare {
+        position: absolute;
+        left: -30%; right: -30%;
+        height: 6px;
+        background: linear-gradient(90deg, transparent, rgba(138, 246, 255, 0.85), transparent);
+        filter: blur(8px);
+        opacity: 0;
+      }
+
+      /* Text card overlay (section 3.5) */
+      .text-card {
+        position: absolute;
+        left: 0; right: 0;
+        bottom: 220px;
+        display: flex; justify-content: center;
+        pointer-events: none;
+      }
+      .text-card .card {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        font-size: 56px;
+        letter-spacing: 6px;
+        text-transform: uppercase;
+        padding: 22px 40px;
+        background: rgba(4, 2, 10, 0.55);
+        border: 1px solid rgba(255, 43, 214, 0.55);
+        border-radius: 6px;
+        box-shadow:
+          0 0 28px rgba(255, 43, 214, 0.45),
+          inset 0 0 28px rgba(124, 58, 237, 0.18);
+        color: #ffffff;
+        text-align: center;
+        backdrop-filter: blur(6px);
+      }
+      .text-card .card.cyan {
+        border-color: rgba(138, 246, 255, 0.65);
+        box-shadow:
+          0 0 28px rgba(138, 246, 255, 0.45),
+          inset 0 0 28px rgba(138, 246, 255, 0.16);
+      }
+      .text-card .card.gold {
+        border-color: rgba(255, 224, 112, 0.65);
+        box-shadow:
+          0 0 28px rgba(255, 224, 112, 0.45),
+          inset 0 0 28px rgba(255, 224, 112, 0.16);
+      }
+
+      .timestamp {
+        position: absolute;
+        top: 60px; left: 60px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 22px; letter-spacing: 4px;
+        color: rgba(255,255,255,0.55);
+        text-transform: uppercase;
+      }
+      .timestamp .dot {
+        display: inline-block;
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #ff2bd6;
+        box-shadow: 0 0 14px #ff2bd6;
+        margin-right: 12px; vertical-align: middle;
+      }
+
+      .gradient-text {
+        background: linear-gradient(135deg, #ff7aa6, #e0c0ff 50%, #8af6ff);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
+
+      /* ===== Scene 1 — Astronaut emerging (0–4s) ===== */
+      #scene1 .astronaut-rise {
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        width: 360px; height: 540px;
+      }
+      .astronaut-svg {
+        width: 100%; height: 100%;
+        filter: drop-shadow(0 0 36px rgba(255, 43, 214, 0.55))
+                drop-shadow(0 0 72px rgba(124, 58, 237, 0.55));
+      }
+      #scene1 .ignite {
+        position: absolute;
+        left: 50%; top: 60%;
+        transform: translate(-50%, -50%);
+        width: 720px; height: 720px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(255, 43, 214, 0.55), rgba(124, 58, 237, 0.25) 40%, transparent 70%);
+        filter: blur(20px);
+      }
+
+      /* ===== Scene 2 — Donna AI grid scroll (4–10s) ===== */
+      #scene2 .grid-stage {
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        perspective: 1200px;
+      }
+      #scene2 .grid-rail {
+        display: grid;
+        grid-template-columns: repeat(3, 280px);
+        gap: 28px;
+        transform-style: preserve-3d;
+      }
+      #scene2 .cover {
+        width: 280px; height: 280px;
+        border-radius: 14px;
+        position: relative;
+        overflow: hidden;
+        box-shadow:
+          0 18px 40px rgba(0,0,0,0.5),
+          0 0 0 1px rgba(255,255,255,0.06);
+      }
+      #scene2 .cover::after {
+        content: "";
+        position: absolute; inset: 0;
+        background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85));
+      }
+      .cv-1  { background: linear-gradient(135deg, #ff2bd6, #7c3aed); }
+      .cv-2  { background: linear-gradient(135deg, #8af6ff, #7c3aed); }
+      .cv-3  { background: linear-gradient(135deg, #ff7aa6, #ffe070); }
+      .cv-4  { background: linear-gradient(135deg, #04020a, #ff2bd6 80%); }
+      .cv-5  { background: linear-gradient(135deg, #7c3aed, #04020a 80%); }
+      .cv-6  { background: linear-gradient(135deg, #ffe070, #ff2bd6); }
+      .cv-7  { background: linear-gradient(135deg, #8af6ff, #ffffff 90%); }
+      .cv-8  { background: linear-gradient(135deg, #ff2bd6, #04020a 80%); }
+      .cv-9  { background: linear-gradient(135deg, #e0c0ff, #7c3aed); }
+      .cv-10 { background: linear-gradient(135deg, #ff7aa6, #7c3aed); }
+      .cv-11 { background: linear-gradient(135deg, #04020a, #8af6ff 90%); }
+      .cv-12 { background: linear-gradient(135deg, #ffe070, #04020a 80%); }
+      #scene2 .cover .label {
+        position: absolute;
+        left: 14px; bottom: 12px; right: 14px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 16px; letter-spacing: 2px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #ffffff;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.7);
+        z-index: 1;
+      }
+
+      /* ===== Scene 3 — Cosmic Rock hero (10–18s) ===== */
+      #scene3 .rock-hero {
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        width: 460px; height: 640px;
+      }
+      #scene3 .orbit-ring {
+        position: absolute;
+        left: 50%; top: 50%;
+        width: 920px; height: 920px;
+        border-radius: 50%;
+        border: 1px solid rgba(138, 246, 255, 0.35);
+        transform: translate(-50%, -50%);
+        box-shadow:
+          inset 0 0 40px rgba(138, 246, 255, 0.18),
+          0 0 60px rgba(124, 58, 237, 0.35);
+      }
+      #scene3 .orbit-ring.inner {
+        width: 700px; height: 700px;
+        border-color: rgba(255, 43, 214, 0.45);
+        box-shadow:
+          inset 0 0 30px rgba(255, 43, 214, 0.18),
+          0 0 50px rgba(255, 43, 214, 0.30);
+      }
+      #scene3 .god-rays {
+        position: absolute;
+        left: 50%; top: 0;
+        width: 1300px; height: 1920px;
+        transform: translateX(-50%);
+        background:
+          conic-gradient(from 90deg at 50% 30%,
+            transparent 0deg,
+            rgba(138, 246, 255, 0.10) 12deg,
+            transparent 24deg,
+            rgba(255, 43, 214, 0.10) 36deg,
+            transparent 48deg,
+            rgba(255, 43, 214, 0.10) 60deg,
+            transparent 72deg,
+            rgba(138, 246, 255, 0.10) 84deg,
+            transparent 96deg);
+        mix-blend-mode: screen;
+        opacity: 0;
+      }
+
+      /* ===== Scene 4 — Spotify covers cascade (18–26s) ===== */
+      #scene4 .album-wall {
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        display: grid;
+        grid-template-columns: repeat(2, 360px);
+        gap: 32px;
+      }
+      #scene4 .album {
+        width: 360px; height: 360px;
+        border-radius: 18px;
+        position: relative;
+        overflow: hidden;
+        box-shadow:
+          0 24px 56px rgba(0,0,0,0.55),
+          0 0 0 1px rgba(255,255,255,0.08);
+      }
+      #scene4 .album::after {
+        content: "";
+        position: absolute; inset: 0;
+        background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.88));
+      }
+      #scene4 .album .meta {
+        position: absolute;
+        left: 18px; bottom: 18px; right: 18px;
+        font-family: "JetBrains Mono", monospace;
+        z-index: 1;
+      }
+      #scene4 .album .title {
+        font-size: 24px; font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        line-height: 1.15;
+        color: #ffffff;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.95);
+      }
+      #scene4 .album .artist {
+        margin-top: 6px;
+        font-size: 16px; letter-spacing: 3px;
+        font-weight: 700;
+        color: #ffffff;
+        text-transform: uppercase;
+        text-shadow: 0 1px 4px #000000, 0 0 6px rgba(0,0,0,0.85);
+      }
+      .alb-1 { background: linear-gradient(135deg, #ff2bd6, #04020a 80%); }
+      .alb-2 { background: linear-gradient(135deg, #7c3aed, #ff7aa6); }
+      .alb-3 { background: linear-gradient(135deg, #ffe070, #ff2bd6); }
+      .alb-4 { background: linear-gradient(135deg, #8af6ff, #7c3aed); }
+
+      /* Spotify-style mini bar */
+      #scene4 .spot-bar {
+        position: absolute;
+        left: 50%;
+        top: 80px;
+        transform: translateX(-50%);
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 22px;
+        background: rgba(4, 2, 10, 0.7);
+        border: 1px solid rgba(110, 255, 192, 0.55);
+        border-radius: 999px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 22px; letter-spacing: 3px;
+        color: #b6ffe0;
+        text-transform: uppercase;
+        opacity: 0;
+      }
+      #scene4 .spot-bar .dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #1ed760; box-shadow: 0 0 12px #1ed760;
+      }
+
+      /* ===== Scene 5 — Phone overlay: Donna grid scroll (26–34s) ===== */
+      #scene5 .phone {
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        width: 560px; height: 1180px;
+        background: #04020a;
+        border-radius: 64px;
+        border: 12px solid #15101f;
+        box-shadow:
+          0 30px 80px rgba(0,0,0,0.7),
+          0 0 0 1px rgba(255,255,255,0.06),
+          0 0 60px rgba(124, 58, 237, 0.35);
+        overflow: hidden;
+      }
+      #scene5 .phone-screen {
+        position: absolute; inset: 0;
+        overflow: hidden;
+        background: #08050d;
+      }
+      #scene5 .phone-status {
+        position: absolute;
+        left: 0; right: 0; top: 0;
+        height: 60px;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 36px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px; color: #ffffff;
+        background: linear-gradient(180deg, rgba(8, 4, 16, 0.95), rgba(8, 4, 16, 0.55));
+        z-index: 5;
+      }
+      #scene5 .phone-status .battery {
+        display: inline-block;
+        width: 28px; height: 14px;
+        border: 2px solid #ffffff;
+        border-radius: 3px;
+        position: relative;
+      }
+      #scene5 .phone-status .battery::after {
+        content: ""; position: absolute; inset: 2px;
+        background: #ffffff;
+      }
+      #scene5 .phone-app-title {
+        position: absolute;
+        left: 0; right: 0; top: 70px;
+        padding: 8px 0 14px;
+        text-align: center;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-weight: 800; font-size: 28px;
+        letter-spacing: 2px;
+        color: #ffaedb;
+        background: #04020a;
+        text-transform: uppercase;
+        text-shadow: 0 0 12px rgba(255, 43, 214, 0.6);
+        z-index: 5;
+      }
+      #scene5 .phone-scroll {
+        position: absolute;
+        left: 0; right: 0;
+        top: 130px;
+        display: grid;
+        grid-template-columns: repeat(2, 234px);
+        gap: 18px;
+        padding: 0 28px;
+        will-change: transform;
+      }
+      #scene5 .phone-cover {
+        width: 234px; height: 234px;
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      #scene5 .phone-cover::after {
+        content: "";
+        position: absolute; inset: 0;
+        background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.7));
+      }
+      #scene5 .phone-cover .play {
+        position: absolute;
+        right: 10px; bottom: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 4px 10px;
+        background: #04020a;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 4px;
+        color: #ffffff;
+        letter-spacing: 1px;
+        z-index: 2;
+      }
+
+      /* ===== Scene 6 — Holographic phone / waveforms (34–44s) ===== */
+      #scene6 .holo {
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px; height: 1100px;
+      }
+      #scene6 .holo-frame {
+        position: absolute; inset: 0;
+        border: 2px solid rgba(138, 246, 255, 0.55);
+        border-radius: 56px;
+        box-shadow:
+          0 0 50px rgba(138, 246, 255, 0.45),
+          inset 0 0 30px rgba(138, 246, 255, 0.18);
+        background: linear-gradient(180deg, rgba(8, 4, 16, 0.45), rgba(124, 58, 237, 0.18));
+      }
+      #scene6 .holo-grid {
+        position: absolute; inset: 60px 40px;
+        display: flex; flex-direction: column; gap: 28px;
+        align-items: center; justify-content: center;
+      }
+      #scene6 .holo-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 22px; letter-spacing: 5px;
+        color: rgba(138, 246, 255, 0.85);
+        text-transform: uppercase;
+      }
+      #scene6 .wave-row {
+        display: flex; align-items: flex-end; justify-content: center;
+        gap: 8px; height: 240px; width: 480px;
+      }
+      #scene6 .wave-row .bar {
+        width: 14px; background: linear-gradient(180deg, #ff2bd6, #7c3aed);
+        border-radius: 4px 4px 0 0;
+        box-shadow: 0 0 10px rgba(255, 43, 214, 0.45);
+      }
+      #scene6 .holo-readout {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px; letter-spacing: 3px;
+        font-weight: 600;
+        color: #ffffff;
+        text-transform: uppercase;
+      }
+      #scene6 .holo-readout .v {
+        color: #c4faff;
+        font-weight: 700;
+        text-shadow: 0 0 10px rgba(138, 246, 255, 0.55);
+      }
+      #scene6 .ring-pulse {
+        position: absolute;
+        left: 50%; top: 50%;
+        width: 720px; height: 720px;
+        border-radius: 50%;
+        border: 2px solid rgba(138, 246, 255, 0.45);
+        transform: translate(-50%, -50%);
+        opacity: 0;
+      }
+
+      /* ===== Scene 7 — Phone overlay: rhythmix landing (44–52s) ===== */
+      #scene7 .phone {
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        width: 560px; height: 1180px;
+        background: #04020a;
+        border-radius: 64px;
+        border: 12px solid #15101f;
+        box-shadow:
+          0 30px 80px rgba(0,0,0,0.7),
+          0 0 0 1px rgba(255,255,255,0.06),
+          0 0 60px rgba(255, 43, 214, 0.35);
+        overflow: hidden;
+      }
+      #scene7 .lp {
+        position: absolute; inset: 0;
+        background: #08050d;
+        padding: 80px 36px 36px;
+      }
+      #scene7 .lp-badge {
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 8px 16px;
+        border: 1px solid rgba(255, 224, 112, 0.6);
+        background: rgba(255, 224, 112, 0.12);
+        border-radius: 999px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px; letter-spacing: 3px;
+        color: #ffe070; text-transform: uppercase;
+        margin-bottom: 24px;
+      }
+      #scene7 .lp-badge .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #ffe070; box-shadow: 0 0 10px #ffe070;
+      }
+      #scene7 .lp-wordmark {
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-weight: 800; font-size: 88px;
+        letter-spacing: -3px; line-height: 0.95;
+        margin-bottom: 18px;
+      }
+      #scene7 .lp-tagline {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px; letter-spacing: 3px;
+        color: #cfcfd8; text-transform: uppercase;
+        margin-bottom: 36px;
+      }
+      #scene7 .lp-card-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+      #scene7 .lp-card {
+        padding: 18px;
+        background: linear-gradient(135deg, rgba(20,12,36,0.95), rgba(8,4,16,0.95));
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 14px;
+      }
+      #scene7 .lp-card .h {
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-weight: 800; font-size: 24px;
+        color: #ffaedb; margin-bottom: 6px;
+        text-shadow: 0 0 10px rgba(255, 43, 214, 0.5);
+      }
+      #scene7 .lp-card .p {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px; letter-spacing: 1.5px;
+        font-weight: 500;
+        color: #ffffff; text-transform: uppercase;
+      }
+      #scene7 .lp-cta {
+        margin-top: 26px;
+        padding: 18px;
+        background: linear-gradient(135deg, #ff2bd6, #7c3aed);
+        border-radius: 14px;
+        text-align: center;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-weight: 700; font-size: 24px;
+        letter-spacing: 2px;
+        color: #ffffff;
+        text-transform: uppercase;
+        box-shadow: 0 0 24px rgba(255, 43, 214, 0.55);
+      }
+      #scene7 .scroll {
+        position: absolute; inset: 0;
+        will-change: transform;
+      }
+
+      /* ===== Scene 8 — Triumphant astronaut close (52–60s) ===== */
+      #scene8 .hero-stack {
+        position: absolute;
+        left: 0; right: 0; top: 0; bottom: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+      }
+      #scene8 .hero-astro {
+        width: 420px; height: 600px;
+        margin-bottom: 80px;
+      }
+      #scene8 .burst {
+        position: absolute;
+        left: 50%; top: 38%;
+        transform: translate(-50%, -50%);
+        width: 1400px; height: 1400px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(255, 43, 214, 0.42), rgba(124, 58, 237, 0.28) 40%, transparent 70%);
+        filter: blur(30px);
+      }
+      #scene8 .lockup {
+        text-align: center;
+      }
+      #scene8 .lockup .wordmark {
+        font-weight: 800; font-size: 140px;
+        letter-spacing: -5px; line-height: 0.9;
+        margin-bottom: 18px;
+      }
+      #scene8 .lockup .handle {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 28px; letter-spacing: 6px;
+        color: #ffffff; text-transform: uppercase;
+        margin-bottom: 36px;
+      }
+      #scene8 .lockup .join {
+        display: inline-flex; align-items: center; gap: 12px;
+        padding: 14px 28px;
+        border: 1px solid rgba(110, 255, 192, 0.6);
+        background: rgba(110, 255, 192, 0.14);
+        border-radius: 999px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 22px; letter-spacing: 4px;
+        color: #b6ffe0; text-transform: uppercase;
+      }
+      #scene8 .lockup .join .dot {
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #6effc0; box-shadow: 0 0 16px #6effc0;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="60"
+      data-width="1080"
+      data-height="1920"
+    >
+    <!-- Reusable astronaut SVG defs (inside root so the linter sees them as part of the composition) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="astro" viewBox="0 0 360 540">
+          <!-- Glow halo -->
+          <circle cx="180" cy="270" r="220" fill="url(#astroGlow)" opacity="0.55"/>
+          <radialGradient id="astroGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ff2bd6" stop-opacity="0.7"/>
+            <stop offset="55%" stop-color="#7c3aed" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#04020a" stop-opacity="0"/>
+          </radialGradient>
+          <!-- Helmet -->
+          <ellipse cx="180" cy="120" rx="90" ry="100" fill="#15101f" stroke="#8af6ff" stroke-width="3"/>
+          <ellipse cx="180" cy="120" rx="74" ry="84" fill="url(#visor)"/>
+          <linearGradient id="visor" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#8af6ff"/>
+            <stop offset="55%" stop-color="#7c3aed"/>
+            <stop offset="100%" stop-color="#ff2bd6"/>
+          </linearGradient>
+          <!-- visor reflection -->
+          <ellipse cx="158" cy="100" rx="22" ry="14" fill="#ffffff" opacity="0.55"/>
+          <!-- shoulders / suit -->
+          <path d="M 80 220 L 280 220 L 310 320 L 290 460 L 70 460 L 50 320 Z"
+                fill="#1a1325" stroke="#8af6ff" stroke-width="3"/>
+          <!-- chest panel -->
+          <rect x="148" y="270" width="64" height="84" rx="8"
+                fill="#04020a" stroke="#ff2bd6" stroke-width="2"/>
+          <circle cx="180" cy="290" r="6" fill="#ff2bd6"/>
+          <circle cx="180" cy="312" r="6" fill="#8af6ff"/>
+          <circle cx="180" cy="334" r="6" fill="#ffe070"/>
+          <!-- arms -->
+          <path d="M 80 220 L 30 360 L 60 460 L 90 460 L 100 360 Z"
+                fill="#1a1325" stroke="#8af6ff" stroke-width="2.5"/>
+          <path d="M 280 220 L 330 360 L 300 460 L 270 460 L 260 360 Z"
+                fill="#1a1325" stroke="#8af6ff" stroke-width="2.5"/>
+          <!-- guitar slung -->
+          <line x1="120" y1="240" x2="280" y2="380" stroke="#ffe070" stroke-width="3"/>
+          <ellipse cx="290" cy="400" rx="46" ry="28" fill="#ff2bd6" stroke="#ffffff" stroke-width="2" transform="rotate(25 290 400)"/>
+          <rect x="110" y="225" width="160" height="14" rx="3" fill="#7c3aed" transform="rotate(40 190 232)"/>
+        </symbol>
+        <symbol id="astro-hero" viewBox="0 0 420 600">
+          <circle cx="210" cy="300" r="280" fill="url(#heroGlow)" opacity="0.5"/>
+          <radialGradient id="heroGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffe070" stop-opacity="0.6"/>
+            <stop offset="50%" stop-color="#ff2bd6" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#04020a" stop-opacity="0"/>
+          </radialGradient>
+          <!-- arms RAISED in V -->
+          <path d="M 130 220 L 30 80 L 60 70 L 170 220 Z" fill="#1a1325" stroke="#8af6ff" stroke-width="3"/>
+          <path d="M 290 220 L 390 80 L 360 70 L 250 220 Z" fill="#1a1325" stroke="#8af6ff" stroke-width="3"/>
+          <!-- guitar held high in right hand -->
+          <ellipse cx="380" cy="80" rx="56" ry="34" fill="#ff2bd6" stroke="#ffffff" stroke-width="3" transform="rotate(-20 380 80)"/>
+          <rect x="280" y="65" width="140" height="16" rx="4" fill="#7c3aed" transform="rotate(-20 350 73)"/>
+          <!-- helmet -->
+          <ellipse cx="210" cy="170" rx="100" ry="110" fill="#15101f" stroke="#8af6ff" stroke-width="3"/>
+          <ellipse cx="210" cy="170" rx="82" ry="92" fill="url(#visor2)"/>
+          <linearGradient id="visor2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffe070"/>
+            <stop offset="50%" stop-color="#ff2bd6"/>
+            <stop offset="100%" stop-color="#7c3aed"/>
+          </linearGradient>
+          <ellipse cx="186" cy="146" rx="26" ry="16" fill="#ffffff" opacity="0.55"/>
+          <!-- torso -->
+          <path d="M 100 270 L 320 270 L 350 380 L 330 540 L 90 540 L 70 380 Z"
+                fill="#1a1325" stroke="#8af6ff" stroke-width="3"/>
+          <rect x="178" y="320" width="64" height="84" rx="8"
+                fill="#04020a" stroke="#ff2bd6" stroke-width="2"/>
+          <circle cx="210" cy="340" r="7" fill="#ff2bd6"/>
+          <circle cx="210" cy="364" r="7" fill="#8af6ff"/>
+          <circle cx="210" cy="388" r="7" fill="#ffe070"/>
+        </symbol>
+      </defs>
+    </svg>
+
+      <!-- Voiceover narration (Kokoro am_adam, ~55.5s) -->
+      <audio
+        id="narration"
+        data-start="0"
+        data-duration="auto"
+        data-track-index="0"
+        src="narration.wav"
+        data-volume="1"
+      ></audio>
+
+      <!-- Scene 1: Astronaut emerges from darkness (0–4s) -->
+      <div id="scene1" class="scene clip" data-start="0" data-duration="4.2" data-track-index="1">
+        <div class="scene-inner" id="scene1-inner">
+          <div class="cosmos" data-layout-allow-overflow></div>
+          <div class="stars"></div>
+          <div class="ignite" id="s1-ignite" data-layout-allow-overflow></div>
+          <div class="astronaut-rise" id="s1-astro">
+            <svg class="astronaut-svg" viewBox="0 0 360 540" data-layout-allow-overflow><use href="#astro"/></svg>
+          </div>
+          <div class="vignette"></div>
+          <div class="grain"></div>
+          <div class="lens-flare" id="s1-flare" style="top: 38%;"></div>
+          <div class="timestamp"><span class="dot"></span>00:00</div>
+          <div class="text-card"><div class="card" id="s1-card">Two Months Ago</div></div>
+        </div>
+      </div>
+
+      <!-- Scene 2: Donna AI grid scrolling (4–10s) -->
+      <div id="scene2" class="scene clip" data-start="4" data-duration="6.2" data-track-index="2">
+        <div class="scene-inner" id="scene2-inner">
+          <div class="cosmos" data-layout-allow-overflow style="opacity:0.55"></div>
+          <div class="stars"></div>
+          <div class="grid-stage">
+            <div class="grid-rail" id="s2-rail">
+              <div class="cover cv-1"><div class="label">Cosmic Rock</div></div>
+              <div class="cover cv-2"><div class="label">Hot Mess</div></div>
+              <div class="cover cv-3"><div class="label">Warrior</div></div>
+              <div class="cover cv-4"><div class="label">The Ride</div></div>
+              <div class="cover cv-5"><div class="label">Orange Funk</div></div>
+              <div class="cover cv-6"><div class="label">Play It Hard</div></div>
+              <div class="cover cv-7"><div class="label">Rhythm Reign</div></div>
+              <div class="cover cv-8"><div class="label">Donna AI</div></div>
+              <div class="cover cv-9"><div class="label">Embrace</div></div>
+              <div class="cover cv-10"><div class="label">Hot Mess II</div></div>
+              <div class="cover cv-11"><div class="label">Atlas</div></div>
+              <div class="cover cv-12"><div class="label">Lone Star</div></div>
+            </div>
+          </div>
+          <div class="vignette"></div>
+          <div class="grain"></div>
+          <div class="timestamp"><span class="dot"></span>00:04</div>
+          <div class="text-card"><div class="card cyan" id="s2-card">One Person. One Phone.</div></div>
+        </div>
+      </div>
+
+      <!-- Scene 3: Cosmic Rock hero — astronaut + guitar (10–18s) -->
+      <div id="scene3" class="scene clip" data-start="10" data-duration="8.2" data-track-index="3">
+        <div class="scene-inner" id="scene3-inner">
+          <div class="cosmos" data-layout-allow-overflow></div>
+          <div class="stars"></div>
+          <div class="god-rays" id="s3-rays" data-layout-allow-overflow></div>
+          <div class="orbit-ring" id="s3-ring-out" data-layout-allow-overflow></div>
+          <div class="orbit-ring inner" id="s3-ring-in" data-layout-allow-overflow></div>
+          <div class="rock-hero" id="s3-astro">
+            <svg class="astronaut-svg" viewBox="0 0 360 540" data-layout-allow-overflow><use href="#astro"/></svg>
+          </div>
+          <div class="vignette"></div>
+          <div class="grain"></div>
+          <div class="lens-flare" id="s3-flare" style="top: 30%;"></div>
+          <div class="timestamp"><span class="dot"></span>00:10</div>
+          <div class="text-card"><div class="card" id="s3-card">Rhythmix World</div></div>
+        </div>
+      </div>
+
+      <!-- Scene 4: Spotify catalog cascade (18–26s) -->
+      <div id="scene4" class="scene clip" data-start="18" data-duration="8.2" data-track-index="4">
+        <div class="scene-inner" id="scene4-inner">
+          <div class="cosmos" data-layout-allow-overflow style="opacity:0.45"></div>
+          <div class="stars"></div>
+          <div class="spot-bar" id="s4-spotbar"><span class="dot"></span>Now on Spotify</div>
+          <div class="album-wall">
+            <div class="album alb-1" id="s4-a1">
+              <div class="meta"><div class="title">Cosmic Rock</div><div class="artist">Jamie Wigg · 2026</div></div>
+            </div>
+            <div class="album alb-2" id="s4-a2">
+              <div class="meta"><div class="title">Hot Mess</div><div class="artist">Jamie Wigg · 2026</div></div>
+            </div>
+            <div class="album alb-3" id="s4-a3">
+              <div class="meta"><div class="title">Warrior of Rock Wars</div><div class="artist">Jamie Wigg · 2026</div></div>
+            </div>
+            <div class="album alb-4" id="s4-a4">
+              <div class="meta"><div class="title">The Ride</div><div class="artist">Jamie Wigg · 2026</div></div>
+            </div>
+          </div>
+          <div class="vignette"></div>
+          <div class="grain"></div>
+          <div class="timestamp"><span class="dot"></span>00:18</div>
+          <div class="text-card"><div class="card gold" id="s4-card">6 Albums · Spotify · 2026</div></div>
+        </div>
+      </div>
+
+      <!-- Scene 5: Phone overlay — Donna AI grid scroll (26–34s) -->
+      <div id="scene5" class="scene clip" data-start="26" data-duration="8.2" data-track-index="5" data-layout-allow-overflow>
+        <div class="scene-inner" id="scene5-inner">
+          <div class="cosmos" data-layout-allow-overflow style="opacity:0.4"></div>
+          <div class="stars"></div>
+          <div class="phone">
+            <div class="phone-screen">
+              <div class="phone-status">
+                <span>9:41</span>
+                <span><span class="battery"></span></span>
+              </div>
+              <div class="phone-app-title">Donna AI</div>
+              <div class="phone-scroll" id="s5-scroll" data-layout-allow-overflow>
+                <div class="phone-cover cv-1"><div class="play">471 plays</div></div>
+                <div class="phone-cover cv-2"><div class="play">699 plays</div></div>
+                <div class="phone-cover cv-3"><div class="play">452 plays</div></div>
+                <div class="phone-cover cv-4"><div class="play">318 plays</div></div>
+                <div class="phone-cover cv-5"><div class="play">227 plays</div></div>
+                <div class="phone-cover cv-6"><div class="play">512 plays</div></div>
+                <div class="phone-cover cv-7"><div class="play">880 plays</div></div>
+                <div class="phone-cover cv-8"><div class="play">194 plays</div></div>
+                <div class="phone-cover cv-9"><div class="play">370 plays</div></div>
+                <div class="phone-cover cv-10"><div class="play">605 plays</div></div>
+                <div class="phone-cover cv-11"><div class="play">241 plays</div></div>
+                <div class="phone-cover cv-12"><div class="play">408 plays</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="vignette"></div>
+          <div class="grain"></div>
+          <div class="timestamp"><span class="dot"></span>00:26</div>
+          <div class="text-card"><div class="card cyan" id="s5-card">Thousands of Plays</div></div>
+        </div>
+      </div>
+
+      <!-- Scene 6: Holographic phone / waveforms (34–44s) -->
+      <div id="scene6" class="scene clip" data-start="34" data-duration="10.2" data-track-index="6">
+        <div class="scene-inner" id="scene6-inner">
+          <div class="cosmos" data-layout-allow-overflow></div>
+          <div class="stars"></div>
+          <div class="ring-pulse" id="s6-ring1"></div>
+          <div class="ring-pulse" id="s6-ring2"></div>
+          <div class="holo" id="s6-holo">
+            <div class="holo-frame"></div>
+            <div class="holo-grid">
+              <div class="holo-label">RHYTHMIX // ENGINE</div>
+              <div class="wave-row" id="s6-wave"></div>
+              <div class="holo-readout">BPM <span class="v">128</span> · KEY <span class="v">F♯m</span> · ENERGY <span class="v">87%</span></div>
+              <div class="holo-readout">GENERATE · MASTER · DISTRIBUTE</div>
+            </div>
+          </div>
+          <div class="vignette"></div>
+          <div class="grain"></div>
+          <div class="lens-flare" id="s6-flare" style="top: 35%;"></div>
+          <div class="timestamp"><span class="dot"></span>00:34</div>
+          <div class="text-card"><div class="card" id="s6-card">Building the Platform</div></div>
+        </div>
+      </div>
+
+      <!-- Scene 7: Phone overlay — RHYTHMIX landing (44–52s) -->
+      <div id="scene7" class="scene clip" data-start="44" data-duration="8.2" data-track-index="7">
+        <div class="scene-inner" id="scene7-inner">
+          <div class="cosmos" data-layout-allow-overflow style="opacity:0.4"></div>
+          <div class="stars"></div>
+          <div class="phone">
+            <div class="lp">
+              <div class="scroll" id="s7-scroll">
+                <div class="lp-badge"><span class="dot"></span>Coming Soon</div>
+                <div class="lp-wordmark gradient-text">RHYTHMIX<br/>WORLD</div>
+                <div class="lp-tagline">Your studio. In your pocket.</div>
+                <div class="lp-card-row">
+                  <div class="lp-card"><div class="h">Generate</div><div class="p">Idea to track</div></div>
+                  <div class="lp-card"><div class="h">Master</div><div class="p">Pro-grade sound</div></div>
+                  <div class="lp-card"><div class="h">Distribute</div><div class="p">Spotify · Apple</div></div>
+                  <div class="lp-card"><div class="h">Earn</div><div class="p">Build a career</div></div>
+                </div>
+                <div class="lp-cta">Join the Waitlist</div>
+              </div>
+            </div>
+          </div>
+          <div class="vignette"></div>
+          <div class="grain"></div>
+          <div class="timestamp"><span class="dot"></span>00:44</div>
+          <div class="text-card"><div class="card gold" id="s7-card">App Coming Soon</div></div>
+        </div>
+      </div>
+
+      <!-- Scene 8: Triumphant astronaut close (52–60s) -->
+      <div id="scene8" class="scene clip" data-start="52" data-duration="8" data-track-index="8">
+        <div class="scene-inner" id="scene8-inner">
+          <div class="cosmos" data-layout-allow-overflow></div>
+          <div class="stars"></div>
+          <div class="burst" id="s8-burst" data-layout-allow-overflow></div>
+          <div class="hero-stack">
+            <div class="hero-astro" id="s8-astro">
+              <svg class="astronaut-svg" viewBox="0 0 420 600" data-layout-allow-overflow><use href="#astro-hero"/></svg>
+            </div>
+            <div class="lockup">
+              <div class="wordmark gradient-text" id="s8-wm">RHYTHMIX</div>
+              <div class="handle" id="s8-handle">@jamiewigg-t4k</div>
+              <div class="join" id="s8-join"><span class="dot"></span>Join the Rhythm</div>
+            </div>
+          </div>
+          <div class="vignette"></div>
+          <div class="grain"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // ===== Scene 1 — Astronaut emerges (0–4.2s) =====
+      tl.from("#s1-ignite", { scale: 0.2, opacity: 0, duration: 1.6, ease: "expo.out" }, 0.1);
+      tl.from("#s1-astro", { y: 80, opacity: 0, duration: 1.4, ease: "expo.out" }, 0.3);
+      tl.fromTo("#s1-flare", { opacity: 0, scaleX: 0.4 }, { opacity: 1, scaleX: 1, duration: 0.45, ease: "power2.out" }, 0.9);
+      tl.to("#s1-flare", { opacity: 0, duration: 0.6, ease: "power2.in" }, 1.4);
+      tl.from("#s1-card", { y: 30, opacity: 0, duration: 0.55, ease: "power3.out" }, 1.0);
+      tl.to("#scene1-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 3.75);
+
+      // ===== Scene 2 — Donna AI grid (4–10.2s) =====
+      tl.from("#scene2-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 4.0);
+      tl.from("#scene2 .cover", {
+        y: 60, opacity: 0,
+        duration: 0.55, ease: "expo.out",
+        stagger: { each: 0.06, from: "random" }
+      }, 4.25);
+      // slow drift up to feel like a fast scroll on the phone
+      tl.fromTo("#s2-rail",
+        { y: 60 },
+        { y: -120, duration: 5.4, ease: "none" },
+        4.6
+      );
+      tl.from("#s2-card", { y: 30, opacity: 0, duration: 0.55, ease: "power3.out" }, 4.7);
+      tl.to("#scene2-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 9.75);
+
+      // ===== Scene 3 — Cosmic Rock hero (10–18.2s) =====
+      tl.from("#scene3-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 10.0);
+      tl.from("#s3-ring-out", { scale: 0.7, opacity: 0, duration: 1.2, ease: "expo.out" }, 10.25);
+      tl.from("#s3-ring-in", { scale: 0.6, opacity: 0, duration: 1.0, ease: "expo.out" }, 10.45);
+      tl.fromTo("#s3-rays", { opacity: 0, rotation: -10 }, { opacity: 1, rotation: 0, duration: 1.4, ease: "power2.out", transformOrigin: "50% 30%" }, 10.4);
+      tl.from("#s3-astro", { y: 60, opacity: 0, scale: 0.92, duration: 1.0, ease: "expo.out" }, 10.55);
+      // Slow orbit drift (one shared transform on the rings)
+      tl.to("#s3-ring-out", { rotation: 18, duration: 7.0, ease: "none", transformOrigin: "50% 50%" }, 10.5);
+      tl.to("#s3-ring-in", { rotation: -22, duration: 7.0, ease: "none", transformOrigin: "50% 50%" }, 10.5);
+      // Lens flare hit
+      tl.fromTo("#s3-flare", { opacity: 0, scaleX: 0.4 }, { opacity: 1, scaleX: 1, duration: 0.5, ease: "power2.out" }, 11.0);
+      tl.to("#s3-flare", { opacity: 0, duration: 0.6, ease: "power2.in" }, 11.6);
+      tl.from("#s3-card", { y: 30, opacity: 0, duration: 0.55, ease: "power3.out" }, 11.0);
+      tl.to("#scene3-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 17.75);
+
+      // ===== Scene 4 — Spotify cascade (18–26.2s) =====
+      tl.from("#scene4-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 18.0);
+      tl.fromTo("#s4-spotbar", { y: -28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 18.25);
+      tl.from("#s4-a1", { y: -120, opacity: 0, duration: 0.7, ease: "expo.out" }, 18.45);
+      tl.from("#s4-a2", { x: 120, opacity: 0, duration: 0.7, ease: "expo.out" }, 18.65);
+      tl.from("#s4-a3", { x: -120, opacity: 0, duration: 0.7, ease: "expo.out" }, 18.85);
+      tl.from("#s4-a4", { y: 120, opacity: 0, duration: 0.7, ease: "expo.out" }, 19.05);
+      tl.from("#s4-card", { y: 30, opacity: 0, duration: 0.55, ease: "power3.out" }, 19.4);
+      tl.to("#scene4-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 25.75);
+
+      // ===== Scene 5 — Phone overlay: Donna grid scroll (26–34.2s) =====
+      tl.from("#scene5-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 26.0);
+      tl.from("#scene5 .phone", { y: 100, opacity: 0, scale: 0.95, duration: 0.85, ease: "expo.out" }, 26.15);
+      tl.fromTo("#s5-scroll", { y: 0 }, { y: -800, duration: 6.6, ease: "power1.inOut" }, 26.7);
+      tl.from("#s5-card", { y: 30, opacity: 0, duration: 0.55, ease: "power3.out" }, 27.0);
+      tl.to("#scene5-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 33.75);
+
+      // ===== Scene 6 — Holographic platform (34–44.2s) =====
+      tl.from("#scene6-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 34.0);
+      tl.from("#s6-holo", { scale: 0.85, opacity: 0, duration: 0.9, ease: "expo.out" }, 34.2);
+      tl.from("#s6-holo .holo-label", { y: -20, opacity: 0, duration: 0.55, ease: "power3.out" }, 34.6);
+      tl.from("#s6-holo .holo-readout", { y: 20, opacity: 0, duration: 0.55, ease: "power2.out", stagger: 0.18 }, 34.85);
+      // Bars built dynamically below; pulse ring beats
+      tl.fromTo("#s6-ring1", { scale: 0.5, opacity: 0.6 }, { scale: 1.4, opacity: 0, duration: 1.6, ease: "power2.out", repeat: 4 }, 35.2);
+      tl.fromTo("#s6-ring2", { scale: 0.5, opacity: 0.4 }, { scale: 1.4, opacity: 0, duration: 1.6, ease: "power2.out", repeat: 4 }, 35.7);
+      tl.fromTo("#s6-flare", { opacity: 0, scaleX: 0.4 }, { opacity: 1, scaleX: 1, duration: 0.5, ease: "power2.out" }, 35.4);
+      tl.to("#s6-flare", { opacity: 0, duration: 0.6, ease: "power2.in" }, 36.0);
+      tl.from("#s6-card", { y: 30, opacity: 0, duration: 0.55, ease: "power3.out" }, 35.0);
+      tl.to("#scene6-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 43.75);
+
+      // ===== Scene 7 — Phone overlay: RHYTHMIX landing (44–52.2s) =====
+      tl.from("#scene7-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 44.0);
+      tl.from("#scene7 .phone", { y: 100, opacity: 0, scale: 0.95, duration: 0.85, ease: "expo.out" }, 44.15);
+      tl.from("#scene7 .lp-badge", { y: -16, opacity: 0, duration: 0.5, ease: "power3.out" }, 44.85);
+      tl.from("#scene7 .lp-wordmark", { y: 24, opacity: 0, duration: 0.7, ease: "expo.out" }, 45.0);
+      tl.from("#scene7 .lp-tagline", { y: 16, opacity: 0, duration: 0.5, ease: "power2.out" }, 45.3);
+      tl.from("#scene7 .lp-card", { y: 30, opacity: 0, duration: 0.5, ease: "power3.out", stagger: 0.12 }, 45.55);
+      tl.from("#scene7 .lp-cta", { scale: 0.9, opacity: 0, duration: 0.55, ease: "expo.out" }, 46.2);
+      tl.from("#s7-card", { y: 30, opacity: 0, duration: 0.55, ease: "power3.out" }, 45.4);
+      tl.to("#scene7-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 51.75);
+
+      // ===== Scene 8 — Triumphant close (52–60s, final) =====
+      tl.from("#scene8-inner", { opacity: 0, duration: 0.45, ease: "power1.inOut" }, 52.0);
+      tl.from("#s8-burst", { scale: 0.4, opacity: 0, duration: 1.6, ease: "expo.out" }, 52.1);
+      tl.from("#s8-astro", { y: 60, opacity: 0, scale: 0.9, duration: 1.1, ease: "expo.out" }, 52.4);
+      tl.from("#s8-wm", { y: 40, opacity: 0, scale: 0.94, duration: 0.85, ease: "expo.out" }, 53.4);
+      tl.from("#s8-handle", { y: 20, opacity: 0, duration: 0.55, ease: "power2.out" }, 53.95);
+      tl.from("#s8-join", { y: 20, opacity: 0, duration: 0.55, ease: "power3.out" }, 54.35);
+      // Subtle slow zoom on the burst — confident, not bouncy
+      tl.to("#s8-burst", { scale: 1.15, duration: 5.5, ease: "power1.inOut", overwrite: "auto" }, 53.7);
+      // Final fade
+      tl.to("#scene8-inner", { opacity: 0, duration: 0.8, ease: "power2.inOut" }, 59.2);
+
+      // ===== Build deterministic waveform bars in scene 6 =====
+      const wave = document.getElementById("s6-wave");
+      if (wave) {
+        // Mulberry32 PRNG (deterministic)
+        const seed = 0x1f5a2bd6;
+        let a = seed >>> 0;
+        const rand = () => {
+          a |= 0; a = a + 0x6D2B79F5 | 0;
+          let t = Math.imul(a ^ a >>> 15, 1 | a);
+          t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+        const NUM = 24;
+        const heights = [];
+        for (let i = 0; i < NUM; i++) {
+          const bar = document.createElement("div");
+          bar.className = "bar";
+          const baseH = 60 + Math.round(rand() * 160);
+          heights.push(baseH);
+          bar.style.height = baseH + "px";
+          wave.appendChild(bar);
+        }
+        // Animate each bar between two deterministic heights
+        const bars = wave.querySelectorAll(".bar");
+        bars.forEach((bar, i) => {
+          const peak = 80 + Math.round(rand() * 160);
+          const trough = 30 + Math.round(rand() * 60);
+          // Entrance
+          tl.from(bar, { scaleY: 0, opacity: 0, duration: 0.45, ease: "power3.out", transformOrigin: "50% 100%" }, 35.05 + i * 0.025);
+          // Sustain pulse — finite repeats inside the scene window
+          tl.to(bar, {
+            height: peak,
+            duration: 0.32,
+            ease: "sine.inOut",
+            repeat: 12,
+            yoyo: true
+          }, 35.6 + (i % 6) * 0.07);
+        });
+      }
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

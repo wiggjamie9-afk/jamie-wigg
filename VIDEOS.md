@@ -4,6 +4,18 @@ Tap a play button to watch. Long-press the download link to save to your phone.
 
 ---
 
+## 🚀 NEW — Freebeat Ad (cinematic 60s with voiceover)
+
+`1080 × 1920 · 60s · with AI voiceover (am_adam)`
+
+Cinematic AI music video aesthetic — astronaut in deep space, neon purple/pink nebulas, glowing waveforms, holographic phone UI. Full Jamie Wigg origin-story narration ("Two months ago, I had an idea…") muxed onto the visual.
+
+https://github.com/wiggjamie9-afk/jamie-wigg/raw/claude/create-one-minute-video-41EHi/rhythmix-freebeat-ad/rhythmix-freebeat-ad.mp4
+
+▶︎ **[Download rhythmix-freebeat-ad.mp4](rhythmix-freebeat-ad/rhythmix-freebeat-ad.mp4)** &nbsp;·&nbsp; 7.7 MB &nbsp;·&nbsp; 9:16 vertical &nbsp;·&nbsp; works on TikTok / Reels / Shorts / FB Stories
+
+---
+
 ## 📱 Vertical — TikTok · Instagram Reels · YouTube Shorts · Facebook Stories
 
 `1080 × 1920 · 32s`
