@@ -8,9 +8,19 @@
 
 No metrics, no testimonials, no pricing — brand reveal + "join the waitlist for launch". Use this until the product, stats, and pricing are real.
 
+### 60-second cut · long form
+
+5-scene narrative: hook → 4 pillars → 3-step process → audience → waitlist CTA.
+
+https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s.mp4
+
+**[⬇ Download teaser-coming-soon-60s.mp4](videos/teaser-coming-soon-60s.mp4)** &nbsp;·&nbsp; 1080×1920 · 9:16 · 60s &nbsp;·&nbsp; works on TikTok, Reels, YouTube Shorts (within Shorts' 60s limit), FB Stories
+
+### 32-second cut · short form
+
 https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon.mp4
 
-**[⬇ Download teaser-coming-soon.mp4](videos/teaser-coming-soon.mp4)** &nbsp;·&nbsp; 1080×1920 · 9:16 · 32s &nbsp;·&nbsp; works on TikTok, Reels, Shorts, FB Stories
+**[⬇ Download teaser-coming-soon.mp4](videos/teaser-coming-soon.mp4)** &nbsp;·&nbsp; 1080×1920 · 9:16 · 32s
 
 ---
 
