@@ -4,7 +4,37 @@ Tap a play button to watch. Long-press the download link to save to your phone.
 
 ---
 
-## 🚀 NEW — Freebeat Ad (cinematic 60s with voiceover)
+## 💰 NEW — Lifetime Deal (30s vertical · AI voiceover)
+
+`1080 × 1920 · 30s · with AI voiceover (af_sky)`
+
+Gold-themed urgency video. LIMITED TIME badge → $149 giant gold number vs $899 struck through → all 14 features checklist → "Join the waitlist" CTA.
+
+▶︎ **[Download rhythmix-lifetime.mp4](rhythmix-lifetime/rhythmix-lifetime.mp4)** &nbsp;·&nbsp; 9:16 vertical &nbsp;·&nbsp; TikTok / Reels / Shorts
+
+---
+
+## 🎛 NEW — 14 Features Showcase (32s vertical · AI voiceover)
+
+`1080 × 1920 · 32s · with AI voiceover (af_sky)`
+
+Rapid-fire feature parade — all 14 AI tools shown one by one with icons, names, and coloured tags. RHYTHMIX wordmark opener and closer.
+
+▶︎ **[Download rhythmix-features.mp4](rhythmix-features/rhythmix-features.mp4)** &nbsp;·&nbsp; 9:16 vertical &nbsp;·&nbsp; TikTok / Reels / Shorts
+
+---
+
+## ⭐ NEW — Creator Testimonials (32s vertical · AI voiceover)
+
+`1080 × 1920 · 32s · with AI voiceover (af_heart)`
+
+Social proof reel — Alex Chen (31K streams), Sam Wu ($7,200 sync deal), Nova Vance ($96K VR concert). Ends with RHYTHMIX wordmark.
+
+▶︎ **[Download rhythmix-testimonials.mp4](rhythmix-testimonials/rhythmix-testimonials.mp4)** &nbsp;·&nbsp; 9:16 vertical &nbsp;·&nbsp; TikTok / Reels / Shorts
+
+---
+
+## 🚀 Freebeat Ad (cinematic 60s with voiceover)
 
 `1080 × 1920 · 60s · with AI voiceover (am_adam)`
 
@@ -57,6 +87,9 @@ https://github.com/wiggjamie9-afk/jamie-wigg/raw/claude/add-code-guidance-FbvgK/
 
 | Video | Use for |
 |---|---|
+| `rhythmix-lifetime.mp4` | TikTok · Instagram Reels · YouTube Shorts (Lifetime Deal offer) |
+| `rhythmix-features.mp4` | TikTok · Instagram Reels · YouTube Shorts (Feature showcase) |
+| `rhythmix-testimonials.mp4` | TikTok · Instagram Reels · YouTube Shorts (Social proof) |
 | `rhythmix-vertical.mp4` | TikTok · Instagram Reels · YouTube Shorts · Facebook Stories |
 | `rhythmix-square.mp4` | Instagram Feed · Facebook Feed |
 | `rhythmix-32s.mp4` | YouTube (regular) |
