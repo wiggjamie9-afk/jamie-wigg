@@ -20,26 +20,23 @@ Outputs land on disk so subsequent steps (e.g. importing into a HyperFrames comp
    - Replicate → https://replicate.com/account/api-tokens
    - ElevenLabs → https://elevenlabs.io/app/settings/api-keys
 
-3. Wire it up in your Claude config. Edit `.claude/settings.json` (or `~/.claude/settings.json` for all projects) and add:
+3. The MCP server is already declared in the repo's `.mcp.json` and approved in `.claude/settings.json` (`enabledMcpjsonServers`). The only thing you need to provide is the API tokens. Copy the example local settings file:
 
-   ```json
-   {
-     "mcpServers": {
-       "creative-stack": {
-         "command": "node",
-         "args": [".claude/mcp/creative-stack/server.mjs"],
-         "env": {
-           "REPLICATE_API_TOKEN": "r8_...",
-           "ELEVENLABS_API_KEY": "sk_..."
-         }
-       }
-     }
-   }
+   ```bash
+   cp .claude/settings.local.json.example .claude/settings.local.json
    ```
 
-   Or set the env vars in your shell profile and omit the `env` block.
+   Open `.claude/settings.local.json` and replace the placeholder strings with your real tokens. This file is `.gitignore`d — it never gets committed.
 
-4. Restart Claude Code. The tools `replicate_image`, `replicate_video`, `replicate_music`, `replicate_run`, `elevenlabs_tts`, `elevenlabs_voices` will appear.
+4. Verify the tokens work:
+
+   ```bash
+   REPLICATE_API_TOKEN=r8_... ELEVENLABS_API_KEY=sk_... node .claude/mcp/creative-stack/check.mjs
+   ```
+
+   Expect two ✓ lines.
+
+5. Restart Claude Code. The tools `replicate_image`, `replicate_video`, `replicate_music`, `replicate_run`, `elevenlabs_tts`, `elevenlabs_voices` will appear.
 
 ## Tools
 
