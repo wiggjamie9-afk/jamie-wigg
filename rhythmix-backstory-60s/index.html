@@ -13,7 +13,6 @@
       font-family: "Inter", sans-serif;
     }
 
-    /* Root composition */
     #root {
       position: relative;
       width: 1080px;
@@ -21,17 +20,7 @@
       overflow: hidden;
     }
 
-    /* ─── Shared scene styles ─── */
-    .scene {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 1080px;
-      height: 1920px;
-      overflow: hidden;
-    }
-
-    /* Film grain overlay — persistent across all scenes */
+    /* Film grain overlay */
     #grain {
       position: absolute;
       top: 0;
@@ -45,23 +34,40 @@
           45deg,
           rgba(255,255,255,0.013) 0px,
           rgba(255,255,255,0.013) 1px,
-          transparent 1px,
-          transparent 3px
+          rgba(255,255,255,0) 1px,
+          rgba(255,255,255,0) 3px
         ),
         repeating-linear-gradient(
           -45deg,
           rgba(255,255,255,0.008) 0px,
           rgba(255,255,255,0.008) 1px,
-          transparent 1px,
-          transparent 5px
+          rgba(255,255,255,0) 1px,
+          rgba(255,255,255,0) 5px
         );
     }
 
-    /* ─── SCENE 1: Everyone said it couldn't be done (0–12s) ─── */
-    #scene1 {
-      background: #050505;
-      z-index: 1;
+    /* All scenes stacked — GSAP switches between inner divs */
+    .scene {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
     }
+
+    .scene-inner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+    }
+
+    /* ─── SCENE 1: Everyone said it couldn't be done (0–12s) ─── */
+    #scene1 { background: #050505; z-index: 1; }
+    #s1-inner { background: #050505; }
 
     .s1-content {
       display: flex;
@@ -83,7 +89,7 @@
 
     .s1-word {
       font-family: "Inter", sans-serif;
-      font-size: 60px;
+      font-size: 62px;
       font-weight: 800;
       color: #ffffff;
       text-transform: uppercase;
@@ -92,12 +98,8 @@
       line-height: 1.15;
     }
 
-    #s1-line1 {
-      margin-bottom: 8px;
-    }
-    #s1-line2 {
-      margin-bottom: 80px;
-    }
+    #s1-line1 { margin-bottom: 8px; }
+    #s1-line2 { margin-bottom: 80px; }
 
     #s1-divider {
       width: 600px;
@@ -110,7 +112,7 @@
 
     #s1-wrong {
       font-family: "Inter", sans-serif;
-      font-size: 80px;
+      font-size: 82px;
       font-weight: 900;
       color: #f5c000;
       text-transform: uppercase;
@@ -119,11 +121,8 @@
     }
 
     /* ─── SCENE 2: My name is Jamie (12–24s) ─── */
-    #scene2 {
-      background: #080503;
-      z-index: 2;
-    }
-
+    #scene2 { background: #080503; z-index: 2; }
+    #s2-inner { background: #080503; visibility: hidden; }
 
     .s2-content {
       display: flex;
@@ -205,10 +204,8 @@
     }
 
     /* ─── SCENE 3: So I built RHYTHMIX (24–36s) ─── */
-    #scene3 {
-      background: #000000;
-      z-index: 3;
-    }
+    #scene3 { background: #000000; z-index: 3; }
+    #s3-inner { background: #000000; visibility: hidden; }
 
     .s3-content {
       display: flex;
@@ -254,7 +251,7 @@
       text-align: center;
       background: linear-gradient(135deg, #ff1f5a 0%, #7c3aed 50%, #00d8ff 100%);
       -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      -webkit-text-fill-color: rgba(0,0,0,0);
       background-clip: text;
       clip-path: inset(0 100% 0 0);
       margin-bottom: 50px;
@@ -274,13 +271,10 @@
       line-height: 1.5;
     }
 
-    /* ─── SCENE 4: Stats (36–50s) ─── */
-    #scene4 {
-      background: #060407;
-      z-index: 4;
-    }
+    /* ─── SCENE 4: Stats rapid-fire (36–50s) ─── */
+    #scene4 { background: #060407; z-index: 4; }
+    #s4-inner { background: #060407; visibility: hidden; }
 
-    /* Purple glow right */
     #s4-glow {
       position: absolute;
       top: 30%;
@@ -357,12 +351,9 @@
     }
 
     /* ─── SCENE 5: CTA (50–60s) ─── */
-    #scene5 {
-      background: #030201;
-      z-index: 5;
-    }
+    #scene5 { background: #030201; z-index: 5; }
+    #s5-inner { background: #030201; visibility: hidden; }
 
-    /* Gold radial glow from bottom */
     #s5-glow {
       position: absolute;
       bottom: -300px;
@@ -497,152 +488,108 @@
   ></audio>
 
   <!-- ═══════════════════════════════════════════════
-       SCENE 1: Everyone said it couldn't be done
-       0–12s  track-index=0
+       All scenes span full composition (0–60s)
+       GSAP transitions inner divs, not outer clips
   ═══════════════════════════════════════════════ -->
-  <div id="scene1" class="scene clip" data-start="0" data-duration="12" data-track-index="0">
-    <div class="s1-content">
-      <!-- "EVERYONE SAID" word by word -->
-      <div id="s1-line1" class="s1-word-row">
-        <span class="s1-word" id="s1-w1">EVERYONE</span>
-        <span class="s1-word" id="s1-w2">SAID</span>
+
+  <!-- SCENE 1: Everyone said it couldn't be done (visible 0–12s) -->
+  <div id="scene1" class="scene clip" data-start="0" data-duration="60" data-track-index="0">
+    <div id="s1-inner" class="scene-inner">
+      <div class="s1-content">
+        <div id="s1-line1" class="s1-word-row">
+          <span class="s1-word" id="s1-w1">EVERYONE</span>
+          <span class="s1-word" id="s1-w2">SAID</span>
+        </div>
+        <div id="s1-line2" class="s1-word-row">
+          <span class="s1-word" id="s1-w3">IT</span>
+          <span class="s1-word" id="s1-w4">COULDN'T</span>
+          <span class="s1-word" id="s1-w5">BE</span>
+          <span class="s1-word" id="s1-w6">DONE.</span>
+        </div>
+        <div id="s1-divider"></div>
+        <div id="s1-wrong">THEY WERE WRONG.</div>
       </div>
-      <!-- "IT COULDN'T BE DONE." word by word -->
-      <div id="s1-line2" class="s1-word-row">
-        <span class="s1-word" id="s1-w3">IT</span>
-        <span class="s1-word" id="s1-w4">COULDN'T</span>
-        <span class="s1-word" id="s1-w5">BE</span>
-        <span class="s1-word" id="s1-w6">DONE.</span>
-      </div>
-      <!-- Red divider line -->
-      <div id="s1-divider"></div>
-      <!-- THEY WERE WRONG. -->
-      <div id="s1-wrong">THEY WERE WRONG.</div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════
-       SCENE 2: My name is Jamie
-       12–24s  track-index=1
-  ═══════════════════════════════════════════════ -->
-  <div id="scene2" class="scene clip" data-start="12" data-duration="12" data-track-index="1">
-    <div class="s2-content">
-      <!-- iPhone silhouette at top -->
-      <div id="s2-iphone">
-        <div id="s2-iphone-glow"></div>
+  <!-- SCENE 2: My name is Jamie (visible 12–24s) -->
+  <div id="scene2" class="scene clip" data-start="0" data-duration="60" data-track-index="1">
+    <div id="s2-inner" class="scene-inner">
+      <div class="s2-content">
+        <div id="s2-iphone">
+          <div id="s2-iphone-glow"></div>
+        </div>
+        <div id="s2-name">JAMIE</div>
+        <div id="s2-desc1">NOT A DEVELOPER.</div>
+        <div id="s2-desc2">NOT A MUSIC PRODUCER.</div>
+        <div id="s2-desc3">JUST SOMEONE WITH AN IDEA.</div>
       </div>
-      <!-- Name card -->
-      <div id="s2-name">JAMIE</div>
-      <div id="s2-desc1">NOT A DEVELOPER.</div>
-      <div id="s2-desc2">NOT A MUSIC PRODUCER.</div>
-      <div id="s2-desc3">JUST SOMEONE WITH AN IDEA.</div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════
-       SCENE 3: So I built RHYTHMIX
-       24–36s  track-index=2
-  ═══════════════════════════════════════════════ -->
-  <div id="scene3" class="scene clip" data-start="24" data-duration="12" data-track-index="2">
-    <div class="s3-content">
-      <div id="s3-line1">SO I PICKED UP MY iPHONE.</div>
-      <div id="s3-and-i-built">AND I BUILT</div>
-      <div id="s3-rhythmix">RHYTHMIX</div>
-      <div id="s3-tagline">THE WORLD'S FIRST COMPLETE AI MUSIC PLATFORM.</div>
+  <!-- SCENE 3: So I built RHYTHMIX (visible 24–36s) -->
+  <div id="scene3" class="scene clip" data-start="0" data-duration="60" data-track-index="2">
+    <div id="s3-inner" class="scene-inner">
+      <div class="s3-content">
+        <div id="s3-line1">SO I PICKED UP MY iPHONE.</div>
+        <div id="s3-and-i-built">AND I BUILT</div>
+        <div id="s3-rhythmix">RHYTHMIX</div>
+        <div id="s3-tagline">THE WORLD'S FIRST COMPLETE AI MUSIC PLATFORM.</div>
+      </div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════
-       SCENE 4: Stats rapid-fire
-       36–50s  track-index=3
-  ═══════════════════════════════════════════════ -->
-  <div id="scene4" class="scene clip" data-start="36" data-duration="14" data-track-index="3">
-    <div id="s4-glow" data-layout-ignore></div>
-    <div class="s4-content">
-
-      <div id="s4-stat1" class="stat-block">
-        <div class="stat-number" id="s4-n1">22</div>
-        <div class="stat-label">AI TOOLS BUILT INTO ONE PLATFORM</div>
+  <!-- SCENE 4: Stats rapid-fire (visible 36–50s) -->
+  <div id="scene4" class="scene clip" data-start="0" data-duration="60" data-track-index="3">
+    <div id="s4-inner" class="scene-inner">
+      <div id="s4-glow" data-layout-ignore></div>
+      <div class="s4-content">
+        <div id="s4-stat1" class="stat-block">
+          <div class="stat-number" id="s4-n1">22</div>
+          <div class="stat-label">AI TOOLS BUILT INTO ONE PLATFORM</div>
+        </div>
+        <div id="s4-stat2" class="stat-block">
+          <div class="stat-number" id="s4-n2">120+</div>
+          <div class="stat-label">PLATFORMS IN ONE TAP</div>
+        </div>
+        <div id="s4-stat3" class="stat-block">
+          <div class="stat-number" id="s4-n3">3D</div>
+          <div class="stat-label">VIRTUAL PERFORMANCE VENUES</div>
+        </div>
+        <div id="s4-stat4" class="stat-block">
+          <div class="stat-number green-glow" id="s4-n4">100%</div>
+          <div class="stat-label">OF EVERY DOLLAR GOES TO YOU</div>
+        </div>
+        <div id="s4-final">ALL FROM ONE iPHONE.</div>
       </div>
-
-      <div id="s4-stat2" class="stat-block">
-        <div class="stat-number" id="s4-n2">120+</div>
-        <div class="stat-label">PLATFORMS IN ONE TAP</div>
-      </div>
-
-      <div id="s4-stat3" class="stat-block">
-        <div class="stat-number" id="s4-n3">3D</div>
-        <div class="stat-label">VIRTUAL PERFORMANCE VENUES</div>
-      </div>
-
-      <div id="s4-stat4" class="stat-block">
-        <div class="stat-number green-glow" id="s4-n4">100%</div>
-        <div class="stat-label">OF EVERY DOLLAR GOES TO YOU</div>
-      </div>
-
-      <div id="s4-final">ALL FROM ONE iPHONE.</div>
-
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════
-       SCENE 5: CTA
-       50–60s  track-index=4
-  ═══════════════════════════════════════════════ -->
-  <div id="scene5" class="scene clip" data-start="50" data-duration="10" data-track-index="4">
-    <div id="s5-glow" data-layout-ignore></div>
-    <div class="s5-content">
-      <div id="s5-url">rhythmixapp.com.au</div>
-      <div id="s5-price">$149 · ONE TIME · YOURS FOREVER</div>
-      <div id="s5-one-person">ONE PERSON.</div>
-      <div id="s5-changed-music">CHANGED MUSIC.</div>
-      <div id="s5-tonight">TONIGHT.</div>
+  <!-- SCENE 5: CTA (visible 50–60s) -->
+  <div id="scene5" class="scene clip" data-start="0" data-duration="60" data-track-index="4">
+    <div id="s5-inner" class="scene-inner">
+      <div id="s5-glow" data-layout-ignore></div>
+      <div class="s5-content">
+        <div id="s5-url">rhythmixapp.com.au</div>
+        <div id="s5-price">$149 · ONE TIME · YOURS FOREVER</div>
+        <div id="s5-one-person">ONE PERSON.</div>
+        <div id="s5-changed-music">CHANGED MUSIC.</div>
+        <div id="s5-tonight">TONIGHT.</div>
+      </div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════
-       CAPTIONS — synced to narration (45.7s)
-       Narration starts at 0s
-  ═══════════════════════════════════════════════ -->
-  <!--
-    Approximate word timing for am_michael at natural pace for 45.7s over 132 words
-    ~0.35s per word average, with natural pauses at sentence boundaries.
-
-    Sentence breakdown & estimated timing:
-    0.0–2.8  Everyone said it couldn't be done.
-    2.8–7.0  That building a complete music platform took a team, a studio, millions in funding.
-    7.0–8.5  They were wrong.
-    8.5–10.0 My name is Jamie.
-    10.0–12.5 I'm not a developer.
-    12.5–15.0 I'm not a music producer.
-    15.0–19.0 I'm just someone who refused to accept that professional music was out of reach for ordinary people.
-    19.0–21.5 So I picked up my iPhone.
-    21.5–23.5 And I built RHYTHMIX.
-    23.5–25.5 Twenty two AI tools.
-    25.5–28.5 Distribution to one hundred and twenty platforms.
-    28.5–30.5 Three dimensional performance venues.
-    30.5–32.0 Sync licensing.
-    32.0–33.0 All of it.
-    33.0–35.0 From one device.
-    35.0–36.5 From nothing.
-    36.5–40.5 If I can build this on an iPhone, imagine what you can create with it.
-    40.5–43.0 rhythmixapp.com.au
-    43.0–44.0 One hundred and forty nine dollars.
-    44.0–44.8 Once.
-    44.8–45.7 Forever.
-    (remaining silence 45.7–60s filled by scene 5 hold)
-  -->
-
-  <div id="cg-0" class="cap-group"><span class="cap-text">Everyone said it couldn't be done.</span></div>
-  <div id="cg-1" class="cap-group"><span class="cap-text">That building a complete music platform took a team, a studio, millions in funding.</span></div>
-  <div id="cg-2" class="cap-group"><span class="cap-text">They were wrong.</span></div>
-  <div id="cg-3" class="cap-group"><span class="cap-text">My name is Jamie.</span></div>
-  <div id="cg-4" class="cap-group"><span class="cap-text">I'm not a developer.</span></div>
-  <div id="cg-5" class="cap-group"><span class="cap-text">I'm not a music producer.</span></div>
-  <div id="cg-6" class="cap-group"><span class="cap-text">I'm just someone who refused to accept that professional music was out of reach.</span></div>
-  <div id="cg-7" class="cap-group"><span class="cap-text">So I picked up my iPhone.</span></div>
-  <div id="cg-8" class="cap-group"><span class="cap-text">And I built RHYTHMIX.</span></div>
-  <div id="cg-9" class="cap-group"><span class="cap-text">Twenty two AI tools.</span></div>
+  <!-- ─── CAPTIONS ─── -->
+  <div id="cg-0"  class="cap-group"><span class="cap-text">Everyone said it couldn't be done.</span></div>
+  <div id="cg-1"  class="cap-group"><span class="cap-text">That building a complete music platform took a team, a studio, millions in funding.</span></div>
+  <div id="cg-2"  class="cap-group"><span class="cap-text">They were wrong.</span></div>
+  <div id="cg-3"  class="cap-group"><span class="cap-text">My name is Jamie.</span></div>
+  <div id="cg-4"  class="cap-group"><span class="cap-text">I'm not a developer.</span></div>
+  <div id="cg-5"  class="cap-group"><span class="cap-text">I'm not a music producer.</span></div>
+  <div id="cg-6"  class="cap-group"><span class="cap-text">I'm just someone who refused to accept that professional music was out of reach.</span></div>
+  <div id="cg-7"  class="cap-group"><span class="cap-text">So I picked up my iPhone.</span></div>
+  <div id="cg-8"  class="cap-group"><span class="cap-text">And I built RHYTHMIX.</span></div>
+  <div id="cg-9"  class="cap-group"><span class="cap-text">Twenty two AI tools.</span></div>
   <div id="cg-10" class="cap-group"><span class="cap-text">Distribution to one hundred and twenty platforms.</span></div>
   <div id="cg-11" class="cap-group"><span class="cap-text">Three dimensional performance venues. Sync licensing.</span></div>
   <div id="cg-12" class="cap-group"><span class="cap-text">All of it. From one device. From nothing.</span></div>
@@ -654,7 +601,7 @@
 
 <script src="gsap.min.js"></script>
 <script>
-// ─── Seeded PRNG (mulberry32) — no Math.random() ───────────────────────
+// ─── Seeded PRNG ───────────────────────────────────────────────────────
 function mulberry32(seed) {
   return function() {
     seed |= 0; seed = seed + 0x6D2B79F5 | 0;
@@ -667,157 +614,132 @@ function mulberry32(seed) {
 window.__timelines = window.__timelines || {};
 var tl = gsap.timeline({ paused: true });
 
-// ─── Initial scene states — inside timeline to avoid gsap.set() conflicts ─
-// Scenes 2-5 start at opacity 0 — transitions reveal them
-tl.set("#scene2", { opacity: 0, filter: "blur(22px)", scale: 0.96 }, 0);
-tl.set("#scene3", { opacity: 0 }, 0);
-tl.set("#scene4", { opacity: 0 }, 0);
-tl.set("#scene5", { opacity: 0, scale: 1.06 }, 0);
-
 // ═══════════════════════════════════════════════════════════════════════
-// SCENE 1 ENTRANCES: 0–12s
-// Words appear typewriter-style, then red line, then "THEY WERE WRONG."
+// SCENE 1 CONTENT: 0–12s
 // ═══════════════════════════════════════════════════════════════════════
 
-// "EVERYONE" — word 1
+// Typewriter words
 tl.set("#s1-w1", { opacity: 1 }, 0.3);
-// "SAID" — word 2
 tl.set("#s1-w2", { opacity: 1 }, 0.65);
-// "IT" — word 3
 tl.set("#s1-w3", { opacity: 1 }, 1.2);
-// "COULDN'T" — word 4
 tl.set("#s1-w4", { opacity: 1 }, 1.55);
-// "BE" — word 5
 tl.set("#s1-w5", { opacity: 1 }, 1.9);
-// "DONE." — word 6
 tl.set("#s1-w6", { opacity: 1 }, 2.25);
 
-// Red divider line draws from left to right at 6s
+// Red divider line
 tl.to("#s1-divider", { scaleX: 1, duration: 0.8, ease: "power2.inOut" }, 5.8);
 
-// "THEY WERE WRONG." — clip-path wipe
+// "THEY WERE WRONG." wipe
 tl.to("#s1-wrong", { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "power3.out" }, 6.7);
 
 // ═══════════════════════════════════════════════════════════════════════
-// TRANSITION 1→2: Blur crossfade (calm) at t=11.2s
+// TRANSITION 1→2: Blur crossfade at 11.2s
+// Transitions inner divs — not the clip containers
 // ═══════════════════════════════════════════════════════════════════════
 var T12 = 11.2;
-tl.to("#scene1", { filter: "blur(22px)", scale: 1.04, duration: 0.7, ease: "power1.in" }, T12);
-tl.to("#scene1", { opacity: 0, duration: 0.5, ease: "power1.in" }, T12 + 0.45);
-tl.to("#scene2", { opacity: 1, duration: 0.35, ease: "power1.inOut" }, T12 + 0.5);
-tl.to("#scene2", { filter: "blur(0px)", scale: 1, duration: 0.65, ease: "power1.out" }, T12 + 0.85);
+tl.to("#s1-inner", { filter: "blur(22px)", scale: 1.04, duration: 0.7, ease: "power1.in" }, T12);
+tl.to("#s1-inner", { opacity: 0, duration: 0.5, ease: "power1.in" }, T12 + 0.45);
+tl.set("#s1-inner", { visibility: "hidden" }, T12 + 0.95);
+
+tl.set("#s2-inner", { visibility: "visible", opacity: 0, filter: "blur(22px)", scale: 0.96 }, T12 + 0.45);
+tl.to("#s2-inner", { opacity: 1, duration: 0.35, ease: "power1.inOut" }, T12 + 0.5);
+tl.to("#s2-inner", { filter: "blur(0px)", scale: 1, duration: 0.65, ease: "power1.out" }, T12 + 0.85);
 
 // ═══════════════════════════════════════════════════════════════════════
-// SCENE 2 ENTRANCES: starts at 12s (offsets from 12s)
+// SCENE 2 CONTENT: 12–24s
 // ═══════════════════════════════════════════════════════════════════════
-// iPhone silhouette — delayed entrance
 tl.fromTo("#s2-iphone", { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.4, ease: "power2.out" }, 12.3);
-
-// "JAMIE" name — slow fade
-tl.fromTo("#s2-name", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1.8, ease: "sine.out" }, 12.8);
-
-// Descriptor lines
-tl.fromTo("#s2-desc1", { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: "power2.out" }, 14.8);
-
-tl.fromTo("#s2-desc2", { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: "power2.out" }, 16.0);
-
-tl.fromTo("#s2-desc3", { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 1.0, ease: "expo.out" }, 17.3);
+tl.fromTo("#s2-name",   { y: 20,  opacity: 0 }, { y: 0, opacity: 1, duration: 1.8, ease: "sine.out"   }, 12.8);
+tl.fromTo("#s2-desc1",  { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: "power2.out" }, 14.8);
+tl.fromTo("#s2-desc2",  { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: "power2.out" }, 16.0);
+tl.fromTo("#s2-desc3",  { y: 15,  opacity: 0 }, { y: 0, opacity: 1, duration: 1.0, ease: "expo.out"   }, 17.3);
 
 // ═══════════════════════════════════════════════════════════════════════
-// TRANSITION 2→3: Focus pull at t=23.0s
+// TRANSITION 2→3: Focus pull at 23.0s
 // ═══════════════════════════════════════════════════════════════════════
 var T23 = 23.0;
-tl.to("#scene2", { filter: "blur(18px)", duration: 0.6, ease: "power1.in" }, T23);
-tl.to("#scene2", { opacity: 0, duration: 0.4, ease: "power2.in" }, T23 + 0.35);
-tl.to("#scene3", { opacity: 1, duration: 0.4, ease: "power2.out" }, T23 + 0.35);
+tl.to("#s2-inner", { filter: "blur(18px)", duration: 0.6, ease: "power1.in" }, T23);
+tl.to("#s2-inner", { opacity: 0, duration: 0.4, ease: "power2.in" }, T23 + 0.35);
+tl.set("#s2-inner", { visibility: "hidden" }, T23 + 0.75);
+
+tl.set("#s3-inner", { visibility: "visible", opacity: 0 }, T23 + 0.3);
+tl.to("#s3-inner", { opacity: 1, duration: 0.4, ease: "power2.out" }, T23 + 0.35);
 
 // ═══════════════════════════════════════════════════════════════════════
-// SCENE 3 ENTRANCES: starts at 24s
+// SCENE 3 CONTENT: 24–36s
 // ═══════════════════════════════════════════════════════════════════════
-// "SO I PICKED UP MY iPHONE." — clip-path wipe
 tl.to("#s3-line1", { clipPath: "inset(0 0% 0 0)", duration: 1.0, ease: "power3.out" }, 24.2);
-
-// "AND I BUILT" — fade in
-tl.fromTo("#s3-and-i-built", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power2.out" }, 25.5);
-
-// "RHYTHMIX" — clip-path wipe, massive reveal
-tl.to("#s3-rhythmix", { clipPath: "inset(0 0% 0 0)", duration: 1.2, ease: "expo.out" }, 26.4);
-
-// Tagline fades in
-tl.fromTo("#s3-tagline", { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 1.0, ease: "sine.out" }, 27.8);
+tl.fromTo("#s3-and-i-built", { y: 20,  opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power2.out" }, 25.5);
+tl.to("#s3-rhythmix",        { clipPath: "inset(0 0% 0 0)", duration: 1.2, ease: "expo.out" },               26.4);
+tl.fromTo("#s3-tagline",     { y: 15,  opacity: 0 }, { y: 0, opacity: 1, duration: 1.0, ease: "sine.out"   }, 27.8);
 
 // ═══════════════════════════════════════════════════════════════════════
-// TRANSITION 3→4: Color dip at t=35.2s
+// TRANSITION 3→4: Color dip at 35.2s
 // ═══════════════════════════════════════════════════════════════════════
 var T34 = 35.2;
-tl.to("#scene3", { opacity: 0, duration: 0.35, ease: "power3.in" }, T34);
-tl.to("#scene4", { opacity: 1, duration: 0.35, ease: "power2.out" }, T34 + 0.3);
+tl.to("#s3-inner", { opacity: 0, duration: 0.35, ease: "power3.in" }, T34);
+tl.set("#s3-inner", { visibility: "hidden" }, T34 + 0.35);
+
+tl.set("#s4-inner", { visibility: "visible", opacity: 0 }, T34 + 0.25);
+tl.to("#s4-inner", { opacity: 1, duration: 0.35, ease: "power2.out" }, T34 + 0.3);
 
 // ═══════════════════════════════════════════════════════════════════════
-// SCENE 4 ENTRANCES: Stats, each shown for ~3s then hidden, next shown
-// Scene 4: 36–50s (14s)
-// Stats: show at 36.2, 39.2, 42.2, 45.2
-// Final "ALL FROM ONE iPHONE." at 48.2
+// SCENE 4 CONTENT: Stats 36–50s
 // ═══════════════════════════════════════════════════════════════════════
 
-// Stat 1: "22 / AI TOOLS" — 36.2 to 39.2
+// Stat 1: 36.2–39.2
 tl.set("#s4-stat1", { visibility: "visible", opacity: 1 }, 36.2);
-tl.fromTo("#s4-n1", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, 36.2);
-tl.fromTo("#s4-stat1 .stat-label", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 36.7);
+tl.fromTo("#s4-n1",              { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, 36.2);
+tl.fromTo("#s4-stat1 .stat-label", { y: 12, opacity: 0 },   { y: 0,     opacity: 1, duration: 0.5, ease: "power2.out"   }, 36.7);
 tl.set("#s4-stat1", { visibility: "hidden" }, 39.2);
 
-// Stat 2: "120+ / PLATFORMS" — 39.2 to 42.2
+// Stat 2: 39.2–42.2
 tl.set("#s4-stat2", { visibility: "visible", opacity: 1 }, 39.2);
-tl.fromTo("#s4-n2", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, 39.2);
-tl.fromTo("#s4-stat2 .stat-label", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 39.7);
+tl.fromTo("#s4-n2",              { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, 39.2);
+tl.fromTo("#s4-stat2 .stat-label", { y: 12, opacity: 0 },   { y: 0,     opacity: 1, duration: 0.5, ease: "power2.out"   }, 39.7);
 tl.set("#s4-stat2", { visibility: "hidden" }, 42.2);
 
-// Stat 3: "3D / VIRTUAL PERFORMANCE VENUES" — 42.2 to 45.2
+// Stat 3: 42.2–45.2
 tl.set("#s4-stat3", { visibility: "visible", opacity: 1 }, 42.2);
-tl.fromTo("#s4-n3", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, 42.2);
-tl.fromTo("#s4-stat3 .stat-label", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 42.7);
+tl.fromTo("#s4-n3",              { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, 42.2);
+tl.fromTo("#s4-stat3 .stat-label", { y: 12, opacity: 0 },   { y: 0,     opacity: 1, duration: 0.5, ease: "power2.out"   }, 42.7);
 tl.set("#s4-stat3", { visibility: "hidden" }, 45.2);
 
-// Stat 4: "100% / EVERY DOLLAR" — 45.2 to 48.2
+// Stat 4: 45.2–48.2
 tl.set("#s4-stat4", { visibility: "visible", opacity: 1 }, 45.2);
-tl.fromTo("#s4-n4", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, 45.2);
-tl.fromTo("#s4-stat4 .stat-label", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 45.7);
+tl.fromTo("#s4-n4",              { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, 45.2);
+tl.fromTo("#s4-stat4 .stat-label", { y: 12, opacity: 0 },   { y: 0,     opacity: 1, duration: 0.5, ease: "power2.out"   }, 45.7);
 tl.set("#s4-stat4", { visibility: "hidden" }, 48.2);
 
-// Final line "ALL FROM ONE iPHONE."
+// Final line
 tl.fromTo("#s4-final", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 48.2);
 
 // ═══════════════════════════════════════════════════════════════════════
-// TRANSITION 4→5: Zoom through at t=49.3s
+// TRANSITION 4→5: Zoom through at 49.3s
 // ═══════════════════════════════════════════════════════════════════════
 var T45 = 49.3;
-tl.to("#scene4", { scale: 1.08, opacity: 0, duration: 0.5, ease: "power3.in" }, T45);
-tl.to("#scene5", { scale: 1, opacity: 1, duration: 0.6, ease: "power2.out" }, T45 + 0.2);
+tl.to("#s4-inner", { scale: 1.08, opacity: 0, duration: 0.5, ease: "power3.in" }, T45);
+tl.set("#s4-inner", { visibility: "hidden" }, T45 + 0.5);
+
+tl.set("#s5-inner", { visibility: "visible", opacity: 0, scale: 1.06 }, T45 + 0.15);
+tl.to("#s5-inner", { scale: 1, opacity: 1, duration: 0.6, ease: "power2.out" }, T45 + 0.2);
 
 // ═══════════════════════════════════════════════════════════════════════
-// SCENE 5 ENTRANCES: CTA, 50–60s
+// SCENE 5 CONTENT: CTA 50–60s
 // ═══════════════════════════════════════════════════════════════════════
-// URL — clip-path wipe
-tl.to("#s5-url", { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "expo.out" }, 50.3);
-
-// Price
+tl.to("#s5-url",       { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "expo.out" },              50.3);
 tl.fromTo("#s5-price", { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power2.out" }, 51.3);
 
-// "ONE PERSON."
-tl.fromTo("#s5-one-person", { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 52.6);
+tl.fromTo("#s5-one-person",   { y: 15, opacity: 0 }, { y: 0,   opacity: 1, duration: 0.7, ease: "power3.out"    }, 52.6);
+tl.to("#s5-changed-music",    { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "expo.out" },                      53.5);
+tl.fromTo("#s5-tonight",      { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.7, ease: "back.out(1.4)" }, 54.6);
 
-// "CHANGED MUSIC." — clip-path wipe
-tl.to("#s5-changed-music", { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "expo.out" }, 53.5);
-
-// "TONIGHT." — scale in
-tl.fromTo("#s5-tonight", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.7, ease: "back.out(1.4)" }, 54.6);
-
-// ─── FINAL FADE TO BLACK (scene 5 exit) ───────────────────────────────
-tl.to("#scene5", { opacity: 0, duration: 1.2, ease: "power2.inOut" }, 58.5);
+// Final fade to black
+tl.to("#s5-inner", { opacity: 0, duration: 1.2, ease: "power2.inOut" }, 58.5);
+tl.set("#s5-inner", { visibility: "hidden" }, 60.0);
 
 // ═══════════════════════════════════════════════════════════════════════
-// CAPTIONS — timed to narration
-// Each group: visibility→visible, opacity fade in, opacity fade out, set kill
+// CAPTIONS — synced to narration (45.7s total)
 // ═══════════════════════════════════════════════════════════════════════
 var GROUPS = [
   { id: "cg-0",  start: 0.2,  end: 2.8  },
