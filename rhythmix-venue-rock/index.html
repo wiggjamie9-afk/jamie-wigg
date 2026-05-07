@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000;
+        font-family: "Anton", "Impact", "Arial Black", sans-serif;
+        color: #fff;
+      }
+
+      /* ====== ROOT COMPOSITION ====== */
+      #root {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+      }
+
+      /* ====== SHARED STAGE BACKDROP ====== */
+      .stage-bg {
+        position: absolute;
+        inset: 0;
+        background: #000;
+      }
+
+      /* Stage floor — perspective dark wooden planks */
+      .stage-floor {
+        position: absolute;
+        bottom: 0;
+        left: -10%;
+        width: 120%;
+        height: 540px;
+        background: repeating-linear-gradient(
+          180deg,
+          #1a1008 0px,
+          #1a1008 14px,
+          #120d05 14px,
+          #120d05 28px
+        );
+        transform: perspective(800px) rotateX(28deg);
+        transform-origin: bottom center;
+      }
+
+      /* Haze/fog at floor level */
+      .stage-haze {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 1080px;
+        height: 340px;
+        background: radial-gradient(
+          ellipse 900px 220px at 50% 100%,
+          rgba(255, 255, 255, 0.12) 0%,
+          rgba(255, 255, 255, 0.05) 45%,
+          transparent 75%
+        );
+        pointer-events: none;
+      }
+
+      /* Speaker stacks — left and right */
+      .speaker {
+        position: absolute;
+        bottom: 220px;
+        width: 155px;
+        height: 520px;
+        background: #111;
+        border: 1px solid #1c1c1c;
+      }
+      .speaker-left { left: 0; }
+      .speaker-right { right: 0; }
+
+      /* Horizontal speaker slot lines */
+      .speaker::before {
+        content: "";
+        position: absolute;
+        inset: 20px 16px;
+        background: repeating-linear-gradient(
+          180deg,
+          #0a0a0a 0px,
+          #0a0a0a 6px,
+          #1a1a1a 6px,
+          #1a1a1a 12px
+        );
+        border-radius: 2px;
+      }
+
+      /* ====== LIGHT BEAMS ====== */
+      .beams-container {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .beam {
+        position: absolute;
+        bottom: 200px;
+        width: 0;
+        border-left: none;
+        transform-origin: bottom center;
+        opacity: 0;
+      }
+
+      /* Each beam is a tall narrow clip-path polygon */
+      .beam-1 {
+        left: 50%;
+        margin-left: -8px;
+        width: 16px;
+        height: 1400px;
+        background: linear-gradient(to top, rgba(255,240,180,0.55), rgba(255,255,255,0.08), transparent);
+        clip-path: polygon(4px 100%, 0px 0%, 16px 0%, 12px 100%);
+        filter: blur(3px);
+      }
+      .beam-2 {
+        left: 50%;
+        margin-left: -260px;
+        width: 12px;
+        height: 1350px;
+        background: linear-gradient(to top, rgba(255,200,100,0.4), rgba(255,255,255,0.06), transparent);
+        clip-path: polygon(2px 100%, 0px 0%, 12px 0%, 10px 100%);
+        filter: blur(4px);
+        transform: rotate(-8deg);
+      }
+      .beam-3 {
+        left: 50%;
+        margin-left: 240px;
+        width: 12px;
+        height: 1350px;
+        background: linear-gradient(to top, rgba(255,200,100,0.4), rgba(255,255,255,0.06), transparent);
+        clip-path: polygon(2px 100%, 0px 0%, 12px 0%, 10px 100%);
+        filter: blur(4px);
+        transform: rotate(8deg);
+      }
+
+      /* ====== CROWD SILHOUETTE ====== */
+      .crowd {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 1080px;
+        height: 200px;
+        background: #0a0a0a;
+        clip-path: polygon(
+          0% 100%, 0% 70%,
+          2% 55%, 4% 70%, 6% 48%, 8% 60%, 10% 42%,
+          12% 58%, 14% 38%, 16% 55%, 18% 35%,
+          20% 52%, 22% 32%, 24% 50%, 26% 30%,
+          28% 48%, 30% 28%, 32% 46%, 34% 26%,
+          36% 44%, 38% 25%, 40% 46%, 42% 30%,
+          44% 48%, 46% 28%, 48% 46%, 50% 25%,
+          52% 44%, 54% 28%, 56% 46%, 58% 30%,
+          60% 48%, 62% 26%, 64% 44%, 66% 25%,
+          68% 46%, 70% 30%, 72% 50%, 74% 34%,
+          76% 52%, 78% 36%, 80% 55%, 82% 38%,
+          84% 58%, 86% 42%, 88% 60%, 90% 44%,
+          92% 62%, 94% 48%, 96% 65%, 98% 52%,
+          100% 68%, 100% 100%
+        );
+      }
+
+      /* ====== PYRO PARTICLES ====== */
+      .pyro-container {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .particle {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0;
+      }
+
+      /* ====== FLASH OVERLAY (transition) ====== */
+      #flash-overlay {
+        position: absolute;
+        inset: 0;
+        background: #fff;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 100;
+      }
+
+      /* ====== SCENES ====== */
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+      }
+
+      /* Scene 1 — stage power-up */
+      #scene1 { z-index: 1; opacity: 1; }
+
+      /* Scene 2 — main copy */
+      #scene2 { z-index: 2; opacity: 0; }
+
+      /* Scene 3 — brand + CTA */
+      #scene3 { z-index: 3; opacity: 0; }
+
+      /* Scene 4 — final fade */
+      #scene4 { z-index: 4; opacity: 0; }
+
+      /* ====== SCENE CONTENT ====== */
+      .scene-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: 120px 80px;
+        gap: 32px;
+        box-sizing: border-box;
+      }
+
+      /* S1 elements */
+      #s1-powering {
+        font-family: "Bebas Neue", "Anton", "Impact", sans-serif;
+        font-size: 44px;
+        letter-spacing: 18px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.55);
+        align-self: center;
+        margin-top: 600px;
+      }
+
+      /* S2 elements */
+      #s2-headline {
+        font-family: "Anton", "Impact", "Arial Black", sans-serif;
+        font-size: 100px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        line-height: 0.95;
+        color: #ffffff;
+        /* clip-path wipe — starts clipped, revealed left-to-right */
+        clip-path: inset(0 100% 0 0);
+      }
+      #s2-sub {
+        font-family: "Bebas Neue", "Anton", "Impact", sans-serif;
+        font-size: 55px;
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 6px;
+        color: #f5c000;
+        clip-path: inset(0 100% 0 0);
+      }
+      .s2-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        width: 100%;
+        height: 100%;
+        padding: 0 80px 480px 80px;
+        gap: 28px;
+        box-sizing: border-box;
+      }
+
+      /* S3 elements */
+      #s3-brand {
+        font-family: "Anton", "Impact", "Arial Black", sans-serif;
+        font-size: 140px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 8px;
+        color: #ffffff;
+        clip-path: inset(0 100% 0 0);
+        line-height: 1;
+      }
+      #s3-tagline {
+        font-family: "Bebas Neue", "Anton", sans-serif;
+        font-size: 30px;
+        letter-spacing: 10px;
+        text-transform: uppercase;
+        color: #e040fb;
+      }
+      #s3-cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5c000;
+        color: #000;
+        font-family: "Bebas Neue", "Anton", sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        letter-spacing: 6px;
+        text-transform: uppercase;
+        padding: 22px 60px;
+        border-radius: 60px;
+        align-self: flex-start;
+        opacity: 0;
+      }
+      .s3-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        width: 100%;
+        height: 100%;
+        padding: 0 80px 420px 80px;
+        gap: 30px;
+        box-sizing: border-box;
+      }
+
+      /* S4 final */
+      #s4-logo {
+        font-family: "Anton", "Impact", "Arial Black", sans-serif;
+        font-size: 120px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 10px;
+        color: #ffffff;
+        align-self: center;
+        text-align: center;
+        margin-top: 700px;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ROOT COMPOSITION -->
+    <div
+      id="root"
+      data-composition-id="rhythmix-venue-rock"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- AUDIO NARRATION -->
+      <audio
+        id="narration"
+        class="clip"
+        data-start="0"
+        data-duration="13.7"
+        data-track-index="0"
+        src="narration.wav"
+        data-volume="1"
+      ></audio>
+
+      <!-- ====== ALWAYS-ON STAGE LAYER ====== -->
+      <div class="stage-bg"></div>
+      <div class="stage-floor"></div>
+      <div class="stage-haze"></div>
+
+      <!-- Speaker stacks -->
+      <div class="speaker speaker-left"></div>
+      <div class="speaker speaker-right"></div>
+
+      <!-- Light beams -->
+      <div class="beams-container">
+        <div class="beam beam-1" id="beam1"></div>
+        <div class="beam beam-2" id="beam2"></div>
+        <div class="beam beam-3" id="beam3"></div>
+      </div>
+
+      <!-- Pyro particles -->
+      <div class="pyro-container" id="pyro-container"></div>
+
+      <!-- Crowd silhouette -->
+      <div class="crowd"></div>
+
+      <!-- Transition flash overlay -->
+      <div id="flash-overlay"></div>
+
+      <!-- ====== SCENE 1 — Stage power up ====== -->
+      <div id="scene1" class="scene">
+        <div class="scene-content" style="justify-content: flex-end; padding-bottom: 500px;">
+          <div id="s1-powering">LOADING THE STAGE...</div>
+        </div>
+      </div>
+
+      <!-- ====== SCENE 2 — Main copy ====== -->
+      <div id="scene2" class="scene">
+        <div class="s2-content">
+          <div id="s2-headline">STADIUM<br>SOUND.</div>
+          <div id="s2-sub">FROM YOUR BEDROOM.</div>
+        </div>
+      </div>
+
+      <!-- ====== SCENE 3 — Brand + CTA ====== -->
+      <div id="scene3" class="scene">
+        <div class="s3-content">
+          <div id="s3-brand">RHYTHMIX</div>
+          <div id="s3-tagline">ROCK YOUR WORLD.</div>
+          <div id="s3-cta">GET STARTED FREE</div>
+        </div>
+      </div>
+
+      <!-- ====== SCENE 4 — Final fade ====== -->
+      <div id="scene4" class="scene">
+        <div id="s4-logo">RHYTHMIX</div>
+      </div>
+    </div>
+
+    <script>
+      // ====== MULBERRY32 SEEDED PRNG (seed=7) ======
+      function mulberry32(a) {
+        return function() {
+          a |= 0; a = a + 0x6D2B79F5 | 0;
+          var t = Math.imul(a ^ a >>> 15, 1 | a);
+          t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+      }
+      var rand = mulberry32(7);
+
+      // ====== PYRO PARTICLES ======
+      var pyroContainer = document.getElementById("pyro-container");
+      var pyroColors = ["#ff6600", "#ff3300", "#f5c000", "#ff8800", "#ff2200"];
+      var particles = [];
+      var PARTICLE_COUNT = 35;
+
+      for (var i = 0; i < PARTICLE_COUNT; i++) {
+        var p = document.createElement("div");
+        p.className = "particle";
+        var size = 4 + rand() * 8;
+        p.style.width = size + "px";
+        p.style.height = size + "px";
+        p.style.background = pyroColors[Math.floor(rand() * pyroColors.length)];
+
+        // Left or right cluster (bottom corners)
+        var side = i < 18 ? "left" : "right";
+        var baseX = side === "left" ? (20 + rand() * 180) : (880 + rand() * 180);
+        var baseY = 1700 + rand() * 160;
+        p.style.left = baseX + "px";
+        p.style.top = baseY + "px";
+        p.style.boxShadow = "0 0 6px 2px " + p.style.background;
+
+        pyroContainer.appendChild(p);
+        particles.push({
+          el: p,
+          targetX: baseX + (rand() - 0.5) * 280,
+          targetY: baseY - (400 + rand() * 700),
+          duration: 0.6 + rand() * 0.8,
+          delay: rand() * 0.5,
+          side: side
+        });
+      }
+
+      // ====== TIMELINE ======
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      // === S1 (0–2s): Stage lights power up ===
+      tl.from("#s1-powering", { opacity: 0, y: 20, duration: 0.6, ease: "power2.out" }, 0.2);
+
+      // Beams fade in from 0 opacity
+      tl.to("#beam1", { opacity: 0.35, duration: 1.2, ease: "power2.out" }, 0.3);
+      tl.to("#beam2", { opacity: 0.25, duration: 1.0, ease: "power1.out" }, 0.5);
+      tl.to("#beam3", { opacity: 0.25, duration: 1.0, ease: "power1.out" }, 0.6);
+
+      // === TRANSITION S1 → S2: Overexposure flash at t=2 ===
+      tl.to("#flash-overlay", { opacity: 0.6, duration: 0.18, ease: "power2.in" }, 1.75);
+      tl.to("#flash-overlay", { opacity: 1, duration: 0.12, ease: "power2.in" }, 1.93);
+      tl.set("#scene2", { opacity: 1 }, 2.05);
+      tl.set("#scene1", { opacity: 0 }, 2.05);
+      tl.set("#scene1", { visibility: "hidden" }, 2.5);
+      tl.to("#flash-overlay", { opacity: 0, duration: 0.4, ease: "power2.out" }, 2.05);
+
+      // === S2 (2–18s): Clip-path wipes and pyro ===
+      // Headline clip-path wipe — white text
+      tl.to("#s2-headline", {
+        clipPath: "inset(0 0% 0 0)",
+        duration: 0.9,
+        ease: "power3.out"
+      }, 2.4);
+
+      // Subhead clip-path wipe — gold
+      tl.to("#s2-sub", {
+        clipPath: "inset(0 0% 0 0)",
+        duration: 0.7,
+        ease: "expo.out"
+      }, 3.1);
+
+      // Activate pyro particles — staggered launches
+      var pyroStart = 2.5;
+      for (var j = 0; j < particles.length; j++) {
+        var pd = particles[j];
+        var cycleDuration = pd.duration;
+        var totalTime = 15.5; // pyro runs from t=2.5 to t=18
+        var repeatCount = Math.floor(totalTime / cycleDuration) - 1;
+        tl.fromTo(pd.el,
+          { x: 0, y: 0, opacity: 0 },
+          {
+            x: pd.targetX - parseFloat(pd.el.style.left),
+            y: pd.targetY - parseFloat(pd.el.style.top),
+            opacity: 0.9,
+            duration: cycleDuration * 0.5,
+            ease: "power2.out",
+            repeat: repeatCount,
+            yoyo: false,
+            repeatDelay: 0.15 + rand() * 0.3
+          },
+          pyroStart + pd.delay
+        );
+      }
+
+      // Dim pyro at end of S2
+      tl.to(pyroContainer, { opacity: 0, duration: 0.5, ease: "power2.in" }, 17.5);
+
+      // === TRANSITION S2 → S3: Blur crossfade at t=18 ===
+      tl.to("#scene2", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.5, ease: "power2.inOut" }, 18.0);
+      tl.set("#scene2", { visibility: "hidden" }, 18.6);
+      tl.fromTo("#scene3",
+        { opacity: 0, filter: "blur(10px)", scale: 0.97 },
+        { opacity: 1, filter: "blur(0px)", scale: 1, duration: 0.5, ease: "power2.inOut" },
+        18.1
+      );
+
+      // === S3 (18–28s): Brand + CTA ===
+      // RHYTHMIX brand clip-path wipe
+      tl.to("#s3-brand", {
+        clipPath: "inset(0 0% 0 0)",
+        duration: 1.0,
+        ease: "power3.out"
+      }, 18.6);
+
+      // Tagline entrance — slide up from below
+      tl.from("#s3-tagline", { y: 40, opacity: 0, duration: 0.6, ease: "expo.out" }, 19.4);
+
+      // CTA pill entrance — scale + fade (fromTo avoids property overlap)
+      tl.fromTo("#s3-cta",
+        { opacity: 0, scale: 0.85 },
+        { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.7)" },
+        20.0
+      );
+
+      // Subtle pulse on CTA
+      tl.to("#s3-cta", { scale: 1.04, duration: 0.35, ease: "sine.inOut", repeat: Math.floor(8 / 0.7) - 1, yoyo: true }, 20.6);
+
+      // === TRANSITION S3 → S4: Crossfade at t=28 ===
+      tl.to("#scene3", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 28.0);
+      tl.set("#scene3", { visibility: "hidden" }, 28.6);
+      tl.fromTo("#scene4",
+        { opacity: 0 },
+        { opacity: 1, duration: 0.5, ease: "power2.inOut" },
+        28.0
+      );
+
+      // === S4 (28–30s): Final fade ===
+      tl.to("#s4-logo", { opacity: 1, duration: 0.4, ease: "power2.out" }, 28.3);
+      // Fade everything to black
+      tl.to("#root", { opacity: 0, duration: 0.8, ease: "power2.in" }, 29.2);
+      tl.set("#scene4", { visibility: "hidden" }, 30.0);
+
+      window.__timelines["rhythmix-venue-rock"] = tl;
+    </script>
+  </body>
+</html>

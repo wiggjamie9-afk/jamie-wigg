@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000000;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        color: #ffffff;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000000;
+      }
+      #scene2 { opacity: 0; z-index: 2; }
+      #scene3 { opacity: 0; z-index: 3; }
+      #scene4 { opacity: 0; z-index: 4; background: #000000; }
+
+      /* Laser grid */
+      .laser-grid {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+        opacity: 0;
+        transform-origin: center center;
+      }
+      .laser-line-h {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        height: 1px;
+        background: rgba(124,58,237,0.6);
+      }
+      .laser-line-v {
+        position: absolute;
+        top: 0;
+        height: 1920px;
+        width: 1px;
+        background: rgba(124,58,237,0.6);
+      }
+
+      /* UV neon floor band */
+      .uv-floor {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 1080px;
+        height: 300px;
+        background: radial-gradient(ellipse 900px 260px at 50% 100%,
+          rgba(124,58,237,0.45) 0%,
+          rgba(80,20,180,0.2) 40%,
+          rgba(0,0,0,0) 75%);
+        z-index: 2;
+        pointer-events: none;
+      }
+
+      /* Concrete texture (subtle) */
+      .concrete-tex {
+        position: absolute;
+        inset: 0;
+        background-image:
+          repeating-linear-gradient(
+            -45deg,
+            rgba(255,255,255,0.012) 0px,
+            rgba(255,255,255,0.012) 1px,
+            rgba(0,0,0,0) 1px,
+            rgba(0,0,0,0) 6px
+          );
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      /* Particles container */
+      .particles-wrap {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+      }
+      .particle {
+        position: absolute;
+        border-radius: 50%;
+      }
+
+      /* Strobe overlay */
+      .strobe {
+        position: absolute;
+        inset: 0;
+        background: #ffffff;
+        opacity: 0;
+        z-index: 8;
+        pointer-events: none;
+      }
+
+      /* Scene 2 text */
+      #s2-content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 500px 80px 0;
+        gap: 32px;
+        box-sizing: border-box;
+        z-index: 10;
+      }
+      #s2-drop {
+        font-size: 110px;
+        font-weight: 900;
+        color: #ff00ff;
+        letter-spacing: -2px;
+        text-align: center;
+        clip-path: inset(0 100% 0 0);
+        line-height: 1;
+      }
+      #s2-feel {
+        font-size: 50px;
+        font-weight: 700;
+        color: #7c3aed;
+        letter-spacing: 3px;
+        text-align: center;
+        clip-path: inset(0 100% 0 0);
+        line-height: 1;
+      }
+
+      /* Scene 3 text */
+      #s3-content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 0 80px;
+        gap: 36px;
+        box-sizing: border-box;
+        z-index: 10;
+      }
+      #s3-brand {
+        font-size: 140px;
+        font-weight: 900;
+        color: #ffffff;
+        letter-spacing: -4px;
+        text-align: center;
+        clip-path: inset(0 100% 0 0);
+        line-height: 0.9;
+      }
+      #s3-sub {
+        font-size: 28px;
+        font-weight: 600;
+        color: #00d8ff;
+        letter-spacing: 4px;
+        text-align: center;
+        text-transform: uppercase;
+        clip-path: inset(0 100% 0 0);
+        max-width: 900px;
+      }
+      #s3-cta {
+        background: linear-gradient(135deg, #f5c000, #ffd84d);
+        color: #000000;
+        font-size: 32px;
+        font-weight: 800;
+        padding: 24px 64px;
+        border-radius: 60px;
+        letter-spacing: 1px;
+        text-align: center;
+        opacity: 0;
+      }
+      #s3-cyan-glow {
+        position: absolute;
+        top: 700px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 700px;
+        height: 300px;
+        background: radial-gradient(ellipse, rgba(0,216,255,0.1) 0%, rgba(0,0,0,0) 70%);
+        z-index: 6;
+        pointer-events: none;
+      }
+
+      /* Captions */
+      #captions {
+        position: absolute;
+        bottom: 620px;
+        left: 0;
+        width: 1080px;
+        text-align: center;
+        z-index: 50;
+        pointer-events: none;
+      }
+      .cap-group {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        text-align: center;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-size: 50px;
+        font-weight: 800;
+        color: #ffffff;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.95), 0 0 30px rgba(124,58,237,0.5);
+        letter-spacing: 1px;
+        line-height: 1.2;
+        visibility: hidden;
+        padding: 0 60px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="rhythmix-venue-rave"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- AUDIO -->
+      <audio
+        id="narration"
+        class="clip"
+        data-start="0"
+        data-duration="30"
+        data-track-index="2"
+        src="narration.wav"
+        data-volume="1"
+      ></audio>
+
+      <!-- SCENE 1: darkness + laser grid fade in (0-2s) -->
+      <div id="scene1" class="scene clip" data-start="0" data-duration="2" data-track-index="0">
+        <div class="concrete-tex"></div>
+        <div class="uv-floor"></div>
+        <div class="laser-grid" id="s1-grid">
+          <!-- 8 horizontal lines -->
+          <div class="laser-line-h" style="top:240px;"></div>
+          <div class="laser-line-h" style="top:480px;"></div>
+          <div class="laser-line-h" style="top:720px;"></div>
+          <div class="laser-line-h" style="top:960px;"></div>
+          <div class="laser-line-h" style="top:1200px;"></div>
+          <div class="laser-line-h" style="top:1440px;"></div>
+          <div class="laser-line-h" style="top:1680px;"></div>
+          <div class="laser-line-h" style="top:1920px;"></div>
+          <!-- 8 vertical lines -->
+          <div class="laser-line-v" style="left:135px;"></div>
+          <div class="laser-line-v" style="left:270px;"></div>
+          <div class="laser-line-v" style="left:405px;"></div>
+          <div class="laser-line-v" style="left:540px;"></div>
+          <div class="laser-line-v" style="left:675px;"></div>
+          <div class="laser-line-v" style="left:810px;"></div>
+          <div class="laser-line-v" style="left:945px;"></div>
+          <div class="laser-line-v" style="left:1080px;"></div>
+        </div>
+        <div class="strobe" id="s1-strobe"></div>
+      </div>
+
+      <!-- SCENE 2: DROP THE BASS / FEEL EVERY BEAT (2-18s) -->
+      <div id="scene2" class="scene clip" data-start="2" data-duration="16" data-track-index="0">
+        <div class="concrete-tex"></div>
+        <div class="uv-floor"></div>
+        <div class="laser-grid" id="s2-grid">
+          <div class="laser-line-h" style="top:240px;"></div>
+          <div class="laser-line-h" style="top:480px;"></div>
+          <div class="laser-line-h" style="top:720px;"></div>
+          <div class="laser-line-h" style="top:960px;"></div>
+          <div class="laser-line-h" style="top:1200px;"></div>
+          <div class="laser-line-h" style="top:1440px;"></div>
+          <div class="laser-line-h" style="top:1680px;"></div>
+          <div class="laser-line-h" style="top:1920px;"></div>
+          <div class="laser-line-v" style="left:135px;"></div>
+          <div class="laser-line-v" style="left:270px;"></div>
+          <div class="laser-line-v" style="left:405px;"></div>
+          <div class="laser-line-v" style="left:540px;"></div>
+          <div class="laser-line-v" style="left:675px;"></div>
+          <div class="laser-line-v" style="left:810px;"></div>
+          <div class="laser-line-v" style="left:945px;"></div>
+          <div class="laser-line-v" style="left:1080px;"></div>
+        </div>
+        <div class="particles-wrap" id="s2-particles"></div>
+        <div class="strobe" id="s2-strobe"></div>
+        <div id="s2-content">
+          <div id="s2-drop">DROP THE BASS.</div>
+          <div id="s2-feel">FEEL EVERY BEAT.</div>
+        </div>
+      </div>
+
+      <!-- SCENE 3: RHYTHMIX + CTA (18-28s) -->
+      <div id="scene3" class="scene clip" data-start="18" data-duration="10" data-track-index="0">
+        <div class="concrete-tex"></div>
+        <div class="uv-floor"></div>
+        <div class="laser-grid" id="s3-grid">
+          <div class="laser-line-h" style="top:240px;"></div>
+          <div class="laser-line-h" style="top:480px;"></div>
+          <div class="laser-line-h" style="top:720px;"></div>
+          <div class="laser-line-h" style="top:960px;"></div>
+          <div class="laser-line-h" style="top:1200px;"></div>
+          <div class="laser-line-h" style="top:1440px;"></div>
+          <div class="laser-line-h" style="top:1680px;"></div>
+          <div class="laser-line-h" style="top:1920px;"></div>
+          <div class="laser-line-v" style="left:135px;"></div>
+          <div class="laser-line-v" style="left:270px;"></div>
+          <div class="laser-line-v" style="left:405px;"></div>
+          <div class="laser-line-v" style="left:540px;"></div>
+          <div class="laser-line-v" style="left:675px;"></div>
+          <div class="laser-line-v" style="left:810px;"></div>
+          <div class="laser-line-v" style="left:945px;"></div>
+          <div class="laser-line-v" style="left:1080px;"></div>
+        </div>
+        <div class="particles-wrap" id="s3-particles"></div>
+        <div id="s3-cyan-glow"></div>
+        <div id="s3-content">
+          <div id="s3-brand">RHYTHMIX</div>
+          <div id="s3-sub">UNDERGROUND. UNLIMITED.</div>
+          <div id="s3-cta">rhythmixapp.com.au</div>
+        </div>
+      </div>
+
+      <!-- SCENE 4: fade to black (28-30s) -->
+      <div id="scene4" class="scene clip" data-start="28" data-duration="2" data-track-index="0">
+      </div>
+
+      <!-- CAPTIONS -->
+      <div id="captions">
+        <div class="cap-group" id="cg-0">Underground. Unfiltered. Unstoppable.</div>
+        <div class="cap-group" id="cg-1">RHYTHMIX generates bass-heavy tracks</div>
+        <div class="cap-group" id="cg-2">built for the dance floor.</div>
+        <div class="cap-group" id="cg-3">Your music. Your rave. Your rules.</div>
+        <div class="cap-group" id="cg-4">$149. One time.</div>
+        <div class="cap-group" id="cg-5">Own it forever.</div>
+      </div>
+    </div>
+
+    <script>
+    (function() {
+      /* mulberry32 PRNG */
+      function mulberry32(seed) {
+        return function() {
+          seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+          var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+          t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+      }
+
+      /* Build floating particles */
+      function buildParticles(containerId, seed) {
+        var rng = mulberry32(seed);
+        var wrap = document.getElementById(containerId);
+        if (!wrap) return [];
+        var els = [];
+        var colors = ['#00d8ff','#ff00ff','#7c3aed','#00d8ff','#ff00ff'];
+        for (var i = 0; i < 35; i++) {
+          var size = 3 + rng() * 7;
+          var x = rng() * 1080;
+          var y = 400 + rng() * 1400;
+          var col = colors[Math.floor(rng() * colors.length)];
+          var p = document.createElement('div');
+          p.className = 'particle';
+          p.style.cssText = 'width:' + size.toFixed(1) + 'px;height:' + size.toFixed(1) + 'px;left:' + x.toFixed(1) + 'px;top:' + y.toFixed(1) + 'px;background:' + col + ';box-shadow:0 0 8px 3px ' + col + ';opacity:0;';
+          wrap.appendChild(p);
+          els.push({ el: p, startY: y, travelY: 120 + rng() * 200 });
+        }
+        return els;
+      }
+
+      var p2data = buildParticles('s2-particles', 99);
+      var p3data = buildParticles('s3-particles', 99);
+      var p2els = p2data.map(function(d) { return d.el; });
+      var p3els = p3data.map(function(d) { return d.el; });
+
+      /* Caption groups — narration is 14.0s */
+      var GROUPS = [
+        { text: "Underground. Unfiltered. Unstoppable.", start: 0.3,  end: 2.4  },
+        { text: "RHYTHMIX generates bass-heavy tracks",  start: 2.5,  end: 5.0  },
+        { text: "built for the dance floor.",            start: 5.1,  end: 6.8  },
+        { text: "Your music. Your rave. Your rules.",    start: 6.9,  end: 9.4  },
+        { text: "$149. One time.",                       start: 9.5,  end: 11.5 },
+        { text: "Own it forever.",                       start: 11.6, end: 13.9 }
+      ];
+
+      /* Timeline */
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      /* ── SCENE 1 entrances: laser grid fades in (0-2s) ── */
+      tl.to('#s1-grid', { opacity: 0.6, duration: 1.4, ease: 'power2.out' }, 0.2);
+      /* subtle grid rotate */
+      tl.to('#s1-grid', { rotation: 2, duration: 4, ease: 'sine.inOut', yoyo: true, repeat: 3 }, 0.5);
+      /* strobe flashes: opacity 0 -> 0.06 -> 0 every 2s, epilepsy safe */
+      tl.to('#s1-strobe', { opacity: 0.06, duration: 0.06, ease: 'none', yoyo: true, repeat: 1 }, 0.5);
+      tl.to('#s1-strobe', { opacity: 0.06, duration: 0.06, ease: 'none', yoyo: true, repeat: 1 }, 1.5);
+
+      /* ── TRANSITION S1→S2: glitch flash ── */
+      tl.to('#scene1', { opacity: 0, filter: 'brightness(0.2)', duration: 0.3, ease: 'power3.in' }, 1.7);
+      tl.set('#scene1', { opacity: 0 }, 2.00);
+      tl.set('#scene2', { opacity: 1 }, 1.9);
+      tl.from('#scene2', { filter: 'brightness(2)', duration: 0.3, ease: 'power2.out' }, 1.9);
+
+      /* ── SCENE 2 entrances (base t=2s) ── */
+      var s2 = 2.0;
+      tl.to('#s2-grid', { opacity: 0.6, duration: 0.4, ease: 'power2.out' }, s2 + 0.1);
+      /* grid slow rotate yoyo */
+      tl.to('#s2-grid', { rotation: 2, duration: 4, ease: 'sine.inOut', yoyo: true,
+        repeat: Math.floor(16 / 8) - 1 }, s2 + 0.2);
+      /* strobe pulses every 2s */
+      var strobeStarts2 = [s2+0.5, s2+2.5, s2+4.5, s2+6.5, s2+8.5, s2+10.5, s2+12.5, s2+14.5];
+      strobeStarts2.forEach(function(t) {
+        tl.to('#s2-strobe', { opacity: 0.06, duration: 0.06, ease: 'none', yoyo: true, repeat: 1 }, t);
+      });
+      /* particles float up */
+      p2data.forEach(function(d, i) {
+        tl.to(d.el, { opacity: 0.7, duration: 0.6, ease: 'power2.out' }, s2 + 0.1 + i * 0.015);
+        tl.to(d.el, { y: '-=' + d.travelY, duration: 8 + (i % 4) * 2, ease: 'none',
+          repeat: Math.floor(16 / 10) - 1 }, s2 + 0.1 + i * 0.015);
+      });
+      /* clip-path text wipes */
+      tl.to('#s2-drop', { clipPath: 'inset(0 0% 0 0)', duration: 0.7, ease: 'expo.out'   }, s2 + 0.5);
+      tl.to('#s2-feel', { clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'power3.out' }, s2 + 0.9);
+
+      /* ── TRANSITION S2→S3: chromatic flash ── */
+      var t23 = 18;
+      tl.to('#scene2', { scale: 1.06, opacity: 0, duration: 0.35, ease: 'power4.in' }, t23 - 0.25);
+      tl.set('#scene2', { opacity: 0 }, t23 + 0.05);
+      tl.set('#scene3', { opacity: 1 }, t23 + 0.05);
+
+      /* ── SCENE 3 entrances (base t=18.1s) ── */
+      var s3 = 18.1;
+      tl.to('#s3-grid', { opacity: 0.6, duration: 0.4, ease: 'power2.out' }, s3 + 0.1);
+      tl.to('#s3-grid', { rotation: 2, duration: 4, ease: 'sine.inOut', yoyo: true,
+        repeat: Math.floor(10 / 8) - 1 }, s3 + 0.2);
+      /* strobe pulses scene 3 */
+      var strobeStarts3 = [s3+0.5, s3+2.5, s3+4.5, s3+6.5, s3+8.5];
+      strobeStarts3.forEach(function(t) {
+        tl.to('#s3-strobe-NA', { opacity: 0 }, t); /* no strobe in s3 — cleaner climax */
+      });
+      /* particles float up in s3 */
+      p3data.forEach(function(d, i) {
+        tl.to(d.el, { opacity: 0.7, duration: 0.5, ease: 'power2.out' }, s3 + 0.1 + i * 0.015);
+        tl.to(d.el, { y: '-=' + d.travelY, duration: 8, ease: 'none',
+          repeat: Math.floor(10 / 8) - 1 }, s3 + 0.1 + i * 0.015);
+      });
+      /* brand wipe */
+      tl.to('#s3-brand', { clipPath: 'inset(0 0% 0 0)', duration: 0.8, ease: 'expo.out'   }, s3 + 0.3);
+      tl.to('#s3-sub',   { clipPath: 'inset(0 0% 0 0)', duration: 0.65, ease: 'power3.out' }, s3 + 0.75);
+      tl.fromTo('#s3-cta', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.5)' }, s3 + 1.2);
+
+      /* ── TRANSITION S3→S4: fade to black (final scene exit) ── */
+      tl.to('#scene3', { opacity: 0, duration: 1.5, ease: 'power2.inOut' }, 28);
+      tl.set('#scene3', { opacity: 0 }, 29.5);
+      tl.set('#scene4', { opacity: 1 }, 28.3);
+
+      /* ── CAPTIONS ── */
+      GROUPS.forEach(function(g, gi) {
+        var cap = document.getElementById('cg-' + gi);
+        tl.set(cap, { visibility: 'visible', innerHTML: g.text }, g.start);
+        tl.set(cap, { visibility: 'hidden' }, g.end - 0.06);
+      });
+
+      /* caption self-lint */
+      GROUPS.forEach(function(g, gi) {
+        var el = document.getElementById('cg-' + gi);
+        if (!el) return;
+        tl.seek(g.end + 0.01);
+        var c = window.getComputedStyle(el);
+        if (c.opacity !== '0' && c.visibility !== 'hidden') {
+          console.warn('[caption-lint] group ' + gi + ' visible at t=' + (g.end + 0.01).toFixed(2));
+        }
+      });
+      tl.seek(0);
+
+      window.__timelines['rhythmix-venue-rave'] = tl;
+    })();
+    </script>
+  </body>
+</html>

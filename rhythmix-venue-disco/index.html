@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000000;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        color: #ffffff;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000000;
+      }
+      #scene2 { opacity: 0; z-index: 2; }
+      #scene3 { opacity: 0; z-index: 3; }
+      #scene4 { opacity: 0; z-index: 4; background: #000000; }
+
+      /* Disco ball */
+      .disco-ball-wrap {
+        position: absolute;
+        top: 140px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 200px;
+        z-index: 20;
+      }
+      .disco-ball {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%,
+          rgba(255,255,255,0.95) 0%,
+          rgba(200,200,220,0.7) 18%,
+          rgba(140,140,180,0.5) 40%,
+          rgba(60,60,100,0.8) 70%,
+          rgba(20,20,40,1) 100%);
+        box-shadow:
+          inset -15px -15px 30px rgba(0,0,0,0.8),
+          inset 8px 8px 20px rgba(255,255,255,0.4),
+          0 0 40px rgba(255,255,255,0.15),
+          0 0 80px rgba(255,255,255,0.08);
+        position: relative;
+        overflow: hidden;
+      }
+      .disco-ball::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.13) 1px, rgba(0,0,0,0) 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.13) 1px, rgba(0,0,0,0) 1px);
+        background-size: 18px 18px;
+      }
+      .sparkle-wrap {
+        position: absolute;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 320px;
+        height: 320px;
+        z-index: 19;
+        pointer-events: none;
+      }
+
+      /* Floor */
+      .checker-floor {
+        position: absolute;
+        bottom: 0;
+        left: -80px;
+        width: 1240px;
+        height: 700px;
+        transform: perspective(400px) rotateX(45deg);
+        transform-origin: bottom center;
+        background-image: repeating-conic-gradient(#1a1a1a 0% 25%, #2a2a2a 0% 50%);
+        background-size: 80px 80px;
+        z-index: 2;
+      }
+      .floor-fog {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 1080px;
+        height: 320px;
+        background: radial-gradient(ellipse 900px 260px at 50% 100%,
+          rgba(255,255,255,0.08) 0%, rgba(0,0,0,0) 70%);
+        z-index: 3;
+        pointer-events: none;
+      }
+      .floor-spot {
+        position: absolute;
+        bottom: 360px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 300px;
+        height: 120px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%);
+        z-index: 4;
+        pointer-events: none;
+      }
+
+      /* Beams */
+      .beams-wrap {
+        position: absolute;
+        top: 0; left: 0;
+        width: 1080px; height: 1920px;
+        z-index: 5;
+        pointer-events: none;
+      }
+      .beam { position: absolute; top: 0; width: 0; height: 0; opacity: 0; }
+      .beam-red  { left: 160px; border-left: 30px solid rgba(0,0,0,0); border-right: 30px solid rgba(0,0,0,0); border-top: 1320px solid rgba(255,31,90,0.28); transform-origin: top center; transform: rotate(-8deg); }
+      .beam-blue { left: 320px; border-left: 26px solid rgba(0,0,0,0); border-right: 26px solid rgba(0,0,0,0); border-top: 1300px solid rgba(0,216,255,0.25); transform-origin: top center; transform: rotate(-4deg); }
+      .beam-green{ left: 680px; border-left: 26px solid rgba(0,0,0,0); border-right: 26px solid rgba(0,0,0,0); border-top: 1300px solid rgba(0,232,135,0.22); transform-origin: top center; transform: rotate(4deg); }
+      .beam-gold { left: 850px; border-left: 30px solid rgba(0,0,0,0); border-right: 30px solid rgba(0,0,0,0); border-top: 1320px solid rgba(245,192,0,0.24); transform-origin: top center; transform: rotate(8deg); }
+
+      /* Scene 2 text */
+      #s2-content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 520px 80px 0;
+        gap: 28px;
+        box-sizing: border-box;
+        z-index: 10;
+      }
+      #s2-stage {
+        font-size: 100px;
+        font-weight: 900;
+        color: #ffffff;
+        letter-spacing: -2px;
+        text-align: center;
+        clip-path: inset(0 100% 0 0);
+        line-height: 1;
+      }
+      #s2-genre {
+        font-size: 60px;
+        font-weight: 700;
+        color: #f5c000;
+        letter-spacing: 2px;
+        text-align: center;
+        clip-path: inset(0 100% 0 0);
+        line-height: 1;
+      }
+
+      /* Scene 3 text */
+      #s3-content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 0 80px;
+        gap: 36px;
+        box-sizing: border-box;
+        z-index: 10;
+      }
+      #s3-brand {
+        font-size: 140px;
+        font-weight: 900;
+        color: #ffffff;
+        letter-spacing: -4px;
+        text-align: center;
+        clip-path: inset(0 100% 0 0);
+        line-height: 0.9;
+      }
+      #s3-sub {
+        font-size: 28px;
+        font-weight: 600;
+        color: #00d8ff;
+        letter-spacing: 3px;
+        text-align: center;
+        text-transform: uppercase;
+        clip-path: inset(0 100% 0 0);
+        max-width: 900px;
+      }
+      #s3-cta {
+        background: linear-gradient(135deg, #f5c000, #ffd84d);
+        color: #000000;
+        font-size: 32px;
+        font-weight: 800;
+        padding: 24px 64px;
+        border-radius: 60px;
+        letter-spacing: 1px;
+        text-align: center;
+        opacity: 0;
+      }
+      #s3-gold-glow {
+        position: absolute;
+        top: 600px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 800px;
+        height: 400px;
+        background: radial-gradient(ellipse, rgba(245,192,0,0.12) 0%, rgba(0,0,0,0) 70%);
+        z-index: 6;
+        pointer-events: none;
+      }
+
+      /* Captions */
+      #captions {
+        position: absolute;
+        bottom: 620px;
+        left: 0;
+        width: 1080px;
+        text-align: center;
+        z-index: 50;
+        pointer-events: none;
+      }
+      .cap-group {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        text-align: center;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-size: 52px;
+        font-weight: 800;
+        color: #ffffff;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 30px rgba(245,192,0,0.4);
+        letter-spacing: 1px;
+        line-height: 1.2;
+        visibility: hidden;
+        padding: 0 60px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="rhythmix-venue-disco"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- AUDIO -->
+      <audio
+        id="narration"
+        class="clip"
+        data-start="0"
+        data-duration="30"
+        data-track-index="2"
+        src="narration.wav"
+        data-volume="1"
+      ></audio>
+
+      <!-- SCENE 1: disco ball descend (0-2s) -->
+      <div id="scene1" class="scene clip" data-start="0" data-duration="2" data-track-index="0">
+        <div class="disco-ball-wrap" id="s1-ball-wrap">
+          <div class="disco-ball" id="s1-ball"></div>
+        </div>
+        <div class="sparkle-wrap" id="s1-sparkles"></div>
+        <div class="checker-floor"></div>
+        <div class="floor-fog"></div>
+        <div class="floor-spot"></div>
+      </div>
+
+      <!-- SCENE 2: ANY STAGE / ANY GENRE (2-18s) -->
+      <div id="scene2" class="scene clip" data-start="2" data-duration="16" data-track-index="0">
+        <div class="disco-ball-wrap">
+          <div class="disco-ball" id="s2-ball"></div>
+        </div>
+        <div class="sparkle-wrap" id="s2-sparkles"></div>
+        <div class="checker-floor"></div>
+        <div class="floor-fog"></div>
+        <div class="floor-spot"></div>
+        <div class="beams-wrap">
+          <div class="beam beam-red"   id="s2-beam-red"></div>
+          <div class="beam beam-blue"  id="s2-beam-blue"></div>
+          <div class="beam beam-green" id="s2-beam-green"></div>
+          <div class="beam beam-gold"  id="s2-beam-gold"></div>
+        </div>
+        <div id="s2-content">
+          <div id="s2-stage">ANY STAGE.</div>
+          <div id="s2-genre">ANY GENRE.</div>
+        </div>
+      </div>
+
+      <!-- SCENE 3: RHYTHMIX + CTA (18-28s) -->
+      <div id="scene3" class="scene clip" data-start="18" data-duration="10" data-track-index="0">
+        <div class="checker-floor"></div>
+        <div class="floor-fog"></div>
+        <div class="floor-spot"></div>
+        <div class="beams-wrap">
+          <div class="beam beam-red"   id="s3-beam-red"></div>
+          <div class="beam beam-blue"  id="s3-beam-blue"></div>
+          <div class="beam beam-green" id="s3-beam-green"></div>
+          <div class="beam beam-gold"  id="s3-beam-gold"></div>
+        </div>
+        <div id="s3-gold-glow"></div>
+        <div id="s3-content">
+          <div id="s3-brand">RHYTHMIX</div>
+          <div id="s3-sub">GENERATE YOUR TRACK TONIGHT.</div>
+          <div id="s3-cta">rhythmixapp.com.au</div>
+        </div>
+      </div>
+
+      <!-- SCENE 4: fade to black (28-30s) -->
+      <div id="scene4" class="scene clip" data-start="28" data-duration="2" data-track-index="0">
+      </div>
+
+      <!-- CAPTIONS -->
+      <div id="captions">
+        <div class="cap-group" id="cg-0">RHYTHMIX puts you on every stage.</div>
+        <div class="cap-group" id="cg-1">Disco. Rock. Jazz. Rave.</div>
+        <div class="cap-group" id="cg-2">Generate your track,</div>
+        <div class="cap-group" id="cg-3">choose your venue,</div>
+        <div class="cap-group" id="cg-4">perform anywhere in the world.</div>
+        <div class="cap-group" id="cg-5">Tonight.</div>
+        <div class="cap-group" id="cg-6">For $149. One time.</div>
+      </div>
+    </div>
+
+    <script>
+    (function() {
+      /* mulberry32 PRNG */
+      function mulberry32(seed) {
+        return function() {
+          seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+          var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+          t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+      }
+
+      /* Build sparkles in scene 1 and scene 2 */
+      function buildSparkles(containerId, seed) {
+        var rng = mulberry32(seed);
+        var wrap = document.getElementById(containerId);
+        if (!wrap) return [];
+        var els = [];
+        var colors = ['#ffffff','#f5c000','#00d8ff','#ff1f5a','#00e887'];
+        for (var i = 0; i < 35; i++) {
+          var angle = rng() * Math.PI * 2;
+          var dist  = 80 + rng() * 60;
+          var size  = 2 + rng() * 5;
+          var cx = 160 + Math.cos(angle) * dist;
+          var cy = 160 + Math.sin(angle) * dist;
+          var col = colors[Math.floor(rng() * colors.length)];
+          var sp = document.createElement('div');
+          sp.style.cssText = 'position:absolute;border-radius:50%;width:' + size.toFixed(1) + 'px;height:' + size.toFixed(1) + 'px;left:' + cx.toFixed(1) + 'px;top:' + cy.toFixed(1) + 'px;background:' + col + ';box-shadow:0 0 6px 2px ' + col + ';opacity:0;';
+          wrap.appendChild(sp);
+          els.push(sp);
+        }
+        return els;
+      }
+
+      var sparkles1 = buildSparkles('s1-sparkles', 32);
+      var sparkles2 = buildSparkles('s2-sparkles', 32);
+
+      /* Caption groups — narration is 10.6s, pad rest as silence */
+      var GROUPS = [
+        { text: "RHYTHMIX puts you on every stage.", start: 0.3,  end: 2.2  },
+        { text: "Disco. Rock. Jazz. Rave.",           start: 2.3,  end: 4.1  },
+        { text: "Generate your track,",               start: 4.2,  end: 5.6  },
+        { text: "choose your venue,",                 start: 5.7,  end: 7.0  },
+        { text: "perform anywhere in the world.",     start: 7.1,  end: 8.8  },
+        { text: "Tonight.",                           start: 8.9,  end: 9.7  },
+        { text: "For $149. One time.",                start: 9.8,  end: 10.5 }
+      ];
+
+      /* Timeline */
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      /* ── SCENE 1 entrances (0-2s) ── */
+      tl.from('#s1-ball-wrap', { y: -240, duration: 1.2, ease: 'power3.out' }, 0.1);
+      tl.to(sparkles1, { opacity: 1, stagger: 0.02, duration: 0.8, ease: 'power2.out' }, 0.3);
+      tl.to('#s1-ball', { rotation: 20, duration: 2, ease: 'sine.inOut' }, 0);
+
+      /* ── TRANSITION S1→S2: overexposure flash ── */
+      tl.to('#scene1', { filter: 'brightness(3)', opacity: 0, duration: 0.35, ease: 'power3.in' }, 1.65);
+      tl.set('#scene1', { opacity: 0 }, 2.00);
+      tl.set('#scene2', { opacity: 1 }, 1.85);
+      tl.from('#scene2', { filter: 'brightness(3)', duration: 0.35, ease: 'power2.out' }, 1.85);
+
+      /* ── SCENE 2 entrances (base t=2s) ── */
+      var s2 = 2.0;
+      tl.to('#s2-ball', { rotation: 360, duration: 8, ease: 'none', repeat: 1 }, s2);
+      tl.to(sparkles2, { opacity: 1, stagger: 0.015, duration: 0.6, ease: 'power2.out' }, s2 + 0.2);
+      /* beam fade in */
+      tl.to('#s2-beam-red',   { opacity: 1, duration: 0.5, ease: 'power2.out' }, s2 + 0.1);
+      tl.to('#s2-beam-blue',  { opacity: 1, duration: 0.5, ease: 'sine.out'   }, s2 + 0.2);
+      tl.to('#s2-beam-green', { opacity: 1, duration: 0.5, ease: 'power2.out' }, s2 + 0.3);
+      tl.to('#s2-beam-gold',  { opacity: 1, duration: 0.5, ease: 'expo.out'   }, s2 + 0.4);
+      /* beam sweeps - finite yoyo */
+      tl.to('#s2-beam-red',   { rotation: -8 + 16, duration: 2.5, ease: 'sine.inOut', yoyo: true, repeat: 5 }, s2 + 0.6);
+      tl.to('#s2-beam-blue',  { rotation: -4 + 10, duration: 3.0, ease: 'sine.inOut', yoyo: true, repeat: 4 }, s2 + 0.8);
+      tl.to('#s2-beam-green', { rotation:  4 - 10, duration: 2.8, ease: 'sine.inOut', yoyo: true, repeat: 5 }, s2 + 0.5);
+      tl.to('#s2-beam-gold',  { rotation:  8 - 16, duration: 3.2, ease: 'sine.inOut', yoyo: true, repeat: 4 }, s2 + 0.7);
+      /* text wipes */
+      tl.to('#s2-stage', { clipPath: 'inset(0 0% 0 0)', duration: 0.7, ease: 'expo.out'   }, s2 + 0.5);
+      tl.to('#s2-genre', { clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'power3.out' }, s2 + 0.9);
+
+      /* ── TRANSITION S2→S3: zoom-through ── */
+      var t23 = 18;
+      tl.to('#scene2', { scale: 1.08, opacity: 0, duration: 0.4, ease: 'power3.in' }, t23 - 0.3);
+      tl.set('#scene2', { opacity: 0 }, t23 + 0.05);
+      tl.set('#scene3', { opacity: 1 }, t23 + 0.05);
+
+      /* ── SCENE 3 entrances (base t=18.15s) ── */
+      var s3 = 18.15;
+      tl.to('#s3-beam-red',   { opacity: 1, duration: 0.4, ease: 'power2.out' }, s3);
+      tl.to('#s3-beam-blue',  { opacity: 1, duration: 0.4, ease: 'sine.out'   }, s3 + 0.1);
+      tl.to('#s3-beam-green', { opacity: 1, duration: 0.4, ease: 'power2.out' }, s3 + 0.15);
+      tl.to('#s3-beam-gold',  { opacity: 1, duration: 0.4, ease: 'expo.out'   }, s3 + 0.2);
+      /* beam sweeps scene 3 */
+      tl.to('#s3-beam-red',   { rotation: -8 + 14, duration: 2.4, ease: 'sine.inOut', yoyo: true, repeat: 3 }, s3 + 0.5);
+      tl.to('#s3-beam-blue',  { rotation: -4 + 8,  duration: 2.8, ease: 'sine.inOut', yoyo: true, repeat: 2 }, s3 + 0.6);
+      tl.to('#s3-beam-green', { rotation:  4 - 8,  duration: 2.6, ease: 'sine.inOut', yoyo: true, repeat: 3 }, s3 + 0.55);
+      tl.to('#s3-beam-gold',  { rotation:  8 - 14, duration: 3.0, ease: 'sine.inOut', yoyo: true, repeat: 2 }, s3 + 0.65);
+      /* brand wipe */
+      tl.to('#s3-brand', { clipPath: 'inset(0 0% 0 0)', duration: 0.8, ease: 'expo.out'   }, s3 + 0.3);
+      tl.to('#s3-sub',   { clipPath: 'inset(0 0% 0 0)', duration: 0.65, ease: 'power3.out' }, s3 + 0.7);
+      tl.fromTo('#s3-cta', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.5)' }, s3 + 1.1);
+
+      /* ── TRANSITION S3→S4: fade to black (final) ── */
+      tl.to('#scene3', { opacity: 0, duration: 1.5, ease: 'power2.inOut' }, 28);
+      tl.set('#scene3', { opacity: 0 }, 29.5);
+      tl.set('#scene4', { opacity: 1 }, 28.2);
+
+      /* ── CAPTIONS ── */
+      GROUPS.forEach(function(g, gi) {
+        var cap = document.getElementById('cg-' + gi);
+        tl.set(cap, { visibility: 'visible', innerHTML: g.text }, g.start);
+        tl.set(cap, { visibility: 'hidden' }, g.end - 0.06);
+      });
+
+      /* caption self-lint */
+      GROUPS.forEach(function(g, gi) {
+        var el = document.getElementById('cg-' + gi);
+        if (!el) return;
+        tl.seek(g.end + 0.01);
+        var c = window.getComputedStyle(el);
+        if (c.opacity !== '0' && c.visibility !== 'hidden') {
+          console.warn('[caption-lint] group ' + gi + ' visible at t=' + (g.end + 0.01).toFixed(2));
+        }
+      });
+      tl.seek(0);
+
+      window.__timelines['rhythmix-venue-disco'] = tl;
+    })();
+    </script>
+  </body>
+</html>
