@@ -51,6 +51,24 @@ if $need_kokoro && command -v pip3 >/dev/null 2>&1; then
     || warn "kokoro auto-install failed; run: pip3 install kokoro-onnx soundfile"
 fi
 
+# --- Brain MCP server ---
+if [ -d .claude/mcp/brain ]; then
+  if [ -d .claude/mcp/brain/node_modules ]; then
+    ok "brain MCP installed"
+  else
+    note "installing brain MCP dependencies (one-time)..."
+    ( cd .claude/mcp/brain && npm install --silent ) >/dev/null 2>&1 \
+      && ok "brain MCP installed" \
+      || warn "brain MCP install failed; run: cd .claude/mcp/brain && npm install"
+  fi
+  if [ -f .claude/brain.db ]; then
+    bsize=$(du -h .claude/brain.db 2>/dev/null | awk '{print $1}')
+    note "brain.db present (${bsize:-?})"
+  else
+    note "brain.db not yet seeded — first /remember or /analyze will create it"
+  fi
+fi
+
 # --- Repo health ---
 if [ -d .git ]; then
   branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")

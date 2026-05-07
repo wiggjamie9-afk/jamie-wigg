@@ -7,10 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
 - **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
 - **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.
+- **Deep multi-agent analysis of anything** → run `/analyze <topic>`. Fans out to 17 specialist sub-brains in parallel (critic, devil's-advocate, planner, strategist, financial, security, technical, creative, …) and writes the synthesis back to the brain MCP for next time.
+- **Store / search the second brain** → `/remember <fact>`, `/recall <query>`, `/brain` (stats / recent / decay / prune / export).
 - **Reference for video pipeline** → `rhythmix-overview-60s/` is the canonical 60s landscape example.
 - **Brand identity** → `rhythmix-teaser-60s/DESIGN.md` (palette, typography, motion eases).
 - **Cloud-AI tools the user actually uses** → `CREATIVE-AI-STACK.md` (iPhone-driven; user has no desktop).
 - **Replicate + ElevenLabs MCP server (image/video/music/voice tools)** → `.claude/mcp/creative-stack/`. Run `npm install` in that folder once and add the `mcpServers` block from its README to wire it up. Requires API tokens.
+- **Brain MCP server (persistent memory + organic decay + relationship graph)** → `.claude/mcp/brain/`. SQLite-backed, no API keys. Session-start hook auto-installs deps. DB lives at `.claude/brain.db` (gitignored).
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
 
 ## Repository Overview
@@ -66,6 +69,33 @@ If the user asks for HTML-based video, captions/subtitles, audio-reactive visual
 ## RHYTHMIX Landing Page Drafts
 
 `text.txt`, `text 2.txt`, `text 3.txt` are standalone HTML/CSS sections for a RHYTHMIX (AI music) marketing site — hero/stats, features, pricing tiers (including a $149 lifetime deal), creator testimonials, competitor positioning vs Suno/Udio/LANDR, and FAQ. They are not wired into the Remotion build. Treat them as design source for landing pages or as input to `website-to-hyperframes`.
+
+## Second Brain (`/analyze`, `/remember`, `/recall`, `/brain`)
+
+A persistent SQLite-backed memory plus a fleet of 17 specialist sub-agents that fan out in parallel for deep analysis.
+
+### Architecture
+
+- **MCP server** at `.claude/mcp/brain/` — SQLite (`better-sqlite3`) with FTS5 over content+tags, a typed/weighted relationship graph, and organic time-decay (default half-life 30 days). Tools: `brain_remember`, `brain_recall`, `brain_relate`, `brain_neighbours`, `brain_episodes`, `brain_stats`, `brain_decay`, `brain_prune`, `brain_forget`, `brain_export`. Storage: `.claude/brain.db` (gitignored).
+- **Sub-agents** at `.claude/agents/brain-*.md` — each is a focused analyzer with a sharp angle: `critic`, `devils-advocate`, `summarizer`, `pattern-finder`, `fact-checker`, `decision-framer`, `planner`, `researcher`, `emotional`, `financial`, `security`, `technical`, `creative`, `historian` (queries the brain for prior context), `systems-thinker`, `strategist`, `simplifier`. 17 total.
+- **Slash commands** at `.claude/commands/`:
+  - `/analyze <topic>` — historian first → 16 specialists in parallel → synthesis → memory write-back with relationships.
+  - `/remember <fact>` — auto-classifies kind + tags, stores via `brain_remember`.
+  - `/recall <query>` — FTS recall, sorted by effective strength (reads reinforce).
+  - `/brain [stats|recent|decay|prune|export]` — inspection and maintenance.
+
+### Organic memory model
+
+- Every memory has `strength` (0–2) and `last_accessed`.
+- Reads reinforce: `strength = min(2, strength + 0.1)`, `last_accessed = now`, `access_count++`.
+- Effective strength = `strength × 0.5^(Δt / half_life_days)`.
+- `brain_decay` commits decayed values to disk; `brain_prune` removes the fossils (default threshold 0.05).
+
+### Write-once conventions
+
+- Don't hand-edit `.claude/brain.db` — use the MCP tools.
+- Brain `forget` and `prune` are NOT in the auto-allowlist; they prompt every time on purpose.
+- The brain MCP is enabled via `.mcp.json` and `.claude/settings.json#enabledMcpjsonServers`. Session-start auto-installs deps.
 
 ## Graphify Output
 
