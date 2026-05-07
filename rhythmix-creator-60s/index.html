@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <script src="gsap.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { width:1920px; height:1080px; overflow:hidden; background:#08050d;
+      font-family:"Space Grotesk",system-ui,sans-serif; color:#fff; }
+
+    .cosmos { position:absolute; inset:-10%;
+      background:
+        radial-gradient(850px 750px at 25% 35%, rgba(0,216,255,.35), transparent 60%),
+        radial-gradient(750px 850px at 80% 65%, rgba(124,58,237,.5), transparent 60%),
+        radial-gradient(600px 500px at 55% 92%, rgba(255,31,90,.2), transparent 65%); }
+    .stars { position:absolute; inset:0;
+      background-image:
+        radial-gradient(1.5px 1.5px at 4% 11%,#fff 50%,transparent),
+        radial-gradient(1px 1px at 16% 5%,#fff 50%,transparent),
+        radial-gradient(1.5px 1.5px at 29% 17%,#cce8ff 50%,transparent),
+        radial-gradient(1px 1px at 44% 8%,#fff 50%,transparent),
+        radial-gradient(2px 2px at 60% 14%,#d4caff 50%,transparent),
+        radial-gradient(1px 1px at 73% 6%,#fff 50%,transparent),
+        radial-gradient(1.5px 1.5px at 87% 21%,#fff 50%,transparent),
+        radial-gradient(1px 1px at 10% 36%,#cce8ff 50%,transparent),
+        radial-gradient(1px 1px at 24% 44%,#fff 50%,transparent),
+        radial-gradient(1px 1px at 53% 51%,#fff 50%,transparent),
+        radial-gradient(1.5px 1.5px at 76% 43%,#d4caff 50%,transparent),
+        radial-gradient(1px 1px at 91% 55%,#fff 50%,transparent),
+        radial-gradient(2px 2px at 7% 67%,#fff 50%,transparent),
+        radial-gradient(1px 1px at 37% 74%,#fff 50%,transparent),
+        radial-gradient(1.5px 1.5px at 66% 81%,#cce8ff 50%,transparent);
+      background-repeat:no-repeat; opacity:.7; }
+    .vignette { position:absolute; inset:0;
+      background:radial-gradient(140% 120% at 50% 50%,transparent 45%,rgba(0,0,0,.78) 100%); }
+
+    .scene { position:absolute; inset:0; width:1920px; height:1080px; }
+    .scene-bg { position:absolute; inset:0; background:#08050d; overflow:hidden; }
+
+    #captions { position:absolute; bottom:60px; left:120px; right:120px; text-align:center;
+      font-size:44px; font-weight:700; line-height:1.25;
+      text-shadow:0 0 24px rgba(0,216,255,.9),0 2px 6px rgba(0,0,0,.95);
+      z-index:100; visibility:hidden; }
+
+    .gring { position:absolute; left:50%; top:50%; border-radius:50%;
+      border:1px solid rgba(0,216,255,.14); transform:translate(-50%,-50%); }
+    .scan { position:absolute; top:50%; left:-5%; right:-5%; height:1px;
+      background:linear-gradient(90deg,transparent,rgba(0,216,255,.7),transparent);
+      box-shadow:0 0 8px rgba(0,216,255,.4); }
+
+    /* S1: Studio in pocket */
+    .s1-inner { display:flex; align-items:center; justify-content:center;
+      width:100%; height:100%; padding:80px 160px; gap:100px; }
+    .s1-left { flex:1.1; display:flex; flex-direction:column; gap:28px; }
+    .s1-right { flex:.9; display:flex; flex-direction:column; align-items:center; gap:20px; }
+    #s1-badge { font-family:"JetBrains Mono",monospace; font-size:20px; letter-spacing:5px;
+      color:#00d8ff; text-transform:uppercase; border:1px solid rgba(0,216,255,.3);
+      padding:10px 26px; border-radius:100px; background:rgba(0,216,255,.05); display:inline-block; }
+    #s1-hl { font-size:100px; font-weight:800; line-height:.9; letter-spacing:-4px; }
+    #s1-hl .gold { color:#f5c000; }
+    #s1-sub { font-size:34px; color:#a0a0b0; line-height:1.5; max-width:680px; }
+    #s1-big { font-size:200px; line-height:1; }
+    #s1-tagline { font-family:"JetBrains Mono",monospace; font-size:24px; letter-spacing:3px;
+      color:#00d8ff; text-transform:uppercase; }
+
+    /* S2: The prompt demo */
+    .s-center { display:flex; flex-direction:column; align-items:center; justify-content:center;
+      width:100%; height:100%; padding:80px 160px; gap:40px; }
+    #s2-label { font-family:"JetBrains Mono",monospace; font-size:20px; letter-spacing:5px;
+      color:#a0a0b0; text-transform:uppercase; }
+    .terminal { background:rgba(8,5,13,.9); border:1px solid rgba(0,216,255,.25);
+      border-radius:16px; padding:44px 56px; width:100%; max-width:1300px; }
+    .term-bar { display:flex; gap:10px; margin-bottom:28px; }
+    .term-dot { width:14px; height:14px; border-radius:50%; }
+    .term-prompt { font-family:"JetBrains Mono",monospace; font-size:30px; color:#a0a0b0;
+      margin-bottom:16px; }
+    .term-input { font-family:"JetBrains Mono",monospace; font-size:36px; color:#00d8ff;
+      font-weight:600; line-height:1.5; }
+    .term-cursor { display:inline-block; width:3px; height:36px; background:#00d8ff;
+      margin-left:6px; vertical-align:middle; }
+    #s2-result { display:flex; align-items:center; gap:32px; }
+    #s2-ready { font-size:52px; font-weight:800;
+      background:linear-gradient(135deg,#00d8ff,#7c3aed);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    #s2-time { font-family:"JetBrains Mono",monospace; font-size:26px; color:#00e887;
+      border:1px solid rgba(0,232,135,.3); padding:10px 24px; border-radius:100px; }
+    .step-flow { display:flex; align-items:center; gap:28px; }
+    .flow-pill { font-size:28px; font-weight:700; padding:18px 36px; border-radius:100px; }
+    .flow-arrow { font-size:36px; color:#a0a0b0; }
+
+    /* S3: 22 tools */
+    .s3-split { display:flex; align-items:center; justify-content:center;
+      width:100%; height:100%; padding:80px 120px; gap:60px; }
+    .s3-left { flex:1; display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .s3-right { flex:1.5; display:flex; flex-direction:column; gap:18px; }
+    #s3-big { font-size:220px; font-weight:800; letter-spacing:-8px; line-height:.8;
+      color:#00d8ff; text-shadow:0 0 80px rgba(0,216,255,.4); }
+    #s3-label { font-family:"JetBrains Mono",monospace; font-size:26px; letter-spacing:5px;
+      color:#a0a0b0; text-transform:uppercase; }
+    #s3-sub { font-size:32px; font-weight:600; text-align:center; line-height:1.35; }
+    #s3-title { font-size:44px; font-weight:700; color:#a0a0b0; }
+    .feat-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .feat-item { background:rgba(26,19,37,.85); border:1px solid rgba(0,216,255,.15);
+      border-radius:14px; padding:22px 28px; display:flex; align-items:center; gap:14px; }
+    .feat-icon { font-size:30px; flex-shrink:0; }
+    .feat-name { font-size:26px; font-weight:600; }
+    .feat-desc { font-size:20px; color:#a0a0b0; }
+    .divider-v { width:1px; height:380px;
+      background:linear-gradient(180deg,transparent,rgba(0,216,255,.35),transparent); }
+
+    /* S4: Royalties */
+    .s4-inner { display:flex; align-items:center; justify-content:center;
+      width:100%; height:100%; padding:80px 160px; gap:80px; }
+    .s4-left { flex:1; display:flex; flex-direction:column; align-items:center; gap:20px; }
+    .s4-right { flex:1; display:flex; flex-direction:column; gap:24px; }
+    #s4-pct { font-size:240px; font-weight:800; letter-spacing:-10px; line-height:.8;
+      color:#00e887; text-shadow:0 0 100px rgba(0,232,135,.45); }
+    #s4-pct-lbl { font-family:"JetBrains Mono",monospace; font-size:28px; letter-spacing:5px;
+      color:#a0a0b0; text-transform:uppercase; }
+    #s4-title { font-size:68px; font-weight:800; letter-spacing:-2px; line-height:.95; }
+    .royalty-item { display:flex; align-items:center; gap:20px; padding:20px 28px;
+      background:rgba(26,19,37,.85); border:1px solid rgba(0,232,135,.2); border-radius:14px; }
+    .ri-icon { font-size:34px; flex-shrink:0; }
+    .ri-text { font-size:30px; font-weight:600; }
+    .ri-note { font-size:22px; color:#a0a0b0; margin-top:4px; }
+
+    /* S5: Pricing CTA */
+    #s5-kicker { font-family:"JetBrains Mono",monospace; font-size:20px; letter-spacing:5px;
+      color:#f5c000; text-transform:uppercase; border:1px solid rgba(245,192,0,.3);
+      padding:10px 26px; border-radius:100px; background:rgba(245,192,0,.05); }
+    #s5-hl { font-size:120px; font-weight:800; letter-spacing:-4px; line-height:.88; text-align:center;
+      background:linear-gradient(135deg,#00d8ff,#7c3aed,#ff1f5a);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .price-row { display:flex; align-items:center; gap:40px; }
+    .price-pill { border-radius:20px; padding:32px 48px; text-align:center; }
+    .price-pill.monthly { background:rgba(26,19,37,.9); border:1px solid rgba(255,255,255,.1); }
+    .price-pill.lifetime { background:linear-gradient(135deg,rgba(245,192,0,.12),rgba(255,31,90,.08));
+      border:2px solid rgba(245,192,0,.45); }
+    .pp-val { font-size:80px; font-weight:800; letter-spacing:-2px; line-height:.9; }
+    .pp-lbl { font-size:28px; color:#a0a0b0; margin-top:8px; }
+    #s5-url { font-family:"JetBrains Mono",monospace; font-size:38px; color:#00d8ff;
+      border-bottom:2px solid rgba(0,216,255,.4); padding-bottom:8px; }
+    #s5-btn { background:linear-gradient(135deg,#00d8ff,#7c3aed); color:#fff;
+      font-size:40px; font-weight:700; padding:28px 80px; border-radius:100px; }
+  </style>
+</head>
+<body>
+  <div id="root" data-composition-id="rhythmix-creator-60s"
+    data-start="0" data-duration="46.5" data-width="1920" data-height="1080">
+
+    <audio id="narr" data-start="0" data-duration="auto" data-track-index="0"
+      src="narration.wav" data-volume="1"></audio>
+
+    <!-- S1: Studio in pocket (0–11s) -->
+    <div id="s1" class="scene clip" data-start="0" data-duration="11" data-track-index="1">
+      <div class="scene-bg">
+        <div class="cosmos"></div><div class="stars"></div><div class="vignette"></div>
+        <div class="gring" style="width:820px;height:820px"></div>
+        <div class="scan" id="sc1"></div>
+      </div>
+      <div class="s1-inner">
+        <div class="s1-left">
+          <div id="s1-badge">Imagine this</div>
+          <h1 id="s1-hl">YOUR<br>MUSIC<br>STUDIO<br><span class="gold">IN YOUR POCKET</span></h1>
+          <p id="s1-sub">No gear. No training. No studio time.<br>Just an idea and thirty seconds.</p>
+        </div>
+        <div class="s1-right">
+          <div id="s1-big">📱</div>
+          <div id="s1-tagline">Open app. Type idea. Done.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S2: The typing demo (10.5–20.5s) -->
+    <div id="s2" class="scene clip" data-start="10.5" data-duration="10" data-track-index="2">
+      <div class="scene-bg">
+        <div class="cosmos"></div><div class="stars"></div><div class="vignette"></div>
+      </div>
+      <div class="s-center">
+        <div id="s2-label">You type this</div>
+        <div class="terminal" id="s2-term">
+          <div class="term-bar">
+            <div class="term-dot" style="background:#ff1f5a"></div>
+            <div class="term-dot" style="background:#f5c000"></div>
+            <div class="term-dot" style="background:#00e887"></div>
+          </div>
+          <div class="term-prompt">RHYTHMIX › Generate Track</div>
+          <div class="term-input" id="s2-type">"dark ambient, cinematic, 60 BPM,<br>build a sense of tension"<span class="term-cursor"></span></div>
+        </div>
+        <div id="s2-result">
+          <div id="s2-ready">Track ready in 30 seconds</div>
+          <div id="s2-time">Live on Spotify before lunch</div>
+        </div>
+        <div class="step-flow" id="s2-flow">
+          <div class="flow-pill" style="background:linear-gradient(135deg,rgba(255,31,90,.2),rgba(124,58,237,.2));border:1px solid rgba(255,31,90,.4)">Master it</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-pill" style="background:linear-gradient(135deg,rgba(0,216,255,.15),rgba(124,58,237,.15));border:1px solid rgba(0,216,255,.4)">Distribute it</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-pill" style="background:linear-gradient(135deg,rgba(0,232,135,.15),rgba(0,216,255,.1));border:1px solid rgba(0,232,135,.4)">Earn from it</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S3: 22 tools (20–31s) -->
+    <div id="s3" class="scene clip" data-start="20" data-duration="11" data-track-index="3">
+      <div class="scene-bg">
+        <div class="cosmos"></div><div class="stars"></div><div class="vignette"></div>
+      </div>
+      <div class="s3-split">
+        <div class="s3-left">
+          <div id="s3-big">22</div>
+          <div id="s3-label">AI Tools</div>
+          <div id="s3-sub">Purpose-built<br>for the modern<br>creator</div>
+        </div>
+        <div class="divider-v" id="s3-dv"></div>
+        <div class="s3-right">
+          <div id="s3-title">That is RHYTHMIX</div>
+          <div class="feat-row">
+            <div class="feat-item" id="f1"><div class="feat-icon">🎤</div><div><div class="feat-name">Voice Cloning</div><div class="feat-desc">Your voice, any style</div></div></div>
+            <div class="feat-item" id="f2"><div class="feat-icon">🎛</div><div><div class="feat-name">Stem Separation</div><div class="feat-desc">Isolate any element</div></div></div>
+            <div class="feat-item" id="f3"><div class="feat-icon">✍️</div><div><div class="feat-name">AI Lyrics Writing</div><div class="feat-desc">Words that hit different</div></div></div>
+            <div class="feat-item" id="f4"><div class="feat-icon">🎚</div><div><div class="feat-name">Pro Mastering</div><div class="feat-desc">Streaming-ready quality</div></div></div>
+            <div class="feat-item" id="f5"><div class="feat-icon">🌐</div><div><div class="feat-name">100+ Platforms</div><div class="feat-desc">Every streaming service</div></div></div>
+            <div class="feat-item" id="f6"><div class="feat-icon">💸</div><div><div class="feat-name">Direct Earnings</div><div class="feat-desc">No label. No cuts.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S4: 100% yours (30.5–41s) -->
+    <div id="s4" class="scene clip" data-start="30.5" data-duration="10.5" data-track-index="4">
+      <div class="scene-bg">
+        <div class="cosmos"></div><div class="stars"></div><div class="vignette"></div>
+        <div class="gring" style="width:880px;height:880px;border-color:rgba(0,232,135,.12)"></div>
+      </div>
+      <div class="s4-inner">
+        <div class="s4-left">
+          <div id="s4-pct">100%</div>
+          <div id="s4-pct-lbl">Royalties · Yours</div>
+        </div>
+        <div class="s4-right">
+          <div id="s4-title">You keep<br>every cent.</div>
+          <div class="royalty-item" id="ri1"><div class="ri-icon">🚫</div><div><div class="ri-text">No hidden fees</div><div class="ri-note">Transparent pricing, always</div></div></div>
+          <div class="royalty-item" id="ri2"><div class="ri-icon">🚫</div><div><div class="ri-text">No label cut</div><div class="ri-note">You own what you make</div></div></div>
+          <div class="royalty-item" id="ri3"><div class="ri-icon">✅</div><div><div class="ri-text">Direct line to your audience</div><div class="ri-note">Just you and your music</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S5: Pricing CTA (40.5–46.5s) -->
+    <div id="s5" class="scene clip" data-start="40.5" data-duration="6" data-track-index="5">
+      <div class="scene-bg">
+        <div class="cosmos"></div><div class="stars"></div><div class="vignette"></div>
+        <div class="gring" style="width:900px;height:900px;border-color:rgba(0,216,255,.12)"></div>
+        <div class="scan" id="sc5"></div>
+      </div>
+      <div class="s-center">
+        <div id="s5-kicker">The studio everyone can finally afford</div>
+        <div id="s5-hl">RHYTHMIX</div>
+        <div class="price-row">
+          <div class="price-pill monthly" id="s5-mo">
+            <div class="pp-val" style="color:#00d8ff">$9</div>
+            <div class="pp-lbl">per month</div>
+          </div>
+          <div style="font-size:44px;color:#a0a0b0">or</div>
+          <div class="price-pill lifetime" id="s5-lt">
+            <div class="pp-val" style="color:#f5c000">$149</div>
+            <div class="pp-lbl">lifetime deal</div>
+          </div>
+        </div>
+        <div id="s5-url">rhythmixapp.com.au</div>
+        <div id="s5-btn">Grab the Deal →</div>
+      </div>
+    </div>
+
+    <div id="captions"></div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const cap = document.getElementById('captions');
+
+      // S1
+      tl.from('#sc1', { scaleX: 0, duration: 2.0, ease: 'power2.out' }, 0.1);
+      tl.from('#s1-badge', { y: 30, opacity: 0, duration: 0.6, ease: 'power3.out' }, 0.3);
+      tl.from('#s1-hl', { x: -80, opacity: 0, duration: 0.85, ease: 'expo.out' }, 0.6);
+      tl.from('#s1-sub', { y: 40, opacity: 0, duration: 0.6, ease: 'power2.out' }, 1.2);
+      tl.from('#s1-big', { scale: 0.5, opacity: 0, duration: 0.9, ease: 'expo.out' }, 0.9);
+      tl.from('#s1-tagline', { y: 25, opacity: 0, duration: 0.5, ease: 'power2.out' }, 1.7);
+
+      // S2
+      tl.from('#s2-label', { y: 30, opacity: 0, duration: 0.5, ease: 'power3.out' }, 10.75);
+      tl.from('#s2-term', { y: 50, opacity: 0, duration: 0.75, ease: 'expo.out' }, 11.05);
+      tl.from('#s2-type', { opacity: 0, duration: 0.5, ease: 'power2.out' }, 11.6);
+      tl.from('#s2-result', { y: 35, opacity: 0, duration: 0.6, ease: 'power3.out' }, 12.4);
+      tl.from('#s2-flow', { y: 30, opacity: 0, duration: 0.55, ease: 'power2.out' }, 13.0);
+
+      // S3
+      tl.from('#s3-big', { scale: 0.5, opacity: 0, duration: 0.85, ease: 'expo.out' }, 20.25);
+      tl.from('#s3-dv', { scaleY: 0, opacity: 0, duration: 0.7, ease: 'power2.out' }, 20.6);
+      tl.from('#s3-title', { x: 40, opacity: 0, duration: 0.6, ease: 'power3.out' }, 20.75);
+      tl.from('#f1', { x: 50, opacity: 0, duration: 0.45, ease: 'power3.out' }, 21.1);
+      tl.from('#f2', { x: 50, opacity: 0, duration: 0.45, ease: 'expo.out' }, 21.25);
+      tl.from('#f3', { x: 50, opacity: 0, duration: 0.45, ease: 'power2.out' }, 21.4);
+      tl.from('#f4', { x: 50, opacity: 0, duration: 0.45, ease: 'power3.out' }, 21.55);
+      tl.from('#f5', { x: 50, opacity: 0, duration: 0.45, ease: 'expo.out' }, 21.7);
+      tl.from('#f6', { x: 50, opacity: 0, duration: 0.45, ease: 'power2.out' }, 21.85);
+
+      // S4
+      tl.from('#s4-pct', { scale: 0.55, opacity: 0, duration: 0.9, ease: 'expo.out' }, 30.75);
+      tl.from('#s4-pct-lbl', { y: 25, opacity: 0, duration: 0.5, ease: 'power2.out' }, 31.45);
+      tl.from('#s4-title', { x: 40, opacity: 0, duration: 0.65, ease: 'power3.out' }, 31.15);
+      tl.from('#ri1', { x: 50, opacity: 0, duration: 0.5, ease: 'power3.out' }, 31.7);
+      tl.from('#ri2', { x: 50, opacity: 0, duration: 0.5, ease: 'expo.out' }, 31.95);
+      tl.from('#ri3', { x: 50, opacity: 0, duration: 0.5, ease: 'power2.out' }, 32.2);
+
+      // S5
+      tl.from('#sc5', { scaleX: 0, duration: 2.0, ease: 'power2.out' }, 40.6);
+      tl.from('#s5-kicker', { y: 30, opacity: 0, duration: 0.55, ease: 'power3.out' }, 40.75);
+      tl.from('#s5-hl', { scale: 0.65, opacity: 0, duration: 0.9, ease: 'expo.out' }, 41.1);
+      tl.from('#s5-mo', { x: -40, opacity: 0, duration: 0.55, ease: 'power3.out' }, 41.7);
+      tl.from('#s5-lt', { x: 40, opacity: 0, duration: 0.55, ease: 'expo.out' }, 41.9);
+      tl.from('#s5-url', { y: 25, opacity: 0, duration: 0.5, ease: 'power2.out' }, 42.4);
+      tl.from('#s5-btn', { scale: 0.8, opacity: 0, duration: 0.5, ease: 'back.out(1.5)' }, 42.85);
+      tl.to('#s5', { opacity: 0, duration: 0.65, ease: 'power2.in' }, 45.65);
+
+      // Captions
+      const groups = [{"text":"Imagine waking up","start":0.0,"end":0.852},{"text":"and your music","start":0.852,"end":1.703},{"text":"studio is already","start":1.703,"end":2.555},{"text":"in your pocket","start":2.555,"end":3.577},{"text":"You open an","start":3.577,"end":4.429},{"text":"app You type","start":4.429,"end":5.507},{"text":"dark ambient cinematic","start":5.507,"end":6.473},{"text":"sixty beats per","start":6.473,"end":7.324},{"text":"minute build a","start":7.324,"end":8.233},{"text":"sense of tension","start":8.233,"end":9.255},{"text":"And thirty seconds","start":9.255,"end":10.106},{"text":"later your track","start":10.106,"end":11.015},{"text":"is ready You","start":11.015,"end":12.037},{"text":"master it You","start":12.037,"end":13.059},{"text":"distribute it It","start":13.059,"end":14.081},{"text":"is live on","start":14.081,"end":14.932},{"text":"Spotify before lunch","start":14.932,"end":15.954},{"text":"That is RHYTHMIX","start":15.954,"end":16.976},{"text":"The first AI","start":16.976,"end":17.828},{"text":"music platform to","start":17.828,"end":18.679},{"text":"put generate master","start":18.679,"end":19.645},{"text":"distribute and earn","start":19.645,"end":20.553},{"text":"all in one","start":20.553,"end":21.405},{"text":"place Twenty-two tools","start":21.405,"end":22.427},{"text":"purpose-built for the","start":22.427,"end":23.278},{"text":"modern creator Voice","start":23.278,"end":24.3},{"text":"cloning Stem separation","start":24.3,"end":25.493},{"text":"AI lyrics writing","start":25.493,"end":26.515},{"text":"Professional mastering And","start":26.515,"end":27.537},{"text":"a distribution network","start":27.537,"end":28.388},{"text":"that reaches over","start":28.388,"end":29.24},{"text":"one hundred streaming","start":29.24,"end":30.092},{"text":"platforms You keep","start":30.092,"end":31.114},{"text":"every cent No","start":31.114,"end":32.136},{"text":"hidden fees No","start":32.136,"end":33.158},{"text":"label cut Just","start":33.158,"end":34.179},{"text":"you your music","start":34.179,"end":35.145},{"text":"and a direct","start":35.145,"end":35.996},{"text":"line to your","start":35.996,"end":36.848},{"text":"audience Start with","start":36.848,"end":37.87},{"text":"a plan from","start":37.87,"end":38.722},{"text":"nine dollars a","start":38.722,"end":39.573},{"text":"month Or grab","start":39.573,"end":40.595},{"text":"the one hundred","start":40.595,"end":41.447},{"text":"and forty-nine dollar","start":41.447,"end":42.299},{"text":"lifetime deal before","start":42.299,"end":43.15},{"text":"it's gone RHYTHMIX","start":43.15,"end":44.342},{"text":"The music studio","start":44.342,"end":45.194},{"text":"everyone can finally","start":45.194,"end":46.046},{"text":"afford","start":46.046,"end":46.5}];
+      groups.forEach(g => {
+        tl.set(cap, { visibility: 'visible', innerHTML: g.text }, g.start);
+        tl.set(cap, { visibility: 'hidden' }, g.end - 0.07);
+      });
+      tl.set(cap, { visibility: 'hidden' }, 46.5);
+
+      window.__timelines["rhythmix-creator-60s"] = tl;
+    </script>
+  </div>
+</body>
+</html>
