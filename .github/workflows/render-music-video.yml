@@ -1,0 +1,87 @@
+name: Render music video
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Audio track path (relative to repo root)'
+        required: true
+        default: 'voiceover-adam.wav'
+      theme:
+        description: 'Visual theme (one line)'
+        required: true
+        default: 'neon midnight city, lone figure on rooftop, blade runner aesthetic'
+      bpm:
+        description: 'BPM (track tempo)'
+        required: false
+        default: '120'
+      model:
+        description: 'Replicate model'
+        required: false
+        default: 'minimax-video'
+        type: choice
+        options:
+          - minimax-video
+          - hunyuan-video
+          - luma-ray
+          - kling-v2
+      output_name:
+        description: 'Output filename (under videos/)'
+        required: false
+        default: 'rhythmix-studio-001.mp4'
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Render
+        env:
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+        working-directory: rhythmix-studio
+        run: |
+          if [ -z "$REPLICATE_API_TOKEN" ]; then
+            echo "::error::REPLICATE_API_TOKEN secret is not set on this repository."
+            echo "Add it at: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+          node bin/rhythmix-studio.mjs render "../${{ inputs.track }}" \
+            --theme "${{ inputs.theme }}" \
+            --bpm "${{ inputs.bpm }}" \
+            --model "${{ inputs.model }}" \
+            --concurrency 4 \
+            --out ../rhythmix-out/render
+
+      - name: Move output to videos/
+        run: |
+          mkdir -p videos
+          cp rhythmix-out/render/final.mp4 "videos/${{ inputs.output_name }}"
+          ls -la "videos/${{ inputs.output_name }}"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "videos/${{ inputs.output_name }}"
+          git commit -m "Render: ${{ inputs.output_name }} via ${{ inputs.model }} (theme: ${{ inputs.theme }})"
+          git push
+
+      - name: Output download link
+        run: |
+          echo "## ✅ Render complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Download:** https://github.com/${{ github.repository }}/raw/main/videos/${{ inputs.output_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**View on GitHub:** https://github.com/${{ github.repository }}/blob/main/videos/${{ inputs.output_name }}" >> $GITHUB_STEP_SUMMARY
