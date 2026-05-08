@@ -54,73 +54,82 @@ jobs:
         run: |
           mkdir -p .debug
           DEBUG=.debug/last-render.txt
-          {
-            echo "Run: ${{ github.run_id }} ($(date -u +%FT%TZ))"
-            echo "Inputs: track=${{ inputs.track }} theme='${{ inputs.theme }}' model=${{ inputs.model }}"
-            echo ""
+          : > "$DEBUG"
+          log() { echo "$@" | tee -a "$DEBUG"; }
 
-            if [ -z "$RAW_TOKEN" ]; then
-              echo "RESULT: TOKEN_NOT_SET"
-              echo "REPLICATE_API_TOKEN secret is not set on this repository."
-              echo "Add it at: https://github.com/${{ github.repository }}/settings/secrets/actions"
-              exit 1
-            fi
+          log "Run: ${{ github.run_id }} ($(date -u +%FT%TZ))"
+          log "Inputs: track=${{ inputs.track }} theme='${{ inputs.theme }}' model=${{ inputs.model }}"
+          log ""
 
-            TRIMMED=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')
-            echo "Raw secret length:    ${#RAW_TOKEN}"
-            echo "Trimmed length:       ${#TRIMMED}"
-            echo "Trimmed prefix:       ${TRIMMED:0:5}..."
-            echo "Trimmed suffix:       ...${TRIMMED: -3}"
+          if [ -z "$RAW_TOKEN" ]; then
+            log "RESULT: TOKEN_NOT_SET"
+            log "REPLICATE_API_TOKEN secret is not set on this repository."
+            log "Add it at: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
 
-            if [ "${TRIMMED:0:3}" != "r8_" ]; then
-              echo "RESULT: WRONG_PREFIX"
-              echo "Token doesn't start with 'r8_'. Got '${TRIMMED:0:5}'."
-              exit 1
-            fi
+          TRIMMED=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')
+          log "Raw secret length:    ${#RAW_TOKEN}"
+          log "Trimmed length:       ${#TRIMMED}"
+          log "Trimmed prefix:       ${TRIMMED:0:5}..."
+          log "Trimmed suffix:       ...${TRIMMED: -3}"
 
-            echo ""
-            echo "Auth tests against https://api.replicate.com/v1/account"
+          if [ "${TRIMMED:0:3}" != "r8_" ]; then
+            log ""
+            log "RESULT: WRONG_PREFIX"
+            log "Token doesn't start with 'r8_'. Got '${TRIMMED:0:5}'."
+            exit 1
+          fi
 
-            T_STATUS=$(curl -s -o /tmp/t.txt -w "%{http_code}" \
-              -H "Authorization: Token $TRIMMED" \
-              https://api.replicate.com/v1/account || echo "000")
-            echo "  Token  auth: HTTP $T_STATUS"
+          if [ ${#TRIMMED} -lt 35 ]; then
+            log ""
+            log "RESULT: TOKEN_TOO_SHORT (${#TRIMMED} chars, expected ~40)"
+            log ""
+            log "The secret was truncated when pasted. Mobile Safari sometimes only"
+            log "selects/pastes part of a long token. Fix:"
+            log "  1. Copy the FULL token (40 chars, starts with r8_)"
+            log "  2. Open https://github.com/${{ github.repository }}/settings/secrets/actions"
+            log "  3. Tap pencil icon, Select All, Delete, Paste, Update secret"
+            log "  4. Verify by re-running this workflow"
+            exit 1
+          fi
 
-            B_STATUS=$(curl -s -o /tmp/b.txt -w "%{http_code}" \
-              -H "Authorization: Bearer $TRIMMED" \
-              https://api.replicate.com/v1/account || echo "000")
-            echo "  Bearer auth: HTTP $B_STATUS"
+          log ""
+          log "Auth tests against https://api.replicate.com/v1/account"
 
-            echo ""
-            echo "Token response body:"
-            cat /tmp/t.txt | head -c 500 || true
-            echo ""
-            echo ""
-            echo "Bearer response body:"
-            cat /tmp/b.txt | head -c 500 || true
-            echo ""
+          T_STATUS=$(curl -s -o /tmp/t.txt -w "%{http_code}" \
+            -H "Authorization: Token $TRIMMED" \
+            https://api.replicate.com/v1/account || echo "000")
+          log "  Token  auth: HTTP $T_STATUS"
 
-            if [ "$T_STATUS" = "200" ] || [ "$B_STATUS" = "200" ]; then
-              echo ""
-              echo "RESULT: AUTH_OK"
-              exit 0
-            else
-              echo ""
-              echo "RESULT: AUTH_REJECTED (Token=$T_STATUS Bearer=$B_STATUS)"
-              echo "Token rejected by Replicate. The most likely cause is that the secret value"
-              echo "differs from a real, active Replicate API token."
-              echo ""
-              echo "Fix:"
-              echo "  - Visit https://replicate.com/account/api-tokens"
-              echo "  - Confirm a token exists; if not, create one"
-              echo "  - Copy + paste it carefully (mind whitespace) into:"
-              echo "    https://github.com/${{ github.repository }}/settings/secrets/actions"
-              exit 1
-            fi
-          } 2>&1 | tee "$DEBUG"
+          B_STATUS=$(curl -s -o /tmp/b.txt -w "%{http_code}" \
+            -H "Authorization: Bearer $TRIMMED" \
+            https://api.replicate.com/v1/account || echo "000")
+          log "  Bearer auth: HTTP $B_STATUS"
+
+          log ""
+          log "Token response body:"
+          cat /tmp/t.txt | head -c 500 | tee -a "$DEBUG" || true
+          log ""
+          log "Bearer response body:"
+          cat /tmp/b.txt | head -c 500 | tee -a "$DEBUG" || true
+          log ""
+
+          if [ "$T_STATUS" = "200" ] || [ "$B_STATUS" = "200" ]; then
+            log "RESULT: AUTH_OK"
+          else
+            log "RESULT: AUTH_REJECTED (Token=$T_STATUS Bearer=$B_STATUS)"
+            log "Token rejected by Replicate. Most likely:"
+            log "  - Token has been deleted/rotated on Replicate side"
+            log "  - Token belongs to a different account"
+            log "  - Replicate account billing issue"
+            log ""
+            log "Fix: visit https://replicate.com/account/api-tokens, create a fresh"
+            log "token, and update the GitHub secret."
+            exit 1
+          fi
 
       - name: Render
-        if: success()
         env:
           RAW_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
         working-directory: rhythmix-studio
@@ -134,7 +143,6 @@ jobs:
             --out ../rhythmix-out/render 2>&1 | tee -a ../.debug/last-render.txt
 
       - name: Move output to videos/
-        if: success()
         run: |
           mkdir -p videos
           cp rhythmix-out/render/final.mp4 "videos/${{ inputs.output_name }}"
@@ -154,7 +162,7 @@ jobs:
             echo "Nothing to commit"
           else
             git commit -m "Workflow run ${{ github.run_id }}: $([ -f videos/${{ inputs.output_name }} ] && echo render OK || echo debug log)"
-            git push || echo "Push failed (rare race condition, debug still in artifact)"
+            git push || echo "Push failed (rare race condition)"
           fi
 
       - name: Output download link
