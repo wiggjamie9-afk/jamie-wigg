@@ -47,16 +47,83 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
 
-      - name: Render
+      - name: Validate Replicate token
         env:
-          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
-        working-directory: rhythmix-studio
+          RAW_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
         run: |
-          if [ -z "$REPLICATE_API_TOKEN" ]; then
+          if [ -z "$RAW_TOKEN" ]; then
             echo "::error::REPLICATE_API_TOKEN secret is not set on this repository."
             echo "Add it at: https://github.com/${{ github.repository }}/settings/secrets/actions"
             exit 1
           fi
+
+          # Strip ALL whitespace (handles trailing newlines, leading spaces, tabs)
+          TRIMMED=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')
+
+          echo "Raw secret length: ${#RAW_TOKEN}"
+          echo "Trimmed length:    ${#TRIMMED}"
+          echo "Prefix:            ${TRIMMED:0:4}..."
+
+          if [ "${TRIMMED:0:3}" != "r8_" ]; then
+            echo "::error::Token doesn't start with 'r8_'. Got '${TRIMMED:0:4}'."
+            echo "The secret value is wrong. Re-create at https://replicate.com/account/api-tokens"
+            echo "and re-paste at https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+
+          # Test with Token prefix (Replicate's documented auth scheme)
+          echo ""
+          echo "Testing 'Token' auth..."
+          T_STATUS=$(curl -s -o /tmp/t.txt -w "%{http_code}" \
+            -H "Authorization: Token $TRIMMED" \
+            https://api.replicate.com/v1/account || echo "000")
+          echo "  Token auth: HTTP $T_STATUS"
+
+          # Test with Bearer prefix (sometimes accepted)
+          echo "Testing 'Bearer' auth..."
+          B_STATUS=$(curl -s -o /tmp/b.txt -w "%{http_code}" \
+            -H "Authorization: Bearer $TRIMMED" \
+            https://api.replicate.com/v1/account || echo "000")
+          echo "  Bearer auth: HTTP $B_STATUS"
+
+          if [ "$T_STATUS" = "200" ] || [ "$B_STATUS" = "200" ]; then
+            echo "::notice::Token validates against Replicate."
+            if [ "$T_STATUS" = "200" ]; then
+              cat /tmp/t.txt | head -c 300
+            else
+              cat /tmp/b.txt | head -c 300
+            fi
+            echo ""
+          else
+            echo "::error::Token rejected by Replicate (Token: $T_STATUS, Bearer: $B_STATUS)"
+            echo "Response from Token request:"
+            cat /tmp/t.txt
+            echo ""
+            echo "Response from Bearer request:"
+            cat /tmp/b.txt
+            echo ""
+            echo ""
+            echo "Likely causes:"
+            echo "  1. Token has been deleted/rotated on Replicate"
+            echo "  2. Token has hidden characters (re-paste it)"
+            echo "  3. Replicate account billing not active despite credit showing"
+            echo ""
+            echo "Fix:"
+            echo "  - Go to https://replicate.com/account/api-tokens"
+            echo "  - Delete any old tokens, create one named 'rhythmix-3'"
+            echo "  - Copy the value (only shown once!)"
+            echo "  - Update at https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+
+      - name: Render
+        env:
+          RAW_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+        working-directory: rhythmix-studio
+        run: |
+          # Re-trim and export so the engine sees a clean value
+          export REPLICATE_API_TOKEN=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')
+
           node bin/rhythmix-studio.mjs render "../${{ inputs.track }}" \
             --theme "${{ inputs.theme }}" \
             --bpm "${{ inputs.bpm }}" \
