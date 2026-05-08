@@ -13,6 +13,34 @@ export class ReplicateError extends Error {
   }
 }
 
+// Fetch with automatic retry on 429 (rate limit). Honors the retry_after
+// hint from Replicate's response body, falling back to exponential backoff.
+async function fetchWithRateLimitRetry(url, init, { maxRetries = 6 } = {}) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(url, init);
+    if (res.status !== 429) return res;
+
+    if (attempt >= maxRetries) return res;
+
+    let retryAfter = 10;
+    try {
+      const body = await res.clone().json();
+      if (typeof body.retry_after === "number") {
+        retryAfter = Math.min(120, Math.max(1, body.retry_after));
+      }
+    } catch {
+      // body wasn't JSON; use default
+    }
+    // Add a small jitter so concurrent retries don't collide
+    const jitter = Math.random() * 2;
+    const waitMs = (retryAfter + jitter) * 1000;
+    console.log(
+      `[replicate] 429 received, waiting ${(waitMs / 1000).toFixed(1)}s before retry ${attempt + 1}/${maxRetries}…`
+    );
+    await new Promise((r) => setTimeout(r, waitMs));
+  }
+}
+
 export async function replicateRun({
   model,
   input,
@@ -29,10 +57,6 @@ export async function replicateRun({
   }
   const [name, version] = rest.split(":");
 
-  // Replicate's current API:
-  //   - Versioned models  → POST /v1/predictions          { version, input }
-  //   - Official models   → POST /v1/models/{o}/{n}/predictions { input }
-  // The old `{ model: "owner/name", input }` shape is no longer accepted.
   let url;
   let body;
   if (version) {
@@ -43,7 +67,7 @@ export async function replicateRun({
     body = { input };
   }
 
-  const start = await fetch(url, {
+  const start = await fetchWithRateLimitRetry(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${REPLICATE_TOKEN}`,
@@ -75,7 +99,7 @@ export async function replicateRun({
     }
     onProgress?.(prediction.status);
     await new Promise((r) => setTimeout(r, 2000));
-    const poll = await fetch(prediction.urls.get, {
+    const poll = await fetchWithRateLimitRetry(prediction.urls.get, {
       headers: { Authorization: `Bearer ${REPLICATE_TOKEN}` },
     });
     prediction = await poll.json();

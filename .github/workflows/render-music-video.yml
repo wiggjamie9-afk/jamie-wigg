@@ -29,6 +29,10 @@ on:
         description: 'Output filename (under videos/)'
         required: false
         default: 'rhythmix-studio-001.mp4'
+      concurrency:
+        description: 'Parallel scene generations (1 if you have <$5 spent on Replicate)'
+        required: false
+        default: '1'
 
 permissions:
   contents: write
@@ -58,13 +62,11 @@ jobs:
           log() { echo "$@" | tee -a "$DEBUG"; }
 
           log "Run: ${{ github.run_id }} ($(date -u +%FT%TZ))"
-          log "Inputs: track=${{ inputs.track }} theme='${{ inputs.theme }}' model=${{ inputs.model }}"
+          log "Inputs: track=${{ inputs.track }} theme='${{ inputs.theme }}' model=${{ inputs.model }} concurrency=${{ inputs.concurrency }}"
           log ""
 
           if [ -z "$RAW_TOKEN" ]; then
             log "RESULT: TOKEN_NOT_SET"
-            log "REPLICATE_API_TOKEN secret is not set on this repository."
-            log "Add it at: https://github.com/${{ github.repository }}/settings/secrets/actions"
             exit 1
           fi
 
@@ -75,22 +77,12 @@ jobs:
           log "Trimmed suffix:       ...${TRIMMED: -3}"
 
           if [ "${TRIMMED:0:3}" != "r8_" ]; then
-            log ""
-            log "RESULT: WRONG_PREFIX"
-            log "Token doesn't start with 'r8_'. Got '${TRIMMED:0:5}'."
+            log "RESULT: WRONG_PREFIX (got '${TRIMMED:0:5}')"
             exit 1
           fi
 
           if [ ${#TRIMMED} -lt 35 ]; then
-            log ""
-            log "RESULT: TOKEN_TOO_SHORT (${#TRIMMED} chars, expected ~40)"
-            log ""
-            log "The secret was truncated when pasted. Mobile Safari sometimes only"
-            log "selects/pastes part of a long token. Fix:"
-            log "  1. Copy the FULL token (40 chars, starts with r8_)"
-            log "  2. Open https://github.com/${{ github.repository }}/settings/secrets/actions"
-            log "  3. Tap pencil icon, Select All, Delete, Paste, Update secret"
-            log "  4. Verify by re-running this workflow"
+            log "RESULT: TOKEN_TOO_SHORT (${#TRIMMED} chars)"
             exit 1
           fi
 
@@ -107,25 +99,10 @@ jobs:
             https://api.replicate.com/v1/account || echo "000")
           log "  Bearer auth: HTTP $B_STATUS"
 
-          log ""
-          log "Token response body:"
-          cat /tmp/t.txt | head -c 500 | tee -a "$DEBUG" || true
-          log ""
-          log "Bearer response body:"
-          cat /tmp/b.txt | head -c 500 | tee -a "$DEBUG" || true
-          log ""
-
           if [ "$T_STATUS" = "200" ] || [ "$B_STATUS" = "200" ]; then
             log "RESULT: AUTH_OK"
           else
             log "RESULT: AUTH_REJECTED (Token=$T_STATUS Bearer=$B_STATUS)"
-            log "Token rejected by Replicate. Most likely:"
-            log "  - Token has been deleted/rotated on Replicate side"
-            log "  - Token belongs to a different account"
-            log "  - Replicate account billing issue"
-            log ""
-            log "Fix: visit https://replicate.com/account/api-tokens, create a fresh"
-            log "token, and update the GitHub secret."
             exit 1
           fi
 
@@ -139,7 +116,7 @@ jobs:
             --theme "${{ inputs.theme }}" \
             --bpm "${{ inputs.bpm }}" \
             --model "${{ inputs.model }}" \
-            --concurrency 4 \
+            --concurrency "${{ inputs.concurrency }}" \
             --out ../rhythmix-out/render 2>&1 | tee -a ../.debug/last-render.txt
 
       - name: Move output to videos/
