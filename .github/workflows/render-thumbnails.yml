@@ -1,0 +1,89 @@
+name: Generate thumbnails
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  thumbnails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright
+        run: |
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Render thumbnail PNGs from thumbnail.html
+        run: |
+          mkdir -p thumbnails
+          node <<'EOF'
+          const { chromium } = require('playwright');
+          const path = require('path');
+
+          (async () => {
+            const browser = await chromium.launch();
+            const fileUrl = 'file://' + path.resolve('thumbnail.html');
+
+            const variants = [
+              { name: 'rhythmix-thumbnail-16-9.png',     w: 1280, h: 720,  cls: '' },
+              { name: 'rhythmix-thumbnail-square.png',   w: 1080, h: 1080, cls: 'square' },
+              { name: 'rhythmix-thumbnail-vertical.png', w: 720,  h: 1280, cls: 'vertical' },
+            ];
+
+            for (const v of variants) {
+              const ctx = await browser.newContext({
+                viewport: { width: v.w, height: v.h },
+                deviceScaleFactor: 2,
+              });
+              const page = await ctx.newPage();
+              await page.goto(fileUrl);
+              await page.evaluate((cls) => {
+                document.body.className = cls;
+                const sw = document.querySelector('.switcher');
+                if (sw) sw.style.display = 'none';
+              }, v.cls);
+              await page.waitForTimeout(500);
+              const thumb = page.locator('.thumb');
+              await thumb.screenshot({ path: `thumbnails/${v.name}`, type: 'png' });
+              await ctx.close();
+              console.log('Generated:', v.name);
+            }
+
+            await browser.close();
+          })().catch((e) => {
+            console.error(e);
+            process.exit(1);
+          });
+          EOF
+
+      - name: Commit thumbnails
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || true
+          git add thumbnails/*.png
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "Generate brand thumbnails (16:9, square, 9:16)"
+            git push
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Thumbnails generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download links:" >> $GITHUB_STEP_SUMMARY
+          echo "- **16:9** (YouTube, Twitter, Facebook): https://github.com/${{ github.repository }}/raw/main/thumbnails/rhythmix-thumbnail-16-9.png" >> $GITHUB_STEP_SUMMARY
+          echo "- **Square** (Gumroad, Instagram feed): https://github.com/${{ github.repository }}/raw/main/thumbnails/rhythmix-thumbnail-square.png" >> $GITHUB_STEP_SUMMARY
+          echo "- **9:16** (TikTok, Reels, Shorts): https://github.com/${{ github.repository }}/raw/main/thumbnails/rhythmix-thumbnail-vertical.png" >> $GITHUB_STEP_SUMMARY
