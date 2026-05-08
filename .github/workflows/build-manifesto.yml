@@ -1,0 +1,60 @@
+name: Build manifesto video
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_video:
+        description: 'Path to source AI video'
+        required: false
+        default: 'videos/rhythmix-studio-001.mp4'
+      output_name:
+        description: 'Output filename (under videos/)'
+        required: false
+        default: 'manifesto-new-world-60s.mp4'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Install sharp
+        run: npm install --no-save sharp@0.34.5
+
+      - name: Build manifesto video
+        env:
+          SOURCE_VIDEO: ${{ inputs.source_video }}
+          OUTPUT_NAME:  ${{ inputs.output_name }}
+          TMP_DIR: ${{ runner.temp }}/manifesto-overlays
+        run: node scripts/build-manifesto.mjs
+
+      - name: Commit manifesto video
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || true
+          git add "videos/${{ inputs.output_name }}"
+          if git diff --cached --quiet; then
+            echo "Nothing to commit (already up to date)"
+          else
+            git commit -m "Build manifesto video: ${{ inputs.output_name }}"
+            git push
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Manifesto video built" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Download:** https://github.com/${{ github.repository }}/raw/main/videos/${{ inputs.output_name }}" >> $GITHUB_STEP_SUMMARY
