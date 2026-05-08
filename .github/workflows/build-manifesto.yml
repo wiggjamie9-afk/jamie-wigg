@@ -11,6 +11,10 @@ on:
         description: 'Output filename (under videos/)'
         required: false
         default: 'manifesto-new-world-60s.mp4'
+  push:
+    paths:
+      - 'scripts/build-manifesto.mjs'
+      - '.github/workflows/build-manifesto.yml'
 
 permissions:
   contents: write
@@ -34,8 +38,8 @@ jobs:
 
       - name: Build manifesto video
         env:
-          SOURCE_VIDEO: ${{ inputs.source_video }}
-          OUTPUT_NAME:  ${{ inputs.output_name }}
+          SOURCE_VIDEO: ${{ inputs.source_video || 'videos/rhythmix-studio-001.mp4' }}
+          OUTPUT_NAME:  ${{ inputs.output_name  || 'manifesto-new-world-60s.mp4' }}
           TMP_DIR: ${{ runner.temp }}/manifesto-overlays
         run: node scripts/build-manifesto.mjs
 
@@ -44,17 +48,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase origin main || true
-          git add "videos/${{ inputs.output_name }}"
+          OUT_NAME="${{ inputs.output_name || 'manifesto-new-world-60s.mp4' }}"
+          git add "videos/$OUT_NAME"
           if git diff --cached --quiet; then
             echo "Nothing to commit (already up to date)"
           else
-            git commit -m "Build manifesto video: ${{ inputs.output_name }}"
+            git commit -m "Build manifesto video: $OUT_NAME"
             git push
           fi
 
       - name: Summary
         if: always()
         run: |
+          OUT_NAME="${{ inputs.output_name || 'manifesto-new-world-60s.mp4' }}"
           echo "## Manifesto video built" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Download:** https://github.com/${{ github.repository }}/raw/main/videos/${{ inputs.output_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Download:** https://github.com/${{ github.repository }}/raw/main/videos/$OUT_NAME" >> $GITHUB_STEP_SUMMARY
