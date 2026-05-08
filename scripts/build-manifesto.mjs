@@ -1,3 +1,5 @@
+// Manifesto video — paradigm-shift framing for RHYTHMIX Studio.
+// Edit any of the slides below and push; workflow re-renders automatically.
 import sharp from 'sharp';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -14,7 +16,6 @@ const OUT_DIR = 'videos';
 await mkdir(TMP_DIR, { recursive: true });
 
 function overlaySvg({ kicker, head, sub, accent, accentPosition = 'after' }) {
-  // accentPosition controls which side of the heading the gradient word sits on.
   const headBlock = accent
     ? (accentPosition === 'before'
         ? `<tspan fill="url(#brand)">${accent}</tspan> ${head}`
