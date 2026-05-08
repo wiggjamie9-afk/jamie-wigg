@@ -338,6 +338,48 @@
     letter-spacing: 0.18em;
   }
 
+  /* Language strip */
+  .lang-strip {
+    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  }
+  .lang-strip .l-label {
+    font-family: var(--fm); font-size: 10px; letter-spacing: 0.16em;
+    color: var(--muted); text-transform: uppercase; margin-right: 6px;
+  }
+  .l-chip {
+    padding: 8px 14px; border-radius: 999px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--line);
+    font-family: var(--fm); font-size: 11px; letter-spacing: 0.14em;
+    color: var(--muted); cursor: pointer; text-transform: uppercase;
+    transition: all .15s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .l-chip:hover { color: #fff; border-color: var(--line-2); }
+  .l-chip.active {
+    background: rgba(124,58,237,.18);
+    border-color: rgba(124,58,237,.55);
+    color: #d6c0ff;
+  }
+  .l-chip .flag { font-size: 14px; }
+  .lang-preview {
+    padding: 12px 14px;
+    background: rgba(124,58,237,.08);
+    border: 1px solid rgba(124,58,237,.3);
+    border-radius: 10px;
+    font-family: var(--fs); font-size: 15px; line-height: 1.45;
+    color: #e6d9ff;
+    display: none;
+  }
+  .lang-preview.show { display: block; }
+  .lang-preview.loading { opacity: 0.5; }
+  .lang-preview .lp-label {
+    font-family: var(--fm); font-size: 9px; letter-spacing: 0.18em;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 6px;
+    display: block;
+  }
+  .lang-preview .lp-label .lp-flag { margin-right: 4px; }
+
   /* Sections */
   section.section { padding: 100px 0; }
   .eyebrow { font-family: var(--fm); color: var(--red); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; font-size: 11px; }
@@ -639,6 +681,18 @@
       </div>
       <div class="composer-controls">
         <textarea id="lyrics" maxlength="80" placeholder="Type a phrase to sing — anything you want."></textarea>
+        <div class="lang-strip">
+          <span class="l-label">Listen in</span>
+          <button class="l-chip active" data-lang="en"><span class="flag">🇬🇧</span> English</button>
+          <button class="l-chip" data-lang="it"><span class="flag">🇮🇹</span> Italian</button>
+          <button class="l-chip" data-lang="fr"><span class="flag">🇫🇷</span> French</button>
+          <button class="l-chip" data-lang="es"><span class="flag">🇪🇸</span> Spanish</button>
+          <button class="l-chip" data-lang="ru"><span class="flag">🇷🇺</span> Russian</button>
+        </div>
+        <div class="lang-preview" id="langPreview">
+          <span class="lp-label"><span class="lp-flag" id="lpFlag">🇮🇹</span>Sung in <span id="lpLang">Italian</span></span>
+          <span id="lpText">—</span>
+        </div>
         <div class="quality-strip">
           <span class="q-label">Audio quality</span>
           <button class="q-chip active" data-q="studio">Studio</button>
@@ -844,6 +898,49 @@
     "rnb-m":       { name: "ZEPHYR",    gender: "M", genre: "RNB",       base: 98.00 },  // G2
   };
 
+  // ---------- Languages ----------
+  const LANG_NAMES = { en: "English", it: "Italian", fr: "French", es: "Spanish", ru: "Russian" };
+  const LANG_FLAGS = { en: "🇬🇧", it: "🇮🇹", fr: "🇫🇷", es: "🇪🇸", ru: "🇷🇺" };
+
+  // Cyrillic → Latin so the formant engine can find vowels in Russian text
+  const CYR2LAT = {
+    а:'a', б:'b', в:'v', г:'g', д:'d', е:'e', ё:'yo', ж:'zh',
+    з:'z', и:'i', й:'y', к:'k', л:'l', м:'m', н:'n', о:'o',
+    п:'p', р:'r', с:'s', т:'t', у:'u', ф:'f', х:'h', ц:'ts',
+    ч:'ch', ш:'sh', щ:'shch', ъ:'', ы:'i', ь:'', э:'e',
+    ю:'yu', я:'ya'
+  };
+  function transliterate(text) {
+    return text.toLowerCase().split("").map(c => CYR2LAT[c] !== undefined ? CYR2LAT[c] : c).join("");
+  }
+
+  // Translation: try Chrome's on-device Translator API first, fall back to MyMemory free public API.
+  let nativeTranslators = {};
+  async function getNativeTranslator(target) {
+    if (target === "en") return null;
+    if (typeof Translator === "undefined") return null;
+    if (nativeTranslators[target]) return nativeTranslators[target];
+    try {
+      const availability = await Translator.availability({ sourceLanguage: "en", targetLanguage: target });
+      if (availability === "unavailable") return null;
+      const t = await Translator.create({ sourceLanguage: "en", targetLanguage: target });
+      nativeTranslators[target] = t;
+      return t;
+    } catch { return null; }
+  }
+  async function translate(text, target) {
+    if (target === "en" || !text || !text.trim()) return text;
+    const native = await getNativeTranslator(target);
+    if (native) {
+      try { return await native.translate(text); } catch {}
+    }
+    try {
+      const r = await fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|" + target);
+      const j = await r.json();
+      return (j.responseData && j.responseData.translatedText) || text;
+    } catch { return text; }
+  }
+
   // ---------- State ----------
   let ctx, master;
   let studioBus, liveBus, dolbyBus;
@@ -854,6 +951,9 @@
   let bpm = 96;
   let feel = 1; // 0=tight, 1=flow, 2=loose
   let quality = "studio";
+  let currentLang = "en";
+  let translateTimer = null;
+  let lastTranslated = "";
 
   // ---------- Audio core ----------
   function buildIR(seconds, decay) {
@@ -999,8 +1099,9 @@
   // Convert a phrase into a sequence of sung notes.
   function tokenizePhrase(text) {
     // Split into vowel-anchored syllables: each token is one vowel + surrounding consonants.
+    // Strip combining diacritics so é→e, à→a, ñ→n etc. for French/Italian/Spanish.
     const out = [];
-    const lower = text.toLowerCase();
+    const lower = text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
     let i = 0;
     while (i < lower.length) {
       const c = lower[i];
@@ -1242,6 +1343,44 @@
     });
   });
 
+  // Language picker
+  const langPreview = document.getElementById("langPreview");
+  const lpText = document.getElementById("lpText");
+  const lpLang = document.getElementById("lpLang");
+  const lpFlag = document.getElementById("lpFlag");
+
+  async function updatePreview() {
+    const text = (lyrics.value || "").trim();
+    if (currentLang === "en" || !text) {
+      langPreview.classList.remove("show", "loading");
+      lastTranslated = "";
+      return "";
+    }
+    langPreview.classList.add("show", "loading");
+    lpLang.textContent = LANG_NAMES[currentLang];
+    lpFlag.textContent = LANG_FLAGS[currentLang];
+    const translated = await translate(text, currentLang);
+    langPreview.classList.remove("loading");
+    lpText.textContent = translated;
+    lastTranslated = translated;
+    return translated;
+  }
+
+  document.querySelectorAll(".l-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".l-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      currentLang = chip.dataset.lang;
+      updatePreview();
+    });
+  });
+
+  lyrics.addEventListener("input", () => {
+    if (currentLang === "en") return;
+    clearTimeout(translateTimer);
+    translateTimer = setTimeout(updatePreview, 600);
+  });
+
   // Genre filter
   document.querySelectorAll(".genre-chip").forEach(chip => {
     chip.addEventListener("click", () => {
@@ -1262,19 +1401,24 @@
     feelVal.textContent = ["TIGHT", "FLOW", "LOOSE"][feel];
   });
 
-  singBtn.addEventListener("click", () => {
-    const text = (lyrics.value || "la la la").trim();
+  singBtn.addEventListener("click", async () => {
+    const sourceText = (lyrics.value || "la la la").trim();
+    let textToSing = sourceText;
+    if (currentLang !== "en") {
+      const translated = lastTranslated || await updatePreview() || sourceText;
+      textToSing = currentLang === "ru" ? transliterate(translated) : translated;
+    }
     stopAudition();
     stopSinging();
     voiceEls.forEach(el => el.classList.toggle("singing", el.dataset.id === selectedId));
     const v = VOICES[selectedId];
     const g = GENRE[v.genre];
-    npTitle.textContent = v.name + " · singing";
-    npMeta.textContent = v.genre + " · " + v.gender + " · " + g.tag + " · " + bpm + " BPM";
+    npTitle.textContent = v.name + " · singing in " + LANG_NAMES[currentLang];
+    npMeta.textContent = v.genre + " · " + v.gender + " · " + g.tag + " · " + bpm + " BPM · " + LANG_FLAGS[currentLang];
     const tile = document.querySelector('.voice[data-id="' + selectedId + '"] .head');
     npSwatch.style.background = window.getComputedStyle(tile).background;
     nowplay.classList.add("show");
-    const audio = startSinging(selectedId, text);
+    const audio = startSinging(selectedId, textToSing);
     singing = { stop: audio.stop };
   });
 
