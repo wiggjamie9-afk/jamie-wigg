@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
+const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN?.trim();
 
 export class ReplicateError extends Error {
   constructor(message, { status, predictionId } = {}) {
@@ -29,14 +29,24 @@ export async function replicateRun({
   }
   const [name, version] = rest.split(":");
 
-  const body = version
-    ? { version, input }
-    : { model: `${owner}/${name}`, input };
+  // Replicate's current API:
+  //   - Versioned models  → POST /v1/predictions          { version, input }
+  //   - Official models   → POST /v1/models/{o}/{n}/predictions { input }
+  // The old `{ model: "owner/name", input }` shape is no longer accepted.
+  let url;
+  let body;
+  if (version) {
+    url = "https://api.replicate.com/v1/predictions";
+    body = { version, input };
+  } else {
+    url = `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
+    body = { input };
+  }
 
-  const start = await fetch("https://api.replicate.com/v1/predictions", {
+  const start = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Token ${REPLICATE_TOKEN}`,
+      Authorization: `Bearer ${REPLICATE_TOKEN}`,
       "Content-Type": "application/json",
       Prefer: "wait=60",
     },
@@ -66,7 +76,7 @@ export async function replicateRun({
     onProgress?.(prediction.status);
     await new Promise((r) => setTimeout(r, 2000));
     const poll = await fetch(prediction.urls.get, {
-      headers: { Authorization: `Token ${REPLICATE_TOKEN}` },
+      headers: { Authorization: `Bearer ${REPLICATE_TOKEN}` },
     });
     prediction = await poll.json();
   }
