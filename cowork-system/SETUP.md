@@ -476,3 +476,32 @@ Monthly: trigger Performance Reviewer on day 30. Don't wait.
 4. Skill 7 (scheduler) once you have approved drafts.
 5. Skills 2, 3, 5, 8 + Weekly Session wrapper.
 6. ManyChat (Step 5) once content is live and you have a lead magnet ready.
+
+---
+
+## Website automation skills (RHYTHMIX static site)
+
+In addition to the content-marketing skills above, three skills automate updates to the live `rhythmixapp.com.au` site (the `.html` files in this repo's root, deployed via GitHub Pages):
+
+| Skill | File | Use when |
+|---|---|---|
+| Site Copy Updater | `skills/site-copy-updater.md` | Rewriting one named section of an existing page (hero, features, pricing, testimonials, FAQ). Preserves wrapper + classes. Always shows a diff before commit. |
+| Content Section Publisher | `skills/content-section-publisher.md` | Adding a new section to an existing page or saving as a fragment. Models on `launch-section.html`. Types: release-announcement, case-study, comparison, feature-spotlight, testimonial-block, stat-block. |
+| Campaign Landing Page Generator | `skills/campaign-landing-page.md` | Generating a complete standalone landing page for one campaign / one ManyChat keyword (e.g. `/suno-comparison.html`, `/founding-presale.html`). Handles meta + sitemap. |
+
+### Triggering them
+
+- "Update the hero on rhythmix.html — emphasise the $149 lifetime more aggressively."
+- "Add a release-announcement section to launch.html for the new VR concert feature."
+- "Generate a landing page at /suno-comparison.html targeting producers, ManyChat keyword SUNO."
+
+### Hard rules baked into all three
+
+- Refuse to push to origin without explicit instruction. They commit on the current branch only.
+- Refuse to invent creator names, dollar amounts, or stats. The operator must supply them.
+- Refuse to edit `privacy.html`, `refunds.html`, `terms.html` — those need legal review.
+- Always preview a diff (or full block, for new sections / pages) and wait for explicit approval before writing.
+
+### What's NOT covered
+
+These skills only edit a static marketing site. They do not run the RHYTHMIX product itself (signups, payments, AI music generation, distribution, royalties). That's a real SaaS build with a backend, separate from this Cowork system.
