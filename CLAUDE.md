@@ -13,6 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Cloud-AI tools the user actually uses** → `CREATIVE-AI-STACK.md` (iPhone-driven; user has no desktop).
 - **Replicate + ElevenLabs MCP server (image/video/music/voice tools)** → `.claude/mcp/creative-stack/`. Run `npm install` in that folder once and add the `mcpServers` block from its README to wire it up. Requires API tokens.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
+- **UI/UX design intelligence** → `/ui-ux-pro-max` skill (vendored at `.claude/skills/ui-ux-pro-max/`, installed via `npx uipro-cli init --ai claude`). 67 styles, 96 palettes, 57 font pairings, 25 charts, 13 stacks. Reach for it on landing pages, dashboards, components, color/typography decisions.
+- **MCP servers wired in `.mcp.json`** → `creative-stack` (Replicate + ElevenLabs, needs `REPLICATE_API_TOKEN` + `ELEVENLABS_API_KEY` in `settings.local.json`) and `magic` (`@21st-dev/magic`, AI UI component generator, needs `MAGIC_API_KEY`). Copy `.claude/settings.local.json.example` → `.claude/settings.local.json` and fill in real keys.
 
 ## Repository Overview
 
