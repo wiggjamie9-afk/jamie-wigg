@@ -464,17 +464,35 @@ LTD pinned. 60 spots left.
 
 ---
 
-## Auto-posting (optional, if you want to skip the manual step)
+## Auto-posting (wired — see `AUTOPOST-PROCEDURE.md`)
 
-You have the **Zapier MCP** wired in (`.mcp.json` enables `zapier-mcp` per CLAUDE.md). To go from manual to auto:
+**Status:** Zapier MCP enabled for Instagram, Threads, and YouTube. 12 of 21 posts can fire automatically. The other 9 (8 TikToks + 1 X) stay manual.
 
-1. Tell me **"wire posting to my Buffer"** (or Hootsuite, Later, Metricool — whichever scheduler you use).
-2. I'll create a Zap that watches `clients/rhythmix/outputs/captions/2026-05/*.md`, parses the frontmatter (date, platform, format), pulls the matching asset from `outputs/creatives/`, and queues it in your scheduler.
-3. You hit approve in your scheduler app once, and the rest of the month posts itself.
+**Activation steps** (one-time, ~5 minutes):
 
-**TikTok caveat:** TikTok doesn't allow API posting from third-party tools for most accounts. You'll always have to upload TikToks manually unless you have a Business + Content Posting API approval. This playbook assumes manual TikTok posts.
+1. **Convert Instagram → Creator.** IG app → Settings → Account type → Switch to Creator. Free, instant, no review.
+2. **Authorize each Zapier app** (click each link, sign in, allow):
+   - Instagram for Business: https://mcp.zapier.com/mcp/servers/f4b999dd-2a62-40eb-9f60-90df9d6610d3/app-auth/InstagramBusinessCLIAPI
+   - Threads by Unshape: https://mcp.zapier.com/mcp/servers/f4b999dd-2a62-40eb-9f60-90df9d6610d3/app-auth/App198018CLIAPI
+   - YouTube: https://mcp.zapier.com/mcp/servers/f4b999dd-2a62-40eb-9f60-90df9d6610d3/app-auth/YouTubeV4CLIAPI
+3. **Render the 8 HTML mockups to PNG** (one-off, ~2 min on a desktop):
+   ```bash
+   npm install -g playwright
+   npx playwright install chromium
+   node clients/rhythmix/scripts/render-png.mjs 2026-05
+   git add clients/rhythmix/outputs/creatives/2026-05/*.png
+   git commit -m "Render May 2026 PNG creatives"
+   git push
+   ```
+4. **Tell me "all three authed and PNGs pushed."** I'll dry-run the first auto-post day to verify, then fire each day on demand.
 
-**Instagram caveat:** Auto-posting requires a Business or Creator account linked via Meta Graph API.
+**Daily flow once activated:** every morning, ping me **"post today"** in chat. I fire the IG / Threads / YouTube posts due that day via Zapier MCP, log them in HEARTBEAT.md, and report back with permalinks. You handle the TikTok upload manually using the playbook block above.
+
+**TikTok caveat:** TikTok doesn't allow third-party posting for personal accounts. The 8 TikTok posts (#01, 04, 07, 10, 12, 15, 18, 21) and the TikTok reply (#07) stay manual.
+
+**X caveat:** X auto-posting needs a developer account and API tokens. The single X post (#11) on 2026-05-20 stays manual — just paste the caption.
+
+See `AUTOPOST-PROCEDURE.md` for the full per-date Zapier action map.
 
 ---
 
