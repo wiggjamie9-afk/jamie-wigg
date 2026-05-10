@@ -4,6 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Start (For Claude)
 
+- **Build a website or app end-to-end (idea → deployed)** → follow `BUILD-BLUEPRINT.md`. It orchestrates the saved prompts in `PROMPTS.md` plus this repo's skills/MCP servers across discover → design → build → deploy → distribute.
 - **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
 - **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
 - **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.
