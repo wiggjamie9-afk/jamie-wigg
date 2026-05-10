@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Generate a looping GIF preview + a poster JPG next to a rendered MP4.
 #
-# Usage:  ./tools/post-render/post-render.sh path/to/video.mp4
+# Usage:  ./tools/post-render/post-render.sh <video.mp4> [offset_pct]
+#         offset_pct defaults to 0.30 — pass 0.50 if 30% lands on a fade-to-black.
 # Output: path/to/video-preview.gif  (3s, 360px wide, ~12fps, loops)
-#         path/to/video-poster.jpg   (single frame ~30% in)
+#         path/to/video-poster.jpg   (single frame at offset_pct)
 
 set -euo pipefail
 
-VIDEO="${1:?usage: post-render.sh <video.mp4>}"
+VIDEO="${1:?usage: post-render.sh <video.mp4> [offset_pct]}"
+OFFSET_PCT="${2:-0.30}"
 [[ -f "$VIDEO" ]] || { echo "not a file: $VIDEO" >&2; exit 1; }
 
 DIR=$(dirname "$VIDEO")
@@ -16,7 +18,7 @@ PREVIEW="$DIR/$NAME-preview.gif"
 POSTER="$DIR/$NAME-poster.jpg"
 
 DURATION=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$VIDEO")
-START=$(awk -v d="$DURATION" 'BEGIN { printf "%.2f", d * 0.30 }')
+START=$(awk -v d="$DURATION" -v p="$OFFSET_PCT" 'BEGIN { printf "%.2f", d * p }')
 
 # Poster: single sharp frame ~30% in
 ffmpeg -nostdin -y -loglevel error \
