@@ -19,7 +19,7 @@ DURATION=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 
 START=$(awk -v d="$DURATION" 'BEGIN { printf "%.2f", d * 0.30 }')
 
 # Poster: single sharp frame ~30% in
-ffmpeg -y -loglevel error \
+ffmpeg -nostdin -y -loglevel error \
   -ss "$START" -i "$VIDEO" \
   -frames:v 1 -q:v 3 \
   "$POSTER"
@@ -28,12 +28,12 @@ ffmpeg -y -loglevel error \
 PALETTE=$(mktemp --suffix=.png)
 trap 'rm -f "$PALETTE"' EXIT
 
-ffmpeg -y -loglevel error \
+ffmpeg -nostdin -y -loglevel error \
   -ss "$START" -t 3 -i "$VIDEO" \
   -vf "fps=12,scale=360:-1:flags=lanczos,palettegen=stats_mode=diff" \
   "$PALETTE"
 
-ffmpeg -y -loglevel error \
+ffmpeg -nostdin -y -loglevel error \
   -ss "$START" -t 3 -i "$VIDEO" -i "$PALETTE" \
   -lavfi "fps=12,scale=360:-1:flags=lanczos[v];[v][1:v]paletteuse=dither=bayer:bayer_scale=5" \
   -loop 0 \
