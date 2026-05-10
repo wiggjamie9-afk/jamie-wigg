@@ -1,23 +1,23 @@
 # Streaming Royalty Math — Instagram (carousel)
 
 ## Hook (line 1, < 8 words)
-Only 1 in 20 musicians earn from streaming.
+Streaming pays the rent for 1 in 20 musicians.
 
 ## Body
 
-Only 1 in 20 musicians earn from streaming.
+Streaming pays the rent for 1 in 20 musicians.
 
 The other 19 figured something out.
 
 Median streaming income in 2024: $1,450. The average: $11,523. The gap is the whole story — outliers drag the average up while half the industry earns less than a phone bill.
 
-Worse: 87% of tracks on Spotify earn exactly $0. They never clear the 1,000-stream-per-year threshold. Your distributor took $20 to put your track on a platform that decided it doesn't exist.
+87% of tracks on Spotify earn exactly $0. They never clear the 1,000-stream threshold. Your distributor took $20 to put your track on a platform that decided it doesn't exist.
 
 You're not "growing slowly." You're playing the wrong game.
 
-The other 19? They stopped fighting Spotify for $0.003 and started stacking: sync placements, fan investment, merch, AI-mastered direct-to-fan drops.
+The other 19 stopped fighting Spotify for $0.003 and stacked: sync placements, fan investment, AI-mastered direct-to-fan drops, merch.
 
-Streams became marketing. Money came from elsewhere.
+Streams became the marketing layer. Income came from elsewhere.
 
 ## CTA
 Comment PAID and I'll DM you the 9 ways indie musicians actually make money in 2026.
@@ -26,9 +26,9 @@ Comment PAID and I'll DM you the 9 ways indie musicians actually make money in 2
 #indieartist #musicproducer #musicmarketing #musicianlife #indiemusic #spotifyforartists #musicpromotion #musicbusiness #syncplacement #artistdevelopment #aimusic #rhythmix
 
 ## Notes
-- Char count (body + CTA): ~880. Adds ~150 with hashtags. Total ~1,030 — in the 800–1,500 sweet spot.
+- Char count (body + CTA): ~870. With hashtags ~1,020. Sweet spot ✓
 - Pillar: 4 — The Industry Lie
-- Voice tests: Stat Test ✓ (number-led hook), Setup Test ✓ (no setup line; first sentence IS the hook)
-- ManyChat keyword: PAID — `[CONFIRM]` not yet validated against your campaign log
-- Lead magnet: "9 ways indie musicians actually make money in 2026" — `[CONFIRM]` does this resource exist or do I need to draft it as a follow-up task?
-- Paired carousel: TBD — will be built in Step 6 (Visual Generator) once all writers are approved
+- Voice tests: Stat Test ✓, Setup Test ✓
+- ManyChat keyword: PAID
+- Lead magnet: drafted at /cowork-system/published/lead-magnets/9-ways-indie-musicians-make-money-2026.md
+- Paired carousel: /cowork-system/drafts/carousel-briefs/streaming-royalty-math-nano-banana-prompts-2026-05-10.md
