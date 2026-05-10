@@ -1,6 +1,8 @@
 # RHYTHMIX — Auto-Post Procedure (May 2026)
 
-This is the deterministic playbook I follow when you say **"post today"** or **"post 2026-05-NN"** in chat. It maps each date to a sequence of Zapier MCP write actions. It only fires posts whose platform supports auto-posting (IG / Threads / X / YouTube). TikTok stays manual — see POSTING-PLAYBOOK.md.
+This is the deterministic playbook I follow when you say **"post today"** or **"post 2026-05-NN"** in chat. It maps each date to a sequence of Zapier MCP write actions.
+
+> **Threads routing change (2026-05-10):** Threads-by-Unshape OAuth was blocked at Unshape's paywall, so the 4 Threads-only posts are rerouted as **IG posts with the "Share to Threads" toggle on**. IG cross-posts the same image+caption to Threads automatically — no Zapier-Threads connector needed.
 
 ## Base public URL pattern
 
@@ -12,19 +14,20 @@ BASE = https://raw.githubusercontent.com/wiggjamie9-afk/jamie-wigg/claude/new-se
 
 After this branch lands on `main`, swap the branch in the URL.
 
-For HTML mockups → PNG: until `clients/rhythmix/scripts/render-png.mjs` is run on a desktop and the resulting PNGs are pushed, IG image posts stay manual (they can't consume HTML). Run that script once a month and the rest of the pipeline is hands-free.
+PNGs are already rendered and committed (see commit `3d137d2`). When IG fires, every `.png` file in `clients/rhythmix/outputs/creatives/2026-05/` is reachable at `BASE/<path>`.
 
 ## Auto-postable in May 2026
 
-Of the 21 posts, **12 are auto-postable** once IG is on Creator + the three Zapier OAuth flows are complete. Per-platform breakdown:
+Of the 21 posts, **11 are auto-postable** via IG + YouTube. Per-platform breakdown:
 
-| Platform | Posts | Status (today) |
+| Platform | Posts | Status |
 | --- | --- | --- |
-| Instagram (image / carousel) | 02, 05, 09, 13, 16, 20 | ⏳ needs PNG render + IG OAuth + IG Creator account |
-| Threads (text / image) | 03, 08, 14, 19 | ⏳ needs Threads OAuth (image posts also need PNG render) |
-| YouTube Shorts | 06, 17 | ⏳ needs YouTube OAuth |
-| X | 11 | manual (no X OAuth — text-only post anyway) |
+| Instagram (image / carousel, some auto-share to Threads) | 02, 03†, 05, 08†, 09, 13, 14†, 16, 19†, 20 | ✅ IG OAuth done, PNGs rendered |
+| YouTube Shorts | 06, 17 | ✅ YouTube OAuth done |
+| X | 11 | manual (no X OAuth — text post anyway) |
 | TikTok | 01, 04, 07, 10, 12, 15, 18, 21 | manual (TikTok blocks 3rd-party posting) |
+
+† = posts that were originally Threads-native, now posted via IG with **"Share to Threads" toggle ON**. The IG Reel/Carousel UI has this option in the share screen — Zapier doesn't expose the toggle directly, so I'll prepend a one-line reminder when those posts fire that you should toggle it on at the IG side via the post's Edit-share-options menu (or you can pre-set it as a default in IG settings).
 
 ## Per-date procedure
 
@@ -32,25 +35,26 @@ Of the 21 posts, **12 are auto-postable** once IG is on Creator + the three Zapi
 
 - 01 TikTok manual
 
-### 2026-05-11 (Tue) — 1 auto candidate
+### 2026-05-11 (Tue) — 1 auto
 
-- **02** IG carousel:
+- **02** IG carousel (5 slides):
   - **action:** `execute_zapier_write_action(app="Instagram for Business", action="publish_media_v2")`
-  - **media:** `[BASE/clients/rhythmix/outputs/creatives/2026-05/02-14-features-one-subscription-01.png, ..., -05.png]` (5 slides)
+  - **media:** `[BASE/.../02-14-features-one-subscription-01.png, ..., -05.png]`
   - **caption:** body of `outputs/captions/2026-05/02-14-features-one-subscription.md`
 
-### 2026-05-12 (Wed) — 1 auto
+### 2026-05-12 (Wed) — 1 auto (was Threads, now IG → auto-shares to Threads)
 
-- **03** Threads single-text:
-  - **action:** `execute_zapier_write_action(app="Threads by Unshape", action="create_post")`
-  - **text:** body of `outputs/captions/2026-05/03-ai-music-microwave.md`
-  - **media_type:** `TEXT`
+- **03** IG single-image (auto-shares to Threads):
+  - **action:** `publish_media_v2`
+  - **media:** `[BASE/.../03-ai-music-microwave.png]`
+  - **caption:** body of post 03
+  - **note:** before posting, ensure IG → Settings → Privacy → "Share Posts to Threads" is enabled (one-time toggle) so this and posts 08, 14, 19 auto-cross-post.
 
 ### 2026-05-13 (Thu) — 0 auto
 
 - 04 TikTok manual
 
-### 2026-05-14 (Fri) — 1 auto candidate
+### 2026-05-14 (Fri) — 1 auto
 
 - **05** IG single-image:
   - **action:** `publish_media_v2`
@@ -63,7 +67,7 @@ Of the 21 posts, **12 are auto-postable** once IG is on Creator + the three Zapi
   - **action:** `execute_zapier_write_action(app="YouTube", action="upload_video")`
   - **title:** `Stem-split a 2010 demo in 30 seconds`
   - **description:** body of post 06
-  - **video:** `BASE/rhythmix-s3-tools-f/renders/rhythmix-s3-tools-f.mp4` (or the ffmpeg-recut version once pushed)
+  - **video:** `BASE/rhythmix-s3-tools-f/renders/rhythmix-s3-tools-f.mp4`
   - **privacy_status:** `public`
   - **tags:** `["stemseparation","musicproducer","aimusic","remix","producerlife","Shorts"]`
   - **made_for_kids:** `false`
@@ -72,17 +76,16 @@ Of the 21 posts, **12 are auto-postable** once IG is on Creator + the three Zapi
 
 - 07 TikTok reply manual
 
-### 2026-05-17 (Mon) — 1 auto candidate
+### 2026-05-17 (Mon) — 1 auto (was Threads, now IG → auto-shares to Threads)
 
-- **08** Threads single-image:
-  - **action:** `create_post`
-  - **text:** body of post 08
-  - **media_type:** `IMAGE`
-  - **image_url:** `BASE/.../08-nova-never-performed-live.png`
+- **08** IG single-image (auto-shares to Threads):
+  - **action:** `publish_media_v2`
+  - **media:** `[BASE/.../08-nova-never-performed-live.png]`
+  - **caption:** body of post 08
 
-### 2026-05-18 (Tue) — 1 auto candidate
+### 2026-05-18 (Tue) — 1 auto
 
-- **09** IG carousel:
+- **09** IG carousel (5 slides):
   - **action:** `publish_media_v2`
   - **media:** `[BASE/.../09-suno-udio-landr-rhythmix-01.png, ..., -05.png]`
   - **caption:** body of post 09
@@ -99,31 +102,30 @@ Of the 21 posts, **12 are auto-postable** once IG is on Creator + the three Zapi
 
 - 12 TikTok manual
 
-### 2026-05-22 (Sat) — 1 auto candidate
+### 2026-05-22 (Sat) — 1 auto
 
 - **13** IG single-image:
   - **action:** `publish_media_v2`
   - **media:** `[BASE/.../13-0-or-149.png]`
   - **caption:** body of post 13
 
-### 2026-05-23 (Sun) — 1 auto
+### 2026-05-23 (Sun) — 1 auto (was Threads, now IG → auto-shares to Threads)
 
-- **14** Threads single-text:
-  - **action:** `create_post`
-  - **text:** body of post 14
-  - **media_type:** `TEXT`
+- **14** IG single-image (auto-shares to Threads):
+  - **action:** `publish_media_v2`
+  - **media:** `[BASE/.../14-we-dont-take-royalties.png]`
+  - **caption:** body of post 14
 
 ### 2026-05-24 (Mon) — 0 auto
 
 - 15 TikTok manual
 
-### 2026-05-25 (Tue) — 1 auto candidate
+### 2026-05-25 (Tue) — 1 auto
 
-- **16** IG carousel (8 slides):
+- **16** IG carousel (8 slides — within IG's 10-slide limit):
   - **action:** `publish_media_v2`
   - **media:** `[BASE/.../16-six-tools-stop-paying-01.png, ..., -08.png]`
   - **caption:** body of post 16
-  - **note:** IG limits a carousel to 10 slides — 8 fits.
 
 ### 2026-05-26 (Wed) — 1 auto
 
@@ -139,15 +141,14 @@ Of the 21 posts, **12 are auto-postable** once IG is on Creator + the three Zapi
 
 - 18 TikTok manual
 
-### 2026-05-28 (Fri) — 1 auto candidate
+### 2026-05-28 (Fri) — 1 auto (was Threads, now IG → auto-shares to Threads)
 
-- **19** Threads single-image:
-  - **action:** `create_post`
-  - **text:** body of post 19
-  - **media_type:** `IMAGE`
-  - **image_url:** `BASE/.../19-2400-average-sync.png`
+- **19** IG single-image (auto-shares to Threads):
+  - **action:** `publish_media_v2`
+  - **media:** `[BASE/.../19-2400-average-sync.png]`
+  - **caption:** body of post 19
 
-### 2026-05-29 (Sat) — 1 auto candidate
+### 2026-05-29 (Sat) — 1 auto
 
 - **20** IG single-image:
   - **action:** `publish_media_v2`
@@ -160,24 +161,30 @@ Of the 21 posts, **12 are auto-postable** once IG is on Creator + the three Zapi
 
 ## Ready-to-fire summary
 
-Once IG is on Creator + the 3 OAuth flows are done + PNGs are rendered, **the daily ping list is**:
-
-| Date | Skill ping | Posts fired |
+| Date | Ping | Posts fired |
 | --- | --- | --- |
 | 2026-05-11 | "post today" | 02 IG carousel |
-| 2026-05-12 | "post today" | 03 Threads text |
+| 2026-05-12 | "post today" | 03 IG → Threads cross-post |
 | 2026-05-14 | "post today" | 05 IG single |
 | 2026-05-15 | "post today" | 06 YouTube Short |
-| 2026-05-17 | "post today" | 08 Threads image |
+| 2026-05-17 | "post today" | 08 IG → Threads cross-post |
 | 2026-05-18 | "post today" | 09 IG carousel |
 | 2026-05-22 | "post today" | 13 IG single |
-| 2026-05-23 | "post today" | 14 Threads text |
+| 2026-05-23 | "post today" | 14 IG → Threads cross-post |
 | 2026-05-25 | "post today" | 16 IG carousel |
 | 2026-05-26 | "post today" | 17 YouTube Short |
-| 2026-05-28 | "post today" | 19 Threads image |
+| 2026-05-28 | "post today" | 19 IG → Threads cross-post |
 | 2026-05-29 | "post today" | 20 IG single |
 
-12 days you say "post today" + 9 days you post a TikTok manually. The other 1 day (X-only on the 20th) is single-text — paste the caption from the playbook into X.
+12 days you say "post today" + 9 days you post a TikTok manually. The X post on 2026-05-20 is single-text — paste the caption from the playbook.
+
+## One-time IG toggle
+
+Before the first auto-post fires, enable IG-to-Threads cross-posting once:
+
+**IG app → Settings & privacy → Privacy → Posts → Sharing to other apps → Threads → ON (always)**
+
+After that, every IG post automatically appears on Threads with the same caption + image. No per-post action needed.
 
 ## What I do when you say "post today"
 

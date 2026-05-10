@@ -468,23 +468,16 @@ LTD pinned. 60 spots left.
 
 **Status:** Zapier MCP enabled for Instagram, Threads, and YouTube. 12 of 21 posts can fire automatically. The other 9 (8 TikToks + 1 X) stay manual.
 
-**Activation steps** (one-time, ~5 minutes):
+**Activation steps** (one-time, ~3 minutes):
 
 1. **Convert Instagram → Creator.** IG app → Settings → Account type → Switch to Creator. Free, instant, no review.
-2. **Authorize each Zapier app** (click each link, sign in, allow):
-   - Instagram for Business: https://mcp.zapier.com/mcp/servers/f4b999dd-2a62-40eb-9f60-90df9d6610d3/app-auth/InstagramBusinessCLIAPI
-   - Threads by Unshape: https://mcp.zapier.com/mcp/servers/f4b999dd-2a62-40eb-9f60-90df9d6610d3/app-auth/App198018CLIAPI
-   - YouTube: https://mcp.zapier.com/mcp/servers/f4b999dd-2a62-40eb-9f60-90df9d6610d3/app-auth/YouTubeV4CLIAPI
-3. **Render the 8 HTML mockups to PNG** (one-off, ~2 min on a desktop):
-   ```bash
-   npm install -g playwright
-   npx playwright install chromium
-   node clients/rhythmix/scripts/render-png.mjs 2026-05
-   git add clients/rhythmix/outputs/creatives/2026-05/*.png
-   git commit -m "Render May 2026 PNG creatives"
-   git push
-   ```
-4. **Tell me "all three authed and PNGs pushed."** I'll dry-run the first auto-post day to verify, then fire each day on demand.
+2. **Enable IG → Threads cross-posting once.** IG app → Settings & privacy → Privacy → Posts → Sharing to other apps → Threads → ON (always). This replaces the broken Threads-by-Unshape Zapier connector.
+3. **Authorize each Zapier app** (click, sign in, allow):
+   - Instagram for Business: https://mcp.zapier.com/mcp/servers/f4b999dd-2a62-40eb-9f60-90df9d6610d3/app-auth/InstagramBusinessCLIAPI ✅
+   - YouTube: https://mcp.zapier.com/mcp/servers/f4b999dd-2a62-40eb-9f60-90df9d6610d3/app-auth/YouTubeV4CLIAPI ✅
+4. **Tell me "ready to post"** when steps 1–3 are done. I'll dry-run the first auto-post day to verify, then fire each day on demand.
+
+PNGs are already rendered and committed (commit `3d137d2`) — no desktop work required.
 
 **Daily flow once activated:** every morning, ping me **"post today"** in chat. I fire the IG / Threads / YouTube posts due that day via Zapier MCP, log them in HEARTBEAT.md, and report back with permalinks. You handle the TikTok upload manually using the playbook block above.
 

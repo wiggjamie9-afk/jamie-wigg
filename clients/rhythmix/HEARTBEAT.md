@@ -5,6 +5,7 @@ Most-recent-first.
 
 | Timestamp | Skill | Args | Output | Status |
 | --- | --- | --- | --- | --- |
+| 2026-05-10T13:35:00+00:00 | social-media-manager | rhythmix 2026-05 reroute-threads | 03 + 14 PNG creatives + AUTOPOST-PROCEDURE update | ok (Threads-by-Unshape OAuth blocked at vendor paywall; rerouted 4 Threads-only posts (03, 08, 14, 19) as IG posts with IG→Threads cross-post toggle; net 11 auto + 10 manual instead of 11 auto + 10 manual but cleaner) |
 | 2026-05-10T13:05:00+00:00 | social-creative-designer | rhythmix 2026-05 png-render | clients/rhythmix/outputs/creatives/2026-05/*.png (23 PNGs) | ok (rendered via WeasyPrint+PyMuPDF since sandbox blocks chromium CDN; system-font fallback compensated via renderer-only CSS overrides; all 1080×1080 / 1080×1350 dimensions correct) |
 | 2026-05-10T12:15:00+00:00 | social-media-manager | rhythmix 2026-05 wire-autopost | AUTOPOST-PROCEDURE.md + scripts/render-png.mjs + POSTING-PLAYBOOK update | ok (Zapier MCP enabled for IG/Threads/YouTube, 12/21 posts auto-postable, awaiting user OAuth + IG-Creator conversion + PNG render) |
 | 2026-05-10T11:50:00+00:00 | social-media-manager | rhythmix 2026-05 finalize | POSTING-PLAYBOOK.md + 2026-05-metrics.csv + 2026-05.md skeleton + README.md | ok (Step 5 + 6 staged: day-by-day playbook, metrics tracker, review skeleton, client README) |
