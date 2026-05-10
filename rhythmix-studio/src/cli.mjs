@@ -6,6 +6,7 @@ import { buildPlan } from "./plan.mjs";
 import { MODELS, estimateCost } from "./models.mjs";
 import { replicateRun, downloadToDisk, firstUrl, ReplicateError } from "./replicate.mjs";
 import { pexelsSearch, pickVideoFile, downloadPexelsVideo, PexelsError } from "./sources/pexels.mjs";
+import { listLocalClips, copyLocalClip, LocalSourceError } from "./sources/local.mjs";
 import { compose } from "./compose.mjs";
 import { log } from "./log.mjs";
 
@@ -42,7 +43,8 @@ Common options:
   --theme <text>        Visual theme/concept (required for plan/render).
   --bpm <n>             Track BPM, used to snap cuts to beats. Default: no snapping.
   --aspect <ratio>      "16:9" (default), "9:16", or "1:1".
-  --source <name>       "replicate" (default, paid AI gen) or "pexels" (FREE stock footage).
+  --source <name>       "replicate" (default, paid AI gen), "pexels" (FREE stock footage), or "local" (FREE, your own clips).
+  --clips-dir <path>    For --source local: directory containing .mp4/.mov clips to use as scene material.
   --model <name>        For replicate source: hunyuan-video | kling-v2 | luma-ray | minimax-video.
   --out <dir>           Output directory (default: ./rhythmix-out/<track-name>).
   --dry-run             Plan only, print scenes + cost, do not call any model.
@@ -54,6 +56,9 @@ Sources:
   pexels      Real cinematic stock footage. Free.
               Trade-off: artistic consistency across clips is lower.
               Requires PEXELS_API_KEY (free signup at https://www.pexels.com/api/).
+  local       Your own video files used as scene material. Free, no API.
+              Use --clips-dir <path> to point at a directory of .mp4 clips.
+              Trade-off: visuals are whatever you supply, not theme-matched.
 
 Environment:
   REPLICATE_API_TOKEN   For --source replicate.
@@ -105,7 +110,11 @@ async function cmdPlan(args) {
 
   log.ok(`${plan.scenes.length} scenes across ${plan.sections.length} sections`);
   for (const s of plan.scenes) {
-    const label = source === "pexels" ? "Pexels stock" : MODELS[s.model].label;
+    const label = source === "pexels"
+      ? "Pexels stock"
+      : source === "local"
+        ? "Local clip"
+        : MODELS[s.model].label;
     log.step(
       s.index + 1,
       plan.scenes.length,
@@ -116,6 +125,8 @@ async function cmdPlan(args) {
 
   if (source === "pexels") {
     log.info("Pexels mode: $0 — uses your free PEXELS_API_KEY.");
+  } else if (source === "local") {
+    log.info("Local mode: $0 — uses video files from --clips-dir.");
   } else {
     const cost = estimateCost(plan);
     log.cost("Estimated total", cost);
@@ -149,11 +160,19 @@ async function generateScenePexels({ scene, outDir, pexelsVideos }) {
   return downloadPexelsVideo({ url: file.link, filename, outDir });
 }
 
-async function generateAll({ plan, outDir, concurrency, source }) {
+async function generateSceneLocal({ scene, outDir, localClips }) {
+  const srcPath = localClips[scene.index % localClips.length];
+  if (!srcPath) throw new Error(`No local clip available for scene ${scene.index}`);
+  const filename = `scene-${String(scene.index).padStart(3, "0")}-local.mp4`;
+  return copyLocalClip({ srcPath, filename, outDir });
+}
+
+async function generateAll({ plan, outDir, concurrency, source, clipsDir }) {
   const sceneDir = join(outDir, "scenes");
   await ensureDir(sceneDir);
 
   let pexelsVideos = null;
+  let localClips = null;
   if (source === "pexels") {
     log.info(`Searching Pexels for: "${plan.theme}"`);
     const orientation = plan.aspectRatio === "9:16"
@@ -168,6 +187,11 @@ async function generateAll({ plan, outDir, concurrency, source }) {
     if (!pexelsVideos.length) {
       throw new Error(`Pexels returned no videos for "${plan.theme}". Try a different theme.`);
     }
+  } else if (source === "local") {
+    if (!clipsDir) throw new Error("--clips-dir is required for --source local");
+    log.info(`Loading local clips from: ${clipsDir}`);
+    localClips = await listLocalClips(clipsDir);
+    log.ok(`Found ${localClips.length} local clips`);
   }
 
   const results = new Array(plan.scenes.length);
@@ -176,12 +200,18 @@ async function generateAll({ plan, outDir, concurrency, source }) {
     while (cursor < plan.scenes.length) {
       const idx = cursor++;
       const scene = plan.scenes[idx];
-      const label = source === "pexels" ? "Pexels stock" : MODELS[scene.model].label;
+      const label = source === "pexels"
+        ? "Pexels stock"
+        : source === "local"
+          ? "Local clip"
+          : MODELS[scene.model].label;
       log.step(idx + 1, plan.scenes.length, `Fetching ${scene.role} via ${label}…`);
       try {
         const path = source === "pexels"
           ? await generateScenePexels({ scene, outDir: sceneDir, pexelsVideos })
-          : await generateSceneReplicate({ scene, outDir: sceneDir });
+          : source === "local"
+            ? await generateSceneLocal({ scene, outDir: sceneDir, localClips })
+            : await generateSceneReplicate({ scene, outDir: sceneDir });
         log.ok(`  scene ${idx + 1} → ${path}`);
         results[idx] = path;
       } catch (err) {
@@ -201,6 +231,7 @@ function requireSourceCredentials(source) {
   if (source === "pexels" && !process.env.PEXELS_API_KEY) {
     throw new Error("PEXELS_API_KEY not set. Required for --source pexels. Free at https://www.pexels.com/api/");
   }
+  // source === "local" needs no credentials, only --clips-dir at runtime
 }
 
 async function cmdRender(args) {
@@ -215,7 +246,7 @@ async function cmdRender(args) {
 
   log.header(`Generating scenes (source: ${source})`);
   const concurrency = Number(args.concurrency ?? 2);
-  const sceneFiles = await generateAll({ plan, outDir, concurrency, source });
+  const sceneFiles = await generateAll({ plan, outDir, concurrency, source, clipsDir: args["clips-dir"] });
 
   log.header("Composing final video");
   const finalPath = join(outDir, "final.mp4");
