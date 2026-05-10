@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick Start (For Claude)
 
 - **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
+- **Run a full month of social for a client (RHYTHMIX or anyone else)** → invoke `/social-media-manager`. It dispatches `/brand-onboarding` (once per client) → `/content-calendar` (monthly) → `/caption-writer` + `/social-creative-designer` (per post) → `/social-performance-review` (end of month). Outputs land in `clients/<slug>/`.
 - **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
 - **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.
 - **Reference for video pipeline** → `rhythmix-overview-60s/` is the canonical 60s landscape example.
@@ -19,7 +20,8 @@ This is a workspace combining a Remotion video starter, HyperFrames-related skil
 
 - `video/` — Remotion 4 + React 19 + Tailwind v4 video project (currently a starter; `MyComposition` returns `null`).
 - `text.txt`, `text 2.txt`, `text 3.txt` — RHYTHMIX landing page HTML/CSS fragments (hero, features, pricing, testimonials, FAQ).
-- `.agents/skills/` — Source-of-truth skill bundles (hyperframes, hyperframes-cli, hyperframes-registry, remotion-to-hyperframes, website-to-hyperframes, gsap).
+- `.agents/skills/` — Source-of-truth skill bundles (hyperframes, hyperframes-cli, hyperframes-registry, remotion-to-hyperframes, website-to-hyperframes, gsap, plus the social-AI-team: social-media-manager, brand-onboarding, content-calendar, caption-writer, social-creative-designer, social-performance-review).
+- `clients/<slug>/` — Per-client workspace produced by the social-AI-team (context, outputs, HEARTBEAT.md). Created on first onboarding.
 - `.claude/skills/` — Mostly symlinks into `.agents/skills/` plus a local `remotion` skill.
 - `skills-lock.json` — Tracks upstream commit hashes for skills sourced from `heygen-com/hyperframes`.
 - `graphify-out/` — Generated knowledge-graph artifacts (`graph.html`, `graph.json`, `GRAPH_REPORT.md`). Regenerated output, not hand-edited.
@@ -60,8 +62,10 @@ Available skills:
 - `remotion`, `remotion-to-hyperframes` — Remotion authoring + Remotion→HyperFrames porting.
 - `website-to-hyperframes` — capture a website into a HyperFrames video.
 - `gsap` — GSAP animation reference for HyperFrames compositions.
+- `social-media-manager` — orchestrator for the social-AI-team. Dispatches the five skills below.
+- `brand-onboarding`, `content-calendar`, `caption-writer`, `social-creative-designer`, `social-performance-review` — the social-AI-team specialists. Each runs once per its phase and writes to `clients/<slug>/`. Encodes the visumind 1-second design rule and a Paperclip-style heartbeat audit trail. The creative step delegates to `rhythmix-author` for RHYTHMIX motion content and to the creative-stack MCP for image/video generation.
 
-If the user asks for HTML-based video, captions/subtitles, audio-reactive visuals, scene transitions, TTS, or website→video flows, reach for the HyperFrames skills rather than Remotion.
+If the user asks for HTML-based video, captions/subtitles, audio-reactive visuals, scene transitions, TTS, or website→video flows, reach for the HyperFrames skills rather than Remotion. If the user asks for "post for me," "run the social team," "kick off a client," or anything spanning more than one of the social-AI-team specialists, reach for `/social-media-manager`.
 
 ## RHYTHMIX Landing Page Drafts
 
