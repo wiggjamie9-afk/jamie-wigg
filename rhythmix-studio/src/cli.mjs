@@ -1,7 +1,7 @@
 import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join, basename } from "node:path";
-import { probeAudio } from "./audio.mjs";
+import { probeAudio, detectBpm } from "./audio.mjs";
 import { buildPlan } from "./plan.mjs";
 import { MODELS, estimateCost } from "./models.mjs";
 import { replicateRun, downloadToDisk, firstUrl, ReplicateError } from "./replicate.mjs";
@@ -91,6 +91,17 @@ async function cmdPlan(args) {
   const audio = await probeAudio(track);
   log.ok(`Duration: ${audio.duration.toFixed(2)}s @ ${audio.sampleRate}Hz, ${audio.channels}ch (${audio.codec})`);
 
+  let bpm = args.bpm ? Number(args.bpm) : undefined;
+  if (!bpm) {
+    const detected = await detectBpm(track);
+    if (detected) {
+      bpm = detected.bpm;
+      log.ok(`Auto-detected BPM: ${bpm.toFixed(1)} (via ${detected.detector})`);
+    } else {
+      log.warn(`No --bpm given and no BPM detector installed (install 'aubio' or 'bpm-tools' for auto-detect). Cuts will not snap to beat.`);
+    }
+  }
+
   const aspectRatio = args.aspect ?? "16:9";
   const dims = aspectRatio === "9:16"
     ? { width: 720, height: 1280 }
@@ -101,7 +112,7 @@ async function cmdPlan(args) {
   const plan = buildPlan({
     audio,
     theme: args.theme,
-    bpm: args.bpm ? Number(args.bpm) : undefined,
+    bpm,
     modelPreference: args.model,
     aspectRatio,
     width: dims.width,
@@ -167,6 +178,29 @@ async function generateSceneLocal({ scene, outDir, localClips }) {
   return copyLocalClip({ srcPath, filename, outDir });
 }
 
+// Wrap a scene fetch in bounded retries with exponential backoff so a
+// transient API failure doesn't abandon the whole render (and its $$).
+async function withRetry(fn, { attempts = 3, label = "fetch" } = {}) {
+  let lastErr;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i === attempts) break;
+      const waitMs = 1000 * Math.pow(2, i - 1);
+      log.warn(`  ${label} failed (attempt ${i}/${attempts}): ${err.message} — retrying in ${waitMs}ms`);
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+  throw lastErr;
+}
+
+function expectedSceneFilename(scene, source) {
+  const tag = source === "pexels" ? "pexels" : source === "local" ? "local" : scene.model;
+  return `scene-${String(scene.index).padStart(3, "0")}-${tag}.mp4`;
+}
+
 async function generateAll({ plan, outDir, concurrency, source, clipsDir }) {
   const sceneDir = join(outDir, "scenes");
   await ensureDir(sceneDir);
@@ -205,17 +239,31 @@ async function generateAll({ plan, outDir, concurrency, source, clipsDir }) {
         : source === "local"
           ? "Local clip"
           : MODELS[scene.model].label;
+
+      // Checkpoint: skip if this scene's output already exists from a
+      // previous run. Lets a failed render resume without re-spending.
+      const existingPath = join(sceneDir, expectedSceneFilename(scene, source));
+      if (existsSync(existingPath)) {
+        log.step(idx + 1, plan.scenes.length, `✓ scene ${idx + 1} already rendered — skipping`);
+        results[idx] = existingPath;
+        continue;
+      }
+
       log.step(idx + 1, plan.scenes.length, `Fetching ${scene.role} via ${label}…`);
       try {
-        const path = source === "pexels"
-          ? await generateScenePexels({ scene, outDir: sceneDir, pexelsVideos })
-          : source === "local"
-            ? await generateSceneLocal({ scene, outDir: sceneDir, localClips })
-            : await generateSceneReplicate({ scene, outDir: sceneDir });
+        const path = await withRetry(
+          () => (source === "pexels"
+            ? generateScenePexels({ scene, outDir: sceneDir, pexelsVideos })
+            : source === "local"
+              ? generateSceneLocal({ scene, outDir: sceneDir, localClips })
+              : generateSceneReplicate({ scene, outDir: sceneDir })),
+          { attempts: 3, label: `scene ${idx + 1} fetch` }
+        );
         log.ok(`  scene ${idx + 1} → ${path}`);
         results[idx] = path;
       } catch (err) {
-        log.err(`  scene ${idx + 1} failed: ${err.message}`);
+        log.err(`  scene ${idx + 1} failed after retries: ${err.message}`);
+        log.info(`  Re-run the same command to resume — completed scenes are kept.`);
         throw err;
       }
     }

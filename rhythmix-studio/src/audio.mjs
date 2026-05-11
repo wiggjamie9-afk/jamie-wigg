@@ -37,6 +37,39 @@ export async function probeAudio(path) {
   };
 }
 
+// Try external BPM detectors in order of accuracy. Returns null if none
+// installed — caller then falls back to "no beat snapping" with a clear hint.
+export async function detectBpm(path) {
+  const detectors = [
+    {
+      cmd: "aubio",
+      args: ["tempo", path],
+      parse: (out) => {
+        const m = out.match(/([\d.]+)\s*bpm/i) || out.match(/^([\d.]+)/);
+        return m ? Number(m[1]) : null;
+      },
+    },
+    {
+      cmd: "bpm-tag",
+      args: ["-n", path],
+      parse: (out) => {
+        const m = out.match(/([\d.]+)\s*BPM/i);
+        return m ? Number(m[1]) : null;
+      },
+    },
+  ];
+  for (const d of detectors) {
+    try {
+      const { stdout } = await run(d.cmd, d.args);
+      const bpm = d.parse(stdout);
+      if (bpm && bpm > 40 && bpm < 240) return { bpm, detector: d.cmd };
+    } catch {
+      // detector not installed or failed; try next
+    }
+  }
+  return null;
+}
+
 export function beatsFromBpm({ duration, bpm, downbeatsPerBar = 4 }) {
   if (!bpm || bpm <= 0) return [];
   const secondsPerBeat = 60 / bpm;

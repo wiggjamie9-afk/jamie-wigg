@@ -16,10 +16,18 @@ function runFfmpeg(args) {
   });
 }
 
-async function trimClip({ input, output, duration }) {
+// Cover-style aspect fit: scale up so the clip fully covers the target box,
+// then center-crop the overflow. No black bars; some edge content is lost.
+function aspectFilter({ width, height }) {
+  return `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
+}
+
+async function trimClip({ input, output, duration, width, height }) {
+  const filter = aspectFilter({ width, height });
   await runFfmpeg([
     "-i", input,
     "-t", String(duration),
+    "-vf", filter,
     "-c:v", "libx264",
     "-preset", "veryfast",
     "-pix_fmt", "yuv420p",
@@ -67,7 +75,13 @@ export async function compose({ plan, sceneFiles, outputPath, workDir }) {
     const scene = plan.scenes[i];
     const src = sceneFiles[i];
     const dst = join(workDir, `trimmed-${String(i).padStart(3, "0")}.mp4`);
-    await trimClip({ input: src, output: dst, duration: scene.duration });
+    await trimClip({
+      input: src,
+      output: dst,
+      duration: scene.duration,
+      width: scene.width ?? plan.scenes[0]?.width ?? 1280,
+      height: scene.height ?? plan.scenes[0]?.height ?? 720,
+    });
     trimmed.push(dst);
   }
 
