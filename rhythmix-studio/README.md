@@ -26,7 +26,22 @@ This is the **CLI engine** that the future RHYTHMIX Studio web app will wrap.
 
 - Node 20+
 - `ffmpeg` and `ffprobe` on PATH
-- A Replicate API token: https://replicate.com/account/api-tokens
+- Optional: `aubio` for auto-BPM detection (`brew install aubio` / `apt install aubio-tools`)
+- A Replicate API token (paid mode): https://replicate.com/account/api-tokens
+- Or a free Pexels API key (free mode): https://www.pexels.com/api/
+
+## No computer? Run it in your browser via GitHub Codespaces
+
+iPad-only or Chromebook? You can render videos directly in the browser:
+
+1. Open this repo in Safari/Chrome
+2. Tap **Code → Codespaces → Create codespace on main**
+3. Wait ~1 min for the environment to build
+4. In the terminal, run: `bash rhythmix-studio/demo.sh`
+5. Download `rhythmix-out/demo/final.mp4` from the file tree
+
+Free for 60 hours/month on any GitHub account. The `.devcontainer/`
+config pre-installs Node, ffmpeg, and aubio.
 
 ## Quickstart
 
