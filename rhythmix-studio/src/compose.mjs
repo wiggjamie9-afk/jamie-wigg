@@ -26,9 +26,12 @@ async function trimClip({ input, output, duration, width, height }) {
   // Normalize to a fixed framerate + reset PTS — xfade (used for transitions)
   // refuses to compose inputs with mismatched timebases, so all clips have
   // to come out of trim with the same fps/timebase even if their sources
-  // differ.
+  // differ. -stream_loop -1 loops the input indefinitely so a short source
+  // clip (e.g. a 4s --source local file) still produces the full requested
+  // duration; the -t flag then truncates cleanly at the right length.
   const filter = `${aspectFilter({ width, height })},fps=30,setpts=PTS-STARTPTS`;
   await runFfmpeg([
+    "-stream_loop", "-1",
     "-i", input,
     "-t", String(duration),
     "-vf", filter,
