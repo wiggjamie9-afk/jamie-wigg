@@ -15,6 +15,10 @@
 set -e
 
 cd "$(dirname "$0")/.."   # repo root
+# Demo is meant to be fresh every run, not resumed — clear any cached
+# scenes/work from a previous demo so updates to the script don't get
+# masked by the resume-from-checkpoint behaviour.
+find rhythmix-out/demo -mindepth 1 -delete 2>/dev/null || true
 mkdir -p rhythmix-out/demo
 
 echo ""
@@ -32,10 +36,29 @@ ffmpeg -y -loglevel error \
 
 echo "🎬 [2/3] Generating 15 synthetic source clips..."
 mkdir -p rhythmix-out/demo/clips
+# Use ffmpeg's gradients lavfi source — generates beautiful animated colour
+# fields in real time (no per-pixel math), so 15 clips finish in seconds
+# instead of minutes. Each clip rotates the colour pair and shifts the
+# gradient angle for visual variety.
+COLOURS=("#ff1f5a:#7c3aed" "#00d8ff:#ff1f5a" "#f5c000:#7c3aed" "#7c3aed:#00d8ff" \
+         "#ff1f5a:#f5c000" "#00d8ff:#7c3aed" "#7c3aed:#f5c000" "#f5c000:#00d8ff" \
+         "#ff1f5a:#00d8ff" "#7c3aed:#ff1f5a" "#00d8ff:#f5c000" "#f5c000:#ff1f5a" \
+         "#ff1f5a:#7c3aed" "#00d8ff:#ff1f5a" "#7c3aed:#00d8ff")
 for i in $(seq 0 14); do
+  pair="${COLOURS[$i]}"
+  c0="${pair%%:*}"
+  c1="${pair##*:}"
+  # Alternate diagonal direction per clip for visual variety without ever
+  # going outside the frame (no corner artifacts from rotation).
+  if [ $((i % 2)) -eq 0 ]; then
+    coords="x0=0:y0=0:x1=1280:y1=720"
+  else
+    coords="x0=1280:y0=0:x1=0:y1=720"
+  fi
   ffmpeg -y -loglevel error -f lavfi \
-    -i "color=c=black:s=1280x720:r=30:d=8,format=yuv420p,geq=r='128+127*sin(2*PI*(X/W*cos(${i})+T/4))':g='128+127*sin(2*PI*(Y/H*sin(${i})+T/3))':b='128+127*sin(2*PI*((X+Y)/W*0.7+T/5))',gblur=sigma=20,eq=saturation=1.5:contrast=1.05" \
-    -c:v libx264 -preset veryfast -pix_fmt yuv420p \
+    -i "gradients=s=1280x720:r=30:duration=8:c0=${c0}:c1=${c1}:${coords}:speed=0.15:nb_colors=2" \
+    -vf "eq=saturation=1.3:contrast=1.05" \
+    -t 8 -c:v libx264 -preset veryfast -pix_fmt yuv420p \
     "rhythmix-out/demo/clips/clip-$(printf "%02d" $i).mp4"
 done
 
