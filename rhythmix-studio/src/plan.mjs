@@ -43,32 +43,66 @@ function clipsForSection({ section, modelMaxSeconds }) {
 
 const PROMPT_RECIPES = {
   intro: [
-    "Slow, atmospheric establishing shot, {theme}, anamorphic lens, golden hour, volumetric light, cinematic.",
+    "Slow atmospheric establishing shot of {theme}, anamorphic lens, golden hour, volumetric light, cinematic.",
     "Drone push-in over {theme}, dawn mist, 35mm film grain, shallow depth of field.",
+    "Opening wide of {theme} at first light, lens flare, soft particulates, peaceful.",
+    "Static held shot of {theme} pre-dawn, indigo sky, gentle camera drift, atmospheric.",
+    "Long lens telephoto of {theme}, heat shimmer, distant figure, mysterious.",
   ],
   verse: [
     "Mid-shot of {theme}, handheld camera, naturalistic lighting, 35mm film aesthetic, subtle motion.",
     "Tracking shot through {theme}, neon ambience, rain-slick surfaces, Roger Deakins lighting.",
+    "Over-the-shoulder POV through {theme}, organic camera shake, available light, intimate.",
+    "Side-tracking dolly past {theme}, soft window light, dust motes, observational.",
+    "Locked-off mid-shot of {theme}, slight push-in, naturalistic palette, film grain.",
+    "Walking handheld through {theme}, sodium streetlight glow, candid feel.",
   ],
   chorus: [
     "Sweeping cinematic crane shot revealing {theme}, dramatic god rays, epic scale, IMAX feel, vivid color grade.",
     "Hero close-up amid {theme}, lens flares, particles in air, slow-motion, blockbuster cinematography.",
     "Wide aerial reveal of {theme}, dramatic clouds, rich teal-and-orange grade, cinematic.",
+    "Tracking-back hero shot through {theme}, kicked-up debris, anamorphic flares, action-film energy.",
+    "Overhead spinning top-down of {theme}, kaleidoscopic symmetry, saturated color, music-video grammar.",
+    "Whip-pan into a hero pose in {theme}, motion blur, decisive light, big-screen confidence.",
+    "Slow-mo low-angle through {theme}, lens flare across frame, hero silhouette, anthemic.",
   ],
   bridge: [
     "Surreal dreamlike interpretation of {theme}, prismatic light, slow drift, ethereal palette, art-house.",
     "Macro abstract textures inspired by {theme}, shallow focus, color shift, dreamlike.",
+    "Upside-down reflective shot of {theme}, water-mirror surface, suspended time, melancholic.",
+    "Slow-zoom on a single detail of {theme}, soft focus pulled across plane, contemplative.",
   ],
   outro: [
     "Final lingering shot of {theme}, fade to silhouette, warm dusk light, slow reveal, melancholy cinematic.",
     "Pulled-back wide of {theme}, slow zoom out, soft focus, end-credits energy.",
+    "Static long-hold of {theme} at twilight, gentle ambient motion, reflective.",
+    "Quiet aerial pull-up away from {theme}, dusk colors, fade-out cadence.",
   ],
 };
 
-function pickPrompt(role, theme, seed) {
-  const recipes = PROMPT_RECIPES[role] ?? PROMPT_RECIPES.verse;
-  const idx = seed % recipes.length;
-  return recipes[idx].replace("{theme}", theme);
+// Deterministic shuffle so re-running the same plan gives the same scenes,
+// but consecutive scenes in the same section don't repeat the same prompt.
+function shuffleSeeded(list, seed) {
+  const out = [...list];
+  let s = seed || 1;
+  for (let i = out.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280;
+    const j = Math.floor((s / 233280) * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function buildPromptPicker() {
+  const queues = {};
+  return function pick(role, theme, sceneSeed) {
+    const recipes = PROMPT_RECIPES[role] ?? PROMPT_RECIPES.verse;
+    if (!queues[role] || !queues[role].length) {
+      queues[role] = shuffleSeeded(recipes, sceneSeed + role.length);
+    }
+    const tpl = queues[role].shift();
+    return tpl.replace("{theme}", theme);
+  };
 }
 
 export function buildPlan({
@@ -89,6 +123,7 @@ export function buildPlan({
 
   const scenes = [];
   let sceneSeed = 0;
+  const pickPrompt = buildPromptPicker();
   for (const section of sections) {
     const model = pickModel({
       preference: modelPreference,
