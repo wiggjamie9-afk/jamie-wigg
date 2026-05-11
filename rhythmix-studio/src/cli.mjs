@@ -1,7 +1,7 @@
 import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join, basename } from "node:path";
-import { probeAudio, detectBpm } from "./audio.mjs";
+import { probeAudio, detectBpm, loudnessCurve, structureFromLoudness } from "./audio.mjs";
 import { buildPlan } from "./plan.mjs";
 import { MODELS, estimateCost } from "./models.mjs";
 import { replicateRun, downloadToDisk, firstUrl, ReplicateError } from "./replicate.mjs";
@@ -102,6 +102,20 @@ async function cmdPlan(args) {
     }
   }
 
+  // Optional audio-driven structure detection. Reads the per-second loudness
+  // curve and groups quiet/loud runs into intro/verse/chorus/bridge/outro.
+  // Falls back to the hardcoded template if the song is too short or too flat.
+  let structure;
+  if (!args["flat-plan"]) {
+    const curve = await loudnessCurve(track);
+    structure = structureFromLoudness(curve);
+    if (structure) {
+      log.ok(`Detected structure: ${structure.map((s) => s.role).join(" → ")}`);
+    } else {
+      log.info(`Audio too flat or short for structure detection — using default template.`);
+    }
+  }
+
   const aspectRatio = args.aspect ?? "16:9";
   const dims = aspectRatio === "9:16"
     ? { width: 720, height: 1280 }
@@ -113,6 +127,7 @@ async function cmdPlan(args) {
     audio,
     theme: args.theme,
     bpm,
+    structure,
     modelPreference: args.model,
     aspectRatio,
     width: dims.width,
@@ -299,7 +314,8 @@ async function cmdRender(args) {
   log.header("Composing final video");
   const finalPath = join(outDir, "final.mp4");
   const workDir = join(outDir, "work");
-  await compose({ plan, sceneFiles, outputPath: finalPath, workDir });
+  const transitions = args["no-transitions"] ? "cut" : "crossfade";
+  await compose({ plan, sceneFiles, outputPath: finalPath, workDir, transitions });
   log.ok(`Final video: ${finalPath}`);
 }
 
@@ -319,7 +335,8 @@ async function cmdRenderFromPlan(args) {
   log.header("Composing final video");
   const finalPath = join(outDir, "final.mp4");
   const workDir = join(outDir, "work");
-  await compose({ plan: planData, sceneFiles, outputPath: finalPath, workDir });
+  const transitions = args["no-transitions"] ? "cut" : "crossfade";
+  await compose({ plan: planData, sceneFiles, outputPath: finalPath, workDir, transitions });
   log.ok(`Final video: ${finalPath}`);
 }
 
