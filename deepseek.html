@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RHYTHMIX — DeepSeek-V4-Pro · 1.6T MoE, 1M context</title>
+  <meta name="description" content="Chat with DeepSeek-V4-Pro: 1.6T parameter Mixture-of-Experts model, 49B activated, 1M-token context, open weights under MIT. Three reasoning modes.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rhythmixapp.com.au/deepseek.html">
+  <meta property="og:title" content="RHYTHMIX — DeepSeek-V4-Pro playground">
+  <meta property="og:description" content="1.6T parameter MoE, 1M context, three reasoning modes — chat in your browser.">
+  <meta property="og:image" content="https://rhythmixapp.com.au/thumbnails/rhythmix-thumbnail-square.png">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:#fff;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      min-height:100vh; overflow-x:hidden; }
+
+    nav { display:flex; justify-content:space-between; align-items:center;
+      padding:20px 24px; position:sticky; top:0; z-index:100;
+      background:rgba(0,0,0,.85); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.06); }
+    .nav-logo { font-size:22px; font-weight:900;
+      background:linear-gradient(135deg,#ff1f5a,#7c3aed,#00d8ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      text-decoration:none; }
+    .nav-links { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    .nav-links a { color:#a0a0b0; text-decoration:none; font-size:14px; font-weight:600; }
+    .nav-cta { background:linear-gradient(135deg,#f5c000,#ff8800);
+      color:#000 !important; padding:10px 20px; border-radius:100px;
+      font-size:14px; font-weight:900; text-decoration:none; }
+
+    .hero { text-align:center; padding:56px 24px 20px;
+      background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(0,216,255,.18),transparent); }
+    .hero-badge { display:inline-flex; align-items:center; gap:8px;
+      background:rgba(0,216,255,.1); border:1px solid rgba(0,216,255,.4); color:#00d8ff;
+      font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+      padding:8px 18px; border-radius:100px; margin-bottom:18px; }
+    .badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor;
+      animation:pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .hero h1 { font-size:clamp(34px,7vw,60px); font-weight:900; line-height:1.05;
+      letter-spacing:-1.5px; margin-bottom:12px; }
+    .hero h1 em { font-style:normal;
+      background:linear-gradient(135deg,#00d8ff,#7c3aed,#ff1f5a);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero-sub { color:#a0a0b0; font-size:clamp(14px,2.4vw,17px); line-height:1.6;
+      max-width:640px; margin:0 auto 14px; }
+    .hero-sub strong { color:#fff; }
+    .stat-pills { display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+      margin:10px auto 8px; padding:0 16px; }
+    .stat-pill { font-size:11px; font-weight:700; letter-spacing:1px;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+      color:#a0a0b0; padding:6px 12px; border-radius:100px; }
+    .stat-pill b { color:#00d8ff; }
+    .hero-credit { color:#555; font-size:12px; margin-top:10px; }
+    .hero-credit code { color:#00d8ff; font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+    .hero-credit a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    .app { max-width:980px; margin:0 auto; padding:14px 20px 8px; }
+    .chat-card { background:#0d0d0d; border:1px solid rgba(255,255,255,.08);
+      border-radius:20px; overflow:hidden; }
+
+    .chat-head { display:flex; align-items:center; justify-content:space-between;
+      gap:10px; padding:14px 18px; border-bottom:1px solid rgba(255,255,255,.06);
+      flex-wrap:wrap; }
+    .mode-group { display:flex; gap:0;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+      border-radius:10px; padding:3px; }
+    .mode-btn { background:transparent; border:none; color:#a0a0b0;
+      font-size:11px; font-weight:800; letter-spacing:1px;
+      padding:7px 12px; border-radius:7px; cursor:pointer; transition:.12s; }
+    .mode-btn.on { background:linear-gradient(135deg,#7c3aed,#00d8ff);
+      color:#fff; box-shadow:0 0 10px rgba(0,216,255,.3); }
+    .mode-btn small { display:block; font-size:9px; font-weight:600;
+      opacity:.7; margin-top:1px; letter-spacing:1px; }
+    .chat-tools { display:flex; gap:6px; }
+    .chat-tool { background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08); color:#a0a0b0;
+      font-size:11px; font-weight:700; letter-spacing:1px;
+      padding:7px 12px; border-radius:8px; cursor:pointer; }
+    .chat-tool:hover { color:#fff; border-color:rgba(124,58,237,.4); }
+
+    .chat-log { padding:18px; min-height:300px; max-height:560px;
+      overflow-y:auto; display:flex; flex-direction:column; gap:14px; }
+    .chat-log:empty::before { content:'Start a conversation. Try: "Write four 32-bar verse hooks for a moody synthwave track about driving home at 3am."'; display:block; color:#444; font-size:13px;
+      line-height:1.6; padding:80px 24px; text-align:center; font-style:italic; }
+    .msg { display:flex; gap:12px; }
+    .msg-avatar { width:30px; height:30px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; font-weight:900; }
+    .msg.user .msg-avatar {
+      background:linear-gradient(135deg,#f5c000,#ff8800); color:#000; }
+    .msg.assistant .msg-avatar {
+      background:linear-gradient(135deg,#7c3aed,#00d8ff); color:#fff; }
+    .msg-body { flex:1; min-width:0; }
+    .msg-role { font-size:11px; font-weight:700; letter-spacing:1px;
+      text-transform:uppercase; color:#666; margin-bottom:4px; }
+    .msg.user .msg-role { color:#f5c000; }
+    .msg.assistant .msg-role { color:#00d8ff; }
+    .msg-text { color:#e4e4ee; font-size:14px; line-height:1.65;
+      white-space:pre-wrap; word-wrap:break-word; }
+    .msg-text code { background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08); border-radius:4px;
+      padding:1px 6px; font-family:ui-monospace,'SF Mono',Menlo,monospace;
+      font-size:12.5px; }
+    .msg.assistant .msg-text { color:#fff; }
+    details.think { margin-bottom:8px; background:rgba(124,58,237,.06);
+      border:1px solid rgba(124,58,237,.2); border-radius:10px; overflow:hidden; }
+    details.think > summary { padding:8px 12px; cursor:pointer;
+      font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      color:#7c3aed; list-style:none; }
+    details.think > summary::-webkit-details-marker { display:none; }
+    details.think > summary::before { content:'▸ '; }
+    details[open].think > summary::before { content:'▾ '; }
+    details.think .think-body { padding:10px 14px;
+      border-top:1px solid rgba(124,58,237,.15);
+      font-size:13px; line-height:1.6; color:#a98be0;
+      white-space:pre-wrap; word-wrap:break-word; }
+
+    .compose { border-top:1px solid rgba(255,255,255,.06);
+      padding:14px 18px; display:flex; gap:10px; align-items:flex-end; }
+    .compose textarea { flex:1; background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.1); border-radius:12px; color:#fff;
+      font-family:inherit; font-size:14px; padding:11px 14px; outline:none;
+      resize:none; max-height:200px; line-height:1.55; }
+    .compose textarea:focus { border-color:rgba(0,216,255,.45);
+      background:rgba(0,216,255,.04); }
+    .send { background:linear-gradient(135deg,#7c3aed,#00d8ff);
+      border:none; color:#fff; font-size:13px; font-weight:900; letter-spacing:1px;
+      text-transform:uppercase; padding:12px 22px; border-radius:12px;
+      cursor:pointer; box-shadow:0 0 18px rgba(0,216,255,.25); }
+    .send:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+    .settings { padding:0 18px 14px; display:flex; gap:18px;
+      flex-wrap:wrap; align-items:center; font-size:11px; color:#666; }
+    .settings label { display:inline-flex; gap:6px; align-items:center;
+      color:#a0a0b0; font-weight:700; }
+    .settings input[type=number], .settings input[type=text] {
+      width:64px; background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.1); border-radius:6px;
+      color:#fff; font-family:inherit; font-size:12px; padding:5px 8px;
+      outline:none; font-variant-numeric:tabular-nums; }
+
+    .section { max-width:980px; margin:32px auto 0; padding:0 20px; }
+    .section-tag { font-size:11px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:#7c3aed; margin-bottom:8px; }
+    .section-title { font-size:22px; font-weight:800; margin-bottom:14px; }
+
+    .bench { display:grid; gap:1px; background:rgba(255,255,255,.06);
+      border-radius:14px; overflow:hidden;
+      grid-template-columns:1.6fr repeat(4, minmax(0,1fr)); }
+    .bench > div { background:#0d0d0d; padding:11px 14px;
+      font-size:12px; color:#a0a0b0; font-variant-numeric:tabular-nums; }
+    .bench-head { background:#000 !important; color:#666 !important;
+      font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; }
+    .bench-row-cat { font-size:10px; font-weight:800; letter-spacing:2px;
+      text-transform:uppercase; color:#7c3aed; grid-column:1/-1;
+      padding:10px 14px !important; background:rgba(124,58,237,.06) !important; }
+    .bench-key { color:#fff; font-weight:600; }
+    .bench-best { color:#00e887; font-weight:800; }
+    .bench-our { color:#00d8ff; font-weight:800; }
+    @media (max-width:680px) {
+      .bench { grid-template-columns:1.4fr repeat(2,minmax(0,1fr)); font-size:11px; }
+      .bench-hide-sm { display:none !important; }
+    }
+
+    details.snippet { background:#0d0d0d;
+      border:1px solid rgba(255,255,255,.08); border-radius:14px;
+      margin-bottom:10px; overflow:hidden; }
+    details.snippet > summary { padding:14px 18px; cursor:pointer;
+      font-size:13px; font-weight:800; color:#fff; list-style:none;
+      display:flex; align-items:center; justify-content:space-between; }
+    details.snippet > summary::-webkit-details-marker { display:none; }
+    details.snippet > summary .chev { font-size:10px; color:#555; transition:.2s; }
+    details[open].snippet > summary .chev { transform:rotate(180deg); }
+    details.snippet > summary small { font-size:11px; font-weight:600;
+      color:#666; letter-spacing:1px; margin-left:auto; margin-right:14px; }
+    .snippet-body { padding:0 18px 18px; }
+    pre.code { background:#000; border:1px solid rgba(255,255,255,.06);
+      border-radius:10px; padding:14px 16px; overflow-x:auto;
+      font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:12.5px;
+      line-height:1.65; color:#e4e4ee; position:relative; }
+    pre.code .copy { position:absolute; top:8px; right:8px;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+      color:#a0a0b0; font-size:10px; font-weight:800; letter-spacing:1px;
+      padding:5px 10px; border-radius:6px; cursor:pointer; font-family:inherit; }
+    pre.code .copy:hover { color:#fff; }
+    pre.code .c-key { color:#ff79c6; }
+    pre.code .c-str { color:#f5c000; }
+    pre.code .c-com { color:#5a5a6a; font-style:italic; }
+    pre.code .c-num { color:#00e887; }
+
+    .notice { max-width:980px; margin:32px auto 28px; padding:0 20px; }
+    .notice-card { background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07); border-radius:14px;
+      padding:18px 22px; color:#a0a0b0; font-size:13px; line-height:1.65; }
+    .notice-card strong { color:#fff; }
+    .notice-card a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    footer { text-align:center; padding:40px 24px; color:#333; font-size:13px;
+      border-top:1px solid rgba(255,255,255,.05); }
+    footer a { color:#444; text-decoration:none; margin:0 6px; }
+    footer a:hover { color:#a0a0b0; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">RHYTHMIX</a>
+  <div class="nav-links">
+    <a href="/features.html">Features</a>
+    <a href="/voice-clone.html">Voice Clone</a>
+    <a href="/ai-cover.html">AI Cover</a>
+    <a href="/tagger.html">Tagger</a>
+    <a href="/ace-step.html">ACE-Step</a>
+    <a href="/omnivoice.html">OmniVoice</a>
+    <a href="/qwen-image-edit.html">Qwen Edit</a>
+    <a href="/deepseek.html" style="color:#fff">DeepSeek</a>
+    <a class="nav-cta" href="https://wiggjamie.gumroad.com/l/rhythmix-studio">Buy · $149</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge"><span class="badge-dot"></span>Lab · DeepSeek-V4-Pro</div>
+  <h1>1.6T MoE.<br><em>1-million-token context.</em></h1>
+  <p class="hero-sub">Chat with <strong>DeepSeek-V4-Pro</strong> — 49B activated of 1.6T total, hybrid attention, three reasoning effort modes. <strong>MIT</strong> licensed, open weights.</p>
+  <div class="stat-pills">
+    <span class="stat-pill"><b>1.6T</b> params</span>
+    <span class="stat-pill"><b>49B</b> activated</span>
+    <span class="stat-pill"><b>1M</b> context</span>
+    <span class="stat-pill"><b>32T</b> tokens trained</span>
+    <span class="stat-pill"><b>MIT</b> license</span>
+    <span class="stat-pill"><b>FP4 + FP8</b> mixed</span>
+  </div>
+  <p class="hero-credit">Live via <code id="space-slug">akhaliq/DeepSeek-V4-Pro</code> on Hugging Face · cold-start may take 30s+</p>
+</div>
+
+<div class="app">
+  <div class="chat-card">
+    <div class="chat-head">
+      <div class="mode-group" id="mode" role="tablist">
+        <button type="button" class="mode-btn" data-mode="non">Non-think <small>FAST</small></button>
+        <button type="button" class="mode-btn on" data-mode="high">Think High <small>ACCURATE</small></button>
+        <button type="button" class="mode-btn" data-mode="max">Think Max <small>BOUNDARY</small></button>
+      </div>
+      <div class="chat-tools">
+        <button type="button" class="chat-tool" id="clear-chat">Clear</button>
+        <button type="button" class="chat-tool" id="copy-chat">Copy</button>
+      </div>
+    </div>
+    <div class="chat-log" id="log"></div>
+    <div class="settings">
+      <label>Temp <input type="number" id="temp" min="0" max="2" step="0.1" value="1.0"></label>
+      <label>Top-p <input type="number" id="topp" min="0" max="1" step="0.05" value="1.0"></label>
+      <label>Max tokens <input type="number" id="maxtok" min="32" max="8192" step="32" value="2048"></label>
+      <span style="margin-left:auto;color:#444">Defaults per model card: temp=1.0, top_p=1.0</span>
+    </div>
+    <div class="compose">
+      <textarea id="input" rows="1" placeholder="Message DeepSeek-V4-Pro…  ⌘/Ctrl+Enter to send"></textarea>
+      <button type="button" class="send" id="send">Send ↵</button>
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-tag">Benchmarks · Pro Max vs frontier</div>
+  <div class="section-title">Where it lands among the big models.</div>
+  <div class="bench">
+    <div class="bench-head">Benchmark</div>
+    <div class="bench-head">DS-V4-Pro Max</div>
+    <div class="bench-head bench-hide-sm">Opus-4.6 Max</div>
+    <div class="bench-head bench-hide-sm">GPT-5.4 xH</div>
+    <div class="bench-head">Gemini-3.1 Pro</div>
+
+    <div class="bench-row-cat">Knowledge &amp; Reasoning</div>
+    <div class="bench-key">MMLU-Pro</div>
+    <div class="bench-our">87.5</div>
+    <div class="bench-hide-sm">89.1</div>
+    <div class="bench-hide-sm">87.5</div>
+    <div class="bench-best">91.0</div>
+
+    <div class="bench-key">SimpleQA-Verified</div>
+    <div>57.9</div>
+    <div class="bench-hide-sm">46.2</div>
+    <div class="bench-hide-sm">45.3</div>
+    <div class="bench-best">75.6</div>
+
+    <div class="bench-key">Chinese-SimpleQA</div>
+    <div class="bench-our">84.4</div>
+    <div class="bench-hide-sm">76.4</div>
+    <div class="bench-hide-sm">76.8</div>
+    <div class="bench-best">85.9</div>
+
+    <div class="bench-key">GPQA Diamond</div>
+    <div>90.1</div>
+    <div class="bench-hide-sm">91.3</div>
+    <div class="bench-hide-sm">93.0</div>
+    <div class="bench-best">94.3</div>
+
+    <div class="bench-key">LiveCodeBench</div>
+    <div class="bench-best">93.5</div>
+    <div class="bench-hide-sm">88.8</div>
+    <div class="bench-hide-sm">—</div>
+    <div>91.7</div>
+
+    <div class="bench-key">Codeforces (Elo)</div>
+    <div class="bench-best">3206</div>
+    <div class="bench-hide-sm">—</div>
+    <div class="bench-hide-sm">3168</div>
+    <div>3052</div>
+
+    <div class="bench-key">HMMT 2026 Feb</div>
+    <div>95.2</div>
+    <div class="bench-hide-sm">96.2</div>
+    <div class="bench-hide-sm bench-best">97.7</div>
+    <div>94.7</div>
+
+    <div class="bench-row-cat">Long Context</div>
+    <div class="bench-key">MRCR 1M</div>
+    <div class="bench-our">83.5</div>
+    <div class="bench-hide-sm bench-best">92.9</div>
+    <div class="bench-hide-sm">—</div>
+    <div>76.3</div>
+
+    <div class="bench-key">CorpusQA 1M</div>
+    <div class="bench-our">62.0</div>
+    <div class="bench-hide-sm bench-best">71.7</div>
+    <div class="bench-hide-sm">—</div>
+    <div>53.8</div>
+
+    <div class="bench-row-cat">Agentic</div>
+    <div class="bench-key">Terminal Bench 2.0</div>
+    <div>67.9</div>
+    <div class="bench-hide-sm">65.4</div>
+    <div class="bench-hide-sm bench-best">75.1</div>
+    <div>68.5</div>
+
+    <div class="bench-key">SWE Verified</div>
+    <div class="bench-our">80.6</div>
+    <div class="bench-hide-sm bench-best">80.8</div>
+    <div class="bench-hide-sm">—</div>
+    <div>80.6</div>
+
+    <div class="bench-key">BrowseComp</div>
+    <div>83.4</div>
+    <div class="bench-hide-sm">83.7</div>
+    <div class="bench-hide-sm">82.7</div>
+    <div class="bench-best">85.9</div>
+  </div>
+  <p style="color:#444;font-size:11px;margin-top:10px">
+    Source: DeepSeek-V4-Pro model card · best score per row highlighted green, V4-Pro highlighted cyan.
+  </p>
+</section>
+
+<section class="section">
+  <div class="section-tag">Run It Locally</div>
+  <div class="section-title">Quick start.</div>
+
+  <details class="snippet" open>
+    <summary>Transformers <small>Python · pipeline</small><span class="chev">▼</span></summary>
+    <div class="snippet-body">
+<pre class="code"><button type="button" class="copy">Copy</button><span class="c-com"># Use a pipeline as a high-level helper</span>
+<span class="c-key">from</span> transformers <span class="c-key">import</span> pipeline
+
+pipe = pipeline(<span class="c-str">"text-generation"</span>, model=<span class="c-str">"deepseek-ai/DeepSeek-V4-Pro"</span>)
+messages = [
+    {<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Who are you?"</span>},
+]
+pipe(messages)</pre>
+    </div>
+  </details>
+
+  <details class="snippet">
+    <summary>vLLM <small>OpenAI-compatible server</small><span class="chev">▼</span></summary>
+    <div class="snippet-body">
+<pre class="code"><button type="button" class="copy">Copy</button><span class="c-com"># Install vLLM</span>
+pip install vllm
+
+<span class="c-com"># Start the vLLM server</span>
+vllm serve <span class="c-str">"deepseek-ai/DeepSeek-V4-Pro"</span>
+
+<span class="c-com"># Call the server (OpenAI-compatible)</span>
+curl -X POST <span class="c-str">"http://localhost:8000/v1/chat/completions"</span> \
+    -H <span class="c-str">"Content-Type: application/json"</span> \
+    --data <span class="c-str">'{
+        "model": "deepseek-ai/DeepSeek-V4-Pro",
+        "messages": [{"role": "user", "content": "What is the capital of France?"}]
+    }'</span></pre>
+    </div>
+  </details>
+
+  <details class="snippet">
+    <summary>SGLang <small>High-throughput server</small><span class="chev">▼</span></summary>
+    <div class="snippet-body">
+<pre class="code"><button type="button" class="copy">Copy</button>pip install sglang
+
+python3 -m sglang.launch_server \
+    --model-path <span class="c-str">"deepseek-ai/DeepSeek-V4-Pro"</span> \
+    --host <span class="c-num">0.0.0.0</span> \
+    --port <span class="c-num">30000</span>
+
+curl -X POST <span class="c-str">"http://localhost:30000/v1/chat/completions"</span> \
+    -H <span class="c-str">"Content-Type: application/json"</span> \
+    --data <span class="c-str">'{
+        "model": "deepseek-ai/DeepSeek-V4-Pro",
+        "messages": [{"role": "user", "content": "What is the capital of France?"}]
+    }'</span></pre>
+    </div>
+  </details>
+
+  <details class="snippet">
+    <summary>Docker Model Runner <small>One-liner</small><span class="chev">▼</span></summary>
+    <div class="snippet-body">
+<pre class="code"><button type="button" class="copy">Copy</button>docker model run hf.co/deepseek-ai/DeepSeek-V4-Pro</pre>
+    </div>
+  </details>
+</section>
+
+<section class="notice">
+  <div class="notice-card">
+    <strong>About this playground.</strong> The chat box routes to a community wrapper Space (<code id="notice-space">akhaliq/DeepSeek-V4-Pro</code>) on Hugging Face via @gradio/client. Use <code>?space=&lt;owner/name&gt;</code> in the URL to point at a different mirror (e.g. <code>?space=wangsheng/DeepSeekV4Chat</code>) — the Pro model is too large to run client-side, so all inference goes through the chosen Space. Cold-start can be slow; rate limits apply per HF visitor. <strong>This page does not collect or log your conversations.</strong>
+  </div>
+</section>
+
+<footer>
+  <p>
+    <a href="/features.html">Features</a> ·
+    <a href="/downloads.html">Videos</a> ·
+    <a href="/studio.html">Studio</a> ·
+    <a href="/voice-clone.html">Voice Clone</a> ·
+    <a href="/ai-cover.html">AI Cover</a> ·
+    <a href="/tagger.html">Tagger</a> ·
+    <a href="/ace-step.html">ACE-Step</a> ·
+    <a href="/omnivoice.html">OmniVoice</a> ·
+    <a href="/qwen-image-edit.html">Qwen Edit</a> ·
+    <a href="/privacy.html">Privacy</a> ·
+    <a href="/terms.html">Terms</a>
+  </p>
+  <p style="margin-top:10px">© 2026 RHYTHMIX · AI music video studio · Made in Australia</p>
+</footer>
+
+<script type="module">
+  import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client@1.10.0/+esm";
+
+  const SPACE = new URLSearchParams(location.search).get('space') || 'akhaliq/DeepSeek-V4-Pro';
+  document.getElementById('space-slug').textContent = SPACE;
+  document.getElementById('notice-space').textContent = SPACE;
+
+  const $ = id => document.getElementById(id);
+
+  // Mode switching
+  let mode = 'high';
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('on', b === btn));
+      mode = btn.dataset.mode;
+    });
+  });
+
+  // Conversation state
+  let messages = [];
+  const log = $('log');
+
+  const escapeHTML = s => s.replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+
+  const renderText = txt => {
+    // Inline code only — keep it simple
+    return escapeHTML(txt).replace(/`([^`]+)`/g, '<code>$1</code>');
+  };
+
+  // Parse <think>…</think> ... summary out of a completion
+  const splitThink = raw => {
+    if (!raw) return { think:'', text:'' };
+    const m = raw.match(/^([\s\S]*?<think>([\s\S]*?)<\/think>\s*)?([\s\S]*)$/);
+    if (m && m[2]) return { think: m[2].trim(), text: m[3].trim() };
+    const m2 = raw.match(/^([\s\S]*?)<\/think>\s*([\s\S]*)$/);
+    if (m2) return { think: m2[1].trim(), text: m2[2].trim() };
+    return { think:'', text: raw.trim() };
+  };
+
+  const renderMessage = (msg) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + msg.role;
+    const av = document.createElement('div');
+    av.className = 'msg-avatar';
+    av.textContent = msg.role === 'user' ? 'Y' : 'V4';
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    const role = document.createElement('div');
+    role.className = 'msg-role';
+    role.textContent = msg.role === 'user' ? 'You' : 'DeepSeek-V4-Pro';
+    body.appendChild(role);
+    if (msg.role === 'assistant' && msg.reasoning) {
+      const d = document.createElement('details');
+      d.className = 'think';
+      const s = document.createElement('summary');
+      s.textContent = 'Thinking';
+      const tb = document.createElement('div');
+      tb.className = 'think-body';
+      tb.textContent = msg.reasoning;
+      d.appendChild(s); d.appendChild(tb);
+      body.appendChild(d);
+    }
+    const text = document.createElement('div');
+    text.className = 'msg-text';
+    text.innerHTML = renderText(msg.content || '');
+    if (msg._pending) {
+      text.innerHTML = '<span style="color:#666">▌</span>';
+    }
+    body.appendChild(text);
+    wrap.appendChild(av);
+    wrap.appendChild(body);
+    return wrap;
+  };
+
+  const redraw = () => {
+    log.innerHTML = '';
+    messages.forEach(m => log.appendChild(renderMessage(m)));
+    log.scrollTop = log.scrollHeight;
+  };
+
+  // HF Space client
+  let _client = null;
+  const getClient = async () => {
+    if (_client) return _client;
+    _client = await Client.connect(SPACE);
+    return _client;
+  };
+
+  const send = async () => {
+    const inputEl = $('input');
+    const txt = inputEl.value.trim();
+    if (!txt) return;
+
+    messages.push({ role:'user', content: txt });
+    const pending = { role:'assistant', content:'', _pending:true };
+    messages.push(pending);
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    redraw();
+    $('send').disabled = true;
+
+    try {
+      const client = await getClient();
+      const history = messages.slice(0, -1).map(m => ({
+        role: m.role, content: m.content,
+      }));
+
+      // ACE-Step pattern: try keyed → positional → various endpoint names
+      const callArgs = {
+        message: txt,
+        history,
+        thinking_mode: mode,
+        system_prompt: mode === 'max' ? 'You are DeepSeek-V4-Pro in Think Max mode. Push reasoning to its fullest extent.' : '',
+        temperature: parseFloat($('temp').value),
+        top_p: parseFloat($('topp').value),
+        max_new_tokens: parseInt($('maxtok').value, 10),
+      };
+
+      let result;
+      const tryCalls = [
+        () => client.predict('/chat', callArgs),
+        () => client.predict('/predict', callArgs),
+        () => client.predict('/chat', [txt, history]),
+        () => client.predict('/predict', [txt, history]),
+        () => client.predict(0, [txt, history]),
+      ];
+      let lastErr;
+      for (const tc of tryCalls) {
+        try { result = await tc(); break; }
+        catch (e) { lastErr = e; }
+      }
+      if (!result) throw lastErr;
+
+      // Result shape varies wildly between Spaces — handle common cases
+      let raw = '';
+      const d = result?.data;
+      if (Array.isArray(d)) {
+        const first = d[0];
+        if (typeof first === 'string') raw = first;
+        else if (Array.isArray(first)) {
+          // ChatBot list-of-pairs format: take the last assistant message
+          const last = first[first.length - 1];
+          raw = Array.isArray(last) ? (last[1] || '') : (last?.content || '');
+        } else if (first && typeof first === 'object') {
+          raw = first.content || first.text || first.message || '';
+        }
+      } else if (typeof d === 'string') raw = d;
+
+      const { think, text } = splitThink(raw);
+      Object.assign(pending, {
+        _pending: false,
+        content: text || raw || '(no reply)',
+        reasoning: think || undefined,
+      });
+      redraw();
+    } catch (err) {
+      console.error('[deepseek]', err);
+      Object.assign(pending, {
+        _pending: false,
+        content: `⚠ Couldn't reach the Space: ${err?.message || err}\n\nTry switching mirror with ?space=<owner/name> in the URL. Suggested: ?space=wangsheng/DeepSeekV4Chat`,
+      });
+      redraw();
+    } finally {
+      $('send').disabled = false;
+      $('input').focus();
+    }
+  };
+
+  $('send').addEventListener('click', send);
+  $('input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); }
+  });
+  $('input').addEventListener('input', () => {
+    const t = $('input');
+    t.style.height = 'auto';
+    t.style.height = Math.min(t.scrollHeight, 200) + 'px';
+  });
+
+  $('clear-chat').addEventListener('click', () => {
+    messages = [];
+    redraw();
+    $('input').focus();
+  });
+
+  $('copy-chat').addEventListener('click', async () => {
+    const text = messages.map(m =>
+      `${m.role === 'user' ? 'You' : 'DeepSeek-V4-Pro'}:\n${m.content}`
+    ).join('\n\n---\n\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = $('copy-chat'); const old = btn.textContent;
+      btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = old, 1400);
+    } catch {}
+  });
+
+  // Code-block copy buttons
+  document.querySelectorAll('pre.code .copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const pre = btn.parentElement;
+      const text = pre.textContent.replace(/^Copy/, '').trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        const old = btn.textContent;
+        btn.textContent = '✓'; setTimeout(() => btn.textContent = old, 1200);
+      } catch {}
+    });
+  });
+</script>
+
+</body>
+</html>
