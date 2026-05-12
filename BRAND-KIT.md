@@ -161,12 +161,41 @@ Before producing a graphic, confirm:
 
 If any of those five are missing, ask — don't guess. Guessing produces generic output.
 
-## 8. Reference Compositions
+## 8. Occasion Library (Music Video Presets)
+
+RHYTHMIX is a music **video** tool — the user brings an MP3, RHYTHMIX cuts the visuals. Eight launch occasions, each presets model selection, pacing, palette tilt, and prompt library:
+
+| Occasion | Model lean | Pacing | Aspect default | Palette tilt |
+|---|---|---|---|---|
+| Music drop reel | Kling v2 chorus, Hunyuan verses | Beat-snapped, drop-anchored | 9:16 | Magenta + cyan |
+| Album trailer | Mixed, one per track | One scene per hook | 16:9 | Full palette |
+| Wedding first dance | Luma Ray throughout | Lyric-snapped, long holds | 16:9 | Soft pink, warm white |
+| Brand promo | Pexels stock | Caption-driven | 16:9 / 1:1 | Restricted — magenta only |
+| Travel reel | Luma Ray | Long chorus holds, fast build cuts | 9:16 | Cyan + signal green |
+| Workout hype | MiniMax | Hard cuts on every kick | 9:16 | Magenta + hot gold |
+| DJ set highlight | Kling drop, Hunyuan crowd | Drop-anchored | 9:16 | Magenta + cyan strobe |
+| Memorial tribute | Luma Ray | Wide holds, no fast cuts | 16:9 | Muted, soft pink only |
+
+When scripting promo videos, marketing copy, or carousel posts about RHYTHMIX, lean on these concrete moments instead of abstract "AI music video" language. **Concrete > abstract.** ("Cut your wedding first dance" beats "AI-powered music videos.")
+
+## 9. Three Inputs (Positioning)
+
+When describing what the user brings to RHYTHMIX, use this three-input framing — not the four-pillar one (Generate/Master/Distribute/Earn). The four pillars are about what the engine does; the three inputs are about what the user does.
+
+| Input | What it is | Status |
+|---|---|---|
+| **MP3** | Drop in a finished track. RHYTHMIX analyzes loudness, BPM, structure. | Live today |
+| **Theme** | A short text vibe ("neon city night," "lo-fi anime," "cinematic chorus"). LLM scene prompts. | Coming (Studio web app) |
+| **Photo seed** | One reference image. RHYTHMIX uses it as the visual anchor across all scenes for consistency. | Roadmap |
+
+Headline copy template: **"Drop your track. Pick your moment. Render the video."** Use this — or close variants — whenever a hero or hook needs the user-facing pitch in one line.
+
+## 11. Reference Compositions
 
 Look at these before authoring a new asset:
 
 - `rhythmix-overview-60s/index.html` — canonical 60s landscape video
 - `rhythmix-teaser-60s/index.html` — 60s portrait teaser
 - `rhythmix.html` — landing page (full)
-- `index.html` — current homepage
+- `index.html` — current homepage (now includes the Occasions section)
 - `rhythmix-teaser-60s/DESIGN.md` — video-specific motion spec

@@ -113,6 +113,8 @@ For 90s recuts: split scene 1 into separate hook and reveal, expand scene 4 to 4
 - Reveal RHYTHMIX as the answer, not the topic
 - Four pillars are always: **Generate · Master · Distribute · Earn** (in that order)
 - Three steps are always: **Describe → Refine → Release**
+- **Three inputs** (when describing what the user brings, not what the engine does): **MP3 · Theme · Photo seed**. Headline form: *"Drop your track. Pick your moment. Render the video."* — see `BRAND-KIT.md §9`.
+- **Concrete occasions beat abstract claims.** When possible, name the moment: "Cut your wedding first dance," "Drop your single," "Trailer your album," "Hype your workout." Full library in `BRAND-KIT.md §8`.
 - Close with **"RHYTHMIX. Coming soon."** or "Just be first in line. RHYTHMIX. Coming soon."
 - Never promise pricing in the narration unless the user explicitly asks for a $149/lifetime variant
 - Never use the phrase "AI-powered" — the platform IS AI-music; saying "AI-powered" sounds defensive
