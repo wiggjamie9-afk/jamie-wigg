@@ -15,9 +15,34 @@ User asks for any of:
 
 For unrelated video tasks, prefer the generic `hyperframes` skill instead.
 
+## Brief intake — RTCO frame
+
+Before writing a single line of script or HTML, fill these four. If the user's request leaves any blank, ask — don't guess. Guessing produces generic output.
+
+| Slot | Prompt to user (if missing) |
+|---|---|
+| **R**ole | "Who is the voice — narrator persona? (default: confident insider, modern aspirational)" |
+| **T**ask | "What's the single outcome — waitlist signup, app download, founder credibility, feature reveal?" |
+| **C**ontext | "Who's watching, on what surface, after seeing what? (e.g. iPhone IG reel after a creator tip)" |
+| **O**utput | "Length, aspect, voice, CTA copy — confirm or default to 60s landscape, bf_emma, 'Coming soon.'" |
+
+Record the four answers as a comment at the top of `script.txt` so future variants can be re-cut from the same brief.
+
+## Critique step — BEFORE writing the script
+
+Once RTCO is filled, do a 30-second self-critique pass:
+
+1. **Is the hook a question or a denial pattern?** ("What if…" / "No producer. No studio.") If not, rewrite.
+2. **Is RHYTHMIX revealed as the answer, not introduced as the topic?** If not, rewrite.
+3. **Is there exactly one stat / proof point that's the hero?** Stats are the brand's heroes — find one. If none, ask the user.
+4. **Does the CTA give exactly one next action?** If two, cut one.
+5. **Would a stranger remember one thing after watching?** Name that one thing in a comment at the top of `script.txt`. If you can't name it in five words, the script is unfocused.
+
+Surface any of these to the user before generating TTS. TTS is ~30s on CPU — don't waste a render on a weak script.
+
 ## Hard rules
 
-1. **Brand identity is fixed** — colors, fonts, motion eases, "What NOT to Do" anti-patterns are defined in `rhythmix-teaser-60s/DESIGN.md`. Read that file before authoring; do not invent palette or typography.
+1. **Brand identity is fixed** — read both `BRAND-KIT.md` (full brand grammar) and `rhythmix-teaser-60s/DESIGN.md` (video motion spec) before authoring. Do not invent palette, typography, or layout grammar.
 2. **Five-scene pattern** is the proven structure (see "Scene template" below). Deviate only when the user explicitly asks.
 3. **Audio is always a separate `<audio>` clip** on track-index 0; visuals on tracks 1–5. Never use a `<video>` element for audio.
 4. **Compute scene timing from the actual narration duration** — read it with `python3 -c "import wave; w=wave.open('narration.wav','rb'); print(w.getnframes()/w.getframerate())"` and place a 1.5s pre-roll + the narration + the remainder as outro hold.
@@ -116,6 +141,39 @@ npx --yes hyperframes@0.4.42 render --quality standard --output ${DIR##*/}.mp4
 # 8. Commit + push (NEVER without explicit user instruction)
 cd .. && git add $DIR && git commit -m "Add $DIR" && git push
 ```
+
+## Pre-publish review checklist
+
+Run this **before** appending the card to `downloads.html`. If any item fails, fix and re-render — do NOT publish a video that fails this gate.
+
+**Brand**
+- [ ] Palette is restricted to `BRAND-KIT.md` tokens — no `#3b82f6`, `#333`, default blues/greys
+- [ ] Type pairs are Space Grotesk + JetBrains Mono only
+- [ ] No bouncy / elastic / back eases anywhere
+- [ ] No full-frame linear gradients (use radial glow + solid canvas)
+- [ ] "AI-powered" does not appear in script or on-screen text
+- [ ] One stat is the visual hero of at least one scene
+
+**Composition**
+- [ ] `npx hyperframes lint` clean (warnings reviewed and justified)
+- [ ] `npx hyperframes inspect` confirms all clips have `data-start`, `data-duration`, `data-track-index`, `class="clip"`
+- [ ] `npx hyperframes validate` contrast warnings all fall inside transition windows
+- [ ] No `Math.random()`, `Date.now()`, `repeat: -1`, or network fetches
+
+**Narrative**
+- [ ] Opens with a question or denial pattern
+- [ ] RHYTHMIX revealed as the answer (not the topic)
+- [ ] Closes with "Coming soon." or "Be first in line. Coming soon."
+- [ ] Exactly one CTA — no double-asks
+- [ ] One-sentence "what will a stranger remember" answer exists at top of `script.txt`
+
+**Output**
+- [ ] Filename matches project folder name: `rhythmix-<slug>-<dur>s.mp4`
+- [ ] Aspect ratio matches the brief (16:9 / 9:16 / 1:1)
+- [ ] File size sanity-checked (≈6–15 MB for 60s standard quality)
+- [ ] Audio plays — no silent renders
+
+If everything passes, proceed to the publishing step below.
 
 ## Publishing to the iPhone download page
 

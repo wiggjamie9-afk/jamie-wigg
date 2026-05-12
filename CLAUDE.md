@@ -4,14 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Start (For Claude)
 
-- **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
+- **ANY graphics work** (video, landing page, social post, poster, thumbnail, ad creative) → read `BRAND-KIT.md` first. It is the single source of truth for palette, typography, layout grammar, motion, and the "outstanding vs generic" test. The `frontend-design`, `canvas-design`, `theme-factory`, `hyperframes`, and `algorithmic-art` skills all anchor here.
+- **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. The skill enforces an RTCO brief intake, a pre-script critique, and a pre-publish review checklist. Don't re-derive the brand from scratch.
 - **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
 - **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.
 - **Reference for video pipeline** → `rhythmix-overview-60s/` is the canonical 60s landscape example.
-- **Brand identity** → `rhythmix-teaser-60s/DESIGN.md` (palette, typography, motion eases).
+- **Video motion spec** → `rhythmix-teaser-60s/DESIGN.md` (motion eases, scene timing — narrower than the brand kit).
 - **Cloud-AI tools the user actually uses** → `CREATIVE-AI-STACK.md` (iPhone-driven; user has no desktop).
 - **Replicate + ElevenLabs MCP server (image/video/music/voice tools)** → `.claude/mcp/creative-stack/`. Run `npm install` in that folder once and add the `mcpServers` block from its README to wire it up. Requires API tokens.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
+
+## Graphics quality bar
+
+When producing any visual asset, run the **outstanding-vs-generic test** in `BRAND-KIT.md §5` before showing it to the user. If three or more rows fall on the "generic" side, redo rather than ship.
+
+Generic-looking AI output is the default failure mode. The defenses are:
+1. A concrete brand kit (✓ `BRAND-KIT.md`)
+2. Restricted palette + type stack (no Roboto, no `#3b82f6`)
+3. Radial glow on dark canvas instead of linear gradients
+4. One highlight color per composition, not three
+5. Numbers as the hero, not decoration
 
 ## Repository Overview
 
