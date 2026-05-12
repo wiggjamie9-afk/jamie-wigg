@@ -22,6 +22,7 @@ These five cover ~80% of creative output. Everything below is depth.
 
 | Rank | Tool | Best At | Where | Notes |
 |---|---|---|---|---|
+| ★ | **Higgsfield DOP** via the in-repo `higgsfield` MCP server | Image-to-video with motion presets, A→B morphs, talking heads | In Claude Code | Wired into `.mcp.json`. Pair with `higgsfield-to-hyperframes` skill to drop clips straight into HyperFrames scenes. |
 | ★ | **Veo 3** (Google) via [labs.google](https://labs.google) or [replicate.com/google/veo-3](https://replicate.com) | Cinematic realism, sound + dialogue | Web | Currently the gold standard. Works from iPhone Safari. |
 | ★ | **Kling 2.0** (Kuaishou) via [klingai.com](https://klingai.com) or [pollo.ai](https://pollo.ai) | Realistic motion, image-to-video | Web/iOS | Strong character consistency. |
 | ★ | **Runway Gen-3** ([runwayml.com](https://runwayml.com)) | Storyboarding, edit-grade output | Web/iOS app | Industry-standard for filmmakers. |
@@ -39,6 +40,7 @@ These five cover ~80% of creative output. Everything below is depth.
 
 | Rank | Tool | Best At | Where | Notes |
 |---|---|---|---|---|
+| ★ | **Higgsfield Soul** via the in-repo `higgsfield` MCP server | Text-to-image with character refs for consistent faces across shots | In Claude Code | Wired into `.mcp.json`. `create_character` once, then reuse via `custom_reference_id` across multiple Soul prompts. |
 | ★ | **Midjourney** ([midjourney.com](https://midjourney.com)) | All-purpose, aesthetic ceiling | Web (iPhone-friendly) | $10–60/mo. Highest visual quality. |
 | ★ | **Flux 1.1 Pro / Pro Ultra** via [replicate.com/black-forest-labs/flux-1.1-pro](https://replicate.com) | Photorealism, prompt fidelity | API | Pay per image; tiny cost. |
 | ★ | **Ideogram 2.0** ([ideogram.ai](https://ideogram.ai)) | **Text inside images, logos, posters** | Web/iOS | Best for typography. |
@@ -124,6 +126,7 @@ These five cover ~80% of creative output. Everything below is depth.
 
 | Tool | Use Case | Where |
 |---|---|---|
+| **Higgsfield Speech-to-Video** via the in-repo `higgsfield` MCP server | Talking-head clips driven by a face image + script (or your own audio) | In Claude Code |
 | **HeyGen** ([heygen.com](https://heygen.com)) | Talking-head avatars, multi-language dubbing | Web/iOS |
 | **D-ID** ([d-id.com](https://d-id.com)) | Photo → talking head | Web |
 | **Synthesia** ([synthesia.io](https://synthesia.io)) | Corporate avatar videos | Web |
