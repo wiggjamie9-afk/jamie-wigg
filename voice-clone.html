@@ -175,6 +175,7 @@
   <h1>Voice <em>Clone</em></h1>
   <p class="hero-sub">Type a script. Drop a <strong>short voice reference</strong>. Get the same voice reading your text — for narration over your music videos.</p>
   <p class="hero-credit">Powered by xtts_v2 · Original space by <a href="https://huggingface.co/tonyassi" target="_blank" rel="noopener">Tony Assi</a></p>
+  <p class="hero-credit" style="margin-top:6px;font-size:11px">Live via <code id="vc-space-slug" style="color:#7c3aed;font-family:ui-monospace,'SF Mono',Menlo,monospace">tonyassi/voice-clone</code> on Hugging Face · cold-start may take 30s+</p>
 </div>
 
 <div class="app">
@@ -285,7 +286,12 @@
   <p style="margin-top:10px">© 2026 RHYTHMIX · AI music video studio · Made in Australia</p>
 </footer>
 
-<script>
+<script type="module">
+  import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client@1.10.0/+esm";
+
+  const SPACE = new URLSearchParams(location.search).get('space') || 'tonyassi/voice-clone';
+  document.getElementById('vc-space-slug').textContent = SPACE;
+
   const $ = (id) => document.getElementById(id);
   const text = $('vc-text');
   const count = $('vc-count');
@@ -360,20 +366,63 @@
     outReady.style.display = 'none';
   });
 
-  submit.addEventListener('click', () => {
-    if (!text.value.trim() || !(fileInput.files[0] || dropFilled.style.display === 'flex')) {
+  let _client = null;
+  const getClient = async () => {
+    if (_client) return _client;
+    _client = await Client.connect(SPACE);
+    return _client;
+  };
+
+  const setLoadingMsg = (msg) => {
+    outLoading.querySelector('span:last-child').textContent = msg;
+  };
+  const showError = (msg) => {
+    outLoading.style.display = 'none';
+    outReady.style.display = 'none';
+    outEmpty.style.display = 'block';
+    outEmpty.innerHTML = `<span style="color:#ff1f5a">⚠ ${msg}</span>`;
+  };
+
+  submit.addEventListener('click', async () => {
+    const audioFile = fileInput.files && fileInput.files[0];
+    if (!text.value.trim() || !audioFile) {
       drop.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(0)' }], { duration: 280 });
+      if (!audioFile && dropFilled.style.display === 'flex') {
+        showError('Please re-attach the reference audio file from your device (example rows only fill the filename, not the actual file).');
+      }
       return;
     }
     outEmpty.style.display = 'none';
     outReady.style.display = 'none';
     outLoading.style.display = 'flex';
+    setLoadingMsg('Connecting to ' + SPACE + '… (cold-start may take 30s+)');
     submit.disabled = true;
-    setTimeout(() => {
+
+    try {
+      const client = await getClient();
+      setLoadingMsg('Cloning voice (xtts_v2)…');
+      const result = await client.predict('/predict', {
+        text: text.value,
+        audio: audioFile,
+      });
+      const out = result?.data?.[0];
+      const url = typeof out === 'string' ? out : (out?.url || out?.path);
+      if (!url) throw new Error('No audio returned from the Space.');
+
+      const audio = outReady.querySelector('audio');
+      audio.src = url;
       outLoading.style.display = 'none';
       outReady.style.display = 'block';
+
+      const share = outReady.querySelector('.share');
+      if (share) { share.href = url; share.target = '_blank'; }
+    } catch (err) {
+      console.error('[voice-clone]', err);
+      const msg = err?.message || String(err);
+      showError(`Couldn't reach the Space: ${msg}. It may be sleeping, private, or temporarily down — try again in a minute, or pass <code>?space=&lt;owner/name&gt;</code> in the URL to use a mirror.`);
+    } finally {
       submit.disabled = false;
-    }, 1800);
+    }
   });
 </script>
 

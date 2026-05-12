@@ -239,6 +239,7 @@
   <h1>Image <em>Tagger</em></h1>
   <p class="hero-sub">Drop an illustration. Get the full <strong>Danbooru-style tag list</strong>, content rating, and detected characters — ready to paste into any prompt.</p>
   <p class="hero-credit">Powered by <a href="https://huggingface.co/SmilingWolf" target="_blank" rel="noopener">SmilingWolf's WaifuDiffusion tagger</a> · Example image by ほし☆☆☆</p>
+  <p class="hero-credit" style="margin-top:6px;font-size:11px">Live via <code id="space-slug" style="color:#7c3aed;font-family:ui-monospace,'SF Mono',Menlo,monospace">SmilingWolf/wd-tagger</code> on Hugging Face · cold-start may take 30s</p>
 </div>
 
 <div class="app">
@@ -382,9 +383,13 @@
   <p style="margin-top:10px">© 2026 RHYTHMIX · AI music video studio · Made in Australia</p>
 </footer>
 
-<script>
+<script type="module">
+  import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client@1.10.0/+esm";
+
+  const SPACE = new URLSearchParams(location.search).get('space') || 'SmilingWolf/wd-tagger';
+  document.getElementById('space-slug').textContent = SPACE;
+
   const $ = id => document.getElementById(id);
-  const fmtSize = b => b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';
 
   const drop = $('drop');
   const file = $('file');
@@ -393,15 +398,15 @@
   const dropOverlay = $('drop-overlay');
   const dropClear = $('drop-clear');
 
-  let currentImage = null;
+  let currentFile = null;
 
-  const showImage = (src) => {
+  const showImage = (f, src) => {
     dropPreview.src = src;
     dropPreview.style.display = 'block';
     dropOverlay.style.display = 'flex';
     dropEmpty.style.display = 'none';
     drop.classList.add('has-file');
-    currentImage = src;
+    currentFile = f;
   };
   const clearImage = () => {
     file.value = '';
@@ -410,13 +415,13 @@
     dropOverlay.style.display = 'none';
     dropEmpty.style.display = 'flex';
     drop.classList.remove('has-file');
-    currentImage = null;
+    currentFile = null;
   };
 
   const readFile = (f) => {
     if (!f || !f.type.startsWith('image/')) return;
     const r = new FileReader();
-    r.onload = e => showImage(e.target.result);
+    r.onload = e => showImage(f, e.target.result);
     r.readAsDataURL(f);
   };
 
@@ -477,37 +482,11 @@
     });
   });
 
-  const SAMPLE = {
-    string: '1girl, solo, long hair, looking at viewer, smile, blue eyes, sky, cloud, outdoors, blonde hair, day, hair ornament, hairband, blush, dress, white dress, summer, wind, sunlight',
-    rating: [
-      { name:'general', pct:0.92 },
-      { name:'sensitive', pct:0.07 },
-      { name:'questionable', pct:0.01 },
-      { name:'explicit', pct:0.00 },
-    ],
-    characters: [
-      { name:'hoshino_(blue_archive)', pct:0.87 },
-    ],
-    tags: [
-      { name:'1girl', pct:0.99 },
-      { name:'solo', pct:0.98 },
-      { name:'long hair', pct:0.95 },
-      { name:'looking at viewer', pct:0.93 },
-      { name:'smile', pct:0.91 },
-      { name:'blue eyes', pct:0.89 },
-      { name:'sky', pct:0.84 },
-      { name:'cloud', pct:0.81 },
-      { name:'outdoors', pct:0.79 },
-      { name:'blonde hair', pct:0.76 },
-      { name:'hair ornament', pct:0.71 },
-      { name:'dress', pct:0.66 },
-      { name:'white dress', pct:0.62 },
-      { name:'wind', pct:0.55 },
-      { name:'sunlight', pct:0.47 },
-    ],
-  };
-
   const renderBars = (container, items) => {
+    if (!items || !items.length) {
+      container.innerHTML = '<div class="res-empty" style="padding:0">— nothing above threshold —</div>';
+      return;
+    }
     container.innerHTML = items.map(i => `
       <div class="bar">
         <div class="bar-head">
@@ -518,9 +497,33 @@
       </div>`).join('');
   };
 
+  // Gradio Label outputs come as { label, confidences: [{label, confidence}, ...] }
+  // or as a plain dict { tag: score }
+  const parseLabel = (raw) => {
+    if (!raw) return [];
+    if (Array.isArray(raw.confidences)) {
+      return raw.confidences.map(c => ({ name:c.label, pct:c.confidence }));
+    }
+    return Object.entries(raw).map(([name, pct]) => ({ name, pct })).sort((a,b)=>b.pct-a.pct);
+  };
+
+  let _client = null;
+  const getClient = async () => {
+    if (_client) return _client;
+    _client = await Client.connect(SPACE);
+    return _client;
+  };
+
+  const showError = (msg) => {
+    $('res-string-loading').style.display = 'none';
+    $('res-string-ready').style.display = 'none';
+    $('res-string-empty').style.display = 'block';
+    $('res-string-empty').innerHTML = `<span style="color:#ff1f5a">⚠ ${msg}</span>`;
+  };
+
   const submit = $('submit');
-  submit.addEventListener('click', () => {
-    if (!currentImage) {
+  submit.addEventListener('click', async () => {
+    if (!currentFile) {
       drop.animate(
         [{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],
         {duration:280}
@@ -530,38 +533,56 @@
     $('res-string-empty').style.display = 'none';
     $('res-string-ready').style.display = 'none';
     $('res-string-loading').style.display = 'flex';
+    $('res-string-loading').querySelector('span:last-child').textContent =
+      'Connecting to ' + SPACE + '… (cold-start can take 30s)';
     submit.disabled = true;
 
-    setTimeout(() => {
+    try {
+      const client = await getClient();
+      $('res-string-loading').querySelector('span:last-child').textContent =
+        'Tagging image…';
+      const result = await client.predict('/predict', {
+        image: currentFile,
+        model_repo: $('model').value,
+        general_thresh: parseFloat($('gen-thresh').value),
+        general_mcut_enabled: $('gen-mcut').checked,
+        character_thresh: parseFloat($('char-thresh').value),
+        character_mcut_enabled: $('char-mcut').checked,
+      });
+
+      const data = result?.data || [];
+      const [tagString, rating, characters, generalTags] = data;
+
       $('res-string-loading').style.display = 'none';
       $('res-string-ready').style.display = 'block';
-      $('res-string').textContent = SAMPLE.string;
+      $('res-string').textContent = tagString || '(no tags above threshold)';
 
       $('res-rating-empty').style.display = 'none';
       $('res-rating').style.display = 'block';
-      renderBars($('res-rating'), SAMPLE.rating);
+      renderBars($('res-rating'), parseLabel(rating));
 
       $('res-char-empty').style.display = 'none';
       $('res-char').style.display = 'block';
-      renderBars($('res-char'), SAMPLE.characters);
+      renderBars($('res-char'), parseLabel(characters));
 
       $('res-tags-empty').style.display = 'none';
       $('res-tags').style.display = 'block';
-      const t = (+$('gen-thresh').value);
-      renderBars($('res-tags'), SAMPLE.tags.filter(i => $('gen-mcut').checked || i.pct >= t));
-
+      renderBars($('res-tags'), parseLabel(generalTags));
+    } catch (err) {
+      console.error('[tagger]', err);
+      const msg = err?.message || String(err);
+      showError(`Couldn't reach the Space: ${msg}. The Space may be sleeping, private, or temporarily down — try again in a minute, or pass <code>?space=&lt;owner/name&gt;</code> in the URL to use a mirror.`);
+    } finally {
       submit.disabled = false;
-    }, 1500);
+    }
   });
 
   $('clear').addEventListener('click', () => {
     clearImage();
-    ['res-string','res-rating','res-char','res-tags'].forEach(k => {
-      const ready = $('res-' + (k==='res-rating' ? 'rating' : k.replace('res-','')));
-    });
     $('res-string-ready').style.display = 'none';
     $('res-string-loading').style.display = 'none';
     $('res-string-empty').style.display = 'block';
+    $('res-string-empty').textContent = 'Submit an image to see the comma-separated tag prompt.';
     $('res-rating').style.display = 'none';
     $('res-rating-empty').style.display = 'block';
     $('res-char').style.display = 'none';

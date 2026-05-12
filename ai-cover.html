@@ -206,6 +206,7 @@
   <h1>🥳 AI 歌手<em>全明星</em>翻唱</h1>
   <p class="hero-sub">无需训练，<strong>一键翻唱</strong>。只需 1 个歌曲名，AI 立刻为你倾情演唱任意歌手的任意歌曲，也支持说话语音翻唱。随时随地，听你想听 🎶</p>
   <p class="hero-credit">Powered by <b>NeuCoSVC v2</b> · Tencent ARC Lab × Tsinghua University</p>
+  <p class="hero-credit" style="margin-top:6px;font-size:11px">Live via <code id="cv-space-slug" style="color:#00d8ff;font-family:ui-monospace,'SF Mono',Menlo,monospace">kevinwang676/NeuCoSVC-2</code> on Hugging Face · cold-start 1-2 min · GPU Space may be queued or paused</p>
 </div>
 
 <div class="app">
@@ -361,7 +362,12 @@
   <p style="margin-top:10px">© 2026 RHYTHMIX · AI music video studio · Made in Australia</p>
 </footer>
 
-<script>
+<script type="module">
+  import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client@1.10.0/+esm";
+
+  const SPACE = new URLSearchParams(location.search).get('space') || 'kevinwang676/NeuCoSVC-2';
+  document.getElementById('cv-space-slug').textContent = SPACE;
+
   const $ = (s, el=document) => el.querySelector(s);
   const $$ = (s, el=document) => [...el.querySelectorAll(s)];
   const fmtSize = b => b < 1024 ? b+' B' : b<1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
@@ -426,25 +432,77 @@
   const outLoading = $('#out-loading');
   const outReady = $('#out-ready');
 
-  submit.addEventListener('click', () => {
-    const hasSong = $('#song-q').value.trim() || $('#file-song').files[0];
-    const hasVoice = $('#voice-q').value.trim() || $('#file-voice').files[0];
-    if (!hasSong || !hasVoice) {
+  let _client = null;
+  const getClient = async () => {
+    if (_client) return _client;
+    _client = await Client.connect(SPACE);
+    return _client;
+  };
+
+  const setLoadingMsg = (msg) => {
+    outLoading.querySelector('span:last-child').textContent = msg;
+  };
+  const showError = (msg) => {
+    outLoading.style.display = 'none';
+    outReady.style.display = 'none';
+    outEmpty.style.display = 'block';
+    outEmpty.innerHTML = `<span style="color:#ff1f5a">⚠ ${msg}</span>`;
+  };
+
+  submit.addEventListener('click', async () => {
+    const songFile = $('#file-song').files[0];
+    const voiceFile = $('#file-voice').files[0];
+    const songQ = $('#song-q').value.trim();
+    const voiceQ = $('#voice-q').value.trim();
+
+    if (!(songQ || songFile) || !(voiceQ || voiceFile)) {
       submit.animate(
         [{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],
         {duration:280}
       );
       return;
     }
+
     outEmpty.style.display = 'none';
     outReady.style.display = 'none';
     outLoading.style.display = 'flex';
+    setLoadingMsg('正在连接 ' + SPACE + '…（GPU 启动约 1-2 分钟）');
     submit.disabled = true;
-    setTimeout(() => {
+
+    try {
+      const client = await getClient();
+      setLoadingMsg('AI 正在为你倾情演唱中…');
+
+      // NeuCoSVC v2 input signature varies by mirror; we attempt the common
+      // positional form. Override via ?space= if your mirror uses different params.
+      const result = await client.predict('/predict', [
+        songQ,                          // target song query (BV or song name)
+        voiceQ,                         // voice query
+        parseInt($('#start-sec').value || '0', 10),
+        $('#is-song').checked,
+        $('#auto-pitch').checked,
+        parseInt($('#pitch').value || '0', 10),
+        parseInt($('#vol-vocal').value || '0', 10),
+        parseInt($('#vol-inst').value || '0', 10),
+        songFile || null,
+        voiceFile || null,
+      ]);
+
+      const out = result?.data?.[0];
+      const url = typeof out === 'string' ? out : (out?.url || out?.path);
+      if (!url) throw new Error('Space returned no audio.');
+
+      const audio = outReady.querySelector('audio');
+      audio.src = url;
       outLoading.style.display = 'none';
       outReady.style.display = 'block';
+    } catch (err) {
+      console.error('[ai-cover]', err);
+      const msg = err?.message || String(err);
+      showError(`无法连接到 Space（${msg}）。NeuCoSVC v2 的公开镜像不稳定，可能正在睡眠或暂停。请稍后重试，或通过 URL 参数 <code>?space=&lt;owner/name&gt;</code> 切换到其他镜像。`);
+    } finally {
       submit.disabled = false;
-    }, 2200);
+    }
   });
 </script>
 
