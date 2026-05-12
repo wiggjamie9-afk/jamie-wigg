@@ -17,21 +17,21 @@ npm install -g 9router
 
 Dashboard opens at `http://localhost:20128/dashboard`.
 
-First-login password is `INITIAL_PASSWORD` from `.env`, or `123456` if unset.
+First-login password is `INITIAL_PASSWORD` from `.env`, or `123456` if unset. **Set a strong `INITIAL_PASSWORD` in `.env` before first start, or rotate it immediately in Dashboard → Settings before connecting any providers** — leaving the `123456` fallback live exposes your provider API keys on the local network.
 
 > ⚠️ Port `20128` is 9Router's default. Nothing in this repo uses it (Remotion Studio runs on `:3000`, HyperFrames preview on its own port), so no collisions.
 
 ## 2. Connect a free provider
 
-Open Dashboard → **Providers** and connect at least one of:
+Open Dashboard → **Providers** and connect at least one of (provider list verified against the upstream 9Router README as of **2026-05-12** — re-check at <https://github.com/decolua/9router> before relying on this):
 
-| Provider        | Cost | What you get                              |
-| --------------- | ---- | ----------------------------------------- |
-| **Kiro AI**     | $0   | Claude Sonnet 4.5 + GLM-5 + MiniMax, no quota |
-| **OpenCode Free** | $0 | Auto-fetched models, no auth              |
-| **Vertex AI**   | $300 credits | Gemini 3 Pro + DeepSeek + GLM-5 (new GCP accts) |
+| Provider          | Cost                              | What you get                                     |
+| ----------------- | --------------------------------- | ------------------------------------------------ |
+| **Kiro AI**       | $0                                | Claude Sonnet 4.5 + GLM-5 + MiniMax, no quota    |
+| **OpenCode Free** | $0                                | Auto-fetched models, no auth                     |
+| **Vertex AI**     | $300 trial credits (not perpetual) | Gemini 3 Pro + DeepSeek + GLM-5 (new GCP accts)  |
 
-> The retired free tiers (iFlow, Qwen, Gemini CLI) are no longer usable in 2026. Stick to the three above.
+> The upstream 9Router README (2026-05-12) recommends against the iFlow / Qwen / Gemini CLI free tiers and points users at Kiro / OpenCode Free / Vertex instead. The public 9router.com homepage may still list iFlow and Qwen — if you want to try them, check current status at <https://9router.com> before wiring them in.
 
 ## 3. Point Claude Code at it
 
@@ -45,13 +45,15 @@ In Claude Code settings (or any CLI tool):
 
 The RHYTHMIX skills run long agent loops (TTS → composition → render → publish). Make a combo in Dashboard → Combos:
 
-```
+```text
 Combo name: rhythmix-fallback
   1. cc/claude-opus-4-7         (subscription primary)
   2. kr/claude-sonnet-4.5       (free unlimited Claude)
   3. kr/glm-5                   (free fallback)
   4. oc/<auto>                  (OpenCode Free emergency)
 ```
+
+> Model alias prefixes (`cc/`, `kr/`, `glm/`, `oc/`) are 9Router-internal routing aliases — confirm the current list in Dashboard → Models, since 9Router's alias map drifts over time.
 
 This keeps `/rhythmix-new` and `/album-launch` running even after a 5h Pro window closes.
 
