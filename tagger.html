@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RHYTHMIX — Tagger · WaifuDiffusion</title>
+  <meta name="description" content="Drop an illustration. Get the full Danbooru-style tag list, rating, and detected characters. Powered by SmilingWolf's WaifuDiffusion tagger models.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rhythmixapp.com.au/tagger.html">
+  <meta property="og:title" content="RHYTHMIX — WaifuDiffusion Tagger">
+  <meta property="og:description" content="Drop an image. Get tags, rating, and characters in one click.">
+  <meta property="og:image" content="https://rhythmixapp.com.au/thumbnails/rhythmix-thumbnail-square.png">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:#fff;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      min-height:100vh; overflow-x:hidden; }
+
+    nav { display:flex; justify-content:space-between; align-items:center;
+      padding:20px 24px; position:sticky; top:0; z-index:100;
+      background:rgba(0,0,0,.85); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.06); }
+    .nav-logo { font-size:22px; font-weight:900;
+      background:linear-gradient(135deg,#ff1f5a,#7c3aed,#00d8ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      text-decoration:none; }
+    .nav-links { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    .nav-links a { color:#a0a0b0; text-decoration:none; font-size:14px; font-weight:600; }
+    .nav-cta { background:linear-gradient(135deg,#f5c000,#ff8800);
+      color:#000 !important; padding:10px 20px; border-radius:100px;
+      font-size:14px; font-weight:900; text-decoration:none; }
+
+    .hero { text-align:center; padding:64px 24px 32px;
+      background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(255,31,90,.18),transparent); }
+    .hero-badge { display:inline-flex; align-items:center; gap:8px;
+      background:rgba(255,31,90,.1); border:1px solid rgba(255,31,90,.4); color:#ff1f5a;
+      font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+      padding:8px 18px; border-radius:100px; margin-bottom:22px; }
+    .badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor;
+      animation:pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .hero h1 { font-size:clamp(36px,8vw,72px); font-weight:900; line-height:1.0;
+      letter-spacing:-2px; margin-bottom:14px; }
+    .hero h1 em { font-style:normal;
+      background:linear-gradient(135deg,#ff1f5a,#7c3aed,#00d8ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero-sub { color:#a0a0b0; font-size:clamp(14px,2.5vw,17px); line-height:1.6;
+      max-width:580px; margin:0 auto 14px; }
+    .hero-sub strong { color:#fff; }
+    .hero-credit { color:#555; font-size:12px; }
+    .hero-credit a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    .app { max-width:1080px; margin:0 auto; padding:24px 20px 8px; }
+    .grid { display:grid; grid-template-columns:1.1fr 1fr; gap:16px;
+      align-items:start; }
+    @media (max-width:840px) { .grid { grid-template-columns:1fr; } }
+
+    .card { background:#0d0d0d; border:1px solid rgba(255,255,255,.08);
+      border-radius:20px; padding:22px; }
+    .card-label { font-size:11px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:#7c3aed; margin-bottom:10px; }
+    .card-title { font-size:16px; font-weight:800; margin-bottom:14px; }
+
+    .drop { position:relative; aspect-ratio:1/1; max-height:420px;
+      border:2px dashed rgba(255,255,255,.15);
+      border-radius:14px; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; gap:10px; padding:20px; text-align:center;
+      cursor:pointer; transition:.15s; background:rgba(255,255,255,.02);
+      overflow:hidden; }
+    .drop:hover, .drop.over { border-color:rgba(124,58,237,.6);
+      background:rgba(124,58,237,.06); }
+    .drop input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; z-index:2; }
+    .drop-icon { font-size:36px; opacity:.7; }
+    .drop-main { font-size:14px; font-weight:700; color:#a0a0b0; }
+    .drop-or { font-size:11px; color:#444; letter-spacing:2px;
+      text-transform:uppercase; }
+    .drop-btn { background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.15); color:#fff; font-size:13px;
+      font-weight:700; padding:9px 18px; border-radius:100px; }
+    .drop.has-file { border-style:solid; border-color:rgba(0,232,135,.4); padding:0; }
+    .drop-preview { width:100%; height:100%; object-fit:contain;
+      background:#000; }
+    .drop-overlay { position:absolute; inset:auto 10px 10px auto;
+      display:flex; gap:6px; z-index:3; }
+    .drop-clear { background:rgba(0,0,0,.7); backdrop-filter:blur(6px);
+      border:1px solid rgba(255,255,255,.15); color:#fff;
+      font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      padding:7px 12px; border-radius:100px; cursor:pointer; }
+
+    select { width:100%; background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.1); border-radius:10px; color:#fff;
+      font-family:inherit; font-size:14px; padding:13px 14px; outline:none;
+      cursor:pointer; appearance:none;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M6 8L0 0h12z'/></svg>");
+      background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+    select:focus { border-color:rgba(124,58,237,.6);
+      background-color:rgba(124,58,237,.05); }
+
+    .thresh { display:flex; flex-direction:column; gap:8px;
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07);
+      border-radius:12px; padding:14px; }
+    .thresh-head { display:flex; align-items:center; justify-content:space-between;
+      gap:10px; }
+    .thresh-label { font-size:13px; font-weight:700; color:#fff; }
+    .thresh-reset { background:transparent; border:1px solid rgba(255,255,255,.12);
+      color:#a0a0b0; font-size:13px; width:28px; height:28px;
+      border-radius:50%; cursor:pointer; line-height:1; }
+    .thresh-reset:hover { background:rgba(124,58,237,.15); color:#fff;
+      border-color:rgba(124,58,237,.4); }
+    .slider-row { display:flex; align-items:center; gap:12px; }
+    .slider-row input[type=range] { flex:1; -webkit-appearance:none; appearance:none;
+      height:4px; border-radius:100px; background:rgba(255,255,255,.1); outline:none; }
+    .slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none;
+      width:18px; height:18px; border-radius:50%;
+      background:linear-gradient(135deg,#7c3aed,#00d8ff); cursor:pointer;
+      box-shadow:0 0 8px rgba(124,58,237,.5); }
+    .slider-row input[type=range]:disabled::-webkit-slider-thumb { background:#444; box-shadow:none; }
+    .slider-row input[type=range]::-moz-range-thumb { width:18px; height:18px;
+      border:none; border-radius:50%;
+      background:linear-gradient(135deg,#7c3aed,#00d8ff); cursor:pointer; }
+    .slider-val { min-width:42px; text-align:right; font-size:13px;
+      font-weight:800; color:#7c3aed; font-variant-numeric:tabular-nums; }
+    .slider-row input:disabled + .slider-val { color:#444; }
+
+    .check { display:flex; gap:10px; align-items:center; cursor:pointer; font-size:12px; }
+    .check input { appearance:none; width:16px; height:16px;
+      border:1.5px solid rgba(255,255,255,.25); border-radius:4px;
+      background:transparent; cursor:pointer; position:relative; transition:.15s; }
+    .check input:checked { background:linear-gradient(135deg,#7c3aed,#00d8ff);
+      border-color:transparent; }
+    .check input:checked::after { content:'✓'; color:#fff; font-weight:900;
+      font-size:11px; position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%); }
+    .check span { color:#a0a0b0; font-weight:600; }
+
+    .field-stack { display:flex; flex-direction:column; gap:14px; }
+
+    .actions { display:flex; gap:10px; justify-content:flex-end;
+      max-width:1080px; margin:0 auto; padding:8px 20px 28px; }
+    .btn-clear { background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12); color:#a0a0b0; font-size:14px;
+      font-weight:700; padding:13px 24px; border-radius:12px; cursor:pointer; }
+    .btn-submit { background:linear-gradient(135deg,#ff1f5a,#7c3aed);
+      border:none; color:#fff; font-size:14px; font-weight:900; letter-spacing:1px;
+      text-transform:uppercase; padding:13px 32px; border-radius:12px;
+      cursor:pointer; box-shadow:0 0 24px rgba(124,58,237,.3); }
+    .btn-submit:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+    .results { max-width:1080px; margin:0 auto 48px; padding:0 20px;
+      display:grid; gap:14px; grid-template-columns:1fr 1fr; }
+    @media (max-width:760px) { .results { grid-template-columns:1fr; } }
+    .res-card { background:#0d0d0d; border:1px solid rgba(255,255,255,.08);
+      border-radius:16px; padding:18px; min-height:120px; }
+    .res-card.full { grid-column:1/-1; }
+    .res-label { font-size:11px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:#00d8ff; margin-bottom:10px; }
+    .res-empty { color:#444; font-size:13px; line-height:1.5; padding:8px 0; }
+    .res-string { background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.06);
+      border-radius:10px; padding:14px; font-family:ui-monospace,'SF Mono',Menlo,monospace;
+      font-size:13px; color:#00e887; line-height:1.6; word-break:break-word;
+      white-space:pre-wrap; min-height:90px; }
+    .copy-btn { float:right; background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12); color:#a0a0b0; font-size:11px;
+      font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      padding:6px 12px; border-radius:6px; cursor:pointer; }
+    .copy-btn:hover { color:#fff; }
+
+    .bar { display:flex; flex-direction:column; gap:4px; margin-bottom:8px; }
+    .bar-head { display:flex; justify-content:space-between; align-items:center;
+      font-size:12px; }
+    .bar-name { color:#fff; font-weight:600; }
+    .bar-pct { color:#a0a0b0; font-variant-numeric:tabular-nums; }
+    .bar-track { height:6px; background:rgba(255,255,255,.05);
+      border-radius:100px; overflow:hidden; }
+    .bar-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#00d8ff);
+      border-radius:100px; transition:width .4s ease; }
+
+    .res-status { color:#a0a0b0; font-size:14px; padding:8px 0;
+      display:flex; align-items:center; gap:10px; }
+    .spinner { width:14px; height:14px; border-radius:50%;
+      border:2px solid rgba(124,58,237,.25); border-top-color:#7c3aed;
+      animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .examples { max-width:1080px; margin:0 auto 48px; padding:0 20px; }
+    .examples h2 { font-size:22px; font-weight:800; margin-bottom:6px; }
+    .examples-sub { color:#555; font-size:13px; margin-bottom:18px; }
+    .ex-row { display:grid; grid-template-columns:80px 1fr auto auto auto;
+      gap:14px; align-items:center; background:#0d0d0d;
+      border:1px solid rgba(255,255,255,.06); border-radius:14px;
+      padding:14px; cursor:pointer; transition:.15s; }
+    .ex-row:hover { border-color:rgba(124,58,237,.4); background:rgba(124,58,237,.04); }
+    .ex-img { width:80px; height:80px; border-radius:10px;
+      background:linear-gradient(135deg,#1a0033,#000a1a);
+      display:flex; align-items:center; justify-content:center;
+      font-size:32px; }
+    .ex-model { font-size:12px; color:#fff; font-weight:700;
+      font-family:ui-monospace,'SF Mono',Menlo,monospace; word-break:break-all; }
+    .ex-chip { font-size:11px; color:#a0a0b0; font-weight:600;
+      background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+      border-radius:8px; padding:5px 9px; white-space:nowrap;
+      font-variant-numeric:tabular-nums; }
+    @media (max-width:680px) {
+      .ex-row { grid-template-columns:60px 1fr; gap:10px; }
+      .ex-img { width:60px; height:60px; font-size:24px; }
+      .ex-chip { grid-column:2/3; justify-self:start; }
+    }
+
+    .notice { max-width:1080px; margin:0 auto 28px; padding:0 20px; }
+    .notice-card { background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07); border-radius:14px;
+      padding:18px 22px; color:#a0a0b0; font-size:13px; line-height:1.65; }
+    .notice-card strong { color:#fff; }
+    .notice-card a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    footer { text-align:center; padding:40px 24px; color:#333; font-size:13px;
+      border-top:1px solid rgba(255,255,255,.05); }
+    footer a { color:#444; text-decoration:none; margin:0 6px; }
+    footer a:hover { color:#a0a0b0; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">RHYTHMIX</a>
+  <div class="nav-links">
+    <a href="/features.html">Features</a>
+    <a href="/voice-clone.html">Voice Clone</a>
+    <a href="/ai-cover.html">AI Cover</a>
+    <a href="/tagger.html" style="color:#fff">Tagger</a>
+    <a class="nav-cta" href="https://wiggjamie.gumroad.com/l/rhythmix-studio">Buy · $149</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge"><span class="badge-dot"></span>Lab · WaifuDiffusion</div>
+  <h1>Image <em>Tagger</em></h1>
+  <p class="hero-sub">Drop an illustration. Get the full <strong>Danbooru-style tag list</strong>, content rating, and detected characters — ready to paste into any prompt.</p>
+  <p class="hero-credit">Powered by <a href="https://huggingface.co/SmilingWolf" target="_blank" rel="noopener">SmilingWolf's WaifuDiffusion tagger</a> · Example image by ほし☆☆☆</p>
+</div>
+
+<div class="app">
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-label">01 · Input</div>
+      <div class="card-title">Image</div>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/*">
+        <div id="drop-empty" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div class="drop-icon">🖼️</div>
+          <div class="drop-main">Drop image here</div>
+          <div class="drop-or">— or —</div>
+          <span class="drop-btn">Click to upload</span>
+        </div>
+        <img id="drop-preview" class="drop-preview" style="display:none" alt="preview">
+        <div id="drop-overlay" class="drop-overlay" style="display:none">
+          <button type="button" class="drop-clear" id="drop-clear">Remove</button>
+        </div>
+      </label>
+    </div>
+
+    <div class="card field-stack">
+      <div>
+        <div class="card-label">02 · Model</div>
+        <div class="card-title">Tagger model</div>
+        <select id="model">
+          <optgroup label="v3 (recommended)">
+            <option value="SmilingWolf/wd-swinv2-tagger-v3" selected>SmilingWolf/wd-swinv2-tagger-v3</option>
+            <option value="SmilingWolf/wd-convnext-tagger-v3">SmilingWolf/wd-convnext-tagger-v3</option>
+            <option value="SmilingWolf/wd-vit-tagger-v3">SmilingWolf/wd-vit-tagger-v3</option>
+            <option value="SmilingWolf/wd-vit-large-tagger-v3">SmilingWolf/wd-vit-large-tagger-v3</option>
+            <option value="SmilingWolf/wd-eva02-large-tagger-v3">SmilingWolf/wd-eva02-large-tagger-v3</option>
+          </optgroup>
+          <optgroup label="v1.4 (legacy)">
+            <option value="SmilingWolf/wd-v1-4-moat-tagger-v2">SmilingWolf/wd-v1-4-moat-tagger-v2</option>
+            <option value="SmilingWolf/wd-v1-4-swinv2-tagger-v2">SmilingWolf/wd-v1-4-swinv2-tagger-v2</option>
+            <option value="SmilingWolf/wd-v1-4-convnext-tagger-v2">SmilingWolf/wd-v1-4-convnext-tagger-v2</option>
+            <option value="SmilingWolf/wd-v1-4-convnextv2-tagger-v2">SmilingWolf/wd-v1-4-convnextv2-tagger-v2</option>
+            <option value="SmilingWolf/wd-v1-4-vit-tagger-v2">SmilingWolf/wd-v1-4-vit-tagger-v2</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="thresh">
+        <div class="thresh-head">
+          <span class="thresh-label">General Tags Threshold</span>
+          <button type="button" class="thresh-reset" data-target="gen" title="Reset to 0.35">↺</button>
+        </div>
+        <div class="slider-row">
+          <input type="range" id="gen-thresh" min="0" max="1" step="0.01" value="0.35">
+          <span class="slider-val" id="gen-thresh-v">0.35</span>
+        </div>
+        <label class="check"><input type="checkbox" id="gen-mcut"><span>Use MCut threshold</span></label>
+      </div>
+
+      <div class="thresh">
+        <div class="thresh-head">
+          <span class="thresh-label">Character Tags Threshold</span>
+          <button type="button" class="thresh-reset" data-target="char" title="Reset to 0.85">↺</button>
+        </div>
+        <div class="slider-row">
+          <input type="range" id="char-thresh" min="0" max="1" step="0.01" value="0.85">
+          <span class="slider-val" id="char-thresh-v">0.85</span>
+        </div>
+        <label class="check"><input type="checkbox" id="char-mcut"><span>Use MCut threshold</span></label>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="actions">
+  <button type="button" class="btn-clear" id="clear">Clear</button>
+  <button type="button" class="btn-submit" id="submit">Submit</button>
+</div>
+
+<div class="results">
+  <div class="res-card full">
+    <div class="res-label">Output (string)</div>
+    <div id="res-string-empty" class="res-empty">Submit an image to see the comma-separated tag prompt.</div>
+    <div id="res-string-loading" class="res-status" style="display:none"><span class="spinner"></span><span>Reading image…</span></div>
+    <div id="res-string-ready" style="display:none">
+      <button type="button" class="copy-btn" id="copy-string">Copy</button>
+      <div class="res-string" id="res-string"></div>
+    </div>
+  </div>
+
+  <div class="res-card">
+    <div class="res-label">Rating</div>
+    <div id="res-rating-empty" class="res-empty">—</div>
+    <div id="res-rating" style="display:none"></div>
+  </div>
+
+  <div class="res-card">
+    <div class="res-label">Output (characters)</div>
+    <div id="res-char-empty" class="res-empty">No characters detected yet.</div>
+    <div id="res-char" style="display:none"></div>
+  </div>
+
+  <div class="res-card full">
+    <div class="res-label">Output (tags)</div>
+    <div id="res-tags-empty" class="res-empty">Tags with confidence above the threshold will appear here.</div>
+    <div id="res-tags" style="display:none"></div>
+  </div>
+</div>
+
+<section class="examples">
+  <h2>Examples</h2>
+  <p class="examples-sub">Tap a row to load the model and thresholds (image upload still required for the mockup).</p>
+
+  <div class="ex-row" data-model="SmilingWolf/wd-swinv2-tagger-v3" data-gen="0.35" data-char="0.85" data-mcut-gen="false" data-mcut-char="false">
+    <div class="ex-img">🌸</div>
+    <div>
+      <div class="ex-model">SmilingWolf/wd-swinv2-tagger-v3</div>
+      <div style="font-size:11px;color:#555;margin-top:4px;letter-spacing:1px;text-transform:uppercase">Default · v3 SwinV2</div>
+    </div>
+    <span class="ex-chip">Gen 0.35</span>
+    <span class="ex-chip">Char 0.85</span>
+    <span class="ex-chip">MCut off</span>
+  </div>
+</section>
+
+<section class="notice">
+  <div class="notice-card">
+    <strong>About this tool.</strong> The tagger predicts <strong>Danbooru-style tags</strong>, content rating, and known characters from an illustration. Use it to backfill prompts for upscalers, style transfers, or for organizing reference boards. <strong>MCut</strong> auto-picks the cut-off based on the biggest score gap; toggle it on to skip manual threshold tuning. Tag data and weights from <a href="https://huggingface.co/SmilingWolf" target="_blank" rel="noopener">SmilingWolf</a>.
+  </div>
+</section>
+
+<footer>
+  <p>
+    <a href="/features.html">Features</a> ·
+    <a href="/downloads.html">Videos</a> ·
+    <a href="/studio.html">Studio</a> ·
+    <a href="/voice-clone.html">Voice Clone</a> ·
+    <a href="/ai-cover.html">AI Cover</a> ·
+    <a href="/privacy.html">Privacy</a> ·
+    <a href="/terms.html">Terms</a>
+  </p>
+  <p style="margin-top:10px">© 2026 RHYTHMIX · AI music video studio · Made in Australia</p>
+</footer>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const fmtSize = b => b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';
+
+  const drop = $('drop');
+  const file = $('file');
+  const dropEmpty = $('drop-empty');
+  const dropPreview = $('drop-preview');
+  const dropOverlay = $('drop-overlay');
+  const dropClear = $('drop-clear');
+
+  let currentImage = null;
+
+  const showImage = (src) => {
+    dropPreview.src = src;
+    dropPreview.style.display = 'block';
+    dropOverlay.style.display = 'flex';
+    dropEmpty.style.display = 'none';
+    drop.classList.add('has-file');
+    currentImage = src;
+  };
+  const clearImage = () => {
+    file.value = '';
+    dropPreview.removeAttribute('src');
+    dropPreview.style.display = 'none';
+    dropOverlay.style.display = 'none';
+    dropEmpty.style.display = 'flex';
+    drop.classList.remove('has-file');
+    currentImage = null;
+  };
+
+  const readFile = (f) => {
+    if (!f || !f.type.startsWith('image/')) return;
+    const r = new FileReader();
+    r.onload = e => showImage(e.target.result);
+    r.readAsDataURL(f);
+  };
+
+  file.addEventListener('change', e => readFile(e.target.files && e.target.files[0]));
+  dropClear.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); clearImage(); });
+
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => readFile(e.dataTransfer.files && e.dataTransfer.files[0]));
+
+  const bind = (range, out, decimals=2) => {
+    const upd = () => out.textContent = (+range.value).toFixed(decimals);
+    range.addEventListener('input', upd); upd();
+  };
+  bind($('gen-thresh'), $('gen-thresh-v'));
+  bind($('char-thresh'), $('char-thresh-v'));
+
+  const syncMcut = (chk, range, out) => {
+    const upd = () => {
+      range.disabled = chk.checked;
+      out.style.opacity = chk.checked ? '.3' : '1';
+    };
+    chk.addEventListener('change', upd); upd();
+  };
+  syncMcut($('gen-mcut'), $('gen-thresh'), $('gen-thresh-v'));
+  syncMcut($('char-mcut'), $('char-thresh'), $('char-thresh-v'));
+
+  document.querySelectorAll('.thresh-reset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.target === 'gen') {
+        $('gen-thresh').value = '0.35';
+        $('gen-thresh-v').textContent = '0.35';
+        $('gen-mcut').checked = false;
+      } else {
+        $('char-thresh').value = '0.85';
+        $('char-thresh-v').textContent = '0.85';
+        $('char-mcut').checked = false;
+      }
+      $('gen-thresh').dispatchEvent(new Event('input'));
+      $('char-thresh').dispatchEvent(new Event('input'));
+      $('gen-mcut').dispatchEvent(new Event('change'));
+      $('char-mcut').dispatchEvent(new Event('change'));
+    });
+  });
+
+  document.querySelectorAll('.ex-row').forEach(row => {
+    row.addEventListener('click', () => {
+      $('model').value = row.dataset.model;
+      $('gen-thresh').value = row.dataset.gen;
+      $('char-thresh').value = row.dataset.char;
+      $('gen-mcut').checked = row.dataset.mcutGen === 'true';
+      $('char-mcut').checked = row.dataset.mcutChar === 'true';
+      $('gen-thresh').dispatchEvent(new Event('input'));
+      $('char-thresh').dispatchEvent(new Event('input'));
+      $('gen-mcut').dispatchEvent(new Event('change'));
+      $('char-mcut').dispatchEvent(new Event('change'));
+      $('model').scrollIntoView({ behavior:'smooth', block:'center' });
+    });
+  });
+
+  const SAMPLE = {
+    string: '1girl, solo, long hair, looking at viewer, smile, blue eyes, sky, cloud, outdoors, blonde hair, day, hair ornament, hairband, blush, dress, white dress, summer, wind, sunlight',
+    rating: [
+      { name:'general', pct:0.92 },
+      { name:'sensitive', pct:0.07 },
+      { name:'questionable', pct:0.01 },
+      { name:'explicit', pct:0.00 },
+    ],
+    characters: [
+      { name:'hoshino_(blue_archive)', pct:0.87 },
+    ],
+    tags: [
+      { name:'1girl', pct:0.99 },
+      { name:'solo', pct:0.98 },
+      { name:'long hair', pct:0.95 },
+      { name:'looking at viewer', pct:0.93 },
+      { name:'smile', pct:0.91 },
+      { name:'blue eyes', pct:0.89 },
+      { name:'sky', pct:0.84 },
+      { name:'cloud', pct:0.81 },
+      { name:'outdoors', pct:0.79 },
+      { name:'blonde hair', pct:0.76 },
+      { name:'hair ornament', pct:0.71 },
+      { name:'dress', pct:0.66 },
+      { name:'white dress', pct:0.62 },
+      { name:'wind', pct:0.55 },
+      { name:'sunlight', pct:0.47 },
+    ],
+  };
+
+  const renderBars = (container, items) => {
+    container.innerHTML = items.map(i => `
+      <div class="bar">
+        <div class="bar-head">
+          <span class="bar-name">${i.name}</span>
+          <span class="bar-pct">${(i.pct*100).toFixed(1)}%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(i.pct*100).toFixed(1)}%"></div></div>
+      </div>`).join('');
+  };
+
+  const submit = $('submit');
+  submit.addEventListener('click', () => {
+    if (!currentImage) {
+      drop.animate(
+        [{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],
+        {duration:280}
+      );
+      return;
+    }
+    $('res-string-empty').style.display = 'none';
+    $('res-string-ready').style.display = 'none';
+    $('res-string-loading').style.display = 'flex';
+    submit.disabled = true;
+
+    setTimeout(() => {
+      $('res-string-loading').style.display = 'none';
+      $('res-string-ready').style.display = 'block';
+      $('res-string').textContent = SAMPLE.string;
+
+      $('res-rating-empty').style.display = 'none';
+      $('res-rating').style.display = 'block';
+      renderBars($('res-rating'), SAMPLE.rating);
+
+      $('res-char-empty').style.display = 'none';
+      $('res-char').style.display = 'block';
+      renderBars($('res-char'), SAMPLE.characters);
+
+      $('res-tags-empty').style.display = 'none';
+      $('res-tags').style.display = 'block';
+      const t = (+$('gen-thresh').value);
+      renderBars($('res-tags'), SAMPLE.tags.filter(i => $('gen-mcut').checked || i.pct >= t));
+
+      submit.disabled = false;
+    }, 1500);
+  });
+
+  $('clear').addEventListener('click', () => {
+    clearImage();
+    ['res-string','res-rating','res-char','res-tags'].forEach(k => {
+      const ready = $('res-' + (k==='res-rating' ? 'rating' : k.replace('res-','')));
+    });
+    $('res-string-ready').style.display = 'none';
+    $('res-string-loading').style.display = 'none';
+    $('res-string-empty').style.display = 'block';
+    $('res-rating').style.display = 'none';
+    $('res-rating-empty').style.display = 'block';
+    $('res-char').style.display = 'none';
+    $('res-char-empty').style.display = 'block';
+    $('res-tags').style.display = 'none';
+    $('res-tags-empty').style.display = 'block';
+  });
+
+  $('copy-string').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('res-string').textContent);
+      const b = $('copy-string'); const old = b.textContent;
+      b.textContent = 'Copied'; setTimeout(() => b.textContent = old, 1200);
+    } catch {}
+  });
+</script>
+
+</body>
+</html>
