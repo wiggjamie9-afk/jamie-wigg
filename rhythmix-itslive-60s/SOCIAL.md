@@ -12,12 +12,12 @@ One source of truth for all platforms. Copy from here, paste into each app on yo
 ## 🎬 YouTube Shorts (or full upload)
 
 **Title** (100 chars max)
-```
+```text
 RHYTHMIX is LIVE — The new world order of AI music | Generate, master & release tracks
 ```
 
 **Description** (5000 chars max, paste exactly as shown)
-```
+```text
 The wait is over. RHYTHMIX is live — a complete AI music platform in your pocket.
 
 Generate a track from a one-line idea. Master to a professional standard. Distribute to every major platform. Earn a real career from what you make.
@@ -46,12 +46,12 @@ For bedroom producers with great ideas and no gear. First-time artists with no l
 ```
 
 **Tags** (paste comma-separated into YouTube's Tags field)
-```
+```text
 ai music, ai music generator, ai music platform, ai song maker, ai music studio, make music with ai, ai music production, ai music for creators, ai music video, suno alternative, udio alternative, landr alternative, best ai music tool, ai music 2026, rhythmix, rhythmix studio, music ai, ai song generator, generate music with ai, music maker app, indie music tool, bedroom producer, ai composer, ai music app, music distribution
 ```
 
 **Hashtags** (for Shorts — put 2-3 at end of title or as #Shorts)
-```
+```text
 #Shorts #AIMusic #RHYTHMIX
 ```
 
@@ -60,7 +60,7 @@ ai music, ai music generator, ai music platform, ai song maker, ai music studio,
 ## 📸 Instagram Reel (Business account)
 
 **Caption** (2200 chars max — hook first, hashtags at the end)
-```
+```text
 The wait is over. 🎵
 
 RHYTHMIX is LIVE — and it just changed who gets to make music.
@@ -88,7 +88,7 @@ Come in. Enjoy the experience. This is the new world order of AI music. 🚀
 ## 🎵 TikTok
 
 **Caption** (under 150 chars works best for the algorithm)
-```
+```text
 The wait is over. RHYTHMIX is LIVE 🎵 A whole AI music studio in your pocket. $149 lifetime, no subscription. Link in bio 🔗
 
 #AIMusic #MusicProducer #BedroomProducer #MusicTok #ProducerTok #AIMusicProducer #IndieMusic #MusicTech
@@ -101,7 +101,7 @@ The wait is over. RHYTHMIX is LIVE 🎵 A whole AI music studio in your pocket. 
 ## 🐦 X / Twitter
 
 **Single tweet** (under 280 chars including link)
-```
+```text
 The wait is over.
 
 RHYTHMIX is LIVE — a complete AI music studio in your pocket.
@@ -116,7 +116,7 @@ $149 lifetime. No subscription, ever.
 **Or — 3-tweet launch thread:**
 
 Tweet 1:
-```
+```text
 The wait is over. RHYTHMIX is LIVE 🎵
 
 A complete AI music studio in your pocket.
@@ -129,7 +129,7 @@ $149 lifetime — no subscription, ever.
 ```
 
 Tweet 2:
-```
+```text
 Suno makes the song.
 Udio makes the song.
 LANDR finishes the song.
@@ -141,7 +141,7 @@ Not just a track maker. A music business in a tap.
 ```
 
 Tweet 3:
-```
+```text
 For the bedroom producer with great ideas and no gear.
 The first-time artist with no label.
 The solo creator scoring their own content.
@@ -155,7 +155,7 @@ This is the new world order of AI music.
 
 ## 🧵 Threads
 
-```
+```text
 The wait is over. RHYTHMIX is LIVE 🎵
 
 A complete AI music studio in your pocket — generate, master, distribute, and earn from your music. No producer. No studio. No subscription.
@@ -170,7 +170,7 @@ Come in. Enjoy the experience.
 ## 📘 Facebook Page
 
 **Post** (longer, more storytelling)
-```
+```text
 🎵 Today we go live.
 
 RHYTHMIX is the AI music platform I've been building for everyone who's ever had a song in their head but no studio to record it in.
@@ -198,7 +198,7 @@ Come in. Enjoy the experience. This is the new world order of AI music.
 ## 💼 LinkedIn
 
 **Post** (professional / founder voice, 1300-3000 chars works best)
-```
+```text
 Today, RHYTHMIX goes live. 🎵
 
 I built it because the AI music tools that exist today — Suno, Udio, LANDR — each solve one piece of the puzzle. None solve the whole problem of "I have an idea, I want a finished, distributed, earning song."
