@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Brand identity** → `rhythmix-teaser-60s/DESIGN.md` (palette, typography, motion eases).
 - **Cloud-AI tools the user actually uses** → `CREATIVE-AI-STACK.md` (iPhone-driven; user has no desktop).
 - **Replicate + ElevenLabs MCP server (image/video/music/voice tools)** → `.claude/mcp/creative-stack/`. Run `npm install` in that folder once and add the `mcpServers` block from its README to wire it up. Requires API tokens.
+- **Higgsfield AI MCP server (Soul text-to-image, DOP image-to-video, talking-head, character refs)** → registered in `.mcp.json` as `higgsfield`. Install with `pip install git+https://github.com/geopopos/geo_higgsfield_ai_mcp`. Put `HIGGSFIELD_API_KEY` and `HIGGSFIELD_SECRET` in `.env` at the repo root (gitignored). To use it *with* HyperFrames in a single flow, invoke the `higgsfield-to-hyperframes` skill — it owns the prompt → poll → download → wire-in pipeline.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
 
 ## Repository Overview
@@ -59,6 +60,7 @@ Available skills:
 - `hyperframes`, `hyperframes-cli`, `hyperframes-registry` — HyperFrames HTML video composition workflow.
 - `remotion`, `remotion-to-hyperframes` — Remotion authoring + Remotion→HyperFrames porting.
 - `website-to-hyperframes` — capture a website into a HyperFrames video.
+- `higgsfield-to-hyperframes` — bridge between the Higgsfield MCP server (AI imagery + image-to-video + talking heads + character refs) and a HyperFrames composition. Owns the prompt → poll → download → wire-in pipeline. Reach for it when a HyperFrames scene needs photorealistic stills or short AI-animated clips instead of pure CSS/SVG.
 - `gsap` — GSAP animation reference for HyperFrames compositions.
 
 If the user asks for HTML-based video, captions/subtitles, audio-reactive visuals, scene transitions, TTS, or website→video flows, reach for the HyperFrames skills rather than Remotion.
