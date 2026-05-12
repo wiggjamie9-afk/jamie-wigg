@@ -178,7 +178,28 @@ RHYTHMIX is a music **video** tool — the user brings an MP3, RHYTHMIX cuts the
 
 When scripting promo videos, marketing copy, or carousel posts about RHYTHMIX, lean on these concrete moments instead of abstract "AI music video" language. **Concrete > abstract.** ("Cut your wedding first dance" beats "AI-powered music videos.")
 
-## 9. Three Inputs (Positioning)
+## 9. Engine Capabilities (As-Of)
+
+The studio engine ships these capabilities today. Reference this when writing copy — don't claim what isn't built.
+
+| Capability | Status | Marketing phrase |
+|---|---|---|
+| Auto-BPM (aubio) | Live | "Auto-detected tempo" |
+| Loudness-driven section detection | Live | "Reads your song's structure" |
+| Beat-snapped cuts | Live | "Every cut lands on the beat" |
+| Crossfade transitions | Live | "Seamless transitions" |
+| **Story mode (7 narrative beats, 3-act arc)** | Live | "Every video is a 3-act short film" |
+| **Multi-aspect (YouTube + Reels + IG-feed in one render)** | Live | "Three aspects, one render" |
+| **Character consistency via reference image** | Live | "Your hero stays your hero — every cut" |
+| Retry + checkpointing on Replicate failures | Live | "Resume a failed render without re-spending" |
+| 4 video models (Kling, Hunyuan, Luma, MiniMax) | Live | "Auto-routes to the right model per scene" |
+| Free modes (Pexels stock + your own clips) | Live | "Render for $0 if you want to" |
+| LLM scene prompts from lyrics + theme | Roadmap | Tag as "Coming next" |
+| Asset pack (cover + Canvas + IG cover) | Roadmap | Tag as "Coming next" |
+| Whisper-based karaoke captions | Roadmap | Tag as "Coming next" |
+| Stem-separated visual layers | Roadmap | Tag as "Coming next" |
+
+## 10. Three Inputs (Positioning)
 
 When describing what the user brings to RHYTHMIX, use this three-input framing — not the four-pillar one (Generate/Master/Distribute/Earn). The four pillars are about what the engine does; the three inputs are about what the user does.
 
@@ -190,7 +211,20 @@ When describing what the user brings to RHYTHMIX, use this three-input framing �
 
 Headline copy template: **"Drop your track. Pick your moment. Render the video."** Use this — or close variants — whenever a hero or hook needs the user-facing pitch in one line.
 
-## 11. Reference Compositions
+## 11. Category-Defining Thesis
+
+When repositioning RHYTHMIX, anchor on this one-line strategic claim:
+
+> *"RHYTHMIX is the only platform that turns your audio into a release-ready visual package — music video, every aspect, character-consistent, story-arced — in one render."*
+
+This is **category-creating, not category-competing**:
+- Not "AI music video generator" (commodity, race to bottom)
+- Not "Kling wrapper" (no moat)
+- The **release-day asset bundle for music creators** — a different category, different price point, different moat
+
+Use this thesis or close variants whenever the brief calls for top-line positioning.
+
+## 12. Reference Compositions
 
 Look at these before authoring a new asset:
 

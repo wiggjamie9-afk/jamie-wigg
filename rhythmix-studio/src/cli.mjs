@@ -8,6 +8,7 @@ import { replicateRun, downloadToDisk, firstUrl, ReplicateError } from "./replic
 import { pexelsSearch, pickVideoFile, downloadPexelsVideo, PexelsError } from "./sources/pexels.mjs";
 import { listLocalClips, copyLocalClip, LocalSourceError } from "./sources/local.mjs";
 import { compose, composeMultiAspect } from "./compose.mjs";
+import { generateAssetPack, estimateAssetCost, validateFormats, ASSET_SPECS } from "./assets.mjs";
 import { log } from "./log.mjs";
 
 function parseArgs(argv) {
@@ -38,6 +39,11 @@ Usage:
   rhythmix-studio plan <track.mp3> --theme "..." [options]
   rhythmix-studio render <track.mp3> --theme "..." [options]
   rhythmix-studio render-from-plan <plan.json> [options]
+  rhythmix-studio assets --theme "..." [--formats cover,canvas,feedCover]
+                          Generate the release-day asset pack: album cover
+                          + Spotify Canvas + IG feed cover, all from one
+                          theme. ~$0.04/image (FLUX 1.1 Pro). Use --dry-run
+                          to estimate cost.
 
 Common options:
   --theme <text>        Visual theme/concept (required for plan/render).
@@ -377,6 +383,51 @@ async function runCompose({ plan, sceneFiles, outDir, workDir, transitions, aspe
   log.ok(`Final video: ${finalPath}`);
 }
 
+async function cmdAssets(args) {
+  if (!args.theme) throw new Error("--theme is required");
+
+  const requested = (args.formats ?? Object.keys(ASSET_SPECS).join(",")).split(",").map((s) => s.trim()).filter(Boolean);
+  validateFormats(requested);
+
+  const outDir = args.out
+    ? resolve(args.out)
+    : resolve(process.cwd(), "rhythmix-out", `assets-${Date.now()}`);
+
+  log.header("RHYTHMIX Studio — Asset Pack");
+  log.info(`Theme:   ${args.theme}`);
+  log.info(`Formats: ${requested.map((f) => ASSET_SPECS[f].label).join(", ")}`);
+  if (args["reference-image"]) {
+    log.info(`Reference image: ${args["reference-image"]}`);
+  }
+
+  const cost = estimateAssetCost(requested);
+  log.cost("Estimated total", cost);
+
+  if (args["dry-run"]) {
+    log.warn("Dry run — no images generated. Re-run without --dry-run to fetch.");
+    return;
+  }
+
+  requireSourceCredentials("replicate");
+  await ensureDir(outDir);
+
+  log.header("Generating assets");
+  const results = await generateAssetPack({
+    theme: args.theme,
+    outDir,
+    formats: requested,
+    referenceImage: args["reference-image"],
+    onProgress: ({ fmt, spec, status, path }) => {
+      if (status === "starting") log.info(`  fetching ${spec.label}…`);
+      if (status === "done") log.ok(`  ${spec.label} → ${path}`);
+    },
+  });
+  log.header("Done");
+  for (const [fmt, info] of Object.entries(results)) {
+    log.ok(`${info.label} (${info.aspectRatio}) → ${info.path}`);
+  }
+}
+
 export async function main(argv) {
   const args = parseArgs(argv);
   const cmd = args._[0];
@@ -390,6 +441,7 @@ export async function main(argv) {
     if (cmd === "plan") await cmdPlan(args);
     else if (cmd === "render") await cmdRender(args);
     else if (cmd === "render-from-plan") await cmdRenderFromPlan(args);
+    else if (cmd === "assets") await cmdAssets(args);
     else {
       log.err(`Unknown command: ${cmd}`);
       printHelp();

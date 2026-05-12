@@ -10,16 +10,22 @@ This is the **CLI engine** that the future RHYTHMIX Studio web app will wrap.
 
 - [x] CLI scaffold with `plan` / `render` / `render-from-plan` commands
 - [x] ffprobe-based audio analyzer
-- [x] Beat-snapping from user-supplied BPM
+- [x] Auto-BPM (aubio/bpm-tools) + loudness-driven section detection
+- [x] Beat-snapping from auto-detected or user-supplied BPM
 - [x] Rule-based scene planner with role routing (intro / verse / chorus / bridge / outro)
+- [x] **Story mode** — 7-beat narrative arc layered onto audio structure, default ON
+- [x] **Multi-aspect render** — `--aspects 16:9,9:16,1:1` produces all three from one job
+- [x] **Character consistency** — `--reference-image <url>` passed to Kling as start_image
+- [x] Crossfade transitions (0.25s xfade, with concat fallback for short clips)
 - [x] Model registry: hunyuan-video, kling-v2, luma-ray, minimax-video
-- [x] Replicate runner with prediction polling
+- [x] Replicate runner with prediction polling + bounded retries with checkpointing
 - [x] ffmpeg compositor (per-scene trim, concat, audio mux)
 - [x] Dry-run cost estimator
 - [ ] LLM-based scene planner from lyrics + theme (next)
-- [ ] Auto BPM / section detection (Python sidecar)
-- [ ] Transitions (crossfade, beat-cut, whip-pan)
+- [ ] Asset pack (cover art + Spotify Canvas + IG cover from same job)
+- [ ] Whisper-based caption overlay (karaoke-style, beat-perfect)
 - [ ] Lip-sync for vocal sections
+- [ ] Stem-separated visual layers (Demucs → kick drives camera, vocal drives motion)
 - [ ] Web app wrapper (Phase 2)
 
 ## Requirements
@@ -82,9 +88,13 @@ Output lands in `./rhythmix-out/<track-name>/`:
 | Flag | Default | Notes |
 |---|---|---|
 | `--theme <text>` | required | Visual concept; gets interpolated into prompt recipes per scene role. |
-| `--bpm <n>` | none | If set, scene cuts snap to nearest beat. Strongly recommended. |
+| `--bpm <n>` | auto-detected | If set, overrides auto-detection. Scene cuts snap to nearest beat. |
 | `--aspect <ratio>` | `16:9` | Also `9:16`, `1:1`. |
-| `--model <name>` | auto-routed | Force a single model. One of `hunyuan-video`, `kling-v2`, `luma-ray`, `minimax-video`. |
+| `--aspects <list>` | none | Comma-separated multi-aspect render: `"16:9,9:16,1:1"` produces all three from one job. Overrides `--aspect`. |
+| `--model <name>` | auto-routed | Force a single model: `hunyuan-video`, `kling-v2`, `luma-ray`, `minimax-video`. |
+| `--reference-image <url>` | none | Subject image. Kling v2 uses it as start_image for character consistency across scenes. |
+| `--no-story-mode` | off | Disable narrative-arc preamble on prompts. Default ON. |
+| `--no-transitions` | off | Disable crossfade — hard cuts only. |
 | `--out <dir>` | `./rhythmix-out/<name>` | Output directory. |
 | `--concurrency <n>` | `2` | Parallel scene generations. |
 | `--dry-run` | off | Plan + cost estimate only. |
