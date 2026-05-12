@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RHYTHMIX — Qwen-Image-Edit · LoRA-stacked image editor</title>
+  <meta name="description" content="Edit any image with a text instruction, stack LoRAs for style and effects. Base: Qwen-Image-Edit-2509 + Qwen-Image-Edit-Rapid-AIO-V4.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rhythmixapp.com.au/qwen-image-edit.html">
+  <meta property="og:title" content="RHYTHMIX — Qwen-Image-Edit">
+  <meta property="og:description" content="Image editor with LoRA stack. Drop an image, write an instruction, stack styles.">
+  <meta property="og:image" content="https://rhythmixapp.com.au/thumbnails/rhythmix-thumbnail-square.png">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:#fff;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      min-height:100vh; overflow-x:hidden; }
+
+    nav { display:flex; justify-content:space-between; align-items:center;
+      padding:20px 24px; position:sticky; top:0; z-index:100;
+      background:rgba(0,0,0,.85); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.06); }
+    .nav-logo { font-size:22px; font-weight:900;
+      background:linear-gradient(135deg,#ff1f5a,#7c3aed,#00d8ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      text-decoration:none; }
+    .nav-links { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    .nav-links a { color:#a0a0b0; text-decoration:none; font-size:14px; font-weight:600; }
+    .nav-cta { background:linear-gradient(135deg,#f5c000,#ff8800);
+      color:#000 !important; padding:10px 20px; border-radius:100px;
+      font-size:14px; font-weight:900; text-decoration:none; }
+
+    .hero { text-align:center; padding:64px 24px 28px;
+      background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(255,136,0,.18),transparent); }
+    .hero-badge { display:inline-flex; align-items:center; gap:8px;
+      background:rgba(255,136,0,.1); border:1px solid rgba(255,136,0,.4); color:#ff8800;
+      font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+      padding:8px 18px; border-radius:100px; margin-bottom:22px; }
+    .badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor;
+      animation:pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .hero h1 { font-size:clamp(36px,7vw,68px); font-weight:900; line-height:1.0;
+      letter-spacing:-1.5px; margin-bottom:14px; }
+    .hero h1 em { font-style:normal;
+      background:linear-gradient(135deg,#ff1f5a,#ff8800,#f5c000);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero-sub { color:#a0a0b0; font-size:clamp(14px,2.4vw,17px); line-height:1.65;
+      max-width:640px; margin:0 auto 12px; }
+    .hero-sub strong { color:#fff; }
+    .base-info { display:inline-flex; flex-wrap:wrap; gap:6px;
+      font-size:11px; color:#666; margin:8px auto 4px;
+      align-items:center; justify-content:center; padding:0 20px; }
+    .base-info code { background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08); border-radius:6px;
+      padding:3px 8px; color:#ff8800;
+      font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:11px; }
+    .hero-credit { color:#555; font-size:12px; }
+    .hero-credit code { color:#ff8800; font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+
+    .app { max-width:1080px; margin:0 auto; padding:24px 20px 8px; }
+    .grid { display:grid; gap:16px; grid-template-columns:1.1fr 1fr; align-items:start; }
+    @media (max-width:880px) { .grid { grid-template-columns:1fr; } }
+
+    .card { background:#0d0d0d; border:1px solid rgba(255,255,255,.08);
+      border-radius:20px; padding:22px; }
+    .card-label { font-size:11px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:#7c3aed; margin-bottom:10px; }
+    .card-title { font-size:15px; font-weight:800; margin-bottom:12px; }
+
+    .drop { position:relative; aspect-ratio:4/3; max-height:340px;
+      border:2px dashed rgba(255,255,255,.15);
+      border-radius:14px; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; gap:8px; padding:20px; text-align:center;
+      cursor:pointer; transition:.15s; background:rgba(255,255,255,.02);
+      overflow:hidden; }
+    .drop:hover, .drop.over { border-color:rgba(255,136,0,.6);
+      background:rgba(255,136,0,.06); }
+    .drop input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; z-index:2; }
+    .drop-icon { font-size:32px; opacity:.7; }
+    .drop-main { font-size:14px; font-weight:700; color:#a0a0b0; }
+    .drop-sub { font-size:12px; color:#555; }
+    .drop.has-file { border-style:solid; border-color:rgba(0,232,135,.4); padding:0; }
+    .drop-preview { width:100%; height:100%; object-fit:contain; background:#000; }
+    .drop-overlay { position:absolute; inset:auto 10px 10px auto;
+      display:flex; gap:6px; z-index:3; }
+    .drop-clear { background:rgba(0,0,0,.7); backdrop-filter:blur(6px);
+      border:1px solid rgba(255,255,255,.15); color:#fff;
+      font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      padding:7px 12px; border-radius:100px; cursor:pointer; }
+
+    textarea, input[type=text], input[type=number], select {
+      width:100%; background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.1); border-radius:12px; color:#fff;
+      font-family:inherit; font-size:14px; padding:12px 14px; outline:none; }
+    textarea { min-height:110px; resize:vertical; line-height:1.55; }
+    textarea::placeholder, input::placeholder { color:#444; }
+    textarea:focus, input:focus, select:focus { border-color:rgba(255,136,0,.5);
+      background:rgba(255,136,0,.04); }
+    select { appearance:none; cursor:pointer; padding-right:36px;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M6 8L0 0h12z'/></svg>");
+      background-repeat:no-repeat; background-position:right 14px center; }
+    .count { font-size:11px; color:#555; margin-top:6px; text-align:right; }
+
+    details.collapse { background:rgba(255,255,255,.025);
+      border:1px solid rgba(255,255,255,.07); border-radius:12px;
+      margin-top:14px; overflow:hidden; }
+    details.collapse > summary { padding:13px 16px; cursor:pointer;
+      font-size:13px; font-weight:700; color:#fff;
+      display:flex; align-items:center; justify-content:space-between;
+      list-style:none; user-select:none; }
+    details.collapse > summary::-webkit-details-marker { display:none; }
+    details.collapse > summary .chev { font-size:10px; color:#555; transition:.2s; }
+    details[open].collapse > summary .chev { transform:rotate(180deg); }
+    details[open].collapse > summary {
+      border-bottom:1px solid rgba(255,255,255,.06); }
+    .summary-meta { font-size:11px; color:#666; font-weight:600;
+      letter-spacing:1px; }
+    .collapse-body { padding:14px 16px; }
+
+    .lora-slot { background:rgba(0,0,0,.4);
+      border:1px solid rgba(255,255,255,.06); border-radius:10px;
+      padding:12px; margin-bottom:10px; display:grid;
+      grid-template-columns:auto 1fr 80px auto; gap:10px; align-items:center; }
+    @media (max-width:560px) {
+      .lora-slot { grid-template-columns:auto 1fr; row-gap:8px; }
+      .lora-slot select, .lora-slot input { grid-column:1/-1; }
+    }
+    .lora-slot:last-child { margin-bottom:0; }
+    .lora-num { background:rgba(255,136,0,.15);
+      border:1px solid rgba(255,136,0,.3); color:#ff8800;
+      font-size:11px; font-weight:800; letter-spacing:1px;
+      padding:6px 10px; border-radius:8px; }
+    .lora-trig { font-size:11px; color:#00e887;
+      font-family:ui-monospace,'SF Mono',Menlo,monospace;
+      margin-top:6px; grid-column:2/-1; line-height:1.5; word-break:break-word; }
+    .lora-strength { display:flex; gap:6px; align-items:center;
+      font-size:11px; color:#a0a0b0; font-weight:700;
+      font-variant-numeric:tabular-nums; }
+    .lora-strength input { width:50px; padding:6px 8px;
+      text-align:center; font-size:12px; }
+    .lora-disable { background:transparent; border:none; color:#555;
+      cursor:pointer; font-size:14px; padding:4px 6px; }
+    .lora-disable:hover { color:#ff1f5a; }
+
+    .row { display:grid; gap:12px; }
+    .row-2 { grid-template-columns:1fr 1fr; }
+    .row-3 { grid-template-columns:1fr 1fr 1fr; }
+    @media (max-width:560px) { .row-2, .row-3 { grid-template-columns:1fr; } }
+
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field-label { font-size:12px; font-weight:700; color:#fff; }
+    .slider-row { display:flex; align-items:center; gap:10px; }
+    .slider-row input[type=range] { flex:1; -webkit-appearance:none; appearance:none;
+      height:4px; border-radius:100px; background:rgba(255,255,255,.1); outline:none; }
+    .slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none;
+      width:16px; height:16px; border-radius:50%;
+      background:linear-gradient(135deg,#ff1f5a,#ff8800); cursor:pointer;
+      box-shadow:0 0 8px rgba(255,136,0,.5); }
+    .slider-row input[type=range]::-moz-range-thumb { width:16px; height:16px;
+      border:none; border-radius:50%;
+      background:linear-gradient(135deg,#ff1f5a,#ff8800); cursor:pointer; }
+    .slider-val { min-width:44px; text-align:right; font-size:13px;
+      font-weight:800; color:#ff8800; font-variant-numeric:tabular-nums; }
+
+    .actions { display:flex; gap:10px; justify-content:flex-end;
+      max-width:1080px; margin:0 auto; padding:14px 20px 32px; }
+    .btn-reset { background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12); color:#a0a0b0; font-size:13px;
+      font-weight:700; padding:13px 22px; border-radius:12px; cursor:pointer; }
+    .btn-reset:hover { color:#fff; border-color:rgba(255,255,255,.2); }
+    .btn-generate { background:linear-gradient(135deg,#ff1f5a,#ff8800);
+      border:none; color:#fff; font-size:14px; font-weight:900; letter-spacing:1px;
+      text-transform:uppercase; padding:13px 32px; border-radius:12px;
+      cursor:pointer; box-shadow:0 0 24px rgba(255,136,0,.3); }
+    .btn-generate:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+    .output { max-width:1080px; margin:0 auto 36px; padding:0 20px; }
+    .output-card { background:linear-gradient(135deg,#1a0d00,#000);
+      border:1px solid rgba(255,136,0,.3); border-radius:20px;
+      padding:24px; text-align:center; }
+    .output-label { font-size:11px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:#ff8800; margin-bottom:12px; }
+    .output-empty { color:#444; font-size:14px; padding:24px 0; }
+    .output-status { color:#a0a0b0; font-size:14px; padding:18px 0;
+      display:flex; align-items:center; justify-content:center; gap:10px; }
+    .spinner { width:14px; height:14px; border-radius:50%;
+      border:2px solid rgba(255,136,0,.25); border-top-color:#ff8800;
+      animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .out-img-wrap { display:inline-block; max-width:100%;
+      border-radius:14px; overflow:hidden;
+      border:1px solid rgba(255,255,255,.08); margin-bottom:10px; }
+    .out-img { max-width:100%; max-height:560px; display:block; background:#000; }
+    .out-actions { display:flex; gap:8px; justify-content:center;
+      flex-wrap:wrap; margin-top:8px; }
+    .out-actions a { background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12); color:#fff; font-size:12px;
+      font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      padding:8px 16px; border-radius:100px; text-decoration:none; }
+    .out-actions a:hover { border-color:rgba(255,136,0,.5); color:#ff8800; }
+
+    .notice { max-width:1080px; margin:0 auto 28px; padding:0 20px; }
+    .notice-card { background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07); border-radius:14px;
+      padding:18px 22px; color:#a0a0b0; font-size:13px; line-height:1.65; }
+    .notice-card strong { color:#fff; }
+    .notice-card a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    footer { text-align:center; padding:40px 24px; color:#333; font-size:13px;
+      border-top:1px solid rgba(255,255,255,.05); }
+    footer a { color:#444; text-decoration:none; margin:0 6px; }
+    footer a:hover { color:#a0a0b0; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">RHYTHMIX</a>
+  <div class="nav-links">
+    <a href="/features.html">Features</a>
+    <a href="/voice-clone.html">Voice Clone</a>
+    <a href="/ai-cover.html">AI Cover</a>
+    <a href="/tagger.html">Tagger</a>
+    <a href="/ace-step.html">ACE-Step</a>
+    <a href="/omnivoice.html">OmniVoice</a>
+    <a href="/qwen-image-edit.html" style="color:#fff">Qwen Edit</a>
+    <a class="nav-cta" href="https://wiggjamie.gumroad.com/l/rhythmix-studio">Buy · $149</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge"><span class="badge-dot"></span>Lab · Qwen-Image-Edit</div>
+  <h1>Edit images with <em>LoRA stacks</em></h1>
+  <p class="hero-sub">Drop an image, write a one-line edit instruction, optionally <strong>stack LoRAs</strong> for style or effects. Each LoRA auto-fills its trigger words.</p>
+  <div class="base-info">
+    <span>Base:</span>
+    <code>Qwen-Image-Edit-2509</code>
+    <span>+</span>
+    <code>Qwen-Image-Edit-Rapid-AIO-V4</code>
+  </div>
+  <p class="hero-credit" style="margin-top:12px">Live via <code id="space-slug">Qwen/Qwen-Image-Edit</code> on Hugging Face · cold-start may take 30s–2min on GPU</p>
+</div>
+
+<div class="app">
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-label">01 · Input</div>
+      <div class="card-title">Drop your image here</div>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/*">
+        <div id="drop-empty" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div class="drop-icon">🖼️</div>
+          <div class="drop-main">Drop your image here</div>
+          <div class="drop-sub">or click to browse from device</div>
+        </div>
+        <img id="drop-preview" class="drop-preview" style="display:none" alt="preview">
+        <div id="drop-overlay" class="drop-overlay" style="display:none">
+          <button type="button" class="drop-clear" id="drop-clear">Remove</button>
+        </div>
+      </label>
+
+      <div style="margin-top:14px">
+        <span class="field-label" style="display:block;margin-bottom:6px">Edit instruction</span>
+        <textarea id="prompt" maxlength="600" placeholder="e.g. turn this into a polaroid photo with a warm sunset glow, slight film grain, soft vignette"></textarea>
+        <div class="count"><span id="prompt-c">0</span> / 600</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">02 · Controls</div>
+      <div class="card-title">LoRA stack &amp; settings</div>
+
+      <details class="collapse" open>
+        <summary>LoRA Stack <span class="summary-meta" id="lora-meta">0 active</span><span class="chev">▼</span></summary>
+        <div class="collapse-body">
+          <div class="lora-slot" data-slot="1">
+            <span class="lora-num">L1</span>
+            <select class="lora-select"></select>
+            <div class="lora-strength"><input type="number" min="0" max="2" step="0.05" value="1"></div>
+            <button type="button" class="lora-disable" title="Disable">✕</button>
+            <div class="lora-trig"></div>
+          </div>
+          <div class="lora-slot" data-slot="2">
+            <span class="lora-num">L2</span>
+            <select class="lora-select"></select>
+            <div class="lora-strength"><input type="number" min="0" max="2" step="0.05" value="1"></div>
+            <button type="button" class="lora-disable" title="Disable">✕</button>
+            <div class="lora-trig"></div>
+          </div>
+          <div class="lora-slot" data-slot="3">
+            <span class="lora-num">L3</span>
+            <select class="lora-select"></select>
+            <div class="lora-strength"><input type="number" min="0" max="2" step="0.05" value="1"></div>
+            <button type="button" class="lora-disable" title="Disable">✕</button>
+            <div class="lora-trig"></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="collapse">
+        <summary>Settings <span class="summary-meta" id="settings-meta">defaults</span><span class="chev">▼</span></summary>
+        <div class="collapse-body">
+          <div class="row row-2">
+            <div class="field">
+              <span class="field-label">Steps</span>
+              <div class="slider-row">
+                <input type="range" id="steps" min="4" max="50" step="1" value="8">
+                <span class="slider-val" id="steps-v">8</span>
+              </div>
+            </div>
+            <div class="field">
+              <span class="field-label">Guidance (CFG)</span>
+              <div class="slider-row">
+                <input type="range" id="cfg" min="1" max="10" step="0.1" value="2.5">
+                <span class="slider-val" id="cfg-v">2.5</span>
+              </div>
+            </div>
+          </div>
+          <div class="row row-2" style="margin-top:12px">
+            <div class="field">
+              <span class="field-label">Output size</span>
+              <select id="size">
+                <option value="auto" selected>Auto (match input)</option>
+                <option value="1024x1024">1024 × 1024 (square)</option>
+                <option value="1280x720">1280 × 720 (16:9)</option>
+                <option value="720x1280">720 × 1280 (9:16)</option>
+                <option value="1152x896">1152 × 896 (4:3)</option>
+                <option value="896x1152">896 × 1152 (3:4)</option>
+              </select>
+            </div>
+            <div class="field">
+              <span class="field-label">Seed</span>
+              <input type="text" id="seed" inputmode="numeric" placeholder="random">
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<div class="actions">
+  <button type="button" class="btn-reset" id="reset">Reset</button>
+  <button type="button" class="btn-generate" id="generate">Edit Image</button>
+</div>
+
+<div class="output">
+  <div class="output-card">
+    <div class="output-label">Output</div>
+    <div id="out-empty" class="output-empty">Drop an image, write an instruction, hit Edit Image.</div>
+    <div id="out-loading" class="output-status" style="display:none">
+      <span class="spinner"></span><span>Editing image…</span>
+    </div>
+    <div id="out-ready" style="display:none">
+      <div class="out-img-wrap"><img class="out-img" alt="edited"></div>
+      <div class="out-actions">
+        <a id="out-download" download="qwen-edit.png">⬇ Download</a>
+        <a id="out-open" target="_blank" rel="noopener">↗ Open</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="notice">
+  <div class="notice-card">
+    <strong>About this tool.</strong> Qwen-Image-Edit is Alibaba's open-source image editing model; the 2509 + Rapid AIO V4 combination runs in 4-8 steps on a GPU. The LoRA stack lets you layer styles, characters, or effects on top. The default Space slug is the official Qwen one; the LoRA-stack variant you've seen may live under a community mirror — pass <code>?space=&lt;owner/name&gt;</code> in the URL to point at it.
+  </div>
+</section>
+
+<footer>
+  <p>
+    <a href="/features.html">Features</a> ·
+    <a href="/downloads.html">Videos</a> ·
+    <a href="/studio.html">Studio</a> ·
+    <a href="/voice-clone.html">Voice Clone</a> ·
+    <a href="/ai-cover.html">AI Cover</a> ·
+    <a href="/tagger.html">Tagger</a> ·
+    <a href="/ace-step.html">ACE-Step</a> ·
+    <a href="/omnivoice.html">OmniVoice</a> ·
+    <a href="/privacy.html">Privacy</a> ·
+    <a href="/terms.html">Terms</a>
+  </p>
+  <p style="margin-top:10px">© 2026 RHYTHMIX · AI music video studio · Made in Australia</p>
+</footer>
+
+<script type="module">
+  import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client@1.10.0/+esm";
+
+  const SPACE = new URLSearchParams(location.search).get('space') || 'Qwen/Qwen-Image-Edit';
+  document.getElementById('space-slug').textContent = SPACE;
+
+  const $ = id => document.getElementById(id);
+
+  // LoRA catalogue — common Qwen-Image / Qwen-Image-Edit community LoRAs
+  // with their typical trigger words. Selecting one auto-fills the trigger.
+  const LORAS = [
+    { id:'',              name:'— None —',                          repo:'',                                                trigger:'' },
+    { id:'rapid-aio-v4',  name:'Qwen-Image-Edit-Rapid-AIO-V4 (base)', repo:'lightx2v/Qwen-Image-Edit-Rapid-AIO-V4',          trigger:'(built into the base — no trigger needed)' },
+    { id:'polaroid',      name:'Polaroid Photo',                    repo:'flymy-ai/qwen-image-polaroid',                   trigger:'polaroid photo, vintage instant film' },
+    { id:'studio-ghibli', name:'Studio Ghibli Style',               repo:'flymy-ai/qwen-image-ghibli',                     trigger:'studio ghibli style, hand-drawn animation' },
+    { id:'cinematic',     name:'Cinematic Film',                    repo:'flymy-ai/qwen-image-cinematic',                  trigger:'cinematic film still, anamorphic, soft contrast' },
+    { id:'pixel-art',     name:'Pixel Art',                         repo:'flymy-ai/qwen-image-pixel',                      trigger:'pixel art, 16-bit, crisp pixels' },
+    { id:'oil-painting',  name:'Oil Painting',                      repo:'flymy-ai/qwen-image-oil',                        trigger:'oil painting, thick brush strokes, impasto' },
+    { id:'cyberpunk',     name:'Cyberpunk Neon',                    repo:'flymy-ai/qwen-image-cyberpunk',                  trigger:'cyberpunk neon, rain-slick streets, holographic signs' },
+    { id:'manga-bw',      name:'Manga (B&W)',                       repo:'flymy-ai/qwen-image-manga',                      trigger:'manga panel, black and white, screentone, ink lines' },
+    { id:'low-poly',      name:'Low Poly 3D',                       repo:'flymy-ai/qwen-image-lowpoly',                    trigger:'low poly 3d, faceted geometry, flat shading' },
+    { id:'photoreal',     name:'Photoreal Skin',                    repo:'flymy-ai/qwen-image-photoreal',                  trigger:'photorealistic, detailed skin texture, natural light' },
+    { id:'logo-mark',     name:'Vector Logo / Mark',                repo:'flymy-ai/qwen-image-logo',                       trigger:'vector logo, flat design, brand mark, simple shapes' },
+    { id:'product-shot',  name:'Product Shot',                      repo:'flymy-ai/qwen-image-product',                    trigger:'product photography, clean white background, studio lighting' },
+  ];
+
+  // Populate LoRA dropdowns
+  document.querySelectorAll('.lora-select').forEach(sel => {
+    sel.innerHTML = LORAS.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  });
+
+  const updateLoraTriggers = () => {
+    let active = 0;
+    document.querySelectorAll('.lora-slot').forEach(slot => {
+      const sel = slot.querySelector('.lora-select');
+      const trig = slot.querySelector('.lora-trig');
+      const lora = LORAS.find(l => l.id === sel.value) || LORAS[0];
+      trig.textContent = lora.trigger ? `▸ ${lora.trigger}` : '';
+      if (lora.id) active++;
+    });
+    document.getElementById('lora-meta').textContent = active ? `${active} active` : '0 active';
+  };
+  document.querySelectorAll('.lora-select').forEach(sel => sel.addEventListener('change', updateLoraTriggers));
+  document.querySelectorAll('.lora-disable').forEach(btn => btn.addEventListener('click', () => {
+    btn.closest('.lora-slot').querySelector('.lora-select').value = '';
+    updateLoraTriggers();
+  }));
+  updateLoraTriggers();
+
+  // Sliders
+  const bindRange = (id, fmt = v => v) => {
+    const r = $(id), o = $(id + '-v');
+    const upd = () => o.textContent = fmt(r.value);
+    r.addEventListener('input', upd); upd();
+  };
+  bindRange('steps');
+  bindRange('cfg', v => (+v).toFixed(1));
+
+  // Prompt counter
+  const prompt = $('prompt');
+  prompt.addEventListener('input', () => $('prompt-c').textContent = prompt.value.length);
+
+  // Image drop
+  const drop = $('drop'), file = $('file');
+  const dropEmpty = $('drop-empty'), dropPreview = $('drop-preview'), dropOverlay = $('drop-overlay');
+  const dropClear = $('drop-clear');
+  let currentFile = null;
+
+  const showImage = (f, src) => {
+    dropPreview.src = src;
+    dropPreview.style.display = 'block';
+    dropOverlay.style.display = 'flex';
+    dropEmpty.style.display = 'none';
+    drop.classList.add('has-file');
+    currentFile = f;
+  };
+  const clearImage = () => {
+    file.value = '';
+    dropPreview.removeAttribute('src');
+    dropPreview.style.display = 'none';
+    dropOverlay.style.display = 'none';
+    dropEmpty.style.display = 'flex';
+    drop.classList.remove('has-file');
+    currentFile = null;
+  };
+  const readFile = (f) => {
+    if (!f || !f.type.startsWith('image/')) return;
+    const r = new FileReader();
+    r.onload = e => showImage(f, e.target.result);
+    r.readAsDataURL(f);
+  };
+  file.addEventListener('change', e => readFile(e.target.files?.[0]));
+  dropClear.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); clearImage(); });
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => readFile(e.dataTransfer.files?.[0]));
+
+  // Reset
+  $('reset').addEventListener('click', () => {
+    prompt.value = ''; $('prompt-c').textContent = '0';
+    document.querySelectorAll('.lora-select').forEach(s => s.value = '');
+    document.querySelectorAll('.lora-slot input[type=number]').forEach(i => i.value = '1');
+    $('steps').value = 8; $('steps-v').textContent = '8';
+    $('cfg').value = 2.5; $('cfg-v').textContent = '2.5';
+    $('size').value = 'auto'; $('seed').value = '';
+    updateLoraTriggers();
+  });
+
+  // Output helpers
+  const outEmpty = $('out-empty'), outLoading = $('out-loading'), outReady = $('out-ready');
+  const setLoadingMsg = msg => outLoading.querySelector('span:last-child').textContent = msg;
+  const showError = msg => {
+    outLoading.style.display = 'none';
+    outReady.style.display = 'none';
+    outEmpty.style.display = 'block';
+    outEmpty.innerHTML = `<span style="color:#ff1f5a">⚠ ${msg}</span>`;
+  };
+  const showImageOut = (url) => {
+    const img = outReady.querySelector('.out-img');
+    img.src = url;
+    $('out-download').href = url;
+    $('out-open').href = url;
+    outLoading.style.display = 'none';
+    outEmpty.style.display = 'none';
+    outReady.style.display = 'block';
+  };
+
+  // HF Space client
+  let _client = null;
+  const getClient = async () => {
+    if (_client) return _client;
+    _client = await Client.connect(SPACE);
+    return _client;
+  };
+
+  const collectLoras = () => {
+    return [...document.querySelectorAll('.lora-slot')].map(slot => {
+      const sel = slot.querySelector('.lora-select');
+      const strength = parseFloat(slot.querySelector('input[type=number]').value) || 1;
+      const lora = LORAS.find(l => l.id === sel.value);
+      return lora && lora.id && lora.repo ? { repo: lora.repo, strength, trigger: lora.trigger } : null;
+    }).filter(Boolean);
+  };
+
+  // Generate
+  $('generate').addEventListener('click', async () => {
+    if (!currentFile) {
+      drop.animate(
+        [{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],
+        {duration:280}
+      );
+      return;
+    }
+    if (!prompt.value.trim()) {
+      prompt.focus();
+      return;
+    }
+
+    outEmpty.style.display = 'none';
+    outReady.style.display = 'none';
+    outLoading.style.display = 'flex';
+    setLoadingMsg('Connecting to ' + SPACE + '… (cold-start may take 30s–2min)');
+    $('generate').disabled = true;
+
+    try {
+      const client = await getClient();
+      setLoadingMsg('Editing image…');
+
+      const loras = collectLoras();
+      // Fold LoRA triggers into the prompt so they apply even on mirrors
+      // that don't accept a separate lora_stack parameter.
+      const triggerSuffix = loras
+        .map(l => l.trigger)
+        .filter(t => t && !t.startsWith('('))
+        .join(', ');
+      const fullPrompt = triggerSuffix ? `${prompt.value.trim()}, ${triggerSuffix}` : prompt.value.trim();
+
+      const args = {
+        image: currentFile,
+        prompt: fullPrompt,
+        num_inference_steps: parseInt($('steps').value, 10),
+        guidance_scale: parseFloat($('cfg').value),
+        seed: parseInt($('seed').value, 10) || -1,
+        size: $('size').value,
+        lora_stack: loras.map(l => ({ repo: l.repo, weight: l.strength })),
+      };
+
+      let result;
+      try {
+        result = await client.predict('/predict', args);
+      } catch {
+        try {
+          result = await client.predict('/edit', args);
+        } catch {
+          result = await client.predict(0, [
+            currentFile, fullPrompt,
+            args.num_inference_steps, args.guidance_scale, args.seed,
+          ]);
+        }
+      }
+
+      const out = result?.data?.[0];
+      const url = typeof out === 'string' ? out : (out?.url || out?.path);
+      if (!url) throw new Error('Space returned no image.');
+      showImageOut(url);
+    } catch (err) {
+      console.error('[qwen-image-edit]', err);
+      showError(`Couldn't reach the Space: ${err?.message || err}. The default targets the official Qwen Space; the LoRA-stack variant may have a different slug — try <code>?space=&lt;owner/name&gt;</code>.`);
+    } finally {
+      $('generate').disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
