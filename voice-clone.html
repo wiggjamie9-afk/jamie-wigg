@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RHYTHMIX — Voice Clone</title>
+  <meta name="description" content="Clone any voice from a short audio sample. Type a script, drop a reference clip, get a synthetic read in seconds. Non-commercial preview tool.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rhythmixapp.com.au/voice-clone.html">
+  <meta property="og:title" content="RHYTHMIX — Voice Clone">
+  <meta property="og:description" content="Type text. Drop a reference voice. Get it spoken back. Powered by xtts_v2.">
+  <meta property="og:image" content="https://rhythmixapp.com.au/thumbnails/rhythmix-thumbnail-square.png">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:#fff;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      min-height:100vh; overflow-x:hidden; }
+
+    nav { display:flex; justify-content:space-between; align-items:center;
+      padding:20px 24px; position:sticky; top:0; z-index:100;
+      background:rgba(0,0,0,.85); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.06); }
+    .nav-logo { font-size:22px; font-weight:900;
+      background:linear-gradient(135deg,#ff1f5a,#7c3aed,#00d8ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      text-decoration:none; }
+    .nav-links { display:flex; gap:16px; align-items:center; }
+    .nav-links a { color:#a0a0b0; text-decoration:none; font-size:14px; font-weight:600; }
+    .nav-cta { background:linear-gradient(135deg,#f5c000,#ff8800);
+      color:#000 !important; padding:10px 20px; border-radius:100px;
+      font-size:14px; font-weight:900; text-decoration:none; }
+
+    .hero { text-align:center; padding:64px 24px 32px;
+      background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(124,58,237,.2),transparent); }
+    .hero-badge { display:inline-flex; align-items:center; gap:8px;
+      background:rgba(0,232,135,.1); border:1px solid rgba(0,232,135,.4); color:#00e887;
+      font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+      padding:8px 18px; border-radius:100px; margin-bottom:22px; }
+    .badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor;
+      animation:pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .hero h1 { font-size:clamp(36px,8vw,72px); font-weight:900; line-height:1.0;
+      letter-spacing:-2px; margin-bottom:18px; }
+    .hero h1 em { font-style:normal;
+      background:linear-gradient(135deg,#ff1f5a,#7c3aed,#00d8ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero-sub { color:#a0a0b0; font-size:clamp(15px,2.5vw,18px); line-height:1.6;
+      max-width:560px; margin:0 auto 14px; }
+    .hero-sub strong { color:#fff; }
+    .hero-credit { color:#555; font-size:12px; }
+    .hero-credit a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    .app { max-width:920px; margin:0 auto; padding:24px 20px 24px; }
+    .app-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:760px) { .app-grid { grid-template-columns:1fr; } }
+
+    .card { background:#0d0d0d; border:1px solid rgba(255,255,255,.08);
+      border-radius:20px; padding:22px; }
+    .card-label { font-size:11px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:#7c3aed; margin-bottom:10px; }
+    .card-title { font-size:17px; font-weight:800; margin-bottom:14px; }
+
+    textarea { width:100%; min-height:180px; resize:vertical;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+      border-radius:12px; color:#fff; font-family:inherit; font-size:15px;
+      line-height:1.5; padding:14px 16px; outline:none; }
+    textarea::placeholder { color:#444; }
+    textarea:focus { border-color:rgba(124,58,237,.6); background:rgba(124,58,237,.05); }
+    .count { font-size:12px; color:#555; margin-top:8px; text-align:right; }
+
+    .drop { position:relative; min-height:180px; border:2px dashed rgba(255,255,255,.15);
+      border-radius:12px; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; gap:10px; padding:20px; text-align:center;
+      cursor:pointer; transition:.15s; background:rgba(255,255,255,.02); }
+    .drop:hover, .drop.over { border-color:rgba(124,58,237,.6);
+      background:rgba(124,58,237,.06); }
+    .drop input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .drop-icon { font-size:32px; opacity:.7; }
+    .drop-main { font-size:14px; font-weight:700; color:#a0a0b0; }
+    .drop-or { font-size:11px; color:#444; letter-spacing:2px;
+      text-transform:uppercase; }
+    .drop-btn { background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.15); color:#fff; font-size:13px;
+      font-weight:700; padding:9px 18px; border-radius:100px; }
+    .drop.has-file { border-style:solid; border-color:rgba(0,232,135,.4);
+      background:rgba(0,232,135,.04); }
+    .file-name { font-size:14px; font-weight:700; color:#00e887;
+      word-break:break-all; padding:0 8px; }
+    .file-meta { font-size:11px; color:#555; }
+    .file-clear { background:rgba(255,31,90,.15); border:1px solid rgba(255,31,90,.3);
+      color:#ff1f5a; font-size:11px; font-weight:700; letter-spacing:1px;
+      text-transform:uppercase; padding:6px 12px; border-radius:100px;
+      cursor:pointer; margin-top:4px; }
+
+    .actions { display:flex; gap:10px; justify-content:flex-end;
+      max-width:920px; margin:0 auto; padding:8px 20px 32px; }
+    .btn-clear { background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12); color:#a0a0b0; font-size:14px;
+      font-weight:700; padding:14px 24px; border-radius:12px; cursor:pointer; }
+    .btn-submit { background:linear-gradient(135deg,#ff1f5a,#7c3aed);
+      border:none; color:#fff; font-size:14px; font-weight:900; letter-spacing:1px;
+      text-transform:uppercase; padding:14px 32px; border-radius:12px;
+      cursor:pointer; box-shadow:0 0 24px rgba(124,58,237,.3); }
+    .btn-submit:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+    .output { max-width:920px; margin:0 auto 48px; padding:0 20px; }
+    .output-card { background:linear-gradient(135deg,#0d0020,#000);
+      border:1px solid rgba(124,58,237,.3); border-radius:20px;
+      padding:28px; text-align:center; }
+    .output-card .card-label { color:#f5c000; margin-bottom:14px; }
+    .output-empty { color:#444; font-size:14px; padding:24px 0; }
+    .output-status { color:#a0a0b0; font-size:14px; padding:24px 0;
+      display:flex; align-items:center; justify-content:center; gap:10px; }
+    .spinner { width:14px; height:14px; border-radius:50%;
+      border:2px solid rgba(124,58,237,.25); border-top-color:#7c3aed;
+      animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    audio { width:100%; max-width:560px; margin-top:8px; }
+    .share { margin-top:14px; display:inline-flex; align-items:center; gap:6px;
+      color:#555; font-size:12px; font-weight:700; letter-spacing:2px;
+      text-transform:uppercase; text-decoration:none; }
+    .share:hover { color:#a0a0b0; }
+
+    .examples { max-width:920px; margin:0 auto 48px; padding:0 20px; }
+    .examples h2 { font-size:22px; font-weight:800; margin-bottom:6px; }
+    .examples-sub { color:#555; font-size:13px; margin-bottom:18px; }
+    .ex-table { display:grid; grid-template-columns:1fr auto; gap:0;
+      background:rgba(255,255,255,.06); border-radius:16px; overflow:hidden; }
+    .ex-head { background:#0d0d0d; color:#555; font-size:11px; font-weight:700;
+      letter-spacing:2px; text-transform:uppercase; padding:14px 18px;
+      border-bottom:1px solid rgba(255,255,255,.05); }
+    .ex-row { display:contents; }
+    .ex-row > * { background:#000; padding:14px 18px; cursor:pointer;
+      border-bottom:1px solid rgba(255,255,255,.04); transition:.15s; }
+    .ex-row:hover > * { background:rgba(124,58,237,.06); }
+    .ex-row:last-child > * { border-bottom:none; }
+    .ex-text { font-size:14px; color:#a0a0b0; line-height:1.5;
+      overflow:hidden; text-overflow:ellipsis; }
+    .ex-text strong { color:#fff; }
+    .ex-file { font-size:13px; color:#f5c000; font-weight:700; white-space:nowrap;
+      text-align:right; }
+
+    .notice { max-width:920px; margin:0 auto 48px; padding:0 20px; }
+    .notice-card { background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07); border-radius:16px;
+      padding:22px; color:#a0a0b0; font-size:13px; line-height:1.6; }
+    .notice-card strong { color:#fff; }
+    .notice-card a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    footer { text-align:center; padding:40px 24px; color:#333; font-size:13px;
+      border-top:1px solid rgba(255,255,255,.05); }
+    footer a { color:#444; text-decoration:none; margin:0 6px; }
+    footer a:hover { color:#a0a0b0; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">RHYTHMIX</a>
+  <div class="nav-links">
+    <a href="/features.html">Features</a>
+    <a href="/downloads.html">Videos</a>
+    <a href="/studio.html">Studio</a>
+    <a href="/members.html">Sign in</a>
+    <a class="nav-cta" href="https://wiggjamie.gumroad.com/l/rhythmix-studio">Buy · $149</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge"><span class="badge-dot"></span>Lab · Preview</div>
+  <h1>Voice <em>Clone</em></h1>
+  <p class="hero-sub">Type a script. Drop a <strong>short voice reference</strong>. Get the same voice reading your text — for narration over your music videos.</p>
+  <p class="hero-credit">Powered by xtts_v2 · Original space by <a href="https://huggingface.co/tonyassi" target="_blank" rel="noopener">Tony Assi</a></p>
+</div>
+
+<div class="app">
+  <form id="vc-form" class="app-grid" autocomplete="off">
+    <div class="card">
+      <div class="card-label">01 · Script</div>
+      <div class="card-title">Text</div>
+      <textarea id="vc-text" placeholder="Type whatever you want spoken in the cloned voice..." maxlength="800"></textarea>
+      <div class="count"><span id="vc-count">0</span> / 800</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">02 · Reference</div>
+      <div class="card-title">Voice reference audio file</div>
+      <label class="drop" id="vc-drop">
+        <input type="file" id="vc-file" accept="audio/*">
+        <div id="vc-drop-empty" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div class="drop-icon">🎤</div>
+          <div class="drop-main">Drop audio here</div>
+          <div class="drop-or">— or —</div>
+          <span class="drop-btn">Click to upload</span>
+        </div>
+        <div id="vc-drop-filled" style="display:none;flex-direction:column;align-items:center;gap:6px">
+          <div class="drop-icon">✓</div>
+          <div class="file-name" id="vc-file-name"></div>
+          <div class="file-meta" id="vc-file-meta"></div>
+          <button type="button" class="file-clear" id="vc-file-clear">Remove</button>
+        </div>
+      </label>
+    </div>
+  </form>
+
+  <div class="actions">
+    <button type="button" class="btn-clear" id="vc-clear">Clear</button>
+    <button type="button" class="btn-submit" id="vc-submit">Submit</button>
+  </div>
+</div>
+
+<div class="output">
+  <div class="output-card">
+    <div class="card-label">Output</div>
+    <div id="vc-output-empty" class="output-empty">Submit a script and a reference clip to generate audio.</div>
+    <div id="vc-output-loading" class="output-status" style="display:none">
+      <span class="spinner"></span><span>Cloning voice…</span>
+    </div>
+    <div id="vc-output-ready" style="display:none">
+      <audio controls></audio>
+      <div><a class="share" href="#">🔗 Share via link</a></div>
+    </div>
+  </div>
+</div>
+
+<section class="examples">
+  <h2>Examples</h2>
+  <p class="examples-sub">Tap a row to load the script. Reference clips ship with the demo.</p>
+  <div class="ex-table">
+    <div class="ex-head">Text</div>
+    <div class="ex-head" style="text-align:right">Voice reference audio file</div>
+
+    <div class="ex-row" data-text="Hey! It's me Dorthy, from the Wizard of Oz. Type in whatever you'd like me to say." data-file="Wizard-of-Oz-Dorthy.wav">
+      <div class="ex-text"><strong>Hey! It's me Dorthy</strong>, from the Wizard of Oz. Type in whatever you'd like me to say.</div>
+      <div class="ex-file">Wizard-of-Oz-Dorthy.wav</div>
+    </div>
+
+    <div class="ex-row" data-text="It's me Vito Corleone, from the Godfather. Type in whatever you'd like me to say." data-file="Godfather.wav">
+      <div class="ex-text"><strong>It's me Vito Corleone</strong>, from the Godfather. Type in whatever you'd like me to say.</div>
+      <div class="ex-file">Godfather.wav</div>
+    </div>
+
+    <div class="ex-row" data-text="Hey, it's me Paris Hilton. Type in whatever you'd like me to say." data-file="Paris-Hilton.mp3">
+      <div class="ex-text"><strong>Hey, it's me Paris Hilton.</strong> Type in whatever you'd like me to say.</div>
+      <div class="ex-file">Paris-Hilton.mp3</div>
+    </div>
+
+    <div class="ex-row" data-text="Hey, it's me Megan Fox from Transformers. Type in whatever you'd like me to say." data-file="Megan-Fox.mp3">
+      <div class="ex-text"><strong>Hey, it's me Megan Fox</strong> from Transformers. Type in whatever you'd like me to say.</div>
+      <div class="ex-file">Megan-Fox.mp3</div>
+    </div>
+
+    <div class="ex-row" data-text="Hey there, it's me Jeff Goldblum. Type in whatever you'd like me to say." data-file="Jeff-Goldblum.mp3">
+      <div class="ex-text"><strong>Hey there, it's me Jeff Goldblum.</strong> Type in whatever you'd like me to say.</div>
+      <div class="ex-file">Jeff-Goldblum.mp3</div>
+    </div>
+
+    <div class="ex-row" data-text="Hey there, it's me Heath Ledger as the Joker. Type in whatever you'd like me to say." data-file="Heath-Ledger.mp3">
+      <div class="ex-text"><strong>Hey there, it's me Heath Ledger</strong> as the Joker. Type in whatever you'd like me to say.</div>
+      <div class="ex-file">Heath-Ledger.mp3</div>
+    </div>
+  </div>
+</section>
+
+<section class="notice">
+  <div class="notice-card">
+    <strong>About this tool.</strong> Voice Clone runs on the <strong>xtts_v2</strong> model. Non-commercial use only under the <a href="https://coqui.ai/cpml" target="_blank" rel="noopener">Coqui Public Model License</a>. This is a preview lab in the RHYTHMIX studio — for narration sketches, scratch VO over music videos, and demo cuts. Don't clone anyone's voice without permission.
+  </div>
+</section>
+
+<footer>
+  <p>
+    <a href="/features.html">Features</a> ·
+    <a href="/downloads.html">Videos</a> ·
+    <a href="/studio.html">Studio</a> ·
+    <a href="/founder.html">Founder</a> ·
+    <a href="/privacy.html">Privacy</a> ·
+    <a href="/terms.html">Terms</a> ·
+    <a href="/refunds.html">Refunds</a>
+  </p>
+  <p style="margin-top:10px">© 2026 RHYTHMIX · AI music video studio · Made in Australia</p>
+</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const text = $('vc-text');
+  const count = $('vc-count');
+  const fileInput = $('vc-file');
+  const drop = $('vc-drop');
+  const dropEmpty = $('vc-drop-empty');
+  const dropFilled = $('vc-drop-filled');
+  const fileName = $('vc-file-name');
+  const fileMeta = $('vc-file-meta');
+  const fileClear = $('vc-file-clear');
+  const submit = $('vc-submit');
+  const clearBtn = $('vc-clear');
+  const outEmpty = $('vc-output-empty');
+  const outLoading = $('vc-output-loading');
+  const outReady = $('vc-output-ready');
+
+  const fmtSize = (b) => b < 1024 ? b + ' B' :
+    b < 1048576 ? (b / 1024).toFixed(1) + ' KB' :
+    (b / 1048576).toFixed(1) + ' MB';
+
+  text.addEventListener('input', () => { count.textContent = text.value.length; });
+
+  const showFile = (name, size) => {
+    fileName.textContent = name;
+    fileMeta.textContent = size ? fmtSize(size) : '';
+    dropEmpty.style.display = 'none';
+    dropFilled.style.display = 'flex';
+    drop.classList.add('has-file');
+  };
+  const clearFile = () => {
+    fileInput.value = '';
+    dropEmpty.style.display = 'flex';
+    dropFilled.style.display = 'none';
+    drop.classList.remove('has-file');
+  };
+
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) showFile(f.name, f.size);
+  });
+  fileClear.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); clearFile(); });
+
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); drop.classList.add('over');
+  }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); drop.classList.remove('over');
+  }));
+  drop.addEventListener('drop', (e) => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.startsWith('audio/')) {
+      const dt = new DataTransfer(); dt.items.add(f);
+      fileInput.files = dt.files;
+      showFile(f.name, f.size);
+    }
+  });
+
+  document.querySelectorAll('.ex-row').forEach(row => {
+    row.addEventListener('click', () => {
+      text.value = row.dataset.text;
+      count.textContent = text.value.length;
+      showFile(row.dataset.file, 0);
+      text.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+
+  clearBtn.addEventListener('click', () => {
+    text.value = ''; count.textContent = '0';
+    clearFile();
+    outEmpty.style.display = 'block';
+    outLoading.style.display = 'none';
+    outReady.style.display = 'none';
+  });
+
+  submit.addEventListener('click', () => {
+    if (!text.value.trim() || !(fileInput.files[0] || dropFilled.style.display === 'flex')) {
+      drop.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(0)' }], { duration: 280 });
+      return;
+    }
+    outEmpty.style.display = 'none';
+    outReady.style.display = 'none';
+    outLoading.style.display = 'flex';
+    submit.disabled = true;
+    setTimeout(() => {
+      outLoading.style.display = 'none';
+      outReady.style.display = 'block';
+      submit.disabled = false;
+    }, 1800);
+  });
+</script>
+
+</body>
+</html>
