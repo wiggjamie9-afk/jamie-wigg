@@ -24,12 +24,19 @@ export const MODELS = {
     maxClipSeconds: 10,
     bestFor: ["cinematic", "realistic", "long-form"],
     estimatedUsdPerClip: 1.40,
-    buildInput: (scene) => ({
-      prompt: scene.prompt,
-      duration: Math.min(scene.duration ?? 5, 10),
-      aspect_ratio: scene.aspectRatio ?? "16:9",
-      cfg_scale: 0.5,
-    }),
+    buildInput: (scene) => {
+      const input = {
+        prompt: scene.prompt,
+        duration: Math.min(scene.duration ?? 5, 10),
+        aspect_ratio: scene.aspectRatio ?? "16:9",
+        cfg_scale: 0.5,
+      };
+      // Reference image → image-to-video mode on Kling for character/face
+      // consistency across scenes. Solves the #1 AI-video pain point: the
+      // hero looks like a different person every cut.
+      if (scene.referenceImage) input.start_image = scene.referenceImage;
+      return input;
+    },
   },
 
   "luma-ray": {

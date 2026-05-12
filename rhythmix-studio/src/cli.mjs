@@ -7,7 +7,7 @@ import { MODELS, estimateCost } from "./models.mjs";
 import { replicateRun, downloadToDisk, firstUrl, ReplicateError } from "./replicate.mjs";
 import { pexelsSearch, pickVideoFile, downloadPexelsVideo, PexelsError } from "./sources/pexels.mjs";
 import { listLocalClips, copyLocalClip, LocalSourceError } from "./sources/local.mjs";
-import { compose } from "./compose.mjs";
+import { compose, composeMultiAspect } from "./compose.mjs";
 import { log } from "./log.mjs";
 
 function parseArgs(argv) {
@@ -43,9 +43,22 @@ Common options:
   --theme <text>        Visual theme/concept (required for plan/render).
   --bpm <n>             Track BPM, used to snap cuts to beats. Default: no snapping.
   --aspect <ratio>      "16:9" (default), "9:16", or "1:1".
+  --aspects <list>      Comma-separated: render multiple aspects from one job
+                        (e.g. "16:9,9:16,1:1" — YouTube + Reels + IG feed in
+                        one render). Overrides --aspect. Same source clips,
+                        re-composed; you only pay once.
   --source <name>       "replicate" (default, paid AI gen), "pexels" (FREE stock footage), or "local" (FREE, your own clips).
   --clips-dir <path>    For --source local: directory containing .mp4/.mov clips to use as scene material.
   --model <name>        For replicate source: hunyuan-video | kling-v2 | luma-ray | minimax-video.
+  --reference-image <url-or-path>
+                        Image URL (or local path) of the subject/character to
+                        keep consistent across all scenes. Honoured by Kling v2
+                        as start_image; other models ignore it gracefully.
+                        Solves the "hero looks different every cut" problem.
+  --no-story-mode       Disable narrative-arc prompt enrichment. Default ON —
+                        scenes form a coherent 3-act story (arrival → encounter
+                        → peak → doubt → departure) instead of disconnected
+                        vignettes.
   --out <dir>           Output directory (default: ./rhythmix-out/<track-name>).
   --dry-run             Plan only, print scenes + cost, do not call any model.
   --concurrency <n>     Parallel scene generations (default: 2).
@@ -132,7 +145,16 @@ async function cmdPlan(args) {
     aspectRatio,
     width: dims.width,
     height: dims.height,
+    storyMode: !args["no-story-mode"],
+    referenceImage: args["reference-image"],
   });
+
+  if (plan.storyMode) {
+    log.ok(`Story mode ON — ${plan.sections.length}-section narrative arc layered onto audio structure`);
+  }
+  if (plan.referenceImage) {
+    log.ok(`Reference image: ${plan.referenceImage} (Kling scenes will use it as start_image)`);
+  }
 
   log.ok(`${plan.scenes.length} scenes across ${plan.sections.length} sections`);
   for (const s of plan.scenes) {
@@ -312,11 +334,9 @@ async function cmdRender(args) {
   const sceneFiles = await generateAll({ plan, outDir, concurrency, source, clipsDir: args["clips-dir"] });
 
   log.header("Composing final video");
-  const finalPath = join(outDir, "final.mp4");
   const workDir = join(outDir, "work");
   const transitions = args["no-transitions"] ? "cut" : "crossfade";
-  await compose({ plan, sceneFiles, outputPath: finalPath, workDir, transitions });
-  log.ok(`Final video: ${finalPath}`);
+  await runCompose({ plan, sceneFiles, outDir, workDir, transitions, aspects: args.aspects });
 }
 
 async function cmdRenderFromPlan(args) {
@@ -333,10 +353,27 @@ async function cmdRenderFromPlan(args) {
   const sceneFiles = await generateAll({ plan: planData, outDir, concurrency, source });
 
   log.header("Composing final video");
-  const finalPath = join(outDir, "final.mp4");
   const workDir = join(outDir, "work");
   const transitions = args["no-transitions"] ? "cut" : "crossfade";
-  await compose({ plan: planData, sceneFiles, outputPath: finalPath, workDir, transitions });
+  await runCompose({ plan: planData, sceneFiles, outDir, workDir, transitions, aspects: args.aspects });
+}
+
+// Dispatch single- vs multi-aspect compose based on --aspects flag.
+// Single aspect → `final.mp4`. Multiple → `final-16x9.mp4`, `final-9x16.mp4`, etc.
+async function runCompose({ plan, sceneFiles, outDir, workDir, transitions, aspects }) {
+  if (aspects && typeof aspects === "string") {
+    const list = aspects.split(",").map((s) => s.trim()).filter(Boolean);
+    if (list.length === 0) throw new Error("--aspects given but empty");
+    const outputs = await composeMultiAspect({
+      plan, sceneFiles, outDir, workDir, transitions, aspects: list,
+    });
+    for (const [aspect, path] of Object.entries(outputs)) {
+      log.ok(`Final ${aspect}: ${path}`);
+    }
+    return;
+  }
+  const finalPath = join(outDir, "final.mp4");
+  await compose({ plan, sceneFiles, outputPath: finalPath, workDir, transitions });
   log.ok(`Final video: ${finalPath}`);
 }
 

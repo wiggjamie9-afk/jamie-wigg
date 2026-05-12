@@ -129,7 +129,15 @@ async function muxAudio({ video, audio, output, totalDuration }) {
   ]);
 }
 
-export async function compose({ plan, sceneFiles, outputPath, workDir, transitions = "crossfade" }) {
+const ASPECT_DIMS = {
+  "16:9": { width: 1280, height: 720 },
+  "9:16": { width: 720, height: 1280 },
+  "1:1":  { width: 1024, height: 1024 },
+};
+
+// Compose a single aspect from the source scene files. Internal — exported
+// `compose` and `composeMultiAspect` both route through here.
+async function composeOne({ plan, sceneFiles, outputPath, workDir, transitions, dims }) {
   if (!existsSync(workDir)) await mkdir(workDir, { recursive: true });
 
   const N = plan.scenes.length;
@@ -151,8 +159,8 @@ export async function compose({ plan, sceneFiles, outputPath, workDir, transitio
       input: src,
       output: dst,
       duration: trimDuration,
-      width: scene.width ?? plan.scenes[0]?.width ?? 1280,
-      height: scene.height ?? plan.scenes[0]?.height ?? 720,
+      width: dims.width,
+      height: dims.height,
     });
     trimmed.push(dst);
     durations.push(trimDuration);
@@ -183,4 +191,40 @@ export async function compose({ plan, sceneFiles, outputPath, workDir, transitio
   });
 
   return outputPath;
+}
+
+export async function compose({ plan, sceneFiles, outputPath, workDir, transitions = "crossfade" }) {
+  const dims = {
+    width: plan.scenes[0]?.width ?? 1280,
+    height: plan.scenes[0]?.height ?? 720,
+  };
+  return composeOne({ plan, sceneFiles, outputPath, workDir, transitions, dims });
+}
+
+// Render the same scene set into multiple aspect ratios from a single job.
+// `aspects` is an array of "16:9" | "9:16" | "1:1" strings. Each gets its own
+// trim pass + final MP4 under outDir as `final-<aspect>.mp4`.
+//
+// The expensive part of a render is the per-scene Replicate call; once the
+// source clips exist on disk, re-composing them at a different aspect is
+// fast (ffmpeg crop, not generation). This means a Reels/Shorts cut, a
+// YouTube cut and an IG-feed cut all come out of one paid render.
+export async function composeMultiAspect({ plan, sceneFiles, outDir, workDir, transitions = "crossfade", aspects }) {
+  const outputs = {};
+  for (const aspect of aspects) {
+    const dims = ASPECT_DIMS[aspect];
+    if (!dims) throw new Error(`Unknown aspect: ${aspect}. Must be one of ${Object.keys(ASPECT_DIMS).join(", ")}`);
+    const aspectWork = join(workDir, `aspect-${aspect.replace(":", "x")}`);
+    const aspectOut = join(outDir, `final-${aspect.replace(":", "x")}.mp4`);
+    await composeOne({
+      plan,
+      sceneFiles,
+      outputPath: aspectOut,
+      workDir: aspectWork,
+      transitions,
+      dims,
+    });
+    outputs[aspect] = aspectOut;
+  }
+  return outputs;
 }
