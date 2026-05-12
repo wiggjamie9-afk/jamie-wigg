@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RHYTHMIX — ACE-Step · Describe a song, AI writes it</title>
+  <meta name="description" content="Type a description, get a full produced song. Powered by ACE-Step v1.5 — the open-source text-to-song model. 30s, 60s or 120s. Instrumental or with lyrics.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rhythmixapp.com.au/ace-step.html">
+  <meta property="og:title" content="RHYTHMIX — ACE-Step text-to-song">
+  <meta property="og:description" content="Describe any song. AI writes & produces it.">
+  <meta property="og:image" content="https://rhythmixapp.com.au/thumbnails/rhythmix-thumbnail-square.png">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:#fff;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      min-height:100vh; overflow-x:hidden; }
+
+    nav { display:flex; justify-content:space-between; align-items:center;
+      padding:20px 24px; position:sticky; top:0; z-index:100;
+      background:rgba(0,0,0,.85); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.06); }
+    .nav-logo { font-size:22px; font-weight:900;
+      background:linear-gradient(135deg,#ff1f5a,#7c3aed,#00d8ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      text-decoration:none; }
+    .nav-links { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    .nav-links a { color:#a0a0b0; text-decoration:none; font-size:14px; font-weight:600; }
+    .nav-cta { background:linear-gradient(135deg,#f5c000,#ff8800);
+      color:#000 !important; padding:10px 20px; border-radius:100px;
+      font-size:14px; font-weight:900; text-decoration:none; }
+
+    .hero { text-align:center; padding:64px 24px 30px;
+      background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(245,192,0,.18),transparent); }
+    .hero-badge { display:inline-flex; align-items:center; gap:8px;
+      background:rgba(245,192,0,.1); border:1px solid rgba(245,192,0,.4); color:#f5c000;
+      font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+      padding:8px 18px; border-radius:100px; margin-bottom:22px; }
+    .badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor;
+      animation:pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .hero h1 { font-size:clamp(36px,8vw,72px); font-weight:900; line-height:1.0;
+      letter-spacing:-2px; margin-bottom:14px; }
+    .hero h1 em { font-style:normal;
+      background:linear-gradient(135deg,#ff1f5a,#f5c000,#00d8ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero-sub { color:#a0a0b0; font-size:clamp(15px,2.5vw,18px); line-height:1.6;
+      max-width:580px; margin:0 auto 14px; }
+    .hero-sub strong { color:#fff; }
+    .hero-credit { color:#555; font-size:12px; }
+    .hero-credit code { color:#f5c000; font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+    .hero-credit a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    .app { max-width:880px; margin:0 auto; padding:24px 20px 12px; }
+
+    .card { background:#0d0d0d; border:1px solid rgba(255,255,255,.08);
+      border-radius:20px; padding:24px; }
+
+    textarea { width:100%; min-height:160px; resize:vertical;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+      border-radius:12px; color:#fff; font-family:inherit; font-size:16px;
+      line-height:1.55; padding:16px 18px; outline:none; }
+    textarea::placeholder { color:#444; }
+    textarea:focus { border-color:rgba(245,192,0,.6);
+      background:rgba(245,192,0,.04); }
+
+    .controls { display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+      margin-top:16px; }
+    .pill-group { display:flex; gap:0; background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08); border-radius:100px; padding:4px; }
+    .pill { background:transparent; border:none; color:#a0a0b0;
+      font-size:12px; font-weight:700; letter-spacing:1px;
+      padding:8px 16px; border-radius:100px; cursor:pointer; transition:.15s; }
+    .pill.on { background:linear-gradient(135deg,#7c3aed,#00d8ff); color:#fff;
+      box-shadow:0 0 14px rgba(124,58,237,.35); }
+
+    .check { display:flex; gap:10px; align-items:center; cursor:pointer;
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07);
+      border-radius:100px; padding:8px 16px 8px 12px; }
+    .check:hover { border-color:rgba(245,192,0,.4); background:rgba(245,192,0,.05); }
+    .check input { appearance:none; width:16px; height:16px;
+      border:1.5px solid rgba(255,255,255,.25); border-radius:4px;
+      background:transparent; cursor:pointer; position:relative; transition:.15s; }
+    .check input:checked { background:linear-gradient(135deg,#f5c000,#ff8800);
+      border-color:transparent; }
+    .check input:checked::after { content:'✓'; color:#000; font-weight:900;
+      font-size:12px; position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%); }
+    .check span { color:#fff; font-size:13px; font-weight:700; }
+
+    .spacer { flex:1; min-width:0; }
+
+    .btn-ghost { background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12); color:#a0a0b0; font-size:13px;
+      font-weight:700; padding:10px 18px; border-radius:100px; cursor:pointer;
+      display:inline-flex; align-items:center; gap:6px; }
+    .btn-ghost:hover { color:#fff; border-color:rgba(124,58,237,.4); }
+    .btn-generate { background:linear-gradient(135deg,#ff1f5a,#f5c000);
+      border:none; color:#000; font-size:14px; font-weight:900; letter-spacing:1px;
+      text-transform:uppercase; padding:13px 32px; border-radius:100px;
+      cursor:pointer; box-shadow:0 0 24px rgba(245,192,0,.3); }
+    .btn-generate:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+    .output { max-width:880px; margin:18px auto 36px; padding:0 20px; }
+    .output-card { background:linear-gradient(135deg,#0d0020,#000);
+      border:1px solid rgba(245,192,0,.25); border-radius:20px;
+      padding:24px; text-align:center; }
+    .output-label { font-size:11px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:#f5c000; margin-bottom:12px; }
+    .output-empty { color:#444; font-size:14px; padding:18px 0; }
+    .output-status { color:#a0a0b0; font-size:14px; padding:18px 0;
+      display:flex; align-items:center; justify-content:center; gap:10px; }
+    .spinner { width:14px; height:14px; border-radius:50%;
+      border:2px solid rgba(245,192,0,.25); border-top-color:#f5c000;
+      animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    audio { width:100%; max-width:560px; margin-top:6px; }
+
+    .ace-link { display:inline-block; margin:0 auto 36px; color:#a0a0b0;
+      font-size:13px; text-decoration:none; padding:0 24px; }
+    .ace-link strong { color:#fff; }
+    .ace-link a { color:#7c3aed; text-decoration:none; font-weight:700; }
+    .ace-link-wrap { text-align:center; }
+
+    .feed { max-width:1200px; margin:0 auto 48px; padding:0 20px; }
+    .feed-head { display:flex; align-items:center; justify-content:space-between;
+      gap:14px; margin-bottom:18px; flex-wrap:wrap; }
+    .feed-label { font-size:11px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:#7c3aed; }
+    .feed-note { color:#555; font-size:12px; }
+
+    .grid { display:grid; gap:12px;
+      grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
+    .song { background:#0d0d0d; border:1px solid rgba(255,255,255,.07);
+      border-radius:14px; padding:14px; cursor:pointer; transition:.15s;
+      display:flex; flex-direction:column; gap:8px; min-height:120px; }
+    .song:hover { border-color:rgba(245,192,0,.4); background:rgba(245,192,0,.04);
+      transform:translateY(-2px); }
+    .song-cover { aspect-ratio:1/1; border-radius:10px; position:relative;
+      background:linear-gradient(135deg,#1a0033,#000a1a);
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden; }
+    .song-cover::before { content:''; position:absolute; inset:0;
+      background:radial-gradient(circle at 30% 30%,rgba(255,31,90,.3),transparent 60%),
+                 radial-gradient(circle at 70% 70%,rgba(0,216,255,.25),transparent 60%); }
+    .song-cover-glyph { position:relative; z-index:1; font-size:32px;
+      filter:drop-shadow(0 0 12px rgba(245,192,0,.4)); }
+    .song-dur { position:absolute; top:8px; right:8px; z-index:2;
+      background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+      border:1px solid rgba(255,255,255,.12); color:#fff;
+      font-size:10px; font-weight:800; letter-spacing:1px;
+      padding:3px 8px; border-radius:100px; }
+    .song-title { font-size:13px; font-weight:700; color:#fff;
+      line-height:1.35; min-height:36px; }
+    .song-play { font-size:11px; color:#a0a0b0; font-weight:700;
+      letter-spacing:1px; text-transform:uppercase;
+      display:flex; align-items:center; gap:5px; }
+    .song-play::before { content:'▷'; color:#f5c000; font-size:14px; }
+
+    .notice { max-width:880px; margin:0 auto 28px; padding:0 20px; }
+    .notice-card { background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07); border-radius:14px;
+      padding:18px 22px; color:#a0a0b0; font-size:13px; line-height:1.65; }
+    .notice-card strong { color:#fff; }
+    .notice-card a { color:#7c3aed; text-decoration:none; font-weight:600; }
+
+    footer { text-align:center; padding:40px 24px; color:#333; font-size:13px;
+      border-top:1px solid rgba(255,255,255,.05); }
+    footer a { color:#444; text-decoration:none; margin:0 6px; }
+    footer a:hover { color:#a0a0b0; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">RHYTHMIX</a>
+  <div class="nav-links">
+    <a href="/features.html">Features</a>
+    <a href="/voice-clone.html">Voice Clone</a>
+    <a href="/ai-cover.html">AI Cover</a>
+    <a href="/tagger.html">Tagger</a>
+    <a href="/ace-step.html" style="color:#fff">ACE-Step</a>
+    <a class="nav-cta" href="https://wiggjamie.gumroad.com/l/rhythmix-studio">Buy · $149</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge"><span class="badge-dot"></span>Lab · ACE-Step v1.5</div>
+  <h1>Describe a song.<br><em>AI writes &amp; produces it.</em></h1>
+  <p class="hero-sub">Type one line. Pick a duration. Hit <strong>Generate</strong>. ACE-Step writes the lyrics, composes the chords, sings the vocals and produces the mix — all in one pass.</p>
+  <p class="hero-credit">Live via <code id="space-slug">ACE-Step/ACE-Step</code> on Hugging Face · cold-start can take 1-2 min on a GPU Space</p>
+</div>
+
+<div class="app">
+  <div class="card">
+    <textarea id="prompt" maxlength="600" placeholder="dark synthwave, 110 bpm, female vocal, bittersweet lyrics about driving home alone at 3am, sparkling arp, fat sub bass, cinematic build, outro fade"></textarea>
+
+    <div class="controls">
+      <div class="pill-group" id="duration" role="tablist">
+        <button type="button" class="pill" data-dur="30">30s</button>
+        <button type="button" class="pill on" data-dur="60">60s</button>
+        <button type="button" class="pill" data-dur="120">120s</button>
+      </div>
+      <label class="check"><input type="checkbox" id="instrumental"><span>Instrumental</span></label>
+      <div class="spacer"></div>
+      <button type="button" class="btn-ghost" id="share">🔗 Share</button>
+      <button type="button" class="btn-generate" id="generate">Generate</button>
+    </div>
+  </div>
+</div>
+
+<div class="output">
+  <div class="output-card">
+    <div class="output-label">Output</div>
+    <div id="out-empty" class="output-empty">Describe a song above and hit Generate.</div>
+    <div id="out-loading" class="output-status" style="display:none">
+      <span class="spinner"></span><span>Composing your song…</span>
+    </div>
+    <div id="out-ready" style="display:none">
+      <audio controls></audio>
+    </div>
+  </div>
+</div>
+
+<div class="ace-link-wrap">
+  <p class="ace-link">Want more control &amp; longer songs? <a href="https://acestudio.ai" target="_blank" rel="noopener"><strong>Try ACE Studio →</strong></a></p>
+</div>
+
+<section class="feed">
+  <div class="feed-head">
+    <div class="feed-label">Community Songs</div>
+    <div class="feed-note">Tap a card to load its title as a starter prompt.</div>
+  </div>
+  <div class="grid" id="songs"></div>
+</section>
+
+<section class="notice">
+  <div class="notice-card">
+    <strong>About this tool.</strong> ACE-Step is an open-source text-to-song model. The Submit button calls the live <a href="https://huggingface.co/spaces/ACE-Step/ACE-Step" target="_blank" rel="noopener">ACE-Step Space</a> via @gradio/client — first request may queue or cold-start for a minute or two. Use the <code>?space=&lt;owner/name&gt;</code> URL parameter to swap to a mirror if the default is sleeping.
+  </div>
+</section>
+
+<footer>
+  <p>
+    <a href="/features.html">Features</a> ·
+    <a href="/downloads.html">Videos</a> ·
+    <a href="/studio.html">Studio</a> ·
+    <a href="/voice-clone.html">Voice Clone</a> ·
+    <a href="/ai-cover.html">AI Cover</a> ·
+    <a href="/tagger.html">Tagger</a> ·
+    <a href="/privacy.html">Privacy</a> ·
+    <a href="/terms.html">Terms</a>
+  </p>
+  <p style="margin-top:10px">© 2026 RHYTHMIX · AI music video studio · Made in Australia</p>
+</footer>
+
+<script type="module">
+  import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client@1.10.0/+esm";
+
+  const SPACE = new URLSearchParams(location.search).get('space') || 'ACE-Step/ACE-Step';
+  document.getElementById('space-slug').textContent = SPACE;
+
+  const $ = id => document.getElementById(id);
+  const prompt = $('prompt');
+  const instrumental = $('instrumental');
+  const durationGroup = $('duration');
+  const generate = $('generate');
+  const share = $('share');
+  const outEmpty = $('out-empty');
+  const outLoading = $('out-loading');
+  const outReady = $('out-ready');
+
+  let duration = 60;
+  durationGroup.querySelectorAll('.pill').forEach(p => {
+    p.addEventListener('click', () => {
+      durationGroup.querySelectorAll('.pill').forEach(x => x.classList.remove('on'));
+      p.classList.add('on');
+      duration = parseInt(p.dataset.dur, 10);
+    });
+  });
+
+  share.addEventListener('click', async () => {
+    const url = new URL(location.href);
+    if (prompt.value.trim()) url.searchParams.set('q', prompt.value.trim());
+    url.searchParams.set('d', String(duration));
+    if (instrumental.checked) url.searchParams.set('i', '1');
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      const old = share.textContent;
+      share.textContent = '✓ Copied';
+      setTimeout(() => share.textContent = old, 1400);
+    } catch {
+      window.prompt('Share link:', url.toString());
+    }
+  });
+
+  // Restore from URL
+  const params = new URLSearchParams(location.search);
+  if (params.get('q')) prompt.value = params.get('q');
+  if (params.get('d')) {
+    const d = params.get('d');
+    durationGroup.querySelectorAll('.pill').forEach(p => {
+      p.classList.toggle('on', p.dataset.dur === d);
+      if (p.dataset.dur === d) duration = parseInt(d, 10);
+    });
+  }
+  if (params.get('i') === '1') instrumental.checked = true;
+
+  let _client = null;
+  const getClient = async () => {
+    if (_client) return _client;
+    _client = await Client.connect(SPACE);
+    return _client;
+  };
+
+  const setLoadingMsg = msg => outLoading.querySelector('span:last-child').textContent = msg;
+  const showError = msg => {
+    outLoading.style.display = 'none';
+    outReady.style.display = 'none';
+    outEmpty.style.display = 'block';
+    outEmpty.innerHTML = `<span style="color:#ff1f5a">⚠ ${msg}</span>`;
+  };
+
+  generate.addEventListener('click', async () => {
+    if (!prompt.value.trim()) {
+      prompt.animate(
+        [{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],
+        {duration:280}
+      );
+      prompt.focus();
+      return;
+    }
+    outEmpty.style.display = 'none';
+    outReady.style.display = 'none';
+    outLoading.style.display = 'flex';
+    setLoadingMsg('Connecting to ' + SPACE + '… (cold-start 1-2 min)');
+    generate.disabled = true;
+
+    try {
+      const client = await getClient();
+      setLoadingMsg(`Composing your ${duration}s ${instrumental.checked ? 'instrumental' : 'song'}…`);
+
+      // ACE-Step Gradio API varies by mirror. We try the common keyed form
+      // first; the positional fallback covers older / community mirrors.
+      const args = {
+        prompt: prompt.value,
+        audio_duration: duration,
+        instrumental: instrumental.checked,
+      };
+
+      let result;
+      try {
+        result = await client.predict('/predict', args);
+      } catch (innerErr) {
+        console.warn('[ace-step] keyed call failed, trying positional', innerErr);
+        result = await client.predict('/predict', [
+          prompt.value, duration, instrumental.checked,
+        ]);
+      }
+
+      const out = result?.data?.[0];
+      const url = typeof out === 'string' ? out : (out?.url || out?.path);
+      if (!url) throw new Error('Space returned no audio.');
+
+      const audio = outReady.querySelector('audio');
+      audio.src = url;
+      outLoading.style.display = 'none';
+      outReady.style.display = 'block';
+    } catch (err) {
+      console.error('[ace-step]', err);
+      const msg = err?.message || String(err);
+      showError(`Couldn't reach the Space: ${msg}. It may be sleeping, queued, or temporarily down. Try again in a minute, or pass <code>?space=&lt;owner/name&gt;</code> in the URL to use a mirror.`);
+    } finally {
+      generate.disabled = false;
+    }
+  });
+
+  const COMMUNITY = [
+    ['后来', 60, '🌙'],
+    ['后来 (Later)', 120, '🌙'],
+    ['Shatter the Silence', 60, '⚡'],
+    ['Rising Pulse', 60, '🌅'],
+    ['Commit al Corazón', 60, '❤️'],
+    ['Orion Drift', 120, '🌌'],
+    ['Orbit Kick', 120, '🛰️'],
+    ['Rising Dawn', 60, '🌄'],
+    ['Neon Austin Nights', 60, '🪩'],
+    ['Paw Patrol Party (Raunchy Remix)', 60, '🎉'],
+    ['Sunlit Strum', 60, '🎸'],
+    ['Midnight Groove', 60, '🎷'],
+    ['Urban Strings', 60, '🎻'],
+    ["Can't Cum Now", 60, '🚫'],
+    ['Starlight Drift', 120, '✨'],
+    ['Dil Da Beat', 60, '🥁'],
+    ['Supercharged Nights', 120, '⚡'],
+    ['Raga Clash', 60, '🪕'],
+    ['Jatt Flow', 120, '🌾'],
+    ["Athira's Light", 60, '🪔'],
+    ['Cinematic Surge', 60, '🎬'],
+    ['Midnight Marionette', 120, '🎭'],
+    ['Starlit Whisper', 60, '⭐'],
+    ['Neon Rush', 60, '💫'],
+    ['Gentle Horizon', 60, '🌊'],
+    ['Cafe Echoes', 120, '☕'],
+    ['Ngorongoro Echo', 60, '🦒'],
+    ['Po‑Po‑Po Troya', 60, '🥁'],
+    ['Starlit Reverie', 120, '🌠'],
+    ['Deep Pulse', 60, '🌀'],
+    ['Espresso Rush', 30, '☕'],
+    ['Study Lounge', 60, '📚'],
+    ['Midnight Neon', 120, '🌃'],
+    ['Midnight Whisper', 60, '🌙'],
+    ['Noche de Amor', 60, '💃'],
+    ['BERSATU KITA TEGUH BERCERAI KITA KAWIN LAGI', 60, '🇲🇾'],
+    ['සිසිළේ ගලා (Flow of the Breeze)', 60, '🍃'],
+    ['Finger Family Fun', 60, '👨‍👩‍👧'],
+    ['Neon Night Whisper', 60, '🌃'],
+    ['8-Bit Waltz', 120, '🎮'],
+    ['Mask of Stone', 60, '🗿'],
+    ['Purple Brass Drop', 120, '🎺'],
+    ['Untitled', 60, '∅'],
+    ['Young Journey', 60, '🛤️'],
+    ['Pixel Pulse', 60, '👾'],
+    ['Neon Pulse', 60, '💡'],
+    ['Little Cry of the Lost', 60, '💧'],
+    ['Click Pulse', 30, '⚙️'],
+    ['Midnight Pulse', 60, '🌑'],
+    ['Satin Crush', 60, '🌹'],
+  ];
+
+  const songs = $('songs');
+  songs.innerHTML = COMMUNITY.map(([t, d, g]) => `
+    <button type="button" class="song" data-title="${t.replace(/"/g,'&quot;')}" data-dur="${d}">
+      <div class="song-cover">
+        <span class="song-cover-glyph">${g}</span>
+        <span class="song-dur">${d}s</span>
+      </div>
+      <div class="song-title">${t}</div>
+      <div class="song-play">Use as prompt</div>
+    </button>`).join('');
+
+  songs.querySelectorAll('.song').forEach(el => {
+    el.addEventListener('click', () => {
+      prompt.value = el.dataset.title;
+      const d = el.dataset.dur;
+      durationGroup.querySelectorAll('.pill').forEach(p => {
+        p.classList.toggle('on', p.dataset.dur === d);
+        if (p.dataset.dur === d) duration = parseInt(d, 10);
+      });
+      prompt.scrollIntoView({ behavior:'smooth', block:'center' });
+      prompt.focus();
+    });
+  });
+</script>
+
+</body>
+</html>
