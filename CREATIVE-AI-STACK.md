@@ -33,6 +33,25 @@ These five cover ~80% of creative output. Everything below is depth.
 
 **Workflow tip:** Generate clips on Replicate/Kling/Runway → download to Files → import into CapCut → cut and add captions there.
 
+### When to use Kling/Veo vs HyperFrames — DECISION RULE
+
+This was settled deliberately. Do not re-derive every session.
+
+| Need | Tool | Why |
+|---|---|---|
+| Photoreal humans, faces, real-world scenes, cinematic shots (close-up / medium / wide), 4K hero footage | **Kling 3.0 iOS app** (or Veo 3 / Runway) | HyperFrames is HTML/CSS — it cannot generate photoreal imagery. Don't try. |
+| Branded motion graphics, animated typography, wordmark reveals, stat counters, kinetic captions, audio-synced highlights, dark-canvas glow overlays | **HyperFrames** (`rhythmix-author` skill) | This is what HyperFrames is built for. Faster and more on-brand than generative tools. |
+| Hybrid: cinematic plate + brand overlay (e.g. Kling footage of a producer in a studio + RHYTHMIX wordmark and CTA on top) | **Both** — generate the plate in Kling, drop the MP4 into a `rhythmix-*/` project, reference it as a `<video>` background in `index.html`, then add the HyperFrames brand layer on top | Best of both. Photoreal where it matters, brand consistency on the overlay. |
+
+**Standard iPhone-only workflow** (chosen path for this repo, no MCP integration needed):
+
+1. Open **Kling iOS app** → generate the cinematic clip(s). Use multi-shot for close/medium/wide variants in one go.
+2. Save to Photos → Files → AirDrop or upload to repo.
+3. (Optional) Drop into **CapCut** to trim / colour-match / add captions.
+4. (Optional hybrid) Drop the MP4 into a `rhythmix-<slug>/` folder and overlay HyperFrames brand graphics on top via a `<video class="clip">` element.
+
+Skip the MCP integration. The Replicate API path costs ~$1-2/clip and adds latency vs. the native app, which is faster and free under the Kling subscription.
+
 ---
 
 ## 2. AI Image Generation (Artwork, Posters, Album Art)

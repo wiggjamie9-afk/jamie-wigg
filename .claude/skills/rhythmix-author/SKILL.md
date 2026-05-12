@@ -15,6 +15,14 @@ User asks for any of:
 
 For unrelated video tasks, prefer the generic `hyperframes` skill instead.
 
+### Out of scope — route to Kling iOS app
+
+If the brief calls for **photoreal humans, faces, cinematic live-action shots, or 4K hero footage** (e.g. "a producer in a studio", "people walking down the street", "astronaut close-up"), this skill cannot deliver. HyperFrames is HTML/CSS motion graphics; it can't generate photoreal imagery.
+
+Route the user to: **Kling 3.0 iOS app** → CapCut for finishing. See `CREATIVE-AI-STACK.md §1` decision rule.
+
+If they want a **hybrid** (Kling cinematic plate + RHYTHMIX brand overlay), proceed with this skill but treat the Kling MP4 as a `<video class="clip">` background asset in scene 1 — wordmark, captions, and CTA still render through HyperFrames on top.
+
 ## Brief intake — RTCO frame
 
 Before writing a single line of script or HTML, fill these four. If the user's request leaves any blank, ask — don't guess. Guessing produces generic output.
