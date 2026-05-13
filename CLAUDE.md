@@ -78,3 +78,17 @@ If the user asks for HTML-based video, captions/subtitles, audio-reactive visual
 - Don't reduce the dependency lockfile churn — keep `video/package-lock.json` in sync with `package.json`.
 - Don't commit `node_modules/`, `.remotion/`, or `graphify-out/cache/` (already covered by `.gitignore` / `.graphifyignore`).
 - Skill edits go in `.agents/skills/<name>/` (the symlink target), never in the `.claude/skills/` symlink path.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `wiggjamie9-afk/jamie-wigg` via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
