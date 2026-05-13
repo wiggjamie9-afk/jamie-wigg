@@ -108,8 +108,9 @@ async function cmdPlan(args) {
   let structure;
   if (!args["flat-plan"]) {
     const curve = await loudnessCurve(track);
-    structure = structureFromLoudness(curve);
-    if (structure) {
+    const detected = structureFromLoudness(curve);
+    if (detected) {
+      structure = detected;
       log.ok(`Detected structure: ${structure.map((s) => s.role).join(" → ")}`);
     } else {
       log.info(`Audio too flat or short for structure detection — using default template.`);
@@ -330,7 +331,7 @@ async function cmdRenderFromPlan(args) {
 
   log.header(`Generating scenes from saved plan (source: ${source})`);
   const concurrency = Number(args.concurrency ?? 2);
-  const sceneFiles = await generateAll({ plan: planData, outDir, concurrency, source });
+  const sceneFiles = await generateAll({ plan: planData, outDir, concurrency, source, clipsDir: args["clips-dir"] });
 
   log.header("Composing final video");
   const finalPath = join(outDir, "final.mp4");
