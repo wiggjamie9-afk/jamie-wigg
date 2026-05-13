@@ -168,6 +168,60 @@
       border-top:1px solid rgba(255,255,255,.05); }
     footer a { color:#444; text-decoration:none; margin:0 8px; }
     footer a:hover { color:#a0a0b0; }
+
+    /* Quantum-inspired probability field */
+    .hero { position:relative; overflow:hidden; }
+    .hero > *:not(canvas) { position:relative; z-index:1; }
+    #quantum-field { position:absolute; inset:0; z-index:0; pointer-events:none;
+      display:block; opacity:.92; }
+
+    /* Returning-visitor strip */
+    .welcome-back { display:none; max-width:520px; margin:0 auto 18px;
+      background:rgba(0,216,255,.08); border:1px solid rgba(0,216,255,.25);
+      border-radius:100px; padding:8px 18px; font-size:13px; color:#cce8ff;
+      text-align:center; }
+    .welcome-back.show { display:inline-block; }
+    .welcome-back strong { color:#fff; text-transform:capitalize; }
+
+    /* Vibe picker (genre preference) */
+    .vibe-picker { display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
+      margin:6px auto 22px; max-width:580px; }
+    .vibe-label { width:100%; text-align:center; font-size:11px; font-weight:700;
+      letter-spacing:3px; text-transform:uppercase; color:#7c7c92; margin-bottom:6px; }
+    .vibe-pill { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
+      color:#a0a0b0; font-size:12px; font-weight:700; letter-spacing:1px;
+      text-transform:uppercase; padding:8px 14px; border-radius:100px;
+      cursor:pointer; transition:all .2s; font-family:inherit; }
+    .vibe-pill:hover { border-color:rgba(124,58,237,.5); color:#fff; }
+    .vibe-pill.active { background:linear-gradient(135deg,rgba(255,31,90,.18),rgba(124,58,237,.18));
+      border-color:rgba(124,58,237,.6); color:#fff; }
+
+    /* Consent banner */
+    #consent-banner { position:fixed; bottom:16px; right:16px; z-index:200;
+      max-width:340px; background:rgba(10,10,18,.95);
+      border:1px solid rgba(124,58,237,.4); border-radius:14px;
+      padding:16px 18px; backdrop-filter:blur(12px);
+      transform:translateY(160%); transition:transform .4s ease;
+      box-shadow:0 12px 40px rgba(0,0,0,.5); }
+    #consent-banner.show { transform:translateY(0); }
+    #consent-banner h4 { font-size:13px; font-weight:800; margin-bottom:6px;
+      letter-spacing:1px; }
+    #consent-banner p { font-size:12px; color:#a0a0b0; line-height:1.55; margin-bottom:12px; }
+    #consent-banner .cb-row { display:flex; gap:8px; }
+    #consent-banner button { flex:1; background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.15); color:#fff; font-size:12px;
+      font-weight:700; padding:9px 12px; border-radius:8px; cursor:pointer;
+      transition:all .2s; font-family:inherit; }
+    #consent-banner button:hover { background:rgba(255,255,255,.14); }
+    #consent-banner button.primary { background:linear-gradient(135deg,#ff1f5a,#7c3aed);
+      border-color:transparent; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .badge-dot, .lc-spot-dot { animation:none !important; }
+    }
+    @media (max-width: 600px) {
+      #consent-banner { right:12px; left:12px; bottom:12px; max-width:none; }
+    }
   </style>
 </head>
 <body>
@@ -182,15 +236,24 @@
 </nav>
 
 <div class="hero">
+  <canvas id="quantum-field" aria-hidden="true"></canvas>
   <div class="hero-pills">
     <span class="pill-deal">Lifetime Deal · $149</span>
     <span class="pill-status"><span class="badge-dot"></span>Pre-sale Open</span>
   </div>
+  <div class="welcome-back" id="welcome-back" role="status" aria-live="polite"></div>
   <h1>Your music.<br><em>As a movie.</em></h1>
   <p class="hero-sub">Lock in lifetime access at <strong>$149</strong> today. Full RHYTHMIX Studio interface launches in <strong>14 days</strong>.</p>
   <div class="hero-btns">
     <a class="btn-primary" href="https://wiggjamie.gumroad.com/l/rhythmix-studio">Lock In Lifetime Access →</a>
     <a class="btn-secondary" href="#how">How It Works</a>
+  </div>
+  <div class="vibe-picker" role="radiogroup" aria-label="Pick your vibe">
+    <div class="vibe-label">Pick your vibe — we remember it</div>
+    <button class="vibe-pill" data-vibe="cinematic" role="radio" aria-checked="false">Cinematic</button>
+    <button class="vibe-pill" data-vibe="lofi" role="radio" aria-checked="false">Lo-fi</button>
+    <button class="vibe-pill" data-vibe="hyperpop" role="radio" aria-checked="false">Hyperpop</button>
+    <button class="vibe-pill" data-vibe="dreamy" role="radio" aria-checked="false">Dreamy</button>
   </div>
   <p class="hero-note">14-day money-back guarantee · <strong>$149 once</strong> · No subscription, ever</p>
 </div>
@@ -348,6 +411,15 @@
   <p style="margin-top:10px">© 2026 RHYTHMIX</p>
 </footer>
 
+<aside id="consent-banner" role="dialog" aria-labelledby="cb-title">
+  <h4 id="cb-title">Remember your vibe?</h4>
+  <p>We store your vibe choice and a short interaction log <strong>in your browser only</strong>. Nothing is sent to a server. Clear it any time from site settings.</p>
+  <div class="cb-row">
+    <button id="consent-no" type="button">No thanks</button>
+    <button id="consent-yes" class="primary" type="button">Sounds good</button>
+  </div>
+</aside>
+
 <script>
   const form = document.getElementById('early-form');
   const success = document.getElementById('email-success');
@@ -362,6 +434,301 @@
       setTimeout(() => success.classList.add('show'), 200);
     });
   }
+</script>
+
+<script>
+/* ---------- RHYTHMIX Studio · quantum-inspired layer ----------
+   Probability-cloud particle field (wavefunction-style soft Gaussian
+   clouds + click-to-collapse), audio-reactive on hero video play,
+   localStorage behavior tracking with explicit consent, persisted
+   vibe picker that biases particle hues, returning-visitor greeting.
+   All data stays in the browser. No backend. */
+(() => {
+  const STORE = {
+    log: 'rhythmix_behavior_v1',
+    consent: 'rhythmix_consent_v1',
+    vibe: 'rhythmix_vibe_v1',
+    visits: 'rhythmix_visits_v1',
+  };
+  const VIBES = ['cinematic', 'lofi', 'hyperpop', 'dreamy'];
+  const VIBE_HUES = {
+    cinematic: [262, 350],          // purple + red — moody, filmic
+    lofi:      [190, 262, 220],     // cyan/indigo — chill
+    hyperpop:  [350, 320, 48],      // hot pink + gold — loud
+    dreamy:    [262, 190, 290],     // violet + cyan — soft
+    default:   [262, 350, 190],
+  };
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- consent + tracking ---------- */
+  const hasConsent = () => localStorage.getItem(STORE.consent) === 'yes';
+  function track(type, data) {
+    if (!hasConsent()) return;
+    try {
+      const log = JSON.parse(localStorage.getItem(STORE.log) || '[]');
+      log.push({ type, t: Date.now(), ...data });
+      if (log.length > 200) log.splice(0, log.length - 200);
+      localStorage.setItem(STORE.log, JSON.stringify(log));
+    } catch (_) { /* localStorage full or disabled */ }
+  }
+
+  /* ---------- quantum field ---------- */
+  const canvas = document.getElementById('quantum-field');
+  let hues = VIBE_HUES.default;
+  let setVibeHues = () => {};
+
+  if (canvas && canvas.getContext) {
+    const ctx = canvas.getContext('2d');
+    const hero = canvas.parentElement;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let w = 0, h = 0;
+
+    const resize = () => {
+      const r = hero.getBoundingClientRect();
+      w = r.width; h = r.height;
+      canvas.width = Math.max(1, Math.floor(w * dpr));
+      canvas.height = Math.max(1, Math.floor(h * dpr));
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    };
+    resize();
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(hero);
+    else addEventListener('resize', resize);
+
+    const N = reduceMotion ? 24 : 70;
+    const particles = [];
+    for (let i = 0; i < N; i++) {
+      particles.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        r: 22 + Math.random() * 50,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.012 + Math.random() * 0.025,
+        amp: 0.5 + Math.random() * 0.6,
+        hue: hues[Math.floor(Math.random() * hues.length)],
+      });
+    }
+
+    setVibeHues = (vibe) => {
+      const list = VIBE_HUES[vibe] || VIBE_HUES.default;
+      hues = list;
+      for (const p of particles) p.hue = list[Math.floor(Math.random() * list.length)];
+    };
+
+    /* audio-reactive scaling (optional — attaches on first user-driven play) */
+    let analyser = null, freqData = null, audioGain = 1;
+    const heroVideo = document.querySelector('.video-hero video');
+    if (heroVideo) {
+      const attach = () => {
+        if (analyser) return;
+        try {
+          const ACtx = window.AudioContext || window.webkitAudioContext;
+          if (!ACtx) return;
+          const ac = new ACtx();
+          const src = ac.createMediaElementSource(heroVideo);
+          analyser = ac.createAnalyser();
+          analyser.fftSize = 64;
+          freqData = new Uint8Array(analyser.frequencyBinCount);
+          src.connect(analyser);
+          analyser.connect(ac.destination);
+          if (ac.state === 'suspended') ac.resume();
+        } catch (_) { analyser = null; }
+      };
+      heroVideo.addEventListener('play', attach, { once: false });
+    }
+
+    /* click-to-collapse: register wavefunction-collapse events */
+    const collapses = [];
+    hero.addEventListener('click', (e) => {
+      const r = canvas.getBoundingClientRect();
+      collapses.push({ x: e.clientX - r.left, y: e.clientY - r.top, t: 0, life: 55 });
+      const a = e.target.closest('a, button');
+      track('hero_click', {
+        label: a ? (a.textContent || '').trim().slice(0, 40) : 'background',
+        cta: a ? (a.classList.contains('btn-primary') || a.classList.contains('nav-cta')) : false,
+      });
+    });
+
+    function draw() {
+      if (analyser) {
+        analyser.getByteFrequencyData(freqData);
+        let sum = 0;
+        for (let i = 0; i < freqData.length; i++) sum += freqData[i];
+        audioGain = 1 + (sum / freqData.length) / 70;
+      } else {
+        audioGain = 1;
+      }
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'lighter';
+
+      for (const p of particles) {
+        if (!reduceMotion) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vx *= 0.992;
+          p.vy *= 0.992;
+          // thermal drift — keeps the field alive even when at rest
+          p.vx += (Math.random() - 0.5) * 0.012;
+          p.vy += (Math.random() - 0.5) * 0.012;
+          p.phase += p.speed;
+          if (p.x < -80) p.x = w + 80;
+          if (p.x > w + 80) p.x = -80;
+          if (p.y < -80) p.y = h + 80;
+          if (p.y > h + 80) p.y = -80;
+        }
+        const pulse = 0.7 + Math.sin(p.phase) * 0.3;
+        const radius = Math.max(8, p.r * p.amp * pulse * audioGain);
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
+        g.addColorStop(0,   `hsla(${p.hue}, 92%, 62%, ${0.28 * audioGain})`);
+        g.addColorStop(0.5, `hsla(${p.hue}, 92%, 52%, ${0.09 * audioGain})`);
+        g.addColorStop(1,   `hsla(${p.hue}, 92%, 50%, 0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let i = collapses.length - 1; i >= 0; i--) {
+        const c = collapses[i];
+        c.t++;
+        const radius = c.t * 7;
+        const alpha = 1 - c.t / c.life;
+        ctx.strokeStyle = `hsla(${hues[0]}, 92%, 72%, ${alpha * 0.55})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        if (c.t < 8) {
+          for (const p of particles) {
+            const dx = c.x - p.x, dy = c.y - p.y;
+            const d = Math.hypot(dx, dy) || 1;
+            if (d < 240) {
+              const force = (1 - d / 240) * 0.32;
+              p.vx += (dx / d) * force;
+              p.vy += (dy / d) * force;
+            }
+          }
+        }
+        if (c.t > c.life) collapses.splice(i, 1);
+      }
+
+      if (!reduceMotion) requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  /* ---------- vibe picker ---------- */
+  const savedVibe = localStorage.getItem(STORE.vibe);
+  const applyVibe = (vibe, fromUser) => {
+    if (!VIBES.includes(vibe)) return;
+    localStorage.setItem(STORE.vibe, vibe);
+    document.querySelectorAll('.vibe-pill').forEach((el) => {
+      const on = el.dataset.vibe === vibe;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    setVibeHues(vibe);
+    if (fromUser) track('vibe_set', { vibe });
+  };
+  document.querySelectorAll('.vibe-pill').forEach((el) => {
+    el.addEventListener('click', () => applyVibe(el.dataset.vibe, true));
+  });
+  if (savedVibe) applyVibe(savedVibe, false);
+
+  /* ---------- returning visitor greeting ---------- */
+  const visits = (parseInt(localStorage.getItem(STORE.visits) || '0', 10) || 0) + 1;
+  localStorage.setItem(STORE.visits, String(visits));
+  if (visits > 1) {
+    const wb = document.getElementById('welcome-back');
+    if (wb) {
+      const vibeBit = savedVibe ? ` Your vibe: <strong>${savedVibe}</strong>.` : '';
+      wb.innerHTML = `Welcome back.${vibeBit} Lifetime is still <strong>$149</strong>.`;
+      wb.classList.add('show');
+    }
+  }
+
+  /* ---------- behavior logging ---------- */
+  track('page_view', { path: location.pathname, visits });
+
+  // Click logging on CTAs + nav links
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a, button');
+    if (!a || a.closest('#consent-banner') || a.classList.contains('vibe-pill')) return;
+    const isCta = a.classList.contains('btn-primary')
+      || a.classList.contains('nav-cta')
+      || a.classList.contains('plan-cta');
+    track('click', {
+      label: (a.textContent || '').trim().slice(0, 40),
+      cta: isCta,
+      href: a.href || null,
+    });
+  });
+
+  // FAQ engagement
+  document.querySelectorAll('.faq details').forEach((d) => {
+    d.addEventListener('toggle', () => {
+      if (d.open) track('faq_open', {
+        q: (d.querySelector('summary')?.textContent || '').trim().slice(0, 70),
+      });
+    });
+  });
+
+  // Section-view tracking (which sections actually got eyes)
+  if ('IntersectionObserver' in window) {
+    const seen = new Set();
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const tag = e.target.querySelector('.section-tag')?.textContent?.trim()
+          || e.target.id || e.target.className.split(' ')[0] || 'section';
+        if (seen.has(tag)) continue;
+        seen.add(tag);
+        track('section_view', { section: tag });
+      }
+    }, { threshold: 0.45 });
+    document.querySelectorAll('section.section, .video-hero, .presale-banner, .cta-block')
+      .forEach((s) => io.observe(s));
+  }
+
+  // Dwell time
+  let lastActive = Date.now();
+  let totalDwell = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      totalDwell += Date.now() - lastActive;
+      track('dwell', { ms: Date.now() - lastActive, total_ms: totalDwell });
+    } else {
+      lastActive = Date.now();
+    }
+  });
+  addEventListener('pagehide', () => {
+    totalDwell += Date.now() - lastActive;
+    track('session_end', { dwell_ms: totalDwell });
+  });
+
+  /* ---------- consent banner ---------- */
+  const banner = document.getElementById('consent-banner');
+  if (banner && localStorage.getItem(STORE.consent) == null) {
+    setTimeout(() => banner.classList.add('show'), 900);
+  }
+  document.getElementById('consent-yes')?.addEventListener('click', () => {
+    localStorage.setItem(STORE.consent, 'yes');
+    banner.classList.remove('show');
+    track('consent', { value: 'yes' });
+    track('page_view', { path: location.pathname, visits, retroactive: true });
+  });
+  document.getElementById('consent-no')?.addEventListener('click', () => {
+    localStorage.setItem(STORE.consent, 'no');
+    banner.classList.remove('show');
+    localStorage.removeItem(STORE.log);
+  });
+})();
 </script>
 
 </body>
