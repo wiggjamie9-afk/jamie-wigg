@@ -129,6 +129,52 @@ async function testFullRender(name, extraArgs) {
   return { v, a, duration };
 }
 
+// Run the CLI expecting a non-zero exit. Confirms the printed error contains
+// `expectMsgFragment`. Used to lock in argument-validation rejections so a
+// future refactor can't silently re-accept bad input.
+async function expectCliReject(label, extraArgs, expectMsgFragment) {
+  try {
+    await run("node", ["bin/rhythmix-studio.mjs", ...extraArgs]);
+    fail(`${label}: expected non-zero exit, got success`);
+  } catch (err) {
+    const msg = err.message ?? String(err);
+    if (msg.includes(expectMsgFragment)) ok(`${label}: rejected with "${expectMsgFragment}"`);
+    else fail(`${label}: rejected but message missing "${expectMsgFragment}"`, err);
+  }
+}
+
+async function testArgValidation() {
+  header("argument validation");
+  // Each case = a typo a real user could make. Today's behavior is "throw
+  // a single-line error before any work starts"; we lock that in so a
+  // future refactor doesn't silently accept (and ruin the render).
+  const base = ["plan", TRACK, "--dry-run"];
+  await expectCliReject("--bpm without value",      [...base, "--theme", "x", "--bpm"],                   "--bpm requires a numeric value");
+  await expectCliReject("--bpm non-numeric",        [...base, "--theme", "x", "--bpm", "abc"],            "--bpm must be a positive number");
+  await expectCliReject("--bpm negative",           [...base, "--theme", "x", "--bpm", "-50"],            "--bpm must be a positive number");
+  await expectCliReject("--theme without value",    [...base, "--theme", "--bpm", "120"],                  "--theme requires a value");
+  await expectCliReject("--aspect invalid",         [...base, "--theme", "x", "--bpm", "120", "--aspect", "4:3"],     "--aspect must be one of");
+  await expectCliReject("--model unknown",          [...base, "--theme", "x", "--bpm", "120", "--model", "kling-v99"], "--model \"kling-v99\" is unknown");
+  await expectCliReject("--source invalid",         [...base, "--theme", "x", "--bpm", "120", "--source", "banana"],   "--source must be one of");
+  await expectCliReject("--concurrency 0",          ["render", TRACK, "--theme", "x", "--bpm", "120", "--source", "local", "--clips-dir", CLIPS_DIR, "--concurrency", "0", "--out", join(OUT_BASE, "validate-c0")], "--concurrency must be a positive integer");
+  await expectCliReject("--concurrency abc",        ["render", TRACK, "--theme", "x", "--bpm", "120", "--source", "local", "--clips-dir", CLIPS_DIR, "--concurrency", "abc", "--out", join(OUT_BASE, "validate-cs")], "--concurrency must be a positive integer");
+}
+
+async function testPlanPortability() {
+  header("plan.json portability");
+  // A saved plan should carry an absolute audio path so the user can
+  // `cd somewhere/else && render-from-plan` without ffmpeg failing.
+  const outDir = join(OUT_BASE, "portability");
+  await run("node", ["bin/rhythmix-studio.mjs", "plan", TRACK,
+    "--theme", "portability", "--bpm", "120", "--flat-plan", "--dry-run",
+    "--out", outDir,
+  ]);
+  const planPath = join(outDir, "plan.json");
+  const plan = JSON.parse(await import("node:fs/promises").then((m) => m.readFile(planPath, "utf8")));
+  if (plan.audio.path && plan.audio.path.startsWith("/")) ok("plan.audio.path is absolute");
+  else fail(`plan.audio.path is "${plan.audio.path}", expected absolute path`);
+}
+
 async function main() {
   if (!existsSync(TRACK)) {
     console.error(`Missing test track: ${TRACK}`);
@@ -150,6 +196,8 @@ async function main() {
   await testFullRender("portrait", ["--aspect", "9:16"]);
   await testFullRender("square", ["--aspect", "1:1"]);
   await testFullRender("no-transitions", ["--aspect", "16:9", "--no-transitions"]);
+  await testArgValidation();
+  await testPlanPortability();
 
   console.log(`\n${passed} passed, ${failed} failed.`);
   process.exit(failed === 0 ? 0 : 1);

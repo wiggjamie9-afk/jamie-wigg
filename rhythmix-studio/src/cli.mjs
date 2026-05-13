@@ -30,6 +30,76 @@ function parseArgs(argv) {
   return args;
 }
 
+// ---- Argument validation ------------------------------------------------
+//
+// parseArgs is intentionally tolerant — it just shuttles strings off the
+// command line into an object. These helpers run *after* parsing and turn
+// bad input into a clear single-line error before the pipeline runs, so a
+// user typo never makes it as far as ffmpeg / Replicate / a half-built MP4.
+
+const VALID_ASPECTS = new Set(["16:9", "9:16", "1:1"]);
+const VALID_SOURCES = new Set(["replicate", "pexels", "local"]);
+
+function requireStringValue(args, flag) {
+  const v = args[flag];
+  if (v === undefined) return undefined;
+  if (v === true) {
+    throw new Error(`--${flag} requires a value, e.g. --${flag} "..."`);
+  }
+  return String(v);
+}
+
+function requirePositiveNumber(args, flag) {
+  const raw = args[flag];
+  if (raw === undefined) return undefined;
+  if (raw === true) {
+    throw new Error(`--${flag} requires a numeric value, e.g. --${flag} 120`);
+  }
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error(`--${flag} must be a positive number (got "${raw}")`);
+  }
+  return n;
+}
+
+function validateAspect(args) {
+  const a = requireStringValue(args, "aspect") ?? "16:9";
+  if (!VALID_ASPECTS.has(a)) {
+    throw new Error(`--aspect must be one of ${[...VALID_ASPECTS].join(", ")} (got "${a}")`);
+  }
+  return a;
+}
+
+function validateSource(args) {
+  const s = requireStringValue(args, "source") ?? "replicate";
+  if (!VALID_SOURCES.has(s)) {
+    throw new Error(`--source must be one of ${[...VALID_SOURCES].join(", ")} (got "${s}")`);
+  }
+  return s;
+}
+
+function validateModel(args) {
+  const m = requireStringValue(args, "model");
+  if (m === undefined) return undefined;
+  if (!MODELS[m]) {
+    throw new Error(`--model "${m}" is unknown. Available: ${Object.keys(MODELS).join(", ")}`);
+  }
+  return m;
+}
+
+function validateConcurrency(args) {
+  const raw = args.concurrency;
+  if (raw === undefined) return 2;
+  if (raw === true) {
+    throw new Error(`--concurrency requires a numeric value, e.g. --concurrency 3`);
+  }
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error(`--concurrency must be a positive integer (got "${raw}")`);
+  }
+  return n;
+}
+
 function printHelp() {
   console.log(`
 rhythmix-studio — turn a track into a cinematic music video
@@ -79,19 +149,27 @@ async function cmdPlan(args) {
   const track = args._[1];
   if (!track) throw new Error("Missing <track> path. Try: rhythmix-studio plan ./song.mp3 --theme \"...\"");
   if (!existsSync(track)) throw new Error(`Track not found: ${track}`);
-  if (!args.theme) throw new Error("--theme is required");
+  const theme = requireStringValue(args, "theme");
+  if (!theme) throw new Error("--theme is required");
 
-  const source = args.source ?? "replicate";
+  const source = validateSource(args);
+  const aspectRatio = validateAspect(args);
+  const modelPreference = validateModel(args);
+  const bpmFlag = requirePositiveNumber(args, "bpm");
 
   log.header("RHYTHMIX Studio — Plan");
   log.info(`Track:  ${track}`);
-  log.info(`Theme:  ${args.theme}`);
+  log.info(`Theme:  ${theme}`);
   log.info(`Source: ${source}`);
 
+  // Store the resolved absolute path so a saved plan.json is portable: the
+  // user can move it (or run `render-from-plan` from a different cwd) without
+  // ffmpeg failing because the original "./song.mp3" no longer resolves.
   const audio = await probeAudio(track);
+  audio.path = resolve(audio.path);
   log.ok(`Duration: ${audio.duration.toFixed(2)}s @ ${audio.sampleRate}Hz, ${audio.channels}ch (${audio.codec})`);
 
-  let bpm = args.bpm ? Number(args.bpm) : undefined;
+  let bpm = bpmFlag;
   if (!bpm) {
     const detected = await detectBpm(track);
     if (detected) {
@@ -117,7 +195,6 @@ async function cmdPlan(args) {
     }
   }
 
-  const aspectRatio = args.aspect ?? "16:9";
   const dims = aspectRatio === "9:16"
     ? { width: 720, height: 1280 }
     : aspectRatio === "1:1"
@@ -126,10 +203,10 @@ async function cmdPlan(args) {
 
   const plan = buildPlan({
     audio,
-    theme: args.theme,
+    theme,
     bpm,
     structure,
-    modelPreference: args.model,
+    modelPreference,
     aspectRatio,
     width: dims.width,
     height: dims.height,
@@ -309,7 +386,7 @@ async function cmdRender(args) {
   requireSourceCredentials(source);
 
   log.header(`Generating scenes (source: ${source})`);
-  const concurrency = Number(args.concurrency ?? 2);
+  const concurrency = validateConcurrency(args);
   const sceneFiles = await generateAll({ plan, outDir, concurrency, source, clipsDir: args["clips-dir"] });
 
   log.header("Composing final video");
@@ -324,13 +401,17 @@ async function cmdRenderFromPlan(args) {
   const planPath = args._[1];
   if (!planPath) throw new Error("Missing <plan.json> path");
   const planData = JSON.parse(await readFile(planPath, "utf8"));
-  const source = args.source ?? planData.source ?? "replicate";
+  const sourceFromArgs = requireStringValue(args, "source");
+  if (sourceFromArgs && !VALID_SOURCES.has(sourceFromArgs)) {
+    throw new Error(`--source must be one of ${[...VALID_SOURCES].join(", ")} (got "${sourceFromArgs}")`);
+  }
+  const source = sourceFromArgs ?? planData.source ?? "replicate";
   const outDir = args.out ? resolve(args.out) : resolve(planPath, "..");
 
   requireSourceCredentials(source);
 
   log.header(`Generating scenes from saved plan (source: ${source})`);
-  const concurrency = Number(args.concurrency ?? 2);
+  const concurrency = validateConcurrency(args);
   const sceneFiles = await generateAll({ plan: planData, outDir, concurrency, source, clipsDir: args["clips-dir"] });
 
   log.header("Composing final video");
