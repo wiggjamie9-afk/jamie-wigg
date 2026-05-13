@@ -10,7 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Reference for video pipeline** → `rhythmix-overview-60s/` is the canonical 60s landscape example.
 - **Brand identity** → `rhythmix-teaser-60s/DESIGN.md` (palette, typography, motion eases).
 - **Cloud-AI tools the user actually uses** → `CREATIVE-AI-STACK.md` (iPhone-driven; user has no desktop).
-- **Replicate + ElevenLabs MCP server (image/video/music/voice tools)** → `.claude/mcp/creative-stack/`. Run `npm install` in that folder once and add the `mcpServers` block from its README to wire it up. Requires API tokens.
+- **Replicate + ElevenLabs MCP server (image/video/music/voice tools)** → `.claude/mcp/creative-stack/`. Deps installed; registered in `.mcp.json`. To use, copy `.claude/settings.local.json.example` → `.claude/settings.local.json` and fill in `REPLICATE_API_TOKEN` + `ELEVENLABS_API_KEY`. The `replicate` skill picks the right tool/model for image, video, or music assets in this repo's style.
+- **Domain language + decisions** → `CONTEXT.md` (Promo, Cut, Narration, Hook) and `docs/adr/` (current: ADR-0001 HyperFrames over Remotion). Read these before reasoning about the pipeline — they prevent re-inventing terms or "fixing" the dormant Remotion setup in `video/`.
 - **Higgsfield AI MCP server (Soul text-to-image, DOP image-to-video, talking-head, character refs)** → registered in `.mcp.json` as `higgsfield`. Install with `pip install git+https://github.com/geopopos/geo_higgsfield_ai_mcp`. Put `HIGGSFIELD_API_KEY` and `HIGGSFIELD_SECRET` in `.env` at the repo root (gitignored). To use it *with* HyperFrames in a single flow, invoke the `higgsfield-to-hyperframes` skill — it owns the prompt → poll → download → wire-in pipeline.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
 
@@ -54,14 +55,26 @@ When extending: add new `<Composition>` registrations in `Root.tsx` and implemen
 
 ## Skills
 
-Skills are consumed by the Claude Code harness via `.claude/skills/`. Most are symlinks pointing into `.agents/skills/`, which is the editable copy. `skills-lock.json` records the upstream `heygen-com/hyperframes` commit hash for each — do **not** hand-edit synced skills; update via the upstream source and re-record the hash.
+Skills live in two shapes in this repo:
 
-Available skills:
+- **Synced / hand-written** — source in `.agents/skills/<name>/`, symlinked into `.claude/skills/<name>`. `skills-lock.json` records upstream commit hashes for the synced ones from `heygen-com/hyperframes`. Don't hand-edit synced skills; update via upstream and re-record the hash.
+- **Installed via the `skills` CLI** — copied directly into `.claude/skills/<name>/` by `npx skills add ...`. Tracked in `skills-lock.json` with `source` = the GitHub slug. Currently the 14 `mattpocock/skills` engineering + productivity skills.
+
+Pipeline skills:
 - `hyperframes`, `hyperframes-cli`, `hyperframes-registry` — HyperFrames HTML video composition workflow.
 - `remotion`, `remotion-to-hyperframes` — Remotion authoring + Remotion→HyperFrames porting.
 - `website-to-hyperframes` — capture a website into a HyperFrames video.
-- `higgsfield-to-hyperframes` — bridge between the Higgsfield MCP server (AI imagery + image-to-video + talking heads + character refs) and a HyperFrames composition. Owns the prompt → poll → download → wire-in pipeline. Reach for it when a HyperFrames scene needs photorealistic stills or short AI-animated clips instead of pure CSS/SVG.
+- `higgsfield-to-hyperframes` — Higgsfield MCP → HyperFrames composition bridge. Owns prompt → poll → download → wire-in. Reach for it when a HyperFrames scene needs photorealistic stills or short AI-animated clips.
+- `replicate` — Replicate MCP tool/model picker for image / video / music assets. Reach for it when a Cut needs an `<img>`, `<video>`, or `<audio>` slot filled (defaults: FLUX 1.1 Pro / HunyuanVideo / MusicGen).
 - `gsap` — GSAP animation reference for HyperFrames compositions.
+
+Engineering skills (Matt Pocock bundle — invoked as slash commands):
+- `/grill-with-docs` — interview a plan; updates `CONTEXT.md` + `docs/adr/` inline.
+- `/diagnose` — disciplined bug/perf-regression loop.
+- `/tdd` — red-green-refactor for a feature or fix.
+- `/to-prd`, `/to-issues`, `/triage` — chat → PRD → issues → triage workflow on GitHub.
+- `/improve-codebase-architecture`, `/zoom-out` — refactor/navigation aids.
+- `/prototype`, `/grill-me`, `/handoff`, `/caveman`, `/write-a-skill` — productivity.
 
 If the user asks for HTML-based video, captions/subtitles, audio-reactive visuals, scene transitions, TTS, or website→video flows, reach for the HyperFrames skills rather than Remotion.
 
@@ -78,3 +91,17 @@ If the user asks for HTML-based video, captions/subtitles, audio-reactive visual
 - Don't reduce the dependency lockfile churn — keep `video/package-lock.json` in sync with `package.json`.
 - Don't commit `node_modules/`, `.remotion/`, or `graphify-out/cache/` (already covered by `.gitignore` / `.graphifyignore`).
 - Skill edits go in `.agents/skills/<name>/` (the symlink target), never in the `.claude/skills/` symlink path.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `wiggjamie9-afk/jamie-wigg` via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
