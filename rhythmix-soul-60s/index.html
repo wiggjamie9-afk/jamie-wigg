@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="gsap.min.js"></script>
+    <script src="three.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #08050d;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        color: #ffffff;
+      }
+      /* Three.js canvas as a persistent background layer */
+      #three-bg { position: absolute; inset: 0; }
+      #three-canvas {
+        position: absolute; inset: 0;
+        width: 1920px; height: 1080px;
+        display: block;
+      }
+      .scene { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+      .scene-inner {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        padding: 80px 160px;
+        box-sizing: border-box;
+        /* Semi-transparent so the Three.js character shows through */
+        background: linear-gradient(180deg, rgba(8,5,13,0.55) 0%, rgba(8,5,13,0.78) 60%, rgba(8,5,13,0.92) 100%);
+      }
+      .scene-bg-radial {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(900px 700px at 22% 28%, rgba(124, 58, 237, 0.22), transparent 60%),
+          radial-gradient(900px 700px at 78% 72%, rgba(255, 31, 90, 0.18), transparent 65%);
+        pointer-events: none;
+      }
+      .grid-overlay {
+        position: absolute; inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 80px 80px;
+        pointer-events: none;
+      }
+      .label-mono {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 22px; letter-spacing: 6px;
+        color: #e6e6ee; text-transform: uppercase;
+      }
+      .gradient-text {
+        background: linear-gradient(135deg, #ff7aa6, #e0c0ff 50%, #8af6ff);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
+      .gradient-green {
+        background: linear-gradient(135deg, #6effc0, #8af6ff);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
+      .gradient-hot {
+        background: linear-gradient(135deg, #ff1f5a, #ff7aa6 50%, #f5c000);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
+
+      /* Scene 1 — HOOK + REVEAL */
+      #scene1 .hook-stack {
+        position: relative; width: 100%; min-height: 320px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 40px;
+      }
+      #scene1 .hook {
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 180px;
+        letter-spacing: -4px; word-spacing: 0.25em;
+        line-height: 1; text-align: center;
+      }
+      #scene1 .hook em {
+        font-style: normal;
+        background: linear-gradient(135deg, #ff1f5a, #ff7aa6 50%, #f5c000);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      #scene1 .reveal { opacity: 0; text-align: center; }
+      #scene1 .reveal-badge {
+        display: inline-flex; align-items: center; gap: 12px;
+        padding: 12px 26px;
+        border: 1px solid rgba(255, 31, 90, 0.55);
+        background: rgba(255, 31, 90, 0.18);
+        border-radius: 999px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px; letter-spacing: 5px;
+        color: #ffd9e8; text-transform: uppercase;
+        margin-bottom: 36px;
+      }
+      #scene1 .reveal-badge .dot {
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #ff1f5a; box-shadow: 0 0 22px #ff1f5a;
+      }
+      #scene1 .wordmark {
+        font-weight: 800; font-size: 240px;
+        line-height: 0.9; letter-spacing: -8px;
+        margin-bottom: 28px;
+      }
+      #scene1 .tagline {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 28px; letter-spacing: 9px;
+        color: #ffffff; text-transform: uppercase;
+      }
+
+      /* Scene 2 — PILLARS */
+      #scene2 .eyebrow { margin-bottom: 40px; }
+      #scene2 .pillars {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+        width: 100%; max-width: 1500px;
+      }
+      #scene2 .pillar {
+        background: linear-gradient(135deg, rgba(40, 30, 60, 0.92), rgba(28, 22, 42, 0.55));
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 22px; padding: 30px 36px;
+        display: flex; align-items: center; gap: 28px;
+      }
+      #scene2 .pillar-num {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 800; font-size: 56px; line-height: 1; min-width: 92px;
+      }
+      #scene2 .pillar-num.pink { color: #ffaedb; }
+      #scene2 .pillar-num.green { color: #6effc0; }
+      #scene2 .pillar-num.cyan { color: #8af6ff; }
+      #scene2 .pillar-num.gold { color: #ffe070; }
+      #scene2 .pillar-text { display: flex; flex-direction: column; gap: 4px; }
+      #scene2 .pillar-name { font-weight: 700; font-size: 56px; letter-spacing: -1.5px; }
+      #scene2 .pillar-desc {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px; letter-spacing: 2px;
+        color: #cfcfd8; text-transform: uppercase;
+      }
+
+      /* Scene 3 — STEPS */
+      #scene3 .eyebrow { margin-bottom: 60px; }
+      #scene3 .steps {
+        display: flex; flex-direction: row; gap: 36px;
+        width: 100%; align-items: stretch; justify-content: center;
+        max-width: 1600px;
+      }
+      #scene3 .step {
+        flex: 1; display: flex; flex-direction: column; align-items: center;
+        gap: 24px; padding: 36px 22px;
+        background: linear-gradient(135deg, rgba(40, 30, 60, 0.7), rgba(28, 22, 42, 0.35));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 22px;
+      }
+      #scene3 .step-circle {
+        width: 120px; height: 120px; border-radius: 50%;
+        background: linear-gradient(135deg, #1a1325, #2a2040);
+        border: 2px solid rgba(255, 255, 255, 0.18);
+        display: flex; align-items: center; justify-content: center;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 800; font-size: 44px; flex-shrink: 0;
+      }
+      #scene3 .step-circle.cyan { color: #8af6ff; border-color: rgba(138, 246, 255, 0.55); box-shadow: 0 0 40px rgba(138, 246, 255, 0.3); }
+      #scene3 .step-circle.purple { color: #e0c0ff; border-color: rgba(224, 192, 255, 0.55); box-shadow: 0 0 40px rgba(224, 192, 255, 0.3); }
+      #scene3 .step-circle.pink { color: #ff7aa6; border-color: rgba(255, 122, 166, 0.55); box-shadow: 0 0 40px rgba(255, 122, 166, 0.3); }
+      #scene3 .step-text { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+      #scene3 .step-name { font-weight: 800; font-size: 78px; letter-spacing: -2.5px; line-height: 1; }
+      #scene3 .step-desc {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px; letter-spacing: 3px;
+        color: #cfcfd8; text-transform: uppercase; text-align: center;
+      }
+
+      /* Scene 4 — AUDIENCE */
+      #scene4 .eyebrow { margin-bottom: 50px; }
+      #scene4 .audiences {
+        display: flex; flex-direction: column;
+        gap: 14px; width: 100%; align-items: center;
+      }
+      #scene4 .aud {
+        font-weight: 800; font-size: 104px;
+        letter-spacing: -3.5px; line-height: 1; text-align: center;
+      }
+
+      /* Scene 5 — CTA */
+      #scene5 .badge {
+        display: inline-flex; align-items: center; gap: 14px;
+        padding: 14px 28px;
+        border: 1px solid rgba(110, 255, 192, 0.55);
+        background: rgba(110, 255, 192, 0.14);
+        border-radius: 999px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 22px; letter-spacing: 5px;
+        color: #b6ffe0; text-transform: uppercase;
+        margin-bottom: 50px;
+      }
+      #scene5 .badge .dot {
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #6effc0; box-shadow: 0 0 22px #6effc0;
+      }
+      #scene5 .h2 {
+        font-weight: 800; font-size: 230px; letter-spacing: -9px; line-height: 1;
+        margin-bottom: 28px; text-align: center;
+      }
+      #scene5 .deck {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 26px; letter-spacing: 6px;
+        color: #ffffff; text-transform: uppercase;
+        margin-bottom: 56px; text-align: center; line-height: 1.5;
+      }
+      #scene5 .wordmark {
+        font-weight: 800; font-size: 180px;
+        letter-spacing: -6px; line-height: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="60"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Narration audio -->
+      <audio
+        id="narration"
+        class="clip"
+        data-start="1.5"
+        data-duration="33.5"
+        data-track-index="0"
+        data-volume="1"
+        src="narration.wav"
+      ></audio>
+
+      <!-- Persistent Three.js background (track 1) — runs entire 60s -->
+      <div id="three-bg" class="scene clip" data-start="0" data-duration="60" data-track-index="1">
+        <canvas id="three-canvas" width="1920" height="1080"></canvas>
+      </div>
+
+      <!-- Scene 1: HOOK + REVEAL  (0–9.5s) -->
+      <div id="scene1" class="scene clip" data-start="0" data-duration="9.5" data-track-index="2">
+        <div class="scene-inner" id="scene1-inner">
+          <div class="scene-bg-radial"></div>
+          <div class="grid-overlay"></div>
+          <div class="hook-stack">
+            <div class="hook" id="hook-1">A&nbsp;<em>spark.</em></div>
+            <div class="hook" id="hook-2" style="opacity:0;">A&nbsp;<em>pulse.</em></div>
+            <div class="hook" id="hook-3" style="opacity:0;">A&nbsp;<em>heartbeat.</em></div>
+          </div>
+          <div class="reveal" id="reveal">
+            <div class="reveal-badge"><span class="dot"></span>Meet</div>
+            <div class="wordmark gradient-text">RHYTHMIX</div>
+            <div class="tagline">Where your spark becomes music</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 2: PILLARS  (9–20.5s) -->
+      <div id="scene2" class="scene clip" data-start="9" data-duration="11.5" data-track-index="3">
+        <div class="scene-inner" id="scene2-inner">
+          <div class="scene-bg-radial"></div>
+          <div class="grid-overlay"></div>
+          <div class="eyebrow label-mono">Four moves bring it to life</div>
+          <div class="pillars">
+            <div class="pillar"><div class="pillar-num pink">01</div><div class="pillar-text"><div class="pillar-name">Generate</div><div class="pillar-desc">Sound from idea</div></div></div>
+            <div class="pillar"><div class="pillar-num green">02</div><div class="pillar-text"><div class="pillar-name">Master</div><div class="pillar-desc">Feels like you</div></div></div>
+            <div class="pillar"><div class="pillar-num cyan">03</div><div class="pillar-text"><div class="pillar-name">Distribute</div><div class="pillar-desc">Every store · stream · fan</div></div></div>
+            <div class="pillar"><div class="pillar-num gold">04</div><div class="pillar-text"><div class="pillar-name">Earn</div><div class="pillar-desc">From the first play</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3: STEPS  (20–25.5s) -->
+      <div id="scene3" class="scene clip" data-start="20" data-duration="5.5" data-track-index="4">
+        <div class="scene-inner" id="scene3-inner">
+          <div class="scene-bg-radial"></div>
+          <div class="grid-overlay"></div>
+          <div class="eyebrow label-mono">Three simple steps</div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-circle cyan">01</div>
+              <div class="step-text"><div class="step-name">Describe</div><div class="step-desc">What you hear</div></div>
+            </div>
+            <div class="step">
+              <div class="step-circle purple">02</div>
+              <div class="step-text"><div class="step-name">Refine</div><div class="step-desc">Until it's yours</div></div>
+            </div>
+            <div class="step">
+              <div class="step-circle pink">03</div>
+              <div class="step-text"><div class="step-name">Release</div><div class="step-desc">To the world</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 4: AUDIENCE  (25–31s) -->
+      <div id="scene4" class="scene clip" data-start="25" data-duration="6" data-track-index="5">
+        <div class="scene-inner" id="scene4-inner">
+          <div class="scene-bg-radial"></div>
+          <div class="grid-overlay"></div>
+          <div class="eyebrow label-mono">For</div>
+          <div class="audiences">
+            <div class="aud"><span class="gradient-text">Bedroom</span> artists.</div>
+            <div class="aud"><span class="gradient-text">First-time</span> songwriters.</div>
+            <div class="aud"><span class="gradient-text">Solo</span> creators.</div>
+            <div class="aud"><span class="gradient-green">Anyone</span> with a story.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 5: CTA  (30.5–60s, final) -->
+      <div id="scene5" class="scene clip" data-start="30.5" data-duration="29.5" data-track-index="6">
+        <div class="scene-inner" id="scene5-inner">
+          <div class="scene-bg-radial"></div>
+          <div class="grid-overlay"></div>
+          <div class="badge"><span class="dot"></span>Waitlist open</div>
+          <div class="h2"><span class="gradient-hot">Be first.</span></div>
+          <div class="deck">Your spark is already inside you.<br/>Just be first in line.</div>
+          <div class="wordmark gradient-text">RHYTHMIX</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GSAP timeline for the overlay scenes -->
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // Scene 1 — HOOK + REVEAL (0–9.5s)
+      tl.from("#hook-1", { y: 60, opacity: 0, duration: 0.55, ease: "expo.out" }, 1.0);
+      tl.to("#hook-1", { opacity: 0, y: -40, duration: 0.35, ease: "power2.in" }, 2.3);
+      tl.fromTo("#hook-2", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "expo.out" }, 2.5);
+      tl.to("#hook-2", { opacity: 0, y: -40, duration: 0.35, ease: "power2.in" }, 3.5);
+      tl.fromTo("#hook-3", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "expo.out" }, 3.7);
+      tl.to("#hook-3", { opacity: 0, y: -40, duration: 0.35, ease: "power2.in" }, 5.0);
+      tl.to(".hook-stack", { opacity: 0, duration: 0.25, ease: "power1.inOut" }, 5.15);
+      tl.fromTo("#reveal", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 5.4);
+      tl.from("#scene1 .reveal-badge", { y: -22, opacity: 0, duration: 0.5, ease: "power3.out" }, 5.5);
+      tl.from("#scene1 .wordmark", { y: 80, opacity: 0, scale: 0.92, duration: 0.85, ease: "expo.out" }, 5.7);
+      tl.from("#scene1 .tagline", { y: 22, opacity: 0, duration: 0.55, ease: "power2.out" }, 6.45);
+      tl.to("#scene1-inner", { opacity: 0, duration: 0.5, ease: "power1.inOut" }, 9.0);
+
+      // Scene 2 — PILLARS
+      tl.from("#scene2-inner", { opacity: 0, duration: 0.5, ease: "power1.inOut" }, 9.0);
+      tl.from("#scene2 .eyebrow", { y: -22, opacity: 0, duration: 0.45, ease: "power2.out" }, 9.3);
+      tl.from("#scene2 .pillar", { y: 60, opacity: 0, duration: 0.55, ease: "expo.out", stagger: 0.5 }, 9.7);
+      tl.from("#scene2 .pillar-num", { scale: 0.6, opacity: 0, duration: 0.5, ease: "back.out(1.6)", stagger: 0.5 }, 9.95);
+      tl.to("#scene2-inner", { opacity: 0, duration: 0.5, ease: "power1.inOut" }, 20.0);
+
+      // Scene 3 — STEPS
+      tl.from("#scene3-inner", { opacity: 0, duration: 0.5, ease: "power1.inOut" }, 20.0);
+      tl.from("#scene3 .eyebrow", { y: -22, opacity: 0, duration: 0.4, ease: "power2.out" }, 20.15);
+      tl.from("#scene3 .step", { y: 60, opacity: 0, duration: 0.5, ease: "expo.out", stagger: 0.35 }, 20.4);
+      tl.from("#scene3 .step-circle", { scale: 0.5, opacity: 0, duration: 0.5, ease: "back.out(1.7)", stagger: 0.35 }, 20.55);
+      tl.to("#scene3-inner", { opacity: 0, duration: 0.5, ease: "power1.inOut" }, 25.0);
+
+      // Scene 4 — AUDIENCE
+      tl.from("#scene4-inner", { opacity: 0, duration: 0.5, ease: "power1.inOut" }, 25.0);
+      tl.from("#scene4 .eyebrow", { y: -22, opacity: 0, duration: 0.4, ease: "power2.out" }, 25.25);
+      tl.from("#scene4 .aud", { y: 70, opacity: 0, duration: 0.55, ease: "expo.out", stagger: 0.45 }, 25.55);
+      tl.to("#scene4-inner", { opacity: 0, duration: 0.5, ease: "power1.inOut" }, 30.5);
+
+      // Scene 5 — CTA
+      tl.from("#scene5-inner", { opacity: 0, duration: 0.5, ease: "power1.inOut" }, 30.5);
+      tl.from("#scene5 .badge", { y: -24, opacity: 0, duration: 0.55, ease: "power3.out" }, 30.9);
+      tl.from("#scene5 .h2", { y: 70, opacity: 0, scale: 0.9, duration: 0.95, ease: "expo.out" }, 31.5);
+      tl.from("#scene5 .deck", { opacity: 0, duration: 0.6, ease: "power1.out" }, 32.7);
+      tl.from("#scene5 .wordmark", { scale: 0.82, opacity: 0, duration: 0.85, ease: "back.out(1.4)" }, 33.5);
+      tl.to("#scene5 .wordmark", { scale: 1.04, duration: 5.0, ease: "sine.inOut", yoyo: true, repeat: 3 }, 40.0);
+      tl.to("#scene5-inner", { opacity: 0, duration: 0.8, ease: "power2.inOut" }, 59.2);
+
+      window.__timelines["main"] = tl;
+    </script>
+
+    <!-- Three.js procedural animated character + particle scene -->
+    <script>
+      // Seeded PRNG (mulberry32) — deterministic across renders
+      function mulberry32(a) {
+        return function () {
+          a |= 0; a = a + 0x6D2B79F5 | 0;
+          var t = a;
+          t = Math.imul(t ^ t >>> 15, t | 1);
+          t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+      }
+      var rand = mulberry32(0xC0FFEE);
+
+      var canvas = document.getElementById('three-canvas');
+      var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+      renderer.setSize(1920, 1080, false);
+      renderer.setPixelRatio(1);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+
+      var scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x08050d, 0.06);
+
+      var camera = new THREE.PerspectiveCamera(38, 1920 / 1080, 0.1, 100);
+      camera.position.set(0, 1.45, 4.2);
+      camera.lookAt(0, 1.0, 0);
+
+      // Lights — RHYTHMIX brand neons
+      scene.add(new THREE.AmbientLight(0x331a4a, 0.5));
+      var magenta = new THREE.PointLight(0xff1f5a, 14, 12);
+      magenta.position.set(-2.4, 1.8, 1.6);
+      scene.add(magenta);
+      var cyan = new THREE.PointLight(0x00d8ff, 14, 12);
+      cyan.position.set(2.4, 1.8, 1.6);
+      scene.add(cyan);
+      var purple = new THREE.PointLight(0x7c3aed, 8, 14);
+      purple.position.set(0, 3.0, -1.6);
+      scene.add(purple);
+
+      // Neon-emissive material factory
+      function neonMat(emissiveHex, baseHex) {
+        return new THREE.MeshStandardMaterial({
+          color: baseHex !== undefined ? baseHex : 0x100820,
+          emissive: emissiveHex,
+          emissiveIntensity: 1.1,
+          roughness: 0.35,
+          metalness: 0.4
+        });
+      }
+
+      // Procedural humanoid figure — built from primitives, animated via bone-style rotation
+      var figure = new THREE.Group();
+      figure.position.set(0, 0, 0);
+
+      var matBody = neonMat(0x7c3aed, 0xe8d8ff);
+      var matLimb = neonMat(0xff1f5a, 0xffe0ec);
+      var matHead = neonMat(0x00d8ff, 0xd0f7ff);
+
+      // Torso
+      var torso = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.18, 0.45, 8, 16),
+        matBody
+      );
+      torso.position.y = 0.95;
+      figure.add(torso);
+
+      // Head
+      var head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.14, 24, 16),
+        matHead
+      );
+      head.position.y = 1.42;
+      figure.add(head);
+
+      // Shoulders/hips pivot groups so we can rotate from the joint
+      function limb(length, pivotY, pivotX) {
+        var g = new THREE.Group();
+        g.position.set(pivotX, pivotY, 0);
+        var mesh = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.05, length, 6, 12),
+          matLimb
+        );
+        mesh.position.y = -length / 2 - 0.05;
+        g.add(mesh);
+        return g;
+      }
+      var leftArm = limb(0.5, 1.22, -0.22);
+      var rightArm = limb(0.5, 1.22, 0.22);
+      var leftLeg = limb(0.55, 0.68, -0.1);
+      var rightLeg = limb(0.55, 0.68, 0.1);
+      figure.add(leftArm); figure.add(rightArm);
+      figure.add(leftLeg); figure.add(rightLeg);
+
+      // Subtle glow halo behind the figure
+      var halo = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.2, 2.8),
+        new THREE.MeshBasicMaterial({
+          color: 0x7c3aed,
+          transparent: true,
+          opacity: 0.18,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        })
+      );
+      halo.position.set(0, 1.0, -0.6);
+      figure.add(halo);
+
+      scene.add(figure);
+
+      // Particle field — neon "data" drifting around the character
+      var particleCount = 1800;
+      var particlePositions = new Float32Array(particleCount * 3);
+      var particleSeeds = new Float32Array(particleCount);
+      for (var i = 0; i < particleCount; i++) {
+        var r = 2.5 + rand() * 8;
+        var theta = rand() * Math.PI * 2;
+        var y = (rand() - 0.3) * 6;
+        particlePositions[i * 3] = Math.cos(theta) * r;
+        particlePositions[i * 3 + 1] = y;
+        particlePositions[i * 3 + 2] = Math.sin(theta) * r - 1.5;
+        particleSeeds[i] = rand();
+      }
+      var particleGeo = new THREE.BufferGeometry();
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+      var particleMat = new THREE.PointsMaterial({
+        color: 0x8af6ff,
+        size: 0.045,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        sizeAttenuation: true
+      });
+      var particles = new THREE.Points(particleGeo, particleMat);
+      scene.add(particles);
+
+      // Pedestal ring under the character
+      var ringGeo = new THREE.RingGeometry(1.2, 1.32, 96);
+      var ringMat = new THREE.MeshBasicMaterial({
+        color: 0xff1f5a, transparent: true, opacity: 0.55,
+        blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+      });
+      var ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.01;
+      scene.add(ring);
+
+      // Cache particle base positions so we update y deterministically
+      var basePositions = particlePositions.slice();
+
+      function renderAt(t) {
+        // Camera dolly — slow push-in across the 60s
+        var dollyT = Math.min(t / 60, 1);
+        camera.position.z = 4.2 - dollyT * 1.2;
+        camera.position.y = 1.45 + Math.sin(t * 0.18) * 0.06;
+        camera.lookAt(0, 1.0, 0);
+
+        // Walk-cycle for the figure — sinusoidal limb swing
+        var cycle = t * 2.0;
+        leftArm.rotation.x = Math.sin(cycle) * 0.45;
+        rightArm.rotation.x = -Math.sin(cycle) * 0.45;
+        leftLeg.rotation.x = -Math.sin(cycle) * 0.4;
+        rightLeg.rotation.x = Math.sin(cycle) * 0.4;
+        figure.position.y = Math.abs(Math.sin(cycle)) * 0.04;
+        figure.rotation.y = Math.sin(t * 0.12) * 0.35;
+        head.rotation.y = Math.sin(t * 0.25) * 0.18;
+
+        // Halo breath
+        halo.material.opacity = 0.14 + Math.sin(t * 1.6) * 0.06;
+
+        // Particle drift — vertical scroll based on per-point seed + time
+        var pos = particleGeo.attributes.position;
+        for (var i = 0; i < particleCount; i++) {
+          var seed = particleSeeds[i];
+          var yBase = ((seed * 6 - 2) + t * (0.3 + seed * 0.4)) % 7;
+          pos.array[i * 3] = basePositions[i * 3];
+          pos.array[i * 3 + 1] = yBase - 2;
+          pos.array[i * 3 + 2] = basePositions[i * 3 + 2];
+        }
+        pos.needsUpdate = true;
+        particles.rotation.y = t * 0.04;
+
+        // Ring pulse synced to a slow breath
+        var pulse = 1 + Math.sin(t * 4.1) * 0.04;
+        ring.scale.setScalar(pulse);
+        ringMat.opacity = 0.4 + Math.sin(t * 2.4) * 0.2;
+
+        // Light cycling for energy
+        magenta.position.x = -2.4 + Math.cos(t * 0.7) * 0.6;
+        cyan.position.x = 2.4 + Math.cos(t * 0.7 + Math.PI) * 0.6;
+
+        renderer.render(scene, camera);
+      }
+
+      // Initial render
+      renderAt(0);
+      // Hook into timeline updates for every captured frame
+      var mainTl = window.__timelines["main"];
+      mainTl.eventCallback("onUpdate", function () {
+        renderAt(mainTl.time());
+      });
+    </script>
+  </body>
+</html>
