@@ -11,6 +11,8 @@ A curated learning path for building AI agents — videos, repositories, guides,
 - [Papers](#papers)
 - [Courses](#courses)
 - [Recommended Starting Path](#recommended-starting-path)
+- [Local Clones](#local-clones)
+- [Notes](#notes)
 
 ## Videos
 
@@ -25,17 +27,19 @@ A curated learning path for building AI agents — videos, repositories, guides,
 
 ## Repositories
 
-- **GenAI Agents (nirdiamant)** — Reference implementations and tutorials for generative AI agents. <https://github.com/nirdiamant/GenAI_Agents>
-- **Microsoft AI Agents for Beginners** — Microsoft's curriculum for getting started with AI agents. <https://github.com/microsoft/ai-agents-for-beginners>
+Repos with `[cloned]` are available locally under `learning/` (gitignored). To pull the rest, click through and clone manually, or run the commands in [Local Clones](#local-clones).
+
+- **GenAI Agents (nirdiamant)** `[cloned]` — Reference implementations and tutorials for generative AI agents. <https://github.com/nirdiamant/GenAI_Agents>
+- **Microsoft AI Agents for Beginners** `[cloned]` — Microsoft's curriculum for getting started with AI agents. <https://github.com/microsoft/ai-agents-for-beginners>
 - **Prompt Engineering Guide** — Comprehensive prompt engineering reference and patterns. <https://lnkd.in/gJjGbxQR>
 - **Hands-On Large Language Models** — Practical LLM exercises and code. <https://lnkd.in/dxaVF86w>
 - **GenAI Agents (alternate)** — Additional collection of generative AI agent examples. <https://lnkd.in/dEt72MEy>
 - **Made with ML** — Production-oriented machine learning curriculum. <https://lnkd.in/d2dMACMj>
-- **Hands-On AI Engineering (Sumanth077)** — End-to-end AI engineering projects. <https://github.com/Sumanth077/Hands-On-AI-Engineering>
+- **Hands-On AI Engineering (Sumanth077)** `[cloned]` — End-to-end AI engineering projects. <https://github.com/Sumanth077/Hands-On-AI-Engineering>
 - **Awesome Generative AI Guide** — Curated list of generative AI resources. <https://lnkd.in/yJ8gxp3q>
 - **Designing Machine Learning Systems** — Companion repository for ML system design. <https://lnkd.in/dEx8sQJK>
 - **Machine Learning for Beginners (Microsoft)** — Microsoft's introductory ML curriculum. <https://lnkd.in/dBj3BAEY>
-- **LLM Course (mlabonne)** — Maxime Labonne's comprehensive LLM course. <https://github.com/mlabonne/llm-course>
+- **LLM Course (mlabonne)** `[cloned]` — Maxime Labonne's comprehensive LLM course. <https://github.com/mlabonne/llm-course>
 
 ## Guides
 
@@ -83,7 +87,27 @@ Given the RHYTHMIX + HyperFrames + Claude Code stack in this repo, these five ar
 4. **MCP with Anthropic (course)** — Deeper foundations for authoring custom MCP servers, useful if extending `.claude/mcp/creative-stack/`.
 5. **OpenAI Practical Guide to Building Agents** — Cross-vendor perspective for agent architecture decisions.
 
+## Local Clones
+
+Four of the directly-named GitHub repos are cloned shallow (`--depth 1`) under `learning/` so you can browse offline. The directory is in `.gitignore` — these are external sources, not part of this repo's history.
+
+```bash
+mkdir -p learning && cd learning
+git clone --depth 1 https://github.com/nirdiamant/GenAI_Agents.git
+git clone --depth 1 https://github.com/microsoft/ai-agents-for-beginners.git
+git clone --depth 1 https://github.com/Sumanth077/Hands-On-AI-Engineering.git
+git clone --depth 1 https://github.com/mlabonne/llm-course.git
+```
+
+Approximate sizes after shallow clone: `GenAI_Agents` ~99 MB, `Hands-On-AI-Engineering` ~94 MB, `ai-agents-for-beginners` ~900 MB (mostly translated course images), `llm-course` ~2 MB.
+
+To refresh:
+
+```bash
+for d in learning/*/; do (cd "$d" && git pull --depth 1 --rebase); done
+```
+
 ## Notes
 
-- Links prefixed `lnkd.in/` are LinkedIn shortened URLs that redirect to the canonical resource. Direct GitHub/YouTube/O'Reilly URLs are preserved as-is.
+- Links prefixed `lnkd.in/` are LinkedIn shortened URLs. **They could not be resolved automatically** in this environment — the sandbox egress allowlist blocks `lnkd.in` (same restriction documented for `*.pollinations.ai` in `CLAUDE.md`). Open them from a normal browser, or whitelist the host in the sandbox config, to follow them through. Direct GitHub / YouTube / O'Reilly / udlbook URLs work as-is.
 - This list is curated, not exhaustive — contributions and pruning welcome.
