@@ -2,6 +2,19 @@
 
 Everything you need to take this codebase from `git clone` to a live, working app on the App Store + Play Store with real music generation, real payments, and real push notifications.
 
+> **TL;DR for the impatient.** A Codespace is pre-configured (`.devcontainer/`). Open one, then:
+> ```bash
+> make install              # one-time
+> make link REF=xxxx        # connect to your Supabase project
+> make deploy               # db push + functions deploy
+> make secrets              # set REPLICATE / STRIPE / RC keys from .env
+> make eas-init             # mint EAS projectId
+> make ship                 # type-check + deploy + build mobile
+> ```
+> Run `make help` to see every target.
+>
+> **No CLI at all?** Use `supabase/bundle.sql` — paste the whole file into the Supabase Dashboard's SQL Editor and click Run. Then add Edge Functions one at a time from the dashboard.
+
 ## What you're deploying
 
 ```
