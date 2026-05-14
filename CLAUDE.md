@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Pollinations AI MCP server (free anonymous tier — image, text, audio, TTS, music)** → registered in `.mcp.json` as `pollinations`. Installed globally via `npm install -g @pollinations/model-context-protocol`. No API key required for the free anonymous tier. Models include FLUX, Sana, Nova Reel, Seedream5, Suno v5, Qwen3-TTS. ⚠️ The sandbox egress allowlist blocks `*.pollinations.ai` — to actually call the API, add it to the allowlist or run Claude Code in an environment with unrestricted egress. Tools register fine; only runtime is gated.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
 - **Cross-session memory across agents** → `AGENTMEMORY.md`. Documents `@agentmemory/agentmemory` (MCP/REST memory server) and how it complements `CONTEXT.md` + `docs/adr/` without duplicating them.
+- **Multi-platform publish / engage / monetise** → `AITOEARN.md`. AiToEarn (`aitoearn.ai` / `aitoearn.cn`) — MCP/HTTP server for distributing a rendered Cut to Douyin, Rednote, Bilibili, WeChat Channels, TikTok, YouTube, Instagram, X, etc., with CPS/CPE/CPM settlement. Use Mode ③ (MCP in `.mcp.json`) for this repo.
 
 ## Repository Overview
 
