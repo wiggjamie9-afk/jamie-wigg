@@ -8,12 +8,19 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { configurePurchases } from '@/lib/purchases';
+import { registerForPushNotifications } from '@/lib/notifications';
+import { checkForUpdates } from '@/lib/updates';
+
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 800, fade: true });
 
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
+    configurePurchases();
+    registerForPushNotifications();
+    checkForUpdates();
   }, []);
 
   return (

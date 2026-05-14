@@ -1,30 +1,51 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { AuroraBackdrop } from '@/components/cinematic/AuroraBackdrop';
 import { CinematicButton } from '@/components/cinematic/CinematicButton';
+import { useAudioStore } from '@/lib/audio-store';
+import { generateTrack, type GenerationProgress } from '@/lib/generation';
 
 const GENRES = ['Lo-fi', 'House', 'Synthwave', 'Trap', 'Ambient', 'Drum & bass'];
 
 export default function Create() {
+  const router = useRouter();
+  const setCurrent = useAudioStore((s) => s.setCurrent);
+
   const [prompt, setPrompt] = useState('');
   const [genre, setGenre] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState<GenerationProgress | null>(null);
+
+  const busy = progress?.status === 'queued' || progress?.status === 'running';
 
   const generate = async () => {
     if (!prompt.trim()) {
       Alert.alert('Add a prompt', 'Tell us what you want to hear.');
       return;
     }
-    setGenerating(true);
-    // TODO: call your generation endpoint, push generated track into audio-store.
-    setTimeout(() => {
-      setGenerating(false);
-      Alert.alert('Demo only', 'Wire this to your generation API to actually produce a track.');
-    }, 1200);
+    setProgress({ status: 'queued' });
+    try {
+      const track = await generateTrack(
+        { prompt: prompt.trim(), genre, durationSec: 60 },
+        (p) => setProgress(p),
+      );
+      setCurrent(track);
+      setProgress({ status: 'succeeded', track });
+      router.push('/(app)/player');
+    } catch (e: any) {
+      setProgress({ status: 'failed', error: e?.message ?? String(e) });
+      Alert.alert('Generation failed', e?.message ?? 'Try again in a moment.');
+    }
   };
+
+  const buttonLabel = busy
+    ? progress?.status === 'queued'
+      ? 'Queued…'
+      : `Generating${typeof progress?.progress === 'number' ? ` · ${Math.round(progress.progress * 100)}%` : '…'}`
+    : 'Generate track';
 
   return (
     <View className="flex-1 bg-ink-50">
@@ -48,6 +69,7 @@ export default function Create() {
                 placeholder="A late-night drive through neon-lit Tokyo, lofi drums, melancholy synths…"
                 placeholderTextColor="#5a5a67"
                 multiline
+                editable={!busy}
                 className="min-h-[160px] rounded-3xl border-hairline border-white/15 bg-ink-200/70 p-5 text-base text-white"
                 textAlignVertical="top"
               />
@@ -61,6 +83,7 @@ export default function Create() {
                   return (
                     <Pressable
                       key={g}
+                      disabled={busy}
                       onPress={() => setGenre(active ? null : g)}
                       className={`rounded-full px-4 py-2 ${active ? 'bg-accent' : 'bg-ink-200/70'}`}>
                       <Text className={active ? 'text-white' : 'text-ink-700'}>{g}</Text>
@@ -71,11 +94,7 @@ export default function Create() {
             </View>
 
             <View className="mt-auto pb-8">
-              <CinematicButton
-                label={generating ? 'Generating…' : 'Generate track'}
-                onPress={generate}
-                loading={generating}
-              />
+              <CinematicButton label={buttonLabel} onPress={generate} loading={busy} />
             </View>
           </View>
         </KeyboardAvoidingView>

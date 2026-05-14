@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { AuroraBackdrop } from '@/components/cinematic/AuroraBackdrop';
 import { Waveform } from '@/components/cinematic/Waveform';
 import { useAudioStore } from '@/lib/audio-store';
+import { shareTrack } from '@/lib/share';
 
 export default function Player() {
   const router = useRouter();
@@ -60,7 +61,9 @@ export default function Player() {
           <Text className="font-mono text-xs uppercase tracking-[3px] text-ink-700">
             Now playing
           </Text>
-          <View style={{ width: 28 }} />
+          <Pressable onPress={() => shareTrack(current)} hitSlop={16}>
+            <Ionicons name="share-outline" size={26} color="white" />
+          </Pressable>
         </View>
 
         <View className="flex-1 justify-end px-6 pb-12">

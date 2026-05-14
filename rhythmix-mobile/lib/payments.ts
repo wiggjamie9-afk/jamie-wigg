@@ -11,6 +11,8 @@
 import { Platform } from 'react-native';
 import { initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-native';
 
+import { buyLifetime } from './purchases';
+
 export type CheckoutResult =
   | { status: 'completed'; provider: 'stripe' | 'iap' }
   | { status: 'cancelled' }
@@ -56,13 +58,10 @@ async function purchaseStripe(amountCents: number): Promise<CheckoutResult> {
 }
 
 async function purchaseIAP(): Promise<CheckoutResult> {
-  // STUB: integrate RevenueCat or StoreKit 2 here.
-  // See https://www.revenuecat.com/docs/getting-started/installation/expo
-  return {
-    status: 'error',
-    message:
-      'iOS IAP not yet wired. Apple requires StoreKit/RevenueCat for digital lifetime unlocks.',
-  };
+  const result = await buyLifetime();
+  if (result.ok) return { status: 'completed', provider: 'iap' };
+  if (result.reason === 'cancelled') return { status: 'cancelled' };
+  return { status: 'error', message: result.reason };
 }
 
 async function fetchPaymentIntent(amountCents: number) {
