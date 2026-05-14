@@ -229,6 +229,36 @@ See the upstream contributing guide in [`yikart/AiToEarn`](https://github.com/yi
 
 ---
 
+## Apple Shortcut: "Publish latest Cut"
+
+Once the AiToEarn MCP entry above is in `.mcp.json` and `AITOEARN_API_KEY` is set in `.env`, this iPhone shortcut sends the most recent rendered Cut to every connected channel without opening Claude Code.
+
+The shortcut posts an MP4 (and optional caption) directly to the AiToEarn HTTP API. Build it once in the Shortcuts app, then trigger it from the lock screen, Action Button, Siri, or the share sheet.
+
+### Setup
+
+1. **Shortcuts app → +** to create a new shortcut. Name it `Publish latest Cut`.
+2. **Get Variable** (or **Ask for Input**) to capture the file path or share-sheet input. Use **Receive any from Share Sheet** in the shortcut settings so the share sheet on an MP4 file can trigger it.
+3. **Get Contents of URL** action:
+   - URL: `https://aitoearn.ai/api/unified/publish` (or `https://aitoearn.cn/...` if your key is China-region).
+   - Method: `POST`.
+   - Headers: `x-api-key` → your AiToEarn API key (the same one in `.env`), `Content-Type` → `multipart/form-data`.
+   - Request Body → **Form**: add a `file` field set to the shortcut's shared file, and a `caption` text field (use **Ask Each Time** so you can type a caption on the fly).
+4. **Show Result** of the response so you can see which channels accepted the upload.
+5. **Add to Home Screen** and assign it to the iPhone's Action Button (Settings → Action Button → Shortcut).
+
+### Day-to-day flow
+
+1. Render a Cut on your laptop or via Claude Code on the web. The MP4 lands in `rhythmix-*-60s/<promo>.mp4`.
+2. Sync it to Files / iCloud Drive (or download from `downloads.html`).
+3. On the iPhone, long-press the MP4 → Share → "Publish latest Cut", or hit the Action Button while the file is selected.
+4. Type a caption when prompted. Tap done.
+5. AiToEarn fans it out to every connected channel. CPS/CPE/CPM accrual starts.
+
+> The endpoint and field names above mirror the AiToEarn REST surface. If a future AiToEarn release renames `unified/publish` or expects a different multipart shape, update the shortcut once — the rest of this repo doesn't change.
+
+---
+
 ## Release timeline
 
 | Date | Change |
