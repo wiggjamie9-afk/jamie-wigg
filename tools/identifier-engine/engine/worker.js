@@ -9,7 +9,10 @@ const BRANDS = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-opus-4-7";
+const MODELS = {
+  best: "claude-opus-4-7",
+  cheap: "claude-sonnet-4-6",
+};
 
 export default {
   async fetch(request, env) {
@@ -39,14 +42,15 @@ export default {
       return Response.json({ error: "image required" }, { status: 400 });
     }
 
-    const identification = await identify(env.ANTHROPIC_API_KEY, brand.systemPrompt, body.image);
+    const model = MODELS[body.tier] ?? MODELS.best;
+    const identification = await identify(env.ANTHROPIC_API_KEY, model, brand.systemPrompt, body.image);
     const enriched = enrich(identification, brand.data, body.brand);
 
     return Response.json(enriched);
   },
 };
 
-async function identify(apiKey, systemPrompt, image) {
+async function identify(apiKey, model, systemPrompt, image) {
   const imageBlock = image.startsWith("http")
     ? { type: "image", source: { type: "url", url: image } }
     : { type: "image", source: { type: "base64", media_type: "image/jpeg", data: image } };
@@ -59,7 +63,7 @@ async function identify(apiKey, systemPrompt, image) {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: 1024,
       system: systemPrompt,
       messages: [{ role: "user", content: [imageBlock, { type: "text", text: "Identify this." }] }],
