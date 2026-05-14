@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RHYTHMIX</title>
+    <meta name="theme-color" content="#0a0a0c" />
+
+    <!-- Open Graph / Twitter — populated client-side from Supabase below. -->
+    <meta property="og:type" content="music.song" />
+    <meta property="og:site_name" content="RHYTHMIX" />
+    <meta property="og:title" content="A track on RHYTHMIX" id="ogTitle" />
+    <meta property="og:description" content="Listen on RHYTHMIX" id="ogDesc" />
+    <meta property="og:image" content="https://rhythmix.app/apple-touch-icon.png" id="ogImage" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Native app handoff. iOS will try to open the universal link if the app is installed. -->
+    <meta name="apple-itunes-app" content="app-id=REPLACE_WITH_ITUNES_ID" />
+
+    <style>
+      :root {
+        --ink-0: #000;
+        --ink-50: #0a0a0c;
+        --ink-200: #1a1a1f;
+        --ink-700: #b5b5c2;
+        --accent: #ff3d7f;
+        --signal-cyan: #5cf2ff;
+        --signal-violet: #9b6bff;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; height: 100%; }
+      body {
+        background: radial-gradient(120% 80% at 20% 10%, rgba(155,107,255,0.25), transparent 60%),
+                    radial-gradient(120% 80% at 80% 90%, rgba(255,61,127,0.25), transparent 60%),
+                    var(--ink-50);
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100dvh;
+      }
+      main { max-width: 520px; margin: 0 auto; padding: 32px 24px 80px; }
+      header { display: flex; align-items: center; gap: 12px; }
+      .brand { font-weight: 800; letter-spacing: 6px; font-size: 12px; color: var(--signal-cyan); text-transform: uppercase; }
+      .artwork {
+        margin-top: 32px;
+        aspect-ratio: 1/1;
+        border-radius: 28px;
+        background: linear-gradient(135deg, var(--signal-violet), var(--accent));
+        box-shadow: 0 30px 80px rgba(255,61,127,0.4);
+        overflow: hidden;
+        position: relative;
+      }
+      .artwork img { width: 100%; height: 100%; object-fit: cover; }
+      .meta { margin-top: 28px; }
+      h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 4px; }
+      .artist { color: var(--ink-700); font-size: 16px; }
+      audio { width: 100%; margin-top: 24px; filter: drop-shadow(0 8px 30px rgba(0,0,0,0.4)); }
+      .cta {
+        display: flex; gap: 12px; margin-top: 32px; flex-direction: column;
+      }
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        padding: 16px 24px; border-radius: 18px; text-decoration: none;
+        font-weight: 600; font-size: 16px; text-align: center;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, #ff7ab0, #ff3d7f, #b30043);
+        color: #fff;
+      }
+      .btn-ghost {
+        border: 1px solid rgba(255,255,255,0.18);
+        color: #fff;
+        backdrop-filter: blur(20px);
+      }
+      .skeleton {
+        background: linear-gradient(90deg, var(--ink-200), #2a2a32, var(--ink-200));
+        background-size: 200% 100%;
+        animation: shimmer 1.5s linear infinite;
+        border-radius: 8px;
+        height: 16px; width: 60%;
+      }
+      @keyframes shimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+      footer { margin-top: 56px; text-align: center; color: rgba(255,255,255,0.4); font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="brand">RHYTHMIX</span>
+      </header>
+
+      <div id="art" class="artwork">
+        <img id="artworkImg" alt="" style="display:none" />
+      </div>
+
+      <div class="meta">
+        <div id="title" class="skeleton" style="width:70%; height:32px"></div>
+        <div id="artist" class="skeleton" style="width:40%; margin-top:10px"></div>
+      </div>
+
+      <audio id="audio" controls preload="metadata" style="display:none"></audio>
+
+      <div class="cta">
+        <a class="btn btn-primary" id="openApp" href="#">Open in RHYTHMIX</a>
+        <a class="btn btn-ghost" href="https://rhythmix.app">Make your own track</a>
+      </div>
+
+      <footer>© RHYTHMIX. All AI-generated audio is licensed for personal + commercial use.</footer>
+    </main>
+
+    <script type="module">
+      // Render shared track preview. Reads /track/:id from the URL, fetches the public track
+      // row from Supabase REST, then exposes a deep-link button to open the app.
+      const SUPABASE_URL = window.RHYTHMIX_SUPABASE_URL || '';
+      const SUPABASE_ANON = window.RHYTHMIX_SUPABASE_ANON || '';
+
+      const parts = location.pathname.split('/').filter(Boolean);
+      const id = parts[parts.length - 1];
+
+      const titleEl = document.getElementById('title');
+      const artistEl = document.getElementById('artist');
+      const audio = document.getElementById('audio');
+      const artImg = document.getElementById('artworkImg');
+      const openApp = document.getElementById('openApp');
+
+      openApp.href = `rhythmix://track/${id}`;
+
+      if (id && SUPABASE_URL && SUPABASE_ANON) {
+        fetch(`${SUPABASE_URL}/rest/v1/tracks?id=eq.${id}&select=title,artist,audio_url,artwork_url,duration_sec,is_public&limit=1`, {
+          headers: {
+            apikey: SUPABASE_ANON,
+            Authorization: `Bearer ${SUPABASE_ANON}`,
+          },
+        })
+          .then((r) => r.json())
+          .then((rows) => {
+            const t = Array.isArray(rows) ? rows[0] : null;
+            if (!t || t.is_public === false) {
+              titleEl.outerHTML = '<h1>Private track</h1>';
+              artistEl.outerHTML = '<div class="artist">Open the app to listen.</div>';
+              return;
+            }
+            titleEl.outerHTML = `<h1>${escapeHtml(t.title)}</h1>`;
+            artistEl.outerHTML = `<div class="artist">${escapeHtml(t.artist)}</div>`;
+            audio.src = t.audio_url;
+            audio.style.display = 'block';
+            if (t.artwork_url) {
+              artImg.src = t.artwork_url;
+              artImg.style.display = 'block';
+            }
+            document.getElementById('ogTitle').setAttribute('content', `${t.title} — RHYTHMIX`);
+            document.getElementById('ogDesc').setAttribute('content', `${t.artist} · RHYTHMIX`);
+            if (t.artwork_url) document.getElementById('ogImage').setAttribute('content', t.artwork_url);
+            document.title = `${t.title} · RHYTHMIX`;
+          })
+          .catch(() => {
+            titleEl.outerHTML = '<h1>Track unavailable</h1>';
+            artistEl.outerHTML = '<div class="artist">Try opening the app instead.</div>';
+          });
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[c]));
+      }
+    </script>
+  </body>
+</html>

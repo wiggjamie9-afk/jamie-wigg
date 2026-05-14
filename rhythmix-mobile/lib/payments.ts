@@ -65,22 +65,32 @@ async function purchaseIAP(): Promise<CheckoutResult> {
 }
 
 async function fetchPaymentIntent(amountCents: number) {
-  const url = process.env.EXPO_PUBLIC_STRIPE_INTENT_URL;
-  if (!url) {
-    throw new Error(
-      'EXPO_PUBLIC_STRIPE_INTENT_URL is not set. Point it at a Supabase Edge Function or your API that returns { clientSecret, customerId, ephemeralKey, customerName }.',
-    );
-  }
+  const url = resolveStripeIntentUrl();
+  const { supabase } = await import('./supabase');
+  const { data } = await supabase.auth.getSession();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (data.session) headers.Authorization = `Bearer ${data.session.access_token}`;
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ amount: amountCents, currency: 'usd', sku: 'lifetime' }),
   });
-  if (!res.ok) throw new Error(`Stripe intent endpoint returned ${res.status}`);
+  if (!res.ok) throw new Error(`Stripe intent endpoint returned ${res.status}: ${await res.text()}`);
   return (await res.json()) as {
     clientSecret: string;
     customerId: string;
     ephemeralKey: string;
     customerName: string;
   };
+}
+
+function resolveStripeIntentUrl(): string {
+  const override = process.env.EXPO_PUBLIC_STRIPE_INTENT_URL;
+  if (override) return override;
+  const supa = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  if (!supa) {
+    throw new Error('EXPO_PUBLIC_SUPABASE_URL (or EXPO_PUBLIC_STRIPE_INTENT_URL) must be set.');
+  }
+  return `${supa.replace(/\/+$/, '')}/functions/v1/stripe-intent`;
 }

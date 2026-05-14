@@ -4,16 +4,15 @@ import { supabase } from './supabase';
 import type { Track } from './audio-store';
 
 /**
- * Talks to a server-side generation endpoint (Supabase Edge Function recommended)
+ * Talks to a server-side generation endpoint (Supabase Edge Functions in this repo)
  * that wraps Replicate / Suno / MusicGen — keeps your API keys off the client.
  *
- * The endpoint should accept:
- *   { prompt: string, genre?: string, durationSec?: number, seed?: number }
- * and either:
- *   (a) return { track: { id, title, artist, audioUrl, artworkUrl, durationSec } } synchronously, or
- *   (b) return { jobId: string } and we poll /generation/status/:jobId.
+ * Default base: `${SUPABASE_URL}/functions/v1`.
+ * Override with EXPO_PUBLIC_GENERATION_URL if you host the API elsewhere.
  *
- * Set EXPO_PUBLIC_GENERATION_URL to the endpoint base (no trailing slash).
+ * Endpoints expected (matches supabase/functions/{generate,generate-status}):
+ *   POST /generate                  → { jobId, externalId, status } | { track }
+ *   GET  /generate-status/:jobId    → { status, progress?, track?, error? }
  */
 
 const TrackSchema = z.object({
@@ -51,15 +50,23 @@ export interface GenerationProgress {
   error?: string;
 }
 
+function resolveBase(): string {
+  const override = process.env.EXPO_PUBLIC_GENERATION_URL;
+  if (override) return override.replace(/\/+$/, '');
+  const supa = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  if (!supa) {
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_URL (or EXPO_PUBLIC_GENERATION_URL) must be set — point at your Supabase project.',
+    );
+  }
+  return `${supa.replace(/\/+$/, '')}/functions/v1`;
+}
+
 export async function generateTrack(
   input: GenerateInput,
   onProgress?: (p: GenerationProgress) => void,
 ): Promise<Track> {
-  const base = process.env.EXPO_PUBLIC_GENERATION_URL;
-  if (!base) {
-    throw new Error('EXPO_PUBLIC_GENERATION_URL not set — point it at your generation API.');
-  }
-
+  const base = resolveBase();
   const headers = await authHeaders();
 
   const startRes = await fetch(`${base}/generate`, {
@@ -67,7 +74,7 @@ export async function generateTrack(
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  if (!startRes.ok) throw new Error(`generation /generate ${startRes.status}`);
+  if (!startRes.ok) throw new Error(`generation /generate ${startRes.status}: ${await startRes.text()}`);
 
   const startBody = StartResponseSchema.parse(await startRes.json());
 
@@ -80,9 +87,9 @@ export async function generateTrack(
   const { jobId } = startBody;
   const deadline = Date.now() + 5 * 60 * 1000;
   while (Date.now() < deadline) {
-    await sleep(1500);
-    const statusRes = await fetch(`${base}/generate/${jobId}`, { headers });
-    if (!statusRes.ok) throw new Error(`generation /generate/:id ${statusRes.status}`);
+    await sleep(2000);
+    const statusRes = await fetch(`${base}/generate-status/${jobId}`, { headers });
+    if (!statusRes.ok) throw new Error(`generation /generate-status/:id ${statusRes.status}`);
     const status = StatusResponseSchema.parse(await statusRes.json());
     onProgress?.({
       status: status.status,
