@@ -19,22 +19,58 @@ You need to run `wrangler` once. Three options:
 2. **GitHub Codespaces in Safari.** Open this repo on github.com, click `Code → Codespaces → New`. Codespaces gives you a full terminal in browser. Works on iPhone.
 3. **Pay someone $20 on Upwork to do steps 1–4 below from your repo.** Fastest if you hate terminals.
 
+### Option 2 in detail — iPhone Safari + Codespaces (recommended)
+
+The free tier is **60 core-hours/month** for personal accounts. A full deploy is ~10 minutes of running time. You'd have to deploy 360 times a month to hit the cap. Realistic monthly use: 1–3 hours.
+
+1. Open Safari. Go to `github.com/wiggjamie9-afk/jamie-wigg`.
+2. Switch to desktop site if it loads mobile (`aA` button → Request Desktop Website). Codespaces UI is much easier on desktop layout.
+3. Tap the green **Code** button → **Codespaces** tab → **Create codespace on `claude/new-session-fhZuL`**.
+4. Wait 60–90 seconds. A full VS Code editor opens in Safari with a terminal at the bottom. If the terminal isn't visible: top-left hamburger menu → Terminal → New Terminal.
+5. In the terminal, paste these one at a time (long-press in the terminal to paste):
+
 ```bash
 cd tools/identifier-engine/engine
 npm install
-npx wrangler login                       # opens browser, authorizes
-npx wrangler secret put ANTHROPIC_API_KEY    # paste sk-ant-...
-npx wrangler secret put IDENTIFIER_KEY       # paste any long random string — save it
+npx wrangler login
+```
+
+The `wrangler login` step opens a Cloudflare auth page in a new tab. Sign in / sign up. When it says "Authorized," go back to the Codespaces tab.
+
+6. Add your secrets:
+
+```bash
+npx wrangler secret put ANTHROPIC_API_KEY
+# paste your sk-ant-... key when prompted, hit return
+
+npx wrangler secret put IDENTIFIER_KEY
+# paste any long random string (e.g. generate with: openssl rand -hex 32)
+# save this somewhere — you'll need it in capture.html
+```
+
+7. Deploy:
+
+```bash
 npx wrangler deploy
 ```
 
-`wrangler deploy` prints the Worker URL. It looks like `https://identifier-engine.YOUR-SUBDOMAIN.workers.dev`. Save it.
+It prints a URL like `https://identifier-engine.YOUR-SUBDOMAIN.workers.dev`. **Copy it.**
 
-Verify:
-```bash
-curl https://identifier-engine.YOUR-SUBDOMAIN.workers.dev/health
-# → {"ok":true,"brands":["whisky","boardgame"]}
-```
+8. Verify in Safari (new tab): paste `<your-url>/health` — should return `{"ok":true,"brands":["whisky","boardgame"]}`.
+
+9. **Stop the codespace to preserve hours**: top-right hamburger in the Codespaces UI → Codespace → Stop Current Codespace. (It also auto-stops after 30 min idle.) You can restart it any time without losing state.
+
+### Codespaces hours — what you'd actually burn
+
+| Action | Approx. minutes |
+|---|---|
+| First deploy (cold start + npm install + login + deploy) | 10 |
+| Redeploy after code change | 2 |
+| Editing the prompt and redeploying 5 times in a session | 15 |
+| **A whole month of normal iteration** | **60–120** |
+| Free tier ceiling | **3,600** (60 hours × 60 min) |
+
+Plenty of headroom. Don't worry about it.
 
 ## Day 2 — wire the capture page (iPhone, ~20 min)
 
