@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Higgsfield AI MCP server (Soul text-to-image, DOP image-to-video, talking-head, character refs)** → registered in `.mcp.json` as `higgsfield`. Install with `pip install git+https://github.com/geopopos/geo_higgsfield_ai_mcp`. Put `HIGGSFIELD_API_KEY` and `HIGGSFIELD_SECRET` in `.env` at the repo root (gitignored). To use it *with* HyperFrames in a single flow, invoke the `higgsfield-to-hyperframes` skill — it owns the prompt → poll → download → wire-in pipeline.
 - **Pollinations AI MCP server (free anonymous tier — image, text, audio, TTS, music)** → registered in `.mcp.json` as `pollinations`. Installed globally via `npm install -g @pollinations/model-context-protocol`. No API key required for the free anonymous tier. Models include FLUX, Sana, Nova Reel, Seedream5, Suno v5, Qwen3-TTS. ⚠️ The sandbox egress allowlist blocks `*.pollinations.ai` — to actually call the API, add it to the allowlist or run Claude Code in an environment with unrestricted egress. Tools register fine; only runtime is gated.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
+- **Cross-session memory across agents** → `AGENTMEMORY.md`. Documents `@agentmemory/agentmemory` (MCP/REST memory server) and how it complements `CONTEXT.md` + `docs/adr/` without duplicating them.
 
 ## Repository Overview
 
