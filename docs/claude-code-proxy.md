@@ -19,6 +19,23 @@ uv tool install --force --python 3.14 git+https://github.com/Alishahryar1/free-c
 
 This installs four binaries to `~/.local/bin/`: `fcc-server`, `fcc-claude`, `fcc-init`, `free-claude-code`.
 
+### Or run from source via the vendored submodule
+
+`vendor/free-claude-code` pins the upstream at the commit this repo was set up against. If you `git clone` this repo fresh, hydrate it with:
+
+```bash
+git submodule update --init --recursive
+```
+
+Then run from source instead of the installed tool:
+
+```bash
+cd vendor/free-claude-code
+uv run uvicorn server:app --host 0.0.0.0 --port 8082
+```
+
+To bump the pin: `cd vendor/free-claude-code && git pull origin main && cd ../.. && git add vendor/free-claude-code && git commit`.
+
 ### Python 3.14 prerelease workaround
 
 Pydantic `2.13.4` (required by `free-claude-code`) calls `typing._eval_type(..., prefer_fwd_module=True)`, a kwarg added in **Python 3.14 final**. If `uv` only ships `3.14.0rc2`, the call fails with `TypeError: _eval_type() got an unexpected keyword argument 'prefer_fwd_module'` on every `fcc-*` invocation.
