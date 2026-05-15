@@ -125,6 +125,44 @@
     .share-btn:active { opacity:.7; }
 
     footer { text-align:center; color:#333; font-size:12px; margin-top:40px; }
+
+    /* In-page video preview — click the GIF to watch the MP4 */
+    .preview-btn { display:block; width:100%; padding:0; background:none;
+      border:none; cursor:pointer; position:relative; margin-bottom:14px;
+      border-radius:14px; overflow:hidden;
+      -webkit-tap-highlight-color:transparent; }
+    .preview-btn .preview { margin-bottom:0; }
+    .preview-btn::after { content:''; position:absolute; inset:0;
+      background:radial-gradient(circle at center, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 60%);
+      pointer-events:none; opacity:.7; transition:opacity .15s; }
+    .preview-btn:active::after { opacity:1; }
+    .play-icon { position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%); width:64px; height:64px; border-radius:50%;
+      background:rgba(0,0,0,.55); backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+      display:flex; align-items:center; justify-content:center;
+      pointer-events:none; transition:transform .15s; }
+    .preview-btn:active .play-icon { transform:translate(-50%,-50%) scale(.92); }
+    .play-icon::before { content:''; width:0; height:0; margin-left:6px;
+      border-style:solid; border-width:14px 0 14px 22px;
+      border-color:transparent transparent transparent #fff; }
+
+    /* Modal */
+    .modal { position:fixed; inset:0; background:rgba(8,5,13,.92);
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      display:none; align-items:center; justify-content:center;
+      z-index:100; padding:20px; }
+    .modal.open { display:flex; }
+    .modal-inner { position:relative; width:100%; max-width:1280px;
+      max-height:90vh; }
+    .modal video { display:block; width:100%; height:auto; max-height:90vh;
+      border-radius:14px; background:#000; }
+    .modal-close { position:absolute; top:-44px; right:0;
+      width:36px; height:36px; border:none; border-radius:50%;
+      background:rgba(255,255,255,.12); color:#fff; font-size:20px;
+      line-height:1; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .modal-close:active { background:rgba(255,255,255,.24); }
+    body.modal-open { overflow:hidden; }
   </style>
 </head>
 <body>
@@ -470,6 +508,76 @@
   </div>
 
   <footer>rhythmixapp.com.au · The World's First Complete AI Music Platform</footer>
+
+  <div class="modal" id="video-modal" role="dialog" aria-modal="true" aria-label="Video preview">
+    <div class="modal-inner">
+      <button class="modal-close" id="modal-close" aria-label="Close preview">×</button>
+      <video id="modal-video" controls playsinline preload="none"></video>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var modal = document.getElementById('video-modal');
+      var video = document.getElementById('modal-video');
+      var closeBtn = document.getElementById('modal-close');
+      if (!modal || !video || !closeBtn) return;
+
+      function findMp4Url(card) {
+        var links = card.querySelectorAll('a.btn');
+        for (var i = 0; i < links.length; i++) {
+          if (/\.mp4(\?|$)/i.test(links[i].getAttribute('href') || '')) {
+            return links[i].getAttribute('href');
+          }
+        }
+        return null;
+      }
+
+      function openModal(url) {
+        video.src = url;
+        modal.classList.add('open');
+        document.body.classList.add('modal-open');
+        var p = video.play();
+        if (p && typeof p.catch === 'function') p.catch(function () {});
+      }
+
+      function closeModal() {
+        modal.classList.remove('open');
+        document.body.classList.remove('modal-open');
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      }
+
+      document.querySelectorAll('.card').forEach(function (card) {
+        var preview = card.querySelector('img.preview');
+        var url = findMp4Url(card);
+        if (!preview || !url) return;
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'preview-btn';
+        btn.setAttribute('aria-label', 'Play preview of ' + (preview.alt || 'video'));
+        preview.parentNode.insertBefore(btn, preview);
+        btn.appendChild(preview);
+
+        var icon = document.createElement('span');
+        icon.className = 'play-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        btn.appendChild(icon);
+
+        btn.addEventListener('click', function () { openModal(url); });
+      });
+
+      closeBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+      });
+    })();
+  </script>
 
 </body>
 </html>
