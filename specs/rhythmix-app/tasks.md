@@ -2,25 +2,25 @@
 
 Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`. The `spec-run` skill builds a dependency graph from these.
 
-- [ ] **T0** — CORS spike: verify whether Replicate API accepts direct browser calls
+- [x] **T0** — CORS spike: verify whether Replicate API accepts direct browser calls
   - **files**: `specs/rhythmix-app/spike-cors.md`
   - **depends**: —
   - **satisfies**: R6
   - **acceptance**: a one-page note documenting the actual behavior (works direct / blocked, with reproduction steps); decision recorded as "build Replicate proxy Worker: yes/no"
 
-- [ ] **T1** — Scaffold `studio/` Next.js 15 app
+- [x] **T1** — Scaffold `studio/` Next.js 15 app
   - **files**: `studio/package.json`, `studio/next.config.ts`, `studio/tsconfig.json`, `studio/app/layout.tsx`, `studio/app/page.tsx`, `studio/app/globals.css`, `studio/.gitignore`
   - **depends**: —
   - **satisfies**: R1, N1
   - **acceptance**: `pnpm dev` in `studio/` serves a blank Next.js page at `localhost:3000`; `pnpm build` produces a static export in `studio/out/`
 
-- [ ] **T2** — Cloudflare Pages deploy wiring for `studio.rhythmixapp.com.au`
+- [x] **T2** — Cloudflare Pages deploy wiring for `studio.rhythmixapp.com.au`
   - **files**: `studio/wrangler.toml`, `.github/workflows/studio-deploy.yml`, `studio/README.md`
   - **depends**: T1
   - **satisfies**: N1
   - **acceptance**: pushing to a branch creates a preview at `<branch>.studio.rhythmixapp-pages.dev`; merging to main triggers a manual-approval deploy to `studio.rhythmixapp.com.au`
 
-- [ ] **T3** — Refactor `rhythmix-studio/src/` into platform-agnostic core
+- [x] **T3** — Refactor `rhythmix-studio/src/` into platform-agnostic core
   - **files**: `rhythmix-studio/src/core/plan.mjs`, `rhythmix-studio/src/core/models.mjs`, `rhythmix-studio/src/core/sources/pexels.mjs`, `rhythmix-studio/src/core/replicate.mjs`, `rhythmix-studio/src/core/index.mjs`, `rhythmix-studio/src/cli.mjs` (update imports only)
   - **depends**: —
   - **satisfies**: R11
@@ -32,7 +32,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R11, N5
   - **acceptance**: Node adapter passes existing `rhythmix-studio/test/run.mjs`; WASM adapter smoke-tested with a 5-second sample track in a Vitest browser environment; identical interface (`probe / trim / concat / mux / extractFrame`)
 
-- [ ] **T5** — Upload + theme entry UI (`/new`)
+- [x] **T5** — Upload + theme entry UI (`/new`)
   - **files**: `studio/app/new/page.tsx`, `studio/components/upload-form/*`, `studio/lib/audio-blob.ts`
   - **depends**: T1
   - **satisfies**: R1, R2
@@ -44,7 +44,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R3, R10, R15, R16
   - **acceptance**: user can paste Replicate token, set a passphrase (asked at first entry + once per session per R3), token is encrypted with WebCrypto AES-GCM and stored in `localStorage`; user can paste license key which is POSTed to the license Worker (T7) and the valid result is cached in `localStorage` for 24h; an "Export support bundle" button downloads a JSON file with logs + browser info + plan history but excluding token / audio / MP4 (R15); a "Clear all local data" button wipes localStorage + IndexedDB after a confirmation dialog (R16); clearing token / license actually clears the storage entries
 
-- [ ] **T7** — License-validation Cloudflare Worker
+- [x] **T7** — License-validation Cloudflare Worker
   - **files**: `studio/workers/license/src/index.ts`, `studio/workers/license/wrangler.toml`, `studio/workers/license/package.json`
   - **depends**: T1
   - **satisfies**: R10
@@ -92,7 +92,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: all
   - **acceptance**: `pnpm test` in `studio/` runs Vitest covering `lib/secrets.ts`, `lib/history.ts`, `lib/render-runner.ts` (mocked Replicate), `lib/capability-detect.ts` (R13 hard-failure detection), `lib/tab-coordinator.ts` (R14 BroadcastChannel); `npm test` in `rhythmix-studio/` covers the new `core/` extraction; CI workflow runs both
 
-- [ ] **T15** — Hard-failure handling and capability detection (added by /spec-analyze)
+- [x] **T15** — Hard-failure handling and capability detection (added by /spec-analyze)
   - **files**: `studio/lib/capability-detect.ts`, `studio/lib/tab-coordinator.ts`, `studio/app/unsupported/page.tsx`, `studio/components/fallback-screens/*`, `studio/app/layout.tsx` (wire detection at root)
   - **depends**: T1
   - **satisfies**: R13, R14

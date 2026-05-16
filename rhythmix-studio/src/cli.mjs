@@ -2,10 +2,21 @@ import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join, basename } from "node:path";
 import { probeAudio, detectBpm, loudnessCurve, structureFromLoudness } from "./audio.mjs";
-import { buildPlan } from "./plan.mjs";
-import { MODELS, estimateCost } from "./models.mjs";
-import { replicateRun, downloadToDisk, firstUrl, ReplicateError } from "./replicate.mjs";
-import { pexelsSearch, pickVideoFile, downloadPexelsVideo, PexelsError } from "./sources/pexels.mjs";
+// Pure / platform-agnostic engine pieces — same modules the web app will import.
+import {
+  buildPlan,
+  MODELS,
+  estimateCost,
+  replicateRun,
+  firstUrl,
+  ReplicateError,
+  pexelsSearch,
+  pickVideoFile,
+  PexelsError,
+} from "./core/index.mjs";
+// Node-only disk-writing helpers — must stay outside core because they need fs/path.
+import { downloadToDisk } from "./replicate.mjs";
+import { downloadPexelsVideo } from "./sources/pexels.mjs";
 import { listLocalClips, copyLocalClip, LocalSourceError } from "./sources/local.mjs";
 import { compose } from "./compose.mjs";
 import { log } from "./log.mjs";
