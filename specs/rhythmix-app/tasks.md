@@ -56,7 +56,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R6
   - **acceptance**: if T0 spike showed CORS is blocked, this task ships; Worker forwards `POST /api/replicate-proxy/v1/*` to `https://api.replicate.com/v1/*` with the user's Authorization header passed through; no logging of request bodies or tokens; rate-limited per IP. If T0 showed CORS works direct, mark this task `skipped` instead of running it.
 
-- [ ] **T9** — Plan preview + editor UI (`/plan/[id]`)
+- [x] **T9** — Plan preview + editor UI (`/plan/[id]`)
   - **files**: `studio/app/plan/[id]/page.tsx`, `studio/components/plan-editor/*`, `studio/lib/plan-storage.ts`
   - **depends**: T3, T5
   - **satisfies**: R4, R5
