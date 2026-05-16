@@ -350,9 +350,9 @@ export function PlanEditor({ planId }: { planId: string }) {
   // ---- Render branches ----
   if (state.kind === "idle" || state.kind === "loading") {
     return (
-      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12">
+      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
         <div className="mx-auto w-full max-w-xl text-center">
-          <p className="text-sm text-neutral-500" aria-live="polite">
+          <p className="font-rhythmix-mono text-sm text-rhythmix-text-muted" aria-live="polite">
             {state.kind === "loading" ? state.message : "Loading…"}
           </p>
         </div>
@@ -362,12 +362,12 @@ export function PlanEditor({ planId }: { planId: string }) {
 
   if (state.kind === "missing-audio") {
     return (
-      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12">
+      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
         <div className="mx-auto w-full max-w-xl">
-          <h1 className="mb-2 text-3xl font-bold tracking-tight text-neutral-900">
+          <h1 className="mb-2 font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text">
             Audio not found
           </h1>
-          <p className="mb-6 text-sm text-neutral-500">
+          <p className="mb-6 text-sm text-rhythmix-text-soft">
             We couldn&apos;t find the audio for this plan. It may have been
             cleared, or you opened the link from a different device. Upload
             your track again to start fresh.
@@ -375,7 +375,7 @@ export function PlanEditor({ planId }: { planId: string }) {
           <button
             type="button"
             onClick={() => router.push("/new")}
-            className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium text-white hover:bg-neutral-800"
+            className="inline-flex items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             style={{ minHeight: "44px" }}
           >
             New video
@@ -387,18 +387,18 @@ export function PlanEditor({ planId }: { planId: string }) {
 
   if (state.kind === "error") {
     return (
-      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12">
+      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
         <div className="mx-auto w-full max-w-xl">
-          <h1 className="mb-2 text-3xl font-bold tracking-tight text-neutral-900">
+          <h1 className="mb-2 font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text">
             Something went wrong
           </h1>
-          <p className="mb-6 text-sm text-red-600" role="alert">
+          <p className="mb-6 text-sm text-rhythmix-magenta break-words" role="alert">
             {state.message}
           </p>
           <button
             type="button"
             onClick={() => router.push("/new")}
-            className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium text-white hover:bg-neutral-800"
+            className="inline-flex items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             style={{ minHeight: "44px" }}
           >
             Start over
@@ -411,19 +411,19 @@ export function PlanEditor({ planId }: { planId: string }) {
   const { plan } = state;
 
   return (
-    <main className="min-h-screen w-full px-4 pb-32 pt-8 sm:px-6 sm:pt-12">
+    <main className="min-h-screen w-full px-4 pb-32 pt-8 sm:px-6 sm:pt-12 bg-rhythmix-bg">
       <div className="mx-auto w-full max-w-4xl">
         <header className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+          <h1 className="font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text sm:text-4xl">
             Plan
           </h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 font-rhythmix-mono text-xs uppercase tracking-wider text-rhythmix-text-muted">
             {plan.scenes.length} scenes · {plan.audioDuration.toFixed(1)}s ·{" "}
             {plan.bpm ? `${plan.bpm} BPM` : "no BPM"} · {plan.aspect}
           </p>
           {plan.theme && (
-            <p className="mt-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-700">
-              <span className="font-medium text-neutral-500">Theme:</span>{" "}
+            <p className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface px-3 py-2 text-xs text-rhythmix-text-soft break-words">
+              <span className="font-rhythmix-mono uppercase tracking-wide text-rhythmix-text-muted">Theme:</span>{" "}
               {plan.theme}
             </p>
           )}
@@ -443,7 +443,7 @@ export function PlanEditor({ planId }: { planId: string }) {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm md:min-w-[640px]">
             <thead className="hidden md:table-header-group">
-              <tr className="border-b border-neutral-300 text-left text-xs uppercase tracking-wide text-neutral-500">
+              <tr className="border-b border-rhythmix-border-strong text-left font-rhythmix-mono text-xs uppercase tracking-wider text-rhythmix-text-muted">
                 <th className="px-3 py-2 font-medium" style={{ width: "12%" }}>
                   Scene
                 </th>
@@ -479,12 +479,12 @@ export function PlanEditor({ planId }: { planId: string }) {
         Render button is always one tap away. `pb-32` on the main element
         makes sure no scene row gets buried under the bar.
       */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-3">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-rhythmix-border-strong bg-[color:var(--color-rhythmix-bg)]/95 px-4 py-3 backdrop-blur sm:px-6">
+        <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={onExport}
-            className="inline-flex items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm font-medium text-neutral-800 hover:bg-neutral-100"
+            className="inline-flex items-center justify-center rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-3 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             style={{ minHeight: "44px" }}
           >
             Export plan.json
@@ -492,7 +492,7 @@ export function PlanEditor({ planId }: { planId: string }) {
           <button
             type="button"
             onClick={onRender}
-            className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium text-white hover:bg-neutral-800"
+            className="inline-flex items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             style={{ minHeight: "44px" }}
           >
             Render →

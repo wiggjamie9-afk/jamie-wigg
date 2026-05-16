@@ -45,18 +45,18 @@ const STATUS_LABEL: Record<SceneStatus, string> = {
 };
 
 /**
- * Tailwind classes per status. We hand-roll the palette rather than reach
- * for `rhythmix-teaser-60s/DESIGN.md` tokens because the render UI is
- * functional / utilitarian; brand colour belongs on hero surfaces. Greys for
- * dormant phases, blue for active work, green for success, red for failure
- * — standard signal vocabulary, accessible against white and dark surfaces.
+ * Tailwind classes per status — RHYTHMIX brand palette (T13 / R12). Pulls
+ * from the signal-tone CSS custom properties in globals.css so every pill
+ * inherits the same dark-surface treatment as the rest of the studio.
+ * Queued = muted surface, generating = cyan info, downloaded = purple,
+ * composed = green ok, failed = magenta danger.
  */
 const STATUS_CLASSES: Record<SceneStatus, string> = {
-  queued: "bg-neutral-100 text-neutral-600 border-neutral-200",
-  generating: "bg-blue-50 text-blue-700 border-blue-200",
-  downloaded: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  composed: "bg-green-50 text-green-700 border-green-200",
-  failed: "bg-red-50 text-red-700 border-red-200",
+  queued: "bg-rhythmix-surface-2 text-rhythmix-text-soft border-rhythmix-border-strong",
+  generating: "bg-[var(--color-rhythmix-info-soft)] text-rhythmix-cyan border-rhythmix-cyan/40",
+  downloaded: "bg-[color:var(--color-rhythmix-purple)]/15 text-rhythmix-purple border-rhythmix-purple/40",
+  composed: "bg-[var(--color-rhythmix-ok-soft)] text-rhythmix-green border-rhythmix-green/40",
+  failed: "bg-[var(--color-rhythmix-danger-soft)] text-rhythmix-magenta border-rhythmix-magenta/40",
 };
 
 export function SceneStatusPill({
@@ -84,15 +84,15 @@ export function SceneStatusPill({
 
   return (
     <span
-      className="inline-flex items-center gap-2"
+      className="inline-flex flex-wrap items-center gap-2"
       data-testid={testId ?? `scene-status-${status}`}
     >
       <span
-        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${classes}`}
+        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-rhythmix-mono text-xs font-semibold uppercase tracking-wider ${classes}`}
       >
         <span aria-live="polite">{label}</span>
         {showAttempt && (
-          <span className="ml-1.5 text-[10px] opacity-80">
+          <span className="ml-1.5 text-[10px] opacity-80 tabular-nums">
             {attempt}/3
           </span>
         )}
@@ -108,7 +108,7 @@ export function SceneStatusPill({
           type="button"
           onClick={onRerun}
           // 44 px tall to satisfy R9's touch-target rule even at small font.
-          className="inline-flex items-center justify-center rounded-md border border-red-300 bg-white px-3 text-xs font-medium text-red-700 hover:bg-red-50 active:bg-red-100"
+          className="inline-flex items-center justify-center rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-magenta/50 bg-transparent px-3 text-xs font-semibold text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           style={{ minHeight: "44px" }}
           data-testid="scene-rerun"
         >

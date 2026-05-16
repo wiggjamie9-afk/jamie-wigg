@@ -33,14 +33,17 @@ export function ComposeBar({ percent }: ComposeBarProps) {
       aria-label="Composing video"
       data-testid="compose-bar"
     >
-      <div className="flex items-center justify-between text-xs text-neutral-600 mb-1.5">
-        <span className="font-medium">Composing…</span>
-        <span className="tabular-nums">{clamped}%</span>
+      <div className="flex items-center justify-between font-rhythmix-mono text-xs uppercase tracking-wider text-rhythmix-text-soft mb-1.5">
+        <span className="font-semibold">Composing…</span>
+        <span className="tabular-nums text-rhythmix-cyan">{clamped}%</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-rhythmix-surface">
         <div
-          className="h-full bg-neutral-900 transition-[width] duration-200 ease-out"
-          style={{ width: `${clamped}%` }}
+          className="h-full bg-rhythmix-magenta transition-[width] duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+          style={{
+            width: `${clamped}%`,
+            backgroundImage: "var(--rhx-grad-cta)",
+          }}
         />
       </div>
     </div>

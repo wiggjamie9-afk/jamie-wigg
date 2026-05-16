@@ -125,10 +125,10 @@ export function UploadForm() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-6">
       {/* Drop zone / file picker */}
-      <div>
-        <label className="mb-2 block text-sm font-medium text-neutral-800">
+      <div className="min-w-0">
+        <label className="mb-2 block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft">
           Audio file
         </label>
         <div
@@ -145,16 +145,16 @@ export function UploadForm() {
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           className={[
-            "flex min-h-[160px] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
+            "flex min-h-[160px] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-rhythmix-lg)] border-2 border-dashed p-6 text-center transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]",
             isDragOver
-              ? "border-neutral-900 bg-neutral-100"
-              : "border-neutral-300 bg-neutral-50 hover:bg-neutral-100",
+              ? "border-rhythmix-magenta bg-rhythmix-surface-2"
+              : "border-rhythmix-border-strong bg-rhythmix-surface hover:bg-rhythmix-surface-2",
           ].join(" ")}
         >
-          <p className="text-sm font-medium text-neutral-800">
+          <p className="text-sm font-semibold text-rhythmix-text break-words">
             {file ? file.name : "Drop an audio file here"}
           </p>
-          <p className="text-xs text-neutral-500">
+          <p className="font-rhythmix-mono text-xs text-rhythmix-text-muted">
             {file
               ? formatBytes(file.size)
               : "or tap to choose · mp3, wav, m4a, flac · up to 50 MB"}
@@ -168,7 +168,7 @@ export function UploadForm() {
           />
         </div>
         {fileError && (
-          <p className="mt-2 text-sm text-red-600" role="alert">
+          <p className="mt-2 text-sm text-rhythmix-magenta" role="alert">
             {fileError}
           </p>
         )}
@@ -180,14 +180,14 @@ export function UploadForm() {
       </div>
 
       {/* Theme */}
-      <div>
+      <div className="min-w-0">
         <label
           htmlFor="theme"
-          className="mb-2 block text-sm font-medium text-neutral-800"
+          className="mb-2 block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft"
         >
           Visual theme
         </label>
-        <p className="mb-2 text-xs text-neutral-500">
+        <p className="mb-2 text-xs text-rhythmix-text-muted">
           Describe the look you want — moods, settings, colours, anything that
           paints the scenes.
         </p>
@@ -198,23 +198,23 @@ export function UploadForm() {
           maxLength={THEME_MAX}
           rows={4}
           placeholder="e.g. neon-soaked night drive through Tokyo, rain on the windshield, slow pans"
-          className="block w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-3 text-base text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+          className="block w-full resize-y rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface px-3 py-3 text-base text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           style={{ minHeight: "96px" }}
         />
-        <div className="mt-1 flex justify-end text-xs text-neutral-500">
+        <div className="mt-1 flex justify-end font-rhythmix-mono text-xs text-rhythmix-text-muted">
           {theme.length}/{THEME_MAX}
         </div>
       </div>
 
       {/* BPM */}
-      <div>
+      <div className="min-w-0">
         <label
           htmlFor="bpm"
-          className="mb-2 block text-sm font-medium text-neutral-800"
+          className="mb-2 block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft"
         >
-          BPM <span className="font-normal text-neutral-500">(optional)</span>
+          BPM <span className="font-normal normal-case tracking-normal text-rhythmix-text-muted">(optional)</span>
         </label>
-        <p className="mb-2 text-xs text-neutral-500">
+        <p className="mb-2 text-xs text-rhythmix-text-muted">
           Sets the beat for scene cuts. Leave blank to auto-detect later.
         </p>
         <input
@@ -227,18 +227,18 @@ export function UploadForm() {
           value={bpm}
           onChange={onBpmChange}
           placeholder="e.g. 128"
-          className="block w-full rounded-md border border-neutral-300 bg-white px-3 py-3 text-base text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+          className="block w-full rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface px-3 py-3 text-base font-rhythmix-mono tabular-nums text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           style={{ minHeight: "44px" }}
         />
         {bpmError && (
-          <p className="mt-2 text-sm text-red-600" role="alert">
+          <p className="mt-2 text-sm text-rhythmix-magenta" role="alert">
             {bpmError}
           </p>
         )}
       </div>
 
       {submitError && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-rhythmix-magenta" role="alert">
           {submitError}
         </p>
       )}
@@ -247,7 +247,7 @@ export function UploadForm() {
         type="button"
         onClick={onContinue}
         disabled={!canContinue}
-        className="inline-flex w-full items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
+        className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)] hover:bg-rhythmix-pink disabled:cursor-not-allowed disabled:bg-rhythmix-surface-2 disabled:text-rhythmix-text-muted"
         style={{ minHeight: "44px" }}
       >
         {submitting ? "Saving…" : "Continue"}

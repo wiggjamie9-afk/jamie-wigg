@@ -74,16 +74,19 @@ export function WaveformCanvas({
         }
 
         const midY = height / 2;
-        ctx.fillStyle = "#fafafa";
+        // Brand-locked: deep violet-near-black surface with a magenta
+        // midline and electric-cyan waveform. Sourced from
+        // rhythmix-teaser-60s/DESIGN.md.
+        ctx.fillStyle = "#1a1325"; // rhythmix-surface
         ctx.fillRect(0, 0, cssWidth, height);
-        ctx.strokeStyle = "#737373";
+        ctx.strokeStyle = "#7c3aed"; // rhythmix-purple midline
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, midY);
         ctx.lineTo(cssWidth, midY);
         ctx.stroke();
 
-        ctx.fillStyle = "#171717";
+        ctx.fillStyle = "#00d8ff"; // rhythmix-cyan waveform
         for (let x = 0; x < cssWidth; x++) {
           let min = 1.0;
           let max = -1.0;
@@ -123,15 +126,15 @@ export function WaveformCanvas({
     <div className="w-full">
       <canvas
         ref={canvasRef}
-        className="block w-full rounded-md border border-neutral-200 bg-neutral-50"
+        className="block w-full rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface"
         style={{ height: `${height}px` }}
         aria-label="Audio waveform preview"
       />
       {status === "decoding" && (
-        <p className="mt-2 text-xs text-neutral-500">Decoding waveform…</p>
+        <p className="mt-2 font-rhythmix-mono text-xs text-rhythmix-text-muted">Decoding waveform…</p>
       )}
       {status === "error" && (
-        <p className="mt-2 text-xs text-red-600">
+        <p className="mt-2 text-xs text-rhythmix-magenta">
           Waveform preview unavailable: {error}
         </p>
       )}

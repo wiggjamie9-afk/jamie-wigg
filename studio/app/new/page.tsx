@@ -9,13 +9,13 @@ export const metadata = {
 
 export default function NewPage() {
   return (
-    <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12">
+    <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+          <h1 className="font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text sm:text-4xl">
             New video
           </h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 text-sm text-rhythmix-text-soft">
             Drop your track and describe the look. Everything stays on your
             device.
           </p>

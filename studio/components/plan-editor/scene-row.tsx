@@ -66,17 +66,17 @@ export function SceneRow({
   const maxClipSeconds = modelMeta?.maxClipSeconds ?? 10;
 
   return (
-    <tr className="block border-b border-neutral-200 md:table-row md:border-b-0">
+    <tr className="block border-b border-rhythmix-border-strong md:table-row md:border-b-0">
       {/* Index + role badge */}
       <td
         className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4"
         data-label="Scene"
       >
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-neutral-900 px-2 text-xs font-medium text-white tabular-nums">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-rhythmix-magenta px-2 font-rhythmix-mono text-xs font-bold text-rhythmix-text tabular-nums">
             {index + 1}
           </span>
-          <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-neutral-700">
+          <span className="rounded-[var(--radius-rhythmix-sm)] bg-rhythmix-surface-2 px-2 py-0.5 font-rhythmix-mono text-xs font-medium uppercase tracking-wider text-rhythmix-cyan">
             {scene.role}
           </span>
         </div>
@@ -84,16 +84,16 @@ export function SceneRow({
 
       {/* Model select */}
       <td
-        className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4"
+        className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4 min-w-0"
         data-label="Model"
       >
-        <label className="mb-1 block text-xs font-medium text-neutral-500 md:hidden">
+        <label className="mb-1 block font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted md:hidden">
           Model
         </label>
         <select
           value={MODEL_OPTIONS.some((o) => o.id === scene.model) ? scene.model : ""}
           onChange={(e) => onChange({ model: e.target.value })}
-          className="block w-full rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+          className="block w-full rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-border-strong bg-rhythmix-surface px-2 py-2 text-sm text-rhythmix-text focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           style={{ minHeight: "44px" }}
           aria-label={`Model for scene ${index + 1}`}
         >
@@ -112,10 +112,10 @@ export function SceneRow({
 
       {/* Duration */}
       <td
-        className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4"
+        className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4 min-w-0"
         data-label="Duration (s)"
       >
-        <label className="mb-1 block text-xs font-medium text-neutral-500 md:hidden">
+        <label className="mb-1 block font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted md:hidden">
           Duration (s)
         </label>
         <input
@@ -143,12 +143,12 @@ export function SceneRow({
               (e.target as HTMLInputElement).blur();
             }
           }}
-          className="block w-full rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm tabular-nums text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+          className="block w-full rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-border-strong bg-rhythmix-surface px-2 py-2 font-rhythmix-mono text-sm tabular-nums text-rhythmix-text focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           style={{ minHeight: "44px" }}
           aria-label={`Duration in seconds for scene ${index + 1}`}
         />
         {bpm && (
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-neutral-400">
+          <p className="mt-1 font-rhythmix-mono text-[10px] uppercase tracking-wide text-rhythmix-text-muted">
             Snaps to {bpm} BPM
           </p>
         )}
@@ -156,10 +156,10 @@ export function SceneRow({
 
       {/* Prompt */}
       <td
-        className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4"
+        className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4 min-w-0"
         data-label="Prompt"
       >
-        <label className="mb-1 block text-xs font-medium text-neutral-500 md:hidden">
+        <label className="mb-1 block font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted md:hidden">
           Prompt
         </label>
         <textarea
@@ -169,7 +169,7 @@ export function SceneRow({
             onChange({ prompt: e.target.value });
           }}
           rows={3}
-          className="block w-full resize-y rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+          className="block w-full resize-y rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-border-strong bg-rhythmix-surface px-2 py-2 text-sm text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           style={{ minHeight: "72px" }}
           aria-label={`Prompt for scene ${index + 1}`}
         />

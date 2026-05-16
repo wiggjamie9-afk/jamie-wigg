@@ -471,9 +471,9 @@ export function RenderProgress({ planId }: { planId: string }) {
 
   if (phase.kind === "loading") {
     return (
-      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12">
+      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
         <div className="mx-auto w-full max-w-xl text-center">
-          <p className="text-sm text-neutral-500" aria-live="polite">
+          <p className="font-rhythmix-mono text-sm text-rhythmix-text-muted" aria-live="polite">
             {phase.message}
           </p>
         </div>
@@ -535,19 +535,19 @@ export function RenderProgress({ planId }: { planId: string }) {
 
   if (phase.kind === "error") {
     return (
-      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12">
+      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
         <div className="mx-auto w-full max-w-xl">
-          <h1 className="mb-2 text-3xl font-bold tracking-tight text-neutral-900">
+          <h1 className="mb-2 font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text">
             Render failed
           </h1>
-          <p className="mb-6 text-sm text-red-600 break-words" role="alert">
+          <p className="mb-6 text-sm text-rhythmix-magenta break-words" role="alert">
             {phase.message}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
               onClick={() => router.push(`/plan/${planId}`)}
-              className="inline-flex w-full items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium text-white hover:bg-neutral-800 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)] sm:w-auto"
               style={{ minHeight: "44px" }}
             >
               Back to plan
@@ -575,19 +575,19 @@ export function RenderProgress({ planId }: { planId: string }) {
   const rerunHandler = isRunning ? undefined : onRerunScene;
 
   return (
-    <main className="min-h-screen w-full px-4 pb-32 pt-8 sm:px-6 sm:pt-12">
+    <main className="min-h-screen w-full px-4 pb-32 pt-8 sm:px-6 sm:pt-12 bg-rhythmix-bg">
       <div className="mx-auto w-full max-w-4xl">
         <header className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+          <h1 className="font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text sm:text-4xl">
             Rendering
           </h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 font-rhythmix-mono text-xs uppercase tracking-wider text-rhythmix-text-muted">
             {plan.scenes.length} scenes · {plan.audioDuration.toFixed(1)}s ·{" "}
             {plan.bpm ? `${plan.bpm} BPM` : "no BPM"} · {plan.aspect}
           </p>
           {isCancelled && (
             <p
-              className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+              className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] px-3 py-2 text-xs text-rhythmix-warn"
               role="status"
             >
               Render cancelled. Head back to the plan to try again.
@@ -595,7 +595,7 @@ export function RenderProgress({ planId }: { planId: string }) {
           )}
           {isDone && (
             <p
-              className="mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800"
+              className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-green/40 bg-[var(--color-rhythmix-ok-soft)] px-3 py-2 text-xs text-rhythmix-green"
               role="status"
             >
               Render done. Your MP4 downloaded automatically.
@@ -625,13 +625,13 @@ export function RenderProgress({ planId }: { planId: string }) {
         />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-3">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-rhythmix-border-strong bg-[color:var(--color-rhythmix-bg)]/95 px-4 py-3 backdrop-blur sm:px-6">
+        <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-3">
           {isRunning ? (
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex w-full items-center justify-center rounded-md border border-red-300 bg-white px-6 py-3 text-base font-medium text-red-700 hover:bg-red-50 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/50 bg-transparent px-6 py-3 text-base font-semibold text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)] sm:w-auto"
               style={{ minHeight: "44px" }}
               data-testid="cancel-render"
             >
@@ -641,7 +641,7 @@ export function RenderProgress({ planId }: { planId: string }) {
             <button
               type="button"
               onClick={() => router.push("/library")}
-              className="inline-flex w-full items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium text-white hover:bg-neutral-800 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)] sm:w-auto"
               style={{ minHeight: "44px" }}
             >
               Back to library

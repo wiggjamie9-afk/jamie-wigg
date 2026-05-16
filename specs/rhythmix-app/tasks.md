@@ -87,7 +87,8 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R9, R12
   - **acceptance**: every page renders correctly at 375 px viewport (iPhone SE); touch targets ≥44 px on `<button>` and link elements; palette / typography sourced from `rhythmix-teaser-60s/DESIGN.md` (loaded as CSS custom properties in `globals.css`); Lighthouse mobile score ≥90 on `/`, `/new`, `/library`
 
-- [ ] **T14** — Tests
+- [x] **T14** — Tests
+  > flags: (1) history.ts eviction relies on `Date.now()` ms — tight loops produce ties; (2) secrets.ts `setToken` doesn't refresh in-memory `sessionToken` on rotation; (3) studio/package.json lacks `test` script + vitest/jsdom/idb dev-deps (outside T14's glob).
   - **files**: `studio/**/*.test.ts`, `studio/vitest.config.ts`, `rhythmix-studio/test/core.test.mjs`
   - **depends**: T3, T4, T6, T10, T12, T15
   - **satisfies**: all

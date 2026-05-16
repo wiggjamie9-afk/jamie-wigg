@@ -45,7 +45,7 @@ export function ScenesTable({ scenes, rows, onRerun }: ScenesTableProps) {
         data-testid="scenes-table"
       >
         <thead className="hidden md:table-header-group">
-          <tr className="border-b border-neutral-300 text-left text-xs uppercase tracking-wide text-neutral-500">
+          <tr className="border-b border-rhythmix-border-strong text-left font-rhythmix-mono text-xs uppercase tracking-wider text-rhythmix-text-muted">
             <th className="px-3 py-2 font-medium" style={{ width: "12%" }}>
               Scene
             </th>
@@ -94,33 +94,33 @@ function SceneTableRow({ scene, index, row, onRerun }: SceneTableRowProps) {
 
   return (
     <tr
-      className="block border-b border-neutral-200 md:table-row md:border-b md:border-neutral-200"
+      className="block border-b border-rhythmix-border-strong md:table-row md:border-b md:border-rhythmix-border-strong"
       data-testid={`scene-row-${scene.id}`}
     >
       <td className="block px-0 py-3 md:table-cell md:px-3 md:py-3">
-        <div className="md:hidden text-xs uppercase tracking-wide text-neutral-500">
+        <div className="md:hidden font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted">
           Scene
         </div>
-        <div className="font-medium text-neutral-900 tabular-nums">
+        <div className="font-rhythmix-display font-bold text-rhythmix-text tabular-nums">
           {index + 1}
         </div>
       </td>
       <td className="block px-0 pb-2 md:table-cell md:px-3 md:py-3">
-        <div className="md:hidden text-xs uppercase tracking-wide text-neutral-500">
+        <div className="md:hidden font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted">
           Role
         </div>
-        <div className="text-neutral-700">{scene.role}</div>
+        <div className="font-rhythmix-mono text-xs uppercase tracking-wider text-rhythmix-cyan">{scene.role}</div>
       </td>
-      <td className="block px-0 pb-2 md:table-cell md:px-3 md:py-3">
-        <div className="md:hidden text-xs uppercase tracking-wide text-neutral-500">
+      <td className="block px-0 pb-2 md:table-cell md:px-3 md:py-3 min-w-0">
+        <div className="md:hidden font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted">
           Model
         </div>
-        <div className="font-mono text-xs text-neutral-700 break-all">
+        <div className="font-rhythmix-mono text-xs text-rhythmix-text-soft break-all">
           {scene.model}
         </div>
       </td>
-      <td className="block px-0 pb-4 md:table-cell md:px-3 md:py-3">
-        <div className="md:hidden text-xs uppercase tracking-wide text-neutral-500 mb-1">
+      <td className="block px-0 pb-4 md:table-cell md:px-3 md:py-3 min-w-0">
+        <div className="md:hidden font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted mb-1">
           Status
         </div>
         <SceneStatusPill
@@ -130,7 +130,7 @@ function SceneTableRow({ scene, index, row, onRerun }: SceneTableRowProps) {
           onRerun={row.status === "failed" ? rerunHandler : undefined}
         />
         {row.status === "failed" && row.error && (
-          <p className="mt-1 text-xs text-red-600 break-words max-w-prose">
+          <p className="mt-1 text-xs text-rhythmix-magenta break-words max-w-prose">
             {row.error}
           </p>
         )}

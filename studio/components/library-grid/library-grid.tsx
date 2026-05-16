@@ -91,19 +91,19 @@ export function LibraryGrid() {
       <EvictionToast ref={toastRef} />
 
       {state.status === "loading" || state.status === "idle" ? (
-        <p className="py-12 text-center text-sm text-neutral-500">
+        <p className="py-12 text-center font-rhythmix-mono text-sm text-rhythmix-text-muted">
           Loading your renders…
         </p>
       ) : null}
 
       {state.status === "error" ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="font-medium">Couldn&rsquo;t load history.</p>
-          <p className="mt-1 text-amber-800">{state.message}</p>
+        <div className="rounded-[var(--radius-rhythmix-md)] border border-rhythmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] p-4 text-sm text-rhythmix-warn">
+          <p className="font-semibold">Couldn&rsquo;t load history.</p>
+          <p className="mt-1 text-rhythmix-text-soft">{state.message}</p>
           <button
             type="button"
             onClick={() => void refresh()}
-            className="mt-3 rounded-md bg-amber-200 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-300"
+            className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-warn/60 bg-transparent px-4 py-2 text-xs font-semibold text-rhythmix-warn hover:bg-[var(--color-rhythmix-warn-soft)] transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           >
             Try again
           </button>
@@ -142,16 +142,17 @@ export function LibraryGrid() {
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-dashed border-neutral-300 p-10 text-center">
-      <p className="text-sm font-medium text-neutral-700">
+    <div className="rounded-[var(--radius-rhythmix-lg)] border border-dashed border-rhythmix-border-strong bg-rhythmix-surface/40 p-10 text-center">
+      <p className="font-rhythmix-display text-base font-semibold text-rhythmix-text">
         No renders yet
       </p>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-rhythmix-text-soft">
         Render a plan to see it here.
       </p>
       <Link
         href="/new"
-        className="mt-4 inline-flex min-h-[40px] items-center justify-center rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-700"
+        role="button"
+        className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-5 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
       >
         Start a new render
       </Link>

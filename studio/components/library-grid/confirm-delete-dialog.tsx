@@ -88,7 +88,7 @@ export function ConfirmDeleteDialog(props: Props) {
   return (
     <div
       // Backdrop. Click-to-cancel.
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
@@ -98,17 +98,17 @@ export function ConfirmDeleteDialog(props: Props) {
         aria-modal="true"
         aria-labelledby="confirm-delete-title"
         aria-describedby="confirm-delete-body"
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-border-strong bg-rhythmix-surface p-6 shadow-2xl"
       >
         <h2
           id="confirm-delete-title"
-          className="text-lg font-semibold text-neutral-900"
+          className="font-rhythmix-display text-lg font-bold text-rhythmix-text"
         >
           {title}
         </h2>
         <p
           id="confirm-delete-body"
-          className="mt-2 text-sm text-neutral-600"
+          className="mt-2 text-sm text-rhythmix-text-soft"
         >
           {body}
         </p>
@@ -118,7 +118,7 @@ export function ConfirmDeleteDialog(props: Props) {
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="min-h-[44px] rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           >
             {cancelLabel}
           </button>
@@ -129,7 +129,7 @@ export function ConfirmDeleteDialog(props: Props) {
               // Fire-and-forget — the parent owns success/error UI.
               void onConfirm();
             }}
-            className="min-h-[44px] rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-danger px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           >
             {confirmLabel}
           </button>
