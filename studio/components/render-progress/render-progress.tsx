@@ -63,15 +63,20 @@ type PhaseState =
   | { kind: "error"; kind2: "generic" | "replicate-unreachable"; message: string };
 
 /**
- * History save signature, mirrored from T12's promised `history.ts` module.
+ * History save signature, mirrored from T12's `history.ts` module.
  * Defined here so the dynamic import has a typed target; if the module
- * doesn't exist yet, we swallow the import error and skip the save.
+ * doesn't exist yet (or fails to load), we swallow the error and skip
+ * the save. The shape mirrors `Omit<RenderMeta, "id" | "createdAt">` from
+ * T12's exports — keeping it inline avoids a hard import dependency.
  */
 type SaveRenderFn = (
   meta: {
     planId: string;
     theme: string;
-    createdAt: number;
+    bpm: number | null;
+    aspect: "16:9" | "9:16" | "1:1";
+    audioDurationSec: number;
+    sceneCount: number;
     failedSceneIds: string[];
   },
   mp4: Blob,
@@ -439,7 +444,10 @@ export function RenderProgress({ planId }: { planId: string }) {
           {
             planId: plan.id,
             theme: plan.theme,
-            createdAt: Date.now(),
+            bpm: plan.bpm,
+            aspect: plan.aspect,
+            audioDurationSec: plan.audioDuration,
+            sceneCount: plan.scenes.length,
             failedSceneIds: result.failedSceneIds,
           },
           result.mp4,

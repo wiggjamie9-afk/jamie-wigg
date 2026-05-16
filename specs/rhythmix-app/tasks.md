@@ -68,7 +68,8 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R6, R7
   - **acceptance**: `runRender({ plan, audioBlob, token, onEvent })` returns `{ mp4, thumbnail, failedSceneIds[] }`; emits `scene:*` and `compose:*` events; per-scene retry up to 3x with exponential backoff; failed scenes do NOT halt the render — the runner continues with remaining scenes and final compose substitutes a placeholder frame (black frame with scene metadata overlay) for any failed scene (R6); exposes a `rerunScenes(plan, audioBlob, token, sceneIds[])` API for retrying just specific scenes without re-rendering the whole plan; cancellable via `AbortSignal`; unit-tested with a mocked Replicate including the partial-failure path
 
-- [ ] **T11** — Render progress UI (`/render/[id]`)
+- [x] **T11** — Render progress UI (`/render/[id]`)
+  > note: T10's `rerunScenes` lacks a cross-call blob cache — re-running one failed scene re-bills all scenes. Documented in T11 docblock; follow-up.
   - **files**: `studio/app/render/[id]/page.tsx`, `studio/components/render-progress/*`
   - **depends**: T9, T10
   - **satisfies**: R6, R7
