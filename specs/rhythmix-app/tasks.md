@@ -50,7 +50,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R10
   - **acceptance**: `POST /api/license { key }` returns `{ valid: true, tier }` for a known Gumroad license and `{ valid: false, reason }` otherwise; valid results cached in Worker KV with 24h TTL; secret `GUMROAD_PRODUCT_ID` configured via wrangler; deployed at `license.studio.rhythmixapp.com.au/api/license`
 
-- [ ] **T8** — Replicate proxy Worker (conditional on T0 outcome)
+- [x] **T8** — Replicate proxy Worker (now unconditional — T0 verdict: build it)
   - **files**: `studio/workers/replicate-proxy/src/index.ts`, `studio/workers/replicate-proxy/wrangler.toml`, `studio/workers/replicate-proxy/package.json`
   - **depends**: T0, T7
   - **satisfies**: R6
