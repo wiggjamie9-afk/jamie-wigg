@@ -207,7 +207,7 @@ export function ReplicateTokenPanel() {
               <button
                 type="button"
                 onClick={() => setShowReplace(false)}
-                className="min-h-[44px] rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
               >
                 Cancel
               </button>
@@ -238,14 +238,14 @@ export function ReplicateTokenPanel() {
             <button
               type="button"
               onClick={() => setShowReplace(true)}
-              className="min-h-[44px] rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             >
               Replace token
             </button>
             <button
               type="button"
               onClick={handleClear}
-              className="min-h-[44px] rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             >
               Clear token
             </button>
@@ -255,25 +255,25 @@ export function ReplicateTokenPanel() {
 
       {/* "Unlocked" → Lock + Clear */}
       {status === "unlocked" && !showReplace ? (
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="mt-4 flex flex-col flex-wrap gap-2 sm:flex-row sm:items-center">
           <button
             type="button"
             onClick={handleLock}
-            className="min-h-[44px] rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-700"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           >
             Lock session
           </button>
           <button
             type="button"
             onClick={() => setShowReplace(true)}
-            className="min-h-[44px] rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           >
             Replace token
           </button>
           <button
             type="button"
             onClick={handleClear}
-            className="min-h-[44px] rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           >
             Clear token
           </button>
@@ -289,21 +289,21 @@ function StatusBadge({ status }: { status: Status }) {
   const map: Record<Status, { label: string; tone: string }> = {
     "no-token": {
       label: "No token set",
-      tone: "border-neutral-200 bg-neutral-50 text-neutral-700",
+      tone: "border-rhythmix-border-strong bg-rhythmix-surface-2 text-rhythmix-text-soft",
     },
     locked: {
       label: "Token stored — locked",
-      tone: "border-amber-200 bg-amber-50 text-amber-900",
+      tone: "border-rhythmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] text-rhythmix-warn",
     },
     unlocked: {
       label: "Token stored — unlocked for this session",
-      tone: "border-emerald-200 bg-emerald-50 text-emerald-900",
+      tone: "border-rhythmix-green/40 bg-[var(--color-rhythmix-ok-soft)] text-rhythmix-green",
     },
   };
   const { label, tone } = map[status];
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${tone}`}
+      className={`inline-flex items-center rounded-full border px-3 py-1 font-rhythmix-mono text-xs font-semibold uppercase tracking-wider ${tone}`}
     >
       {label}
     </span>
@@ -322,8 +322,8 @@ function Field(props: {
   const { label, type, value, onChange, placeholder, autoComplete, spellCheck } = props;
   const id = `field-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
-    <label htmlFor={id} className="block">
-      <span className="block text-sm font-medium text-neutral-800">{label}</span>
+    <label htmlFor={id} className="block min-w-0">
+      <span className="block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft">{label}</span>
       <input
         id={id}
         type={type}
@@ -332,7 +332,7 @@ function Field(props: {
         placeholder={placeholder}
         autoComplete={autoComplete}
         spellCheck={spellCheck ?? true}
-        className="mt-1 block w-full min-h-[44px] rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+        className="mt-1 block w-full min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-deep px-3 py-2 text-sm text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-2 focus:ring-rhythmix-cyan/40 transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
       />
     </label>
   );
@@ -351,13 +351,13 @@ function Messages({
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+          className="rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-rhythmix-magenta"
         >
           {error}
         </p>
       ) : null}
       {info ? (
-        <p className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
+        <p className="rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface-2 px-3 py-2 text-sm text-rhythmix-text-soft">
           {info}
         </p>
       ) : null}

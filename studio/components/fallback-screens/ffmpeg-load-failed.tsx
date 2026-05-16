@@ -21,30 +21,30 @@ export interface FfmpegLoadFailedProps {
 export function FfmpegLoadFailed({ error }: FfmpegLoadFailedProps) {
   return (
     <section
-      className="min-h-[60vh] flex flex-col items-center justify-center px-6 py-12 text-center"
+      className="min-h-[60vh] flex flex-col items-center justify-center px-6 py-12 text-center bg-rhythmix-bg"
       role="alert"
       aria-live="polite"
       data-testid="ffmpeg-load-failed"
     >
-      <div className="max-w-md">
-        <p className="text-xs uppercase tracking-widest text-neutral-500">
+      <div className="max-w-md min-w-0">
+        <p className="font-rhythmix-mono text-xs uppercase tracking-[0.3em] text-rhythmix-text-muted">
           Video engine failed to start
         </p>
-        <h2 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight">
+        <h2 className="mt-3 font-rhythmix-display text-2xl sm:text-3xl font-black tracking-tight text-rhythmix-text">
           ffmpeg.wasm failed to load
         </h2>
-        <p className="mt-4 text-base text-neutral-600 dark:text-neutral-300">
+        <p className="mt-4 text-base text-rhythmix-text-soft">
           Try a different browser or reload the page. Studio uses
           ffmpeg.wasm to assemble your video entirely in the browser, so the
           page can&apos;t continue without it.
         </p>
 
         {error ? (
-          <details className="mt-6 text-left text-xs text-neutral-500">
-            <summary className="cursor-pointer select-none">
+          <details className="mt-6 text-left text-xs text-rhythmix-text-muted">
+            <summary className="cursor-pointer select-none font-rhythmix-mono uppercase tracking-wider text-rhythmix-cyan">
               Technical details
             </summary>
-            <pre className="mt-2 whitespace-pre-wrap break-words rounded bg-neutral-100 dark:bg-neutral-900 p-3 font-mono">
+            <pre className="mt-2 whitespace-pre-wrap break-words rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-border-strong bg-rhythmix-deep p-3 font-rhythmix-mono text-rhythmix-text-soft">
               {error}
             </pre>
           </details>
@@ -58,7 +58,7 @@ export function FfmpegLoadFailed({ error }: FfmpegLoadFailedProps) {
                 window.location.reload();
               }
             }}
-            className="px-5 py-3 rounded-lg bg-black text-white text-sm font-medium hover:bg-neutral-800 transition"
+            className="inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta text-rhythmix-text text-sm font-semibold hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             data-testid="ffmpeg-load-failed-reload"
           >
             Reload page

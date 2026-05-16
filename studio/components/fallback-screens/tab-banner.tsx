@@ -26,18 +26,18 @@ export function TabBanner({ onUseThis, onCloseOther }: TabBannerProps) {
       role="alert"
       aria-live="polite"
       data-testid="tab-banner"
-      className="sticky top-0 z-50 w-full bg-amber-50 dark:bg-amber-950/80 border-b border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100"
+      className="sticky top-0 z-50 w-full bg-[var(--color-rhythmix-warn-soft)] border-b border-rhythmix-warn/40 text-rhythmix-warn"
     >
       <div className="mx-auto max-w-5xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <p className="text-sm font-medium">
+        <p className="text-sm font-medium text-rhythmix-text-soft break-words">
           Studio is open in another tab. Renders cost real money — make sure
           you only run them from one.
         </p>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex flex-wrap gap-2 shrink-0">
           <button
             type="button"
             onClick={onUseThis}
-            className="px-3 py-1.5 rounded-md bg-amber-900 text-amber-50 dark:bg-amber-100 dark:text-amber-900 text-xs font-medium hover:opacity-90 transition"
+            className="inline-flex min-h-[44px] items-center justify-center px-4 py-2 rounded-[var(--radius-rhythmix-md)] bg-rhythmix-warn text-rhythmix-bg text-xs font-semibold uppercase tracking-wider font-rhythmix-mono hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-opacity duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             data-testid="tab-banner-use-this"
           >
             Use this tab
@@ -45,7 +45,7 @@ export function TabBanner({ onUseThis, onCloseOther }: TabBannerProps) {
           <button
             type="button"
             onClick={onCloseOther}
-            className="px-3 py-1.5 rounded-md border border-amber-700 dark:border-amber-300 text-amber-900 dark:text-amber-100 text-xs font-medium hover:bg-amber-100 dark:hover:bg-amber-900 transition"
+            className="inline-flex min-h-[44px] items-center justify-center px-4 py-2 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-warn/50 bg-transparent text-rhythmix-warn text-xs font-semibold uppercase tracking-wider font-rhythmix-mono hover:bg-[var(--color-rhythmix-warn-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             data-testid="tab-banner-close-other"
           >
             Close other tab

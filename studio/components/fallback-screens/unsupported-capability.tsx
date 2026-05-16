@@ -50,20 +50,20 @@ export function UnsupportedCapability({ missing }: UnsupportedCapabilityProps) {
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center"
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center bg-rhythmix-bg"
       role="alert"
       aria-live="polite"
       data-testid="unsupported-capability"
       data-capability={missing}
     >
-      <div className="max-w-md">
-        <p className="text-xs uppercase tracking-widest text-neutral-500">
+      <div className="max-w-md min-w-0">
+        <p className="font-rhythmix-mono text-xs uppercase tracking-[0.3em] text-rhythmix-text-muted">
           {copy.blocking ? "Browser not supported" : "Limited support"}
         </p>
-        <h1 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">
+        <h1 className="mt-3 font-rhythmix-display text-3xl sm:text-4xl font-black tracking-tight rhx-text-gradient">
           {copy.title}
         </h1>
-        <p className="mt-4 text-base text-neutral-600 dark:text-neutral-300">
+        <p className="mt-4 text-base text-rhythmix-text-soft">
           {copy.body}
         </p>
 
@@ -73,11 +73,12 @@ export function UnsupportedCapability({ missing }: UnsupportedCapabilityProps) {
               href={CODESPACES_FALLBACK_URL}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-block px-5 py-3 rounded-lg bg-black text-white text-sm font-medium hover:bg-neutral-800 transition"
+              role="button"
+              className="inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta text-rhythmix-text text-sm font-semibold hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             >
               Use the CLI instead (Codespaces)
             </a>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-rhythmix-text-muted">
               No computer? Run the CLI in your browser via GitHub Codespaces.
               Free for 60 hours/month on any GitHub account.
             </p>

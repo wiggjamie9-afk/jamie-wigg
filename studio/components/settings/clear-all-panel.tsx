@@ -41,16 +41,16 @@ export function ClearAllPanel() {
   return (
     <section
       aria-labelledby="clear-all-heading"
-      className="rounded-2xl border border-red-200 bg-red-50/40 p-5 sm:p-6"
+      className="rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] p-5 sm:p-6"
     >
       <header className="mb-4">
         <h2
           id="clear-all-heading"
-          className="text-lg font-semibold text-red-900"
+          className="font-rhythmix-display text-lg font-bold text-rhythmix-magenta"
         >
           Danger zone
         </h2>
-        <p className="mt-1 text-sm text-red-800">
+        <p className="mt-1 text-sm text-rhythmix-text-soft">
           Wipes your saved token, license, plans, and render history from this
           device. Useful before selling or returning the device, or before
           handing off the browser.
@@ -61,7 +61,7 @@ export function ClearAllPanel() {
         type="button"
         onClick={() => setConfirming(true)}
         disabled={clearing}
-        className="min-h-[44px] rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-red-500"
+        className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-danger px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
       >
         {clearing ? "Clearing…" : "Clear all local data"}
       </button>
@@ -69,7 +69,7 @@ export function ClearAllPanel() {
       {error ? (
         <p
           role="alert"
-          className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-rhythmix-magenta"
         >
           {error}
         </p>
@@ -137,7 +137,7 @@ function ConfirmDialog(props: {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
@@ -147,17 +147,17 @@ function ConfirmDialog(props: {
         aria-modal="true"
         aria-labelledby="clear-all-confirm-title"
         aria-describedby="clear-all-confirm-body"
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-border-strong bg-rhythmix-surface p-6 shadow-2xl"
       >
         <h3
           id="clear-all-confirm-title"
-          className="text-lg font-semibold text-neutral-900"
+          className="font-rhythmix-display text-lg font-bold text-rhythmix-text"
         >
           Clear everything?
         </h3>
         <p
           id="clear-all-confirm-body"
-          className="mt-2 text-sm text-neutral-600"
+          className="mt-2 text-sm text-rhythmix-text-soft"
         >
           This removes your token, license, plans, and render history from this
           device. Can&rsquo;t be undone.
@@ -168,7 +168,7 @@ function ConfirmDialog(props: {
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="min-h-[44px] rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           >
             Cancel
           </button>
@@ -176,7 +176,7 @@ function ConfirmDialog(props: {
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
-            className="min-h-[44px] rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-danger px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
           >
             Clear everything
           </button>

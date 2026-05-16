@@ -81,7 +81,8 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R7, R8
   - **acceptance**: `saveRender / listRenders / getRender / deleteRender` work with `idb`; `saveRender` enforces the 50-entry cap by evicting the oldest entry when over and emitting a one-time toast (R7); `/library` lists past renders with thumbnails, theme, and date; re-download produces an identical MP4; delete requires a confirmation dialog before hard-removing the IndexedDB entry (R8)
 
-- [ ] **T13** — Mobile-first styling locked to brand
+- [x] **T13** — Mobile-first styling locked to brand
+  > flags: Lighthouse mobile ≥90 unverified (no Node deps installed during run); Cloudflare Pages SPA fallback config still needed for `[id]` routes at deploy.
   - **files**: `studio/app/globals.css`, `studio/components/**/*.tsx` (className edits only — no structural changes)
   - **depends**: T1, T5, T6, T9, T11, T12
   - **satisfies**: R9, R12
