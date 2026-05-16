@@ -5,7 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick Start (For Claude)
 
 - **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
-- **Native iOS/Android app** → `mobile/` (Expo + Expo Router + EAS Build). Hybrid shell: WebView loads `rhythmixapp.com.au`, with native Library / Settings tabs. Bundle ID `com.rhythmix.app`. Build via `eas build` (cloud, no Mac required). See `mobile/README.md`.
+- **Native iOS/Android app — two parallel scaffolds** (pick one before publishing):
+  - `mobile/` — **Expo + Expo Router + EAS Build**. Hybrid shell: WebView loads `rhythmixapp.com.au`, with native Library / Settings tabs. Bundle ID `com.rhythmix.app`. Build via `eas build` (cloud, no Mac). Best for adding real native features later.
+  - `capacitor/` — **Capacitor v6** (no Ionic). Bundles `index.html`/`rhythmix.html` etc. into the binary (offline). Bundle ID `com.rhythmix.web`. Rebuild web bundle with `npm run build:www`; sync to native with `npm run sync`. Best for fastest store submission of the existing site.
 - **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
 - **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.
 - **Reference for video pipeline** → `rhythmix-overview-60s/` is the canonical 60s landscape example.
