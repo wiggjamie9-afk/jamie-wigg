@@ -38,11 +38,11 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R1, R2
   - **acceptance**: user can drop / file-pick an audio file (mp3/wav/m4a/flac), see a waveform preview (rendered with WaveSurfer.js or Canvas from probe data), enter theme text + BPM; client-side validation rejects >50 MB or unsupported codecs; pressing "Continue" advances to `/plan/[id]`
 
-- [ ] **T6** — Settings UI: Replicate token + license key
-  - **files**: `studio/app/settings/page.tsx`, `studio/components/settings/*`, `studio/lib/secrets.ts`
-  - **depends**: T1
-  - **satisfies**: R3, R10
-  - **acceptance**: user can paste Replicate token, set a passphrase, token is encrypted with WebCrypto AES-GCM and stored in `localStorage`; user can paste license key which is POSTed to the license Worker (T7) and the valid result is cached in `localStorage` for 24h; clearing token / license actually clears the storage entries
+- [ ] **T6** — Settings UI: Replicate token, license key, support bundle, clear-all-data
+  - **files**: `studio/app/settings/page.tsx`, `studio/components/settings/*`, `studio/lib/secrets.ts`, `studio/lib/support-bundle.ts`, `studio/lib/clear-all.ts`
+  - **depends**: T1, T12
+  - **satisfies**: R3, R10, R15, R16
+  - **acceptance**: user can paste Replicate token, set a passphrase (asked at first entry + once per session per R3), token is encrypted with WebCrypto AES-GCM and stored in `localStorage`; user can paste license key which is POSTed to the license Worker (T7) and the valid result is cached in `localStorage` for 24h; an "Export support bundle" button downloads a JSON file with logs + browser info + plan history but excluding token / audio / MP4 (R15); a "Clear all local data" button wipes localStorage + IndexedDB after a confirmation dialog (R16); clearing token / license actually clears the storage entries
 
 - [ ] **T7** — License-validation Cloudflare Worker
   - **files**: `studio/workers/license/src/index.ts`, `studio/workers/license/wrangler.toml`, `studio/workers/license/package.json`
@@ -66,7 +66,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **files**: `studio/lib/render-runner.ts`, `studio/lib/render-events.ts`
   - **depends**: T3, T4, T8
   - **satisfies**: R6, R7
-  - **acceptance**: `runRender({ plan, audioBlob, token, onEvent })` returns `{ mp4, thumbnail }`; emits `scene:*` and `compose:*` events; per-scene retry up to 3x with exponential backoff; cancellable via `AbortSignal`; unit-tested with a mocked Replicate
+  - **acceptance**: `runRender({ plan, audioBlob, token, onEvent })` returns `{ mp4, thumbnail, failedSceneIds[] }`; emits `scene:*` and `compose:*` events; per-scene retry up to 3x with exponential backoff; failed scenes do NOT halt the render — the runner continues with remaining scenes and final compose substitutes a placeholder frame (black frame with scene metadata overlay) for any failed scene (R6); exposes a `rerunScenes(plan, audioBlob, token, sceneIds[])` API for retrying just specific scenes without re-rendering the whole plan; cancellable via `AbortSignal`; unit-tested with a mocked Replicate including the partial-failure path
 
 - [ ] **T11** — Render progress UI (`/render/[id]`)
   - **files**: `studio/app/render/[id]/page.tsx`, `studio/components/render-progress/*`
@@ -78,7 +78,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **files**: `studio/lib/history.ts`, `studio/app/library/page.tsx`, `studio/components/library-grid/*`
   - **depends**: T10
   - **satisfies**: R7, R8
-  - **acceptance**: `saveRender / listRenders / getRender / deleteRender` work with `idb`; `/library` lists past renders with thumbnails, theme, and date; re-download produces an identical MP4; delete removes the IndexedDB entry
+  - **acceptance**: `saveRender / listRenders / getRender / deleteRender` work with `idb`; `saveRender` enforces the 50-entry cap by evicting the oldest entry when over and emitting a one-time toast (R7); `/library` lists past renders with thumbnails, theme, and date; re-download produces an identical MP4; delete requires a confirmation dialog before hard-removing the IndexedDB entry (R8)
 
 - [ ] **T13** — Mobile-first styling locked to brand
   - **files**: `studio/app/globals.css`, `studio/components/**/*.tsx` (className edits only — no structural changes)
@@ -88,6 +88,12 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
 
 - [ ] **T14** — Tests
   - **files**: `studio/**/*.test.ts`, `studio/vitest.config.ts`, `rhythmix-studio/test/core.test.mjs`
-  - **depends**: T3, T4, T6, T10, T12
+  - **depends**: T3, T4, T6, T10, T12, T15
   - **satisfies**: all
-  - **acceptance**: `pnpm test` in `studio/` runs Vitest covering `lib/secrets.ts`, `lib/history.ts`, `lib/render-runner.ts` (mocked Replicate); `npm test` in `rhythmix-studio/` covers the new `core/` extraction; CI workflow runs both
+  - **acceptance**: `pnpm test` in `studio/` runs Vitest covering `lib/secrets.ts`, `lib/history.ts`, `lib/render-runner.ts` (mocked Replicate), `lib/capability-detect.ts` (R13 hard-failure detection), `lib/tab-coordinator.ts` (R14 BroadcastChannel); `npm test` in `rhythmix-studio/` covers the new `core/` extraction; CI workflow runs both
+
+- [ ] **T15** — Hard-failure handling and capability detection (added by /spec-analyze)
+  - **files**: `studio/lib/capability-detect.ts`, `studio/lib/tab-coordinator.ts`, `studio/app/unsupported/page.tsx`, `studio/components/fallback-screens/*`, `studio/app/layout.tsx` (wire detection at root)
+  - **depends**: T1
+  - **satisfies**: R13, R14
+  - **acceptance**: on a browser missing WebCrypto / IndexedDB / WebAssembly, the app routes to `/unsupported` with a dedicated screen for each missing capability and a link to the CLI install instructions or Codespace launch flow; on Replicate API unreachable (network timeout to `api.replicate.com`), surface a fallback screen with "retry" + a Replicate status link; on `ffmpeg.wasm` load failure, surface a fallback with a "try a different browser" message; second-tab detection via `BroadcastChannel` shows a banner in both tabs with "use this tab" / "close other tab" actions; unit-tested for each capability flag
