@@ -12,17 +12,24 @@ Wraps the existing RHYTHMIX static site (`index.html`, `rhythmix.html`, etc. at 
 
 ## Setup
 
+**Fast path — one command:**
+
+```bash
+cd capacitor
+bash setup.sh ios        # or: bash setup.sh android  /  bash setup.sh both
+```
+
+That runs `npm install`, builds `www/`, adds the native platform(s) (skips if already present), and syncs everything.
+
+**Manual path** (if you want to see each step):
+
 ```bash
 cd capacitor
 npm install
 npm run build:www          # copies *.html + icons from repo root → capacitor/www/
-```
-
-Add a native platform (run once per platform):
-
-```bash
 npm run ios:add            # creates capacitor/ios/ (Xcode workspace)
 npm run android:add        # creates capacitor/android/ (Gradle project)
+npm run sync               # pushes web bundle + plugins into native projects
 ```
 
 > Both `ios/` and `android/` directories are gitignored by default in this repo. The moment you write custom native code, drop those entries from `.gitignore` so the changes are tracked.

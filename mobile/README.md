@@ -11,10 +11,21 @@ Expo + React Native + EAS Build. Hybrid native shell that loads `rhythmixapp.com
 
 ## One-time setup (from your iPhone or any machine)
 
+**Fast path — one command:**
+
+```bash
+cd mobile
+bash setup.sh ios        # or: bash setup.sh android  /  bash setup.sh both
+```
+
+That runs `npm install`, `npx expo install --fix`, and installs the EAS CLI if missing.
+
+**Manual path** (if you want to see each step):
+
 ```bash
 cd mobile
 npm install
-npx expo install --fix     # align deps with current Expo SDK
+npx expo install --fix   # align deps with current Expo SDK
 ```
 
 Install the EAS CLI globally (or use `npx`):
