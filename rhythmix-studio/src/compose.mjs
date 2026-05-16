@@ -1,20 +1,16 @@
-import { spawn } from "node:child_process";
+// Node-side composition pipeline. Custom filter graphs (aspect-fit
+// scale+crop, xfade chains, fps normalisation) don't fit the
+// adapter's five-op shape (probe/trim/concat/mux/extractFrame), so the
+// individual stages call `runFfmpeg` — the Node adapter's low-level
+// escape hatch — directly. compose.mjs only runs on the CLI side, so
+// importing `./ffmpeg/node.mjs` skips the top-level await on the facade
+// and keeps the WASM bundle out of the Node hot path.
+
 import { writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-function runFfmpeg(args) {
-  return new Promise((resolveP, rejectP) => {
-    const p = spawn("ffmpeg", ["-y", ...args], { stdio: ["ignore", "pipe", "pipe"] });
-    let stderr = "";
-    p.stderr.on("data", (d) => (stderr += d.toString()));
-    p.on("error", rejectP);
-    p.on("close", (code) => {
-      if (code === 0) resolveP();
-      else rejectP(new Error(`ffmpeg exited ${code}\n${stderr}`));
-    });
-  });
-}
+import { runFfmpeg } from "./ffmpeg/node.mjs";
 
 // Cover-style aspect fit: scale up so the clip fully covers the target box,
 // then center-crop the overflow. No black bars; some edge content is lost.

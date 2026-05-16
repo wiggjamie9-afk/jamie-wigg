@@ -26,7 +26,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R11
   - **acceptance**: `cd rhythmix-studio && npm test` still passes; no `node:` or `child_process` imports under `src/core/`; existing CLI commands (`plan`, `render`, `render-from-plan`) still work end-to-end against a sample track
 
-- [ ] **T4** — Build ffmpeg adapter (Node + WASM) with a shared interface
+- [x] **T4** — Build ffmpeg adapter (Node + WASM) with a shared interface
   - **files**: `rhythmix-studio/src/ffmpeg/index.mjs`, `rhythmix-studio/src/ffmpeg/node.mjs`, `rhythmix-studio/src/ffmpeg/wasm.mjs`, `rhythmix-studio/src/audio.mjs` (update to use adapter), `rhythmix-studio/src/compose.mjs` (update to use adapter)
   - **depends**: T3
   - **satisfies**: R11, N5
