@@ -53,15 +53,67 @@ npm run android:run
 
 ---
 
-## Building from an iPhone (no Mac)
+## Building from an iPhone — Ionic Appflow (wired up)
 
-Capacitor itself doesn't run cloud builds — you need either:
+`ionic.config.json`, `appflow.config.json`, and the `@capacitor/live-updates` plugin are all configured. You just need an Appflow account and to wire it to this repo.
 
-- **Ionic Appflow** (paid) — Capacitor's first-party cloud build/sign/distribute service. Connects to this repo and produces signed `.ipa` / `.aab` files. https://ionic.io/appflow
-- **Codemagic / Bitrise / Expo EAS for Capacitor** — generic CI builders that can also build a Capacitor project. EAS Build supports any React Native / native project, including Capacitor's generated Xcode workspace, but the config is more manual than for the Expo project in `../mobile/`.
-- **Borrow a Mac** for one-off `.ipa` builds via Xcode → Archive → Distribute App.
+### One-time Appflow setup (all from iPhone)
 
-If "iPhone-only, no Mac" is a hard constraint, the Expo path (`../mobile/`) is the lower-friction option. Capacitor wins on offline-bundled web content and tighter integration with your existing static site.
+1. **Create an Appflow account** at https://ionic.io/appflow — free tier gives 1 concurrent build + limited build minutes (enough for early testing).
+2. **Create a new app** in the dashboard → "Import existing app" → connect your GitHub repo `wiggjamie9-afk/jamie-wigg` → set monorepo path to `capacitor/`.
+3. **Copy the App ID** (looks like `abc12345`) and replace `REPLACE_WITH_APPFLOW_APP_ID` in three places:
+   - `capacitor/ionic.config.json` (top-level `id`)
+   - `capacitor/appflow.config.json` (`apps[0].appId`)
+   - `capacitor/capacitor.config.ts` (`plugins.LiveUpdates.appId`)
+4. **Upload signing credentials** in the Appflow dashboard → Settings → Certificates:
+   - **iOS:** Apple distribution certificate `.p12` + provisioning profile `.mobileprovision`. Appflow can also generate these for you if you connect your Apple Developer account.
+   - **Android:** Upload an existing keystore `.jks`, or let Appflow generate one (it'll be stored encrypted in your Appflow account).
+
+### Trigger a build (from iPhone)
+
+- **Push a commit** from Working Copy → Appflow detects it and queues a build.
+- Or **manual build** in the dashboard: Builds → New Build → pick branch, target (Web / iOS / Android), build stack, and signing profile.
+- **Watch progress** in the Appflow dashboard. iOS builds take ~10-15min on the free tier.
+
+### Get the binary onto your phone
+
+- **iOS dev/preview:** Appflow generates a TestFlight-distributable `.ipa` and an install link. Open the link in Safari on your iPhone → install → done.
+- **iOS production:** Connect your App Store Connect API key in Appflow → enable "Deploy to App Store Connect" → builds auto-submit for review.
+- **Android:** Appflow uploads `.aab` straight to Google Play (Internal / Closed / Open / Production tracks) when you connect a service-account JSON.
+
+### Live Updates (OTA, no store review)
+
+Once the app is published, you can push web-only updates instantly:
+
+```bash
+# From any machine that has git access
+git commit -am "fix: typo on pricing page"
+git push                       # triggers an Appflow build
+# In the Appflow dashboard, deploy that build to the Production channel.
+# Phones running the app pick up the update on next launch.
+```
+
+Free tier allows Live Updates on a limited number of devices; the Production plan unlocks unlimited. https://ionic.io/pricing
+
+### Pricing snapshot (as of 2026)
+
+- **Hobby** — free — 1 concurrent build, slow build minutes, basic Live Updates
+- **Launch** — ~$49/mo — faster builds, more concurrency, real Live Updates quota
+- **Growth** — ~$120/mo — production-ready, App Store auto-deploy, multiple environments
+
+If Appflow's pricing isn't worth it, alternatives that also build Capacitor projects from iPhone:
+- **Codemagic** — generic CI, has Capacitor templates, generous free tier
+- **EAS Build** — *can* build Capacitor's generated Xcode workspace with a custom config (no Capacitor-native templates though)
+- **GitHub Actions + Fastlane** — DIY route; cheapest long-term, more setup
+
+---
+
+## What's actually wired in this repo
+
+- `ionic.config.json` — declares this as a Capacitor "custom" project (no Ionic framework)
+- `appflow.config.json` — channel mapping for Live Updates
+- `capacitor.config.ts` → `plugins.LiveUpdates` — runtime config (currently no-ops until App ID is filled in)
+- `package.json` → `npm run build` — Appflow's default build step calls this; it runs `scripts/build-www.sh`
 
 ---
 

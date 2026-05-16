@@ -25,6 +25,15 @@ const config: CapacitorConfig = {
       style: "DARK",
       backgroundColor: "#0a0a0a",
     },
+    // Ionic Appflow Live Updates. Fill in `appId` after creating the app in
+    // the Appflow dashboard; pair with the matching channel name (Production,
+    // Staging, etc.). Until then this plugin no-ops at runtime.
+    LiveUpdates: {
+      appId: "REPLACE_WITH_APPFLOW_APP_ID",
+      channel: "Production",
+      autoUpdateMethod: "background",
+      maxVersions: 2,
+    },
   },
 };
 
