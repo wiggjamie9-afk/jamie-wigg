@@ -1,4 +1,14 @@
+// Node-side audio analysis. Probing routes through the ffmpeg adapter
+// (so the web app gets the same shape); the loudness-curve sampler runs
+// a custom ffmpeg filter graph (`astats`) that depends on stderr
+// parsing — that's Node-only and uses child_process directly since it
+// doesn't fit the five-op adapter shape (probe/trim/concat/mux/
+// extractFrame). The BPM detectors shell out to external `aubio` /
+// `bpm-tag` binaries, not ffmpeg, so they stay local too.
+
 import { spawn } from "node:child_process";
+
+import { probe } from "./ffmpeg/index.mjs";
 
 function run(cmd, args) {
   return new Promise((resolve, reject) => {
@@ -15,25 +25,26 @@ function run(cmd, args) {
   });
 }
 
+// probeAudio → preserved signature; returns the same fields the CLI has
+// always relied on (path, duration, sampleRate, channels, codec,
+// bitRate). Implementation is now the adapter's `probe(filePath)` —
+// the Node adapter already returns the extra `path` and `bitRate`
+// fields the CLI uses, so the shape is unchanged.
 export async function probeAudio(path) {
-  const { stdout } = await run("ffprobe", [
-    "-v", "quiet",
-    "-print_format", "json",
-    "-show_format",
-    "-show_streams",
-    path,
-  ]);
-  const meta = JSON.parse(stdout);
-  const stream = meta.streams.find((s) => s.codec_type === "audio");
-  if (!stream) throw new Error(`No audio stream found in ${path}`);
-  const duration = Number(meta.format.duration);
+  const meta = await probe(path);
+  if (!meta.sampleRate) {
+    // probe() returns null sampleRate for video-only files; the CLI's
+    // probeAudio has always thrown when given a track with no audio
+    // stream, so preserve that contract.
+    throw new Error(`No audio stream found in ${path}`);
+  }
   return {
-    path,
-    duration,
-    sampleRate: Number(stream.sample_rate),
-    channels: stream.channels,
-    codec: stream.codec_name,
-    bitRate: stream.bit_rate ? Number(stream.bit_rate) : null,
+    path: meta.path ?? path,
+    duration: meta.duration,
+    sampleRate: meta.sampleRate,
+    channels: meta.channels,
+    codec: meta.codec,
+    bitRate: meta.bitRate ?? null,
   };
 }
 
@@ -41,6 +52,9 @@ export async function probeAudio(path) {
 // astats filter. Returns an array of dB values (one per second). Loud
 // passages of a song show up as higher (less negative) dB values; quiet
 // intros/outros show up as lower values.
+//
+// This uses a custom filter graph that emits metadata into stderr — it
+// doesn't fit the five-op adapter shape, so it stays as a direct spawn.
 export async function loudnessCurve(path) {
   return new Promise((resolveP, rejectP) => {
     const p = spawn("ffmpeg", [
