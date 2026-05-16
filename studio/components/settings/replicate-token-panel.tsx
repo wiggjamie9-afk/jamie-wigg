@@ -158,16 +158,16 @@ export function ReplicateTokenPanel() {
   return (
     <section
       aria-labelledby="replicate-token-heading"
-      className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6"
+      className="rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-border-strong bg-rhythmix-surface p-5 sm:p-6"
     >
       <header className="mb-4">
         <h2
           id="replicate-token-heading"
-          className="text-lg font-semibold text-neutral-900"
+          className="font-rhythmix-display text-lg font-bold text-rhythmix-text"
         >
           Replicate API token
         </h2>
-        <p className="mt-1 text-sm text-neutral-600">
+        <p className="mt-1 text-sm text-rhythmix-text-soft">
           Encrypted with a passphrase you set, then stored on this device.
           We never send your token to our servers.
         </p>
@@ -199,7 +199,7 @@ export function ReplicateTokenPanel() {
             <button
               type="submit"
               disabled={busy}
-              className="min-h-[44px] rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-neutral-700"
+              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             >
               {busy ? "Encrypting…" : "Save token"}
             </button>
@@ -231,7 +231,7 @@ export function ReplicateTokenPanel() {
             <button
               type="submit"
               disabled={busy}
-              className="min-h-[44px] rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-neutral-700"
+              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
             >
               {busy ? "Unlocking…" : "Unlock for this session"}
             </button>
