@@ -62,7 +62,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R4, R5
   - **acceptance**: page reads audio Blob from session storage + plan from `localStorage[plan-<id>]`; renders a scenes table (role, model, duration, prompt); each scene editable (swap model, edit prompt); cost estimate auto-updates as edits happen; "Render" button advances to `/render/[id]`; "Export plan.json" downloads the JSON
 
-- [ ] **T10** — Render runner library
+- [x] **T10** — Render runner library
   - **files**: `studio/lib/render-runner.ts`, `studio/lib/render-events.ts`
   - **depends**: T3, T4, T8
   - **satisfies**: R6, R7
