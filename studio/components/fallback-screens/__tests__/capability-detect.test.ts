@@ -34,21 +34,42 @@ function withGlobal<T extends GlobalSlot>(
   value: unknown,
   body: () => void
 ): void {
-  // Stash the existing descriptor so we can restore it even when it's
-  // undefined or a non-writable global (jsdom freezes some of these).
+  // Modern Node (≥20) defines some globals (notably `crypto`) as
+  // non-writable getter-only properties, so plain `g[slot] = value` throws
+  // "Cannot set property crypto of #<Object> which has only a getter".
+  // `Object.defineProperty` with `configurable: true` works around that
+  // because the property descriptors ARE configurable, just not writable.
   const g = globalThis as unknown as Record<string, unknown>;
-  const had = slot in g;
-  const original = g[slot];
+  const originalDescriptor = Object.getOwnPropertyDescriptor(g, slot);
   if (value === undefined) {
-    delete g[slot];
+    // Tests pass `undefined` to assert "the global is missing". `delete`
+    // also fails on non-configurable globals — use defineProperty with an
+    // explicit undefined value, then restore in finally.
+    Object.defineProperty(g, slot, {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
   } else {
-    g[slot] = value;
+    Object.defineProperty(g, slot, {
+      value,
+      configurable: true,
+      writable: true,
+    });
   }
   try {
     body();
   } finally {
-    if (had) g[slot] = original;
-    else delete g[slot];
+    if (originalDescriptor) {
+      Object.defineProperty(g, slot, originalDescriptor);
+    } else {
+      // Wasn't present originally; safe to delete since we created it.
+      try {
+        delete g[slot];
+      } catch {
+        /* property somehow non-configurable — leave it */
+      }
+    }
   }
 }
 

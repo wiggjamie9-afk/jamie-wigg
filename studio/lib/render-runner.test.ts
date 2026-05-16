@@ -22,17 +22,23 @@ import {
 
 // ---------- Mock the ffmpeg wasm adapter ----------
 
+// Minimal ffmpeg adapter mock. The render-runner only needs the OPS to
+// resolve with a Blob — the actual bytes don't matter for these tests
+// (no MP4 inspection). Calling `arrayBuffer()` on the input Blobs is
+// flaky across Node 22 / jsdom 25 / undici-Blob — the Blob a `fetch` mock
+// returns can fail to expose `arrayBuffer()` depending on which Blob
+// implementation got bound to globalThis. Passing inputs through opaquely
+// sidesteps that without changing what's asserted.
 vi.mock("../../rhythmix-studio/src/ffmpeg/wasm.mjs", () => {
   return {
     trim: vi.fn(async (blob: Blob, _start: number, _end: number) => {
-      return new Blob([await blob.arrayBuffer()], { type: "video/mp4" });
+      return blob;
     }),
     concat: vi.fn(async (blobs: Blob[]) => {
-      const buffers = await Promise.all(blobs.map((b) => b.arrayBuffer()));
-      return new Blob(buffers, { type: "video/mp4" });
+      return new Blob(blobs, { type: "video/mp4" });
     }),
     mux: vi.fn(async (video: Blob, _audio: Blob) => {
-      return new Blob([await video.arrayBuffer()], { type: "video/mp4" });
+      return video;
     }),
     extractFrame: vi.fn(async (_video: Blob, _t: number) => {
       return new Blob([new Uint8Array([0])], { type: "image/jpeg" });

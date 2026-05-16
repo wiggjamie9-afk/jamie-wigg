@@ -31,6 +31,30 @@ if (typeof (globalThis as { crypto?: { randomUUID?: unknown } }).crypto === "und
   });
 }
 
+// jsdom doesn't ship IndexedDB. history.ts's `isBrowser()` guard checks
+// `typeof indexedDB !== "undefined"` to refuse to run during SSR; we
+// satisfy that check with a sentinel here. All real IndexedDB calls are
+// intercepted by the `vi.mock("idb", ...)` block below — the sentinel
+// only exists to pass the isBrowser type-of check.
+if (typeof (globalThis as { indexedDB?: unknown }).indexedDB === "undefined") {
+  Object.defineProperty(globalThis, "indexedDB", {
+    value: {},
+    configurable: true,
+    writable: true,
+  });
+}
+
+// jsdom's Blob is bare-bones — no `arrayBuffer()`, no `stream()`, no `text()`.
+// Node's built-in `Blob` (from `node:buffer`) is fully spec-compliant. Swap
+// the global before the test code constructs any Blobs so `makeBlob(byte)`
+// returns one whose bytes can actually be read back.
+import { Blob as NodeBlob } from "node:buffer";
+Object.defineProperty(globalThis, "Blob", {
+  value: NodeBlob,
+  configurable: true,
+  writable: true,
+});
+
 import {
   describe,
   it,
@@ -84,6 +108,18 @@ vi.mock("idb", () => {
         });
         return {
           store: {
+            // history.ts's evictOldest now reads the full set + sorts in JS
+            // for tie-breaking on (createdAt, seq), so the transaction store
+            // needs getAll() + delete(id) — the previous cursor-based path
+            // is no longer used.
+            async getAll() {
+              return Array.from(store.rows.values());
+            },
+            async delete(id: string) {
+              store.rows.delete(id);
+            },
+            // Retained for back-compat in case any future test exercises the
+            // old cursor path. Not currently called.
             index(_indexName: string) {
               return {
                 async openCursor() {
