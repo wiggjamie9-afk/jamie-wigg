@@ -74,7 +74,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R6, R7
   - **acceptance**: page subscribes to render-runner events; each scene shows status pill (queued / generating / downloaded / composed / failed); compose phase shows percent bar; on completion, MP4 auto-downloads and is saved to IndexedDB (T12); user can cancel mid-render
 
-- [ ] **T12** — Local history (IndexedDB) + library UI
+- [x] **T12** — Local history (IndexedDB) + library UI
   - **files**: `studio/lib/history.ts`, `studio/app/library/page.tsx`, `studio/components/library-grid/*`
   - **depends**: T10
   - **satisfies**: R7, R8
