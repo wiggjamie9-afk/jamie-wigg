@@ -16,7 +16,7 @@ import { PlanEditor } from "../../../components/plan-editor/plan-editor";
 export const dynamic = "force-static";
 
 export function generateStaticParams(): Array<{ id: string }> {
-  return [];
+  return [{ id: "_" }];
 }
 
 export const metadata = {

@@ -18,7 +18,7 @@ import { RenderProgress } from "../../../components/render-progress/render-progr
 export const dynamic = "force-static";
 
 export function generateStaticParams(): Array<{ id: string }> {
-  return [];
+  return [{ id: "_" }];
 }
 
 export const metadata = {

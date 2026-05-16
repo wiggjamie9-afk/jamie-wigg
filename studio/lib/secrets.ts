@@ -83,7 +83,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-function base64ToBytes(b64: string): Uint8Array {
+function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) {
@@ -96,7 +96,7 @@ function base64ToBytes(b64: string): Uint8Array {
 
 async function deriveKey(
   passphrase: string,
-  salt: Uint8Array,
+  salt: Uint8Array<ArrayBuffer>,
 ): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey(
@@ -123,7 +123,7 @@ async function deriveKey(
 async function encryptToken(
   token: string,
   key: CryptoKey,
-  iv: Uint8Array,
+  iv: Uint8Array<ArrayBuffer>,
 ): Promise<Uint8Array> {
   const enc = new TextEncoder();
   const cipher = await crypto.subtle.encrypt(
