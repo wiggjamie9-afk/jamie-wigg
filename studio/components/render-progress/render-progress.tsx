@@ -381,17 +381,19 @@ export function RenderProgress({ planId }: { planId: string }) {
       abortRef.current = controller;
       setPhase({ kind: "running" });
 
-      // rerunScenes regenerates the listed scenes from scratch. The
-      // runner has no cross-call blob cache exposed to us (the
-      // `existingSceneBlobs` param is documented as internal — see the
-      // T10 source comments), so the non-listed scenes also get
-      // re-synthesized as placeholders if they fail again. That's the
-      // gap noted in the docblock; T13/T14 may add a blob cache.
+      // rerunScenes regenerates only the listed scene; survivors from the
+      // previous render are passed through `existingSceneBlobs` so they're
+      // reused as-is and we don't re-bill Replicate for them. The previous
+      // result must be `kind: "done"` (the button is suppressed otherwise);
+      // we read its `sceneBlobs` map here.
+      const survivors =
+        phase.kind === "done" ? phase.result.sceneBlobs : undefined;
       rerunScenes({
         plan,
         audioBlob: audio,
         token,
         sceneIds: [sceneId],
+        existingSceneBlobs: survivors,
         onEvent: handleEvent,
         signal: controller.signal,
       })

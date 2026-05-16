@@ -173,8 +173,14 @@ function readStoredPayload(): StoredPayload | null {
 /**
  * Encrypt `token` under `passphrase` and write the payload to localStorage.
  * Generates a fresh salt + IV every call; replaces any previous payload.
- * Does NOT touch the session cache — callers that want the token live in
- * memory for the tab should follow up with `unlockSession`.
+ *
+ * Session cache refresh: if the tab session is currently unlocked
+ * (`sessionDerivedKey` is set), this call ALSO refreshes the in-memory key
+ * and plaintext token to match the new payload. Without this, rotating
+ * passphrase mid-session would leave `getSessionToken()` returning the stale
+ * pre-rotation token until `unlockSession` was re-called — a subtle but
+ * real correctness bug. If the session is currently locked, the cache stays
+ * locked: callers must opt in to unlock with the new passphrase explicitly.
  */
 export async function setToken(
   token: string,
@@ -197,6 +203,14 @@ export async function setToken(
     salt: bytesToBase64(salt),
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+
+  // Refresh the session cache iff it was already unlocked, so post-rotation
+  // reads see the new token. We re-use the freshly-derived key + the new
+  // plaintext token directly — no need to round-trip through decrypt.
+  if (sessionDerivedKey !== null) {
+    sessionDerivedKey = key;
+    sessionToken = token;
+  }
 }
 
 /**

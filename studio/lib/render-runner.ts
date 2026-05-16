@@ -71,6 +71,13 @@ export type RenderResult = {
   thumbnail: Blob;
   /** Scene IDs that failed all 3 retries; surfaced in UI so user can re-run. */
   failedSceneIds: string[];
+  /**
+   * Per-scene downloaded source Blobs that successfully generated this run.
+   * Failed scenes are absent from the map. Pass this back to `rerunScenes`
+   * as `existingSceneBlobs` so survivors are NOT re-generated against
+   * Replicate — that's the cost-saving fix for the partial-failure UX.
+   */
+  sceneBlobs: Map<string, Blob>;
 };
 
 // ---------- Constants ----------
@@ -218,7 +225,7 @@ async function executeRender(
   onEvent({ type: "compose:progress", percent: 100 });
   onEvent({ type: "compose:done" });
 
-  return { mp4: finalMp4, thumbnail, failedSceneIds };
+  return { mp4: finalMp4, thumbnail, failedSceneIds, sceneBlobs };
 }
 
 // ---------- Scene generation with retry ----------

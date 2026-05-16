@@ -49,6 +49,14 @@ export type RenderMeta = {
   failedSceneIds: string[];
   /** Epoch ms. */
   createdAt: number;
+  /**
+   * Module-scoped monotonic counter, written alongside `createdAt`. Two saves
+   * in the same `Date.now()` ms would otherwise tie on the `createdAt` index
+   * and let the eviction cursor pick an arbitrary "oldest"; `seq` resolves the
+   * tie deterministically (lower seq = older). Optional for rows written
+   * before this field landed; missing values are treated as 0 when sorting.
+   */
+  seq?: number;
 };
 
 export type ToastEvent = {
@@ -68,6 +76,16 @@ const CREATED_AT_INDEX = "createdAt";
 
 /** R7 cap. Renders beyond this trigger one-at-a-time eviction on `saveRender`. */
 export const MAX_RENDERS = 50;
+
+/**
+ * Module-scoped monotonic counter for `seq`. Incremented on every successful
+ * `saveRender`; lives only for the lifetime of the JS module (so a page reload
+ * resets it). That's fine: rows from a previous session already have stable
+ * `(createdAt, seq)` pairs persisted in IndexedDB and never collide with this
+ * session's seq values because they're paired with their own historical
+ * `createdAt`. Within a single session, monotonicity is preserved.
+ */
+let nextSeq = 0;
 
 /**
  * Row layout in IndexedDB. Stored Blobs are native — never base64; that would
@@ -157,6 +175,7 @@ export async function saveRender(
     ...meta,
     id,
     createdAt: Date.now(),
+    seq: nextSeq++,
   };
   const row: RenderRow = { meta: fullMeta, mp4, thumbnail };
 
@@ -185,22 +204,34 @@ export async function saveRender(
 }
 
 /**
- * Walk the `createdAt` index ascending, delete the first cursor entry, return
- * its lightweight identifiers for the toast. Returns null if the store is
- * unexpectedly empty (race with another tab clearing data).
+ * Find the oldest record by `(createdAt ASC, seq ASC)` and delete it. The
+ * tie-breaker is what makes this resilient to `Date.now()`'s ms resolution —
+ * a tight loop of saves inside the same millisecond no longer leaves the
+ * "oldest" up to IndexedDB's internal ordering. Returns `null` if the store
+ * is unexpectedly empty (race with another tab clearing data).
+ *
+ * We read the full set into memory and sort in JS rather than building a
+ * compound `[createdAt, seq]` index, because (a) the store is bounded at ~50
+ * rows so the cost is negligible, and (b) a compound index would require a
+ * schema migration for existing rows that don't have `seq`.
  */
 async function evictOldest(
   db: IDBPDatabase,
 ): Promise<{ id: string; theme: string } | null> {
   const tx = db.transaction(STORE_NAME, "readwrite");
-  const index = tx.store.index(CREATED_AT_INDEX);
-  const cursor = await index.openCursor();
-  if (!cursor) {
+  const rows = (await tx.store.getAll()) as RenderRow[];
+  if (!rows.length) {
     await tx.done;
     return null;
   }
-  const victim = cursor.value as RenderRow;
-  await cursor.delete();
+  // Sort ascending: smallest createdAt first, then smallest seq within ties.
+  rows.sort((a, b) => {
+    const da = a.meta.createdAt - b.meta.createdAt;
+    if (da !== 0) return da;
+    return (a.meta.seq ?? 0) - (b.meta.seq ?? 0);
+  });
+  const victim = rows[0];
+  await tx.store.delete(victim.meta.id);
   await tx.done;
   return { id: victim.meta.id, theme: victim.meta.theme };
 }
