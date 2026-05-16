@@ -96,6 +96,17 @@ If the user asks for HTML-based video, captions/subtitles, audio-reactive visual
 - Don't commit `node_modules/`, `.remotion/`, or `graphify-out/cache/` (already covered by `.gitignore` / `.graphifyignore`).
 - Skill edits go in `.agents/skills/<name>/` (the symlink target), never in the `.claude/skills/` symlink path.
 
+## Token efficiency
+
+The user is iPhone-only and pays per token. Default to the cheapest path that still does the job correctly.
+
+- **Don't re-read a file you just edited** — `Edit`/`Write` surface failures directly; re-reading is a wasted round-trip.
+- **Batch independent reads/searches** in a single message with parallel tool calls (e.g. one message with three `Bash` `grep`s instead of three sequential turns).
+- **Skip subagent dispatch for small tasks.** Under ~3 file reads or a single targeted fix: do it directly. Each subagent has its own context window — that's a tax, not a saving.
+- **Use the existing skills/agents before spawning new ones.** The `Pipeline skills` and `Engineering skills` sections above cover most of what gets asked.
+- **`ToolSearch`: narrow queries.** Use `select:<name>` when you know the tool; never load a wide MCP server's full schema just to find one method.
+- **Don't restate the user's request** before acting — one sentence stating what you're about to do, then act.
+
 ## Agent skills
 
 ### Issue tracker
