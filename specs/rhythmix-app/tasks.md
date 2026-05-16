@@ -38,7 +38,7 @@ Tasks have stable IDs (T1, T2, ...), explicit file globs, and explicit `depends`
   - **satisfies**: R1, R2
   - **acceptance**: user can drop / file-pick an audio file (mp3/wav/m4a/flac), see a waveform preview (rendered with WaveSurfer.js or Canvas from probe data), enter theme text + BPM; client-side validation rejects >50 MB or unsupported codecs; pressing "Continue" advances to `/plan/[id]`
 
-- [ ] **T6** — Settings UI: Replicate token, license key, support bundle, clear-all-data
+- [x] **T6** — Settings UI: Replicate token, license key, support bundle, clear-all-data
   - **files**: `studio/app/settings/page.tsx`, `studio/components/settings/*`, `studio/lib/secrets.ts`, `studio/lib/support-bundle.ts`, `studio/lib/clear-all.ts`
   - **depends**: T1, T12
   - **satisfies**: R3, R10, R15, R16
