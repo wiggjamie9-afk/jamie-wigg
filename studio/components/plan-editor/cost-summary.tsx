@@ -39,10 +39,10 @@ export function CostSummary({ plan, costUsd }: { plan: Plan; costUsd: number }) 
     .sort((a, b) => b.count - a.count);
 
   return (
-    <div className="rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface px-4 py-3 text-sm">
+    <div className="rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface px-4 py-3 text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <span className="font-rhythmix-mono text-xs uppercase tracking-wider text-rhythmix-text-muted">Estimated cost</span>
-        <span className="font-rhythmix-display text-2xl font-black tabular-nums rhx-text-gold">
+        <span className="font-starlightmix-mono text-xs uppercase tracking-wider text-starlightmix-text-muted">Estimated cost</span>
+        <span className="font-starlightmix-display text-2xl font-black tabular-nums slm-text-gold">
           ~${costUsd.toFixed(2)}
         </span>
       </div>
@@ -50,21 +50,21 @@ export function CostSummary({ plan, costUsd }: { plan: Plan; costUsd: number }) 
         type="button"
         data-compact
         onClick={() => setOpen((v) => !v)}
-        className="mt-1 inline-flex items-center font-rhythmix-mono text-xs text-rhythmix-cyan underline-offset-2 hover:underline focus:outline-none focus:underline"
+        className="mt-1 inline-flex items-center font-starlightmix-mono text-xs text-starlightmix-cyan underline-offset-2 hover:underline focus:outline-none focus:underline"
         aria-expanded={open}
       >
         {open ? "Hide breakdown" : "What's in this number?"}
       </button>
       {open && (
-        <div className="mt-3 space-y-2 text-xs text-rhythmix-text-soft">
-          <p className="text-rhythmix-text-muted">
+        <div className="mt-3 space-y-2 text-xs text-starlightmix-text-soft">
+          <p className="text-starlightmix-text-muted">
             Approximate; actual cost depends on Replicate&apos;s billing. Per-model
             rates come from the engine&apos;s model registry.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full border-separate border-spacing-y-1">
               <thead>
-                <tr className="text-left font-rhythmix-mono uppercase tracking-wide text-rhythmix-text-muted">
+                <tr className="text-left font-starlightmix-mono uppercase tracking-wide text-starlightmix-text-muted">
                   <th className="font-normal">Model</th>
                   <th className="font-normal tabular-nums">Clips</th>
                   <th className="font-normal tabular-nums">Rate</th>
@@ -73,7 +73,7 @@ export function CostSummary({ plan, costUsd }: { plan: Plan; costUsd: number }) 
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.model} className="text-rhythmix-text-soft">
+                  <tr key={r.model} className="text-starlightmix-text-soft">
                     <td className="pr-2 break-words">{r.label}</td>
                     <td className="tabular-nums">{r.count}</td>
                     <td className="tabular-nums">${r.rate.toFixed(2)}</td>

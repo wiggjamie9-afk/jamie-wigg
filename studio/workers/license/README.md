@@ -1,11 +1,11 @@
-# `rhythmix-license` Worker
+# `starlightmix-license` Worker
 
-A small Cloudflare Worker that validates **RHYTHMIX** Gumroad license keys for the
+A small Cloudflare Worker that validates **STARLIGHTMIX** Gumroad license keys for the
 studio web app. Lives in front of [Gumroad's license-verify API][gumroad-docs] so
 the browser never has to ship a Gumroad product secret and we can cache valid
 results in Worker KV.
 
-- **Endpoint**: `POST https://license.studio.rhythmixapp.com.au/api/license`
+- **Endpoint**: `POST https://license.studio.starlightmix.com/api/license`
 - **Backed by**: Gumroad `POST /v2/licenses/verify` + Worker KV
   (`LICENSE_CACHE`, 24h TTL on valid results only)
 - **Satisfies**: R10 (license gate) in [`specs/rhythmix-app`](../../../specs/rhythmix-app/)
@@ -17,7 +17,7 @@ results in Worker KV.
 ## Request / response
 
 ```bash
-curl -X POST https://license.studio.rhythmixapp.com.au/api/license \
+curl -X POST https://license.studio.starlightmix.com/api/license \
   -H 'Content-Type: application/json' \
   --data '{"key":"XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"}'
 ```
@@ -39,7 +39,7 @@ customer out.
 
 Allowed origins:
 
-- `https://studio.rhythmixapp.com.au` (prod)
+- `https://studio.starlightmix.com` (prod)
 - `*.studio.rhythmixapp-pages.dev` (Cloudflare Pages previews)
 - `http://localhost:3000`, `http://127.0.0.1:3000` (dev)
 
@@ -84,7 +84,7 @@ wrangler secret put GUMROAD_PRODUCT_ID
 npm run deploy
 ```
 
-DNS: ensure the zone `rhythmixapp.com.au` is on Cloudflare and that
+DNS: ensure the zone `starlightmix.com` is on Cloudflare and that
 `license.studio` resolves to this Worker (Cloudflare will provision the cert
 automatically once the custom-domain route in `wrangler.toml` is applied).
 

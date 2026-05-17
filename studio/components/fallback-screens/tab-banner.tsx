@@ -26,10 +26,10 @@ export function TabBanner({ onUseThis, onCloseOther }: TabBannerProps) {
       role="alert"
       aria-live="polite"
       data-testid="tab-banner"
-      className="sticky top-0 z-50 w-full bg-[var(--color-rhythmix-warn-soft)] border-b border-rhythmix-warn/40 text-rhythmix-warn"
+      className="sticky top-0 z-50 w-full bg-[var(--color-rhythmix-warn-soft)] border-b border-starlightmix-warn/40 text-starlightmix-warn"
     >
       <div className="mx-auto max-w-5xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <p className="text-sm font-medium text-rhythmix-text-soft break-words">
+        <p className="text-sm font-medium text-starlightmix-text-soft break-words">
           Studio is open in another tab. Renders cost real money — make sure
           you only run them from one.
         </p>
@@ -37,7 +37,7 @@ export function TabBanner({ onUseThis, onCloseOther }: TabBannerProps) {
           <button
             type="button"
             onClick={onUseThis}
-            className="inline-flex min-h-[44px] items-center justify-center px-4 py-2 rounded-[var(--radius-rhythmix-md)] bg-rhythmix-warn text-rhythmix-bg text-xs font-semibold uppercase tracking-wider font-rhythmix-mono hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-opacity duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="inline-flex min-h-[44px] items-center justify-center px-4 py-2 rounded-[var(--radius-rhythmix-md)] bg-starlightmix-warn text-starlightmix-bg text-xs font-semibold uppercase tracking-wider font-starlightmix-mono hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-opacity duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             data-testid="tab-banner-use-this"
           >
             Use this tab
@@ -45,7 +45,7 @@ export function TabBanner({ onUseThis, onCloseOther }: TabBannerProps) {
           <button
             type="button"
             onClick={onCloseOther}
-            className="inline-flex min-h-[44px] items-center justify-center px-4 py-2 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-warn/50 bg-transparent text-rhythmix-warn text-xs font-semibold uppercase tracking-wider font-rhythmix-mono hover:bg-[var(--color-rhythmix-warn-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="inline-flex min-h-[44px] items-center justify-center px-4 py-2 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-warn/50 bg-transparent text-starlightmix-warn text-xs font-semibold uppercase tracking-wider font-starlightmix-mono hover:bg-[var(--color-rhythmix-warn-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             data-testid="tab-banner-close-other"
           >
             Close other tab

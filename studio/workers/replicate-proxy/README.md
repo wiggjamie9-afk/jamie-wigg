@@ -1,12 +1,12 @@
-# `rhythmix-replicate-proxy` Worker
+# `starlightmix-replicate-proxy` Worker
 
-A stateless Cloudflare Worker that proxies browser calls from the RHYTHMIX
+A stateless Cloudflare Worker that proxies browser calls from the STARLIGHTMIX
 studio web app to [Replicate's API][replicate-api]. Exists purely to work
 around the fact that `api.replicate.com` does **not** serve permissive CORS
 headers, so the browser cannot call it directly — see the evidence in
 [`specs/rhythmix-app/spike-cors.md`](../../../specs/rhythmix-app/spike-cors.md).
 
-- **Endpoint**: `{GET,POST,OPTIONS} https://replicate-proxy.studio.rhythmixapp.com.au/api/replicate-proxy/v1/*`
+- **Endpoint**: `{GET,POST,OPTIONS} https://replicate-proxy.studio.starlightmix.com/api/replicate-proxy/v1/*`
 - **Upstream**: `https://api.replicate.com/v1/*` (path after `/api/replicate-proxy/v1/` is appended verbatim, query string preserved)
 - **Satisfies**: R6 (CORS handling) in [`specs/rhythmix-app`](../../../specs/rhythmix-app/), supports R3 (Replicate-token transit constraint).
 - **No KV. No D1. No secrets. No persistence of any kind.**
@@ -57,7 +57,7 @@ fix, nothing more.
 
 Allowed origins:
 
-- `https://studio.rhythmixapp.com.au` (prod)
+- `https://studio.starlightmix.com` (prod)
 - `*.studio.rhythmixapp-pages.dev` (Cloudflare Pages previews)
 - `http://localhost:3000`, `http://127.0.0.1:3000` (dev)
 
@@ -119,7 +119,7 @@ bucketing only), or anything past the first path segment.
 ## Deploy
 
 Prereqs: `npm i -g wrangler` and `wrangler login`. The zone
-`rhythmixapp.com.au` must already be on Cloudflare (proxied) so that
+`starlightmix.com` must already be on Cloudflare (proxied) so that
 `replicate-proxy.studio` can resolve to this Worker.
 
 ```bash

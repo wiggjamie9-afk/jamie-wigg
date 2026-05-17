@@ -98,8 +98,8 @@ export function LibraryCard({ meta, onRequestDelete }: Props) {
   }
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-border-strong bg-rhythmix-surface shadow-sm transition-shadow duration-[var(--duration-rhythmix-base)] ease-[var(--ease-rhythmix-out)] hover:shadow-[var(--rhx-glow-magenta)]">
-      <div className="relative aspect-video w-full overflow-hidden bg-rhythmix-deep">
+    <article className="group flex flex-col overflow-hidden rounded-[var(--radius-rhythmix-lg)] border border-starlightmix-border-strong bg-starlightmix-surface shadow-sm transition-shadow duration-[var(--duration-starlightmix-base)] ease-[var(--ease-starlightmix-out)] hover:shadow-[var(--slm-glow-magenta)]">
+      <div className="relative aspect-video w-full overflow-hidden bg-starlightmix-deep">
         {thumbUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -110,14 +110,14 @@ export function LibraryCard({ meta, onRequestDelete }: Props) {
             decoding="async"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center font-rhythmix-mono text-xs text-rhythmix-text-muted">
+          <div className="flex h-full w-full items-center justify-center font-starlightmix-mono text-xs text-starlightmix-text-muted">
             {thumbLoading
               ? "Loading…"
               : thumbError || "No thumbnail"}
           </div>
         )}
         {meta.failedSceneIds.length > 0 ? (
-          <span className="absolute right-2 top-2 rounded-full bg-[var(--color-rhythmix-warn-soft)] px-2 py-0.5 font-rhythmix-mono text-[11px] font-semibold text-rhythmix-warn ring-1 ring-rhythmix-warn/40">
+          <span className="absolute right-2 top-2 rounded-full bg-[var(--color-rhythmix-warn-soft)] px-2 py-0.5 font-starlightmix-mono text-[11px] font-semibold text-starlightmix-warn ring-1 ring-starlightmix-warn/40">
             Failed: {meta.failedSceneIds.length}
           </span>
         ) : null}
@@ -126,12 +126,12 @@ export function LibraryCard({ meta, onRequestDelete }: Props) {
       <div className="flex flex-1 flex-col gap-3 p-4 min-w-0">
         <div className="min-w-0">
           <h3
-            className="line-clamp-2 font-rhythmix-display text-sm font-semibold leading-snug text-rhythmix-text break-words"
+            className="line-clamp-2 font-starlightmix-display text-sm font-semibold leading-snug text-starlightmix-text break-words"
             title={meta.theme}
           >
             {meta.theme || "(untitled theme)"}
           </h3>
-          <p className="mt-1 font-rhythmix-mono text-[11px] uppercase tracking-wider text-rhythmix-text-muted">
+          <p className="mt-1 font-starlightmix-mono text-[11px] uppercase tracking-wider text-starlightmix-text-muted">
             {formatDate(meta.createdAt)} · {meta.sceneCount}{" "}
             {meta.sceneCount === 1 ? "scene" : "scenes"} · {meta.aspect}
           </p>
@@ -142,14 +142,14 @@ export function LibraryCard({ meta, onRequestDelete }: Props) {
             type="button"
             onClick={handleDownload}
             disabled={downloading}
-            className="min-h-[44px] flex-1 rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-3 py-2 text-xs font-semibold text-rhythmix-text hover:bg-rhythmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan disabled:opacity-50 transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="min-h-[44px] flex-1 rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-3 py-2 text-xs font-semibold text-starlightmix-text hover:bg-starlightmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan disabled:opacity-50 transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             {downloading ? "Preparing…" : "Download"}
           </button>
           <button
             type="button"
             onClick={() => onRequestDelete(meta.id)}
-            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-3 py-2 text-xs font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-transparent px-3 py-2 text-xs font-medium text-starlightmix-text-soft hover:bg-starlightmix-surface-2 hover:text-starlightmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             aria-label={`Delete render for ${meta.theme || "untitled"}`}
           >
             Delete

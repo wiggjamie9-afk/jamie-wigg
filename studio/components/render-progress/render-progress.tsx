@@ -473,9 +473,9 @@ export function RenderProgress({ planId }: { planId: string }) {
 
   if (phase.kind === "loading") {
     return (
-      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
+      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-starlightmix-bg">
         <div className="mx-auto w-full max-w-xl text-center">
-          <p className="font-rhythmix-mono text-sm text-rhythmix-text-muted" aria-live="polite">
+          <p className="font-starlightmix-mono text-sm text-starlightmix-text-muted" aria-live="polite">
             {phase.message}
           </p>
         </div>
@@ -537,19 +537,19 @@ export function RenderProgress({ planId }: { planId: string }) {
 
   if (phase.kind === "error") {
     return (
-      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
+      <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-starlightmix-bg">
         <div className="mx-auto w-full max-w-xl">
-          <h1 className="mb-2 font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text">
+          <h1 className="mb-2 font-starlightmix-display text-3xl font-black tracking-tight text-starlightmix-text">
             Render failed
           </h1>
-          <p className="mb-6 text-sm text-rhythmix-magenta break-words" role="alert">
+          <p className="mb-6 text-sm text-starlightmix-magenta break-words" role="alert">
             {phase.message}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
               onClick={() => router.push(`/plan/${planId}`)}
-              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)] sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-6 py-3 text-base font-semibold text-starlightmix-text hover:bg-starlightmix-pink transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)] sm:w-auto"
               style={{ minHeight: "44px" }}
             >
               Back to plan
@@ -577,19 +577,19 @@ export function RenderProgress({ planId }: { planId: string }) {
   const rerunHandler = isRunning ? undefined : onRerunScene;
 
   return (
-    <main className="min-h-screen w-full px-4 pb-32 pt-8 sm:px-6 sm:pt-12 bg-rhythmix-bg">
+    <main className="min-h-screen w-full px-4 pb-32 pt-8 sm:px-6 sm:pt-12 bg-starlightmix-bg">
       <div className="mx-auto w-full max-w-4xl">
         <header className="mb-6">
-          <h1 className="font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text sm:text-4xl">
+          <h1 className="font-starlightmix-display text-3xl font-black tracking-tight text-starlightmix-text sm:text-4xl">
             Rendering
           </h1>
-          <p className="mt-2 font-rhythmix-mono text-xs uppercase tracking-wider text-rhythmix-text-muted">
+          <p className="mt-2 font-starlightmix-mono text-xs uppercase tracking-wider text-starlightmix-text-muted">
             {plan.scenes.length} scenes · {plan.audioDuration.toFixed(1)}s ·{" "}
             {plan.bpm ? `${plan.bpm} BPM` : "no BPM"} · {plan.aspect}
           </p>
           {isCancelled && (
             <p
-              className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] px-3 py-2 text-xs text-rhythmix-warn"
+              className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] px-3 py-2 text-xs text-starlightmix-warn"
               role="status"
             >
               Render cancelled. Head back to the plan to try again.
@@ -597,7 +597,7 @@ export function RenderProgress({ planId }: { planId: string }) {
           )}
           {isDone && (
             <p
-              className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-green/40 bg-[var(--color-rhythmix-ok-soft)] px-3 py-2 text-xs text-rhythmix-green"
+              className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-green/40 bg-[var(--color-rhythmix-ok-soft)] px-3 py-2 text-xs text-starlightmix-green"
               role="status"
             >
               Render done. Your MP4 downloaded automatically.
@@ -627,13 +627,13 @@ export function RenderProgress({ planId }: { planId: string }) {
         />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-rhythmix-border-strong bg-[color:var(--color-rhythmix-bg)]/95 px-4 py-3 backdrop-blur sm:px-6">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-starlightmix-border-strong bg-[color:var(--color-rhythmix-bg)]/95 px-4 py-3 backdrop-blur sm:px-6">
         <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-3">
           {isRunning ? (
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/50 bg-transparent px-6 py-3 text-base font-semibold text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)] sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/50 bg-transparent px-6 py-3 text-base font-semibold text-starlightmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)] sm:w-auto"
               style={{ minHeight: "44px" }}
               data-testid="cancel-render"
             >
@@ -643,7 +643,7 @@ export function RenderProgress({ planId }: { planId: string }) {
             <button
               type="button"
               onClick={() => router.push("/library")}
-              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)] sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-6 py-3 text-base font-semibold text-starlightmix-text hover:bg-starlightmix-pink transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)] sm:w-auto"
               style={{ minHeight: "44px" }}
             >
               Back to library

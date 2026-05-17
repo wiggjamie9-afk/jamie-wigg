@@ -22,7 +22,7 @@ export function generateStaticParams(): Array<{ id: string }> {
 }
 
 export const metadata = {
-  title: "Rendering · RHYTHMIX Studio",
+  title: "Rendering · STARLIGHTMIX Studio",
 };
 
 export default async function RenderPage({

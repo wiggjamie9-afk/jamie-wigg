@@ -5,18 +5,18 @@ import { LibraryGrid } from "../../components/library-grid/library-grid";
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Library · RHYTHMIX Studio",
+  title: "Library · STARLIGHTMIX Studio",
 };
 
 export default function LibraryPage() {
   return (
-    <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-rhythmix-bg">
+    <main className="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 bg-starlightmix-bg">
       <div className="mx-auto w-full max-w-6xl">
         <header className="mb-8">
-          <h1 className="font-rhythmix-display text-3xl font-black tracking-tight text-rhythmix-text sm:text-4xl">
+          <h1 className="font-starlightmix-display text-3xl font-black tracking-tight text-starlightmix-text sm:text-4xl">
             Library
           </h1>
-          <p className="mt-2 text-sm text-rhythmix-text-soft">
+          <p className="mt-2 text-sm text-starlightmix-text-soft">
             Your past renders, kept on this device. Up to 50 most-recent — the
             oldest is auto-removed when you cross the limit.
           </p>

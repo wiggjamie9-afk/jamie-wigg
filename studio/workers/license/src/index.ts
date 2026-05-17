@@ -1,12 +1,12 @@
 /**
- * RHYTHMIX license-validation Cloudflare Worker.
+ * STARLIGHTMIX license-validation Cloudflare Worker.
  *
  * POST /api/license { key } → { valid: true, tier } | { valid: false, reason }
  *
  * - Verifies against the Gumroad license API.
  * - Caches valid results in KV with 24 h TTL (R10 + open-question resolution).
  * - Never logs the license key, the Gumroad response body, or any PII.
- * - CORS-locked to the studio.rhythmixapp.com.au origins (+ dev).
+ * - CORS-locked to the studio.starlightmix.com origins (+ dev).
  * - In-memory sliding-window IP rate limit (best-effort per isolate).
  *
  * Satisfies R10. Does NOT see the user's Replicate token — that's T8.
@@ -25,7 +25,7 @@ const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 h
 const CACHE_PREFIX = "cached:";
 
 const ALLOWED_ORIGIN_EXACT = new Set<string>([
-  "https://studio.rhythmixapp.com.au",
+  "https://studio.starlightmix.com",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
 ]);

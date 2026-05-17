@@ -39,19 +39,19 @@ function UnsupportedPageInner() {
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center bg-rhythmix-bg"
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center bg-starlightmix-bg"
       role="alert"
       aria-live="polite"
       data-testid="unsupported-generic"
     >
       <div className="max-w-md">
-        <p className="font-rhythmix-mono text-xs uppercase tracking-[0.3em] text-rhythmix-text-muted">
+        <p className="font-starlightmix-mono text-xs uppercase tracking-[0.3em] text-starlightmix-text-muted">
           Browser not supported
         </p>
-        <h1 className="mt-3 font-rhythmix-display text-3xl sm:text-4xl font-black tracking-tight rhx-text-gradient">
+        <h1 className="mt-3 font-starlightmix-display text-3xl sm:text-4xl font-black tracking-tight slm-text-gradient">
           Studio can&apos;t run on this browser
         </h1>
-        <p className="mt-4 text-base text-rhythmix-text-soft">
+        <p className="mt-4 text-base text-starlightmix-text-soft">
           Studio needs a modern browser with WebCrypto, IndexedDB, and
           WebAssembly. Try the latest Safari, Chrome, or Firefox — or run
           the CLI in your browser via GitHub Codespaces.
@@ -61,7 +61,7 @@ function UnsupportedPageInner() {
           target="_blank"
           rel="noreferrer noopener"
           role="button"
-          className="mt-8 inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-lg bg-rhythmix-magenta text-rhythmix-text text-sm font-semibold hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+          className="mt-8 inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-lg bg-starlightmix-magenta text-starlightmix-text text-sm font-semibold hover:bg-starlightmix-pink transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
         >
           Use the CLI instead (Codespaces)
         </a>

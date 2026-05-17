@@ -1,9 +1,9 @@
 /**
- * Render runner — orchestrates a full RHYTHMIX video render in the browser.
+ * Render runner — orchestrates a full STARLIGHTMIX video render in the browser.
  *
  * Responsibilities (R6, R7):
  *   1. For every scene in the plan, kick off a Replicate prediction via the
- *      proxy Worker (`replicate-proxy.studio.rhythmixapp.com.au`). Direct
+ *      proxy Worker (`replicate-proxy.studio.starlightmix.com`). Direct
  *      browser-to-Replicate is impossible — see specs/rhythmix-app/spike-cors.md.
  *   2. Generate scenes in parallel up to `concurrency` (default 2).
  *   3. Retry transient failures up to 3 attempts with exponential backoff
@@ -83,7 +83,7 @@ export type RenderResult = {
 // ---------- Constants ----------
 
 const DEFAULT_PROXY_BASE_URL =
-  "https://replicate-proxy.studio.rhythmixapp.com.au/api/replicate-proxy/v1";
+  "https://replicate-proxy.studio.starlightmix.com/api/replicate-proxy/v1";
 
 const MAX_ATTEMPTS = 3;
 /** Backoff in ms: 1s, 2s, 4s. */

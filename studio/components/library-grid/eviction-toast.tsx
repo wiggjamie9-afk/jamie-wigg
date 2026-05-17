@@ -103,14 +103,14 @@ export const EvictionToast = forwardRef<EvictionToastHandle, Props>(
           <div
             key={t.id}
             role="status"
-            className="pointer-events-auto w-full max-w-sm rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface px-4 py-3 text-sm text-rhythmix-text shadow-2xl"
+            className="pointer-events-auto w-full max-w-sm rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface px-4 py-3 text-sm text-starlightmix-text shadow-2xl"
           >
             <div className="flex items-start gap-3 min-w-0">
               <div className="flex-1 min-w-0">
-                <p className="font-rhythmix-display font-semibold text-rhythmix-text">
+                <p className="font-starlightmix-display font-semibold text-starlightmix-text">
                   Oldest render removed
                 </p>
-                <p className="mt-0.5 text-xs text-rhythmix-text-soft break-words">
+                <p className="mt-0.5 text-xs text-starlightmix-text-soft break-words">
                   History caps at 50. We evicted &ldquo;
                   {truncate(t.event.victimTheme, 40)}&rdquo; to make room.
                 </p>
@@ -120,7 +120,7 @@ export const EvictionToast = forwardRef<EvictionToastHandle, Props>(
                 aria-label="Dismiss"
                 data-compact
                 onClick={() => remove(t.id)}
-                className="-mr-1 -mt-1 inline-flex h-8 w-8 items-center justify-center rounded p-1 text-rhythmix-text-muted hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan"
+                className="-mr-1 -mt-1 inline-flex h-8 w-8 items-center justify-center rounded p-1 text-starlightmix-text-muted hover:bg-starlightmix-surface-2 hover:text-starlightmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan"
               >
                 <span aria-hidden>×</span>
               </button>

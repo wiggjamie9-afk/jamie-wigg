@@ -129,7 +129,7 @@ function deleteOwnedDb(name: string): Promise<void> {
 // ---------- Public API ----------
 
 /**
- * Wipe every RHYTHMIX-owned scrap of local state. Order matters slightly:
+ * Wipe every STARLIGHTMIX-owned scrap of local state. Order matters slightly:
  *
  *   1. `clearToken()` — wipes the encrypted payload AND the in-memory cache.
  *      Done first so even if a later step throws, the most-sensitive secret

@@ -21,30 +21,30 @@ export interface FfmpegLoadFailedProps {
 export function FfmpegLoadFailed({ error }: FfmpegLoadFailedProps) {
   return (
     <section
-      className="min-h-[60vh] flex flex-col items-center justify-center px-6 py-12 text-center bg-rhythmix-bg"
+      className="min-h-[60vh] flex flex-col items-center justify-center px-6 py-12 text-center bg-starlightmix-bg"
       role="alert"
       aria-live="polite"
       data-testid="ffmpeg-load-failed"
     >
       <div className="max-w-md min-w-0">
-        <p className="font-rhythmix-mono text-xs uppercase tracking-[0.3em] text-rhythmix-text-muted">
+        <p className="font-starlightmix-mono text-xs uppercase tracking-[0.3em] text-starlightmix-text-muted">
           Video engine failed to start
         </p>
-        <h2 className="mt-3 font-rhythmix-display text-2xl sm:text-3xl font-black tracking-tight text-rhythmix-text">
+        <h2 className="mt-3 font-starlightmix-display text-2xl sm:text-3xl font-black tracking-tight text-starlightmix-text">
           ffmpeg.wasm failed to load
         </h2>
-        <p className="mt-4 text-base text-rhythmix-text-soft">
+        <p className="mt-4 text-base text-starlightmix-text-soft">
           Try a different browser or reload the page. Studio uses
           ffmpeg.wasm to assemble your video entirely in the browser, so the
           page can&apos;t continue without it.
         </p>
 
         {error ? (
-          <details className="mt-6 text-left text-xs text-rhythmix-text-muted">
-            <summary className="cursor-pointer select-none font-rhythmix-mono uppercase tracking-wider text-rhythmix-cyan">
+          <details className="mt-6 text-left text-xs text-starlightmix-text-muted">
+            <summary className="cursor-pointer select-none font-starlightmix-mono uppercase tracking-wider text-starlightmix-cyan">
               Technical details
             </summary>
-            <pre className="mt-2 whitespace-pre-wrap break-words rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-border-strong bg-rhythmix-deep p-3 font-rhythmix-mono text-rhythmix-text-soft">
+            <pre className="mt-2 whitespace-pre-wrap break-words rounded-[var(--radius-rhythmix-sm)] border border-starlightmix-border-strong bg-starlightmix-deep p-3 font-starlightmix-mono text-starlightmix-text-soft">
               {error}
             </pre>
           </details>
@@ -58,7 +58,7 @@ export function FfmpegLoadFailed({ error }: FfmpegLoadFailedProps) {
                 window.location.reload();
               }
             }}
-            className="inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta text-rhythmix-text text-sm font-semibold hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta text-starlightmix-text text-sm font-semibold hover:bg-starlightmix-pink transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             data-testid="ffmpeg-load-failed-reload"
           >
             Reload page

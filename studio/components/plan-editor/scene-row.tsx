@@ -66,17 +66,17 @@ export function SceneRow({
   const maxClipSeconds = modelMeta?.maxClipSeconds ?? 10;
 
   return (
-    <tr className="block border-b border-rhythmix-border-strong md:table-row md:border-b-0">
+    <tr className="block border-b border-starlightmix-border-strong md:table-row md:border-b-0">
       {/* Index + role badge */}
       <td
         className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4"
         data-label="Scene"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-rhythmix-magenta px-2 font-rhythmix-mono text-xs font-bold text-rhythmix-text tabular-nums">
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-starlightmix-magenta px-2 font-starlightmix-mono text-xs font-bold text-starlightmix-text tabular-nums">
             {index + 1}
           </span>
-          <span className="rounded-[var(--radius-rhythmix-sm)] bg-rhythmix-surface-2 px-2 py-0.5 font-rhythmix-mono text-xs font-medium uppercase tracking-wider text-rhythmix-cyan">
+          <span className="rounded-[var(--radius-rhythmix-sm)] bg-starlightmix-surface-2 px-2 py-0.5 font-starlightmix-mono text-xs font-medium uppercase tracking-wider text-starlightmix-cyan">
             {scene.role}
           </span>
         </div>
@@ -87,13 +87,13 @@ export function SceneRow({
         className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4 min-w-0"
         data-label="Model"
       >
-        <label className="mb-1 block font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted md:hidden">
+        <label className="mb-1 block font-starlightmix-mono text-xs uppercase tracking-wide text-starlightmix-text-muted md:hidden">
           Model
         </label>
         <select
           value={MODEL_OPTIONS.some((o) => o.id === scene.model) ? scene.model : ""}
           onChange={(e) => onChange({ model: e.target.value })}
-          className="block w-full rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-border-strong bg-rhythmix-surface px-2 py-2 text-sm text-rhythmix-text focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+          className="block w-full rounded-[var(--radius-rhythmix-sm)] border border-starlightmix-border-strong bg-starlightmix-surface px-2 py-2 text-sm text-starlightmix-text focus:border-starlightmix-cyan focus:outline-none focus:ring-1 focus:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           style={{ minHeight: "44px" }}
           aria-label={`Model for scene ${index + 1}`}
         >
@@ -115,7 +115,7 @@ export function SceneRow({
         className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4 min-w-0"
         data-label="Duration (s)"
       >
-        <label className="mb-1 block font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted md:hidden">
+        <label className="mb-1 block font-starlightmix-mono text-xs uppercase tracking-wide text-starlightmix-text-muted md:hidden">
           Duration (s)
         </label>
         <input
@@ -143,12 +143,12 @@ export function SceneRow({
               (e.target as HTMLInputElement).blur();
             }
           }}
-          className="block w-full rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-border-strong bg-rhythmix-surface px-2 py-2 font-rhythmix-mono text-sm tabular-nums text-rhythmix-text focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+          className="block w-full rounded-[var(--radius-rhythmix-sm)] border border-starlightmix-border-strong bg-starlightmix-surface px-2 py-2 font-starlightmix-mono text-sm tabular-nums text-starlightmix-text focus:border-starlightmix-cyan focus:outline-none focus:ring-1 focus:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           style={{ minHeight: "44px" }}
           aria-label={`Duration in seconds for scene ${index + 1}`}
         />
         {bpm && (
-          <p className="mt-1 font-rhythmix-mono text-[10px] uppercase tracking-wide text-rhythmix-text-muted">
+          <p className="mt-1 font-starlightmix-mono text-[10px] uppercase tracking-wide text-starlightmix-text-muted">
             Snaps to {bpm} BPM
           </p>
         )}
@@ -159,7 +159,7 @@ export function SceneRow({
         className="block px-0 py-2 align-top md:table-cell md:px-3 md:py-4 min-w-0"
         data-label="Prompt"
       >
-        <label className="mb-1 block font-rhythmix-mono text-xs uppercase tracking-wide text-rhythmix-text-muted md:hidden">
+        <label className="mb-1 block font-starlightmix-mono text-xs uppercase tracking-wide text-starlightmix-text-muted md:hidden">
           Prompt
         </label>
         <textarea
@@ -169,7 +169,7 @@ export function SceneRow({
             onChange({ prompt: e.target.value });
           }}
           rows={3}
-          className="block w-full resize-y rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-border-strong bg-rhythmix-surface px-2 py-2 text-sm text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+          className="block w-full resize-y rounded-[var(--radius-rhythmix-sm)] border border-starlightmix-border-strong bg-starlightmix-surface px-2 py-2 text-sm text-starlightmix-text placeholder:text-starlightmix-text-muted focus:border-starlightmix-cyan focus:outline-none focus:ring-1 focus:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           style={{ minHeight: "72px" }}
           aria-label={`Prompt for scene ${index + 1}`}
         />
