@@ -100,16 +100,11 @@ Plus the 16th unique slot in the rails (the today-card picks dynamically).
 - `PRIVACY.md` — what's collected (almost nothing leaves device), per-permission explainers, retention + deletion rights, Australian + GDPR posture
 - `TERMS.md` — founding membership scope, lifetime guarantee, 14-day refund, not-a-medical-device clause, IP + acceptable use
 
-## Deploy to a public URL (5 minutes)
+## Deployed URL
 
-The GitHub Actions workflow is committed: `.github/workflows/pages.yml`. It auto-deploys `sites/codex-of-reality/` to GitHub Pages on every push to `main`.
+**`https://rhythmixapp.com.au/codex/`**
 
-1. Merge `claude/new-session-DyR9R` → `main`
-2. Repo Settings → Pages → Source → **GitHub Actions**
-3. Push to `main` (or click "Run workflow" in the Actions tab)
-4. Your URL: `https://wiggjamie9-afk.github.io/jamie-wigg/`
-
-Drop that URL straight into your TikTok bio.
+The Codex ships as a sub-brand at `/codex/` on your existing `rhythmixapp.com.au` domain. Your RHYTHMIX site at the root is untouched. The existing `.github/workflows/deploy-pages.yml` was extended to copy `sites/codex-of-reality/` into `_site/codex/` during the build — one workflow, two products, one domain.
 
 ## What to do today (in order)
 
