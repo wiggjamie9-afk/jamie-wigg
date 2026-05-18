@@ -18,8 +18,16 @@
 <meta name="twitter:description" content="Science-tuned sound, 0.1 Hz cardiac coherence breath, and two and a half millennia of contemplative lineage." />
 <meta name="twitter:image" content="https://rhythmixapp.com.au/frequency-og.png" />
 <link rel="canonical" href="https://rhythmixapp.com.au/frequency.html" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 90'%3E%3Crect width='90' height='90' fill='%230A0F1F'/%3E%3Ccircle cx='45' cy='45' r='32' fill='none' stroke='%23D4AF37' stroke-width='1.5' opacity='0.5'/%3E%3Ccircle cx='45' cy='45' r='20' fill='none' stroke='%23D4AF37' stroke-width='1.8' opacity='0.8'/%3E%3Ccircle cx='45' cy='45' r='8' fill='%23D4AF37'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230A0F1F'/%3E%3Ccircle cx='90' cy='90' r='64' fill='none' stroke='%23D4AF37' stroke-width='3' opacity='0.5'/%3E%3Ccircle cx='90' cy='90' r='40' fill='none' stroke='%23D4AF37' stroke-width='3.5' opacity='0.8'/%3E%3Ccircle cx='90' cy='90' r='16' fill='%23D4AF37'/%3E%3C/svg%3E" />
+<link rel="manifest" href="/frequency.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="/frequency-icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="/frequency-icon-512.png" />
+<link rel="apple-touch-icon" href="/frequency-icon-512.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Frequency" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="RHYTHMIX Frequency" />
+<meta name="format-detection" content="telephone=no" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -1128,6 +1136,14 @@ footer { padding:5rem 0 3rem; border-top:1px solid var(--border); }
 (()=>{
 'use strict';
 
+// ── Service Worker (PWA · offline + Add-to-Home-Screen) ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/frequency-sw.js', { scope: '/frequency.html' })
+      .catch(e => console.warn('SW registration failed:', e));
+  });
+}
+
 // ── State + LocalStorage ──
 const LS_KEY = 'rhythmix-frequency-v1';
 const state = (()=>{
@@ -1911,31 +1927,66 @@ function drawLineageMap(){
 drawLineageMap();
 
 // ── Forms ──
-document.getElementById('dayOneForm').addEventListener('submit', e => {
+document.getElementById('dayOneForm').addEventListener('submit', async e => {
   e.preventDefault();
   const email = e.target.email.value.trim();
   if (!email) return;
   state.dayOneEmail = email; saveState();
-  document.getElementById('dayOneStatus').textContent = 'Day One queued · check your inbox.';
+  document.getElementById('dayOneStatus').textContent = 'Sending…';
+  try {
+    const res = await fetch('https://formsubmit.co/ajax/wiggjamie9@gmail.com', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        _subject: 'Day One signup · RHYTHMIX Frequency',
+        _captcha: 'false',
+        source: 'rhythmixapp.com.au/frequency.html',
+        email,
+      })
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    document.getElementById('dayOneStatus').textContent = 'Got it · Day One coming.';
+    e.target.reset();
+  } catch(err){
+    console.warn(err);
+    document.getElementById('dayOneStatus').textContent = 'Saved locally · network error. Try again.';
+  }
 });
 const ratingStars = document.querySelectorAll('#ratingStars button');
 ratingStars.forEach(b => b.addEventListener('click', ()=>{
   ratingStars.forEach(o => o.classList.toggle('active', parseInt(o.dataset.r,10) <= parseInt(b.dataset.r,10)));
   document.getElementById('ratingValue').value = b.dataset.r;
 }));
-document.getElementById('feedbackForm').addEventListener('submit', e => {
+document.getElementById('feedbackForm').addEventListener('submit', async e => {
   e.preventDefault();
-  state.feedbackLast = {
-    rating: document.getElementById('ratingValue').value,
-    tried: e.target.tried.value,
-    message: e.target.message.value,
-    email: e.target.email.value,
-    t: Date.now(),
-  };
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd);
+  state.feedbackLast = { ...data, rating: document.getElementById('ratingValue').value, t: Date.now() };
   saveState();
-  document.getElementById('feedbackStatus').textContent = 'Sent · Thank you. Read by Jamie.';
-  e.target.reset();
-  ratingStars.forEach(b => b.classList.remove('active'));
+  document.getElementById('feedbackStatus').textContent = 'Sending…';
+  try {
+    const res = await fetch('https://formsubmit.co/ajax/wiggjamie9@gmail.com', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        _subject: 'RHYTHMIX Frequency feedback',
+        _captcha: 'false',
+        _template: 'table',
+        source: 'rhythmixapp.com.au/frequency.html',
+        rating: document.getElementById('ratingValue').value || '(none)',
+        tried: data.tried || '(none)',
+        message: data.message || '',
+        reply_email: data.email || '',
+      })
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    document.getElementById('feedbackStatus').textContent = 'Sent · Thank you. Read by Jamie.';
+    e.target.reset();
+    ratingStars.forEach(b => b.classList.remove('active'));
+  } catch(err){
+    console.warn(err);
+    document.getElementById('feedbackStatus').textContent = 'Saved locally · network error. Try again or email wiggjamie9@gmail.com';
+  }
 });
 
 // ── Reset / Refresh ──
