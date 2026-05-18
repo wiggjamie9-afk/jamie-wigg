@@ -2,7 +2,7 @@
  * Cache-first for the app shell + Google Fonts.
  * Network-first (with cache fallback) for live data feeds. */
 
-const CACHE = 'codex-v1-2026-05-18';
+const CACHE = 'codex-v2-2026-05-18-elabs';
 
 const SHELL = [
   './',
