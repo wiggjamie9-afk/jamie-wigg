@@ -1136,32 +1136,8 @@ a { color: inherit; text-decoration: none; }
     <button id="btn-cues-toggle">On</button>
   </div>
   <div class="setting-row">
-    <div class="name">Built-in voice<small id="voice-name-label">Browser-native female voice</small></div>
+    <div class="name">Voice<small id="voice-name-label">Auto-selected female voice</small></div>
     <button id="btn-voice-test">Test</button>
-  </div>
-
-  <div class="eyebrow" style="margin-top:var(--sp-4)">Premium voice (ElevenLabs)</div>
-  <div class="setting-row" style="flex-direction:column; align-items:stretch; gap:var(--sp-1)">
-    <div class="name" style="display:flex; justify-content:space-between; align-items:baseline">
-      <span>API key<small>Studio-quality female voice. <a href="https://elevenlabs.io/app/sign-up" target="_blank" rel="noopener" style="color:var(--gold)">elevenlabs.io</a> · free tier ~10k chars/month</small></span>
-      <span class="state" id="elabs-state">Not configured</span>
-    </div>
-    <input id="elabs-key" type="password" placeholder="sk_•••••••••••••••" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
-           style="background:var(--ink); border:1px solid var(--ink-3); color:var(--parchment); padding:0.75rem 1rem; border-radius:var(--r-2); font-family:var(--font-mono); font-size:0.8125rem; outline:none; width:100%" />
-  </div>
-  <div class="setting-row">
-    <div class="name">Voice<small id="elabs-voice-desc">Charlotte · warm Swedish-English</small></div>
-    <select id="elabs-voice"
-            style="background:var(--ink); border:1px solid var(--ink-3); color:var(--parchment); padding:0.5rem 0.75rem; border-radius:var(--r-2); font-family:var(--font-mono); font-size:0.75rem; outline:none">
-    </select>
-  </div>
-  <div class="setting-row">
-    <div class="name">Test premium voice<small>Generates a sample · costs ~20 characters</small></div>
-    <button id="btn-elabs-test">Speak</button>
-  </div>
-  <div class="setting-row">
-    <div class="name">Clear voice cache<small id="elabs-cache-info">0 lines cached locally</small></div>
-    <button id="btn-elabs-clear">Clear</button>
   </div>
 
   <div class="eyebrow" style="margin-top:var(--sp-4)">About</div>
@@ -1806,8 +1782,7 @@ document.querySelectorAll('.cat-tab').forEach(t => t.addEventListener('click', (
   currentCat = t.dataset.cat; renderCodex();
 }));
 
-// ============ VOICE NARRATION ============
-// Two-tier engine: ElevenLabs (premium, requires API key) with Web Speech API fallback.
+// ============ VOICE NARRATION (Web Speech API) ============
 
 const VOICE_KEY = 'codex.voice.v1';
 const voice = Object.assign({
@@ -1816,35 +1791,9 @@ const voice = Object.assign({
   rate: 0.82,
   pitch: 0.95,
   volume: 0.85,
-  elevenLabs: {
-    apiKey: '',
-    voiceId: 'XB0fDUnXU5powFXDhCwa',     // Charlotte — warm, smooth, Swedish-English
-    model: 'eleven_turbo_v2_5',
-    stability: 0.55,
-    similarityBoost: 0.75,
-    style: 0.30,
-  },
 }, (() => { try { return JSON.parse(localStorage.getItem(VOICE_KEY) || '{}'); } catch { return {}; } })());
 
-// Migrate older state that didn't have elevenLabs
-voice.elevenLabs = Object.assign({
-  apiKey: '', voiceId: 'XB0fDUnXU5powFXDhCwa', model: 'eleven_turbo_v2_5',
-  stability: 0.55, similarityBoost: 0.75, style: 0.30,
-}, voice.elevenLabs || {});
-
 function saveVoice() { localStorage.setItem(VOICE_KEY, JSON.stringify(voice)); }
-
-const ELEVENLABS_VOICES = [
-  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', desc: 'Warm · smooth · Swedish-English · recommended' },
-  { id: 'pMsXgVXv3BLzUgSXRplE', name: 'Serena',    desc: 'Calm · meditative · British female' },
-  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella',     desc: 'Soft · intimate · American female' },
-  { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily',      desc: 'Warm · British female' },
-  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel',    desc: 'Clear · neutral American female' },
-  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi',      desc: 'Strong · confident female' },
-];
-
-const audioCache = new Map();   // cacheKey → blob URL
-let activeAudio = null;          // currently playing ElevenLabs audio
 
 let selectedVoice = null;
 
@@ -1883,57 +1832,8 @@ function updateVoiceLabel() {
   if (el && selectedVoice) el.textContent = `${selectedVoice.name} · ${selectedVoice.lang}`;
 }
 
-async function fetchElevenLabsAudio(text) {
-  const el = voice.elevenLabs;
-  if (!el.apiKey) throw new Error('no_api_key');
-  const cacheKey = `${el.voiceId}|${el.model}|${text}`;
-  let url = audioCache.get(cacheKey);
-  if (url) return url;
-  const resp = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${el.voiceId}?output_format=mp3_44100_128`,
-    {
-      method: 'POST',
-      headers: {
-        'xi-api-key': el.apiKey,
-        'Content-Type': 'application/json',
-        'Accept': 'audio/mpeg',
-      },
-      body: JSON.stringify({
-        text,
-        model_id: el.model,
-        voice_settings: {
-          stability: el.stability,
-          similarity_boost: el.similarityBoost,
-          style: el.style,
-          use_speaker_boost: true,
-        },
-      }),
-    }
-  );
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '');
-    throw new Error(`eleven_${resp.status}: ${body.slice(0, 120)}`);
-  }
-  const blob = await resp.blob();
-  url = URL.createObjectURL(blob);
-  audioCache.set(cacheKey, url);
-  return url;
-}
-
-function speakViaElevenLabs(text, opts = {}) {
-  return fetchElevenLabsAudio(text).then((url) => {
-    if (activeAudio) { try { activeAudio.pause(); } catch {} }
-    const audio = new Audio(url);
-    audio.volume = opts.volume != null ? opts.volume : voice.volume;
-    if (opts.rate) audio.playbackRate = opts.rate;
-    activeAudio = audio;
-    return audio.play().then(() =>
-      new Promise((resolve) => { audio.onended = () => { if (activeAudio === audio) activeAudio = null; resolve(); }; })
-    );
-  });
-}
-
-function speakViaWebSpeech(text, opts = {}) {
+function speak(text, opts = {}) {
+  if (!voice.enabled || !text) return;
   if (!('speechSynthesis' in window)) return;
   ensureVoiceReady();
   const u = new SpeechSynthesisUtterance(text);
@@ -1945,24 +1845,11 @@ function speakViaWebSpeech(text, opts = {}) {
   speechSynthesis.speak(u);
 }
 
-function speak(text, opts = {}) {
-  if (!voice.enabled || !text) return;
-  if (voice.elevenLabs && voice.elevenLabs.apiKey) {
-    speakViaElevenLabs(text, opts).catch((err) => {
-      console.warn('[Codex] ElevenLabs failed, falling back to Web Speech:', err.message);
-      speakViaWebSpeech(text, opts);
-    });
-  } else {
-    speakViaWebSpeech(text, opts);
-  }
-}
-
 function speakPhase(phase) {
   if (!voice.speakPhases || !voice.enabled) return;
+  if (!('speechSynthesis' in window)) return;
   // Don't queue cues behind script narration — let the script breathe
-  const wsBusy = ('speechSynthesis' in window) && (speechSynthesis.speaking || speechSynthesis.pending);
-  const elBusy = !!activeAudio && !activeAudio.paused;
-  if (wsBusy || elBusy) return;
+  if (speechSynthesis.speaking || speechSynthesis.pending) return;
   if (phase === 'INHALE') speak('in',  { volume: voice.volume * 0.55, rate: 1.0,  pitch: 1.0 });
   else if (phase === 'EXHALE') speak('out', { volume: voice.volume * 0.55, rate: 0.95, pitch: 0.92 });
   // HOLD stays silent — the held breath is the cue
@@ -1970,25 +1857,6 @@ function speakPhase(phase) {
 
 function stopSpeaking() {
   if ('speechSynthesis' in window) speechSynthesis.cancel();
-  if (activeAudio) {
-    try { activeAudio.pause(); activeAudio.currentTime = 0; } catch {}
-    activeAudio = null;
-  }
-}
-
-// Pre-warm the protocol's script lines (and breath cues) when a session starts.
-// Each line is fetched + cached in the background so playback has zero latency.
-function prewarmProtocolVoice(p) {
-  if (!voice.enabled || !voice.elevenLabs.apiKey) return;
-  const lines = [];
-  for (const [, t] of p.script) lines.push(t);
-  if (voice.speakPhases) { lines.push('in'); lines.push('out'); }
-  let i = 0;
-  const next = () => {
-    if (i >= lines.length) return;
-    fetchElevenLabsAudio(lines[i++]).catch(() => {}).then(() => setTimeout(next, 150));
-  };
-  next();
 }
 
 // Warm up the voice list — Safari is lazy and returns [] on first call
@@ -2569,7 +2437,6 @@ function playStart(forceSource) {
   if (!p) return;
   ensureAudio();
   ensureVoiceReady();
-  prewarmProtocolVoice(p);
   playEngine = makeCoherenceEngine({
     videoEl: document.getElementById('play-video'),
     onStatus: () => {},
@@ -2746,27 +2613,6 @@ function renderSettings() {
   if (v1) { v1.textContent = voice.enabled ? 'On' : 'Off'; v1.classList.toggle('connected', voice.enabled); }
   if (v2) { v2.textContent = voice.speakPhases ? 'On' : 'Off'; v2.classList.toggle('connected', voice.speakPhases); }
   updateVoiceLabel();
-
-  // ElevenLabs section
-  const keyInput = document.getElementById('elabs-key');
-  const stateEl = document.getElementById('elabs-state');
-  const voiceSel = document.getElementById('elabs-voice');
-  const voiceDesc = document.getElementById('elabs-voice-desc');
-  const cacheInfo = document.getElementById('elabs-cache-info');
-  if (keyInput) keyInput.value = voice.elevenLabs.apiKey || '';
-  if (stateEl) {
-    if (voice.elevenLabs.apiKey) { stateEl.textContent = 'Active'; stateEl.className = 'state connected'; }
-    else { stateEl.textContent = 'Not configured'; stateEl.className = 'state'; }
-  }
-  if (voiceSel && !voiceSel.options.length) {
-    voiceSel.innerHTML = ELEVENLABS_VOICES.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
-  }
-  if (voiceSel) voiceSel.value = voice.elevenLabs.voiceId;
-  if (voiceDesc) {
-    const v = ELEVENLABS_VOICES.find(x => x.id === voice.elevenLabs.voiceId);
-    voiceDesc.textContent = v ? `${v.name} · ${v.desc}` : '';
-  }
-  if (cacheInfo) cacheInfo.textContent = `${audioCache.size} lines cached locally`;
 }
 
 document.getElementById('btn-polar').addEventListener('click', async () => {
@@ -2852,60 +2698,7 @@ document.getElementById('btn-voice-test').addEventListener('click', () => {
   // Inside gesture handler so iOS Safari permits speech
   ensureVoiceReady();
   stopSpeaking();
-  // Force built-in voice for this test (bypass ElevenLabs even if configured)
-  speakViaWebSpeech('Welcome to the Codex of Reality. Breathe in. And out.', { volume: voice.volume });
-});
-
-// ElevenLabs Settings handlers
-document.getElementById('elabs-key').addEventListener('input', (e) => {
-  voice.elevenLabs.apiKey = e.target.value.trim();
-  saveVoice();
-  const stateEl = document.getElementById('elabs-state');
-  if (voice.elevenLabs.apiKey) {
-    stateEl.textContent = 'Active'; stateEl.className = 'state connected';
-  } else {
-    stateEl.textContent = 'Not configured'; stateEl.className = 'state';
-  }
-});
-document.getElementById('elabs-voice').addEventListener('change', (e) => {
-  voice.elevenLabs.voiceId = e.target.value;
-  saveVoice();
-  // Clear cache for old voice — different voices need re-generated audio
-  audioCache.forEach((url) => { try { URL.revokeObjectURL(url); } catch {} });
-  audioCache.clear();
-  const v = ELEVENLABS_VOICES.find(x => x.id === voice.elevenLabs.voiceId);
-  if (v) {
-    document.getElementById('elabs-voice-desc').textContent = `${v.name} · ${v.desc}`;
-    toast(`Voice: ${v.name}`);
-  }
-  document.getElementById('elabs-cache-info').textContent = '0 lines cached locally';
-});
-document.getElementById('btn-elabs-test').addEventListener('click', async () => {
-  if (!voice.elevenLabs.apiKey) { toast('Paste your ElevenLabs API key first'); return; }
-  const btn = document.getElementById('btn-elabs-test');
-  const original = btn.textContent;
-  btn.textContent = '◉ …';
-  btn.disabled = true;
-  try {
-    stopSpeaking();
-    await speakViaElevenLabs('Welcome to the Codex of Reality. Breathe in. And out.', { volume: voice.volume });
-    toast('Premium voice working');
-  } catch (err) {
-    const msg = err && err.message ? err.message : 'unknown';
-    if (msg.startsWith('eleven_401')) toast('Invalid API key');
-    else if (msg.startsWith('eleven_429')) toast('Out of credits or rate-limited');
-    else toast('ElevenLabs error · using fallback');
-  } finally {
-    btn.textContent = original;
-    btn.disabled = false;
-    document.getElementById('elabs-cache-info').textContent = `${audioCache.size} lines cached locally`;
-  }
-});
-document.getElementById('btn-elabs-clear').addEventListener('click', () => {
-  audioCache.forEach((url) => { try { URL.revokeObjectURL(url); } catch {} });
-  audioCache.clear();
-  document.getElementById('elabs-cache-info').textContent = '0 lines cached locally';
-  toast('Voice cache cleared');
+  speak('Welcome to the Codex of Reality. Breathe in. And out.');
 });
 
 // ============ CLAIM ============
