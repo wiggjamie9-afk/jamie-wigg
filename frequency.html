@@ -1923,19 +1923,36 @@ ratingStars.forEach(b => b.addEventListener('click', ()=>{
   ratingStars.forEach(o => o.classList.toggle('active', parseInt(o.dataset.r,10) <= parseInt(b.dataset.r,10)));
   document.getElementById('ratingValue').value = b.dataset.r;
 }));
-document.getElementById('feedbackForm').addEventListener('submit', e => {
+document.getElementById('feedbackForm').addEventListener('submit', async e => {
   e.preventDefault();
-  state.feedbackLast = {
-    rating: document.getElementById('ratingValue').value,
-    tried: e.target.tried.value,
-    message: e.target.message.value,
-    email: e.target.email.value,
-    t: Date.now(),
-  };
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd);
+  state.feedbackLast = { ...data, rating: document.getElementById('ratingValue').value, t: Date.now() };
   saveState();
-  document.getElementById('feedbackStatus').textContent = 'Sent · Thank you. Read by Jamie.';
-  e.target.reset();
-  ratingStars.forEach(b => b.classList.remove('active'));
+  document.getElementById('feedbackStatus').textContent = 'Sending…';
+  try {
+    const res = await fetch('https://formsubmit.co/ajax/wiggjamie9@gmail.com', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        _subject: 'RHYTHMIX Frequency feedback',
+        _captcha: 'false',
+        _template: 'table',
+        source: 'rhythmixapp.com.au/frequency.html',
+        rating: document.getElementById('ratingValue').value || '(none)',
+        tried: data.tried || '(none)',
+        message: data.message || '',
+        reply_email: data.email || '',
+      })
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    document.getElementById('feedbackStatus').textContent = 'Sent · Thank you. Read by Jamie.';
+    e.target.reset();
+    ratingStars.forEach(b => b.classList.remove('active'));
+  } catch(err){
+    console.warn(err);
+    document.getElementById('feedbackStatus').textContent = 'Saved locally · network error. Try again or email wiggjamie9@gmail.com';
+  }
 });
 
 // ── Reset / Refresh ──
