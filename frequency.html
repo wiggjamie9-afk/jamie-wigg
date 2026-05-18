@@ -540,7 +540,7 @@ footer { padding:5rem 0 3rem; border-top:1px solid var(--border); }
         <button class="btn btn-sm btn-primary" id="freqPlay">Play Frequency</button>
         <button class="btn btn-sm btn-ghost" id="freqStop" disabled>Stop</button>
       </div>
-      <div class="disclaimer-small">Volume kept low · Sessions 15–30 min maximum</div>
+      <div class="disclaimer-small">Sessions 15–30 min maximum  ·  <span style="color:var(--gold);">iPhone silent switch must be off to hear audio</span></div>
     </div>
 
     <!-- III · coherence engine -->
@@ -768,6 +768,7 @@ footer { padding:5rem 0 3rem; border-top:1px solid var(--border); }
           <button class="btn btn-sm btn-ghost" id="humTone">Play Reference Tone</button>
           <button class="btn btn-sm btn-ghost" id="humStop" disabled>Stop</button>
         </div>
+        <div class="disclaimer-small" style="margin-top:0.75rem;"><span style="color:var(--gold);">No sound? Flip your iPhone silent switch off.</span></div>
         <div class="freq-display"><div class="freq-big" id="humTimer">1:30</div><div class="freq-label">Match the reference tone with your hum</div></div>
       </div>
 
@@ -1176,12 +1177,31 @@ familyToggle.addEventListener('click', ()=>{
 
 // ── AudioContext (lazy-init on first user gesture) ──
 let audioCtx = null;
-function ac(){ if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+let audioUnlocked = false;
+function ac(){
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+// Prime audio on first touch anywhere — iOS Safari unlocks then
+function primeAudio(){
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  const ctx = ac();
+  // play a near-silent 50ms blip to fully unlock the audio output route
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.frequency.value = 440; g.gain.value = 0.0001;
+  o.connect(g); g.connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime + 0.05);
+}
+['pointerdown','touchstart','click'].forEach(ev =>
+  document.addEventListener(ev, primeAudio, { once: true, capture: true, passive: true })
+);
 
 // Isochronic tone: carrier modulated by square-ish envelope at target Hz.
 // For target < 5 Hz we treat the *tone itself* as the carrier; we modulate amplitude
 // at the target Hz with a fixed musical carrier (220 Hz) so it's audible.
-function startIsochronic(targetHz, gainVal=0.08){
+function startIsochronic(targetHz, gainVal=0.35){
   const ctx = ac();
   if (ctx.state === 'suspended') ctx.resume();
   // pick carrier
@@ -1222,8 +1242,8 @@ function startIsochronic(targetHz, gainVal=0.08){
   };
 }
 
-// Plain sine tone (for hum reference)
-function startTone(hz, vol=0.08){
+// Plain sine tone (for hum reference + Solfeggio)
+function startTone(hz, vol=0.35){
   const ctx = ac();
   if (ctx.state === 'suspended') ctx.resume();
   const osc = ctx.createOscillator();
