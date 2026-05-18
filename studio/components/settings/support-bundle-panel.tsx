@@ -39,16 +39,16 @@ export function SupportBundlePanel() {
   return (
     <section
       aria-labelledby="support-bundle-heading"
-      className="rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-border-strong bg-rhythmix-surface p-5 sm:p-6"
+      className="rounded-[var(--radius-rhythmix-lg)] border border-starlightmix-border-strong bg-starlightmix-surface p-5 sm:p-6"
     >
       <header className="mb-4">
         <h2
           id="support-bundle-heading"
-          className="font-rhythmix-display text-lg font-bold text-rhythmix-text"
+          className="font-starlightmix-display text-lg font-bold text-starlightmix-text"
         >
           Export support bundle
         </h2>
-        <p className="mt-1 text-sm text-rhythmix-text-soft">
+        <p className="mt-1 text-sm text-starlightmix-text-soft">
           A JSON snapshot you can attach to your Gumroad receipt reply when
           something&rsquo;s broken.
         </p>
@@ -58,12 +58,12 @@ export function SupportBundlePanel() {
         type="button"
         onClick={() => void handleExport()}
         disabled={busy}
-        className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+        className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
       >
         {busy ? "Building bundle…" : "Export support bundle"}
       </button>
 
-      <p className="mt-3 text-xs text-rhythmix-text-muted">
+      <p className="mt-3 text-xs text-starlightmix-text-muted">
         Bundle excludes your Replicate token, audio, and rendered videos.
         It contains: browser info, capability flags, plan metadata, render
         history metadata, and the recent error log.
@@ -72,13 +72,13 @@ export function SupportBundlePanel() {
       {error ? (
         <p
           role="alert"
-          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-rhythmix-magenta"
+          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-starlightmix-magenta"
         >
           {error}
         </p>
       ) : null}
       {info ? (
-        <p className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface-2 px-3 py-2 text-sm text-rhythmix-text-soft">
+        <p className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface-2 px-3 py-2 text-sm text-starlightmix-text-soft">
           {info}
         </p>
       ) : null}

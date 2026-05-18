@@ -3,7 +3,7 @@ import "./globals.css";
 import { CapabilityGate } from "@/components/fallback-screens/capability-gate";
 
 export const metadata: Metadata = {
-  title: "RHYTHMIX Studio",
+  title: "STARLIGHTMIX Studio",
   description:
     "Upload a track, pick a visual theme, get an AI-generated music video — all in your browser.",
 };

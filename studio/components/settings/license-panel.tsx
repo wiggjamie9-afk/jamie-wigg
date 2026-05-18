@@ -27,7 +27,7 @@ const LICENSE_CACHE_KEY = "rhythmix_license_v1";
 const LICENSE_TTL_MS = 24 * 60 * 60 * 1000; // 24h (R10)
 
 const DEFAULT_LICENSE_URL =
-  "https://license.studio.rhythmixapp.com.au/api/license";
+  "https://license.studio.starlightmix.com/api/license";
 
 type Tier = "lifetime" | "monthly";
 
@@ -191,16 +191,16 @@ export function LicensePanel() {
   return (
     <section
       aria-labelledby="license-heading"
-      className="rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-border-strong bg-rhythmix-surface p-5 sm:p-6"
+      className="rounded-[var(--radius-rhythmix-lg)] border border-starlightmix-border-strong bg-starlightmix-surface p-5 sm:p-6"
     >
       <header className="mb-4">
         <h2
           id="license-heading"
-          className="font-rhythmix-display text-lg font-bold text-rhythmix-text"
+          className="font-starlightmix-display text-lg font-bold text-starlightmix-text"
         >
           License key
         </h2>
-        <p className="mt-1 text-sm text-rhythmix-text-soft">
+        <p className="mt-1 text-sm text-starlightmix-text-soft">
           Unlocks the studio routes. Validated against Gumroad and cached for
           24 hours.
         </p>
@@ -209,14 +209,14 @@ export function LicensePanel() {
       {cached ? (
         <CachedSummary entry={cached} />
       ) : (
-        <p className="rounded-[var(--radius-rhythmix-md)] border border-rhythmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] px-3 py-2 text-sm text-rhythmix-warn">
+        <p className="rounded-[var(--radius-rhythmix-md)] border border-starlightmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] px-3 py-2 text-sm text-starlightmix-warn">
           No valid license cached on this device.
         </p>
       )}
 
       <form className="mt-4 space-y-3" onSubmit={handleValidate}>
         <label htmlFor="license-key-input" className="block min-w-0">
-          <span className="block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft">
+          <span className="block font-starlightmix-mono text-xs uppercase tracking-[0.2em] text-starlightmix-text-soft">
             License key
           </span>
           <input
@@ -227,14 +227,14 @@ export function LicensePanel() {
             placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
             autoComplete="off"
             spellCheck={false}
-            className="mt-1 block w-full min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-deep px-3 py-2 font-rhythmix-mono text-sm tracking-wider text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-2 focus:ring-rhythmix-cyan/40 transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="mt-1 block w-full min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-deep px-3 py-2 font-starlightmix-mono text-sm tracking-wider text-starlightmix-text placeholder:text-starlightmix-text-muted focus:border-starlightmix-cyan focus:outline-none focus:ring-2 focus:ring-starlightmix-cyan/40 transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           />
         </label>
         <div className="flex flex-col flex-wrap gap-2 sm:flex-row sm:items-center">
           <button
             type="submit"
             disabled={busy}
-            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             {busy ? "Validating…" : "Validate"}
           </button>
@@ -244,7 +244,7 @@ export function LicensePanel() {
                 type="button"
                 onClick={handleRecheck}
                 disabled={busy}
-                className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+                className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-text-soft hover:bg-starlightmix-surface-2 hover:text-starlightmix-text disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
               >
                 Re-check now
               </button>
@@ -252,7 +252,7 @@ export function LicensePanel() {
                 type="button"
                 onClick={handleClear}
                 disabled={busy}
-                className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+                className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
               >
                 Clear license
               </button>
@@ -264,13 +264,13 @@ export function LicensePanel() {
       {error ? (
         <p
           role="alert"
-          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-rhythmix-magenta"
+          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-starlightmix-magenta"
         >
           {error}
         </p>
       ) : null}
       {info ? (
-        <p className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface-2 px-3 py-2 text-sm text-rhythmix-text-soft">
+        <p className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface-2 px-3 py-2 text-sm text-starlightmix-text-soft">
           {info}
         </p>
       ) : null}
@@ -284,24 +284,24 @@ function CachedSummary({ entry }: { entry: CachedLicense }) {
   const remainingHours = Math.max(0, Math.round(remainingMs / (60 * 60 * 1000)));
   const tierColour =
     entry.tier === "lifetime"
-      ? "border-rhythmix-gold/40 bg-[color:var(--color-rhythmix-gold)]/10 text-rhythmix-gold"
-      : "border-rhythmix-cyan/40 bg-[var(--color-rhythmix-info-soft)] text-rhythmix-cyan";
+      ? "border-starlightmix-gold/40 bg-[color:var(--color-rhythmix-gold)]/10 text-starlightmix-gold"
+      : "border-starlightmix-cyan/40 bg-[var(--color-rhythmix-info-soft)] text-starlightmix-cyan";
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-2">
         <span
-          className={`inline-flex items-center rounded-full border px-3 py-1 font-rhythmix-mono text-xs font-semibold uppercase tracking-wider ${tierColour}`}
+          className={`inline-flex items-center rounded-full border px-3 py-1 font-starlightmix-mono text-xs font-semibold uppercase tracking-wider ${tierColour}`}
         >
           {entry.tier}
         </span>
-        <span className="font-rhythmix-mono text-sm text-rhythmix-text-soft break-all">
+        <span className="font-starlightmix-mono text-sm text-starlightmix-text-soft break-all">
           {maskKey(entry.key)}
         </span>
       </div>
-      <p className="text-xs text-rhythmix-text-muted">
+      <p className="text-xs text-starlightmix-text-muted">
         Validated {timeAgo(entry.validatedAt)}.{" "}
         {expired ? (
-          <span className="text-rhythmix-warn">Cache expired — re-check now.</span>
+          <span className="text-starlightmix-warn">Cache expired — re-check now.</span>
         ) : (
           <>Cache fresh for ~{remainingHours} more hour(s).</>
         )}

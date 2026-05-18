@@ -41,16 +41,16 @@ export function ClearAllPanel() {
   return (
     <section
       aria-labelledby="clear-all-heading"
-      className="rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] p-5 sm:p-6"
+      className="rounded-[var(--radius-rhythmix-lg)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] p-5 sm:p-6"
     >
       <header className="mb-4">
         <h2
           id="clear-all-heading"
-          className="font-rhythmix-display text-lg font-bold text-rhythmix-magenta"
+          className="font-starlightmix-display text-lg font-bold text-starlightmix-magenta"
         >
           Danger zone
         </h2>
-        <p className="mt-1 text-sm text-rhythmix-text-soft">
+        <p className="mt-1 text-sm text-starlightmix-text-soft">
           Wipes your saved token, license, plans, and render history from this
           device. Useful before selling or returning the device, or before
           handing off the browser.
@@ -61,7 +61,7 @@ export function ClearAllPanel() {
         type="button"
         onClick={() => setConfirming(true)}
         disabled={clearing}
-        className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-danger px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+        className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-danger px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
       >
         {clearing ? "Clearing…" : "Clear all local data"}
       </button>
@@ -69,7 +69,7 @@ export function ClearAllPanel() {
       {error ? (
         <p
           role="alert"
-          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-rhythmix-magenta"
+          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-starlightmix-magenta"
         >
           {error}
         </p>
@@ -147,17 +147,17 @@ function ConfirmDialog(props: {
         aria-modal="true"
         aria-labelledby="clear-all-confirm-title"
         aria-describedby="clear-all-confirm-body"
-        className="w-full max-w-sm rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-border-strong bg-rhythmix-surface p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-[var(--radius-rhythmix-lg)] border border-starlightmix-border-strong bg-starlightmix-surface p-6 shadow-2xl"
       >
         <h3
           id="clear-all-confirm-title"
-          className="font-rhythmix-display text-lg font-bold text-rhythmix-text"
+          className="font-starlightmix-display text-lg font-bold text-starlightmix-text"
         >
           Clear everything?
         </h3>
         <p
           id="clear-all-confirm-body"
-          className="mt-2 text-sm text-rhythmix-text-soft"
+          className="mt-2 text-sm text-starlightmix-text-soft"
         >
           This removes your token, license, plans, and render history from this
           device. Can&rsquo;t be undone.
@@ -168,7 +168,7 @@ function ConfirmDialog(props: {
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-text-soft hover:bg-starlightmix-surface-2 hover:text-starlightmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Cancel
           </button>
@@ -176,7 +176,7 @@ function ConfirmDialog(props: {
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
-            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-danger px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-danger px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Clear everything
           </button>

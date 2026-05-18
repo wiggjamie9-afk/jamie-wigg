@@ -1,5 +1,5 @@
 /**
- * RHYTHMIX Replicate-proxy Cloudflare Worker.
+ * STARLIGHTMIX Replicate-proxy Cloudflare Worker.
  *
  * GET|POST|OPTIONS /api/replicate-proxy/v1/* → https://api.replicate.com/v1/*
  *
@@ -31,7 +31,7 @@ const UPSTREAM_BASE = "https://api.replicate.com/v1/";
 const PROXY_PREFIX = "/api/replicate-proxy/v1/";
 
 const ALLOWED_ORIGIN_EXACT = new Set<string>([
-  "https://studio.rhythmixapp.com.au",
+  "https://studio.starlightmix.com",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
 ]);

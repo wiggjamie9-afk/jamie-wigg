@@ -158,16 +158,16 @@ export function ReplicateTokenPanel() {
   return (
     <section
       aria-labelledby="replicate-token-heading"
-      className="rounded-[var(--radius-rhythmix-lg)] border border-rhythmix-border-strong bg-rhythmix-surface p-5 sm:p-6"
+      className="rounded-[var(--radius-rhythmix-lg)] border border-starlightmix-border-strong bg-starlightmix-surface p-5 sm:p-6"
     >
       <header className="mb-4">
         <h2
           id="replicate-token-heading"
-          className="font-rhythmix-display text-lg font-bold text-rhythmix-text"
+          className="font-starlightmix-display text-lg font-bold text-starlightmix-text"
         >
           Replicate API token
         </h2>
-        <p className="mt-1 text-sm text-rhythmix-text-soft">
+        <p className="mt-1 text-sm text-starlightmix-text-soft">
           Encrypted with a passphrase you set, then stored on this device.
           We never send your token to our servers.
         </p>
@@ -199,7 +199,7 @@ export function ReplicateTokenPanel() {
             <button
               type="submit"
               disabled={busy}
-              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             >
               {busy ? "Encrypting…" : "Save token"}
             </button>
@@ -207,7 +207,7 @@ export function ReplicateTokenPanel() {
               <button
                 type="button"
                 onClick={() => setShowReplace(false)}
-                className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+                className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-text-soft hover:bg-starlightmix-surface-2 hover:text-starlightmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
               >
                 Cancel
               </button>
@@ -231,21 +231,21 @@ export function ReplicateTokenPanel() {
             <button
               type="submit"
               disabled={busy}
-              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             >
               {busy ? "Unlocking…" : "Unlock for this session"}
             </button>
             <button
               type="button"
               onClick={() => setShowReplace(true)}
-              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-text-soft hover:bg-starlightmix-surface-2 hover:text-starlightmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             >
               Replace token
             </button>
             <button
               type="button"
               onClick={handleClear}
-              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+              className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             >
               Clear token
             </button>
@@ -259,21 +259,21 @@ export function ReplicateTokenPanel() {
           <button
             type="button"
             onClick={handleLock}
-            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-4 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Lock session
           </button>
           <button
             type="button"
             onClick={() => setShowReplace(true)}
-            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-text-soft hover:bg-starlightmix-surface-2 hover:text-starlightmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Replace token
           </button>
           <button
             type="button"
             onClick={handleClear}
-            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Clear token
           </button>
@@ -289,21 +289,21 @@ function StatusBadge({ status }: { status: Status }) {
   const map: Record<Status, { label: string; tone: string }> = {
     "no-token": {
       label: "No token set",
-      tone: "border-rhythmix-border-strong bg-rhythmix-surface-2 text-rhythmix-text-soft",
+      tone: "border-starlightmix-border-strong bg-starlightmix-surface-2 text-starlightmix-text-soft",
     },
     locked: {
       label: "Token stored — locked",
-      tone: "border-rhythmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] text-rhythmix-warn",
+      tone: "border-starlightmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] text-starlightmix-warn",
     },
     unlocked: {
       label: "Token stored — unlocked for this session",
-      tone: "border-rhythmix-green/40 bg-[var(--color-rhythmix-ok-soft)] text-rhythmix-green",
+      tone: "border-starlightmix-green/40 bg-[var(--color-rhythmix-ok-soft)] text-starlightmix-green",
     },
   };
   const { label, tone } = map[status];
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 font-rhythmix-mono text-xs font-semibold uppercase tracking-wider ${tone}`}
+      className={`inline-flex items-center rounded-full border px-3 py-1 font-starlightmix-mono text-xs font-semibold uppercase tracking-wider ${tone}`}
     >
       {label}
     </span>
@@ -323,7 +323,7 @@ function Field(props: {
   const id = `field-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
     <label htmlFor={id} className="block min-w-0">
-      <span className="block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft">{label}</span>
+      <span className="block font-starlightmix-mono text-xs uppercase tracking-[0.2em] text-starlightmix-text-soft">{label}</span>
       <input
         id={id}
         type={type}
@@ -332,7 +332,7 @@ function Field(props: {
         placeholder={placeholder}
         autoComplete={autoComplete}
         spellCheck={spellCheck ?? true}
-        className="mt-1 block w-full min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-deep px-3 py-2 text-sm text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-2 focus:ring-rhythmix-cyan/40 transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+        className="mt-1 block w-full min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-deep px-3 py-2 text-sm text-starlightmix-text placeholder:text-starlightmix-text-muted focus:border-starlightmix-cyan focus:outline-none focus:ring-2 focus:ring-starlightmix-cyan/40 transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
       />
     </label>
   );
@@ -351,13 +351,13 @@ function Messages({
       {error ? (
         <p
           role="alert"
-          className="rounded-[var(--radius-rhythmix-md)] border border-rhythmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-rhythmix-magenta"
+          className="rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-starlightmix-magenta"
         >
           {error}
         </p>
       ) : null}
       {info ? (
-        <p className="rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface-2 px-3 py-2 text-sm text-rhythmix-text-soft">
+        <p className="rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface-2 px-3 py-2 text-sm text-starlightmix-text-soft">
           {info}
         </p>
       ) : null}

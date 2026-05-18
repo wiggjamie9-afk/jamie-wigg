@@ -20,7 +20,7 @@ export function generateStaticParams(): Array<{ id: string }> {
 }
 
 export const metadata = {
-  title: "Plan · RHYTHMIX Studio",
+  title: "Plan · STARLIGHTMIX Studio",
 };
 
 export default async function PlanPage({

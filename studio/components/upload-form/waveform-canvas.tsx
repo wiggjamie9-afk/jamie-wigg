@@ -126,15 +126,15 @@ export function WaveformCanvas({
     <div className="w-full">
       <canvas
         ref={canvasRef}
-        className="block w-full rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface"
+        className="block w-full rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface"
         style={{ height: `${height}px` }}
         aria-label="Audio waveform preview"
       />
       {status === "decoding" && (
-        <p className="mt-2 font-rhythmix-mono text-xs text-rhythmix-text-muted">Decoding waveform…</p>
+        <p className="mt-2 font-starlightmix-mono text-xs text-starlightmix-text-muted">Decoding waveform…</p>
       )}
       {status === "error" && (
-        <p className="mt-2 text-xs text-rhythmix-magenta">
+        <p className="mt-2 text-xs text-starlightmix-magenta">
           Waveform preview unavailable: {error}
         </p>
       )}

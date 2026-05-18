@@ -45,18 +45,18 @@ const STATUS_LABEL: Record<SceneStatus, string> = {
 };
 
 /**
- * Tailwind classes per status — RHYTHMIX brand palette (T13 / R12). Pulls
+ * Tailwind classes per status — STARLIGHTMIX brand palette (T13 / R12). Pulls
  * from the signal-tone CSS custom properties in globals.css so every pill
  * inherits the same dark-surface treatment as the rest of the studio.
  * Queued = muted surface, generating = cyan info, downloaded = purple,
  * composed = green ok, failed = magenta danger.
  */
 const STATUS_CLASSES: Record<SceneStatus, string> = {
-  queued: "bg-rhythmix-surface-2 text-rhythmix-text-soft border-rhythmix-border-strong",
-  generating: "bg-[var(--color-rhythmix-info-soft)] text-rhythmix-cyan border-rhythmix-cyan/40",
-  downloaded: "bg-[color:var(--color-rhythmix-purple)]/15 text-rhythmix-purple border-rhythmix-purple/40",
-  composed: "bg-[var(--color-rhythmix-ok-soft)] text-rhythmix-green border-rhythmix-green/40",
-  failed: "bg-[var(--color-rhythmix-danger-soft)] text-rhythmix-magenta border-rhythmix-magenta/40",
+  queued: "bg-starlightmix-surface-2 text-starlightmix-text-soft border-starlightmix-border-strong",
+  generating: "bg-[var(--color-rhythmix-info-soft)] text-starlightmix-cyan border-starlightmix-cyan/40",
+  downloaded: "bg-[color:var(--color-rhythmix-purple)]/15 text-starlightmix-purple border-starlightmix-purple/40",
+  composed: "bg-[var(--color-rhythmix-ok-soft)] text-starlightmix-green border-starlightmix-green/40",
+  failed: "bg-[var(--color-rhythmix-danger-soft)] text-starlightmix-magenta border-starlightmix-magenta/40",
 };
 
 export function SceneStatusPill({
@@ -88,7 +88,7 @@ export function SceneStatusPill({
       data-testid={testId ?? `scene-status-${status}`}
     >
       <span
-        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-rhythmix-mono text-xs font-semibold uppercase tracking-wider ${classes}`}
+        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-starlightmix-mono text-xs font-semibold uppercase tracking-wider ${classes}`}
       >
         <span aria-live="polite">{label}</span>
         {showAttempt && (
@@ -108,7 +108,7 @@ export function SceneStatusPill({
           type="button"
           onClick={onRerun}
           // 44 px tall to satisfy R9's touch-target rule even at small font.
-          className="inline-flex items-center justify-center rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-magenta/50 bg-transparent px-3 text-xs font-semibold text-rhythmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+          className="inline-flex items-center justify-center rounded-[var(--radius-rhythmix-sm)] border border-starlightmix-magenta/50 bg-transparent px-3 text-xs font-semibold text-starlightmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           style={{ minHeight: "44px" }}
           data-testid="scene-rerun"
         >

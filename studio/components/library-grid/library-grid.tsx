@@ -91,19 +91,19 @@ export function LibraryGrid() {
       <EvictionToast ref={toastRef} />
 
       {state.status === "loading" || state.status === "idle" ? (
-        <p className="py-12 text-center font-rhythmix-mono text-sm text-rhythmix-text-muted">
+        <p className="py-12 text-center font-starlightmix-mono text-sm text-starlightmix-text-muted">
           Loading your renders…
         </p>
       ) : null}
 
       {state.status === "error" ? (
-        <div className="rounded-[var(--radius-rhythmix-md)] border border-rhythmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] p-4 text-sm text-rhythmix-warn">
+        <div className="rounded-[var(--radius-rhythmix-md)] border border-starlightmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] p-4 text-sm text-starlightmix-warn">
           <p className="font-semibold">Couldn&rsquo;t load history.</p>
-          <p className="mt-1 text-rhythmix-text-soft">{state.message}</p>
+          <p className="mt-1 text-starlightmix-text-soft">{state.message}</p>
           <button
             type="button"
             onClick={() => void refresh()}
-            className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-rhythmix-sm)] border border-rhythmix-warn/60 bg-transparent px-4 py-2 text-xs font-semibold text-rhythmix-warn hover:bg-[var(--color-rhythmix-warn-soft)] transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-rhythmix-sm)] border border-starlightmix-warn/60 bg-transparent px-4 py-2 text-xs font-semibold text-starlightmix-warn hover:bg-[var(--color-rhythmix-warn-soft)] transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Try again
           </button>
@@ -142,17 +142,17 @@ export function LibraryGrid() {
 
 function EmptyState() {
   return (
-    <div className="rounded-[var(--radius-rhythmix-lg)] border border-dashed border-rhythmix-border-strong bg-rhythmix-surface/40 p-10 text-center">
-      <p className="font-rhythmix-display text-base font-semibold text-rhythmix-text">
+    <div className="rounded-[var(--radius-rhythmix-lg)] border border-dashed border-starlightmix-border-strong bg-starlightmix-surface/40 p-10 text-center">
+      <p className="font-starlightmix-display text-base font-semibold text-starlightmix-text">
         No renders yet
       </p>
-      <p className="mt-1 text-sm text-rhythmix-text-soft">
+      <p className="mt-1 text-sm text-starlightmix-text-soft">
         Render a plan to see it here.
       </p>
       <Link
         href="/new"
         role="button"
-        className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-5 py-2 text-sm font-semibold text-rhythmix-text hover:bg-rhythmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+        className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-5 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
       >
         Start a new render
       </Link>

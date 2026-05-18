@@ -20,25 +20,25 @@ export interface ReplicateUnreachableProps {
 export function ReplicateUnreachable({ onRetry }: ReplicateUnreachableProps) {
   return (
     <section
-      className="min-h-[60vh] flex flex-col items-center justify-center px-6 py-12 text-center bg-rhythmix-bg"
+      className="min-h-[60vh] flex flex-col items-center justify-center px-6 py-12 text-center bg-starlightmix-bg"
       role="alert"
       aria-live="polite"
       data-testid="replicate-unreachable"
     >
       <div className="max-w-md min-w-0">
-        <p className="font-rhythmix-mono text-xs uppercase tracking-[0.3em] text-rhythmix-text-muted">
+        <p className="font-starlightmix-mono text-xs uppercase tracking-[0.3em] text-starlightmix-text-muted">
           Network problem
         </p>
-        <h2 className="mt-3 font-rhythmix-display text-2xl sm:text-3xl font-black tracking-tight text-rhythmix-text">
+        <h2 className="mt-3 font-starlightmix-display text-2xl sm:text-3xl font-black tracking-tight text-starlightmix-text">
           Can&apos;t reach Replicate
         </h2>
-        <p className="mt-4 text-base text-rhythmix-text-soft">
+        <p className="mt-4 text-base text-starlightmix-text-soft">
           Check{" "}
           <a
             href="https://status.replicate.com"
             target="_blank"
             rel="noreferrer noopener"
-            className="text-rhythmix-cyan underline underline-offset-2 hover:text-rhythmix-pink"
+            className="text-starlightmix-cyan underline underline-offset-2 hover:text-starlightmix-pink"
           >
             status.replicate.com
           </a>{" "}
@@ -49,7 +49,7 @@ export function ReplicateUnreachable({ onRetry }: ReplicateUnreachableProps) {
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta text-rhythmix-text text-sm font-semibold hover:bg-rhythmix-pink transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta text-starlightmix-text text-sm font-semibold hover:bg-starlightmix-pink transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             data-testid="replicate-unreachable-retry"
           >
             Retry
@@ -59,7 +59,7 @@ export function ReplicateUnreachable({ onRetry }: ReplicateUnreachableProps) {
             target="_blank"
             rel="noreferrer noopener"
             role="button"
-            className="inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-transparent text-sm font-medium text-rhythmix-text-soft hover:bg-rhythmix-surface-2 hover:text-rhythmix-text transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+            className="inline-flex min-h-[44px] items-center justify-center px-6 py-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-transparent text-sm font-medium text-starlightmix-text-soft hover:bg-starlightmix-surface-2 hover:text-starlightmix-text transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Replicate status
           </a>

@@ -1,5 +1,5 @@
 /**
- * Capability detection for the RHYTHMIX Studio web app.
+ * Capability detection for the STARLIGHTMIX Studio web app.
  *
  * Pure module — no React, no Next.js. Safe to import from server or client,
  * but the detection functions themselves rely on browser globals and will

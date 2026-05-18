@@ -128,7 +128,7 @@ export function UploadForm() {
     <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-6">
       {/* Drop zone / file picker */}
       <div className="min-w-0">
-        <label className="mb-2 block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft">
+        <label className="mb-2 block font-starlightmix-mono text-xs uppercase tracking-[0.2em] text-starlightmix-text-soft">
           Audio file
         </label>
         <div
@@ -145,16 +145,16 @@ export function UploadForm() {
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           className={[
-            "flex min-h-[160px] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-rhythmix-lg)] border-2 border-dashed p-6 text-center transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]",
+            "flex min-h-[160px] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-rhythmix-lg)] border-2 border-dashed p-6 text-center transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]",
             isDragOver
-              ? "border-rhythmix-magenta bg-rhythmix-surface-2"
-              : "border-rhythmix-border-strong bg-rhythmix-surface hover:bg-rhythmix-surface-2",
+              ? "border-starlightmix-magenta bg-starlightmix-surface-2"
+              : "border-starlightmix-border-strong bg-starlightmix-surface hover:bg-starlightmix-surface-2",
           ].join(" ")}
         >
-          <p className="text-sm font-semibold text-rhythmix-text break-words">
+          <p className="text-sm font-semibold text-starlightmix-text break-words">
             {file ? file.name : "Drop an audio file here"}
           </p>
-          <p className="font-rhythmix-mono text-xs text-rhythmix-text-muted">
+          <p className="font-starlightmix-mono text-xs text-starlightmix-text-muted">
             {file
               ? formatBytes(file.size)
               : "or tap to choose · mp3, wav, m4a, flac · up to 50 MB"}
@@ -168,7 +168,7 @@ export function UploadForm() {
           />
         </div>
         {fileError && (
-          <p className="mt-2 text-sm text-rhythmix-magenta" role="alert">
+          <p className="mt-2 text-sm text-starlightmix-magenta" role="alert">
             {fileError}
           </p>
         )}
@@ -183,11 +183,11 @@ export function UploadForm() {
       <div className="min-w-0">
         <label
           htmlFor="theme"
-          className="mb-2 block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft"
+          className="mb-2 block font-starlightmix-mono text-xs uppercase tracking-[0.2em] text-starlightmix-text-soft"
         >
           Visual theme
         </label>
-        <p className="mb-2 text-xs text-rhythmix-text-muted">
+        <p className="mb-2 text-xs text-starlightmix-text-muted">
           Describe the look you want — moods, settings, colours, anything that
           paints the scenes.
         </p>
@@ -198,10 +198,10 @@ export function UploadForm() {
           maxLength={THEME_MAX}
           rows={4}
           placeholder="e.g. neon-soaked night drive through Tokyo, rain on the windshield, slow pans"
-          className="block w-full resize-y rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface px-3 py-3 text-base text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+          className="block w-full resize-y rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface px-3 py-3 text-base text-starlightmix-text placeholder:text-starlightmix-text-muted focus:border-starlightmix-cyan focus:outline-none focus:ring-1 focus:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           style={{ minHeight: "96px" }}
         />
-        <div className="mt-1 flex justify-end font-rhythmix-mono text-xs text-rhythmix-text-muted">
+        <div className="mt-1 flex justify-end font-starlightmix-mono text-xs text-starlightmix-text-muted">
           {theme.length}/{THEME_MAX}
         </div>
       </div>
@@ -210,11 +210,11 @@ export function UploadForm() {
       <div className="min-w-0">
         <label
           htmlFor="bpm"
-          className="mb-2 block font-rhythmix-mono text-xs uppercase tracking-[0.2em] text-rhythmix-text-soft"
+          className="mb-2 block font-starlightmix-mono text-xs uppercase tracking-[0.2em] text-starlightmix-text-soft"
         >
-          BPM <span className="font-normal normal-case tracking-normal text-rhythmix-text-muted">(optional)</span>
+          BPM <span className="font-normal normal-case tracking-normal text-starlightmix-text-muted">(optional)</span>
         </label>
-        <p className="mb-2 text-xs text-rhythmix-text-muted">
+        <p className="mb-2 text-xs text-starlightmix-text-muted">
           Sets the beat for scene cuts. Leave blank to auto-detect later.
         </p>
         <input
@@ -227,18 +227,18 @@ export function UploadForm() {
           value={bpm}
           onChange={onBpmChange}
           placeholder="e.g. 128"
-          className="block w-full rounded-[var(--radius-rhythmix-md)] border border-rhythmix-border-strong bg-rhythmix-surface px-3 py-3 text-base font-rhythmix-mono tabular-nums text-rhythmix-text placeholder:text-rhythmix-text-muted focus:border-rhythmix-cyan focus:outline-none focus:ring-1 focus:ring-rhythmix-cyan transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)]"
+          className="block w-full rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface px-3 py-3 text-base font-starlightmix-mono tabular-nums text-starlightmix-text placeholder:text-starlightmix-text-muted focus:border-starlightmix-cyan focus:outline-none focus:ring-1 focus:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           style={{ minHeight: "44px" }}
         />
         {bpmError && (
-          <p className="mt-2 text-sm text-rhythmix-magenta" role="alert">
+          <p className="mt-2 text-sm text-starlightmix-magenta" role="alert">
             {bpmError}
           </p>
         )}
       </div>
 
       {submitError && (
-        <p className="text-sm text-rhythmix-magenta" role="alert">
+        <p className="text-sm text-starlightmix-magenta" role="alert">
           {submitError}
         </p>
       )}
@@ -247,7 +247,7 @@ export function UploadForm() {
         type="button"
         onClick={onContinue}
         disabled={!canContinue}
-        className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-rhythmix-magenta px-6 py-3 text-base font-semibold text-rhythmix-text transition-colors duration-[var(--duration-rhythmix-fast)] ease-[var(--ease-rhythmix-out)] hover:bg-rhythmix-pink disabled:cursor-not-allowed disabled:bg-rhythmix-surface-2 disabled:text-rhythmix-text-muted"
+        className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-6 py-3 text-base font-semibold text-starlightmix-text transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)] hover:bg-starlightmix-pink disabled:cursor-not-allowed disabled:bg-starlightmix-surface-2 disabled:text-starlightmix-text-muted"
         style={{ minHeight: "44px" }}
       >
         {submitting ? "Saving…" : "Continue"}
