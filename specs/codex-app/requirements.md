@@ -50,6 +50,15 @@ Ships as PWA on day one (web app + add-to-homescreen). Native iOS + Android wrap
 **R10 — Content scale via voice clone**  
 Jamie's TikTok narration cloned via ElevenLabs Professional Voice Cloning. New protocols scriptable to narrated session in < 30 minutes. Sustains the 30-month content commitment.
 
+**R11 — Featured "Codex" verticals**  
+Cross-cutting collections that pull from multiple categories under a single mythological frame. Each vertical is the brand wrapper; individual protocols inside it carry the clinical mechanism. Launch verticals:
+
+- **The Tesla Codex** — 3-6-9 Breath, Schumann Lock (7.83 Hz auditory anchor + coherence-frequency breath), Toroidal Breath, 369 Manifestation Ritual, Violet Ray Tone. Hero protocol: `tesla-369-breath` (3s in / 6s hold / 9s out, extended-exhale parasympathetic activation).
+- **The Hermetic Codex** — *placeholder for later — Emerald Tablet, Kybalion-framed protocols.*
+- **The Vedic Codex** — *placeholder for later — Pranayama lineage, Bandha holds.*
+
+All verticals follow the **mythology ↔ mechanism split** codified in `content/protocols/README.md`: brand-facing copy frames the lineage; in-app copy stays clinically neutral. No medical claims in either.
+
 ## Non-goals
 
 - Not a medical device. Coherence score is a practice score, not a diagnostic.
