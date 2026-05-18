@@ -1126,6 +1126,20 @@ a { color: inherit; text-decoration: none; }
     <button id="btn-reset">Reset</button>
   </div>
 
+  <div class="eyebrow" style="margin-top:var(--sp-4)">Voice</div>
+  <div class="setting-row">
+    <div class="name">Spoken narration<small>Soft female voice reads protocol scripts</small></div>
+    <button id="btn-voice-toggle">On</button>
+  </div>
+  <div class="setting-row">
+    <div class="name">Breath cues<small>Whispers "in" and "out" each cycle</small></div>
+    <button id="btn-cues-toggle">On</button>
+  </div>
+  <div class="setting-row">
+    <div class="name">Voice<small id="voice-name-label">Auto-selected female voice</small></div>
+    <button id="btn-voice-test">Test</button>
+  </div>
+
   <div class="eyebrow" style="margin-top:var(--sp-4)">About</div>
   <div class="setting-row">
     <div class="name">The Codex of Reality<small>Version 0.1 · prototype build</small></div>
@@ -1768,6 +1782,90 @@ document.querySelectorAll('.cat-tab').forEach(t => t.addEventListener('click', (
   currentCat = t.dataset.cat; renderCodex();
 }));
 
+// ============ VOICE NARRATION (Web Speech API) ============
+
+const VOICE_KEY = 'codex.voice.v1';
+const voice = Object.assign({
+  enabled: true,
+  speakPhases: true,
+  rate: 0.82,
+  pitch: 0.95,
+  volume: 0.85,
+}, (() => { try { return JSON.parse(localStorage.getItem(VOICE_KEY) || '{}'); } catch { return {}; } })());
+
+function saveVoice() { localStorage.setItem(VOICE_KEY, JSON.stringify(voice)); }
+
+let selectedVoice = null;
+
+function pickFemaleVoice() {
+  const all = ('speechSynthesis' in window) ? speechSynthesis.getVoices() : [];
+  if (!all.length) return null;
+  // Preference order — iOS / macOS first, then common Web Speech names
+  const preferred = ['Samantha', 'Ava', 'Karen', 'Moira', 'Tessa', 'Fiona', 'Serena',
+                     'Allison', 'Susan', 'Victoria', 'Catherine', 'Joanna'];
+  for (const name of preferred) {
+    const v = all.find(x => x.name.includes(name) && /en/i.test(x.lang));
+    if (v) return v;
+  }
+  const female = all.find(v => /female|woman/i.test(v.name) && /en/i.test(v.lang));
+  if (female) return female;
+  return all.find(v => /^en/i.test(v.lang)) || all[0] || null;
+}
+
+function ensureVoiceReady() {
+  if (!('speechSynthesis' in window)) return false;
+  if (selectedVoice) return true;
+  selectedVoice = pickFemaleVoice();
+  if (!selectedVoice && !ensureVoiceReady._listening) {
+    ensureVoiceReady._listening = true;
+    speechSynthesis.addEventListener('voiceschanged', () => {
+      selectedVoice = pickFemaleVoice();
+      updateVoiceLabel();
+    });
+  }
+  updateVoiceLabel();
+  return !!selectedVoice;
+}
+
+function updateVoiceLabel() {
+  const el = document.getElementById('voice-name-label');
+  if (el && selectedVoice) el.textContent = `${selectedVoice.name} · ${selectedVoice.lang}`;
+}
+
+function speak(text, opts = {}) {
+  if (!voice.enabled || !text) return;
+  if (!('speechSynthesis' in window)) return;
+  ensureVoiceReady();
+  const u = new SpeechSynthesisUtterance(text);
+  if (selectedVoice) u.voice = selectedVoice;
+  u.rate   = opts.rate   != null ? opts.rate   : voice.rate;
+  u.pitch  = opts.pitch  != null ? opts.pitch  : voice.pitch;
+  u.volume = opts.volume != null ? opts.volume : voice.volume;
+  u.lang   = (selectedVoice && selectedVoice.lang) || 'en-AU';
+  speechSynthesis.speak(u);
+}
+
+function speakPhase(phase) {
+  if (!voice.speakPhases || !voice.enabled) return;
+  if (!('speechSynthesis' in window)) return;
+  // Don't queue cues behind script narration — let the script breathe
+  if (speechSynthesis.speaking || speechSynthesis.pending) return;
+  if (phase === 'INHALE') speak('in',  { volume: voice.volume * 0.55, rate: 1.0,  pitch: 1.0 });
+  else if (phase === 'EXHALE') speak('out', { volume: voice.volume * 0.55, rate: 0.95, pitch: 0.92 });
+  // HOLD stays silent — the held breath is the cue
+}
+
+function stopSpeaking() {
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+// Warm up the voice list — Safari is lazy and returns [] on first call
+if ('speechSynthesis' in window) {
+  setTimeout(() => { speechSynthesis.getVoices(); ensureVoiceReady(); }, 100);
+  setTimeout(() => { ensureVoiceReady(); }, 600);
+  setTimeout(() => { ensureVoiceReady(); }, 1500);
+}
+
 // ============ AUDIO ENGINE ============
 
 let audioCtx = null;
@@ -2206,8 +2304,19 @@ let liveEngine = null;
 let liveRaf = null;
 let liveStartT = null;
 let liveStopCym = null;
+let liveScriptIdx = 0;
+const LIVE_SCRIPT = [
+  [0,   "Welcome. Five seconds in. Five seconds out. Let the orb guide you."],
+  [25,  "Cover the rear camera with your fingertip if you'd like a reading."],
+  [90,  "Notice the body softening. Stay with the breath."],
+  [180, "Three minutes. Your nervous system has shifted."],
+  [300, "Five minutes. Beautiful work."],
+  [600, "Long session. Let the count carry you."],
+];
 
 function liveStart(forceSource) {
+  ensureVoiceReady();
+  liveScriptIdx = 0;
   liveEngine = makeCoherenceEngine({
     videoEl: document.getElementById('live-video'),
     onStatus: (s) => document.getElementById('live-status').textContent = s,
@@ -2241,11 +2350,22 @@ function liveStart(forceSource) {
 }
 
 function liveLoop(t) {
+  const elapsed = (t - liveStartT) / 1000;
   const { eased, inhale } = pacerPhase(t - liveStartT, 10000);
   renderOrb(document.getElementById('live-orb'), eased);
   const lbl = inhale ? 'INHALE' : 'EXHALE';
   const phaseEl = document.getElementById('live-phase');
-  if (phaseEl.textContent !== lbl) phaseEl.textContent = lbl;
+  if (phaseEl.textContent !== lbl) {
+    phaseEl.textContent = lbl;
+    speakPhase(lbl);
+  }
+
+  // script narration on Live
+  while (liveScriptIdx < LIVE_SCRIPT.length && elapsed >= LIVE_SCRIPT[liveScriptIdx][0]) {
+    stopSpeaking();
+    speak(LIVE_SCRIPT[liveScriptIdx][1]);
+    liveScriptIdx++;
+  }
 
   if (liveEngine) {
     const c = liveEngine.getCoherence();
@@ -2269,6 +2389,7 @@ function liveStop() {
   if (liveEngine) { liveEngine.stop(); liveEngine = null; }
   if (liveRaf) { cancelAnimationFrame(liveRaf); liveRaf = null; }
   if (liveStopCym) { liveStopCym(); liveStopCym = null; }
+  stopSpeaking();
   document.getElementById('live-start').style.display = '';
   document.getElementById('live-demo').style.display = '';
   document.getElementById('live-save').style.display = 'none';
@@ -2315,6 +2436,7 @@ function playStart(forceSource) {
   const p = playProtocol;
   if (!p) return;
   ensureAudio();
+  ensureVoiceReady();
   playEngine = makeCoherenceEngine({
     videoEl: document.getElementById('play-video'),
     onStatus: () => {},
@@ -2370,11 +2492,17 @@ function playLoop(t) {
   orb.style.transform = `scale(${scale})`;
   orb.style.filter = `blur(${((1.05 - scale) * 5).toFixed(1)}px)`;
   const phaseEl = document.getElementById('play-phase');
-  if (phaseEl.textContent !== label) phaseEl.textContent = label;
+  if (phaseEl.textContent !== label) {
+    phaseEl.textContent = label;
+    speakPhase(label);
+  }
 
   // script
   while (playScriptIdx < p.script.length && elapsed >= p.script[playScriptIdx][0]) {
-    document.getElementById('play-script').textContent = p.script[playScriptIdx][1];
+    const line = p.script[playScriptIdx][1];
+    document.getElementById('play-script').textContent = line;
+    stopSpeaking(); // cancel any queued phase cues so narration takes priority
+    speak(line);
     playScriptIdx++;
   }
 
@@ -2414,6 +2542,7 @@ function playStop() {
   if (playRaf) { cancelAnimationFrame(playRaf); playRaf = null; }
   if (playStopCym) { playStopCym(); playStopCym = null; }
   stopTones();
+  stopSpeaking();
   if (document.getElementById('play-start')) {
     document.getElementById('play-start').style.display = '';
     document.getElementById('play-demo').style.display = '';
@@ -2476,6 +2605,13 @@ function renderSettings() {
     btn.textContent = 'Pair';
     btn.classList.remove('connected');
   }
+  // Voice section
+  ensureVoiceReady();
+  const v1 = document.getElementById('btn-voice-toggle');
+  const v2 = document.getElementById('btn-cues-toggle');
+  if (v1) { v1.textContent = voice.enabled ? 'On' : 'Off'; v1.classList.toggle('connected', voice.enabled); }
+  if (v2) { v2.textContent = voice.speakPhases ? 'On' : 'Off'; v2.classList.toggle('connected', voice.speakPhases); }
+  updateVoiceLabel();
 }
 
 document.getElementById('btn-polar').addEventListener('click', async () => {
@@ -2545,6 +2681,23 @@ document.getElementById('btn-replay').addEventListener('click', () => {
   state.onboardingDone = false;
   saveState();
   location.hash = '#/welcome';
+});
+document.getElementById('btn-voice-toggle').addEventListener('click', () => {
+  voice.enabled = !voice.enabled;
+  if (!voice.enabled) stopSpeaking();
+  saveVoice(); renderSettings();
+  toast('Voice ' + (voice.enabled ? 'on' : 'muted'));
+});
+document.getElementById('btn-cues-toggle').addEventListener('click', () => {
+  voice.speakPhases = !voice.speakPhases;
+  saveVoice(); renderSettings();
+  toast('Breath cues ' + (voice.speakPhases ? 'on' : 'off'));
+});
+document.getElementById('btn-voice-test').addEventListener('click', () => {
+  // Inside gesture handler so iOS Safari permits speech
+  ensureVoiceReady();
+  stopSpeaking();
+  speak('Welcome to the Codex of Reality. Breathe in. And out.');
 });
 
 // ============ CLAIM ============
