@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Codex of Reality · 60s video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+<style>
+  :root {
+    --ink: #0a1628; --ink-2: #0f1d33; --gold: #d4a843; --parchment: #f4ecd6;
+    --parchment-dim: #a89e85; --coherence: #5ce5e0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; color: var(--parchment); font-family: 'JetBrains Mono', monospace; overflow: hidden; height: 100vh; }
+  body { display: grid; place-items: center; }
+  /* The 9:16 stage. Scales to viewport while preserving 1080×1920 ratio. */
+  .stage {
+    position: relative;
+    width: min(100vw, calc(100vh * 9 / 16));
+    aspect-ratio: 9 / 16;
+    max-height: 100vh;
+    background: var(--ink);
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  }
+  canvas.cym { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.45; mix-blend-mode: screen; }
+  .orb {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 55%; aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(212,168,67,0.85), rgba(212,168,67,0.25) 50%, transparent 75%);
+    transition: transform 600ms ease, opacity 600ms ease, filter 600ms ease;
+    will-change: transform, opacity;
+  }
+  .orb.gold { background: radial-gradient(circle at 30% 30%, rgba(212,168,67,0.9), rgba(212,168,67,0.25) 50%, transparent 75%); }
+  .orb.cyan { background: radial-gradient(circle at 30% 30%, rgba(92,229,224,0.85), rgba(92,229,224,0.25) 50%, transparent 75%); box-shadow: 0 0 120px -10px var(--coherence); }
+  .orb.small { transform: translate(-50%, -50%) scale(0.5); }
+  .orb.big   { transform: translate(-50%, -50%) scale(1.2); }
+  .orb.hidden { opacity: 0; }
+
+  .scene {
+    position: absolute; inset: 0;
+    display: grid; place-items: center; padding: 8% 8%;
+    text-align: center; opacity: 0;
+    transition: opacity 700ms ease;
+    pointer-events: none;
+  }
+  .scene.active { opacity: 1; }
+  .scene h1 {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500;
+    font-size: clamp(36px, 7.5vw, 84px);
+    line-height: 0.98; letter-spacing: -0.015em; color: var(--parchment);
+    text-shadow: 0 4px 30px rgba(0,0,0,0.7);
+  }
+  .scene h1 .gold { color: var(--gold); }
+  .scene h1 .cyan { color: var(--coherence); }
+  .scene h1 .strike { text-decoration: line-through; text-decoration-color: var(--gold); color: var(--parchment-dim); }
+  .scene .eyebrow {
+    font-size: clamp(11px, 1.4vw, 16px);
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--parchment-dim); margin-bottom: 24px;
+  }
+  .scene .sub {
+    margin-top: 24px;
+    font-size: clamp(13px, 1.7vw, 20px);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--parchment-dim); line-height: 1.6;
+  }
+  .scene .sub .gold { color: var(--gold); }
+
+  .nums {
+    display: flex; gap: clamp(20px, 4vw, 56px); align-items: baseline; justify-content: center;
+    margin: 24px 0;
+  }
+  .nums .n {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 600;
+    color: var(--gold); font-size: clamp(80px, 18vw, 220px); line-height: 0.85;
+    text-shadow: 0 0 60px rgba(212,168,67,0.5);
+  }
+  .nums .n small {
+    display: block; font-family: 'JetBrains Mono', monospace; font-style: normal;
+    font-size: clamp(9px, 1.2vw, 14px); letter-spacing: 0.3em; color: var(--parchment-dim);
+    text-transform: uppercase; margin-top: 6px;
+  }
+
+  .price {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 600;
+    color: var(--gold); font-size: clamp(96px, 26vw, 280px); line-height: 0.9;
+    text-shadow: 0 0 100px rgba(212,168,67,0.7);
+  }
+  .price .cur {
+    font-family: 'JetBrains Mono', monospace; font-style: normal; font-weight: 500;
+    font-size: 0.32em; vertical-align: 0.55em; letter-spacing: 0.04em; margin-right: 0.1em;
+  }
+  .url {
+    margin-top: 24px;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700;
+    color: var(--parchment); font-size: clamp(13px, 1.8vw, 22px);
+    letter-spacing: 0.2em; text-transform: uppercase;
+  }
+
+  .brand {
+    position: absolute; top: 6%; left: 50%; transform: translateX(-50%);
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: clamp(15px, 2vw, 22px); color: var(--parchment); z-index: 5;
+    opacity: 0.85;
+  }
+  .brand .dot { color: var(--gold); }
+  .progress {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+    background: rgba(212,168,67,0.15); z-index: 5;
+  }
+  .progress .fill { height: 100%; width: 0%; background: var(--gold); transition: width 120ms linear; }
+
+  .controls {
+    position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%);
+    z-index: 10; display: flex; flex-direction: column; gap: 16px; align-items: center;
+  }
+  .controls.hidden { display: none; }
+  .play-btn {
+    background: var(--gold); color: var(--ink); border: 0; cursor: pointer;
+    padding: 16px 36px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    box-shadow: 0 0 40px rgba(212,168,67,0.45);
+  }
+  .hint { color: var(--parchment-dim); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <canvas class="cym" id="cym"></canvas>
+  <div class="orb" id="orb"></div>
+  <div class="brand" id="brand">Codex<span class="dot"> · </span><em>of Reality</em></div>
+
+  <!-- SCENES -->
+  <div class="scene" data-t="0">
+    <div>
+      <div class="eyebrow">FOR A HUNDRED YEARS</div>
+      <h1>Biofeedback lived<br/>in a <span class="gold">clinic.</span></h1>
+    </div>
+  </div>
+
+  <div class="scene" data-t="8">
+    <div>
+      <div class="eyebrow">FOR A HUNDRED YEARS</div>
+      <h1>The <span class="gold">3-6-9</span> lived<br/>in a quote.</h1>
+      <div class="sub">— attributed to Nikola Tesla</div>
+    </div>
+  </div>
+
+  <div class="scene" data-t="18">
+    <div>
+      <h1><span class="strike">$249 sensor.</span><br/><span class="strike">$89 a year.</span><br/><span class="gold">Today, that ends.</span></h1>
+    </div>
+  </div>
+
+  <div class="scene" data-t="30">
+    <div>
+      <div class="eyebrow">CODEX OF REALITY</div>
+      <h1><span class="gold">Reality</span><br/>has a&nbsp;frequency.</h1>
+      <div class="sub">Live HRV <span class="gold">·</span> Tesla 3-6-9 <span class="gold">·</span> Schumann lock</div>
+    </div>
+  </div>
+
+  <div class="scene" data-t="42">
+    <div>
+      <h1>The first biofeedback platform<br/>built for the <span class="gold">mystic.</span></h1>
+      <div class="sub">Not the biohacker.</div>
+    </div>
+  </div>
+
+  <div class="scene" data-t="52">
+    <div>
+      <div class="eyebrow">ONE PRICE · LIFETIME IN</div>
+      <div class="price"><span class="cur">AU$</span>30</div>
+      <div class="url">rhythmixapp.com.au/codex</div>
+    </div>
+  </div>
+
+  <div class="progress"><div class="fill" id="fill"></div></div>
+
+  <div class="controls" id="controls">
+    <button class="play-btn" id="play">▶ Play 60-second video</button>
+    <div class="hint">Tap to start · screen-record to capture</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const TOTAL = 60; // seconds
+  const stage = document.getElementById('stage');
+  const orb = document.getElementById('orb');
+  const fill = document.getElementById('fill');
+  const controls = document.getElementById('controls');
+  const scenes = [...document.querySelectorAll('.scene')];
+  const playBtn = document.getElementById('play');
+
+  // Cymatics canvas
+  const canvas = document.getElementById('cym');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  function fitCanvas() {
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.floor(r.width * 0.5);
+    canvas.height = Math.floor(r.height * 0.5);
+  }
+  fitCanvas();
+  window.addEventListener('resize', fitCanvas);
+
+  // Cymatics frame — Chladni-pattern, lightweight
+  let cymStart = null;
+  function drawCym(t) {
+    if (cymStart === null) cymStart = t;
+    const elapsed = (t - cymStart) / 1000;
+    const W = canvas.width, H = canvas.height;
+    const n = 4 + Math.sin(elapsed * 0.08) * 2 + Math.sin(elapsed * 0.013) * 1.5;
+    const m = 6 + Math.cos(elapsed * 0.07) * 2 + Math.cos(elapsed * 0.011) * 1.5;
+    const L = Math.min(W, H);
+    const img = ctx.createImageData(W, H);
+    const data = img.data;
+    const step = 3;
+    for (let y = 0; y < H; y += step) {
+      for (let x = 0; x < W; x += step) {
+        const u = (x - W / 2) / (L / 2);
+        const v = (y - H / 2) / (L / 2);
+        const f = Math.cos(n * Math.PI * u) * Math.cos(m * Math.PI * v)
+                - Math.cos(m * Math.PI * u) * Math.cos(n * Math.PI * v);
+        const a = Math.min(255, Math.abs(f) * 180);
+        for (let dy = 0; dy < step && y + dy < H; dy++) {
+          for (let dx = 0; dx < step && x + dx < W; dx++) {
+            const i = ((y + dy) * W + (x + dx)) * 4;
+            data[i] = 212; data[i+1] = 168; data[i+2] = 67; data[i+3] = a;
+          }
+        }
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  // Scene scheduler — pick the latest scene whose data-t <= elapsed
+  function showSceneAt(elapsed) {
+    let active = scenes[0];
+    for (const s of scenes) if (+s.dataset.t <= elapsed) active = s;
+    scenes.forEach(s => s.classList.toggle('active', s === active));
+  }
+
+  // Orb pacing — gentle 6s in / 6s out over the whole video
+  function pulseOrb(elapsed) {
+    const phase = (elapsed % 12) / 12;
+    const inhale = phase < 0.5;
+    const local = inhale ? phase * 2 : (1 - phase) * 2;
+    const eased = 0.5 - 0.5 * Math.cos(Math.PI * local);
+    const scale = 0.5 + eased * 0.7;
+    orb.style.transform = `translate(-50%, -50%) scale(${scale.toFixed(3)})`;
+    // colour shifts at scene boundaries
+    if (elapsed >= 42 && !orb.classList.contains('cyan')) {
+      orb.classList.add('cyan'); orb.classList.remove('gold');
+    } else if (elapsed >= 18 && elapsed < 42 && !orb.classList.contains('gold')) {
+      orb.classList.add('gold'); orb.classList.remove('cyan');
+    }
+  }
+
+  // Voiceover script — exact same beats as scene timestamps
+  const SCRIPT = [
+    [0.6, "For a hundred years, biofeedback lived in a clinic."],
+    [8.5, "Tesla's three, six, and nine lived in a quote."],
+    [18.5, "The two-forty-nine dollar sensor. The eighty-nine a year subscription. Today, that ends."],
+    [30.5, "The Codex of Reality. Reality has a frequency."],
+    [37, "Live heart coherence. Tesla's three-six-nine breath. The Earth's resonance."],
+    [42.5, "The first biofeedback platform built for the mystic. Not the biohacker."],
+    [52.5, "Thirty Australian dollars. One price. Lifetime in."],
+    [57, "Rhythmix app dot com dot a u, slash codex."],
+  ];
+
+  // Voice picker — same logic as the app's Samantha-preferred order
+  let selectedVoice = null;
+  function pickVoice() {
+    const voices = speechSynthesis.getVoices();
+    if (!voices.length) return null;
+    const preferred = ['Samantha', 'Ava', 'Karen', 'Moira', 'Tessa', 'Fiona', 'Serena',
+                       'Allison', 'Susan', 'Victoria', 'Catherine', 'Joanna'];
+    for (const name of preferred) {
+      const v = voices.find(x => x.name.includes(name) && /en/i.test(x.lang));
+      if (v) return v;
+    }
+    return voices.find(v => /female/i.test(v.name) && /en/i.test(v.lang))
+        || voices.find(v => /en/i.test(v.lang)) || voices[0];
+  }
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = () => { selectedVoice = pickVoice(); };
+    setTimeout(() => { selectedVoice = pickVoice(); }, 200);
+  }
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(text);
+    if (selectedVoice) u.voice = selectedVoice;
+    u.rate = 0.86; u.pitch = 0.95; u.volume = 1;
+    speechSynthesis.speak(u);
+  }
+
+  // Run
+  let startT = null;
+  let scriptIdx = 0;
+
+  function loop(t) {
+    if (startT === null) startT = t;
+    const elapsed = (t - startT) / 1000;
+    drawCym(t);
+    showSceneAt(elapsed);
+    pulseOrb(elapsed);
+    fill.style.width = Math.min(100, (elapsed / TOTAL) * 100) + '%';
+
+    while (scriptIdx < SCRIPT.length && elapsed >= SCRIPT[scriptIdx][0]) {
+      speak(SCRIPT[scriptIdx][1]); scriptIdx++;
+    }
+
+    if (elapsed < TOTAL) requestAnimationFrame(loop);
+    else {
+      // End — keep last scene up
+      fill.style.width = '100%';
+      controls.classList.remove('hidden');
+      playBtn.textContent = '↺ Replay';
+    }
+  }
+
+  playBtn.addEventListener('click', () => {
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    controls.classList.add('hidden');
+    startT = null;
+    scriptIdx = 0;
+    cymStart = null;
+    // Warm up the voice on the gesture (iOS needs this)
+    speak(' ');
+    requestAnimationFrame(loop);
+  });
+})();
+</script>
+</body>
+</html>
