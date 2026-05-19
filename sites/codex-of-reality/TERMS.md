@@ -33,7 +33,7 @@ The Coherence Engine's heart-rate reading from your phone camera is a practice s
 A Founding Membership grants you:
 - Lifetime access to the Codex of Reality app and web app
 - All current protocols and frequencies
-- All new content released during the next 30 months
+- All new content released during the next 12 months
 - The Coherence Engine (camera + paired hardware)
 
 A Founding Membership does **not** grant you:
@@ -45,7 +45,7 @@ A Founding Membership does **not** grant you:
 ## Lifetime
 
 "Lifetime" means: for as long as the Codex of Reality continues to be operated as a product. We commit to:
-- A minimum 30 months of new content from launch
+- A minimum 12 months of new content from launch
 - 30 days' written notice via email if the product is wound down
 - A full export of your account data on request, in machine-readable format
 
