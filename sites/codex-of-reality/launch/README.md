@@ -2,6 +2,36 @@
 
 Everything you need for the lunchtime launch.
 
+## One-tap downloads (rendered JPGs and MP4s)
+
+Every visual now has a downloadable `.jpg` next to its `.html` source. Tap any link below on your phone and pick **Save to Photos**. No screenshotting required.
+
+**Thumbnails:**
+- https://rhythmixapp.com.au/codex/launch/thumbnail-1200x630.jpg — OG / link-preview card
+- https://rhythmixapp.com.au/codex/launch/thumbnail-tiktok-1080x1920.jpg — TikTok / Reels cover
+- https://rhythmixapp.com.au/codex/launch/thumbnail-youtube-1280x720.jpg — YouTube video thumbnail
+
+**Front page:**
+- https://rhythmixapp.com.au/codex/launch/frontpage-1920x1080.jpg ← main front-page image
+- https://rhythmixapp.com.au/codex/launch/hero-1920x1080.jpg — alternate hero
+
+**Instagram carousel (1080×1080 square):**
+- https://rhythmixapp.com.au/codex/launch/tile-1-coherence-engine.jpg
+- https://rhythmixapp.com.au/codex/launch/tile-2-tesla-codex.jpg
+- https://rhythmixapp.com.au/codex/launch/tile-3-frequencies.jpg
+- https://rhythmixapp.com.au/codex/launch/tile-4-lifetime.jpg
+
+**Three "people" cards (1080×1350 portrait):**
+- https://rhythmixapp.com.au/codex/launch/people-1-finger-on-camera.jpg
+- https://rhythmixapp.com.au/codex/launch/people-2-breathing.jpg
+- https://rhythmixapp.com.au/codex/launch/people-3-coherence.jpg
+
+**Videos (already downloadable MP4):**
+- https://rhythmixapp.com.au/codex/launch/codex-60s.mp4
+- https://rhythmixapp.com.au/codex/launch/codex-30s.mp4
+
+To re-render any visual after editing its HTML, run `bash render-images.sh` from this folder (requires `wkhtmltoimage`).
+
 ## What's in this folder
 
 ```
