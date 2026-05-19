@@ -9,14 +9,22 @@ launch/
 ├── README.md                          ← this file
 ├── social-copy.md                     ← every platform's copy + hashtags
 │
-├── thumbnail-1200x630.html            ← OG card · link previews
-├── hero-1920x1080.html                ← landing banner · paid ad creative
-├── tile-1-coherence-engine.html       ← IG carousel slide 1/4
-├── tile-2-tesla-codex.html            ← IG carousel slide 2/4
-├── tile-3-frequencies.html            ← IG carousel slide 3/4
-├── tile-4-lifetime.html               ← IG carousel slide 4/4
+├── thumbnail-1200x630.html            ← OG card · link previews (default)
+├── thumbnail-tiktok-1080x1920.html    ← vertical thumbnail · TikTok / Reels cover
+├── thumbnail-youtube-1280x720.html    ← horizontal · YouTube video thumbnail
+├── frontpage-1920x1080.html           ← alternate front-page banner / paid-ad creative
+├── hero-1920x1080.html                ← original landing banner (kept for reference)
 │
-├── codex-60s.mp4                      ← rendered video · post directly to TikTok / Reels / YT Shorts
+├── tile-1-coherence-engine.html       ← IG carousel slide 1/4 — the tech
+├── tile-2-tesla-codex.html            ← IG carousel slide 2/4 — the lineage
+├── tile-3-frequencies.html            ← IG carousel slide 3/4 — the library
+├── tile-4-lifetime.html               ← IG carousel slide 4/4 — the offer
+│
+├── people-1-finger-on-camera.html     ← step-by-step image 1/3 — place finger on camera
+├── people-2-breathing.html            ← step-by-step image 2/3 — breathe with the orb
+├── people-3-coherence.html            ← step-by-step image 3/3 — coherence achieved
+│
+├── codex-60s.mp4                      ← rendered video · post directly to TikTok / Reels / Shorts
 ├── codex-30s.mp4                      ← rendered video · short cut for ads
 ├── video-60s.html                     ← interactive preview · richer animation
 ├── video-30s.html                     ← interactive preview · richer animation
