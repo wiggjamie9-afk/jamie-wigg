@@ -26,39 +26,41 @@ jobs:
 
       - name: Build site folder
         run: |
+          set -x
           mkdir -p _site
+
+          # Step marker so we can verify the workflow actually ran.
+          echo "deployed-at: $(date -u +%FT%TZ)"           >  _site/deploy-status.txt
+          echo "commit: ${GITHUB_SHA}"                     >> _site/deploy-status.txt
+          echo "ref: ${GITHUB_REF}"                        >> _site/deploy-status.txt
+          echo "run-id: ${GITHUB_RUN_ID}"                  >> _site/deploy-status.txt
+
+          # Required core files. Don't continue past these if they fail.
           cp *.html _site/
           cp CNAME _site/
           cp favicon.svg _site/
-          # Buyer-deliverable zips at the repo root (e.g. rhythmix-studio.zip)
+          touch _site/.nojekyll
+
+          # From here on, every step is best-effort. A missing optional
+          # asset must not block the html deploy.
+          set +e
+
           for z in *.zip; do
             [ -f "$z" ] && cp "$z" _site/
           done
-          touch _site/.nojekyll
 
-          # Frequency sub-brand assets at repo root (PWA + OG + cover +
-          # promo videos). Whitelisted with explicit globs so we don't
-          # accidentally publish unrelated files.
           for f in frequency-*.png frequency-*.mp4 frequency-*.webmanifest frequency-*.js \
                    frequency.webmanifest; do
             [ -f "$f" ] && cp "$f" _site/
           done
 
-          # Static asset directories referenced from HTML pages.
           [ -d thumbnails ] && cp -r thumbnails _site/
           [ -d videos ] && cp -r videos _site/
 
-          # Codex of Reality — biofeedback app sub-brand, published at /codex/.
-          # The directory ships as a self-contained PWA (home.html + app.html +
-          # sw.js + policies). The index.html in the source redirects to
-          # home.html so /codex/ resolves correctly.
           if [ -d sites/codex-of-reality ]; then
             cp -r sites/codex-of-reality _site/codex
           fi
 
-          # Per-video preview GIFs, poster JPGs, and QR PNGs scattered across
-          # rhythmix-*/ directories. cp --parents preserves nested structure
-          # so relative <img src> paths continue to resolve.
           find . -type f \( \
               -name '*-preview.gif' \
               -o -name '*-poster.jpg' \
@@ -68,6 +70,9 @@ jobs:
             -not -path './node_modules/*' \
             -not -path './_site/*' \
             -exec cp --parents {} _site/ \;
+
+          echo "build finished, _site contains:"
+          ls -la _site | head -40
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
