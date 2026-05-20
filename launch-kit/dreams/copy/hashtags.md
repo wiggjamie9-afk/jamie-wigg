@@ -132,7 +132,7 @@ Speak an intention before bed. The app composes four interlocking layers:
 
 Nothing leaves the device. AU$30, one payment, lifetime. Web app, iPhone-native, no app store.
 
-🌒 The first ritual that stacks all four layers — soundscape, breath, landscape, recall — under one nightly arc.
+The first ritual that stacks all four layers — soundscape, breath, landscape, recall — under one nightly arc.
 
 → rhythmixapp.com.au/dreams
 
