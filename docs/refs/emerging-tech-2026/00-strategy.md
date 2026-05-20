@@ -2,7 +2,7 @@
 
 > **Date:** 2026-05-20
 > **Author:** Claude (deep-dive research bundle, 4 parallel research streams)
-> **For:** Jamie — given existing portfolio of RHYTHMIX (AI music creation/mastering/distribution), RHYTHMIX FREQUENCY (sound + breath + contemplative wellness), and Kodex (separate; not in this repo).
+> **For:** Jamie — given existing portfolio of RHYTHMIX (AI music creation/mastering/distribution) and RHYTHMIX FREQUENCY (sound + breath + contemplative wellness), built using AI coding agents (OpenAI Codex + Claude Code) on iPhone.
 > **Source streams:** [01](./01-biometric-adaptive-media.md) · [02](./02-spatial-audio-xr.md) · [03](./03-voice-ai-ambient-capture.md) · [04](./04-generative-frontier.md)
 
 ---
@@ -151,14 +151,15 @@ What about FREQUENCY ANCHOR (companion that responds in sound, not text)? It's a
 
 ---
 
-## Where Kodex Fits (and what I'd need to know)
+## Codex + Claude Code as the Build Stack — Why That Matters
 
-I don't have details on Kodex in this repo. Two paths depending on what it is:
+Codex (OpenAI's coding agent) and Claude Code are your **build leverage**, not products in the portfolio. That changes the 90-day estimate downward, not the recommendation itself. Three implications worth naming:
 
-- **If Kodex is a creator/IP-management tool:** RESONATE generates ~30 min of music per session × thousands of users × tens of thousands of sessions = a *lot* of generated audio that could feed back into RHYTHMIX's catalogue, mastered, and distributed via existing rails. Kodex becomes the rights-and-attribution layer that makes the generative loop legally clean — "your nervous system co-wrote this track, here's how the splits work." Real, novel, defensible.
-- **If Kodex is something unrelated:** less synergistic. Worth a 30-minute conversation to decide if it stays as a sibling product or gets folded.
+1. **You can ship a Swift + WatchKit + WebSocket app solo.** Codex + Claude Code can scaffold the Lyria RealTime client, the `HKWorkoutSession` streaming, the PHASE spatial-audio rendering, the Polar BLE SDK integration, and the on-device Foundation Models intent classifier. This used to be a 4-person iOS team's job. The constraint becomes *your* taste and decisions, not engineering hours.
+2. **iOS-on-iPhone development is genuinely viable now.** Per `CLAUDE.md` you're iPhone-first with no desktop. Codex CLI runs over SSH; Claude Code runs on the web. Both can drive a remote macOS build runner (or GitHub Actions with macOS) for Xcode compilation. The "I don't have a Mac" objection is dissolving in 2026 — but worth confirming your remote build path before committing.
+3. **The MVP plan compresses.** 90 days is the honest indie estimate; with Codex + Claude Code driving most of the integration code, **45–60 days to a working closed-loop on your own ears is realistic** if you can sustain 2–3 focused dev sessions per week. The bottleneck shifts from code to (a) the FREQUENCY audio bed prep, (b) the Lyria prompt-schedule design, and (c) the calibration UX.
 
-**Ask back to me:** what is Kodex? — I'll fold the answer into the strategy properly.
+**Caveat:** AI coding agents are excellent at the SDK glue — they'll botch the *audio DSP feel*. Spatial-audio crossfade quality, generative-prompt timing, and how the loop "feels" closing are taste decisions only you can make. Plan to spend the saved engineering time on those, not on shipping more features.
 
 ---
 
