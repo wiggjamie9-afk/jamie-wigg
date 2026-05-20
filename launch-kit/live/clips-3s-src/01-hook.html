@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RHYTHMIX LIVE · hook (3s)</title>
+<meta name="viewport" content="width=1080, initial-scale=1">
+<script>
+  // Frame-driven progress. ?frame=NN  (NN = 0..89, 30fps × 3s)
+  // Sets --t (0..1 across whole clip) plus --seg1, --seg2, --seg3 (each 30 frames).
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var raw = p.get('frame');
+    var f = raw === null ? 0 : Math.max(0, Math.min(89, parseInt(raw, 10) || 0));
+    var t = f / 89;
+    function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+    var seg1 = clamp01(f / 30);
+    var seg2 = clamp01((f - 30) / 30);
+    var seg3 = clamp01((f - 60) / 29);
+    var r = document.documentElement;
+    r.style.setProperty('--t', t.toFixed(5));
+    r.style.setProperty('--seg1', seg1.toFixed(5));
+    r.style.setProperty('--seg2', seg2.toFixed(5));
+    r.style.setProperty('--seg3', seg3.toFixed(5));
+    r.style.setProperty('--frame', String(f));
+  })();
+</script>
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+  :root{
+    --canvas:#08050d; --card:#1a1325;
+    --magenta:#ff1f5a; --purple:#7c3aed; --cyan:#00d8ff; --green:#00e887;
+    --white:#ffffff; --muted:#a0a0b0; --mono-dim:#6a6878;
+    --spectrum: linear-gradient(90deg, #ff1f5a 0%, #7c3aed 35%, #00d8ff 70%, #00e887 100%);
+    --t:0; --seg1:0; --seg2:0; --seg3:0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{margin:0;padding:0;background:var(--canvas);font-family:'Space Grotesk',system-ui,sans-serif;color:var(--white);-webkit-font-smoothing:antialiased}
+  .frame{
+    position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--canvas);
+  }
+  .halo-top{position:absolute;inset:0;pointer-events:none;background:radial-gradient(1400px 700px at 50% -120px, rgba(124,58,237,0.22), transparent 70%)}
+  .halo-bottom{position:absolute;inset:0;pointer-events:none;background:radial-gradient(1100px 600px at 50% 110%, rgba(255,31,90,0.18), transparent 70%)}
+
+  .eyebrow{
+    position:absolute;left:0;right:0;top:160px;text-align:center;
+    font-family:'JetBrains Mono',monospace;font-size:22px;letter-spacing:0.28em;text-transform:uppercase;
+    color:var(--cyan);
+    opacity:calc(0.4 + var(--seg1)*0.6);
+  }
+
+  .stage{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 80px;
+  }
+
+  /* Visual area */
+  .visual{
+    position:relative;width:880px;height:700px;display:flex;align-items:center;justify-content:center;margin-bottom:80px;
+  }
+
+  /* Waveform — punches up as seg1 fills (track loads). Locks color in seg2. */
+  .wave{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    transform:scale(calc(0.7 + var(--seg1)*0.3));
+    opacity:calc(var(--seg1));
+  }
+  .wave svg{width:100%;height:100%;display:block}
+
+  /* Beat punch — a hot dot that pulses in seg2 (intensified in seg3) */
+  .punch{
+    position:absolute;width:60px;height:60px;border-radius:50%;
+    background:radial-gradient(circle, var(--magenta) 0%, rgba(255,31,90,0.6) 50%, rgba(255,31,90,0) 100%);
+    transform:scale(calc(0.6 + var(--seg2)*1.4 + var(--seg3)*0.6));
+    opacity:calc(var(--seg2) + var(--seg3)*0.4);
+    box-shadow:
+      0 0 calc(60px + var(--seg2)*120px) rgba(255,31,90, calc(0.7 + var(--seg3)*0.3)),
+      0 0 calc(160px + var(--seg2)*200px) rgba(255,31,90, calc(0.3 + var(--seg3)*0.3));
+  }
+
+  /* Cut markers — drop in across seg2/seg3 */
+  .cut-markers{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:space-around;
+    padding:0 60px;
+    opacity:calc(var(--seg2));
+  }
+  .cm{
+    width:3px;height:calc(280px + var(--seg3)*80px);background:#fff;border-radius:2px;
+    transform:translateY(calc((1 - var(--seg2)) * -40px));
+    box-shadow:0 0 18px rgba(255,255,255,0.6);
+  }
+
+  /* Caption stacks */
+  .caption{
+    position:relative;height:200px;width:100%;display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;font-size:160px;line-height:0.95;letter-spacing:-0.02em;text-align:center;
+  }
+  .caption .line{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;will-change:opacity, transform}
+
+  /* Line 1: "Cut." */
+  .line-1{
+    opacity:calc(var(--seg1) * (1 - var(--seg2)));
+    transform:translateY(calc((1 - var(--seg1)) * 30px));
+    color:var(--white);
+  }
+  /* Line 2: "To the beat." */
+  .line-2{
+    opacity:calc(var(--seg2) * (1 - var(--seg3)));
+    transform:translateY(calc((1 - var(--seg2)) * 30px));
+    color:var(--white);
+    font-size:120px;
+  }
+  /* Line 3: "LIVE." — gradient */
+  .line-3{
+    opacity:calc(var(--seg3));
+    transform:scale(calc(0.92 + var(--seg3) * 0.08));
+    font-size:200px;
+    background:var(--spectrum);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .line-3 .dot{color:var(--magenta);-webkit-text-fill-color:initial}
+
+  .footer{
+    position:absolute;left:0;right:0;bottom:120px;
+    display:flex;flex-direction:column;align-items:center;gap:18px;
+    opacity:calc(0.4 + var(--seg3)*0.6);
+  }
+  .wordmark{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:54px;letter-spacing:0.02em;color:var(--white)}
+  .url{font-family:'JetBrains Mono',monospace;font-size:22px;letter-spacing:0.22em;text-transform:uppercase;color:var(--mono-dim)}
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="halo-top"></div>
+    <div class="halo-bottom"></div>
+
+    <div class="eyebrow">RHYTHMIX · LIVE</div>
+
+    <div class="stage">
+      <div class="visual">
+        <div class="wave" aria-hidden="true">
+          <svg viewBox="0 0 880 600" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="hw" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#ff1f5a"/>
+                <stop offset="35%" stop-color="#7c3aed"/>
+                <stop offset="70%" stop-color="#00d8ff"/>
+                <stop offset="100%" stop-color="#00e887"/>
+              </linearGradient>
+              <filter id="hwg" x="-10%" y="-10%" width="120%" height="120%">
+                <feGaussianBlur stdDeviation="5" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <g fill="url(#hw)" filter="url(#hwg)">
+              <rect x="0"   y="240" width="22" height="120" rx="6"/>
+              <rect x="36"  y="180" width="22" height="240" rx="6"/>
+              <rect x="72"  y="120" width="22" height="360" rx="6"/>
+              <rect x="108" y="200" width="22" height="200" rx="6"/>
+              <rect x="144" y="80"  width="22" height="440" rx="6"/>
+              <rect x="180" y="160" width="22" height="280" rx="6"/>
+              <rect x="216" y="220" width="22" height="160" rx="6"/>
+              <rect x="252" y="100" width="22" height="400" rx="6"/>
+              <rect x="288" y="180" width="22" height="240" rx="6"/>
+              <rect x="324" y="60"  width="22" height="480" rx="6"/>
+              <rect x="360" y="140" width="22" height="320" rx="6"/>
+              <rect x="396" y="200" width="22" height="200" rx="6"/>
+              <rect x="432" y="80"  width="22" height="440" rx="6"/>
+              <rect x="468" y="160" width="22" height="280" rx="6"/>
+              <rect x="504" y="100" width="22" height="400" rx="6"/>
+              <rect x="540" y="220" width="22" height="160" rx="6"/>
+              <rect x="576" y="40"  width="22" height="520" rx="6"/>
+              <rect x="612" y="180" width="22" height="240" rx="6"/>
+              <rect x="648" y="120" width="22" height="360" rx="6"/>
+              <rect x="684" y="200" width="22" height="200" rx="6"/>
+              <rect x="720" y="100" width="22" height="400" rx="6"/>
+              <rect x="756" y="180" width="22" height="240" rx="6"/>
+              <rect x="792" y="240" width="22" height="120" rx="6"/>
+              <rect x="828" y="220" width="22" height="160" rx="6"/>
+            </g>
+          </svg>
+        </div>
+        <div class="cut-markers" aria-hidden="true">
+          <div class="cm"></div>
+          <div class="cm"></div>
+          <div class="cm"></div>
+          <div class="cm"></div>
+          <div class="cm"></div>
+        </div>
+        <div class="punch"></div>
+      </div>
+
+      <div class="caption">
+        <div class="line line-1">Cut.</div>
+        <div class="line line-2">To the beat.</div>
+        <div class="line line-3">LIVE<span class="dot">.</span></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="wordmark">RHYTHMIX LIVE</div>
+      <div class="url">RHYTHMIXAPP.COM.AU / LIVE</div>
+    </div>
+  </div>
+</body>
+</html>
