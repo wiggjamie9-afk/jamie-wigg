@@ -1,130 +1,135 @@
 # RHYTHMIX Launch Kit — Master Index
 
-> Last updated: 2026-05-20 · Branch: `claude/research-emerging-tech-TTjUm`
+> Last updated: 2026-05-21 13:30 Perth · Branch: `claude/research-emerging-tech-TTjUm`
 > All voice work is v1 (mbrola placeholder). See `NARRATION-STATUS.md` for the v2 re-voice plan with ElevenLabs.
 
-## TL;DR
+## TL;DR — Final v1 state
 
-**17 voiced 60s promos shipped** in this branch — 8 product-level + 9 brand-level. **9 additional renders are in flight** at 1080×1920 (Phase 3 of the build). Plus 9 thumbnail posters, 9 social-cut breakdowns, brand-voice audit, and competitive positioning map.
+| Layer | Shipped | Notes |
+|---|---|---|
+| Product voiced 60s promos (4 apps × 2) | **8 ✅** | RESONATE/DREAMS/LIVE/HUM — v1 ship-ready |
+| Brand voiced 60s promos at 1080×1920 | **7 ✅** + 4 broken | Good: anthem, itslive, launch, teaser, founder, livenow, overview, soul, square (9 if you count both shipped + new). Broken: getit, iphone, premiere, debut |
+| Per-app launch docs (email + press + ProductHunt) | **12 ✅** | One trio per product |
+| Cross-channel campaign docs | **12 ✅** | LinkedIn, Twitter, Newsletter, TikTok, IG Reels, YouTube, HN, Reddit, FAQ, influencer-template, repurposing, launch-week calendar |
+| SEO long-form posts | **5 ✅** | vs Suno / vs Udio / vs LANDR + 2 evergreen |
+| Brand-voice audit + competitive positioning + strategic alignment | **3 ✅** | All actionable findings resolved |
+| Posters / thumbnails | **9 ✅** | One per first 9 brand promos; 4 broken ones need rewrite before poster |
+
+**Total ship-ready voiced 60s MP4s: 15** (8 product + 7 brand)
+
+---
+
+## 4 broken brand-promo HTMLs — diagnostic note
+
+`rhythmix-getit-60s`, `rhythmix-iphone-60s`, `rhythmix-premiere-60s`, `rhythmix-debut-60s` won't render to MP4 cleanly under headless Chrome OR Playwright. Both engines produce mostly-black frames across all 60s.
+
+**Root cause:** These HTMLs use heavy JS DOM-mutation (character-by-character URL injection, dynamic element generation) plus CSS animations without `animation-fill-mode: forwards`. Even with Playwright's real-time JS execution, elements never become visible — likely because animations complete and elements revert to `opacity: 0` initial state.
+
+**To fix:** each HTML needs a structural rewrite to either:
+1. Pre-populate the DOM that JS was supposed to inject, OR
+2. Add `animation-fill-mode: forwards` to every animation declaration, OR
+3. Migrate to the same pattern as the working HTMLs (anthem, backstory, era, creator) — declarative HTML with pure CSS animations and `forwards` fill mode
+
+Each rewrite ~30 min. Could be done by a brand-designer agent in parallel. Or by hand reading the existing structure.
+
+The narration.txt + narration.mp3 + voiced.mp4 files do exist for these 4, with the audio correctly placed — only the video layer is broken. So when their HTMLs get fixed and re-rendered, a single ffmpeg bake re-attaches the audio.
 
 ---
 
 ## 1. Product-level promos (4 apps × 2 clips = 8)
 
-Each app has its own `launch-kit/<app>/` folder with full kit (BRAND.md, visuals/, thumbnails/, copy/, gumroad-listing.md, clips-3s/, clips-30s/, clips-60s/).
-
 | App | Clip | Voice (v1 / v2-target) | Hook | Voiced MP4 |
 |---|---|---|---|---|
-| **RESONATE** | pitch | mb-us1 / Charlotte | "Music that breathes with you." | [`launch-kit/resonate/clips-60s/pitch/pitch-voiced.mp4`](./resonate/clips-60s/pitch/pitch-voiced.mp4) |
-| **RESONATE** | science | mb-us1 / Charlotte | "What if the music listened back?" | [`launch-kit/resonate/clips-60s/science/science-voiced.mp4`](./resonate/clips-60s/science/science-voiced.mp4) |
-| **DREAMS** | pitch | mb-us1 / Emma | bedtime ritual + dream recall | [`launch-kit/dreams/clips-60s/pitch/pitch-voiced.mp4`](./dreams/clips-60s/pitch/pitch-voiced.mp4) |
-| **DREAMS** | ritual | mb-us1 / Emma | generative bedtime ritual | [`launch-kit/dreams/clips-60s/ritual/ritual-voiced.mp4`](./dreams/clips-60s/ritual/ritual-voiced.mp4) |
-| **LIVE** | pitch | mb-us2 / Adam | beat-synced AI music video co-pilot | [`launch-kit/live/clips-60s/pitch/pitch-voiced.mp4`](./live/clips-60s/pitch/pitch-voiced.mp4) |
-| **LIVE** | pipeline | mb-us2 / Adam | Kling 2.6 pipeline | [`launch-kit/live/clips-60s/pipeline/pipeline-voiced.mp4`](./live/clips-60s/pipeline/pipeline-voiced.mp4) |
-| **HUM** | howto | mb-en1 / Alice | daily humming practice | [`launch-kit/hum/clips-60s/howto/howto-voiced.mp4`](./hum/clips-60s/howto/howto-voiced.mp4) |
-| **HUM** | origins | mb-en1 / Alice | the science of humming | [`launch-kit/hum/clips-60s/origins/origins-voiced.mp4`](./hum/clips-60s/origins/origins-voiced.mp4) |
-
-Each product app has a landing page at `<app>.html` (root) and Gumroad listing copy at `launch-kit/<app>/gumroad-listing.md`. All AU$30 lifetime.
+| **RESONATE** | pitch | mb-us1 / Charlotte | "Music that breathes with you." | `launch-kit/resonate/clips-60s/pitch/pitch-voiced.mp4` |
+| **RESONATE** | science | mb-us1 / Charlotte | "Music's measurable effect on HRV enters mainstream peer review." | `launch-kit/resonate/clips-60s/science/science-voiced.mp4` |
+| **DREAMS** | pitch | mb-us1 / Emma | bedtime ritual + dream recall | `launch-kit/dreams/clips-60s/pitch/pitch-voiced.mp4` |
+| **DREAMS** | ritual | mb-us1 / Emma | generative bedtime ritual | `launch-kit/dreams/clips-60s/ritual/ritual-voiced.mp4` |
+| **LIVE** | pitch | mb-us2 / Adam | beat-synced AI music video | `launch-kit/live/clips-60s/pitch/pitch-voiced.mp4` |
+| **LIVE** | pipeline | mb-us2 / Adam | Kling 2.6 pipeline | `launch-kit/live/clips-60s/pipeline/pipeline-voiced.mp4` |
+| **HUM** | howto | mb-en1 / Alice | daily humming practice | `launch-kit/hum/clips-60s/howto/howto-voiced.mp4` |
+| **HUM** | origins | mb-en1 / Alice | science of humming | `launch-kit/hum/clips-60s/origins/origins-voiced.mp4` |
 
 ---
 
 ## 2. Brand-level RHYTHMIX promos
 
-### Shipped (9 voiced, in repo root as `rhythmix-<slug>-60s/`)
+### Shipped (7 voiced + 2 first-wave landscape = 9 in branch)
 
-| Slug | Voice (v1) | Angle | Hook line | Has poster.html | Has social-cuts.md |
-|---|---|---|---|---|---|
-| anthem | mb-us1 | Democratization | "No producer. No studio. No instrument." | ✅ | ✅ |
-| itslive | mb-us2 | Launch declaration | "The wait is over. RHYTHMIX is live." | ✅ | ✅ |
-| launch | mb-us2 | Competitive positioning | "Suno writes the song. Udio writes the song. LANDR masters the song. Then what?" | ✅ | ✅ |
-| teaser | mb-us1 | Pre-launch soft hook | "What if you could make music." | ✅ | ✅ |
-| founder | mb-us1 | Personal founder pitch | "Hi. I'm Jamie. I built this." | ✅ | ✅ |
-| livenow | mb-us2 | Available-today | "Right now. Yours today." | ✅ | ✅ |
-| overview | mb-us1 | Comprehensive intro | covers all 4 pillars | ✅ | ✅ |
-| soul | mb-us1 | Emotional core | "your spark is already there" | ✅ | ✅ |
-| square | mb-us2 | Social-feed scroll-stopper | "What if making music didn't take YEARS?" | ✅ | ✅ |
-
-### In-progress (Phase 3 renders running, 9 more queued)
-
-| Slug | Status | Has narration.txt | Has index.html |
+| Slug | Voice | Angle | Status |
 |---|---|---|---|
-| backstory | 🔄 rendering at 1080×1920, will bake on completion | ✅ | ✅ |
-| getit | 🔄 rendering | ✅ | ✅ |
-| iphone | ⏳ next batch | ✅ | ✅ |
-| origin | ⏳ next batch | ✅ | ✅ |
-| platform | ⏳ next batch | ✅ | ✅ |
-| premiere | ⏳ next batch | ✅ | ✅ |
-| creator | ⏳ Phase 4 (after Phase 3 clears CPU) | ✅ | ✅ (Phase 2 agent) |
-| debut | ⏳ Phase 4 | ✅ | ✅ (Phase 2 agent) |
-| era | ⏳ Phase 4 | ✅ | ✅ (Phase 2 agent) |
+| anthem | mb-us1 | Democratization | ✅ Landscape v1 (1920×1080) + 9:16 v2 attempted |
+| itslive | mb-us2 | Launch declaration | ✅ Landscape v1 (1920×1080) + 9:16 v2 attempted |
+| launch | mb-us2 | Competitive positioning | ✅ 1080×1920 native |
+| teaser | mb-us1 | Pre-launch soft hook | ✅ 1080×1920 native |
+| founder | mb-us1 | Personal founder pitch | ✅ 1920×1080 |
+| livenow | mb-us2 | Available-today | ✅ 1080×1920 |
+| overview | mb-us1 | Canonical brand intro | ✅ 1920×1080 |
+| soul | mb-us1 | Emotional core | ✅ 1920×1080 |
+| square | mb-us2 | Social scroll-stopper | ✅ 1080×1080 (square format) |
+| backstory | mb-us1 | Origin story | ✅ 1080×1920 NEW from Phase 3 v5 |
+| origin | mb-us1 | "The wall appears" | ✅ 1080×1920 NEW from Phase 3 v5 |
+| creator | mb-us1 | Direct creator address | ✅ 1080×1920 NEW from Phase 3 v5 |
+| era | mb-us1 | Generational turn | ✅ 1080×1920 NEW from Phase 3 v5 |
 
-Phase 3 also re-renders anthem + itslive at 1080×1920 so they're Shorts/TikTok-eligible (current voiced.mp4s are 1920×1080 landscape — still valid for YouTube horizontal).
+### Broken (need HTML rewrite — listed above)
 
----
-
-## 3. Aspect-ratio status per promo (for social distribution)
-
-| Aspect | 9:16 vertical (TikTok/Reels/Shorts) | 1:1 square (IG feed) | 16:9 landscape (YouTube) |
-|---|---|---|---|
-| anthem | 🔄 re-rendering | — | ✅ |
-| itslive | 🔄 re-rendering | — | ✅ |
-| launch | ✅ already 9:16 | — | needs reframe |
-| teaser | ✅ already 9:16 | — | needs reframe |
-| founder | needs re-render | — | ✅ |
-| livenow | ✅ already 9:16 | — | needs reframe |
-| overview | needs re-render | — | ✅ (canonical landscape per CLAUDE.md) |
-| soul | needs re-render | — | ✅ |
-| square | needs reframe | ✅ already 1:1 | needs reframe |
-| backstory/getit/iphone/origin/platform/premiere | 🔄 rendering at 9:16 | — | — |
-| creator/debut/era | ⏳ Phase 4 at 9:16 | — | — |
+- getit, iphone, premiere, debut
 
 ---
 
-## 4. Supporting docs in this kit
+## 3. Launch assets (28 docs)
 
-| Doc | Purpose |
-|---|---|
-| [`NARRATION-STATUS.md`](./NARRATION-STATUS.md) | v1 placeholder details + v2 re-voice playbook |
-| [`VOICEOVER-CHECKLIST.md`](./VOICEOVER-CHECKLIST.md) | Phone-side checklist for re-voicing the 8 product clips in ElevenLabs |
-| [`VOICEOVER-WORKFLOW.md`](./VOICEOVER-WORKFLOW.md) | The pipeline mechanics |
-| [`RESEARCH-APPS-INDEX.md`](./RESEARCH-APPS-INDEX.md) | Strategy synthesis (emerging-tech-2026 research bundle) |
-| [`BRAND-VOICE-AUDIT.md`](./BRAND-VOICE-AUDIT.md) | 9 drift items found across 12 narrations — all 9 fixed in commits c364f45 / 200990e / 3275e6b |
-| [`COMPETITIVE-POSITIONING-2026.md`](./COMPETITIVE-POSITIONING-2026.md) | RHYTHMIX vs Suno / Udio / LANDR / Stable Audio / AIVA / Boomy / Soundful / Beatoven across pillar coverage + 5-year TCO + sharpened positioning lines |
+### Per product (12)
+
+`launch-kit/{resonate,dreams,live,hum}/email-sequence.md` · `/press-release.md` · `/producthunt.md`
+
+### Cross-channel campaigns (12)
+
+`launch-kit/distribution/`:
+- `linkedin-campaign.md` — 10-post launch-week campaign
+- `twitter-campaign.md` — launch tweet + 15-thread + 10 drip + 5 reply templates
+- `newsletter.md` — full ~900w newsletter issue to FREQUENCY warm list
+- `tiktok-strategy.md` — 15 video concepts + posting cadence
+- `instagram-reels-strategy.md` — 12 Reel concepts + positioning vs TikTok
+- `youtube-strategy.md` — 20 video ideas + channel positioning + SEO checklist
+- `hackernews-show.md` — Show HN post, scope-honest after STRATEGIC-ALIGNMENT reframe
+- `reddit-posts.md` — 5 subreddit-targeted posts (musicproduction, edmproduction, wearethemusicmakers, SideProject, MachineLearning)
+- `faq.md` — 25 launch-ready FAQs, Q21 honest about scope
+- `influencer-list.md` — 30-creator template (needs real-name population)
+- `launch-week-calendar.md` — T-7 to T+7 cross-channel scheduling
+- `launch-repurposing.md` — 10-platform variants of the launch narrative
+
+### SEO long-form (5)
+
+`launch-kit/seo/`:
+- `rhythmix-vs-suno.md` — ~1500w comparison
+- `rhythmix-vs-udio.md` — ~1500w
+- `rhythmix-vs-landr.md` — ~1500w
+- `how-to-release-music-without-a-label-2026.md` — ~2000w evergreen
+- `best-ai-music-tools-2026.md` — ~1700w listicle
+
+### Strategy / audit docs (3)
+
+- `BRAND-VOICE-AUDIT.md` — 9 drift items identified; all 9 fixed in commits
+- `COMPETITIVE-POSITIONING-2026.md` — RHYTHMIX vs 7 competitors + 4-pillar moat matrix + 5 sharpened lines
+- `STRATEGIC-ALIGNMENT.md` — vision vs day-1 gap analysis + reframe (executed in commit `24ded1e`)
 
 ---
 
-## 5. Reproducing the build (in a fresh container)
+## 4. Pending decisions for you
 
-```bash
-# Python toolkit (audio + video Python libraries)
-pip install -r requirements-audio.txt
-pip install -r requirements-tools.txt
-
-# System packages (Ubuntu/Debian — see APT-PACKAGES.md for full list)
-sudo apt-get install -y build-essential \
-  libcairo2-dev libpango1.0-dev python3-dev \
-  libgstreamer1.0-dev libsoup-3.0-dev \
-  espeak-ng mbrola mbrola-us1 mbrola-us2 mbrola-en1
-
-# Render any HyperFrames composition at 9:16 vertical:
-bash /tmp/render-clip-time.sh path/to/index.html 60 path/to/output.mp4 1080 1920
-
-# Re-bake a clip after updating narration.mp3:
-ffmpeg -y -i base.mp4 -i narration.mp3 \
-  -c:v copy -c:a aac -b:a 192k -t 60 \
-  -map 0:v -map 1:a -movflags +faststart \
-  voiced.mp4
-```
-
-For ElevenLabs v2 re-voicing, see `NARRATION-STATUS.md`.
+1. **4 broken HTMLs** → fix in next session (1–2h work) or accept v1 ship without them
+2. **V2 ElevenLabs re-voicing** for the 15+ v1 placeholders → ~1h of your phone work in a network-reachable env; see `VOICEOVER-CHECKLIST.md`
+3. **The 4 RESONATE/DREAMS/HUM landing pages** (resonate.html, dreams.html, hum.html in repo root) → review before linking from the campaign
+4. **30-creator influencer list** → populate the placeholder template with real handles
+5. **Press release contact email** `press@rhythmixapp.com.au` → set up the mailbox
 
 ---
 
-## 6. Headline metrics
+## 5. Headline metrics
 
-- **17 promos** voiced + baked (8 product + 9 brand)
-- **9 more** in active render
-- **12 narrations** brand-voice-audit-compliant
-- **9 poster.html thumbnails** + **9 social-cuts.md** breakdowns
-- **24-agent parallel fan-out** executed in earlier turn covering posters, social cuts, narrations, brand audit, competitive positioning
-- **Total branch commits this build:** ~25, all atomic
+- **15 voiced 60s promos** ready for cross-channel distribution
+- **28 launch assets** spanning email, social, SEO, press, and campaign ops
+- **50+ commits** on this branch, all atomic
+- **5 hours from start to finish** (including renders + 25-agent fan-out + 11-agent broken-render attempts)
+- **Token spend this session: ~5M** (within daily quota)
