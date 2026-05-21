@@ -1,233 +1,149 @@
 # RHYTHMIX — YouTube Channel Strategy
 
-> Date: 2026-05-21
-> Goal: 10,000 subscribers in 6 months from a standing start.
-> Posture: Builder-led, indie-music-tech channel. Not a product demo reel.
+> Date: 2026-05-21 · Owner: Jamie · Channel handle: `@rhythmixapp`
+> Goal: **10,000 subscribers in 6 months** via builder-narrative + AI-music-industry commentary.
+> Companion docs: [`COMPETITIVE-POSITIONING-2026.md`](../COMPETITIVE-POSITIONING-2026.md), [`RESEARCH-APPS-INDEX.md`](../RESEARCH-APPS-INDEX.md), `rhythmix-founder-60s/narration.txt`, `rhythmix-overview-60s/narration.txt`.
 
 ---
 
-## 1. Channel Positioning
+## 1. Channel positioning
 
-RHYTHMIX on YouTube is **the indie-builder voice in AI music** — the one-developer-with-an-iPhone counter-narrative to the venture-backed AI-music incumbents (Suno, Udio, LANDR). The channel is hosted by Jamie, the founder, in a builder-mode register: shipping in public, reading the industry in real time, and showing the full Generate → Master → Distribute → Earn loop instead of selling a single trick.
+RHYTHMIX on YouTube is **the indie-builder voice in AI music** — the channel where a single Perth-based developer builds a four-pillar platform in public, picks fights with the subscription giants, and platforms the bedroom producers who use it. It is explicitly *not* a product-tutorials-only channel. Tutorials live in-app and on the help docs; YouTube is where the *narrative* lives.
 
-It is **not** a product-tutorials-only channel. Tutorials are one of five content modes:
+The mix is built from four threads, all sharing one voice — the producer-toned register from the founder narration ("Producers cost too much. Studios were too far away. So I built RHYTHMIX."):
 
-1. **Builder-narrative** — what's being shipped this week, why it matters, what broke.
-2. **AI music news commentary** — monthly reactions to Suno, Udio, LANDR, Sora-for-music, Kling, Lyria, label moves.
-3. **Customer showcases** — indie musicians who used RHYTHMIX to release real tracks, with the streams to prove it.
-4. **Behind the build** — dev-logs on RHYTHMIX LIVE (beat-synced video), RESONATE (biometric loop), and the platform pillars.
-5. **Showdowns** — head-to-head feature/price/output comparisons against named competitors, scored honestly.
+1. **Builder-narrative** — Jamie on camera, building the platform, shipping features, being honest about what works and what doesn't. This is the channel's soul.
+2. **AI music news commentary** — Suno v5 drops, Udio settles a lawsuit, Sora ships music-video mode, Spotify changes royalty rules. RHYTHMIX reacts within 24 hours with a builder's lens.
+3. **Customer showcases** — bedroom producers who used RHYTHMIX to ship their first track and earn their first royalty. These are the proof points.
+4. **Behind the build** — dev-log style. RHYTHMIX LIVE Kling 2.6 pipeline, RESONATE biometric loop, the four-pillar architecture decisions.
 
-The wedge is credibility through specificity: where competitors run polished launch ads, RHYTHMIX shows the actual code, the actual customer, the actual royalty cheque. The pitch line — "Suno writes the song. Udio writes the song. LANDR masters the song. RHYTHMIX runs the career." — runs underneath every episode without being said out loud each time.
-
----
-
-## 2. Channel Branding
-
-- **Channel name:** `RHYTHMIX` (display) · handle `@rhythmixapp`.
-- **Tagline (banner):** *"Generate. Master. Distribute. Earn. One developer. One iPhone."*
-- **Banner art:** Neon magenta / cyan / green RHYTHMIX gradient (matches brand palette), founder silhouette + iPhone, four-pillar icon strip across the bottom.
-- **Intro (5s):** Magenta waveform → snap to RHYTHMIX wordmark with the four-pillar tick → cut. No music sting longer than 3s.
-- **Outro (10s):** End-screen with subscribe CTA, latest pillar deep-dive, and the lifetime-deal card (AU$149).
-- **Posting cadence:** **2× per week — Tuesday 7pm Perth (11am UTC) and Friday 7pm Perth.** Hits US-evening Monday + US-morning Friday, EU-prime both days, AU breakfast next morning. Consistent slot, never miss.
+Tone: **builder-mode, not corporate**. iPhone-shot is fine. Jump cuts are welcome. The competition has glossy product reels; we have the truth.
 
 ---
 
-## 3. Twenty Video Ideas
+## 2. Channel branding
 
-### Pillar Series — 4 deep-dives (8–12 min each)
-
-The canonical platform explainers. One per pillar. Evergreen anchors for the channel — every other video can link back to one of these.
-
-**P1. "Generate: how RHYTHMIX turns one sentence into a finished song" (10 min)**
-The full Generate pillar walkthrough. Idea → mood/genre prompt → first draft → Section Edit refinement → stem split. Compare output to Suno v5 and Udio Pro on the same prompt. Honest verdict.
-
-**P2. "Master: what 'broadcast quality' actually means in 2026" (8 min)**
-LUFS, dynamic range, true-peak, codec resilience. Walk a generated track through RHYTHMIX's AI Master vs LANDR vs a human mastering engineer. Show waveforms, spectrograms, blind listen test.
-
-**P3. "Distribute: shipping a track to 40+ stores from your phone" (10 min)**
-End-to-end: take a finished master, push through RHYTHMIX Distribute, watch it appear on Spotify, Apple Music, YouTube Music, TikTok, Deezer, Tidal. Compare flow to DistroKid and LANDR Distribution.
-
-**P4. "Earn: royalty splits, merch, NFTs, and the part nobody else builds" (12 min)**
-The Earn pillar — the actual moat. Walk through royalty-split contracts, merch print-on-demand, fan-investment rails, VR/spatial concert hooks, Artist DNA model. Receipts: a customer's first royalty cheque on screen.
+- **Channel name:** `RHYTHMIX` (handle: `@rhythmixapp`)
+- **Tagline (banner):** *"Generate. Master. Distribute. Earn. One developer. One app. AU$149 forever."*
+- **Banner:** Neon magenta / cyan / green gradient (RHYTHMIX brand from `rhythmix-teaser-60s/DESIGN.md`), waveform motif, four-pillar icons, sub CTA bottom-right.
+- **Avatar:** Magenta-on-black `R` mark from the brand identity.
+- **Intro (3s):** Waveform pulse → four-pillar bloom → wordmark. Reused from `rhythmix-overview-60s` opening.
+- **Outro (8s):** "AU$149. Once. Lifetime. rhythmixapp.com.au" + sub CTA + 2 video end-cards.
+- **Cadence:** **2× per week — Tuesday 09:00 + Friday 09:00 Perth (AWST, UTC+8).** Lands at Mon 20:00 / Thu 20:00 US Eastern and Tue 02:00 / Fri 02:00 UK — straddles global prime.
 
 ---
 
-### Showdown Series — 5 head-to-head reviews (6–8 min each)
+## 3. Twenty video ideas
 
-Direct comparison videos. SEO gold (high-intent comparison searches) and credibility-building. Always show RHYTHMIX losing on at least one dimension to keep it honest.
+### Pillar series — four deep-dives, 8–12 min each
 
-**S1. "RHYTHMIX vs Suno v5 — I made the same song on both" (7 min)**
-Same prompt, same genre, side-by-side output. Score on vocal coherence, stem availability, commercial rights, what happens *after* the WAV. Verdict: Suno wins one round, RHYTHMIX wins three.
+One per pillar from the canonical Generate · Master · Distribute · Earn vocabulary. These are the **evergreen anchors** of the channel — every other video links back to one of them.
 
-**S2. "RHYTHMIX vs Udio Pro — the producer's comparison" (8 min)**
-Lean into Udio's instrumental fidelity strength. Test on jazz, orchestral, electronic. Discuss the legal cloud around Udio's training data and what that means for releasing tracks commercially.
+1. **"Generate: How RHYTHMIX turns one sentence into a finished track"** (10 min) — Walk the Generate pillar end-to-end. Side-by-side with Suno on the same prompt. Show Section Edit. Show stem split. End on the "Suno stops here, RHYTHMIX keeps going" hand-off into Master.
+2. **"Master: Why AI mastering finally beat the mastering engineer (for indie)"** (8 min) — LANDR comparison. A/B blind-test the same track. Cover loudness war, LUFS targets, why the AI master is good enough for streaming and what it can't yet do for vinyl/sync.
+3. **"Distribute: Getting your track on 40+ platforms in one click — and why DistroKid is the wrong question"** (11 min) — Walk the distribution flow. Cover store coverage, ISRC/UPC handling, royalty collection, the "no annual fee, no cut" promise vs DistroKid's per-year model.
+4. **"Earn: The four ways an indie artist actually makes money in 2026"** (12 min) — Royalty splits, merch, NFT/royalty-token, fan investment, VR concerts, sync placement. The Earn pillar is the one nobody else has — this video is the moat in YouTube form.
 
-**S3. "RHYTHMIX vs LANDR — the only competitor with more than one pillar" (8 min)**
-The honest one. LANDR is the closest competitor on coverage. Score Generate (LANDR has none) + Master (LANDR strong) + Distribute (both ship) + Earn (LANDR thin). Five-year TCO math on screen.
+### Showdown series — five head-to-head reviews, 6–8 min each
 
-**S4. "RHYTHMIX vs DistroKid — is distribution-only still a business in 2026?" (6 min)**
-DistroKid's posture: cheap, focused, no generation, no mastering depth. Show why bundling matters when the upstream tools are AI-generated. Lifetime vs annual subscription math.
+Built directly off `COMPETITIVE-POSITIONING-2026.md`. Each video is honest — name what the competitor does *better*, then show the pillar gap.
 
-**S5. "Sora 2 for music videos vs RHYTHMIX LIVE — beat-synced AI video showdown" (8 min)**
-RHYTHMIX LIVE (Kling 2.6 beat-sync pipeline) vs Sora 2 vs Veo 3.1 for music video generation. Sync accuracy on the downbeat, render time, cost per minute. Tease the LIVE Pro tier.
+5. **"RHYTHMIX vs Suno v5: I generated the same song on both"** (7 min) — Same prompt, same genre, side-by-side WAVs. Then: "Suno stopped. Watch what RHYTHMIX does next." Master → Distribute → Earn in 90 seconds. End on the **$1,800-over-5-years vs $149-once** TCO chart.
+6. **"RHYTHMIX vs Udio: Producer-tier output, but who actually ships the track?"** (8 min) — Lean into Udio's strengths (stem quality, inpainting). Show Section Edit as the RHYTHMIX equivalent. Talk about the RIAA legal cloud honestly and what platform-native rights flow means for sync placement.
+7. **"RHYTHMIX vs LANDR: The only competitor that covers more than one pillar (and still loses)"** (8 min) — LANDR is the *closest* competitor. Acknowledge their mastering pedigree. Show the bundle creep ($300/yr all-in). Demo collapsing Master + Distribute + Samples into one purchase with Generate on the front and Earn on the back.
+8. **"RHYTHMIX vs DistroKid: Should an indie artist still pay $20/year forever to upload?"** (6 min) — Pure distribution comparison. DistroKid's strengths (speed, ubiquity). The annual-fee trap. Where RHYTHMIX's bundled distribution wins and where it doesn't yet.
+9. **"RHYTHMIX vs Sora 2 for music videos: When the LLM makes the video, who makes the song?"** (7 min) — Sora ships text-to-music-video. Position **RHYTHMIX LIVE** (Kling 2.6 beat-sync co-pilot) as the song-led counter — you bring the track, LIVE matches the visuals to the beat. Teases the LIVE launch.
 
----
+### Behind the build — three dev-log videos, 10–15 min each
 
-### Behind the Build — 3 dev-log style (10–15 min each)
+The series that earns the "indie builder" reputation. iPhone-shot allowed. Jump cuts welcome.
 
-Long-form builder content. These are the "Jamie at his desk with the iPhone" episodes — highest watch-time per video, lowest production cost, strongest community-building.
+10. **"Building RHYTHMIX LIVE: I wired Kling 2.6 to a beat detector on my iPhone"** (14 min) — The LIVE pipeline. Beat detection → prompt synthesis → Kling API → frame stitching. Show the prompt-engineering loop. Show what breaks. Tease pricing (Free / $19 Pro / $49 Studio).
+11. **"The RESONATE biometric loop: closing the gap between HRV and a generative score"** (15 min) — The flagship app. EEG/HRV/Lyria RealTime architecture. 14-day spike → 90-day MVP plan. Honest about what the wearable layer still can't do.
+12. **"One developer, one iPhone, four apps — the FREQUENCY / RHYTHMIX universe explained"** (12 min) — Walk the four-app portfolio (RESONATE, DREAMS, LIVE, HUM). Show the BRAND.md system. Explain why each app exists and how the four reinforce each other. End on the AU$30 / AU$149 lifetime philosophy.
 
-**B1. "Building RHYTHMIX LIVE: beat-synced AI music video in 14 days" (15 min)**
-The Kling 2.6 pipeline dev-log. Architecture diagram, the moment beat-sync started working, the bugs, the cost-per-render math, the call to ship at $19 Pro tier. Show real terminal output.
+### Customer voice — four case studies, 5–7 min each
 
-**B2. "RESONATE: closing the biometric loop between heart rate and generative music" (12 min)**
-The flagship research-app dev-log. HRV → Lyria RealTime pipeline. EEG considered and rejected. Why AirPods Pro 3 changed the spatial-audio plan. The 14-day spike that became a 90-day MVP.
+Each one stars a real RHYTHMIX user. Two pre-launch beta artists, two post-launch lifetime-deal buyers. Builder-style production: phone call, screen-share, their finished track playing under.
 
-**B3. "One developer, one iPhone, four pillars: the RHYTHMIX architecture tour" (12 min)**
-Wide-angle systems episode. How the four pillars share infrastructure. Where the AU$149 lifetime price actually comes from (unit economics). What breaks at 10k users. What breaks at 100k. No bullshit on the limits.
+13. **"From bedroom to Spotify in 11 days: how Maya shipped her first single with RHYTHMIX"** (6 min) — First-time artist persona. Walk her from prompt to streaming royalty cheque. Show real numbers.
+14. **"The Brisbane producer who replaced his $400/mo subscription stack"** (7 min) — Experienced producer dropping Suno + LANDR + DistroKid for RHYTHMIX. TCO story in human form.
+15. **"How a Year 12 student earned her first AU$200 in royalties before her exams"** (5 min) — Teen creator persona. Earn pillar in practice. Family-safe.
+16. **"The TikTok creator who used RHYTHMIX LIVE to bypass licensing nightmares"** (6 min) — Short-form creator. Original tracks + matched visuals. UGC-music-rights angle.
 
----
+### News commentary — four monthly reactions, ~8 min each
 
-### Customer Voice — 4 case studies (5–7 min each)
+One per month, week 1, evergreen-with-a-timestamp format. Cover the biggest AI-music-industry story of the month with the builder's lens.
 
-Mini-documentaries. Each one is one indie musician, one story, real numbers. These convert better than any feature demo and seed organic social distribution because the customer reshares.
-
-**C1. "Bedroom producer in Manila: from zero releases to 50,000 monthly listeners in 90 days" (6 min)**
-First-time-artist segment. How they used Generate + Master + Distribute. Spotify-for-Artists screen recording. Royalty statement on screen.
-
-**C2. "Wedding singer to streaming artist: a 47-year-old's RHYTHMIX story" (7 min)**
-Counter-stereotype customer. Crushes the "AI music is for Gen-Z" angle. Real emotional story, real catalogue, real merch sales.
-
-**C3. "The film composer who replaced his subscription stack" (5 min)**
-B2B-leaning case. Customer who dropped Suno + LANDR + DistroKid + a sample library for RHYTHMIX lifetime. Shows the cost-out spreadsheet.
-
-**C4. "From TikTok cover artist to original IP owner" (7 min)**
-The Artist DNA angle. Customer who used RHYTHMIX to build a consistent "sound" across 12 originals and now owns the model. Brand-building beyond a single track.
+17. **"Suno v6 just shipped. Here's what changes — and what doesn't."** (8 min) — Reactive teardown. Acknowledge the gains. Reiterate the pillar gap.
+18. **"Spotify changed the royalty floor again. What it means for indie AI artists."** (8 min) — Policy reaction. Walk the math. Show how RHYTHMIX's Earn pillar absorbs the change.
+19. **"Apple, Sora, and the music industry: the lawsuit landscape in 2026"** (8 min) — Legal commentary. Calm tone, no FUD. Why platform-native rights flow matters more than ever.
+20. **"The state of AI music: 12 months in, who's actually still here?"** (8 min) — Annual landscape video. Show the pillar coverage matrix from `COMPETITIVE-POSITIONING-2026.md` on screen. Land the "only platform with all four" line.
 
 ---
 
-### News Commentary — 4 monthly AI-music-industry reactions (8 min each)
+## 4. Per-video framework
 
-Recurring monthly slot. Drops the last Friday of each month. Reaction format: 3 news stories, 8 minutes, founder POV. High search velocity, low production cost.
+A four-beat reusable template that every video on the channel follows. Hits the algorithm in the first 30 seconds and earns the click-through promise by the end.
 
-**N1. "The Suno v6 launch — what they fixed, what they didn't, and why it doesn't matter" (8 min)**
-Reaction to whatever Suno ships next. Sharpen the four-pillar argument against the upgrade.
-
-**N2. "RIAA vs Udio: what the settlement means for AI-generated commercial music" (8 min)**
-Legal posture episode. Why platform-native rights flow matters more after every legal move.
-
-**N3. "Lyria RealTime, Veo 3.1, Kling 2.6 — the model layer is commoditising" (8 min)**
-Strategic POV: the moat isn't the model, it's the workflow around it. Lead-in for RHYTHMIX LIVE.
-
-**N4. "Spotify's AI music policy update — what it means for indie artists" (8 min)**
-Whatever the most recent streaming-platform AI policy move is. Honest read on whether RHYTHMIX-generated tracks pass the rules.
+- **Hook (0:00–0:20)** — Lead with the question or the stat. *"Suno made the song. Then what?"* / *"$1,800 over five years, or $149 once?"* / *"I built this in my bedroom on an iPhone."* No logo intro before the hook. Intro animation goes at 0:20, not 0:00.
+- **Demo (0:20–60% of runtime)** — Show, don't tell. Screen-share the actual product, the actual prompt, the actual A/B. For builder/news videos, this is the dev environment or the news clip + reaction.
+- **Narrative (next 30%)** — The "why this matters" — for the artist, for the indie, for the AI-music-industry. Cite the pillar. Cite the TCO. Cite the moat. This is where the channel earns its voice.
+- **CTA (final 5–10%)** — One ask, never more. Sub for the next dev-log / waitlist / lifetime-deal / share with one artist. End on the outro animation. Two end-cards: one pillar deep-dive, one showdown.
 
 ---
 
-## 4. Per-Video Framework — Reusable Template
+## 5. SEO checklist (per video)
 
-Every video, regardless of category, follows the same four-beat structure. The lengths flex; the order doesn't.
+Every published video must clear this checklist before going live. Stored as a Notion template that mirrors this section.
 
-```
-HOOK (0:00–0:15) — One sentence that names the stake. No logo intro yet.
-                    Pattern: "[Claim that sounds wrong]. Here's why it's true."
-                    For showdowns: lead with the unexpected loss.
-                    For dev-logs: lead with the bug, not the win.
+**Title (under 60 characters, primary keyword in first 40)**
+- Front-load the search query: *"RHYTHMIX vs Suno"*, *"AI mastering tutorial"*, *"lifetime deal AI music"*.
+- No all-caps, no emoji, no excessive punctuation.
+- Include the year for evergreen-but-dated content (*"...in 2026"*).
+- A/B candidate: SEO-led, curiosity-led, and hybrid — pick the highest CTR after 48 hours and swap.
 
-DEMO  (0:15–60% of runtime) — Show, don't tell. Screen-record, terminal, real
-                              output. No slides until minute 3+. For customer
-                              videos, this is the customer talking with B-roll
-                              of the work. No cuts longer than 8 seconds.
+**Thumbnail (1280×720, contrast-tested in feed at 320px)**
+- 3–5 word text overlay, high contrast against the RHYTHMIX neon palette.
+- Showdown videos: split-screen VS layout, both logos visible, central VS badge.
+- Builder videos: Jamie's face, single emotion (surprise, focus, smile), brand-color background.
+- Customer videos: artist's face + their track waveform overlay.
+- Run all thumbnails through a 5-tab feed mockup before publishing — must stand out next to Suno / Udio / MKBHD-tier thumbnails.
 
-NARRATIVE (60–90% of runtime) — Step back. What does this mean for the viewer?
-                                Connect to one of the four pillars. Reference
-                                a previous episode (internal links = watch time).
-                                State a clear opinion. Builder voice, not corporate.
+**Description (300–500 words, primary keyword in first sentence)**
+- First two lines (visible above the fold) must front-load the keyword and the AU$149 lifetime hook.
+- Timestamps for every chapter (YouTube auto-generates chapters from these).
+- 3–5 links: rhythmixapp.com.au, waitlist, related video, X/Twitter, the showdown counterpart.
+- 2–3 keyword variations woven naturally through the body.
+- One CTA sentence to subscribe + one to join the waitlist.
 
-CTA (final 30–45s) — Two CTAs, ranked: (1) "Try RHYTHMIX free / lifetime AU$149
-                     at rhythmixapp.com.au", (2) Subscribe + next-in-series link.
-                     Never more than two. Never a Patreon-style appeal.
-```
+**Chapters (minimum 4, named for search)**
+- Use the four-beat framework from §4: `0:00 Hook · 0:20 Demo · X:XX Narrative · X:XX What's next`.
+- For pillar deep-dives, chapter names match the four-pillar vocabulary.
 
-Production rules underneath the framework: founder on camera in at least one segment per video (parasocial trust is the channel's actual moat); B-roll cuts every 4–6 seconds during demo; on-screen captions burned in for accessibility and silent-autoplay capture; consistent lower-third with episode number + pillar tag.
+**Tags (15–25, mix of broad and specific)**
+- Broad: `ai music`, `ai music generator`, `indie musician`, `music production 2026`.
+- Specific: `rhythmix`, `rhythmix vs suno`, `suno v5 alternative`, `lifetime deal ai music`, `bedroom producer`.
+- Competitor handles where relevant: `suno`, `udio`, `landr`, `distrokid`.
+- Pull from YouTube autocomplete on the day of publishing — never use stale tag lists.
 
----
+**Cards + end-screens**
+- 1 card at the demo→narrative transition pointing to the relevant pillar deep-dive.
+- End-screen: 2 video tiles (one pillar, one showdown) + subscribe element + channel watermark active throughout.
 
-## 5. SEO Checklist — Per Video
-
-Run this checklist before every upload. Non-negotiable.
-
-### Title (under 60 characters)
-
-- [ ] Primary keyword in first 40 characters
-- [ ] One concrete number where possible ("14 days", "$149", "40+ stores", "10× cheaper")
-- [ ] No ALL CAPS, no excessive punctuation, no emoji
-- [ ] A/B candidate written in the description footer for swap-test on day 7
-- [ ] Title checked against YouTube autocomplete for the target keyword the same day
-
-**Examples by category:**
-- Pillar: `Master: What "Broadcast Quality" Actually Means (2026)`
-- Showdown: `RHYTHMIX vs Suno v5 — Same Prompt, Side by Side`
-- Behind the build: `Building RHYTHMIX LIVE in 14 Days (Kling 2.6 Pipeline)`
-- Customer: `Bedroom Producer to 50k Monthly Listeners in 90 Days`
-- News: `Suno v6: What They Fixed, What They Missed`
-
-### Thumbnail
-
-- [ ] 3–5 word text overlay maximum, high contrast (white on RHYTHMIX magenta or cyan)
-- [ ] One clear focal subject (face for customer/founder; product UI screenshot for pillar/showdown)
-- [ ] Emotion visible if a person is shown — surprise, focus, or scepticism, never a neutral grin
-- [ ] Tested at 120×68 mobile size for legibility before upload
-- [ ] Compared against the top 3 ranking thumbnails for the target keyword — must visually differ
-
-### Description (300–500 words)
-
-- [ ] Primary keyword in the first sentence
-- [ ] First 2 lines (the 157 chars above "Show more") front-load the value prop
-- [ ] Chapters / timestamps with the primary keyword present in at least one chapter title
-- [ ] 3–5 outbound links: `rhythmixapp.com.au`, the previous episode in this series, the next episode in the series, one customer / partner link, one citation if reacting to news
-- [ ] Subscribe CTA + lifetime-deal mention in one natural paragraph (not stacked CTAs)
-- [ ] Two related-keyword variations woven through paragraphs 2 and 3
-- [ ] Hashtag stack of 3 at the very bottom: #RHYTHMIX, #AIMusic, plus one episode-specific tag
-
-### Chapters (timestamps)
-
-- [ ] Minimum 5 chapters per video, regardless of length
-- [ ] First chapter named with the primary keyword
-- [ ] Last chapter is always "Try RHYTHMIX" — not "Outro"
-- [ ] Chapter titles parseable by humans skimming on mobile — no "Part 1 / Part 2"
-
-### Tags (15–25 per video)
-
-- [ ] Primary keyword as the first tag (exact match)
-- [ ] 3–5 broad-volume tags (e.g. `ai music`, `music production 2026`, `indie music`)
-- [ ] 5–8 specific long-tail tags (e.g. `rhythmix vs suno`, `ai mastering 2026`, `kling 2.6 music video`)
-- [ ] 2–3 competitor names where relevant (`suno`, `udio`, `landr`, `distrokid`)
-- [ ] 1–2 common misspellings (`rythmix`, `rhythmics`)
-- [ ] Channel-anchor tags on every video: `rhythmix`, `jamie wigg`, `ai music platform`
-
-### End screen + cards
-
-- [ ] End screen: subscribe element + best-fit next video (usually the matching pillar deep-dive) + one external link to `rhythmixapp.com.au`
-- [ ] Cards: one card at the 60% mark pointing to the related pillar episode, one card at the 80% mark pointing to a customer episode if available
-
-### Post-publish (within 24 hours)
-
-- [ ] Pin a comment with the AU$149 lifetime link and one provocative question to seed discussion
-- [ ] Cross-post a 60-second cut as a YouTube Short the same day, with a card back to the long-form
-- [ ] Share on the RHYTHMIX newsletter that Friday and on the founder's X / LinkedIn the same evening
-- [ ] Check CTR + AVD at 48 hours; if CTR < 4%, swap the thumbnail and re-test for 7 days
+**Community + cross-post**
+- Community tab poll 24 hours before each video drops ("Which pillar next?", "Suno or Udio for vocals?").
+- Cross-post the 60s trailer cut to Shorts on publish day + 1 (Wednesday + Saturday).
+- Pin the top comment with the AU$149 lifetime link + waitlist link.
 
 ---
 
-## 6. Six-Month Trajectory to 10k Subs
+## 6. Growth math to 10k subs in 6 months
 
-- **Month 1:** Ship all 4 pillar deep-dives (anchor library). Two videos per week from week 1. Target: 500 subs.
-- **Month 2:** Ship the 5 showdown videos. Lean into comparison-search traffic. Target: 1,500 subs.
-- **Month 3:** First 2 customer episodes + first dev-log. Real social proof going live. Target: 3,000 subs.
-- **Month 4:** Second dev-log + 2 more customer episodes + first 2 monthly news commentaries. Target: 5,000 subs.
-- **Month 5:** Third dev-log + remaining news episodes. Begin re-cutting top videos as Shorts compilations. Target: 7,500 subs.
-- **Month 6:** Final case study + one community livestream "ask the builder" episode. Push the lifetime deal as 6-month-anniversary event. Target: 10,000 subs.
-
-Two videos per week × 26 weeks = 52 longs. The 20 listed above carry the first 10 weeks. Months 3–6 fill from showdown updates (model versions ship), monthly news, and rolling customer stories — the content well refills as the platform ships features and as customers release real tracks.
+- 2 longform per week × 26 weeks = 52 videos.
+- Add 2 Shorts per week (trailer + standalone) = 104 Shorts.
+- Target average 1,500 views per longform (pillar/showdown videos pull higher; news/customer pull lower).
+- Conversion at 4–6% subs-per-viewer ≈ 80–120 subs per longform = 4,000–6,000 from longform.
+- Shorts at 5,000–20,000 views average and 1–2% sub-rate ≈ 5,000–20,000 more.
+- One viral showdown (RHYTHMIX vs Suno) at 100k+ views adds the final cushion.
+- Hit rate assumption: 3 of 20 video ideas in §3 break out. Plan for the 17 that don't.
