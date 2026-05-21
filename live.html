@@ -251,9 +251,32 @@ footer { padding:4rem 0 2.5rem; border-top:1px solid var(--border); }
   *,*::before,*::after { animation:none !important; transition:none !important; }
   .reveal { opacity:1; transform:none; }
 }
+
+@media (min-width: 480px) {
+  body.hpanels { overflow: hidden; height: 100vh; }
+  body.hpanels main, body.hpanels > .panels {
+    display: flex; flex-direction: row;
+    width: 100vw; height: 100vh;
+    overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.hpanels section {
+    flex: 0 0 100vw; width: 100vw; height: 100vh;
+    overflow-y: auto; overflow-x: hidden;
+    scroll-snap-align: start;
+    padding: 4vh 6vw;
+  }
+  body.hpanels main::-webkit-scrollbar { display: none; }
+  .hp-dots { position: fixed; bottom: 18px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; z-index: 100; pointer-events: none; }
+  .hp-dots .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.25); transition: all 0.3s; }
+  .hp-dots .dot.on { background: #ff1f5a; transform: scale(1.4); }
+  .swipe-hint { position: fixed; top: 50%; right: 16px; transform: translateY(-50%); font-family: monospace; font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.4); writing-mode: vertical-rl; text-transform: uppercase; animation: hintBob 2s infinite; z-index: 99; pointer-events: none; }
+  @keyframes hintBob { 0%,100% { transform: translateY(-50%) translateX(0); } 50% { transform: translateY(-50%) translateX(-6px); } }
+}
 </style>
 </head>
-<body>
+<body class="hpanels">
 
 <header>
   <div class="nav">
@@ -929,5 +952,27 @@ document.getElementById('signupForm').addEventListener('submit', async e => {
 })();
 </script>
 
+<script>
+(function(){
+  if (window.innerWidth < 480) return;
+  var sections = document.querySelectorAll('main section, body > section');
+  if (sections.length < 2) return;
+  var scroller = sections[0].parentElement;
+  var dots = document.createElement('div'); dots.className = 'hp-dots';
+  sections.forEach(function(s, i){ var d = document.createElement('div'); d.className = 'dot' + (i===0?' on':''); dots.appendChild(d); });
+  document.body.appendChild(dots);
+  var hint = document.createElement('div'); hint.className = 'swipe-hint'; hint.textContent = 'swipe →'; document.body.appendChild(hint);
+  var hid = false;
+  scroller.addEventListener('scroll', function(){
+    if (!hid) { hint.style.opacity='0'; hid=true; setTimeout(()=>hint.remove(), 400); }
+    var i = Math.round(scroller.scrollLeft / window.innerWidth);
+    dots.querySelectorAll('.dot').forEach((d,idx)=>d.classList.toggle('on', idx===i));
+  }, {passive:true});
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') scroller.scrollBy({left: window.innerWidth, behavior:'smooth'});
+    else if (e.key === 'ArrowLeft') scroller.scrollBy({left: -window.innerWidth, behavior:'smooth'});
+  });
+})();
+</script>
 </body>
 </html>
