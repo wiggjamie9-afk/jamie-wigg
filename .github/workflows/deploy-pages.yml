@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -23,65 +23,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Build site folder
-        run: |
-          set -x
-          mkdir -p _site
-
-          # Step marker so we can verify the workflow actually ran.
-          echo "deployed-at: $(date -u +%FT%TZ)"           >  _site/deploy-status.txt
-          echo "commit: ${GITHUB_SHA}"                     >> _site/deploy-status.txt
-          echo "ref: ${GITHUB_REF}"                        >> _site/deploy-status.txt
-          echo "run-id: ${GITHUB_RUN_ID}"                  >> _site/deploy-status.txt
-
-          # Required core files. Don't continue past these if they fail.
-          cp *.html _site/
-          cp CNAME _site/
-          cp favicon.svg _site/
-          touch _site/.nojekyll
-
-          # From here on, every step is best-effort. A missing optional
-          # asset must not block the html deploy.
-          set +e
-
-          for z in *.zip; do
-            [ -f "$z" ] && cp "$z" _site/
-          done
-
-          for f in frequency-*.png frequency-*.mp4 frequency-*.webmanifest frequency-*.js \
-                   frequency.webmanifest; do
-            [ -f "$f" ] && cp "$f" _site/
-          done
-
-          [ -d thumbnails ] && cp -r thumbnails _site/
-          [ -d videos ] && cp -r videos _site/
-
-          if [ -d sites/codex-of-reality ]; then
-            cp -r sites/codex-of-reality _site/codex
-          fi
-
-          find . -type f \( \
-              -name '*-preview.gif' \
-              -o -name '*-poster.jpg' \
-              -o -name '*-qr.png' \
-            \) \
-            -not -path './.git/*' \
-            -not -path './node_modules/*' \
-            -not -path './_site/*' \
-            -exec cp --parents {} _site/ \;
-
-          echo "build finished, _site contains:"
-          ls -la _site | head -40
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '_site'
-
+          path: .
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
