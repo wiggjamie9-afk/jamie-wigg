@@ -25,6 +25,7 @@ SKILLS=(
   voice-ai-voices
   azure-ai-voicelive-py
   app-builder
+  deploy-agent
 )
 
 EXTRA_ARGS=("$@")
