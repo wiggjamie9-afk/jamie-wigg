@@ -1,6 +1,6 @@
 # RHYTHMIX Launch Kit — Master Index
 
-> Last updated: 2026-05-21 13:30 Perth · Branch: `claude/research-emerging-tech-TTjUm`
+> Last updated: 2026-05-21 17:30 Perth · Branch: `claude/research-emerging-tech-TTjUm`
 > All voice work is v1 (mbrola placeholder). See `NARRATION-STATUS.md` for the v2 re-voice plan with ElevenLabs.
 
 ## TL;DR — Final v1 state
@@ -8,14 +8,17 @@
 | Layer | Shipped | Notes |
 |---|---|---|
 | Product voiced 60s promos (4 apps × 2) | **8 ✅** | RESONATE/DREAMS/LIVE/HUM — v1 ship-ready |
-| Brand voiced 60s promos at 1080×1920 | **7 ✅** + 4 broken | Good: anthem, itslive, launch, teaser, founder, livenow, overview, soul, square (9 if you count both shipped + new). Broken: getit, iphone, premiere, debut |
+| Brand voiced 60s promos at 1080×1920 | **11 ✅** | All 4 previously-broken HTMLs (getit, iphone, premiere, debut) rewritten + re-rendered. Premiere is the new visual standout (cinematic curtain-lift, 676–944KB frame density). |
 | Per-app launch docs (email + press + ProductHunt) | **12 ✅** | One trio per product |
 | Cross-channel campaign docs | **12 ✅** | LinkedIn, Twitter, Newsletter, TikTok, IG Reels, YouTube, HN, Reddit, FAQ, influencer-template, repurposing, launch-week calendar |
-| SEO long-form posts | **5 ✅** | vs Suno / vs Udio / vs LANDR + 2 evergreen |
-| Brand-voice audit + competitive positioning + strategic alignment | **3 ✅** | All actionable findings resolved |
-| Posters / thumbnails | **9 ✅** | One per first 9 brand promos; 4 broken ones need rewrite before poster |
+| SEO long-form posts (with roadmap caveats applied) | **5 ✅** | vs Suno / vs Udio / vs LANDR + 2 evergreen |
+| Blog HTML pages (built from SEO MDs) | **5 + index ✅** | At `/blog/` |
+| Strategy / audit docs | **4 ✅** | BRAND-VOICE-AUDIT, COMPETITIVE-POSITIONING, STRATEGIC-ALIGNMENT, CAMPAIGN-CONSISTENCY-AUDIT |
+| Posters / thumbnails | **9 ✅** | One per first 9 brand promos |
 
-**Total ship-ready voiced 60s MP4s: 15** (8 product + 7 brand)
+**Total ship-ready voiced 60s MP4s: 19** (8 product + 11 brand). 
+
+Debut is the one slightly-sparse render — frame@15s went from 12KB → 48KB, content is there but the threshold-crossing aesthetic has intentional negative space. The other 3 broken HTMLs (getit, iphone, premiere) are fully fixed.
 
 ---
 
