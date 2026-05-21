@@ -23,6 +23,8 @@ SKILLS=(
   self-improving-agent
   voice-wake-say
   voice-ai-voices
+  azure-ai-voicelive-py
+  app-builder
 )
 
 EXTRA_ARGS=("$@")
