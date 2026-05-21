@@ -2,6 +2,9 @@
 # OpenClaw installer 🦞
 # Works everywhere. Installs everything. You're welcome.
 #
+# Bootstraps Claude Code (the engine) plus the OpenClaw workspace
+# (~/.openclaw with agents/, skills/, memory/, logs/, bin/).
+#
 # Usage:
 #   curl -fsSL https://openclaw.ai/install.sh | bash
 #
@@ -11,8 +14,10 @@
 #   OPENCLAW_DRY_RUN=1             print steps without executing anything
 #   OPENCLAW_NO_DEPS=1             skip system-dependency install
 #   OPENCLAW_NO_WORKSPACE=1        skip ~/.openclaw scaffolding
+#   OPENCLAW_NO_CLI=1              skip the npm install step entirely
 #   OPENCLAW_NPM_REGISTRY=https://registry.npmjs.org/
-#   OPENCLAW_PACKAGE=@openclaw/cli  npm package name
+#   OPENCLAW_PACKAGE=@anthropic-ai/claude-code  npm package name
+#   OPENCLAW_BIN_NAME=claude       command name to print in next-steps
 #   OPENCLAW_DEBUG=1               trace every command
 
 set -euo pipefail
@@ -25,8 +30,10 @@ OPENCLAW_PREFIX="${OPENCLAW_PREFIX:-$HOME/.openclaw}"
 OPENCLAW_DRY_RUN="${OPENCLAW_DRY_RUN:-0}"
 OPENCLAW_NO_DEPS="${OPENCLAW_NO_DEPS:-0}"
 OPENCLAW_NO_WORKSPACE="${OPENCLAW_NO_WORKSPACE:-0}"
+OPENCLAW_NO_CLI="${OPENCLAW_NO_CLI:-0}"
 OPENCLAW_NPM_REGISTRY="${OPENCLAW_NPM_REGISTRY:-https://registry.npmjs.org/}"
-OPENCLAW_PACKAGE="${OPENCLAW_PACKAGE:-@openclaw/cli}"
+OPENCLAW_PACKAGE="${OPENCLAW_PACKAGE:-@anthropic-ai/claude-code}"
+OPENCLAW_BIN_NAME="${OPENCLAW_BIN_NAME:-claude}"
 MIN_NODE_MAJOR=20
 
 [ "${OPENCLAW_DEBUG:-0}" = "1" ] && set -x
@@ -211,6 +218,8 @@ ensure_optional() {
 # OpenClaw CLI
 
 install_cli() {
+  [ "$OPENCLAW_NO_CLI" = "1" ] && { info "Skipping CLI install (OPENCLAW_NO_CLI=1)"; return; }
+
   if ! command -v npm >/dev/null 2>&1; then
     die "npm not found after Node.js install — bailing out."
   fi
@@ -218,28 +227,34 @@ install_cli() {
   local spec="$OPENCLAW_PACKAGE"
   [ "$OPENCLAW_VERSION" != "latest" ] && spec="${OPENCLAW_PACKAGE}@${OPENCLAW_VERSION}"
 
-  info "Installing OpenClaw CLI ($spec)"
+  # Skip if the target binary is already on PATH at a recent-enough version.
+  if [ "$OPENCLAW_PACKAGE" = "@anthropic-ai/claude-code" ] && command -v "$OPENCLAW_BIN_NAME" >/dev/null 2>&1; then
+    ok "$OPENCLAW_BIN_NAME already installed ($($OPENCLAW_BIN_NAME --version 2>/dev/null | head -1))"
+    return 0
+  fi
+
+  info "Installing $spec"
   if [ "$OPENCLAW_DRY_RUN" = "1" ]; then
     run "npm install -g --registry='$OPENCLAW_NPM_REGISTRY' '$spec'"
     return 0
   fi
 
   if npm install -g --registry="$OPENCLAW_NPM_REGISTRY" "$spec" 2>/tmp/openclaw-npm.log; then
-    ok "OpenClaw CLI installed"
+    ok "Installed $spec"
   else
     warn "npm install failed. Tail of npm log:"
     tail -n 12 /tmp/openclaw-npm.log >&2 || true
     cat <<EOF >&2
 
-The CLI package isn't available on this registry yet, or the install failed
-for another reason. The workspace scaffolding will still be created so you
-can develop locally.
+The package install failed. Workspace scaffolding will still run so you can
+develop locally.
 
-To retry manually once you have the package:
+To retry manually:
   npm install -g $spec
 
-To override the package or registry:
+To override the package or registry (e.g. install a different CLI):
   OPENCLAW_PACKAGE=@your-scope/cli \\
+  OPENCLAW_BIN_NAME=your-bin \\
   OPENCLAW_NPM_REGISTRY=https://npm.pkg.github.com/ \\
   curl -fsSL https://openclaw.ai/install.sh | bash
 EOF
@@ -269,6 +284,7 @@ init_workspace() {
   "arch": "$ARCH",
   "prefix": "$OPENCLAW_PREFIX",
   "package": "$OPENCLAW_PACKAGE",
+  "bin": "$OPENCLAW_BIN_NAME",
   "channel": "$OPENCLAW_VERSION"
 }
 EOF
@@ -286,9 +302,9 @@ print_next_steps() {
   cat <<EOF
 
   1. Open a new terminal (so PATH picks up nvm / npm if just installed).
-  2. Verify:        ${C_CYAN}openclaw --version${C_RESET}
-  3. Sign in:       ${C_CYAN}openclaw login${C_RESET}
-  4. Try an agent:  ${C_CYAN}openclaw run inbox-zero${C_RESET}
+  2. Verify:    ${C_CYAN}${OPENCLAW_BIN_NAME} --version${C_RESET}
+  3. Sign in:   ${C_CYAN}${OPENCLAW_BIN_NAME}${C_RESET}  (interactive — first run handles auth)
+  4. Workspace: ${C_DIM}${OPENCLAW_PREFIX}${C_RESET}
 
   Docs:    https://openclaw.ai/docs
   Status:  https://openclaw.ai/status
