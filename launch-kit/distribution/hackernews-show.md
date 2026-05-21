@@ -1,26 +1,28 @@
-# Show HN: RHYTHMIX – one-person AI music platform that generates, masters, distributes and pays out
+# Show HN: RHYTHMIX – beat-synced AI music video studio (with a 4-pillar roadmap)
 
 ## Title variants
 
-- **Primary:** `Show HN: RHYTHMIX – one-person AI music platform that generates, masters, distributes and pays out`
-- Alt A: `Show HN: RHYTHMIX – I wired four AI music tools into one pipeline so one developer ships a song`
-- Alt B: `Show HN: RHYTHMIX – AU$149 lifetime AI music stack (Generate → Master → Distribute → Earn)`
+- **Primary:** `Show HN: RHYTHMIX – beat-synced AI music video studio (4-engine pipeline, AU$149 lifetime)`
+- Alt A: `Show HN: RHYTHMIX – I wired four video models (Kling/Hunyuan/Luma/MiniMax) into one beat-locked render`
+- Alt B: `Show HN: RHYTHMIX – AU$149 lifetime music-video tool, plus a roadmap to Master/Distribute/Earn`
 
-Recommended: Primary. 12 words, factual, names the four-stage scope without adjectives. No "AI-powered", no "revolutionary".
+Recommended: Primary. 13 words, factual, names what ships day-1 (music video) without overclaiming the not-yet-shipped pillars. No "AI-powered", no "revolutionary".
 
 ---
 
 ## Body (target ~550 words)
 
-I'm Jamie. I built RHYTHMIX solo on an iPhone over roughly a year. It's an AI music platform that takes a text idea, generates a track, masters it, ships it to ~40 streaming stores, and routes royalties + merch + an artist-identity model back to the creator. Generate, master, distribute, earn — four stages, one account, one payment.
+I'm Jamie. I built RHYTHMIX solo on an iPhone over roughly a year. **What ships today is the music-video layer** — drop an MP3, get a beat-synced cinematic video rendered through four frontier models (Kling 2.6, Hunyuan, Luma, MiniMax) in one cut. AU$149 lifetime, single payment, no subscription. The longer-term thesis is a four-pillar platform (Generate, Master, Distribute, Earn) and the AU$149 entitles founding members to every pillar as it lands across 2026 — but I want to be straight up about what's actually live today.
 
-The interesting part for HN is the pipeline plumbing, not the marketing. RHYTHMIX is a router over specialised models, not a single in-house foundation model:
+The interesting part for HN is the pipeline plumbing, not the marketing. RHYTHMIX day-1 is a router over four specialised video models, not a single in-house foundation model:
 
-- **Generation** routes between Suno-v5-class (vocal coherence), Udio-class (instrumental fidelity / inpainting), Stable Audio (sound design, looped stems), and AIVA (long-form / score) depending on prompt classification. Stem-split + section-edit are done on the routed output, not re-trained.
-- **Mastering** is a LANDR-class pipeline running on the rendered WAV with a target-LUFS step keyed to the destination platform.
-- **Distribution** is a single API surface in front of the standard aggregator endpoints. Track is fingerprinted before submission to keep takedown noise low.
-- **Music video** (RHYTHMIX LIVE add-on) chains **Kling 2.6** for shot generation, **Hunyuan Video** for motion continuity, **Luma** for cinematic camera moves, and **MiniMax** for the lip-sync pass — beat-aligned via the track's onset envelope. The whole 60s clip is a CSS-keyframe HyperFrames composition that's then baked to MP4 on-device so the render is deterministic and reviewable as HTML before it touches a GPU.
-- **Earn** is the bit that took longest: royalty splits, merch print-on-demand, optional fan-investment / royalty-token rails, and a per-artist "Artist DNA" embedding the user keeps even if they cancel.
+- **Music video pipeline (live today)** chains **Kling 2.6** for shot generation, **Hunyuan Video** for motion continuity, **Luma** for cinematic camera moves, and **MiniMax** for the lip-sync pass — beat-aligned via the track's onset envelope. The whole 60s clip is a CSS-keyframe HyperFrames composition that's then baked to MP4 on-device so the render is deterministic and reviewable as HTML before it touches a GPU.
+- **Generation pillar (Q2 2026 roadmap)** will route between Suno-v5-class (vocal coherence), Udio-class (instrumental fidelity / inpainting), Stable Audio (sound design, looped stems), and AIVA (long-form / score) depending on prompt classification. Stem-split + section-edit on the routed output, not re-trained.
+- **Mastering pillar (Q2 2026 roadmap)** will be a LANDR-class pipeline running on the rendered WAV with a target-LUFS step keyed to the destination platform.
+- **Distribution pillar (Q3 2026 roadmap)** will be a single API surface in front of the standard aggregator endpoints. Track fingerprinted before submission to keep takedown noise low.
+- **Earn pillar (Q4 2026 roadmap)** is the bit that'll take longest: royalty splits, merch print-on-demand, optional fan-investment / royalty-token rails, and a per-artist "Artist DNA" embedding the user keeps even if they cancel.
+
+The lifetime price covers all four pillars as they land. Founding members pay AU$149 once for the whole roadmap, not just today's music-video tool.
 
 Two sibling products share infrastructure: **RESONATE** does an on-device biometric closed-loop (HRV + EEG headband if present, otherwise camera-PPG fallback) that biases a Lyria-RealTime-style generator in ~2s windows. **HUM** measures HRV through the phone camera (rPPG over the fingertip) to score a daily humming-practice session against vagal-tone deltas. Both are in the same monorepo as RHYTHMIX and share the audio render path.
 

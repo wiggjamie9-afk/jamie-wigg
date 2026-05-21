@@ -80,6 +80,16 @@ About 45 minutes from upload to download. As many videos as your credits allow. 
 
 **Lifetime updates** — every new model that comes online (Kling 3, Hunyuan v3, Sora when it opens, whatever's next) gets added to RHYTHMIX and is available to lifetime members at no additional cost. The product price never goes up for buyers locked in today.
 
+**Lifetime updates also include the next three pillars.** RHYTHMIX shipping today is the *Generate* pillar — the music-video pipeline. **Master**, **Distribute**, and **Earn** are scheduled to land across 2026:
+
+· **Master** (Q2 2026) — auto-mastering hand-off + DAW export, designed to retire your LANDR subscription
+· **Distribute** (Q3 2026) — one-tap release to Spotify, Apple Music, Amazon, Bandcamp, ~40 stores total; no per-track distribution fees
+· **Earn** (Q4 2026) — royalty routing, merch-tie-in, fan-DM CRM, sync-licensing inbox
+
+Founding members pay AU$149 once for *the whole roadmap*. As each pillar ships, it appears in your account automatically. No re-purchase. No upgrade tier. No retroactive paywall.
+
+The four-pillar story you've heard in the brand films — Generate · Master · Distribute · Earn — is the contract. Today you get pillar one and the founding price; you get the other three as they land.
+
 **Generation credits bundled with purchase** — enough credits to render approximately 12–15 typical 3-minute music videos. Top up at cost when you exceed them (we don't make money on inference, only on the product). Bring-your-own API key supported for power users.
 
 **The Brief Page Generator** — auto-generates a press-kit-style brief page for every video you render, with the lyrics, the shot list, the model breakdown, and a direct embed link. Drop it on your release page or send it to playlist editors.
