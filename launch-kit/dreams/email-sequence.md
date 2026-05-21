@@ -5,7 +5,7 @@
 - Cadence: T-7 → T-3 → T-0 (launch day) → T+2 → T+5
 - Sender: Jamie · `wiggjamie9@gmail.com`
 - Audience: existing FREQUENCY customers (warm list, already trust the engine)
-- Goal: convert to AU$30 lifetime founding tier before the price moves
+- Goal: convert to AU$30 lifetime founding tier (capped at 100 buyers) before the price moves
 - Exit conditions: clicks the buy link, replies to the thread, or unsubscribes
 - Send time: 8:30pm AEST (right before the ritual it's selling)
 - Suppression: existing DREAMS purchasers; 3 consecutive unopened
@@ -16,7 +16,7 @@
 
 **Role:** Awareness. Plant the seed. No CTA-to-buy; CTA-to-curiosity.
 
-**Subject A:** The ritual you didn't know you needed
+**Subject A:** Compose your night — something new for after dark
 **Subject B:** Something new — for the night
 **Preheader:** A companion to FREQUENCY. Built for bedtime. Arriving in 7 days.
 

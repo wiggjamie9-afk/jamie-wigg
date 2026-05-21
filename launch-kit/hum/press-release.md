@@ -32,7 +32,7 @@ HUM is an independent contemplative-practice tool built in Perth, Western Austra
 
 Jamie Wigg
 Founder, HUM
-wiggjamie9@gmail.com
+press@rhythmixapp.com.au
 rhythmixapp.com.au/hum
 
 ###

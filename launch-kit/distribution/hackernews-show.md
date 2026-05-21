@@ -17,7 +17,6 @@ I'm Jamie. I built RHYTHMIX solo on an iPhone over roughly a year. **What ships 
 The interesting part for HN is the pipeline plumbing, not the marketing. RHYTHMIX day-1 is a router over four specialised video models, not a single in-house foundation model:
 
 - **Music video pipeline (live today)** chains **Kling 2.6** for shot generation, **Hunyuan Video** for motion continuity, **Luma** for cinematic camera moves, and **MiniMax** for the lip-sync pass — beat-aligned via the track's onset envelope. The whole 60s clip is a CSS-keyframe HyperFrames composition that's then baked to MP4 on-device so the render is deterministic and reviewable as HTML before it touches a GPU.
-- **Generation pillar (Q2 2026 roadmap)** will route between Suno-v5-class (vocal coherence), Udio-class (instrumental fidelity / inpainting), Stable Audio (sound design, looped stems), and AIVA (long-form / score) depending on prompt classification. Stem-split + section-edit on the routed output, not re-trained.
 - **Mastering pillar (Q2 2026 roadmap)** will be a LANDR-class pipeline running on the rendered WAV with a target-LUFS step keyed to the destination platform.
 - **Distribution pillar (Q3 2026 roadmap)** will be a single API surface in front of the standard aggregator endpoints. Track fingerprinted before submission to keep takedown noise low.
 - **Earn pillar (Q4 2026 roadmap)** is the bit that'll take longest: royalty splits, merch print-on-demand, optional fan-investment / royalty-token rails, and a per-artist "Artist DNA" embedding the user keeps even if they cancel.

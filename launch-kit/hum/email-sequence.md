@@ -65,7 +65,7 @@ Four programs — Quiet, Clearing, Descent, Tone — for anxiety, sinuses, sleep
 
 **AU$30. One payment. Lifetime access.** No subscription, no renewal, no trial-ending emails. The price of one year of Calm covers three years of HUM at this price — except there's no second year to pay.
 
-This is the founding tier. It opens this week and the price moves up after.
+This is the founding tier (capped at 100 buyers). It opens this week and the price moves up after.
 
 **CTA:** [Open HUM — AU$30 lifetime →]
 

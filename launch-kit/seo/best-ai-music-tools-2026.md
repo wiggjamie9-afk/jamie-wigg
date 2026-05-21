@@ -85,7 +85,7 @@ Music videos used to be the bottleneck for AI music — you'd spend $30 on Suno 
 
 **What it does well.** LIVE generates 4K music videos synced to the audio waveform, beat-matched cuts, and stem-aware visuals (the visuals respond to the drum stem differently than the vocal stem). The output is a real MP4, not a slideshow. We've shipped three releases with LIVE-generated videos that outperformed our director-made videos on YouTube CTR.
 
-**What it costs.** Bundled inside the RHYTHMIX platform on the Creator tier ($29/month) and above. Standalone LIVE access is $19/month with a 4-video monthly cap.
+**What it costs.** LIVE is a standalone subscription: Free tier (1 video/month), Pro at US$19/month (10 videos), Studio at US$49/month (unlimited). Not part of the RHYTHMIX umbrella lifetime — its own product.
 
 **What it lacks.** Lyric video support is still beta — the karaoke-style timing drifts on long syllables. And LIVE only generates the video; you still need a thumbnail tool and the YouTube upload itself (though RHYTHMIX bundles both on the Studio tier).
 
@@ -109,7 +109,7 @@ We're going to be transparent: we work on RHYTHMIX. We're including it because w
 
 **What it does well.** RHYTHMIX bundles generation (own model + Suno/Udio integration), mastering (LANDR-quality engine), distribution (DSP-direct via partnerships with Spotify and Apple), music video generation (via LIVE), and royalty management into one platform. One login. One subscription. One royalty statement.
 
-**What it costs.** Creator at $29/month (10 tracks/month, full distribution), Studio at $79/month (unlimited tracks, LIVE videos, label tools), Lifetime at $149 one-time (Creator tier forever, 1,200 lifetime credits).
+**What it costs.** AU$149 one-time, lifetime — covers the music-video pipeline today + Master (Q2 2026), Distribute (Q3 2026), Earn (Q4 2026) pillars as they land. No monthly tier; founding-100 buyers get the whole roadmap at the lifetime price.
 
 **What it lacks.** Honesty: our generation model isn't as fast as Suno or as high-fidelity as Udio in isolation. We integrate both as upstream options so you don't have to choose. Where we win is downstream — mastering, distribution, video, and royalty automation in one place.
 
@@ -125,13 +125,13 @@ We're going to be transparent: we work on RHYTHMIX. We're including it because w
 | **DistroKid** | None | None | Excellent | None | Fair | $23-99/yr |
 | **RHYTHMIX LIVE** | None | None | None | Excellent | N/A | $19/mo standalone |
 | **RESONATE** | Niche (somatic) | Built-in | Practitioner-tier | None | Built-in | $12-49/mo |
-| **RHYTHMIX** | Good (+ Suno/Udio passthrough) | Excellent | Excellent | Excellent | Excellent | $29-79/mo or $149 lifetime |
+| **RHYTHMIX** | Good (+ Suno/Udio passthrough) | Excellent | Excellent | Excellent | Excellent | AU$149 lifetime (founding-100) |
 
 ## Verdict: when does the bundle win?
 
 If you're releasing one track this year, don't buy a bundle — pick Suno or Udio for generation, LANDR for mastering, DistroKid for distribution. Total: ~$45/month, four logins.
 
-If you're releasing 2+ tracks a month, the bundle math flips. Four subscriptions at $45/month is $540/year and zero royalty integration. RHYTHMIX Creator at $29/month is $348/year with everything in one place — and the $149 lifetime is a genuine outlier in a subscription-heavy market.
+If you're releasing 2+ tracks a month, the bundle math flips. Four subscriptions across Suno + LANDR + DistroKid + a merch SaaS easily reaches US$50–80/month — US$600–960/year — with zero royalty integration. RHYTHMIX is AU$149 once, lifetime — a genuine outlier in a subscription-heavy market. No monthly recurring tier; the lifetime fee covers the music-video pipeline today plus the four-pillar roadmap as each pillar lands across 2026.
 
 We didn't write this article to sell you RHYTHMIX. We wrote it because we got tired of bundling our own stack and built the answer. If that sounds like your problem, [start a free trial](/pricing). If not, the seven other tools above are all genuinely good at what they do.
 

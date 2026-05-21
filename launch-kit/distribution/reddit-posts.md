@@ -223,7 +223,7 @@ Launching this for real, want feedback from people who've been through the solo-
 
 **Biggest mistake:** Started with too much landing-page work before I had the audio pipeline stable. Two months of CSS that I had to throw away when the actual flow changed.
 
-**Status:** Waitlist open, private beta with around 40 producers, public release Q3 2026. Solo dev, no funding, no team.
+**Status:** Waitlist open, private beta with around 40 producers. Music-video tool ships June 8 2026; remaining pillars (Master, Distribute, Earn) land Q3-Q4 2026. Solo dev, no funding, no team.
 
 **Asking for:**
 - Honest reaction to the four-pillar positioning

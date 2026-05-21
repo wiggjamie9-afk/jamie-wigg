@@ -97,3 +97,11 @@ If you only need mastering and distribution, LANDR is defensible. If you want to
 - [RHYTHMIX vs Suno: AI generation vs full platform](/seo/rhythmix-vs-suno)
 - [RHYTHMIX vs Udio: producer-tier output vs career-tier platform](/seo/rhythmix-vs-udio)
 - [The four pillars: why one AI music subscription isn't enough in 2026](/blog/four-pillars-ai-music)
+
+
+---
+
+**A note on what ships today (May 2026)**
+
+RHYTHMIX day-1 is the music-video pipeline — the four-engine, beat-synced render described above. The three other pillars — **Master**, **Distribute**, and **Earn** — are scheduled to land across the rest of 2026 (Q2, Q3, Q4 respectively). The AU$149 lifetime entitles founding members to every pillar as it ships. Were being explicit about this because comparing a Q4 roadmap item against a competitors shipped product would be unfair to both sides.
+

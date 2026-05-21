@@ -129,3 +129,11 @@ The framing line we keep coming back to: *generation alone is not a career.* Udi
 **Related reading:**
 - [RHYTHMIX vs Suno: The Honest Comparison](/launch-kit/seo/rhythmix-vs-suno.md)
 - [Four pillars of an AI music platform](/launch-kit/COMPETITIVE-POSITIONING-2026.md)
+
+
+---
+
+**A note on what ships today (May 2026)**
+
+RHYTHMIX day-1 is the music-video pipeline — the four-engine, beat-synced render described above. The three other pillars — **Master**, **Distribute**, and **Earn** — are scheduled to land across the rest of 2026 (Q2, Q3, Q4 respectively). The AU$149 lifetime entitles founding members to every pillar as it ships. Were being explicit about this because comparing a Q4 roadmap item against a competitors shipped product would be unfair to both sides.
+

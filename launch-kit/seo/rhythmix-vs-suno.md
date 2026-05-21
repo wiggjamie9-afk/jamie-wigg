@@ -100,3 +100,11 @@ Use this two-question decision tree:
 2. **Do you release more than three or four tracks a year, or do you want one bill instead of five?** If no → Suno is fine. If yes → RHYTHMIX. The TCO and ownership case is decisive once you cross the "release artist" line.
 
 Try the live release flow at [rhythmixapp.com.au/live](https://rhythmixapp.com.au/live) before you decide — it's the part Suno doesn't have.
+
+
+---
+
+**A note on what ships today (May 2026)**
+
+RHYTHMIX day-1 is the music-video pipeline — the four-engine, beat-synced render described above. The three other pillars — **Master**, **Distribute**, and **Earn** — are scheduled to land across the rest of 2026 (Q2, Q3, Q4 respectively). The AU$149 lifetime entitles founding members to every pillar as it ships. Were being explicit about this because comparing a Q4 roadmap item against a competitors shipped product would be unfair to both sides.
+

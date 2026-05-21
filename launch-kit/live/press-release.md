@@ -22,7 +22,7 @@ The Pro tier (USD $19/month) ships unlimited renders, no watermark, and a one-cl
 >
 > — **Jamie Wigg**, founder, RHYTHMIX
 
-RHYTHMIX LIVE is the second product in the RHYTHMIX line, following the AU$149 lifetime RHYTHMIX platform launched earlier in 2026. The two products share the company's four-pillar model — Generate, Master, Distribute, Earn — with LIVE owning the video-and-merch surface of the Earn pillar.
+RHYTHMIX LIVE is the second product in the RHYTHMIX line, following the AU$149 lifetime RHYTHMIX platform launched earlier in 2026. LIVE is a standalone music-video subscription, distinct from the umbrella RHYTHMIX platform — not part of its four-pillar roadmap.
 
 ---
 
@@ -33,7 +33,7 @@ RHYTHMIX is an Australian creator-tools company building an end-to-end platform 
 ## Press contact
 
 Jamie Wigg, founder
-wiggjamie9@gmail.com
+press@rhythmixapp.com.au
 rhythmixapp.com.au/live
 
 Press assets — hero stills, pipeline diagram, sample renders, founder headshot — available on request.
