@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#000000" />
 <title>Reset — Recovery for Team Sport</title>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <style>
   :root {
     --bg: #000;
@@ -219,14 +220,17 @@
 
   /* Trends chart */
   .chart {
-    display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 12px 4px;
+    display: flex; gap: 8px; padding: 12px 4px 4px;
   }
   .bar {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
     color: var(--text-3); font-size: 11px;
   }
+  .bar .track {
+    width: 100%; height: 130px; display: flex; align-items: flex-end;
+  }
   .bar .b {
-    width: 100%; border-radius: 6px 6px 0 0;
+    width: 100%; border-radius: 6px 6px 0 0; min-height: 4px;
     background: linear-gradient(180deg, var(--ready) 0%, rgba(52,211,153,.4) 100%);
     transition: height .3s ease;
   }
@@ -614,14 +618,14 @@
     </div>
 
     <div class="pills">
-      <button class="pill active">All</button>
-      <button class="pill">Matches</button>
-      <button class="pill">Training</button>
-      <button class="pill">Strength</button>
-      <button class="pill">Recovery</button>
+      <button class="pill active" onclick="filterLog(this, 'all')">All</button>
+      <button class="pill" onclick="filterLog(this, 'match')">Matches</button>
+      <button class="pill" onclick="filterLog(this, 'training')">Training</button>
+      <button class="pill" onclick="filterLog(this, 'strength')">Strength</button>
+      <button class="pill" onclick="filterLog(this, 'recovery')">Recovery</button>
     </div>
 
-    <div class="log-item">
+    <div class="log-item" data-cat="match">
       <div class="ic">⚽</div>
       <div class="meta">
         <div class="t">Match · Eastside Rovers</div>
@@ -629,7 +633,7 @@
       </div>
       <div class="rpe high">RPE 8</div>
     </div>
-    <div class="log-item">
+    <div class="log-item" data-cat="training">
       <div class="ic">🏃</div>
       <div class="meta">
         <div class="t">Tempo run</div>
@@ -637,7 +641,7 @@
       </div>
       <div class="rpe">RPE 6</div>
     </div>
-    <div class="log-item">
+    <div class="log-item" data-cat="strength">
       <div class="ic">🏋️</div>
       <div class="meta">
         <div class="t">Lower body strength</div>
@@ -645,7 +649,7 @@
       </div>
       <div class="rpe">RPE 7</div>
     </div>
-    <div class="log-item">
+    <div class="log-item" data-cat="training">
       <div class="ic">⚽</div>
       <div class="meta">
         <div class="t">Team training</div>
@@ -653,13 +657,17 @@
       </div>
       <div class="rpe">RPE 7</div>
     </div>
-    <div class="log-item">
+    <div class="log-item" data-cat="recovery">
       <div class="ic">🧘</div>
       <div class="meta">
         <div class="t">Mobility &amp; foam roll</div>
         <div class="s">Tue 9:00am · 25 min</div>
       </div>
       <div class="rpe">RPE 2</div>
+    </div>
+
+    <div class="empty-log hint" id="emptyLog" style="display: none; text-align: center; padding: 40px 20px;">
+      No sessions in this category this week.
     </div>
 
     <div class="sec-h">7-day load</div>
@@ -682,7 +690,7 @@
         <div class="date">Post-match · Day 1 of 3</div>
         <h1>Recovery</h1>
       </div>
-      <button class="icon-btn" aria-label="Share">
+      <button class="icon-btn" onclick="sharePlan()" aria-label="Share plan">
         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
       </button>
     </div>
@@ -830,28 +838,21 @@
     </div>
 
     <div class="pills">
-      <button class="pill active">Readiness</button>
-      <button class="pill">HRV</button>
-      <button class="pill">Sleep</button>
-      <button class="pill">RHR</button>
-      <button class="pill">Load</button>
+      <button class="pill active" onclick="switchTrend(this, 'readiness')">Readiness</button>
+      <button class="pill" onclick="switchTrend(this, 'hrv')">HRV</button>
+      <button class="pill" onclick="switchTrend(this, 'sleep')">Sleep</button>
+      <button class="pill" onclick="switchTrend(this, 'rhr')">RHR</button>
+      <button class="pill" onclick="switchTrend(this, 'load')">Load</button>
     </div>
 
     <div class="card">
-      <h3>Readiness — 7d</h3>
-      <div class="chart" id="chart">
-        <div class="bar"><div class="b" style="height: 78%"></div><span>Mon</span></div>
-        <div class="bar"><div class="b" style="height: 82%"></div><span>Tue</span></div>
-        <div class="bar"><div class="b warn" style="height: 70%"></div><span>Wed</span></div>
-        <div class="bar"><div class="b warn" style="height: 65%"></div><span>Thu</span></div>
-        <div class="bar"><div class="b" style="height: 80%"></div><span>Fri</span></div>
-        <div class="bar"><div class="b warn" style="height: 75%"></div><span>Sat</span></div>
-        <div class="bar"><div class="b fatigue" style="height: 64%"></div><span>Sun</span></div>
-      </div>
+      <h3 id="chartTitle">Readiness — 7d</h3>
+      <div class="chart" id="chart"></div>
       <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px;">
-        <div><span style="color: var(--text-3);">7-day avg</span> <strong>73</strong></div>
-        <div><span style="color: var(--text-3);">28-day avg</span> <strong>76</strong></div>
+        <div><span style="color: var(--text-3);">7-day avg</span> <strong id="chartAvg7">73</strong></div>
+        <div><span style="color: var(--text-3);">28-day avg</span> <strong id="chartAvg28">76</strong></div>
       </div>
+      <div class="hint" id="chartUnit" style="margin-top: 6px; font-size: 12px;">Score out of 100</div>
     </div>
 
     <div class="sec-h">Personal insights</div>
@@ -892,7 +893,7 @@
         <div class="date">On-device · private</div>
         <h1>Coach</h1>
       </div>
-      <button class="icon-btn" aria-label="History">
+      <button class="icon-btn" onclick="clearChat()" aria-label="New conversation">
         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
       </button>
     </div>
@@ -1141,10 +1142,118 @@
     btn.addEventListener('click', () => btn.classList.toggle('active'));
   });
 
-  // ------- Done checkboxes -------
+  // ------- Log filter -------
+  function filterLog(btn, cat) {
+    btn.parentElement.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const items = document.querySelectorAll('.log-item');
+    let visible = 0;
+    items.forEach(i => {
+      const show = cat === 'all' || i.dataset.cat === cat;
+      i.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    document.getElementById('emptyLog').style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  // ------- Trends chart -------
+  const trendData = {
+    readiness: {
+      title: 'Readiness — 7d', unit: 'Score out of 100', avg7: 73, avg28: 76,
+      bars: [
+        ['Mon', 78, ''], ['Tue', 82, ''], ['Wed', 70, 'warn'], ['Thu', 65, 'warn'],
+        ['Fri', 80, ''], ['Sat', 75, 'warn'], ['Sun', 64, 'fatigue']
+      ]
+    },
+    hrv: {
+      title: 'HRV (SDNN) — 7d', unit: 'ms · 28d baseline 47 ms', avg7: '42 ms', avg28: '47 ms',
+      bars: [
+        ['Mon', 88, ''], ['Tue', 92, ''], ['Wed', 75, 'warn'], ['Thu', 62, 'fatigue'],
+        ['Fri', 86, ''], ['Sat', 80, ''], ['Sun', 70, 'warn']
+      ]
+    },
+    sleep: {
+      title: 'Sleep — 7d', unit: 'Hours · target 8h', avg7: '7h 24m', avg28: '7h 41m',
+      bars: [
+        ['Mon', 85, ''], ['Tue', 90, ''], ['Wed', 72, 'warn'], ['Thu', 68, 'warn'],
+        ['Fri', 88, ''], ['Sat', 60, 'fatigue'], ['Sun', 78, '']
+      ]
+    },
+    rhr: {
+      title: 'Resting HR — 7d', unit: 'bpm overnight · baseline 58 bpm', avg7: '61 bpm', avg28: '58 bpm',
+      bars: [
+        ['Mon', 60, ''], ['Tue', 58, ''], ['Wed', 68, 'warn'], ['Thu', 72, 'fatigue'],
+        ['Fri', 62, ''], ['Sat', 64, 'warn'], ['Sun', 70, 'warn']
+      ]
+    },
+    load: {
+      title: 'Training load — 7d', unit: 'Daily load · sRPE × minutes', avg7: 412, avg28: 387,
+      bars: [
+        ['Mon', 45, ''], ['Tue', 62, ''], ['Wed', 78, 'warn'], ['Thu', 88, 'warn'],
+        ['Fri', 40, ''], ['Sat', 95, 'fatigue'], ['Sun', 22, '']
+      ]
+    }
+  };
+  function renderChart(key) {
+    const d = trendData[key];
+    document.getElementById('chartTitle').textContent = d.title;
+    document.getElementById('chartUnit').textContent = d.unit;
+    document.getElementById('chartAvg7').textContent = d.avg7;
+    document.getElementById('chartAvg28').textContent = d.avg28;
+    document.getElementById('chart').innerHTML = d.bars.map(
+      ([lbl, h, cls]) => `<div class="bar"><div class="track"><div class="b ${cls}" style="height: ${h}%"></div></div><span>${lbl}</span></div>`
+    ).join('');
+  }
+  function switchTrend(btn, key) {
+    btn.parentElement.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    renderChart(key);
+  }
+  renderChart('readiness');
+
+  // ------- Done checkboxes (persisted) -------
+  function protoKey(card) {
+    const t = card.querySelector('.ttl');
+    return 'reset.proto.' + (t ? t.textContent.trim().slice(0, 60) : '');
+  }
   function toggleDone(el) {
-    el.closest('.protocol-card').classList.toggle('done');
+    const card = el.closest('.protocol-card');
+    card.classList.toggle('done');
+    localStorage.setItem(protoKey(card), card.classList.contains('done') ? '1' : '');
     if (navigator.vibrate) navigator.vibrate(8);
+  }
+  document.querySelectorAll('.protocol-card').forEach(card => {
+    if (localStorage.getItem(protoKey(card)) === '1') card.classList.add('done');
+  });
+
+  // ------- Recovery: share + Coach: new conversation -------
+  async function sharePlan() {
+    const text = "My recovery plan for today (via Reset): rehydrate 600ml + electrolytes, 30g protein + 70g carbs breakfast, tart cherry juice, omega-3, casein before bed, sleep extension to 9:30pm.";
+    if (navigator.share) {
+      try { await navigator.share({ title: "Today's recovery plan", text }); return; } catch (_) {}
+    }
+    if (navigator.clipboard) {
+      try { await navigator.clipboard.writeText(text); showToast('Plan copied to clipboard'); return; } catch (_) {}
+    }
+    showToast('Sharing not available on this browser');
+  }
+  function clearChat() {
+    const chat = document.getElementById('chatBox');
+    chat.innerHTML = `
+      <div class="msg coach">
+        <div class="meta">Coach · now</div>
+        Fresh thread. What do you want to talk about — today's plan, a symptom, or something tactical for the next match?
+      </div>
+    `;
+    // restore the quick replies in case they were all consumed
+    const qr = document.querySelector('.quick-replies');
+    qr.innerHTML = `
+      <button onclick="quickReply(this)">What about training tomorrow?</button>
+      <button onclick="quickReply(this)">Should I get a CGM?</button>
+      <button onclick="quickReply(this)">Iron supplement?</button>
+      <button onclick="quickReply(this)">Ice bath tonight?</button>
+    `;
+    showToast('New conversation');
   }
 
   // ------- Check-in -------
