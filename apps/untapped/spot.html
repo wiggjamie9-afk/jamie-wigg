@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SPOT — pet teledermatology triage</title>
+<meta name="description" content="Photo the lump, rash, or hot-spot. AI triage in 30 seconds: watch, schedule, or vet now. Connect to a remote vet if urgent.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fdf8f2">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=">
+<style>
+:root{
+  --cream:#fdf8f2; --cream-2:#f5ecdc; --cream-3:#ece0c8;
+  --forest:#14532d; --forest-2:#1d6b3c; --forest-soft:#2d7a4c;
+  --terra:#c2410c; --terra-soft:#e2693a;
+  --ink:#1a2419; --soft:#4a5a48; --muted:#8a9486; --hairline:#d8cdb6;
+  --amber:#ca8a04; --amber-soft:#f3e2a8;
+  --red:#a32f1d; --red-soft:#fadcd2;
+  --green:#15803d; --green-soft:#d3ead8;
+  --serif:'Lora','Cormorant Garamond',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100%}
+body{padding:0 0 60px;max-width:560px;margin:0 auto;position:relative}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea,select{font:inherit}
+::selection{background:var(--forest);color:var(--cream)}
+
+/* Top bar */
+.bar{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 14px;border-bottom:1px solid var(--hairline)}
+.mark{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--forest);letter-spacing:-0.01em}
+.mark b{font-weight:600;font-style:normal}
+.crumb{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;color:var(--muted);text-transform:uppercase}
+
+/* Typography */
+.eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:0.26em;text-transform:uppercase;color:var(--terra);margin-bottom:10px}
+h1{font-family:var(--serif);font-weight:500;font-size:34px;line-height:1.08;letter-spacing:-0.015em;color:var(--forest);margin-bottom:8px}
+h1 em{font-style:italic;color:var(--terra)}
+h2{font-family:var(--serif);font-weight:500;font-size:22px;line-height:1.15;color:var(--forest);margin-bottom:10px;letter-spacing:-0.01em}
+h3{font-family:var(--serif);font-weight:500;font-size:17px;color:var(--forest);margin-bottom:6px}
+p{font-size:14.5px;line-height:1.55;color:var(--soft);margin-bottom:10px}
+.lede{font-size:15.5px;color:var(--ink);margin-bottom:16px}
+.mono{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:0.5em;padding:14px 22px;border:1.5px solid var(--forest);color:var(--forest);font-family:var(--sans);font-size:14px;font-weight:500;border-radius:50px;transition:all 0.2s;min-height:48px;background:var(--cream)}
+.btn:hover,.btn:active{background:var(--forest);color:var(--cream)}
+.btn-primary{background:var(--forest);color:var(--cream);border-color:var(--forest)}
+.btn-primary:hover,.btn-primary:active{background:var(--forest-2);border-color:var(--forest-2)}
+.btn-terra{background:var(--terra);color:var(--cream);border-color:var(--terra)}
+.btn-terra:hover,.btn-terra:active{background:var(--terra-soft);border-color:var(--terra-soft)}
+.btn-ghost{background:transparent;border-color:var(--hairline);color:var(--soft)}
+.btn-block{width:100%}
+
+/* Section */
+.sec{padding:22px}
+.sec + .sec{padding-top:6px}
+
+/* Pet profile card */
+.pet-card{background:linear-gradient(135deg,var(--cream-2),var(--cream));border:1px solid var(--hairline);border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.pet-avatar{width:54px;height:54px;border-radius:50%;background:var(--forest);color:var(--cream);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;flex-shrink:0;font-style:italic;border:2px solid var(--cream-3)}
+.pet-meta{flex:1;min-width:0}
+.pet-name{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--forest);line-height:1.1}
+.pet-detail{font-size:12px;color:var(--muted);font-family:var(--mono);letter-spacing:0.08em;margin-top:2px;text-transform:uppercase}
+.pet-switch{background:none;border:none;color:var(--terra);font-size:11px;font-family:var(--mono);letter-spacing:0.12em;text-transform:uppercase;padding:6px 10px;border-radius:20px;border:1px solid var(--hairline)}
+
+/* Species picker */
+.species-row{display:flex;gap:10px;margin-bottom:18px}
+.species-btn{flex:1;padding:14px;border:1.5px solid var(--hairline);border-radius:14px;background:var(--cream);display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s}
+.species-btn.on{border-color:var(--forest);background:var(--cream-2);color:var(--forest)}
+.species-emoji{font-size:28px;line-height:1}
+.species-label{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--soft)}
+.species-btn.on .species-label{color:var(--forest)}
+
+/* Upload zone */
+.upload-zone{border:2px dashed var(--hairline);border-radius:18px;padding:30px 20px;text-align:center;background:var(--cream-2);transition:all 0.2s;margin-bottom:14px;position:relative;overflow:hidden}
+.upload-zone:hover{border-color:var(--forest);background:var(--cream-3)}
+.upload-icon{width:54px;height:54px;border-radius:50%;background:var(--cream);border:1.5px solid var(--hairline);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.upload-title{font-family:var(--serif);font-size:18px;color:var(--forest);margin-bottom:4px;font-weight:500}
+.upload-hint{font-size:12px;color:var(--muted)}
+.upload-actions{display:flex;gap:10px;margin-top:14px}
+
+/* Analyzing overlay */
+.analyzing{padding:40px 22px;text-align:center;background:var(--cream-2);border:1px solid var(--hairline);border-radius:18px;margin-bottom:14px}
+.paw-trail{display:flex;justify-content:center;gap:14px;margin-bottom:18px}
+.paw{font-size:26px;opacity:0.2;animation:pawWalk 1.6s ease-in-out infinite}
+.paw:nth-child(2){animation-delay:0.2s}
+.paw:nth-child(3){animation-delay:0.4s}
+.paw:nth-child(4){animation-delay:0.6s}
+.paw:nth-child(5){animation-delay:0.8s}
+@keyframes pawWalk{0%,100%{opacity:0.15;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px);color:var(--terra)}}
+.analyzing-status{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--soft)}
+.analyzing-bar{margin-top:14px;height:3px;background:var(--cream-3);border-radius:2px;overflow:hidden}
+.analyzing-bar::after{content:"";display:block;height:100%;background:linear-gradient(90deg,var(--forest),var(--terra),var(--forest));background-size:200% 100%;animation:scan 2.4s linear infinite}
+@keyframes scan{0%{background-position:0% 0;transform:translateX(-100%)}100%{background-position:200% 0;transform:translateX(100%)}}
+
+/* Image preview */
+.preview-wrap{margin-bottom:14px;border-radius:18px;overflow:hidden;border:1px solid var(--hairline);background:var(--cream-2);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;position:relative}
+.preview-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.preview-placeholder{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:36px;line-height:1;text-align:center;padding:30px}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--terra),transparent);box-shadow:0 0 14px var(--terra);top:0;animation:scanLine 2s ease-in-out infinite}
+@keyframes scanLine{0%,100%{top:0;opacity:0.8}50%{top:calc(100% - 2px);opacity:1}}
+
+/* Triage result */
+.triage{border-radius:18px;padding:20px;margin-bottom:14px;border:1.5px solid}
+.triage.green{background:var(--green-soft);border-color:var(--green)}
+.triage.amber{background:var(--amber-soft);border-color:var(--amber)}
+.triage.red{background:var(--red-soft);border-color:var(--red)}
+.triage-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.triage-dot{font-size:22px;line-height:1}
+.triage-level{font-family:var(--mono);font-size:11px;letter-spacing:0.22em;text-transform:uppercase;font-weight:600}
+.triage.green .triage-level{color:var(--green)}
+.triage.amber .triage-level{color:var(--amber)}
+.triage.red .triage-level{color:var(--red)}
+.triage-condition{font-family:var(--serif);font-size:22px;font-weight:500;color:var(--ink);line-height:1.2;margin-bottom:6px}
+.triage-confidence{font-family:var(--mono);font-size:11px;color:var(--soft);letter-spacing:0.1em;margin-bottom:14px}
+.confidence-bar{height:4px;background:rgba(20,83,45,0.1);border-radius:2px;margin:8px 0 12px;overflow:hidden}
+.confidence-fill{height:100%;background:var(--forest);border-radius:2px}
+
+/* Action list */
+.action-list{list-style:none;margin-top:10px}
+.action-list li{display:flex;gap:10px;padding:10px 0;border-top:1px solid rgba(20,83,45,0.12);font-size:14px;color:var(--ink);line-height:1.45}
+.action-list li:first-child{border-top:none}
+.action-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--forest);color:var(--cream);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600;margin-top:1px}
+
+/* Escalation card */
+.escalate{background:var(--cream-2);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-bottom:14px}
+.escalate-title{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--terra);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.escalate-list{list-style:none}
+.escalate-list li{font-size:13px;color:var(--soft);padding:6px 0 6px 22px;position:relative;line-height:1.45}
+.escalate-list li::before{content:"!";position:absolute;left:0;top:6px;width:16px;height:16px;border-radius:50%;background:var(--terra-soft);color:var(--cream);font-family:var(--mono);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+/* Vet modal */
+.vet-overlay{position:fixed;inset:0;background:rgba(20,36,25,0.6);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(4px)}
+.vet-overlay.on{display:flex}
+.vet-card{background:var(--cream);border-radius:20px;max-width:420px;width:100%;padding:24px;border:1px solid var(--hairline);max-height:90vh;overflow-y:auto}
+.vet-stage{display:none}
+.vet-stage.on{display:block}
+.vet-queue{text-align:center;padding:20px 0}
+.ring{width:90px;height:90px;border-radius:50%;border:3px solid var(--cream-3);border-top-color:var(--forest);margin:0 auto 18px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.vet-queue-status{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+.vet-queue-eta{font-family:var(--serif);font-size:34px;color:var(--forest);font-weight:500}
+.vet-profile{display:flex;align-items:center;gap:14px;padding:16px;background:var(--cream-2);border-radius:14px;margin-bottom:14px}
+.vet-photo{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--forest),var(--forest-soft));color:var(--cream);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;font-weight:600;flex-shrink:0}
+.vet-name{font-family:var(--serif);font-size:18px;font-weight:600;color:var(--forest);line-height:1.1}
+.vet-cred{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;margin-top:3px;text-transform:uppercase}
+.vet-bio{font-size:13px;color:var(--soft);line-height:1.5;margin-bottom:14px}
+.disclaimer{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--hairline)}
+
+/* Footer disclaimer */
+.foot{padding:20px 22px;text-align:center;border-top:1px solid var(--hairline);margin-top:20px}
+.foot p{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:4px}
+
+/* Hidden file input */
+.hide{display:none}
+
+/* Small responsive tweaks */
+@media (max-width:380px){
+  h1{font-size:30px}
+  .sec{padding:18px}
+  .upload-zone{padding:24px 16px}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="mark"><b>SPOT</b> <em>· pet teledermatology</em></span>
+  <span class="crumb">v0.4 · beta</span>
+</div>
+
+<section class="sec">
+  <div class="eyebrow">step 01 · pet profile</div>
+  <h1>Is it a vet visit?</h1>
+  <p class="lede">Snap the spot. We'll tell you in 30 seconds whether to watch, schedule, or go now.</p>
+
+  <div class="pet-card">
+    <div class="pet-avatar" id="petAvatar">B</div>
+    <div class="pet-meta">
+      <div class="pet-name" id="petName">Biscuit</div>
+      <div class="pet-detail" id="petDetail">Labrador · 4 yr · 68 lb</div>
+    </div>
+    <button class="pet-switch" onclick="switchPet()">Switch</button>
+  </div>
+
+  <div class="species-row" id="speciesRow">
+    <button class="species-btn on" data-species="dog" onclick="setSpecies('dog')">
+      <span class="species-emoji">🐕</span>
+      <span class="species-label">Dog</span>
+    </button>
+    <button class="species-btn" data-species="cat" onclick="setSpecies('cat')">
+      <span class="species-emoji">🐈</span>
+      <span class="species-label">Cat</span>
+    </button>
+  </div>
+</section>
+
+<section class="sec" id="captureSec">
+  <div class="eyebrow">step 02 · the photo</div>
+  <h2>Where's the concern?</h2>
+  <p>Good light. Close enough to see texture. Avoid blur.</p>
+
+  <div class="upload-zone" id="uploadZone">
+    <div class="upload-icon">📷</div>
+    <div class="upload-title">Snap or upload</div>
+    <div class="upload-hint">JPEG or PNG · stays on your device until you ask for a vet</div>
+    <div class="upload-actions">
+      <input type="file" id="fileIn" class="hide" accept="image/*" onchange="onUpload(event)">
+      <input type="file" id="cameraIn" class="hide" accept="image/*" capture="environment" onchange="onUpload(event)">
+      <button class="btn btn-primary btn-block" onclick="document.getElementById('cameraIn').click()">Take photo</button>
+      <button class="btn btn-ghost btn-block" onclick="document.getElementById('fileIn').click()">Upload</button>
+    </div>
+  </div>
+
+  <button class="btn btn-ghost btn-block" onclick="runSample()" style="margin-top:6px">Try the sample case →</button>
+</section>
+
+<section class="sec" id="resultSec" style="display:none">
+  <div class="eyebrow">step 03 · triage</div>
+  <h2 id="resultHeading">Reading the photo…</h2>
+
+  <div class="preview-wrap" id="previewWrap">
+    <div class="preview-placeholder">🐾</div>
+  </div>
+
+  <div class="analyzing" id="analyzing">
+    <div class="paw-trail">
+      <span class="paw">🐾</span><span class="paw">🐾</span><span class="paw">🐾</span><span class="paw">🐾</span><span class="paw">🐾</span>
+    </div>
+    <div class="analyzing-status" id="analyzeStatus">Scanning · checking colour, edge, hair pattern…</div>
+    <div class="analyzing-bar"></div>
+  </div>
+
+  <div id="resultCard" style="display:none">
+    <div class="triage" id="triageCard">
+      <div class="triage-head">
+        <span class="triage-dot" id="triageDot">🟡</span>
+        <span class="triage-level" id="triageLevel">Schedule within 48 hours</span>
+      </div>
+      <div class="triage-condition" id="triageCondition">Possible hot spot</div>
+      <p style="font-size:13px;color:var(--ink);margin-bottom:6px" id="triageDesc">Moist pyotraumatic dermatitis — common surface infection from licking.</p>
+      <div class="triage-confidence" id="triageConfidence">Model confidence · 73%</div>
+      <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width:73%"></div></div>
+      <h3 style="margin-top:10px">Do these three things now</h3>
+      <ol class="action-list" id="actionList"></ol>
+    </div>
+
+    <div class="escalate">
+      <div class="escalate-title"><span>⚠</span> Go to a vet if you see</div>
+      <ul class="escalate-list" id="escalateList"></ul>
+    </div>
+
+    <button class="btn btn-terra btn-block" onclick="openVet()" id="vetBtn">Connect to a vet now · $19</button>
+    <button class="btn btn-ghost btn-block" onclick="resetApp()" style="margin-top:10px">Start over</button>
+  </div>
+</section>
+
+<div class="foot">
+  <p><b>Not a substitute for emergency care.</b> If your pet is bleeding heavily, struggling to breathe, collapsed, or seizing — go to an ER vet now.</p>
+  <p style="margin-top:6px"><span class="mono">SPOT · backed by a board of licensed DVMs · audit log retained 7 yrs</span></p>
+</div>
+
+<!-- Vet call overlay -->
+<div class="vet-overlay" id="vetOverlay">
+  <div class="vet-card">
+    <div class="vet-stage on" id="vetQueueStage">
+      <div class="vet-queue">
+        <div class="ring"></div>
+        <div class="vet-queue-status">Connecting you to the on-call vet</div>
+        <div class="vet-queue-eta" id="vetEta">≈ 2 min</div>
+        <p style="margin-top:14px;color:var(--soft);font-size:13px">Triage info, photo, and Biscuit's profile are being shared with the next available vet.</p>
+        <button class="btn btn-ghost" style="margin-top:18px" onclick="closeVet()">Cancel</button>
+      </div>
+    </div>
+    <div class="vet-stage" id="vetLiveStage">
+      <div class="eyebrow" style="margin-bottom:6px">Now connected</div>
+      <h2 style="margin-bottom:14px">Live call · audio + video</h2>
+      <div class="vet-profile">
+        <div class="vet-photo">RB</div>
+        <div>
+          <div class="vet-name">Dr. Rosa Bellamy, DVM</div>
+          <div class="vet-cred">Lic. CA #14722 · Derm-focused</div>
+        </div>
+      </div>
+      <p class="vet-bio">Dr. Bellamy has practiced small-animal dermatology for 11 years and consults for the SPOT panel. She'll review Biscuit's photo, ask a few questions, and can call in a script to your pharmacy if needed.</p>
+      <button class="btn btn-primary btn-block">Start video call</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeVet()">End</button>
+      <div class="disclaimer">Demo · Dr. Bellamy is fictional</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──── Sample case data (Labrador hot spot) ────
+const samples = {
+  dog: {
+    name: 'Biscuit', breed: 'Labrador', age: '4 yr', weight: '68 lb', avatar: 'B',
+    level: 'amber',
+    dot: '🟡',
+    levelText: 'Schedule within 48 hours',
+    condition: 'Possible hot spot',
+    desc: 'Moist pyotraumatic dermatitis — a common surface infection that starts when licking or scratching breaks the skin barrier.',
+    confidence: 73,
+    actions: [
+      'Gently clip the hair around the spot with blunt scissors — air helps it dry.',
+      'Clean once with cool saline (¼ tsp salt in a cup of warm water). Pat dry.',
+      'Stop the licking. A cone, a clean t-shirt, or a bitter spray all work tonight.'
+    ],
+    escalate: [
+      'Spot grows wider than 4 cm in 24 hours',
+      'Pus, yellow discharge, or a strong yeasty smell',
+      'Biscuit becomes lethargic, off food, or feverish to the touch',
+      'Open bleeding that doesn\'t stop in 5 minutes'
+    ]
+  },
+  cat: {
+    name: 'Miso', breed: 'Domestic shorthair', age: '7 yr', weight: '9 lb', avatar: 'M',
+    level: 'green',
+    dot: '🟢',
+    levelText: 'Watch · re-check in 48 hours',
+    condition: 'Likely benign — barber\'s itch pattern',
+    desc: 'Symmetric belly hair loss in cats is most often over-grooming from stress or mild allergy, not skin disease.',
+    confidence: 81,
+    actions: [
+      'Photograph the same patch tomorrow at the same time of day — compare.',
+      'Check for fleas with a fine comb at the base of the tail.',
+      'Note any new stressor: a move, a visitor, a litter change, a new food.'
+    ],
+    escalate: [
+      'Skin becomes red, scabbed, or weepy',
+      'Miso starts vomiting or stops eating',
+      'Hair loss spreads to face, ears, or paws',
+      'You see live fleas or flea dirt'
+    ]
+  }
+};
+
+let currentSpecies = 'dog';
+let analyzing = false;
+
+// ──── Species + pet ────
+function setSpecies(s){
+  currentSpecies = s;
+  document.querySelectorAll('.species-btn').forEach(b => b.classList.toggle('on', b.dataset.species === s));
+  const p = samples[s];
+  document.getElementById('petName').textContent = p.name;
+  document.getElementById('petDetail').textContent = `${p.breed} · ${p.age} · ${p.weight}`;
+  document.getElementById('petAvatar').textContent = p.avatar;
+}
+
+function switchPet(){
+  setSpecies(currentSpecies === 'dog' ? 'cat' : 'dog');
+}
+
+// ──── Upload + analyze ────
+function onUpload(e){
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => startAnalysis(ev.target.result);
+  reader.readAsDataURL(file);
+}
+
+function runSample(){
+  // Inline SVG sample image — soft warm gradient with a "concern" patch
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+    <defs>
+      <radialGradient id="fur" cx="50%" cy="40%" r="70%">
+        <stop offset="0%" stop-color="#d4a574"/>
+        <stop offset="60%" stop-color="#a07242"/>
+        <stop offset="100%" stop-color="#5a3e21"/>
+      </radialGradient>
+      <radialGradient id="hot" cx="55%" cy="55%" r="22%">
+        <stop offset="0%" stop-color="#c2410c"/>
+        <stop offset="50%" stop-color="#a32f1d" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="#5a3e21" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="400" height="300" fill="url(#fur)"/>
+    <g opacity="0.4">
+      ${Array.from({length:80}).map((_,i)=>`<line x1="${Math.random()*400}" y1="${Math.random()*300}" x2="${Math.random()*400+10}" y2="${Math.random()*300+20}" stroke="#3d2812" stroke-width="0.8"/>`).join('')}
+    </g>
+    <ellipse cx="220" cy="165" rx="55" ry="42" fill="url(#hot)"/>
+    <ellipse cx="220" cy="165" rx="32" ry="22" fill="#8b1c0e" opacity="0.5"/>
+  </svg>`;
+  const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
+  startAnalysis(dataUrl);
+}
+
+function startAnalysis(dataUrl){
+  if (analyzing) return;
+  analyzing = true;
+  document.getElementById('resultSec').style.display = 'block';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('analyzing').style.display = 'block';
+  document.getElementById('resultHeading').textContent = 'Reading the photo…';
+  const wrap = document.getElementById('previewWrap');
+  wrap.innerHTML = `<img src="${dataUrl}" alt="uploaded concern"><div class="scan-line"></div>`;
+  document.getElementById('resultSec').scrollIntoView({behavior:'smooth', block:'start'});
+
+  const stages = [
+    'Scanning · checking colour, edge, hair pattern…',
+    'Comparing against 14,000 vet-labelled images…',
+    'Cross-referencing with Biscuit\'s breed + age…',
+    'Triaging severity…'
+  ];
+  let i = 0;
+  const statusEl = document.getElementById('analyzeStatus');
+  const tick = setInterval(() => {
+    i++;
+    if (i < stages.length) statusEl.textContent = stages[i];
+  }, 750);
+
+  setTimeout(() => {
+    clearInterval(tick);
+    showResult();
+    analyzing = false;
+  }, 3000);
+}
+
+function showResult(){
+  const r = samples[currentSpecies];
+  document.getElementById('analyzing').style.display = 'none';
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultHeading').textContent = 'Here\'s what we see';
+  document.querySelector('#previewWrap .scan-line')?.remove();
+
+  const card = document.getElementById('triageCard');
+  card.classList.remove('green','amber','red');
+  card.classList.add(r.level);
+  document.getElementById('triageDot').textContent = r.dot;
+  document.getElementById('triageLevel').textContent = r.levelText;
+  document.getElementById('triageCondition').textContent = r.condition;
+  document.getElementById('triageDesc').textContent = r.desc;
+  document.getElementById('triageConfidence').textContent = `Model confidence · ${r.confidence}%`;
+  document.getElementById('confidenceFill').style.width = r.confidence + '%';
+
+  const actions = document.getElementById('actionList');
+  actions.innerHTML = r.actions.map((a, idx) => `<li><span class="action-num">${idx+1}</span><span>${a}</span></li>`).join('');
+
+  const esc = document.getElementById('escalateList');
+  esc.innerHTML = r.escalate.map(e => `<li>${e}</li>`).join('');
+
+  // CTA text per severity
+  const btn = document.getElementById('vetBtn');
+  if (r.level === 'red'){ btn.textContent = 'Connect to a vet — urgent · $19'; btn.style.background = 'var(--red)'; btn.style.borderColor = 'var(--red)'; }
+  else if (r.level === 'amber'){ btn.textContent = 'Connect to a vet now · $19'; btn.style.background = ''; btn.style.borderColor = ''; }
+  else { btn.textContent = 'Ask a vet anyway · $19'; btn.style.background = ''; btn.style.borderColor = ''; }
+}
+
+function resetApp(){
+  document.getElementById('resultSec').style.display = 'none';
+  document.getElementById('fileIn').value = '';
+  document.getElementById('cameraIn').value = '';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ──── Vet call simulation ────
+function openVet(){
+  document.getElementById('vetOverlay').classList.add('on');
+  document.getElementById('vetQueueStage').classList.add('on');
+  document.getElementById('vetLiveStage').classList.remove('on');
+  let s = 120;
+  const eta = document.getElementById('vetEta');
+  eta.textContent = '≈ 2 min';
+  const timer = setInterval(() => {
+    s -= 6;
+    if (s <= 0){
+      clearInterval(timer);
+      document.getElementById('vetQueueStage').classList.remove('on');
+      document.getElementById('vetLiveStage').classList.add('on');
+      return;
+    }
+    const m = Math.floor(s/60), sec = s%60;
+    eta.textContent = m > 0 ? `≈ ${m}:${String(sec).padStart(2,'0')}` : `${sec}s`;
+  }, 600);
+  document.getElementById('vetOverlay').dataset.timer = timer;
+}
+
+function closeVet(){
+  const o = document.getElementById('vetOverlay');
+  o.classList.remove('on');
+  clearInterval(parseInt(o.dataset.timer || 0));
+}
+
+// Click outside vet card to close
+document.getElementById('vetOverlay').addEventListener('click', e => {
+  if (e.target.id === 'vetOverlay') closeVet();
+});
+</script>
+</body>
+</html>

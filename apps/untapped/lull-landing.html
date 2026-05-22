@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LULL — Why is your baby crying? In your language.</title>
+<meta name="description" content="A multilingual cry classifier and sleep coach for new parents in Hindi, Bahasa, Swahili, Português, Español, Arabic, and English. Built for 3 AM.">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f1729">
+<style>
+:root{
+  --bg:#0f1729; --bg-2:#172033; --bg-3:#1f2a42;
+  --ink:#f5e6c8; --soft:#d8c8a8; --muted:#8a7d68;
+  --coral:#ff8fa3; --coral-soft:#ffb3c1;
+  --line:rgba(245,230,200,0.10);
+  --serif:'Lora','Cormorant Garamond',Georgia,serif;
+  --sans:-apple-system,'Inter',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;line-height:1.55}
+body{background:radial-gradient(ellipse at 50% -10%, #1a2640 0%, var(--bg) 50%, #0a0f1c 100%);min-height:100vh}
+a{color:var(--coral);text-decoration:none}
+::selection{background:var(--coral);color:var(--bg)}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:50;display:flex;justify-content:space-between;align-items:center;padding:18px 6vw;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(15,23,41,0.6);border-bottom:1px solid var(--line)}
+.brand{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--ink);letter-spacing:-0.01em}
+.brand b{font-family:var(--sans);font-style:normal;font-size:11px;color:var(--coral);letter-spacing:0.22em;font-weight:500;margin-left:8px;text-transform:uppercase}
+.nav a.cta{padding:10px 18px;border:1px solid var(--coral);border-radius:50px;font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--coral);transition:all 0.2s}
+.nav a.cta:hover{background:var(--coral);color:var(--bg)}
+
+/* Sections */
+section{padding:80px 6vw;max-width:1080px;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--coral-soft);margin-bottom:18px}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(40px,7vw,72px);line-height:1.02;letter-spacing:-0.02em;margin-bottom:22px;max-width:14ch}
+h1 em{font-style:italic;color:var(--coral)}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,4.5vw,44px);line-height:1.1;margin-bottom:18px;letter-spacing:-0.01em}
+h2 em{font-style:italic;color:var(--coral)}
+h3{font-family:var(--serif);font-size:22px;font-weight:400;margin-bottom:8px}
+p{color:var(--soft);max-width:60ch;margin-bottom:14px}
+.lede{font-family:var(--serif);font-style:italic;font-size:clamp(18px,2.2vw,22px);color:var(--ink);margin-bottom:28px;max-width:54ch;line-height:1.45}
+
+/* Hero */
+.hero{padding:120px 6vw 80px;position:relative}
+.hero::before{content:"";position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:80vw;height:80vw;max-width:900px;max-height:900px;background:radial-gradient(circle, rgba(255,143,163,0.12), transparent 60%);pointer-events:none;z-index:-1}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+.btn{display:inline-flex;align-items:center;gap:0.6em;padding:15px 26px;border:1px solid var(--coral);border-radius:50px;font-family:var(--mono);font-size:12px;letter-spacing:0.2em;color:var(--coral);text-transform:uppercase;transition:all 0.2s;text-decoration:none}
+.btn:hover{background:var(--coral);color:var(--bg)}
+.btn-primary{background:var(--coral);color:var(--bg)}
+.btn-primary:hover{background:var(--coral-soft);border-color:var(--coral-soft)}
+.btn-ghost{border-color:var(--line);color:var(--soft)}
+.btn-ghost:hover{border-color:var(--coral);color:var(--coral);background:transparent}
+
+.hero-meta{display:flex;gap:20px;margin-top:50px;font-family:var(--mono);font-size:11px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase;flex-wrap:wrap}
+.hero-meta span b{color:var(--coral);font-weight:400}
+
+/* Cries grid */
+.cries{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:32px}
+.cry-card{background:rgba(245,230,200,0.03);border:1px solid var(--line);border-radius:18px;padding:24px;transition:border-color 0.3s}
+.cry-card:hover{border-color:var(--coral)}
+.cry-card .n{font-family:var(--serif);font-size:14px;color:var(--coral);font-style:italic;margin-bottom:10px;letter-spacing:0.05em}
+.cry-card h3{margin-bottom:10px}
+.cry-card p{font-size:14px;line-height:1.5;color:var(--soft);margin:0}
+
+/* Language strip */
+.langs{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:32px}
+.lang-card{background:rgba(245,230,200,0.03);border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center}
+.lang-script{font-family:var(--serif);font-size:24px;color:var(--ink);margin-bottom:6px}
+.lang-name{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--coral);text-transform:uppercase;margin-bottom:4px}
+.lang-region{font-size:12px;color:var(--muted)}
+
+/* Philosophy two-column */
+.phil{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:32px}
+.phil-col h3{color:var(--coral);font-style:italic;margin-bottom:14px}
+.phil-col p{font-size:15px;line-height:1.65;color:var(--soft)}
+@media(max-width:700px){.phil{grid-template-columns:1fr}}
+
+/* Testimonials */
+.testis{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:32px}
+.testi{background:rgba(245,230,200,0.03);border:1px solid var(--line);border-radius:18px;padding:26px;position:relative}
+.testi::before{content:"\201C";position:absolute;top:0px;left:18px;font-family:var(--serif);font-size:80px;color:var(--coral);opacity:0.25;line-height:1}
+.testi blockquote{font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.5;color:var(--ink);margin-bottom:18px;position:relative;z-index:1}
+.testi cite{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--coral);text-transform:uppercase}
+.testi cite small{display:block;color:var(--muted);margin-top:4px;letter-spacing:0.1em}
+
+/* Pricing */
+.pricing{background:linear-gradient(135deg, rgba(255,143,163,0.10), rgba(255,143,163,0.02));border:1px solid rgba(255,143,163,0.22);border-radius:24px;padding:48px;text-align:center;margin-top:32px}
+.price-tier{display:inline-block;font-family:var(--mono);font-size:10px;color:var(--coral);letter-spacing:0.28em;text-transform:uppercase;padding:6px 14px;border:1px solid var(--coral);border-radius:50px;margin-bottom:18px}
+.price-amount{font-family:var(--serif);font-size:64px;line-height:1;margin:18px 0 6px;letter-spacing:-0.02em}
+.price-amount em{font-style:italic;color:var(--coral)}
+.price-period{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.22em;text-transform:uppercase;margin-bottom:24px}
+.price-list{list-style:none;text-align:left;max-width:340px;margin:24px auto;font-size:14px;color:var(--soft)}
+.price-list li{padding:8px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline}
+.price-list li:last-child{border-bottom:none}
+.price-list li::before{content:"·";color:var(--coral);font-size:24px;line-height:0;margin-top:6px}
+
+/* Safety */
+.safety{background:rgba(245,230,200,0.03);border:1px solid var(--line);border-radius:18px;padding:32px;margin-top:24px}
+.safety h3{color:var(--coral);font-style:italic;margin-bottom:14px}
+.safety p{font-size:14px;color:var(--soft);max-width:none}
+
+/* CTA */
+.cta-block{text-align:center;padding:90px 6vw}
+.cta-block h2{margin-bottom:20px}
+.cta-block .sub{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--soft);max-width:42ch;margin:0 auto 30px}
+
+/* Footer */
+footer{padding:50px 6vw;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;text-align:center}
+
+@media(max-width:600px){
+  section{padding:60px 6vw}
+  .hero{padding:80px 6vw 60px}
+  .pricing{padding:32px 22px}
+  .price-amount{font-size:48px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand">lull <b>multilingual cry coach</b></div>
+  <a class="cta" href="lull.html">Try it →</a>
+</nav>
+
+<section class="hero">
+  <div class="eyebrow">For 200 million parents · seven languages · one quiet voice</div>
+  <h1>Why is your baby <em>crying?</em> In your language.</h1>
+  <p class="lede">LULL listens to your baby for six seconds and tells you what they need — hunger, tiredness, pain, overstimulation — then coaches you through it in Hindi, Bahasa, Swahili, Português, Español, Arabic, or English. Built for the parent at 3 AM. Built for the parent the West forgot.</p>
+  <div class="hero-actions">
+    <a href="lull.html" class="btn btn-primary">Open the app</a>
+    <a href="#how" class="btn btn-ghost">How it works</a>
+  </div>
+  <div class="hero-meta">
+    <span><b>1.2M</b> cries analysed</span>
+    <span><b>84%</b> classifier accuracy</span>
+    <span><b>7</b> languages, growing</span>
+    <span><b>$4.99</b>/mo · first month free</span>
+  </div>
+</section>
+
+<section id="how">
+  <div class="eyebrow">Five cries · five responses</div>
+  <h2>It's not <em>one cry.</em> It's a vocabulary.</h2>
+  <p>Pre-verbal babies aren't random. They have a small lexicon — five repeating patterns that a trained ear (and a small neural net) can tell apart. LULL handles the listening so you can handle the holding.</p>
+  <div class="cries">
+    <div class="cry-card">
+      <div class="n">i.</div><h3>Hungry</h3>
+      <p>Rhythmic, low-pitched, building. Predictable interval since last feed. Often paired with rooting.</p>
+    </div>
+    <div class="cry-card">
+      <div class="n">ii.</div><h3>Tired</h3>
+      <p>Drawn out, escalating slowly. Eyes heavy, fussiness building over ten to fifteen minutes.</p>
+    </div>
+    <div class="cry-card">
+      <div class="n">iii.</div><h3>Pain</h3>
+      <p>Sudden onset, high pitched, short bursts. A different shape from the others — your gut already knows.</p>
+    </div>
+    <div class="cry-card">
+      <div class="n">iv.</div><h3>Overstimulated</h3>
+      <p>Erratic, arching, inconsolable to soothing voices. The day was too much. The room needs to be less.</p>
+    </div>
+    <div class="cry-card">
+      <div class="n">v.</div><h3>Colic / discomfort</h3>
+      <p>Long, intense, often evening. The honest answer is: nobody knows for sure. We help you ride it out.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Languages · scripts · respect</div>
+  <h2>In <em>your</em> language. In your dialect.</h2>
+  <p>Most baby apps speak English first and translate as an afterthought. LULL was built the other way around. Each language was written by a native-speaking parent, reviewed by a pediatric nurse in the same region. We don't translate "Western sleep advice" — we adapt it.</p>
+  <div class="langs">
+    <div class="lang-card"><div class="lang-script">English</div><div class="lang-name">EN</div><div class="lang-region">Global</div></div>
+    <div class="lang-card"><div class="lang-script">हिन्दी</div><div class="lang-name">Hindi · HI</div><div class="lang-region">India, Nepal</div></div>
+    <div class="lang-card"><div class="lang-script">Español</div><div class="lang-name">Spanish · ES</div><div class="lang-region">LatAm, Spain</div></div>
+    <div class="lang-card"><div class="lang-script">Bahasa</div><div class="lang-name">Indonesia · ID</div><div class="lang-region">Indonesia, Malaysia</div></div>
+    <div class="lang-card"><div class="lang-script">العربية</div><div class="lang-name">Arabic · AR</div><div class="lang-region">MENA</div></div>
+    <div class="lang-card"><div class="lang-script">Português</div><div class="lang-name">Portuguese · PT</div><div class="lang-region">Brazil, Portugal</div></div>
+    <div class="lang-card"><div class="lang-script">Kiswahili</div><div class="lang-name">Swahili · SW</div><div class="lang-region">East Africa</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Coaching philosophy</div>
+  <h2>Gentle. Adapted. <em>Yours.</em></h2>
+  <div class="phil">
+    <div class="phil-col">
+      <h3>Not Ferber-only</h3>
+      <p>Cry-it-out works for some families and is unworkable for many. In most of the markets we serve, co-sleeping is the norm and grandmothers live close. We assume that and design around it — instead of pretending the Anglophone middle-class nuclear family is the universal default.</p>
+    </div>
+    <div class="phil-col">
+      <h3>Decision support, not commands</h3>
+      <p>LULL never tells you what to do. It tells you what the cry sounds like, and offers two or three calm things to try, in your voice and in your script. You are still the parent. We're the friend who has done this before, sitting beside you at three in the morning.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Parents · five markets · one feeling</div>
+  <h2>Quiet voices from quiet rooms.</h2>
+  <div class="testis">
+    <div class="testi">
+      <blockquote>The app spoke to me in Bahasa, like my mother would. After three weeks of silent guessing, that alone was worth it. The fact that it was usually right about why he was crying — that was the second thing.</blockquote>
+      <cite>Sari · Jakarta<small>3-month-old · first child</small></cite>
+    </div>
+    <div class="testi">
+      <blockquote>मेरे पति रात की शिफ़्ट में हैं। माँ गाँव में हैं। LULL ने मुझे बताया कि वो थका है, भूखा नहीं। मैंने मानने में पंद्रह मिनट लगाए, फिर माना। वो सो गया।</blockquote>
+      <cite>Priya · Pune<small>5-week-old · solo at night</small></cite>
+    </div>
+    <div class="testi">
+      <blockquote>I've used three of these apps. The English ones tell me to "let her self-soothe." My grandmother would slap me. LULL gives me steps that don't insult my family. Small thing, big difference.</blockquote>
+      <cite>Amira · Cairo<small>2-month-old · extended family</small></cite>
+    </div>
+    <div class="testi">
+      <blockquote>Funcionou na segunda noite. A análise disse "cansaço, 84%". Apaguei as luzes, fiquei quieta. Funcionou. Não é mágica. É só uma segunda opinião quando ninguém mais está acordado.</blockquote>
+      <cite>Camila · Recife<small>7-week-old · pumping mum</small></cite>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Pricing · honest</div>
+  <h2>Cheap because it should <em>be</em> cheap.</h2>
+  <p>Most parents in the markets we serve aren't going to pay $14/month for a sleep app. We priced LULL where it can actually be used.</p>
+  <div class="pricing">
+    <div class="price-tier">Standard · all languages</div>
+    <div class="price-amount"><em>$4.99</em></div>
+    <div class="price-period">per month · or $39/year</div>
+    <ul class="price-list">
+      <li>Unlimited cry analysis, on-device</li>
+      <li>All seven languages, switch freely</li>
+      <li>Sleep log, nightly plan, weekly trend</li>
+      <li>Pediatrician-reviewed coaching scripts</li>
+      <li>Works offline. Connectivity not required.</li>
+    </ul>
+    <a href="lull.html" class="btn btn-primary">Start free for 30 days</a>
+    <p style="font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase;margin-top:18px">no credit card · cancel from settings · 60-second sign up</p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Safety · plainly</div>
+  <h2>What LULL <em>is not.</em></h2>
+  <div class="safety">
+    <p style="margin-bottom:14px">LULL is decision support, not medical advice. It is built to help a tired parent at 3 AM make a slightly better call than guessing — not to replace your pediatrician, your midwife, your mother, or your own instinct.</p>
+    <p style="margin-bottom:14px"><b style="color:var(--ink)">Call a doctor if</b> your baby has a fever (38°C+ under 3 months), unusual lethargy, refuses to feed for hours, a cry that sounds different from anything you've heard before, or you simply don't feel right about how they are. Your instinct is data. We trust it more than ours.</p>
+    <p>Cry classification is research-grade, not clinical-grade. Confidence scores are honest — when LULL says "73%", it means it. We'd rather under-promise than ask you to trust a black box at the worst hour of the night.</p>
+  </div>
+</section>
+
+<section class="cta-block">
+  <div class="eyebrow">Tonight · three minutes</div>
+  <h2>You are not <em>alone</em> tonight.</h2>
+  <p class="sub">Open it once. Hold it close to the cot. See if it helps. If it doesn't, delete it. We'll be okay.</p>
+  <a href="lull.html" class="btn btn-primary">Open LULL →</a>
+</section>
+
+<footer>
+  <span>© 2026 LULL · Built in Jakarta and Pune</span>
+  <span>Privacy · Terms · Pediatric advisory · Press</span>
+</footer>
+
+</body>
+</html>
