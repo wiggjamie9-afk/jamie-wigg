@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HerdCheck — phone-camera livestock screening</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a3a2a">
+<meta name="description" content="Phone-camera screening for lameness, mastitis, and imminent calving. Built for smallholder dairy and sheep farmers. Works offline.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">⌬</span>
+    <span class="brand-name">HerdCheck</span>
+  </div>
+  <div class="topbar-right">
+    <span id="online-dot" class="online-dot" title="Connection status"></span>
+    <button id="lang-btn" class="lang-btn" aria-label="Language">EN</button>
+  </div>
+</header>
+
+<main id="screen-root">
+  <!-- HERD list -->
+  <section id="screen-herd" class="screen" data-screen="herd">
+    <div class="screen-header">
+      <h1 data-i18n="herd.title">Your herd</h1>
+      <button id="add-animal-btn" class="btn btn-primary" data-i18n="herd.add">+ Add animal</button>
+    </div>
+    <div id="herd-summary" class="summary-row"></div>
+    <div id="animal-list" class="animal-list"></div>
+    <div id="herd-empty" class="empty-state" hidden>
+      <p data-i18n="herd.empty">No animals yet. Tap <strong>+ Add animal</strong> to register your first one.</p>
+    </div>
+  </section>
+
+  <!-- CHECK selection -->
+  <section id="screen-check" class="screen" data-screen="check" hidden>
+    <div class="screen-header">
+      <button class="back-btn" data-back="herd" aria-label="Back">←</button>
+      <h1 id="check-animal-name">Check</h1>
+    </div>
+    <div class="check-menu">
+      <button class="check-card" data-check="lameness">
+        <span class="check-icon">🦵</span>
+        <span class="check-title" data-i18n="check.lameness">Lameness check</span>
+        <span class="check-sub" data-i18n="check.lameness.sub">Walking video · 5-point score</span>
+      </button>
+      <button class="check-card" data-check="mastitis">
+        <span class="check-icon">🩺</span>
+        <span class="check-title" data-i18n="check.mastitis">Mastitis check</span>
+        <span class="check-sub" data-i18n="check.mastitis.sub">Udder photo · symptom list</span>
+      </button>
+      <button class="check-card" data-check="calving">
+        <span class="check-icon">🐄</span>
+        <span class="check-title" data-i18n="check.calving">Calving predictor</span>
+        <span class="check-sub" data-i18n="check.calving.sub">Behaviour signs · gestation day</span>
+      </button>
+      <button class="check-card" data-check="history">
+        <span class="check-icon">📋</span>
+        <span class="check-title" data-i18n="check.history">History</span>
+        <span class="check-sub" data-i18n="check.history.sub">Past checks for this animal</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- LAMENESS check -->
+  <section id="screen-lameness" class="screen" data-screen="lameness" hidden>
+    <div class="screen-header">
+      <button class="back-btn" data-back="check" aria-label="Back">←</button>
+      <h1 data-i18n="lameness.title">Lameness check</h1>
+    </div>
+    <p class="hint" data-i18n="lameness.hint">Film the animal walking 8–10 steps from the side. Watch the back arch and head bob.</p>
+
+    <label class="capture-btn">
+      <input type="file" accept="video/*" capture="environment" id="lameness-video-input">
+      <span>📹 <span data-i18n="lameness.record">Record walking video</span></span>
+    </label>
+    <video id="lameness-preview" controls hidden playsinline></video>
+
+    <h3 data-i18n="lameness.score">Locomotion score (Sprecher 5-point)</h3>
+    <div class="score-buttons" id="lameness-scores">
+      <button data-score="1"><strong>1</strong> <span data-i18n="lameness.s1">Normal — flat back, even stride</span></button>
+      <button data-score="2"><strong>2</strong> <span data-i18n="lameness.s2">Mild — slight back arch when walking</span></button>
+      <button data-score="3"><strong>3</strong> <span data-i18n="lameness.s3">Moderate — arched back, short strides</span></button>
+      <button data-score="4"><strong>4</strong> <span data-i18n="lameness.s4">Lame — favours one leg, head bobs</span></button>
+      <button data-score="5"><strong>5</strong> <span data-i18n="lameness.s5">Severe — refuses to bear weight</span></button>
+    </div>
+
+    <label class="field">
+      <span data-i18n="notes">Notes (optional)</span>
+      <textarea id="lameness-notes" rows="2"></textarea>
+    </label>
+
+    <button class="btn btn-primary btn-full" id="lameness-save" data-i18n="save">Save check</button>
+  </section>
+
+  <!-- MASTITIS check -->
+  <section id="screen-mastitis" class="screen" data-screen="mastitis" hidden>
+    <div class="screen-header">
+      <button class="back-btn" data-back="check" aria-label="Back">←</button>
+      <h1 data-i18n="mastitis.title">Mastitis check</h1>
+    </div>
+    <p class="hint" data-i18n="mastitis.hint">Photograph the udder from behind, fully in frame. We compare left vs right and look for redness.</p>
+
+    <label class="capture-btn">
+      <input type="file" accept="image/*" capture="environment" id="mastitis-photo-input">
+      <span>📷 <span data-i18n="mastitis.photo">Photograph udder</span></span>
+    </label>
+    <div id="mastitis-image-result" class="image-result" hidden>
+      <img id="mastitis-preview" alt="Udder">
+      <div class="image-metrics" id="mastitis-metrics"></div>
+    </div>
+
+    <h3 data-i18n="mastitis.signs">Visible signs (tap all that apply)</h3>
+    <div class="check-grid" id="mastitis-signs">
+      <label><input type="checkbox" data-sign="swelling"> <span data-i18n="mastitis.swelling">Udder swelling</span></label>
+      <label><input type="checkbox" data-sign="asymmetry"> <span data-i18n="mastitis.asymmetry">Visible asymmetry</span></label>
+      <label><input type="checkbox" data-sign="redness"> <span data-i18n="mastitis.redness">Redness on skin</span></label>
+      <label><input type="checkbox" data-sign="heat"> <span data-i18n="mastitis.heat">Quarter feels hot</span></label>
+      <label><input type="checkbox" data-sign="pain"> <span data-i18n="mastitis.pain">Pain on touch / kicks</span></label>
+      <label><input type="checkbox" data-sign="yieldDrop"> <span data-i18n="mastitis.yield">Milk yield dropped</span></label>
+    </div>
+
+    <h3 data-i18n="mastitis.milk">Milk appearance</h3>
+    <div class="radio-row" id="mastitis-milk">
+      <label><input type="radio" name="milk" value="normal" checked> <span data-i18n="mastitis.milk.normal">Normal</span></label>
+      <label><input type="radio" name="milk" value="watery"> <span data-i18n="mastitis.milk.watery">Watery</span></label>
+      <label><input type="radio" name="milk" value="clotted"> <span data-i18n="mastitis.milk.clotted">Clots / flakes</span></label>
+      <label><input type="radio" name="milk" value="blood"> <span data-i18n="mastitis.milk.blood">Blood-tinged</span></label>
+    </div>
+
+    <label class="field">
+      <span data-i18n="notes">Notes (optional)</span>
+      <textarea id="mastitis-notes" rows="2"></textarea>
+    </label>
+
+    <button class="btn btn-primary btn-full" id="mastitis-save" data-i18n="save">Save check</button>
+  </section>
+
+  <!-- CALVING check -->
+  <section id="screen-calving" class="screen" data-screen="calving" hidden>
+    <div class="screen-header">
+      <button class="back-btn" data-back="check" aria-label="Back">←</button>
+      <h1 data-i18n="calving.title">Calving predictor</h1>
+    </div>
+
+    <div id="calving-gestation-info" class="gestation-info"></div>
+
+    <h3 data-i18n="calving.signs">Observed signs in the last 24 hours</h3>
+    <div class="check-grid" id="calving-signs">
+      <label><input type="checkbox" data-sign="vulvaSwelling"> <span data-i18n="calving.vulva">Vulva swollen and red</span></label>
+      <label><input type="checkbox" data-sign="mucusDischarge"> <span data-i18n="calving.mucus">Mucous discharge</span></label>
+      <label><input type="checkbox" data-sign="udderFilling"> <span data-i18n="calving.bagging">Udder bagging up</span></label>
+      <label><input type="checkbox" data-sign="restlessness"> <span data-i18n="calving.restless">Restless / isolated</span></label>
+      <label><input type="checkbox" data-sign="tailRaised"> <span data-i18n="calving.tail">Tail raised / limp</span></label>
+      <label><input type="checkbox" data-sign="pelvicRelaxed"> <span data-i18n="calving.pelvic">Sunken hips (pelvic ligaments relaxed)</span></label>
+      <label><input type="checkbox" data-sign="appetiteLoss"> <span data-i18n="calving.appetite">Off feed</span></label>
+      <label><input type="checkbox" data-sign="waterBag"> <span data-i18n="calving.waterbag">Water bag visible</span></label>
+    </div>
+
+    <label class="capture-btn">
+      <input type="file" accept="image/*" capture="environment" id="calving-photo-input">
+      <span>📷 <span data-i18n="calving.photo">Photo (optional)</span></span>
+    </label>
+    <img id="calving-preview" class="thumb" alt="" hidden>
+
+    <label class="field">
+      <span data-i18n="notes">Notes (optional)</span>
+      <textarea id="calving-notes" rows="2"></textarea>
+    </label>
+
+    <button class="btn btn-primary btn-full" id="calving-save" data-i18n="save">Save check</button>
+  </section>
+
+  <!-- RESULT -->
+  <section id="screen-result" class="screen" data-screen="result" hidden>
+    <div class="screen-header">
+      <button class="back-btn" data-back="herd" aria-label="Back">←</button>
+      <h1 data-i18n="result.title">Result</h1>
+    </div>
+    <div id="result-tier" class="tier-card"></div>
+    <div id="result-body" class="result-body"></div>
+    <button class="btn btn-primary btn-full" data-nav="herd" data-i18n="result.done">Done</button>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="screen-history" class="screen" data-screen="history" hidden>
+    <div class="screen-header">
+      <button class="back-btn" data-back="check" aria-label="Back">←</button>
+      <h1 data-i18n="history.title">History</h1>
+    </div>
+    <div id="history-list" class="history-list"></div>
+  </section>
+
+  <!-- ALERTS dashboard -->
+  <section id="screen-alerts" class="screen" data-screen="alerts" hidden>
+    <div class="screen-header">
+      <h1 data-i18n="alerts.title">Alerts</h1>
+    </div>
+    <div id="alerts-list" class="alerts-list"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="screen-settings" class="screen" data-screen="settings" hidden>
+    <div class="screen-header">
+      <h1 data-i18n="settings.title">Settings</h1>
+    </div>
+    <label class="field">
+      <span data-i18n="settings.farm">Farm name</span>
+      <input type="text" id="settings-farm">
+    </label>
+    <label class="field">
+      <span data-i18n="settings.coop">Co-op ID (optional)</span>
+      <input type="text" id="settings-coop" placeholder="e.g. AMUL-RJN-042">
+    </label>
+    <label class="field">
+      <span data-i18n="settings.lang">Language</span>
+      <select id="settings-lang">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="bn">বাংলা (Bengali)</option>
+        <option value="sw">Kiswahili (Swahili)</option>
+        <option value="pt">Português (Portuguese)</option>
+        <option value="es">Español (Spanish)</option>
+      </select>
+    </label>
+
+    <h3 data-i18n="settings.export">Export & share</h3>
+    <button class="btn btn-secondary btn-full" id="export-csv" data-i18n="settings.exportCsv">Export herd report (CSV)</button>
+    <button class="btn btn-secondary btn-full" id="export-json" data-i18n="settings.exportJson">Export full data (JSON)</button>
+    <button class="btn btn-secondary btn-full" id="share-summary" data-i18n="settings.share">Share alerts summary</button>
+
+    <h3 data-i18n="settings.about">About</h3>
+    <p class="hint">
+      <span data-i18n="settings.aboutBody">HerdCheck is a decision-support tool for smallholders. It assists observation — it is not a replacement for a veterinarian. Risk tiers combine your observations with validated scoring systems (Sprecher 5-point locomotion, CMT-style symptom checklists, Williamson/Mee calving signs).</span>
+    </p>
+    <p class="hint version">v0.1.0 · <a href="#" id="reset-data" data-i18n="settings.reset">Reset all data</a></p>
+  </section>
+
+  <!-- ADD ANIMAL modal -->
+  <section id="screen-add" class="screen" data-screen="add" hidden>
+    <div class="screen-header">
+      <button class="back-btn" data-back="herd" aria-label="Back">←</button>
+      <h1 id="add-title" data-i18n="add.title">Add animal</h1>
+    </div>
+    <label class="field">
+      <span data-i18n="add.tag">Ear tag / ID</span>
+      <input type="text" id="add-tag" inputmode="text" placeholder="042">
+    </label>
+    <label class="field">
+      <span data-i18n="add.name">Name (optional)</span>
+      <input type="text" id="add-name" placeholder="Daisy">
+    </label>
+    <label class="field">
+      <span data-i18n="add.species">Species</span>
+      <select id="add-species">
+        <option value="cow" data-i18n="species.cow">Cow (dairy)</option>
+        <option value="buffalo" data-i18n="species.buffalo">Buffalo</option>
+        <option value="sheep" data-i18n="species.sheep">Sheep</option>
+        <option value="goat" data-i18n="species.goat">Goat</option>
+      </select>
+    </label>
+    <label class="field">
+      <span data-i18n="add.birth">Approximate birth year</span>
+      <input type="number" id="add-birth" inputmode="numeric" min="2000" max="2030" placeholder="2021">
+    </label>
+    <label class="field">
+      <span data-i18n="add.bred">Date last bred (if known)</span>
+      <input type="date" id="add-bred">
+    </label>
+    <button class="btn btn-primary btn-full" id="add-save" data-i18n="add.save">Save animal</button>
+  </section>
+</main>
+
+<nav class="bottom-nav">
+  <button data-nav="herd" class="nav-btn active">
+    <span class="nav-icon">🐄</span>
+    <span class="nav-label" data-i18n="nav.herd">Herd</span>
+  </button>
+  <button data-nav="alerts" class="nav-btn">
+    <span class="nav-icon">⚠️</span>
+    <span class="nav-label" data-i18n="nav.alerts">Alerts</span>
+    <span id="alert-badge" class="badge" hidden>0</span>
+  </button>
+  <button data-nav="settings" class="nav-btn">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label" data-i18n="nav.settings">Settings</span>
+  </button>
+</nav>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="i18n.js"></script>
+<script src="db.js"></script>
+<script src="vision.js"></script>
+<script src="scoring.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
