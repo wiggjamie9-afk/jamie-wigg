@@ -360,6 +360,16 @@
     position: absolute; left: 28px; right: 28px;
     bottom: calc(28px + var(--safe-bot));
   }
+  .cover .cover-close {
+    display: none;
+    position: absolute; top: calc(20px + var(--safe-top)); right: 16px;
+    width: 36px; height: 36px; border-radius: 999px;
+    background: rgba(255,255,255,.10); color: var(--text);
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    z-index: 2;
+  }
+  .onb.cover-preview .cover .cover-close { display: flex; }
   .cover .cta-wrap .fineprint {
     text-align: center; color: var(--text-3); font-size: 12px;
     margin-top: 14px;
@@ -443,6 +453,9 @@
   </div>
 
   <div class="step cover active" data-step="0">
+    <button class="cover-close" onclick="closeCoverPreview()" aria-label="Close preview">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
     <div class="brand-mark"><span class="pulse"></span>RESET</div>
 
     <div class="hero">
@@ -1074,7 +1087,8 @@
       <div class="hint" style="line-height: 1.55;">All HealthKit data stays on this device. Coach uses Apple Intelligence on-device. We never sell or share health data. <a href="#">Read the privacy policy</a>.</div>
     </div>
 
-    <button class="btn outline" onclick="resetApp()" style="margin-top: 14px;">Restart onboarding</button>
+    <button class="btn outline" onclick="showCoverPreview(); closeSheet('settings');" style="margin-top: 14px;">Preview cover screen</button>
+    <button class="btn outline" onclick="resetApp()" style="margin-top: 10px;">Restart onboarding</button>
   </div>
 </div>
 
@@ -1104,10 +1118,13 @@
   // ------- Onboarding -------
   const onb = document.getElementById('onb');
   let onbStep = 0;
+  let coverPreview = false;
   function applyCoverFlag() {
     onb.classList.toggle('cover-active', onbStep === 0);
   }
   function onbNext() {
+    // In preview mode, "Get started" just closes the preview
+    if (coverPreview) { closeCoverPreview(); return; }
     onbStep++;
     document.querySelectorAll('.onb .step').forEach(s => s.classList.toggle('active', +s.dataset.step === onbStep));
     document.querySelectorAll('#onbDots span').forEach((d, i) => d.classList.toggle('active', i === onbStep));
@@ -1117,9 +1134,26 @@
     localStorage.setItem('reset.onboarded', '1');
     onb.classList.remove('open');
   }
+  function showCoverPreview() {
+    coverPreview = true;
+    onbStep = 0;
+    document.querySelectorAll('.onb .step').forEach(s => s.classList.toggle('active', +s.dataset.step === 0));
+    document.querySelectorAll('#onbDots span').forEach((d, i) => d.classList.toggle('active', i === 0));
+    applyCoverFlag();
+    onb.classList.add('open', 'cover-preview');
+  }
+  function closeCoverPreview() {
+    coverPreview = false;
+    onb.classList.remove('open', 'cover-preview');
+    if (location.search.includes('cover')) {
+      history.replaceState(null, '', location.pathname);
+    }
+  }
   if (!localStorage.getItem('reset.onboarded')) {
     onb.classList.add('open');
     applyCoverFlag();
+  } else if (/[?&]cover\b/.test(location.search)) {
+    showCoverPreview();
   }
 
   // Choice toggles for onboarding
