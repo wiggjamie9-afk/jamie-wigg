@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TYMPAN — environmental EQ for hearing aids</title>
+<meta name="description" content="TYMPAN re-tunes your hearing aids for every room you walk into. Restaurant clatter, car cabin, church reverb — adapted in 4 seconds.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fafaf7">
+<style>
+:root{
+  --bone:#fafaf7; --bone-2:#f1efea; --bone-3:#e6e3dc;
+  --ink:#1c1c1e; --ink-2:#3a3a3c; --ink-3:#545458;
+  --muted:#86868b; --muted-2:#a6a6ab;
+  --aubergine:#6b4f7a; --aubergine-deep:#523c5e; --aubergine-soft:#efe9f0;
+  --green:#4f8a5b;
+  --line:rgba(28,28,30,0.08);
+  --line-2:rgba(28,28,30,0.16);
+  --sans:-apple-system,BlinkMacSystemFont,'Inter','SF Pro Text',system-ui,sans-serif;
+  --mono:'JetBrains Mono','SF Mono','Menlo',ui-monospace,monospace;
+  --serif:'Tinos','Iowan Old Style',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bone);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100vh}
+body{font-weight:400;font-size:15px;line-height:1.5}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+::selection{background:var(--aubergine);color:var(--bone)}
+
+/* ── Top bar ── */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,250,247,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:12px 20px;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{font-family:var(--mono);font-weight:600;letter-spacing:0.18em;font-size:13px;color:var(--ink)}
+.brand-mark::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--aubergine);margin-right:9px;vertical-align:1px;animation:pulse-dot 2.2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.55;transform:scale(0.82)}}
+.aid-status{display:flex;align-items:center;gap:8px;justify-self:center;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-3)}
+.aid-status .ble{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(79,138,91,0.5);animation:ble-pulse 2.6s ease-out infinite}
+@keyframes ble-pulse{0%{box-shadow:0 0 0 0 rgba(79,138,91,0.45)}80%,100%{box-shadow:0 0 0 7px rgba(79,138,91,0)}}
+.aid-status b{color:var(--ink);font-weight:600}
+.lr-block{display:flex;gap:10px;font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--ink-3)}
+.lr-ear{display:flex;align-items:center;gap:5px}
+.lr-ear .ear-id{color:var(--ink);font-weight:600}
+.batt{display:inline-block;width:18px;height:8px;border:1px solid var(--ink-3);border-radius:1px;position:relative;vertical-align:middle}
+.batt::after{content:"";position:absolute;right:-2px;top:1.5px;width:1.5px;height:3px;background:var(--ink-3);border-radius:0 1px 1px 0}
+.batt i{display:block;height:100%;background:var(--ink);transition:width 0.4s}
+
+/* ── Layout ── */
+.wrap{max-width:780px;margin:0 auto;padding:22px 18px 100px}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* ── Listening hero ── */
+.hero{background:var(--bone);border:1px solid var(--line);border-radius:16px;padding:26px 22px 22px;margin-bottom:18px;position:relative;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:148px 1fr;gap:22px;align-items:center}
+@media (max-width:540px){.hero-grid{grid-template-columns:120px 1fr;gap:16px}}
+
+/* Circular dB visualizer */
+.orb-wrap{position:relative;width:148px;height:148px}
+@media (max-width:540px){.orb-wrap{width:120px;height:120px}}
+.orb-svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
+.orb-track{fill:none;stroke:var(--bone-3);stroke-width:2}
+.orb-arc{fill:none;stroke:var(--aubergine);stroke-width:2.5;stroke-linecap:round;transition:stroke-dashoffset 0.6s cubic-bezier(.4,.0,.2,1)}
+.orb-pulse{position:absolute;inset:0;border-radius:50%;border:1px solid var(--aubergine);opacity:0;animation:orb-ring 2.4s ease-out infinite}
+@keyframes orb-ring{0%{transform:scale(0.7);opacity:0.4}100%{transform:scale(1.05);opacity:0}}
+.orb-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.orb-db{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:-0.02em;color:var(--ink);line-height:1}
+@media (max-width:540px){.orb-db{font-size:24px}}
+.orb-unit{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;color:var(--muted);margin-top:4px;text-transform:uppercase}
+
+/* Now-listening labels */
+.now-eye{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.now-room{font-family:var(--serif);font-size:26px;letter-spacing:-0.015em;line-height:1.15;color:var(--ink);margin-bottom:8px;transition:opacity 0.4s}
+.now-room.fade{opacity:0}
+.now-meta{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:0.06em;display:flex;flex-wrap:wrap;gap:14px}
+.now-meta span b{color:var(--ink);font-weight:600}
+
+/* ── EQ panel ── */
+.eq-panel{background:var(--ink);color:var(--bone);border-radius:16px;padding:24px 22px;margin-bottom:18px;position:relative;overflow:hidden}
+.eq-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:14px}
+.eq-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;color:var(--aubergine);text-transform:uppercase}
+.eq-conf{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;color:var(--muted-2)}
+.eq-conf b{color:var(--bone);font-weight:600;font-size:13px}
+.eq-title{font-family:var(--serif);font-size:20px;letter-spacing:-0.01em;margin:4px 0 18px;color:var(--bone);transition:opacity 0.4s}
+.eq-title.fade{opacity:0}
+.eq-svg-wrap{position:relative;background:rgba(255,255,255,0.025);border-radius:10px;padding:14px 8px 8px;border:1px solid rgba(255,255,255,0.06)}
+.eq-svg{width:100%;height:160px;display:block}
+.eq-grid{stroke:rgba(255,255,255,0.06);stroke-width:1}
+.eq-zero{stroke:rgba(255,255,255,0.18);stroke-dasharray:2 4;stroke-width:1}
+.eq-prev{fill:none;stroke:rgba(255,255,255,0.18);stroke-width:1.25;stroke-dasharray:3 3}
+.eq-curve{fill:none;stroke:var(--aubergine);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:d 0.7s cubic-bezier(.4,.0,.2,1)}
+.eq-fill{fill:url(#eqGrad);transition:d 0.7s cubic-bezier(.4,.0,.2,1)}
+.eq-dot{fill:var(--aubergine);transition:cy 0.7s cubic-bezier(.4,.0,.2,1)}
+.eq-band-label{font-family:var(--mono);font-size:8.5px;letter-spacing:0.06em;fill:var(--muted-2)}
+.eq-db-axis{font-family:var(--mono);font-size:8.5px;fill:var(--muted-2);letter-spacing:0.04em}
+.eq-axis{display:flex;justify-content:space-between;padding:6px 4px 0;font-family:var(--mono);font-size:9px;letter-spacing:0.05em;color:var(--muted-2)}
+
+/* What changed callout */
+.changed{margin-top:16px;padding:14px;background:rgba(107,79,122,0.14);border-radius:10px;border-left:2px solid var(--aubergine);display:flex;gap:12px;align-items:flex-start}
+.changed-tag{font-family:var(--mono);font-size:10px;color:var(--aubergine);letter-spacing:0.14em;padding-top:1px;flex-shrink:0}
+.changed-text{font-size:13.5px;line-height:1.55;color:var(--bone);transition:opacity 0.4s;flex:1}
+.changed-text.fade{opacity:0}
+
+/* ── Mode toggle ── */
+.modes{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:var(--bone-2);border-radius:12px;padding:5px;margin-bottom:18px;border:1px solid var(--line)}
+.mode-btn{padding:11px 4px;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;border-radius:8px;color:var(--ink-3);transition:all 0.18s;text-align:center;font-weight:500}
+.mode-btn.active{background:var(--ink);color:var(--bone)}
+.mode-btn:hover:not(.active){background:rgba(0,0,0,0.04);color:var(--ink)}
+
+/* ── Sample environments ── */
+.samples{margin-bottom:18px}
+.sample-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:6px}
+.sample-btn{padding:12px 12px 11px;border:1px solid var(--line);border-radius:10px;text-align:left;background:var(--bone);transition:all 0.15s;display:flex;flex-direction:column;gap:4px}
+.sample-btn:hover{border-color:var(--aubergine);background:var(--aubergine-soft)}
+.sample-btn .ico{font-family:var(--mono);font-size:9px;color:var(--aubergine);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:2px}
+.sample-btn .name{font-size:13px;font-weight:500;color:var(--ink);letter-spacing:-0.005em;line-height:1.25}
+.sample-btn .meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em}
+
+/* ── 24h history ── */
+.history{background:var(--bone);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+.history-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.history-title{font-size:14px;font-weight:600;letter-spacing:-0.01em}
+.history-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+.chip-row{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;margin:0 -2px 10px}
+.chip-row::-webkit-scrollbar{height:4px}
+.chip-row::-webkit-scrollbar-thumb{background:var(--bone-3);border-radius:2px}
+.chip{flex:0 0 auto;width:14px;height:34px;border-radius:3px;position:relative;cursor:pointer}
+.chip:hover{transform:scaleY(1.1)}
+.chip-axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.06em;padding:0 2px;margin-top:2px}
+.chip-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.legend-item{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:0.04em;color:var(--ink-3)}
+.legend-sq{width:9px;height:9px;border-radius:2px}
+
+/* ── Foot ── */
+.foot{font-family:var(--mono);font-size:9.5px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:28px;padding-top:20px;border-top:1px solid var(--line);line-height:1.7}
+
+/* ── Pairing overlay ── */
+.pair-overlay{position:fixed;inset:0;background:var(--bone);z-index:200;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:30px;transition:opacity 0.7s}
+.pair-overlay.gone{opacity:0;pointer-events:none}
+.pair-ears{display:flex;gap:42px;margin-bottom:36px}
+.pair-ear{width:54px;height:80px;border:1.5px solid var(--aubergine);border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;position:relative;animation:ear-pulse 1.8s ease-in-out infinite}
+.pair-ear.r{animation-delay:0.4s}
+@keyframes ear-pulse{0%,100%{box-shadow:0 0 0 0 rgba(107,79,122,0.4)}50%{box-shadow:0 0 0 14px rgba(107,79,122,0)}}
+.pair-ear::after{content:attr(data-side);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:11px;color:var(--aubergine);letter-spacing:0.16em}
+.pair-status{font-family:var(--mono);font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--ink-3);text-align:center;line-height:1.9;max-width:320px}
+.pair-status b{color:var(--ink);font-weight:600}
+
+@media (max-width:520px){
+  .modes{grid-template-columns:repeat(5,1fr)}
+  .mode-btn{font-size:9px;letter-spacing:0.08em}
+  .now-room{font-size:22px}
+  .eq-title{font-size:17px}
+  .wrap{padding:18px 14px 100px}
+}
+</style>
+</head>
+<body>
+
+<!-- BLE pairing overlay -->
+<div class="pair-overlay" id="pairOverlay">
+  <div class="pair-ears">
+    <div class="pair-ear" data-side="L"></div>
+    <div class="pair-ear r" data-side="R"></div>
+  </div>
+  <div class="pair-status" id="pairStatus">SCANNING&nbsp;FOR&nbsp;PAIRED&nbsp;AIDS…</div>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-mark">TYMPAN</span>
+  </div>
+  <div class="aid-status">
+    <span class="ble"></span>
+    <span>Connected · <b>Phonak Audéo P90R</b> · L+R</span>
+  </div>
+  <div class="lr-block">
+    <div class="lr-ear"><span class="ear-id">L</span><span class="batt"><i id="battL" style="width:72%"></i></span></div>
+    <div class="lr-ear"><span class="ear-id">R</span><span class="batt"><i id="battR" style="width:68%"></i></span></div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- Now listening -->
+  <div class="eyebrow">Now listening</div>
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="orb-wrap">
+        <div class="orb-pulse" id="orbPulse"></div>
+        <svg class="orb-svg" viewBox="0 0 100 100">
+          <circle class="orb-track" cx="50" cy="50" r="44"/>
+          <circle class="orb-arc" id="orbArc" cx="50" cy="50" r="44" stroke-dasharray="276.46" stroke-dashoffset="180"/>
+        </svg>
+        <div class="orb-center">
+          <div class="orb-db" id="dbVal">62</div>
+          <div class="orb-unit">dB SPL</div>
+        </div>
+      </div>
+      <div>
+        <div class="now-eye">Environment detected</div>
+        <div class="now-room" id="nowRoom">Quiet living room</div>
+        <div class="now-meta">
+          <span>conf · <b id="nowConf">94%</b></span>
+          <span>dom · <b id="nowFreq">500 Hz</b></span>
+          <span><b id="nowDb">42</b> dB peak</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EQ panel -->
+  <div class="eyebrow">Adaptive EQ curve · sent to aids</div>
+  <section class="eq-panel">
+    <div class="eq-head">
+      <span class="eq-eyebrow">▮ LIVE CURVE · 8 BANDS</span>
+      <span class="eq-conf"><b id="curveLatency">38</b> ms latency</span>
+    </div>
+    <div class="eq-title" id="eqTitle">Auto · Quiet living room profile</div>
+    <div class="eq-svg-wrap">
+      <svg class="eq-svg" viewBox="0 0 580 160" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6b4f7a" stop-opacity="0.32"/>
+            <stop offset="100%" stop-color="#6b4f7a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <!-- gridlines -->
+        <line class="eq-grid" x1="40" y1="20" x2="570" y2="20"/>
+        <line class="eq-grid" x1="40" y1="50" x2="570" y2="50"/>
+        <line class="eq-zero" x1="40" y1="80" x2="570" y2="80"/>
+        <line class="eq-grid" x1="40" y1="110" x2="570" y2="110"/>
+        <line class="eq-grid" x1="40" y1="140" x2="570" y2="140"/>
+        <!-- dB axis labels -->
+        <text class="eq-db-axis" x="6" y="23">+12</text>
+        <text class="eq-db-axis" x="6" y="53">+6</text>
+        <text class="eq-db-axis" x="10" y="83">0</text>
+        <text class="eq-db-axis" x="6" y="113">−6</text>
+        <text class="eq-db-axis" x="4" y="143">−12</text>
+        <!-- previous curve (ghost) -->
+        <path class="eq-prev" id="eqPrev" d=""/>
+        <!-- fill + curve -->
+        <path class="eq-fill" id="eqFill" d=""/>
+        <path class="eq-curve" id="eqCurve" d=""/>
+        <!-- band dots -->
+        <g id="eqDots"></g>
+        <!-- band labels -->
+        <g id="eqBandLabels"></g>
+      </svg>
+    </div>
+    <div class="changed">
+      <span class="changed-tag">CHANGED</span>
+      <span class="changed-text" id="changedText">Calibrated for low ambient. Soft-knee compression around speech band. Tinnitus masking at 4kHz held at +2dB.</span>
+    </div>
+  </section>
+
+  <!-- Modes -->
+  <div class="eyebrow">Mode</div>
+  <div class="modes" id="modes">
+    <button class="mode-btn active" data-mode="auto">Auto</button>
+    <button class="mode-btn" data-mode="music">Music</button>
+    <button class="mode-btn" data-mode="speech">Speech</button>
+    <button class="mode-btn" data-mode="quiet">Quiet</button>
+    <button class="mode-btn" data-mode="custom">Custom</button>
+  </div>
+
+  <!-- Sample environments -->
+  <div class="eyebrow">Try a room · play sample</div>
+  <section class="samples">
+    <div class="sample-grid" id="sampleGrid"></div>
+  </section>
+
+  <!-- 24h history -->
+  <section class="history">
+    <div class="history-head">
+      <div class="history-title">Last 24 hours · rooms encountered</div>
+      <div class="history-meta" id="historyMeta">6 ENVIRONMENTS · 4H 12M ADAPTIVE</div>
+    </div>
+    <div class="chip-row" id="chipRow"></div>
+    <div class="chip-axis"><span>−24h</span><span>−12h</span><span>now</span></div>
+    <div class="chip-legend">
+      <span class="legend-item"><span class="legend-sq" style="background:#cdd5cf"></span>Quiet</span>
+      <span class="legend-item"><span class="legend-sq" style="background:#d3c4b5"></span>Speech</span>
+      <span class="legend-item"><span class="legend-sq" style="background:#6b4f7a"></span>Crowd / noise</span>
+      <span class="legend-item"><span class="legend-sq" style="background:#3a3a3c"></span>Vehicle</span>
+      <span class="legend-item"><span class="legend-sq" style="background:#8c6ea0"></span>Music / reverb</span>
+    </div>
+  </section>
+
+  <div class="foot">
+    TYMPAN · firmware 1.2.4 · classifier on-device · curve sync via BLE LE Audio<br>
+    audiologist · Dr. R. Calderón · Bayview Hearing · last sync 2 days ago
+  </div>
+</main>
+
+<script>
+// ──────────── Environment library ────────────
+// EQ values are 8 bands at 250, 500, 1k, 2k, 3k, 4k, 6k, 8k Hz, in dB (-12 to +12)
+const BANDS = [250, 500, 1000, 2000, 3000, 4000, 6000, 8000];
+
+const ENVIRONMENTS = [
+  {
+    name: "Quiet living room",
+    db: 42, freq: "500 Hz", conf: 94,
+    color: "#cdd5cf", tag: "quiet",
+    eq: [+1, +1, +2, +3, +4, +5, +4, +3],
+    changed: "Calibrated for low ambient. Soft-knee compression around speech band. Tinnitus masking held at 4kHz +2dB."
+  },
+  {
+    name: "Crowded restaurant",
+    db: 78, freq: "1.2 kHz babble", conf: 91,
+    color: "#6b4f7a", tag: "crowd",
+    eq: [-4, -3, +1, +5, +7, +6, +3, +1],
+    changed: "Cut 250–500Hz babble bowl by 4dB. Boosted 2–4kHz consonant region +6dB. Beamforming narrowed toward front."
+  },
+  {
+    name: "Driving · sedan, 65 mph",
+    db: 71, freq: "180 Hz rumble", conf: 88,
+    color: "#3a3a3c", tag: "vehicle",
+    eq: [-7, -5, -2, +4, +5, +3, +1, 0],
+    changed: "Suppressed 180Hz road rumble −7dB. Held 2–3kHz at +5dB for dashboard speech and passenger voice. Wind-screen on."
+  },
+  {
+    name: "Coffee shop · espresso machine",
+    db: 74, freq: "2–4 kHz hash", conf: 86,
+    color: "#d3c4b5", tag: "speech",
+    eq: [+1, +2, +3, +2, -4, -5, -2, 0],
+    changed: "Reduced 2–4kHz hash from espresso steam wand. Boosted 500Hz–1kHz vowel warmth +2dB. Held high shelf flat."
+  },
+  {
+    name: "Hardwood church · low organ",
+    db: 67, freq: "85 Hz fundamental", conf: 82,
+    color: "#8c6ea0", tag: "music",
+    eq: [+4, +3, +1, -1, -2, -1, +2, +4],
+    changed: "Late-reverb suppression engaged. Lifted 6–8kHz for spoken word clarity over pew murmur. Bass shelf preserved for organ."
+  },
+  {
+    name: "Office · open plan, HVAC",
+    db: 58, freq: "300 Hz drone", conf: 90,
+    color: "#cdd5cf", tag: "quiet",
+    eq: [-2, -3, +1, +4, +5, +4, +2, +1],
+    changed: "Notched HVAC drone at 300Hz. Lifted speech band for nearby conversation, attenuated keyboard click region."
+  },
+  {
+    name: "Park · outdoor, light wind",
+    db: 51, freq: "broadband", conf: 87,
+    color: "#cdd5cf", tag: "quiet",
+    eq: [0, +1, +2, +3, +3, +3, +2, +2],
+    changed: "Wind-noise suppressor on both aids. Held a flat, natural curve so birds and conversation both pass through."
+  },
+  {
+    name: "Kitchen · running tap + range",
+    db: 69, freq: "3.5 kHz hiss", conf: 84,
+    color: "#d3c4b5", tag: "speech",
+    eq: [-1, 0, +2, +3, -2, -4, -1, +1],
+    changed: "Attenuated 3–4kHz water hiss. Boosted 1–2kHz so partner across the counter stays intelligible."
+  },
+  {
+    name: "Podcast · headphones bypass",
+    db: 64, freq: "speech-only", conf: 96,
+    color: "#d3c4b5", tag: "speech",
+    eq: [-1, 0, +2, +5, +6, +5, +3, +2],
+    changed: "Streamed audio detected via LE Audio. Bypassed mic. Applied your stored speech-clarity preset."
+  }
+];
+
+// ──────────── State ────────────
+const state = {
+  envIdx: 0,
+  mode: 'auto',
+  prevEq: null,
+  history: [],
+  pairDone: false
+};
+
+// ──────────── Orb / dB visualization ────────────
+function setOrb(dbValue){
+  // map 30..90 dB to arc 0..276.46 (full circumference at r=44)
+  const norm = Math.max(0, Math.min(1, (dbValue - 30) / 60));
+  const offset = 276.46 * (1 - norm);
+  document.getElementById('orbArc').setAttribute('stroke-dashoffset', offset);
+  document.getElementById('dbVal').textContent = Math.round(dbValue);
+}
+
+let orbAnimDb = 42;
+function tickOrb(){
+  // jitter the live dB level around the target
+  const target = ENVIRONMENTS[state.envIdx].db;
+  orbAnimDb = orbAnimDb + (target - orbAnimDb) * 0.18 + (Math.random()-0.5)*3.2;
+  setOrb(orbAnimDb);
+}
+setInterval(tickOrb, 240);
+
+// ──────────── EQ curve drawing ────────────
+const EQ_W = 580, EQ_H = 160;
+const EQ_PAD_L = 40, EQ_PAD_R = 12, EQ_PAD_T = 14, EQ_PAD_B = 14;
+const EQ_INNER_W = EQ_W - EQ_PAD_L - EQ_PAD_R;
+const EQ_INNER_H = EQ_H - EQ_PAD_T - EQ_PAD_B;
+
+function bandX(i){ return EQ_PAD_L + (i / (BANDS.length - 1)) * EQ_INNER_W; }
+function dbY(db){ return EQ_PAD_T + (1 - (db + 12) / 24) * EQ_INNER_H; }
+
+function buildBandLabels(){
+  const g = document.getElementById('eqBandLabels');
+  g.innerHTML = BANDS.map((b, i) => {
+    const label = b >= 1000 ? (b/1000) + 'k' : b;
+    return `<text class="eq-band-label" x="${bandX(i)}" y="158" text-anchor="middle">${label}</text>`;
+  }).join('');
+}
+buildBandLabels();
+
+function smoothPath(eq){
+  // catmull-rom -> bezier-ish smoothing
+  const pts = eq.map((v, i) => [bandX(i), dbY(v)]);
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++){
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2[0]} ${p2[1]}`;
+  }
+  return d;
+}
+
+function setEq(eq){
+  const linePath = smoothPath(eq);
+  const fillPath = linePath + ` L ${bandX(BANDS.length-1)} ${dbY(-12)} L ${bandX(0)} ${dbY(-12)} Z`;
+  document.getElementById('eqCurve').setAttribute('d', linePath);
+  document.getElementById('eqFill').setAttribute('d', fillPath);
+  // dots
+  const dotsG = document.getElementById('eqDots');
+  dotsG.innerHTML = eq.map((v, i) =>
+    `<circle class="eq-dot" cx="${bandX(i)}" cy="${dbY(v)}" r="2.5"/>`
+  ).join('');
+  // previous curve (ghost)
+  if (state.prevEq){
+    document.getElementById('eqPrev').setAttribute('d', smoothPath(state.prevEq));
+  }
+}
+
+// ──────────── Apply environment ────────────
+const nowRoomEl = document.getElementById('nowRoom');
+const eqTitleEl = document.getElementById('eqTitle');
+const changedTextEl = document.getElementById('changedText');
+
+function applyEnvironment(idx, opts = {}){
+  const env = ENVIRONMENTS[idx];
+  // capture previous EQ for ghost
+  state.prevEq = ENVIRONMENTS[state.envIdx].eq.slice();
+  state.envIdx = idx;
+
+  // fade label transitions
+  nowRoomEl.classList.add('fade');
+  eqTitleEl.classList.add('fade');
+  changedTextEl.classList.add('fade');
+
+  setTimeout(() => {
+    nowRoomEl.textContent = env.name;
+    eqTitleEl.textContent = `${capitalize(state.mode)} · ${env.name} profile`;
+    changedTextEl.textContent = env.changed;
+    document.getElementById('nowConf').textContent = env.conf + '%';
+    document.getElementById('nowFreq').textContent = env.freq;
+    document.getElementById('nowDb').textContent = env.db;
+    document.getElementById('curveLatency').textContent = (28 + Math.floor(Math.random()*22));
+    nowRoomEl.classList.remove('fade');
+    eqTitleEl.classList.remove('fade');
+    changedTextEl.classList.remove('fade');
+  }, 380);
+
+  setEq(env.eq);
+  pushHistory(env);
+}
+
+function capitalize(s){ return s[0].toUpperCase() + s.slice(1); }
+
+// ──────────── 24h history strip ────────────
+function buildSeedHistory(){
+  // 48 chips, 30-min increments. weight toward quiet/speech baseline with bursts.
+  const tags = ['quiet','quiet','quiet','speech','quiet','vehicle','speech','crowd','quiet','music','quiet','speech'];
+  const colorByTag = {
+    quiet:'#cdd5cf', speech:'#d3c4b5', crowd:'#6b4f7a',
+    vehicle:'#3a3a3c', music:'#8c6ea0'
+  };
+  const labelByTag = {
+    quiet:'Quiet', speech:'Speech', crowd:'Crowd',
+    vehicle:'Vehicle', music:'Music'
+  };
+  for (let i = 0; i < 48; i++){
+    let tag;
+    if (i < 8) tag = Math.random() < 0.7 ? 'quiet' : 'speech';        // overnight
+    else if (i < 14) tag = ['speech','quiet','vehicle'][Math.floor(Math.random()*3)];
+    else if (i < 20) tag = Math.random() < 0.4 ? 'vehicle' : 'speech';
+    else if (i < 24) tag = ['crowd','speech','crowd','quiet'][Math.floor(Math.random()*4)];
+    else if (i < 32) tag = ['quiet','speech','music','quiet'][Math.floor(Math.random()*4)];
+    else if (i < 38) tag = ['speech','crowd','speech'][Math.floor(Math.random()*3)];
+    else if (i < 44) tag = ['music','crowd','speech'][Math.floor(Math.random()*3)];
+    else tag = ['quiet','speech','quiet'][Math.floor(Math.random()*3)];
+    state.history.push({tag, color: colorByTag[tag], label: labelByTag[tag], hour: Math.floor(i/2)});
+  }
+  renderHistory();
+}
+
+function pushHistory(env){
+  state.history.push({tag: env.tag || 'speech', color: env.color, label: env.name, hour: 'now'});
+  if (state.history.length > 60) state.history.shift();
+  renderHistory();
+}
+
+function renderHistory(){
+  const row = document.getElementById('chipRow');
+  row.innerHTML = state.history.slice(-48).map(h =>
+    `<span class="chip" style="background:${h.color}" title="${h.label}"></span>`
+  ).join('');
+  const unique = new Set(state.history.map(h => h.label)).size;
+  document.getElementById('historyMeta').textContent = `${unique} ENVIRONMENTS · 4H 12M ADAPTIVE`;
+}
+
+// ──────────── Sample buttons ────────────
+function buildSamples(){
+  const grid = document.getElementById('sampleGrid');
+  const showcase = [1, 2, 4, 3, 7]; // restaurant, car, church, coffee, kitchen
+  grid.innerHTML = showcase.map(i => {
+    const e = ENVIRONMENTS[i];
+    return `<button class="sample-btn" data-env="${i}">
+      <span class="ico">${e.tag}</span>
+      <span class="name">${e.name}</span>
+      <span class="meta">${e.db} dB · ${e.freq}</span>
+    </button>`;
+  }).join('');
+  grid.querySelectorAll('.sample-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.env);
+      applyEnvironment(idx);
+      // briefly tint
+      btn.style.background = 'var(--aubergine-soft)';
+      btn.style.borderColor = 'var(--aubergine)';
+      setTimeout(() => { btn.style.background = ''; btn.style.borderColor = ''; }, 1400);
+    });
+  });
+}
+
+// ──────────── Mode toggle ────────────
+function bindModes(){
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.mode-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      state.mode = b.dataset.mode;
+      const env = ENVIRONMENTS[state.envIdx];
+      eqTitleEl.classList.add('fade');
+      setTimeout(() => {
+        eqTitleEl.textContent = `${capitalize(state.mode)} · ${env.name} profile`;
+        eqTitleEl.classList.remove('fade');
+      }, 280);
+      // tint EQ curve subtly per mode by re-applying with offset
+      let modEq = env.eq.slice();
+      if (state.mode === 'music')   modEq = modEq.map((v,i)=> v + [+3,+2,0,-1,-1,0,+1,+2][i]);
+      if (state.mode === 'speech')  modEq = modEq.map((v,i)=> v + [-2,-1,+1,+3,+3,+2,0,0][i]);
+      if (state.mode === 'quiet')   modEq = modEq.map((v,i)=> v + [-1,-1,0,+1,+2,+2,+1,0][i]);
+      if (state.mode === 'custom')  modEq = modEq.map(v => v); // user-defined, unchanged here
+      modEq = modEq.map(v => Math.max(-12, Math.min(12, v)));
+      state.prevEq = env.eq.slice();
+      setEq(modEq);
+    });
+  });
+}
+
+// ──────────── Battery slow drain ────────────
+function tickBattery(){
+  ['battL','battR'].forEach(id => {
+    const el = document.getElementById(id);
+    const cur = parseFloat(el.style.width);
+    el.style.width = Math.max(8, cur - 0.04) + '%';
+  });
+}
+setInterval(tickBattery, 8000);
+
+// ──────────── BLE pairing intro ────────────
+const pairOverlay = document.getElementById('pairOverlay');
+const pairStatus  = document.getElementById('pairStatus');
+const pairSteps = [
+  {t: 600,  text: 'SCANNING FOR PAIRED AIDS…'},
+  {t: 1500, text: 'FOUND <b>Phonak Audéo P90R</b>'},
+  {t: 2250, text: 'AUTHENTICATING L · R'},
+  {t: 3100, text: 'NEGOTIATING LE AUDIO · 24-BIT'},
+  {t: 3950, text: 'CALIBRATING TO ROOM'},
+];
+pairSteps.forEach(s => setTimeout(() => { pairStatus.innerHTML = s.text; }, s.t));
+setTimeout(() => {
+  pairOverlay.classList.add('gone');
+  setTimeout(() => pairOverlay.remove(), 750);
+  startListening();
+}, 4700);
+
+// ──────────── Main loop ────────────
+function startListening(){
+  buildSeedHistory();
+  buildSamples();
+  bindModes();
+  applyEnvironment(0);
+
+  // auto-cycle environments every 9.5 seconds
+  setInterval(() => {
+    let next;
+    do { next = Math.floor(Math.random() * ENVIRONMENTS.length); }
+    while (next === state.envIdx);
+    applyEnvironment(next);
+  }, 9500);
+}
+</script>
+</body>
+</html>

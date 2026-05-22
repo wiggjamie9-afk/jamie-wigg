@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HERD — smallholder livestock computer vision</title>
+<meta name="description" content="Walk the pasture. Your phone spots what your eyes can miss. Lameness, mastitis, calving, body condition — flagged before the loss compounds.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5edd9">
+<style>
+:root{
+  --oat:#f5edd9; --oat-2:#ebe1c6; --oat-3:#dfd2b0;
+  --loam:#3a2e1f; --loam-2:#5a4732; --loam-3:#7a6248;
+  --forest:#14532d; --forest-2:#1a6e3c;
+  --terra:#b85c38; --terra-2:#9c4b2d; --terra-soft:#e8c4ab;
+  --amber:#c89a2b; --amber-soft:#f0dc94;
+  --bone:#fbf6e9; --hairline:#c8b896;
+  --ink:#1d1610; --soft:#5a4732; --muted:#8a7960;
+  --serif:'Tinos',Cambria,'Times New Roman',Georgia,serif;
+  --sans:'Inter','Helvetica Neue',-apple-system,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--oat);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100%}
+body{padding:0 0 80px;max-width:480px;margin:0 auto;position:relative;overflow-x:hidden}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+::selection{background:var(--loam);color:var(--oat)}
+
+/* ── Top bar with rule ── */
+.bar{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 14px;border-bottom:2px solid var(--loam);background:var(--oat);position:sticky;top:0;z-index:50}
+.mark{font-family:var(--serif);font-weight:700;font-size:26px;color:var(--loam);letter-spacing:0.04em;line-height:1}
+.mark sup{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--terra);margin-left:6px;font-weight:600;text-transform:uppercase;top:-10px;position:relative}
+.lang-pick{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--loam);text-transform:uppercase;padding:8px 12px;border:1.5px solid var(--loam);border-radius:0;background:var(--oat)}
+.lang-pick:active{background:var(--loam);color:var(--oat)}
+
+/* ── Today summary ── */
+.summary{padding:24px 22px 20px;border-bottom:2px solid var(--loam);background:linear-gradient(180deg,var(--oat),var(--oat-2))}
+.summary .date{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--terra);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.summary .date::before{content:"";width:8px;height:8px;background:var(--terra);border-radius:50%}
+.summary h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.05;color:var(--loam);margin-bottom:14px;letter-spacing:-0.005em}
+.summary h1 em{font-style:italic;font-weight:400;color:var(--forest)}
+.tally{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:2px solid var(--loam);background:var(--bone)}
+.tally div{padding:14px 10px;text-align:center;border-right:1px solid var(--loam)}
+.tally div:last-child{border-right:none}
+.tally .n{font-family:var(--serif);font-weight:700;font-size:30px;color:var(--loam);line-height:1;letter-spacing:-0.02em}
+.tally .n.terra{color:var(--terra)} .tally .n.amber{color:var(--amber)} .tally .n.forest{color:var(--forest)}
+.tally .l{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:var(--soft);text-transform:uppercase;margin-top:6px;line-height:1.2}
+
+/* ── Tabs ── */
+.tabs{display:flex;border-bottom:2px solid var(--loam);background:var(--oat)}
+.tab{flex:1;padding:14px 6px;font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--loam-3);text-align:center;border-right:1px solid var(--loam);font-weight:600}
+.tab:last-child{border-right:none}
+.tab.on{background:var(--loam);color:var(--oat)}
+
+/* ── Walk CTA ── */
+.walk-cta{padding:22px;display:flex;flex-direction:column;gap:14px}
+.walk-btn{background:var(--forest);color:var(--oat);padding:24px 22px;border:3px solid var(--loam);font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:0;text-align:left;display:flex;justify-content:space-between;align-items:center;line-height:1.1;box-shadow:5px 5px 0 var(--loam);transition:transform 0.1s,box-shadow 0.1s;min-height:96px}
+.walk-btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--loam)}
+.walk-btn .sub{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;margin-top:6px;color:var(--oat-3);display:block}
+.walk-btn .arrow{font-family:var(--serif);font-size:38px;line-height:0.8;flex-shrink:0;margin-left:14px}
+.walk-strip{display:flex;gap:8px;font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:var(--soft);text-transform:uppercase;flex-wrap:wrap}
+.walk-strip span{padding:6px 10px;border:1px solid var(--hairline);background:var(--bone)}
+.walk-strip b{color:var(--terra);font-weight:700}
+
+/* ── Earnings stat ── */
+.impact{padding:18px 22px;background:var(--loam);color:var(--oat);display:flex;flex-direction:column;gap:6px;margin:0 22px;border:3px solid var(--loam);box-shadow:4px 4px 0 var(--terra)}
+.impact .l{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--terra-soft)}
+.impact .v{font-family:var(--serif);font-size:20px;font-weight:600;line-height:1.2;letter-spacing:-0.005em}
+.impact .v b{color:var(--amber-soft);font-weight:700;font-style:italic}
+.impact .n{font-family:var(--mono);font-size:10px;color:var(--oat-3);letter-spacing:0.1em;margin-top:2px}
+
+/* ── Walkthrough overlay ── */
+.walk-overlay{position:fixed;inset:0;background:#000;display:none;z-index:100;flex-direction:column;max-width:480px;margin:0 auto}
+.walk-overlay.on{display:flex}
+.walk-head{padding:18px 18px 12px;background:rgba(29,22,16,0.92);color:var(--oat);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--loam-2);z-index:5}
+.walk-head .ttl{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.walk-head .ttl::before{content:"";width:8px;height:8px;background:var(--terra);border-radius:50%;animation:bpulse 1s ease-in-out infinite}
+@keyframes bpulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.walk-head .closer{font-family:var(--mono);font-size:11px;color:var(--oat-3);border:1.5px solid var(--oat-3);padding:6px 12px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600}
+.viewport{flex:1;position:relative;overflow:hidden;background:#1a1410}
+.pasture{position:absolute;inset:0}
+.pasture svg{width:100%;height:100%;display:block}
+.hud{position:absolute;inset:0;pointer-events:none;z-index:6}
+.hud .frame{position:absolute;inset:30px 16px 90px;border:1.5px solid rgba(245,237,217,0.3)}
+.hud .frame::before,.hud .frame::after,.hud .frame > i::before,.hud .frame > i::after{content:"";position:absolute;width:18px;height:18px;border:2px solid var(--oat)}
+.hud .frame::before{top:-2px;left:-2px;border-right:none;border-bottom:none}
+.hud .frame::after{top:-2px;right:-2px;border-left:none;border-bottom:none}
+.hud .frame > i::before{bottom:-2px;left:-2px;border-right:none;border-top:none;position:absolute;width:18px;height:18px}
+.hud .frame > i::after{bottom:-2px;right:-2px;border-left:none;border-top:none;position:absolute;width:18px;height:18px}
+.hud .top{position:absolute;top:14px;left:18px;right:18px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--oat);text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.6)}
+.hud .bot{position:absolute;bottom:14px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:flex-end;font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:var(--oat);text-transform:uppercase}
+.hud .bot .gauge{background:rgba(29,22,16,0.85);padding:8px 12px;border-left:3px solid var(--terra);display:flex;align-items:center;gap:8px}
+.hud .gauge b{color:var(--amber-soft);font-weight:700;font-size:14px;font-family:var(--serif)}
+.hud .scan-sweep{position:absolute;left:0;right:0;height:80px;background:linear-gradient(180deg,transparent,rgba(184,92,56,0.18),transparent);animation:sweep 4s ease-in-out infinite}
+@keyframes sweep{0%,100%{top:8%}50%{top:78%}}
+
+/* ── AR markers ── */
+.marker{position:absolute;z-index:8;pointer-events:auto;cursor:pointer;animation:mIn 0.5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes mIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1);opacity:1}}
+.bbox{width:88px;height:64px;border:2px solid var(--terra);position:relative;box-shadow:0 0 0 1px rgba(0,0,0,0.6),0 0 18px rgba(184,92,56,0.4)}
+.bbox::before,.bbox::after{content:"";position:absolute;width:10px;height:10px;border:2.5px solid var(--terra)}
+.bbox::before{top:-3px;left:-3px;border-right:none;border-bottom:none}
+.bbox::after{bottom:-3px;right:-3px;border-left:none;border-top:none}
+.marker.crit .bbox{border-color:var(--terra);box-shadow:0 0 0 1px #000,0 0 22px rgba(184,92,56,0.7);animation:cflash 1s ease-in-out infinite alternate}
+@keyframes cflash{0%{border-color:var(--terra)}100%{border-color:#ffce8a}}
+.marker.warn .bbox{border-color:var(--amber);box-shadow:0 0 0 1px #000,0 0 16px rgba(200,154,43,0.4)}
+.marker.warn .bbox::before,.marker.warn .bbox::after{border-color:var(--amber)}
+.marker.info .bbox{border-color:var(--forest-2);box-shadow:0 0 0 1px #000,0 0 14px rgba(26,110,60,0.4)}
+.marker.info .bbox::before,.marker.info .bbox::after{border-color:var(--forest-2)}
+.tag{position:absolute;top:-32px;left:0;background:var(--loam);color:var(--oat);padding:5px 8px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;border-left:3px solid var(--terra);max-width:200px}
+.marker.warn .tag{border-left-color:var(--amber)}
+.marker.info .tag{border-left-color:var(--forest-2)}
+.tag b{color:var(--amber-soft);margin-right:4px}
+.tag .det{display:block;font-size:9px;color:var(--oat-3);font-weight:500;margin-top:1px;letter-spacing:0.04em;text-transform:none}
+
+/* ── Animal card overlay ── */
+.card-overlay{position:fixed;inset:0;background:rgba(29,22,16,0.78);display:none;align-items:flex-end;justify-content:center;z-index:200;padding:0;backdrop-filter:blur(3px)}
+.card-overlay.on{display:flex;animation:fadeIn 0.2s ease-out}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.card{background:var(--oat);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;border-top:3px solid var(--loam);animation:slideUp 0.3s cubic-bezier(.34,1.2,.64,1)}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0.5}to{transform:translateY(0);opacity:1}}
+.card-head{padding:18px 22px;border-bottom:2px solid var(--loam);display:flex;align-items:flex-start;gap:14px;background:var(--oat-2)}
+.cow-portrait{width:72px;height:72px;background:var(--loam);flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid var(--loam);position:relative}
+.cow-portrait svg{width:54px;height:54px}
+.cow-portrait .badge{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;background:var(--terra);color:var(--oat);font-family:var(--mono);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--oat)}
+.cow-portrait .badge.warn{background:var(--amber);color:var(--loam)}
+.cow-portrait .badge.info{background:var(--forest-2)}
+.cow-head-meta{flex:1;min-width:0}
+.cow-id{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--loam);line-height:1;letter-spacing:-0.01em}
+.cow-id sup{font-family:var(--mono);font-size:10px;color:var(--terra);font-weight:600;letter-spacing:0.16em;margin-left:6px;text-transform:uppercase;top:-12px;position:relative}
+.cow-sub{font-family:var(--mono);font-size:10px;color:var(--soft);letter-spacing:0.14em;margin-top:6px;text-transform:uppercase}
+.card-x{background:var(--loam);color:var(--oat);width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;font-family:var(--serif);font-weight:700;flex-shrink:0}
+.card-body{padding:18px 22px}
+.diag{padding:14px;background:var(--bone);border:2px solid var(--loam);margin-bottom:16px}
+.diag.crit{background:var(--terra-soft);border-color:var(--terra)}
+.diag.warn{background:var(--amber-soft);border-color:var(--amber)}
+.diag.info{background:#d3ead8;border-color:var(--forest)}
+.diag-l{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--loam);margin-bottom:6px;font-weight:700}
+.diag-v{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--loam);line-height:1.18;margin-bottom:6px}
+.diag-conf{font-family:var(--mono);font-size:10px;color:var(--loam-2);letter-spacing:0.1em}
+.cbar{height:5px;background:rgba(58,46,31,0.2);margin:6px 0 4px;border-radius:0}
+.cfill{height:100%;background:var(--loam)}
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--loam);margin-bottom:16px;background:var(--bone)}
+.kv{padding:10px 12px;border-right:1px solid var(--loam);border-bottom:1px solid var(--loam)}
+.kv:nth-child(even){border-right:none}
+.kv:nth-last-child(-n+2){border-bottom:none}
+.kv .l{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+.kv .v{font-family:var(--serif);font-size:15px;color:var(--loam);font-weight:600;line-height:1.2}
+.rec-box{padding:14px;border:2px solid var(--loam);margin-bottom:14px;background:var(--oat-2)}
+.rec-box .l{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;color:var(--terra);text-transform:uppercase;margin-bottom:6px;font-weight:700}
+.rec-box .v{font-family:var(--serif);font-size:17px;color:var(--loam);line-height:1.35;font-weight:600}
+.actions{display:flex;flex-direction:column;gap:10px}
+.action-btn{padding:18px 16px;border:2px solid var(--loam);background:var(--bone);font-family:var(--serif);font-size:17px;font-weight:600;color:var(--loam);text-align:left;display:flex;justify-content:space-between;align-items:center;min-height:60px;line-height:1.2}
+.action-btn.primary{background:var(--terra);color:var(--oat);border-color:var(--terra-2)}
+.action-btn.primary:active{background:var(--terra-2)}
+.action-btn.ghost{background:var(--oat)}
+.action-btn .ico{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--terra)}
+.action-btn.primary .ico{color:var(--oat)}
+
+/* ── Herd grid ── */
+.herd-tab{display:none;padding:18px 22px 22px}
+.herd-tab.on{display:block}
+.herd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.h-cow{aspect-ratio:1;border:2px solid var(--loam);background:var(--bone);position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:8px;cursor:pointer}
+.h-cow.red{background:var(--terra-soft);border-color:var(--terra)}
+.h-cow.amber{background:var(--amber-soft);border-color:var(--amber)}
+.h-cow.green{background:#d3ead8;border-color:var(--forest)}
+.h-cow .hid{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--loam);line-height:1;letter-spacing:-0.01em}
+.h-cow .hst{font-family:var(--mono);font-size:8px;letter-spacing:0.1em;color:var(--loam-2);text-transform:uppercase;line-height:1.2}
+.h-cow .dot{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--forest);border:1.5px solid var(--loam)}
+.h-cow.red .dot{background:var(--terra)} .h-cow.amber .dot{background:var(--amber)}
+
+/* ── SMS modal ── */
+.sms-overlay{position:fixed;inset:0;background:rgba(29,22,16,0.78);display:none;align-items:center;justify-content:center;z-index:300;padding:20px;backdrop-filter:blur(3px)}
+.sms-overlay.on{display:flex;animation:fadeIn 0.2s ease-out}
+.sms-card{background:var(--oat);max-width:420px;width:100%;border:3px solid var(--loam);max-height:88vh;overflow-y:auto}
+.sms-head{padding:14px 18px;background:var(--loam);color:var(--oat);font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.sms-body{padding:18px}
+.sms-msg{background:var(--bone);border:1.5px solid var(--hairline);padding:14px;font-family:var(--mono);font-size:12px;line-height:1.55;color:var(--loam);white-space:pre-wrap;margin-bottom:14px}
+.sms-photo-strip{display:flex;gap:6px;margin-bottom:14px}
+.sms-photo-strip .ph{flex:1;aspect-ratio:1;background:var(--loam);position:relative;overflow:hidden}
+.sms-photo-strip .ph::after{content:attr(data-id);position:absolute;bottom:4px;left:4px;font-family:var(--mono);font-size:9px;color:var(--terra-soft);font-weight:700;letter-spacing:0.1em}
+.sms-vet{padding:12px;background:var(--oat-2);border:1.5px solid var(--loam);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--loam);text-transform:uppercase}
+.sms-vet b{font-family:var(--serif);font-size:15px;color:var(--loam);display:block;text-transform:none;letter-spacing:0;font-weight:700}
+.sent-strip{background:var(--forest);color:var(--oat);padding:14px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;display:none}
+.sent-strip.on{display:block}
+
+/* High-contrast outdoor toggle dot */
+.contrast-tag{position:fixed;bottom:14px;right:14px;font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:var(--loam);background:var(--oat);border:1.5px solid var(--loam);padding:6px 10px;text-transform:uppercase;z-index:30;font-weight:600}
+
+@media (max-width:380px){
+  .summary h1{font-size:28px}
+  .walk-btn{font-size:19px;padding:20px 18px}
+  .tally .n{font-size:26px}
+}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="bar">
+  <span class="mark">HERD<sup>v0.3</sup></span>
+  <button class="lang-pick" onclick="cycleLang()" id="langBtn">EN ▾</button>
+</div>
+
+<!-- Today summary -->
+<section class="summary">
+  <div class="date" id="dateLine">Friday · 22 May · morning round</div>
+  <h1 id="summaryHead">12 cows. <em>3 need attention.</em> 1 urgent.</h1>
+  <div class="tally">
+    <div><div class="n">12</div><div class="l" id="lblHerd">Herd</div></div>
+    <div><div class="n amber">3</div><div class="l" id="lblFlag">Flagged</div></div>
+    <div><div class="n terra">1</div><div class="l" id="lblUrg">Urgent</div></div>
+  </div>
+</section>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab on" data-tab="walk" onclick="setTab('walk')" id="tab1">Walk pasture</button>
+  <button class="tab" data-tab="herd" onclick="setTab('herd')" id="tab2">All 12 cows</button>
+</div>
+
+<!-- Walk tab content -->
+<div class="walk-tab" id="walkTab">
+  <div class="walk-cta">
+    <button class="walk-btn" onclick="startWalk()">
+      <div>
+        Walk the pasture
+        <span class="sub" id="ctaSub">~90 sec · phone in hand</span>
+      </div>
+      <span class="arrow">→</span>
+    </button>
+    <div class="walk-strip">
+      <span><b>5</b> things checked</span>
+      <span>offline</span>
+      <span>$80 Android</span>
+      <span><b>EN/HI/SW/PT/BN</b></span>
+    </div>
+  </div>
+
+  <div class="impact" id="impactBox">
+    <div class="l" id="impactL">Today's earnings impact</div>
+    <div class="v" id="impactV">Avoided <b>≈ $180</b> vet emergency by early-flagging #14 lameness.</div>
+    <div class="n">~ 6 days' household income · Bihar smallholder benchmark</div>
+  </div>
+</div>
+
+<!-- Herd grid tab -->
+<div class="herd-tab" id="herdTab">
+  <div class="herd-grid" id="herdGrid"></div>
+</div>
+
+<!-- ── Walkthrough fullscreen ── -->
+<div class="walk-overlay" id="walkOverlay">
+  <div class="walk-head">
+    <div class="ttl">Live · scanning pasture · <span id="walkClock">00:00</span></div>
+    <button class="closer" onclick="endWalk()">End ✕</button>
+  </div>
+  <div class="viewport">
+    <div class="pasture">
+      <svg viewBox="0 0 480 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#d8c89a"/>
+            <stop offset="0.55" stop-color="#a8946a"/>
+            <stop offset="1" stop-color="#6e5a3c"/>
+          </linearGradient>
+          <linearGradient id="hills" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#4a5a32"/>
+            <stop offset="1" stop-color="#2a3a1c"/>
+          </linearGradient>
+          <linearGradient id="ground" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#5d6a3a"/>
+            <stop offset="0.5" stop-color="#3e4824"/>
+            <stop offset="1" stop-color="#241b10"/>
+          </linearGradient>
+          <pattern id="grass" width="6" height="6" patternUnits="userSpaceOnUse">
+            <path d="M3,5 L2,2 M3,5 L4,2" stroke="#3a4520" stroke-width="0.6" opacity="0.5"/>
+          </pattern>
+          <pattern id="haze" width="2" height="2" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.3" fill="rgba(255,240,210,0.06)"/>
+          </pattern>
+        </defs>
+        <!-- Sky -->
+        <rect width="480" height="280" fill="url(#sky)"/>
+        <!-- Distant hills -->
+        <polygon points="0,260 80,200 160,240 250,180 330,230 420,190 480,220 480,290 0,290" fill="url(#hills)" opacity="0.85"/>
+        <polygon points="0,290 120,250 220,275 320,245 480,270 480,310 0,310" fill="#3a4520"/>
+        <!-- Ground -->
+        <rect y="290" width="480" height="410" fill="url(#ground)"/>
+        <rect y="290" width="480" height="410" fill="url(#grass)"/>
+        <!-- Tree line silhouette -->
+        <g opacity="0.6">
+          <ellipse cx="40" cy="265" rx="22" ry="18" fill="#1a2510"/>
+          <rect x="38" y="268" width="4" height="14" fill="#2a1f12"/>
+          <ellipse cx="420" cy="258" rx="26" ry="20" fill="#1a2510"/>
+          <rect x="418" y="262" width="4" height="16" fill="#2a1f12"/>
+          <ellipse cx="320" cy="270" rx="18" ry="14" fill="#1a2510"/>
+        </g>
+        <!-- Fence posts -->
+        <g stroke="#2a1f12" stroke-width="2.5">
+          <line x1="20" y1="300" x2="22" y2="330"/>
+          <line x1="80" y1="305" x2="82" y2="338"/>
+          <line x1="160" y1="308" x2="160" y2="345"/>
+          <line x1="240" y1="312" x2="240" y2="350"/>
+          <line x1="320" y1="310" x2="322" y2="350"/>
+          <line x1="400" y1="306" x2="402" y2="340"/>
+          <line x1="450" y1="300" x2="452" y2="332"/>
+          <line x1="0" y1="318" x2="480" y2="324" stroke-width="1.4" opacity="0.7"/>
+          <line x1="0" y1="330" x2="480" y2="336" stroke-width="1.4" opacity="0.6"/>
+        </g>
+        <!-- COW silhouettes (positioned to receive bbox markers) -->
+        <!-- Cow #14 — back / lameness, left side -->
+        <g transform="translate(70,400)">
+          <ellipse cx="60" cy="50" rx="55" ry="28" fill="#3d2812"/>
+          <ellipse cx="60" cy="46" rx="50" ry="22" fill="#5a3920"/>
+          <ellipse cx="15" cy="40" rx="18" ry="16" fill="#3d2812"/>
+          <ellipse cx="15" cy="38" rx="14" ry="12" fill="#5a3920"/>
+          <rect x="22" y="62" width="6" height="32" fill="#2a1908"/>
+          <rect x="50" y="64" width="6" height="34" fill="#2a1908"/>
+          <rect x="78" y="64" width="6" height="32" fill="#2a1908"/>
+          <rect x="100" y="62" width="6" height="34" fill="#2a1908"/>
+          <ellipse cx="60" cy="42" rx="22" ry="10" fill="#7a5230" opacity="0.5"/>
+          <circle cx="3" cy="36" r="2" fill="#1a0d04"/>
+        </g>
+        <!-- Cow #7 — center, mastitis (udder visible) -->
+        <g transform="translate(200,420)">
+          <ellipse cx="65" cy="55" rx="60" ry="30" fill="#4a3018"/>
+          <ellipse cx="65" cy="50" rx="55" ry="24" fill="#6a4528"/>
+          <ellipse cx="125" cy="42" rx="20" ry="17" fill="#4a3018"/>
+          <ellipse cx="125" cy="40" rx="16" ry="13" fill="#6a4528"/>
+          <ellipse cx="35" cy="80" rx="22" ry="10" fill="#d9b896"/>
+          <ellipse cx="32" cy="82" rx="9" ry="6" fill="#b85c38"/>
+          <rect x="20" y="70" width="6" height="32" fill="#2a1908"/>
+          <rect x="48" y="74" width="6" height="30" fill="#2a1908"/>
+          <rect x="82" y="74" width="6" height="30" fill="#2a1908"/>
+          <rect x="108" y="70" width="6" height="32" fill="#2a1908"/>
+          <ellipse cx="65" cy="44" rx="18" ry="8" fill="#f0d9b4" opacity="0.3"/>
+          <circle cx="138" cy="38" r="2" fill="#1a0d04"/>
+        </g>
+        <!-- Cow #21 — right, calving (laying down) -->
+        <g transform="translate(330,470)">
+          <ellipse cx="60" cy="40" rx="62" ry="22" fill="#3a2818"/>
+          <ellipse cx="60" cy="36" rx="55" ry="18" fill="#5d3e22"/>
+          <ellipse cx="3" cy="32" rx="16" ry="13" fill="#3a2818"/>
+          <ellipse cx="3" cy="30" rx="12" ry="10" fill="#5d3e22"/>
+          <ellipse cx="78" cy="62" rx="24" ry="8" fill="#4a3018"/>
+          <rect x="32" y="48" width="5" height="14" fill="#2a1908"/>
+          <rect x="86" y="50" width="5" height="14" fill="#2a1908"/>
+          <circle cx="-8" cy="29" r="2" fill="#1a0d04"/>
+        </g>
+        <!-- Cow #03 — back-left, BCS low -->
+        <g transform="translate(35,505)" opacity="0.95">
+          <ellipse cx="45" cy="35" rx="42" ry="20" fill="#5a4028"/>
+          <ellipse cx="45" cy="32" rx="36" ry="14" fill="#7a5532"/>
+          <ellipse cx="86" cy="26" rx="14" ry="11" fill="#5a4028"/>
+          <rect x="14" y="48" width="4" height="22" fill="#1a0d04"/>
+          <rect x="38" y="50" width="4" height="22" fill="#1a0d04"/>
+          <rect x="62" y="50" width="4" height="22" fill="#1a0d04"/>
+          <rect x="78" y="48" width="4" height="22" fill="#1a0d04"/>
+          <!-- visible rib lines (BCS) -->
+          <line x1="30" y1="28" x2="32" y2="42" stroke="#3a2818" stroke-width="0.6"/>
+          <line x1="38" y1="26" x2="40" y2="42" stroke="#3a2818" stroke-width="0.6"/>
+          <line x1="46" y1="26" x2="48" y2="42" stroke="#3a2818" stroke-width="0.6"/>
+          <line x1="54" y1="26" x2="56" y2="42" stroke="#3a2818" stroke-width="0.6"/>
+          <circle cx="95" cy="24" r="1.6" fill="#1a0d04"/>
+        </g>
+        <!-- Atmospheric grain -->
+        <rect width="480" height="700" fill="url(#haze)"/>
+        <!-- Dust mote dots -->
+        <g fill="rgba(245,237,217,0.18)">
+          <circle cx="120" cy="180" r="1.5"/><circle cx="260" cy="220" r="1"/><circle cx="380" cy="160" r="1.2"/>
+        </g>
+      </svg>
+    </div>
+    <!-- HUD -->
+    <div class="hud">
+      <div class="frame"><i></i></div>
+      <div class="top">
+        <span>REC · <span id="recT">00</span>S</span>
+        <span>GPS · LOCK · OFFLINE</span>
+      </div>
+      <div class="bot">
+        <div class="gauge">PACE · <b id="paceN">2.4</b> KM/H</div>
+        <div class="gauge" style="border-left-color:var(--amber-soft)">SEEN · <b id="seenN">0</b>/12</div>
+      </div>
+      <div class="scan-sweep"></div>
+    </div>
+    <!-- AR markers -->
+    <div id="markers" style="position:absolute;inset:0;z-index:7"></div>
+  </div>
+</div>
+
+<!-- ── Animal card overlay ── -->
+<div class="card-overlay" id="cardOverlay" onclick="if(event.target===this)closeCard()">
+  <div class="card" id="cardEl">
+    <div class="card-head">
+      <div class="cow-portrait">
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <ellipse cx="40" cy="46" rx="32" ry="20" fill="#f5edd9"/>
+          <ellipse cx="40" cy="44" rx="26" ry="14" fill="#dfd2b0"/>
+          <ellipse cx="62" cy="32" rx="10" ry="9" fill="#f5edd9"/>
+          <ellipse cx="62" cy="30" rx="7" ry="6" fill="#dfd2b0"/>
+          <ellipse cx="58" cy="29" rx="2" ry="1.4" fill="#3a2e1f"/>
+          <ellipse cx="66" cy="29" rx="2" ry="1.4" fill="#3a2e1f"/>
+          <ellipse cx="62" cy="35" rx="3" ry="1.5" fill="#3a2e1f"/>
+          <rect x="22" y="58" width="3" height="14" fill="#3a2e1f"/>
+          <rect x="38" y="60" width="3" height="14" fill="#3a2e1f"/>
+          <rect x="50" y="60" width="3" height="14" fill="#3a2e1f"/>
+          <path d="M55 26 L57 21 L60 24" stroke="#3a2e1f" stroke-width="1.5" fill="none"/>
+          <path d="M68 24 L69 20 L71 23" stroke="#3a2e1f" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="badge" id="cBadge">!</span>
+      </div>
+      <div class="cow-head-meta">
+        <div class="cow-id" id="cId">#14<sup>HOLSTEIN</sup></div>
+        <div class="cow-sub" id="cSub">Ear-tag · Holstein-Sahiwal cross · 4 yr · lact. 230 days</div>
+      </div>
+      <button class="card-x" onclick="closeCard()" aria-label="Close">✕</button>
+    </div>
+    <div class="card-body">
+      <div class="diag" id="cDiag">
+        <div class="diag-l" id="cDiagL">Detection · gait analysis</div>
+        <div class="diag-v" id="cDiagV">Left forelimb asymmetry — lameness score 2 of 5</div>
+        <div class="cbar"><div class="cfill" id="cConfFill" style="width:84%"></div></div>
+        <div class="diag-conf" id="cConf">Model confidence · 84% · last seen normal Tue 19 May</div>
+      </div>
+      <div class="kv-grid">
+        <div class="kv"><div class="l">Lactation</div><div class="v" id="cLact">Mid · 230d</div></div>
+        <div class="kv"><div class="l">Last calving</div><div class="v" id="cCalv">04 Oct 2025</div></div>
+        <div class="kv"><div class="l">Last yield</div><div class="v" id="cYield">8.2 L · ↓ 18%</div></div>
+        <div class="kv"><div class="l">History</div><div class="v" id="cHist">1 prior mastitis · 2024</div></div>
+      </div>
+      <div class="rec-box">
+        <div class="l">Recommended action</div>
+        <div class="v" id="cRec">Isolate from herd. Call extension vet within 24 hours. Photograph hoof during walk-out.</div>
+      </div>
+      <div class="actions">
+        <button class="action-btn primary" onclick="openSms()">SMS extension vet · attach photos<span class="ico">→</span></button>
+        <button class="action-btn">Mark "monitoring · 24h"<span class="ico">○</span></button>
+        <button class="action-btn ghost" onclick="closeCard()">Back to pasture<span class="ico">↶</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SMS modal ── -->
+<div class="sms-overlay" id="smsOverlay" onclick="if(event.target===this)closeSms()">
+  <div class="sms-card">
+    <div class="sms-head">
+      <span>Compose · vet referral</span>
+      <button onclick="closeSms()" style="color:var(--oat)">✕</button>
+    </div>
+    <div class="sms-body">
+      <div class="sms-vet">
+        <div>
+          <b>Dr. Naveen Kumar</b>
+          Karnataka Dairy Federation · ext. agent
+        </div>
+        <span>4.2 km</span>
+      </div>
+      <div class="sms-photo-strip">
+        <div class="ph" data-id="#14a" style="background:linear-gradient(135deg,#4a3018,#7a5530)"></div>
+        <div class="ph" data-id="#14b" style="background:linear-gradient(135deg,#5a3920,#3a2818)"></div>
+        <div class="ph" data-id="#14c" style="background:linear-gradient(135deg,#6a4528,#4a3018)"></div>
+      </div>
+      <div class="sms-msg">Cow #14 (Holstein cross, lact. 230d).
+Gait flagged 8:14 IST — left forelimb asymmetry (84% conf).
+Yield dropped 18% over 2 milkings.
+3 photos attached. Isolated in north pen.
+Free this afternoon? — S. Devi · plot 4B</div>
+      <button class="action-btn primary" onclick="sendSms()" style="margin-bottom:0">Send to Dr. Kumar<span class="ico">→</span></button>
+      <div class="sent-strip" id="sentStrip">✓ Sent · he'll reply within ~30 min</div>
+    </div>
+  </div>
+</div>
+
+<div class="contrast-tag" id="contrastTag" onclick="toggleContrast()">☀ Bright sun</div>
+
+<script>
+// ── Cow data ──
+const COWS = [
+  { id:'14', sev:'crit', x:'17%',  y:'56%', det:'lameness · 2/5', label:'GAIT', bx:'88px', by:'70px',
+    breed:'Holstein-Sahiwal cross', age:'4 yr · lact. 230d',
+    diagL:'Detection · gait analysis',
+    diagV:'Left forelimb asymmetry — lameness score 2 of 5',
+    conf:84,
+    confNote:'last seen normal Tue 19 May',
+    lact:'Mid · 230d', calv:'04 Oct 2025', yield:'8.2 L · ↓ 18%', hist:'1 prior mastitis · 2024',
+    rec:'Isolate from herd. Call extension vet within 24 hours. Photograph hoof during walk-out.' },
+  { id:'07', sev:'crit', x:'46%', y:'62%', det:'mastitis · quarter', label:'UDDER',
+    breed:'Jersey × native', age:'5 yr · lact. 92d',
+    diagL:'Detection · udder thermography + asymmetry',
+    diagV:'Right rear quarter — possible early clinical mastitis',
+    conf:78,
+    confNote:'left quarter ~+1.4°C vs right baseline',
+    lact:'Early · 92d', calv:'19 Feb 2026', yield:'11.1 L · ↓ 9%', hist:'none flagged',
+    rec:'Strip-test affected quarter. Move to clean stall. Withhold milk from quarter. Vet within 48h.' },
+  { id:'21', sev:'warn', x:'72%', y:'70%', det:'labor · ~6h', label:'CALVING',
+    breed:'Gir', age:'6 yr · 4th calving',
+    diagL:'Detection · posture + isolation behavior',
+    diagV:'Stage-2 labor onset — calving in ~ 4 to 6 hours',
+    conf:71,
+    confNote:'tail-raise + away from herd · 14 min',
+    lact:'Dry', calv:'expected today', yield:'—', hist:'3 prior calvings · all unassisted',
+    rec:'Move to calving pen. Fresh water + clean bedding. Be present in 4 hrs. Keep iodine ready for navel.' },
+  { id:'03', sev:'info', x:'13%', y:'74%', det:'BCS 2.5 of 5', label:'CONDITION',
+    breed:'Crossbred · native', age:'7 yr · lact. 310d',
+    diagL:'Detection · body condition scoring',
+    diagV:'BCS 2.5 — underconditioned for late lactation',
+    conf:88,
+    confNote:'rib visibility + tail-head hollow',
+    lact:'Late · 310d', calv:'17 Jul 2025', yield:'4.4 L · stable', hist:'BCS drift since Feb',
+    rec:'Add 0.5 kg concentrate at evening milking for 3 weeks. Re-photo Sun 1 June. Consider drying off early.' }
+];
+const STATUS_GRID = [
+  {id:'01',s:'green',st:'Healthy'},{id:'02',s:'green',st:'Healthy'},{id:'03',s:'amber',st:'BCS low'},
+  {id:'04',s:'green',st:'Healthy'},{id:'05',s:'green',st:'Healthy'},{id:'06',s:'green',st:'Healthy'},
+  {id:'07',s:'red',st:'Mastitis?'},{id:'08',s:'green',st:'Healthy'},{id:'09',s:'green',st:'Healthy'},
+  {id:'10',s:'green',st:'Healthy'},{id:'14',s:'red',st:'Lameness'},{id:'21',s:'amber',st:'Calving'}
+];
+
+// ── Translations ──
+const T = {
+  EN: { lang:'EN', summary:'12 cows. <em>3 need attention.</em> 1 urgent.', date:'Friday · 22 May · morning round', herd:'Herd', flag:'Flagged', urg:'Urgent', cta:'~90 sec · phone in hand', impactL:'Today\'s earnings impact', impactV:'Avoided <b>≈ $180</b> vet emergency by early-flagging #14 lameness.', t1:'Walk pasture', t2:'All 12 cows' },
+  HI: { lang:'हिं', summary:'१२ गायें · <em>३ पर ध्यान चाहिए ·</em> १ गंभीर ।', date:'शुक्रवार · २२ मई · सुबह की राउंड', herd:'झुंड', flag:'चिह्नित', urg:'गंभीर', cta:'~९० सेकंड · फ़ोन हाथ में', impactL:'आज की कमाई का असर', impactV:'#14 की लंगड़ाहट जल्दी पकड़कर <b>≈ ₹१५,०००</b> बचाए।', t1:'चरागाह में चलें', t2:'सारी १२ गायें' },
+  SW: { lang:'SW', summary:'Ng\'ombe 12. <em>3 wanahitaji uangalizi.</em> 1 dharura.', date:'Ijumaa · 22 Mei · zamu ya asubuhi', herd:'Kundi', flag:'Imeashiriwa', urg:'Dharura', cta:'~Sekunde 90 · simu mkononi', impactL:'Athari kwa mapato ya leo', impactV:'Umeepuka <b>≈ KSh 23,000</b> kwa kugundua ulemavu wa #14 mapema.', t1:'Tembea malisho', t2:'Ng\'ombe wote 12' },
+  PT: { lang:'PT', summary:'12 vacas. <em>3 precisam de atenção.</em> 1 urgente.', date:'Sexta · 22 maio · ronda da manhã', herd:'Rebanho', flag:'Sinalizadas', urg:'Urgente', cta:'~90 seg · telemóvel na mão', impactL:'Impacto financeiro do dia', impactV:'Evitou <b>≈ R$ 900</b> de emergência veterinária ao detectar manqueira da #14 cedo.', t1:'Andar no pasto', t2:'Todas as 12 vacas' },
+  BN: { lang:'বাং', summary:'১২টি গরু · <em>৩টিকে দেখতে হবে ·</em> ১টি জরুরি ।', date:'শুক্রবার · ২২ মে · সকালের রাউন্ড', herd:'পাল', flag:'চিহ্নিত', urg:'জরুরি', cta:'~৯০ সেকেন্ড · ফোন হাতে', impactL:'আজকের আয়ের প্রভাব', impactV:'#১৪-এর লঙ্গড়ানি আগেভাগে ধরে <b>≈ ১৫,০০০ টাকা</b> বাঁচানো হলো।', t1:'মাঠে হাঁটুন', t2:'সব ১২টি গরু' }
+};
+const LANGS = ['EN','HI','SW','PT','BN'];
+let langIdx = 0;
+
+const $ = id => document.getElementById(id);
+let walking = false, recTimer = null, recSec = 0;
+
+// ── Language cycle ──
+function applyLang(){
+  const t = T[LANGS[langIdx]];
+  $('langBtn').textContent = t.lang + ' ▾';
+  $('summaryHead').innerHTML = t.summary;
+  $('dateLine').textContent = t.date;
+  $('lblHerd').textContent = t.herd;
+  $('lblFlag').textContent = t.flag;
+  $('lblUrg').textContent = t.urg;
+  $('ctaSub').textContent = t.cta;
+  $('impactL').textContent = t.impactL;
+  $('impactV').innerHTML = t.impactV;
+  $('tab1').textContent = t.t1;
+  $('tab2').textContent = t.t2;
+}
+function cycleLang(){ langIdx = (langIdx + 1) % LANGS.length; applyLang(); }
+
+// ── Tabs ──
+function setTab(t){
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('walkTab').style.display = t === 'walk' ? 'block' : 'none';
+  $('herdTab').classList.toggle('on', t === 'herd');
+  if (t === 'herd') renderHerd();
+}
+
+// ── Herd grid ──
+function renderHerd(){
+  $('herdGrid').innerHTML = STATUS_GRID.map(c => `
+    <div class="h-cow ${c.s}" onclick="openCowById('${c.id}')">
+      <span class="dot"></span>
+      <div class="hid">#${c.id}</div>
+      <div class="hst">${c.st}</div>
+    </div>`).join('');
+}
+
+// ── Walk ──
+function startWalk(){
+  walking = true;
+  recSec = 0;
+  $('seenN').textContent = '0';
+  $('markers').innerHTML = '';
+  $('walkOverlay').classList.add('on');
+  recTimer = setInterval(() => {
+    recSec++;
+    $('recT').textContent = String(recSec).padStart(2,'0');
+    $('paceN').textContent = (2.2 + Math.sin(recSec/3) * 0.4).toFixed(1);
+  }, 1000);
+  // Stagger AR detections
+  COWS.forEach((c, i) => setTimeout(() => addMarker(c, i), 1800 + i * 2100));
+}
+
+function addMarker(c, i){
+  if (!walking) return;
+  const m = document.createElement('div');
+  m.className = 'marker ' + c.sev;
+  m.style.left = c.x;
+  m.style.top = c.y;
+  m.innerHTML = `<div class="tag"><b>${c.label}</b>#${c.id}<span class="det">${c.det}</span></div><div class="bbox"></div>`;
+  m.onclick = () => openCow(c);
+  $('markers').appendChild(m);
+  $('seenN').textContent = (i + 1) + '';
+  // Haptic tick on supported devices
+  if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(30);
+}
+
+function endWalk(){
+  walking = false;
+  if (recTimer){ clearInterval(recTimer); recTimer = null; }
+  $('walkOverlay').classList.remove('on');
+}
+
+// ── Animal card ──
+function openCowById(id){
+  const c = COWS.find(x => x.id === id);
+  if (c) openCow(c);
+  else {
+    // For healthy cows, show a small healthy stub
+    openCow({ id, sev:'info', label:'OK', det:'no flag', breed:'—', age:'—',
+      diagL:'No detection · healthy', diagV:'No issues detected on last 3 walks.',
+      conf:96, confNote:'baseline holds', lact:'—', calv:'—', yield:'normal', hist:'clean',
+      rec:'Continue normal feed schedule. Re-check at next round.' });
+  }
+}
+function openCow(c){
+  $('cId').innerHTML = `#${c.id}<sup>${c.breed.split(' ')[0].toUpperCase()}</sup>`;
+  $('cSub').textContent = `Ear-tag · ${c.breed} · ${c.age}`;
+  $('cDiagL').textContent = c.diagL;
+  $('cDiagV').textContent = c.diagV;
+  $('cConf').textContent = `Model confidence · ${c.conf}% · ${c.confNote}`;
+  $('cConfFill').style.width = c.conf + '%';
+  $('cLact').textContent = c.lact;
+  $('cCalv').textContent = c.calv;
+  $('cYield').textContent = c.yield;
+  $('cHist').textContent = c.hist;
+  $('cRec').textContent = c.rec;
+  const diag = $('cDiag');
+  diag.className = 'diag ' + c.sev;
+  const badge = $('cBadge');
+  badge.className = 'badge ' + (c.sev === 'crit' ? '' : c.sev);
+  badge.textContent = c.sev === 'crit' ? '!' : c.sev === 'warn' ? '⏱' : '✓';
+  $('cardOverlay').classList.add('on');
+}
+function closeCard(){ $('cardOverlay').classList.remove('on'); }
+
+// ── SMS ──
+function openSms(){
+  $('sentStrip').classList.remove('on');
+  $('smsOverlay').classList.add('on');
+}
+function closeSms(){ $('smsOverlay').classList.remove('on'); }
+function sendSms(){
+  $('sentStrip').classList.add('on');
+  setTimeout(() => { closeSms(); closeCard(); }, 1400);
+}
+
+// ── Contrast toggle ──
+let highContrast = false;
+function toggleContrast(){
+  highContrast = !highContrast;
+  if (highContrast){
+    document.documentElement.style.setProperty('--oat', '#fff8dc');
+    document.documentElement.style.setProperty('--loam', '#000');
+    document.documentElement.style.setProperty('--terra', '#d83a00');
+    $('contrastTag').textContent = '☀ Sun mode ON';
+  } else {
+    document.documentElement.style.removeProperty('--oat');
+    document.documentElement.style.removeProperty('--loam');
+    document.documentElement.style.removeProperty('--terra');
+    $('contrastTag').textContent = '☀ Bright sun';
+  }
+}
+
+applyLang();
+</script>
+</body>
+</html>
