@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DOCKET — pro-se litigant copilot</title>
+<meta name="description" content="Scan your court paper. Get every deadline, a drafted response with citations, and a clear next step. Built for the 80% of defendants who can't afford a lawyer.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<style>
+:root {
+  --paper:#faf7f2; --paper-2:#f3eee4; --paper-line:#e8e0cf;
+  --ink:#14213d; --ink-soft:#2d3a5a; --ink-mute:#6b7390;
+  --rule:#d8cfb8;
+  --red:#780000; --red-soft:#9d2a2a;
+  --ok:#2d6a4f; --ok-soft:#52b788;
+  --gold:#b8860b;
+  --serif:'Tinos','Source Serif Pro',Georgia,'Times New Roman',serif;
+  --sans:'Inter',-apple-system,system-ui,'Helvetica Neue',sans-serif;
+  --mono:'JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh}
+body{background-image:linear-gradient(var(--paper-2) 1px,transparent 1px);background-size:100% 28px;background-position:0 -1px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:3px}
+
+/* Top bar — court-record feel */
+.bar{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--rule);z-index:50;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-mute)}
+.bar .mark{font-family:var(--serif);font-size:18px;font-weight:700;letter-spacing:0.02em;color:var(--ink);text-transform:none}
+.bar .mark sup{color:var(--red);font-size:10px;letter-spacing:0.2em;font-family:var(--mono);font-weight:600;margin-left:6px;top:-6px;position:relative}
+.bar .right{display:flex;gap:18px;align-items:center}
+.case-num{color:var(--ink)}
+
+.wrap{max-width:980px;margin:0 auto;padding:36px 24px 80px}
+
+/* Stamp / banner */
+.stamp{display:inline-flex;align-items:center;gap:10px;padding:6px 12px;border:1.5px solid var(--red);color:var(--red);font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;font-weight:600;border-radius:2px;transform:rotate(-1.5deg);background:var(--paper)}
+.stamp::before{content:"●";font-size:8px}
+
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(34px,5.5vw,52px);line-height:1.08;letter-spacing:-0.01em;margin:24px 0 12px}
+h2{font-family:var(--serif);font-weight:700;font-size:26px;line-height:1.2;margin-bottom:14px;letter-spacing:-0.005em}
+h3{font-family:var(--serif);font-weight:700;font-size:18px;margin-bottom:8px}
+.lede{font-size:18px;color:var(--ink-soft);max-width:640px;margin-bottom:28px;line-height:1.55}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:var(--red);font-weight:600;margin-bottom:14px}
+.muted{color:var(--ink-mute);font-size:14px}
+
+/* Dropzone */
+.drop{border:2px dashed var(--rule);background:#fff;border-radius:4px;padding:36px 24px;text-align:center;transition:all 0.2s;position:relative;overflow:hidden}
+.drop.hover{border-color:var(--ink);background:var(--paper-2)}
+.drop .icon{font-family:var(--serif);font-size:48px;color:var(--ink-mute);margin-bottom:10px;line-height:1}
+.drop .title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.drop .hint{color:var(--ink-mute);font-size:14px;margin-bottom:18px}
+.drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;border-radius:2px;border:1px solid var(--ink);transition:all 0.15s}
+.btn:hover{background:transparent;color:var(--ink)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn.ghost:hover{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.btn.red{background:var(--red);border-color:var(--red);color:var(--paper)}
+.btn.red:hover{background:transparent;color:var(--red)}
+.btn.sm{padding:7px 14px;font-size:10px}
+
+.or{display:flex;align-items:center;gap:12px;margin:14px 0 0;color:var(--ink-mute);font-family:var(--mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--rule)}
+
+/* Reading overlay */
+.reading{display:none;text-align:center;padding:36px 0}
+.reading.on{display:block}
+.scan{width:100%;max-width:360px;height:160px;border:1.5px solid var(--rule);margin:18px auto;background:#fff;position:relative;overflow:hidden;border-radius:2px}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);box-shadow:0 0 12px var(--red);animation:scanMove 1.6s ease-in-out infinite}
+@keyframes scanMove{0%{top:0}50%{top:calc(100% - 2px)}100%{top:0}}
+.scan-text{position:absolute;inset:0;padding:16px;font-family:var(--mono);font-size:8px;color:var(--ink-mute);line-height:1.6;overflow:hidden;text-align:left;opacity:0.5}
+.reading h3{font-family:var(--serif);font-size:22px;margin-bottom:6px}
+.reading .step{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-mute);margin:3px 0;opacity:0.4}
+.reading .step.on{color:var(--red);opacity:1}
+.reading .step::before{content:"○ ";color:var(--ink-mute)}
+.reading .step.on::before{content:"● ";color:var(--red)}
+.reading .step.done::before{content:"✓ ";color:var(--ok)}
+.reading .step.done{color:var(--ok);opacity:1}
+
+/* Results section */
+.results{display:none;margin-top:8px}
+.results.on{display:block}
+
+/* Case caption — court paper feel */
+.caption{background:#fff;border:1px solid var(--rule);padding:28px 32px;border-radius:2px;margin-bottom:28px;font-family:var(--serif);position:relative;box-shadow:0 1px 0 var(--paper-line),0 6px 14px rgba(20,33,61,0.04)}
+.caption::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red)}
+.caption .court{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:14px}
+.caption-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center;font-size:16px}
+.caption .party{line-height:1.5}
+.caption .party strong{display:block;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;font-size:13px;color:var(--ink-mute);margin-bottom:6px;font-family:var(--mono)}
+.caption .vs{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--ink-mute)}
+.caption .doc-meta{margin-top:18px;padding-top:18px;border-top:1px solid var(--rule);display:flex;gap:24px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--ink-mute);text-transform:uppercase}
+.caption .doc-meta strong{color:var(--ink);font-weight:600}
+
+/* Deadlines */
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin:36px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.section-title h2{margin-bottom:0}
+.section-title .meta{font-family:var(--mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-mute)}
+
+.deadline{background:#fff;border:1px solid var(--rule);border-left:4px solid var(--red);padding:18px 22px;margin-bottom:10px;border-radius:2px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.deadline.warn{border-left-color:var(--gold)}
+.deadline.ok{border-left-color:var(--ok)}
+.deadline .what{flex:1;min-width:200px}
+.deadline .what .label{font-family:var(--serif);font-size:18px;font-weight:700;margin-bottom:4px}
+.deadline .what .plain{font-size:13px;color:var(--ink-mute);line-height:1.45}
+.deadline .when{text-align:right;font-family:var(--mono)}
+.deadline .when .count{font-size:18px;font-weight:600;color:var(--red);letter-spacing:0.02em}
+.deadline .when .count.warn{color:var(--gold)}
+.deadline .when .count.ok{color:var(--ok)}
+.deadline .when .date{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-mute);margin-top:3px}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--rule);margin-top:18px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{padding:11px 18px;font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-mute);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.15s;font-weight:600}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--ink);border-bottom-color:var(--red)}
+
+.tab-panel{display:none;padding:24px 0}
+.tab-panel.on{display:block}
+
+/* Drafted doc — letter feel */
+.letter{background:#fff;border:1px solid var(--rule);padding:42px 48px;font-family:var(--serif);font-size:14px;line-height:1.7;color:var(--ink);max-width:780px;margin:0 auto;border-radius:2px;box-shadow:0 1px 0 var(--paper-line),0 8px 24px rgba(20,33,61,0.06);position:relative}
+.letter .caption-mini{text-align:center;margin-bottom:24px;font-size:12px;letter-spacing:0.06em;line-height:1.5}
+.letter .caption-mini .court{text-transform:uppercase;font-weight:700;letter-spacing:0.18em;font-size:11px;margin-bottom:6px}
+.letter h4{text-align:center;font-family:var(--serif);font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin:24px 0 18px;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);padding:8px 0}
+.letter p{margin-bottom:14px;text-indent:0}
+.letter .signature-block{margin-top:32px;padding-top:14px;font-family:var(--serif)}
+.letter .sig-line{display:inline-block;border-bottom:1px solid var(--ink);width:240px;margin-top:18px;margin-bottom:4px}
+.letter .ph{background:#fff8d6;padding:0 4px;border-radius:1px;border-bottom:1px dashed var(--gold);cursor:text;font-style:italic}
+.letter .cite{font-size:12px;color:var(--ink-mute);font-style:italic}
+.letter .vs{font-style:italic;font-family:var(--serif)}
+
+.doc-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center}
+
+/* Checklist */
+.checklist{background:#fff;border:1px solid var(--rule);border-radius:2px;padding:8px 0}
+.task{display:flex;gap:14px;padding:16px 22px;border-bottom:1px solid var(--paper-line);cursor:pointer;transition:background 0.12s}
+.task:last-child{border-bottom:none}
+.task:hover{background:var(--paper-2)}
+.check{flex-shrink:0;width:22px;height:22px;border:1.5px solid var(--rule);border-radius:50%;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;transition:all 0.15s}
+.task.done .check{background:var(--ok);border-color:var(--ok);color:#fff}
+.task .text{flex:1}
+.task .title{font-family:var(--serif);font-size:16px;font-weight:700;margin-bottom:3px}
+.task.done .title{text-decoration:line-through;color:var(--ink-mute)}
+.task .why{font-size:13px;color:var(--ink-mute);line-height:1.45}
+.task .due{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-top:4px;font-weight:600}
+.task.done .due{color:var(--ok)}
+
+/* Plain English box */
+.translate{background:var(--paper-2);border-left:3px solid var(--gold);padding:14px 18px;margin:14px 0;border-radius:2px;font-size:14px;line-height:1.55}
+.translate strong{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:4px;font-weight:700}
+
+/* Disclaimer ribbon */
+.disclaimer{margin-top:48px;padding:16px 20px;background:var(--paper-2);border:1px dashed var(--rule);border-radius:2px;font-size:13px;color:var(--ink-mute);line-height:1.55}
+.disclaimer strong{color:var(--ink);font-family:var(--mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;display:inline}
+
+.footer-note{margin-top:36px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-mute)}
+.footer-note a{color:var(--red);text-decoration-color:var(--red)}
+
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .caption{padding:20px}
+  .caption-grid{grid-template-columns:1fr;gap:14px;text-align:left}
+  .caption .vs{display:none}
+  .letter{padding:28px 22px;font-size:13px}
+  .deadline{flex-direction:column;align-items:flex-start}
+  .deadline .when{text-align:left}
+  .bar{padding:12px 16px}
+  .bar .right{gap:10px;font-size:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="mark">DOCKET<sup>·BETA</sup></span>
+  <span class="right">
+    <span class="case-num" id="caseNumBar">No case loaded</span>
+    <span>· California · Eviction</span>
+  </span>
+</div>
+
+<main class="wrap">
+
+  <div class="stamp">FILED — pro-se litigant copilot</div>
+  <h1>Your court date isn't waiting.<br><span style="color:var(--red);font-style:italic">Let's get you ready.</span></h1>
+  <p class="lede">Upload the paper you were served. DOCKET reads it, flags every deadline, drafts your response with the right citations for your state, and tells you exactly what to do next — in plain English.</p>
+
+  <!-- Upload -->
+  <section id="uploadSection">
+    <div class="drop" id="drop">
+      <div class="icon">⌂</div>
+      <div class="title">Drop your court paper here</div>
+      <div class="hint">PDF, photo, or scan · Stays on your device · No login</div>
+      <button class="btn" type="button">Choose a file</button>
+      <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.heic">
+    </div>
+    <div class="or">or</div>
+    <div style="text-align:center;margin-top:14px">
+      <button class="btn ghost" onclick="loadSample()">See a sample case →</button>
+      <p class="muted" style="margin-top:10px;font-size:13px">Real example: California unlawful detainer (eviction) — 5-day answer deadline.</p>
+    </div>
+  </section>
+
+  <!-- Reading state -->
+  <section class="reading" id="reading">
+    <div class="eyebrow">Step 1 of 3 — Reading your document</div>
+    <h3>Working through the paper…</h3>
+    <p class="muted">Usually 8–20 seconds. We don't send your document anywhere.</p>
+    <div class="scan">
+      <div class="scan-line"></div>
+      <div class="scan-text">SUPERIOR COURT OF CALIFORNIA · COUNTY OF ALAMEDA · UNLAWFUL DETAINER · CASE NO. RG24-118392 · PLAINTIFF · OAKMONT PROPERTIES LLC · DEFENDANT · ROSA HERNANDEZ · NOTICE TO QUIT · 5-DAY · SUMMONS · COMPLAINT FOR UNLAWFUL DETAINER · CCP §1167 · RENT DUE $2,840 · NOTICE TO PAY OR QUIT · 3-DAY · §1161 · SERVED 2026-05-18 · ANSWER DUE WITHIN 5 COURT DAYS · OAKLAND CA 94601 · MEET AND CONFER · CCP §1179.02 · COVID-19 PROTECTIONS · RETALIATION DEFENSE</div>
+    </div>
+    <div class="step on" id="s1">Identifying the court & case caption</div>
+    <div class="step" id="s2">Extracting deadlines & required actions</div>
+    <div class="step" id="s3">Matching California unlawful detainer rules</div>
+    <div class="step" id="s4">Drafting your answer with citations</div>
+  </section>
+
+  <!-- Results -->
+  <section class="results" id="results">
+
+    <div class="caption">
+      <div class="court">Superior Court of California &middot; County of Alameda &middot; Limited Civil</div>
+      <div class="caption-grid">
+        <div class="party"><strong>Plaintiff</strong>Oakmont Properties, LLC<br><span class="muted">(your landlord)</span></div>
+        <div class="vs">v.</div>
+        <div class="party" style="text-align:right"><strong>Defendant</strong>Rosa Hernandez<br><span class="muted">(that's you)</span></div>
+      </div>
+      <div class="doc-meta">
+        <span>Case No. <strong>RG24-118392</strong></span>
+        <span>Document: <strong>Summons + Complaint for Unlawful Detainer</strong></span>
+        <span>Served: <strong>May 18, 2026</strong></span>
+      </div>
+    </div>
+
+    <div class="translate"><strong>What this means</strong>Your landlord has filed an eviction case against you. You have <strong>5 court days</strong> from when you were served to file an Answer. If you don't, the court can rule against you automatically — that's called a "default." DOCKET has drafted your Answer below.</div>
+
+    <!-- Deadlines -->
+    <div class="section-title">
+      <h2>Your deadlines</h2>
+      <span class="meta">Auto-calculated · Court days, not calendar days</span>
+    </div>
+
+    <div class="deadline" id="d1">
+      <div class="what">
+        <div class="label">File your Answer</div>
+        <div class="plain">A written response to the Complaint. Without it, you lose by default — even if you have a defense.</div>
+      </div>
+      <div class="when">
+        <div class="count" id="cd1">—</div>
+        <div class="date">Due Tue, May 26, 2026 · 4:30 PM</div>
+      </div>
+    </div>
+
+    <div class="deadline warn">
+      <div class="what">
+        <div class="label">Request a fee waiver</div>
+        <div class="plain">Filing an Answer normally costs $240. You may qualify to file for $0. Form FW-001.</div>
+      </div>
+      <div class="when">
+        <div class="count warn" id="cd2">—</div>
+        <div class="date">File together with Answer</div>
+      </div>
+    </div>
+
+    <div class="deadline ok">
+      <div class="what">
+        <div class="label">Trial setting deadline</div>
+        <div class="plain">After your Answer is filed, either side can request trial within 20 days. Be ready.</div>
+      </div>
+      <div class="when">
+        <div class="count ok" id="cd3">—</div>
+        <div class="date">On or before Jun 15, 2026</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" role="tablist">
+      <div class="tab on" data-t="draft">Drafted Answer</div>
+      <div class="tab" data-t="steps">Next steps</div>
+      <div class="tab" data-t="defenses">Possible defenses</div>
+      <div class="tab" data-t="court">Where to file</div>
+    </div>
+
+    <!-- Drafted Answer -->
+    <div class="tab-panel on" data-tp="draft">
+      <p class="muted" style="margin-bottom:16px;text-align:center">Form UD-105 · Answer — Unlawful Detainer · Pre-filled. Tap any <span style="background:#fff8d6;padding:1px 5px;border:1px dashed var(--gold);font-style:italic">yellow field</span> to edit.</p>
+      <article class="letter">
+        <div class="caption-mini">
+          <div class="court">Superior Court of California, County of Alameda</div>
+          <div>Oakmont Properties, LLC, <span class="vs">Plaintiff</span>,</div>
+          <div>v.</div>
+          <div>Rosa Hernandez, <span class="vs">Defendant</span>.</div>
+          <div style="margin-top:8px">Case No. <strong>RG24-118392</strong></div>
+        </div>
+
+        <h4>Defendant's Answer to Complaint for Unlawful Detainer</h4>
+
+        <p><strong>I, <span class="ph" contenteditable="true">Rosa Hernandez</span>, the Defendant in this action, respectfully answer the Complaint as follows:</strong></p>
+
+        <p><strong>1. General Denial.</strong> Pursuant to <span class="cite">Cal. Code Civ. Proc. § 431.30(d)</span>, Defendant generally denies each statement of the verified Complaint.</p>
+
+        <p><strong>2. Affirmative Defenses.</strong> Defendant alleges the following affirmative defenses:</p>
+
+        <p style="padding-left:18px"><em>a. Breach of warranty of habitability.</em> Pursuant to <span class="cite">Cal. Civ. Code § 1941.1</span> and <span class="cite">Green v. Superior Court (1974) 10 Cal.3d 616</span>, the premises at <span class="ph" contenteditable="true">1842 Foothill Blvd, Oakland CA 94601</span> contained substantial defects affecting habitability, including <span class="ph" contenteditable="true">[describe — e.g., persistent mold, broken heater, plumbing leak]</span>, which Plaintiff failed to repair after written notice on <span class="ph" contenteditable="true">[date of notice]</span>.</p>
+
+        <p style="padding-left:18px"><em>b. Improper notice.</em> The 3-day notice to pay or quit served on Defendant did not comply with <span class="cite">Cal. Code Civ. Proc. § 1161(2)</span> in that it <span class="ph" contenteditable="true">[overstated rent owed / failed to credit prior payments / improperly served]</span>.</p>
+
+        <p style="padding-left:18px"><em>c. Retaliation.</em> Pursuant to <span class="cite">Cal. Civ. Code § 1942.5</span>, this action was filed in retaliation for Defendant's good-faith complaint regarding habitability on <span class="ph" contenteditable="true">[date]</span>.</p>
+
+        <p><strong>3. Request for Jury Trial.</strong> Defendant requests trial by jury pursuant to <span class="cite">Cal. Const. art. I, § 16</span>.</p>
+
+        <p><strong>4. Prayer for Relief.</strong> Defendant respectfully requests that the Court (a) deny Plaintiff's requested relief, (b) award Defendant costs of suit, and (c) grant such other relief as is just.</p>
+
+        <p style="margin-top:24px"><em>I declare under penalty of perjury under the laws of the State of California that the foregoing is true and correct.</em></p>
+
+        <div class="signature-block">
+          Dated: <span class="ph" contenteditable="true">May 22, 2026</span><br>
+          <div class="sig-line"></div><br>
+          <span class="ph" contenteditable="true">Rosa Hernandez</span>, Defendant in Pro Per
+        </div>
+      </article>
+
+      <div class="doc-actions">
+        <button class="btn" onclick="alert('In production: opens the PDF in your phone\\'s share sheet so you can save, print, or file electronically through the California court eFile system.')">Download as PDF</button>
+        <button class="btn ghost" onclick="alert('In production: walks you through the court\\'s online filing portal step-by-step — picks the right form, attaches the answer, requests the fee waiver, and confirms submission.')">eFile to Alameda County</button>
+        <button class="btn ghost" onclick="document.querySelector('[data-t=defenses]').click()">Review my defenses</button>
+      </div>
+    </div>
+
+    <!-- Next steps -->
+    <div class="tab-panel" data-tp="steps">
+      <p class="muted" style="margin-bottom:14px">In order. Tap to mark done.</p>
+      <div class="checklist" id="checklist">
+        <div class="task" data-id="t1">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Read your Answer below. Fix the yellow fields.</div>
+            <div class="why">Especially the description of habitability issues — be specific (dates, what broke, who you told).</div>
+            <div class="due">Today</div>
+          </div>
+        </div>
+        <div class="task" data-id="t2">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Gather evidence</div>
+            <div class="why">Photos of conditions · texts/emails to landlord · rent receipts · prior repair requests. Bring originals to court.</div>
+            <div class="due">By Sun, May 24</div>
+          </div>
+        </div>
+        <div class="task" data-id="t3">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Fill out fee waiver (Form FW-001)</div>
+            <div class="why">If your household income is under 125% of federal poverty line, you file for $0. Most tenants qualify.</div>
+            <div class="due">Same day as Answer</div>
+          </div>
+        </div>
+        <div class="task" data-id="t4">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">File the Answer with the court clerk</div>
+            <div class="why">Either in person at the Hayward Hall of Justice or online via odyssey.alameda.courts.ca.gov. Get a stamped copy.</div>
+            <div class="due">By Tue, May 26 — 4:30 PM</div>
+          </div>
+        </div>
+        <div class="task" data-id="t5">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Serve a copy on the landlord's attorney</div>
+            <div class="why">Mail or hand-deliver. Have a friend over 18 do the mailing — they sign a "proof of service."</div>
+            <div class="due">Same day or next business day</div>
+          </div>
+        </div>
+        <div class="task" data-id="t6">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Call legal aid — free help is available</div>
+            <div class="why">East Bay Community Law Center (510-548-4040) takes eviction cases at no charge if you qualify. Call before trial.</div>
+            <div class="due">This week</div>
+          </div>
+        </div>
+        <div class="task" data-id="t7">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Show up to every court date</div>
+            <div class="why">Missing one hearing usually ends the case against you. We'll text you reminders 48h and 4h before.</div>
+            <div class="due">Ongoing</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Defenses -->
+    <div class="tab-panel" data-tp="defenses">
+      <p class="muted" style="margin-bottom:18px">Based on what we read in the complaint and California eviction law. Check the ones that apply — they go into your Answer.</p>
+      <div class="checklist">
+        <div class="task" data-id="d1">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Habitability — the unit wasn't livable</div>
+            <div class="why">Mold, no heat, no hot water, infestation, broken plumbing, unsafe wiring. Even if you didn't pay rent, an uninhabitable unit reduces what you owe. <span style="font-family:var(--mono);font-size:11px">Civ. Code §1941.1 · Green v. Superior Court (1974)</span></div>
+          </div>
+        </div>
+        <div class="task" data-id="d2">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Retaliation — landlord is punishing you</div>
+            <div class="why">If you complained to the landlord, code enforcement, or organized with other tenants in the last 180 days, retaliation is presumed. <span style="font-family:var(--mono);font-size:11px">Civ. Code §1942.5</span></div>
+          </div>
+        </div>
+        <div class="task" data-id="d3">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Improper notice — the 3-day notice was wrong</div>
+            <div class="why">Common errors: rent amount overstated, didn't credit a payment, served incorrectly, demanded other charges (late fees, utilities) inside a "pay rent" notice. Any one of these often kills the case. <span style="font-family:var(--mono);font-size:11px">CCP §1161(2)</span></div>
+          </div>
+        </div>
+        <div class="task" data-id="d4">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Just cause — Oakland's rent ordinance applies</div>
+            <div class="why">Oakland tenants in qualifying units are protected from no-fault evictions. Your landlord must have one of the listed "just causes." <span style="font-family:var(--mono);font-size:11px">Oakland Mun. Code §8.22.300</span></div>
+          </div>
+        </div>
+        <div class="task" data-id="d5">
+          <div class="check">✓</div>
+          <div class="text">
+            <div class="title">Acceptance of rent waiver</div>
+            <div class="why">If the landlord accepted rent after serving the notice, they may have waived their right to evict on that ground. <span style="font-family:var(--mono);font-size:11px">EDC Block v. Tanenhaus (1956)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Where to file -->
+    <div class="tab-panel" data-tp="court">
+      <h3 style="margin-bottom:12px">Alameda County Superior Court</h3>
+      <p style="margin-bottom:12px">Hayward Hall of Justice — Civil Filings, Room 132<br>24405 Amador Street, Hayward, CA 94544<br><span class="muted">Open Mon–Fri, 8:30 AM – 4:30 PM. Closed county holidays.</span></p>
+      <p><strong>eFiling portal:</strong> odyssey.alameda.courts.ca.gov<br><strong>Self-help center:</strong> (510) 891-6010 — free walk-in help, Mon/Wed/Fri</p>
+      <h3 style="margin:24px 0 12px">Filing fees</h3>
+      <p>Answer to unlawful detainer: <strong>$240</strong> — or $0 if you qualify for a fee waiver (Form FW-001). Most tenants in eviction court qualify; the form takes about 10 minutes.</p>
+      <h3 style="margin:24px 0 12px">If you can't make it in person</h3>
+      <p>Mail your Answer with a check (or fee waiver application) so it arrives <strong>before</strong> the deadline — not just postmarked. Use certified mail with return receipt.</p>
+    </div>
+
+  </section>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    <strong>This is not legal advice.</strong> DOCKET is a self-help tool, not a lawyer. Documents are drafted from California court rules and templates, then reviewed by attorneys, but every case is different. If you can speak to a lawyer or legal aid — please do. We list free legal aid for your area on the Next Steps tab.
+  </div>
+
+  <div class="footer-note">
+    DOCKET · for the 80% of defendants who can't afford a lawyer · <a href="docket-landing.html">about</a>
+  </div>
+
+</main>
+
+<script>
+// ──── State ────
+const state = {
+  serviceDate: new Date('2026-05-18T09:00:00'),
+  answerDue: new Date('2026-05-26T16:30:00'),
+  trialDate: new Date('2026-06-15T09:00:00'),
+  loaded: false,
+  done: JSON.parse(localStorage.getItem('docket.done') || '{}')
+};
+
+// ──── Tabs ────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.t;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('on', p.dataset.tp === target));
+  });
+});
+
+// ──── Dropzone ────
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault();drop.classList.add('hover');}));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault();drop.classList.remove('hover');}));
+drop.addEventListener('drop', ev => {
+  ev.preventDefault();
+  const f = ev.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) handleFile(fileInput.files[0]);
+});
+
+function handleFile(file){
+  // Real FileReader pass to capture filename + basic metadata
+  const reader = new FileReader();
+  reader.onload = () => {
+    console.log('[DOCKET] read', file.name, '·', Math.round(file.size/1024), 'KB');
+    startReading();
+  };
+  reader.onerror = () => startReading();
+  reader.readAsArrayBuffer(file.slice(0, 1024)); // peek; we don't actually parse PDFs in this prototype
+}
+
+// ──── Simulated parse ────
+function startReading(){
+  document.getElementById('uploadSection').style.display = 'none';
+  const r = document.getElementById('reading');
+  r.classList.add('on');
+  const steps = ['s1','s2','s3','s4'];
+  let i = 0;
+  const tick = () => {
+    if (i > 0) document.getElementById(steps[i-1]).classList.remove('on');
+    if (i > 0) document.getElementById(steps[i-1]).classList.add('done');
+    if (i < steps.length){
+      document.getElementById(steps[i]).classList.add('on');
+      i++;
+      setTimeout(tick, 480);
+    } else {
+      setTimeout(showResults, 380);
+    }
+  };
+  tick();
+}
+
+function loadSample(){
+  startReading();
+}
+
+function showResults(){
+  document.getElementById('reading').classList.remove('on');
+  document.getElementById('results').classList.add('on');
+  document.getElementById('caseNumBar').textContent = 'Case No. RG24-118392';
+  state.loaded = true;
+  renderChecklist();
+  tickCountdowns();
+}
+
+// ──── Countdown timers ────
+function fmtDelta(target){
+  const now = new Date();
+  let diff = target - now;
+  if (diff <= 0) return {text: 'PASSED', cls: 'warn'};
+  const days = Math.floor(diff / (1000*60*60*24));
+  diff -= days * 24*60*60*1000;
+  const hrs = Math.floor(diff / (1000*60*60));
+  diff -= hrs * 60*60*1000;
+  const mins = Math.floor(diff / (1000*60));
+  if (days > 0) return {text: `${days}d ${hrs}h`, cls: days < 3 ? 'warn' : ''};
+  if (hrs > 0) return {text: `${hrs}h ${mins}m`, cls: 'warn'};
+  return {text: `${mins}m`, cls: 'warn'};
+}
+
+function tickCountdowns(){
+  if (!state.loaded) return;
+  const a = fmtDelta(state.answerDue);
+  document.getElementById('cd1').textContent = a.text;
+  const c2 = document.getElementById('cd2');
+  c2.textContent = a.text;
+  const c3 = document.getElementById('cd3');
+  c3.textContent = fmtDelta(state.trialDate).text;
+}
+setInterval(tickCountdowns, 30 * 1000);
+
+// ──── Checklist persistence ────
+function renderChecklist(){
+  document.querySelectorAll('.task').forEach(t => {
+    const id = t.dataset.id;
+    if (state.done[id]) t.classList.add('done');
+    t.addEventListener('click', () => {
+      t.classList.toggle('done');
+      state.done[id] = t.classList.contains('done');
+      localStorage.setItem('docket.done', JSON.stringify(state.done));
+    });
+  });
+}
+
+// ──── Auto-load sample after 600ms so the demo always works ────
+window.addEventListener('load', () => {
+  // Show upload UI first; auto-advance if user hasn't interacted in 2.5s — keeps the demo alive
+  setTimeout(() => {
+    if (!state.loaded && document.getElementById('uploadSection').style.display !== 'none'){
+      // Don't auto-load — just leave the sample button visible. User has 'See a sample case →'.
+    }
+  }, 2500);
+});
+</script>
+</body>
+</html>

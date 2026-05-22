@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>STACK — indoor air, identified</title>
+<meta name="description" content="STACK identifies the SOURCE of your indoor air pollution. Not just PM2.5 — the gas stove, the mold, the off-gassing couch. A cheap sensor + phone audio + ML fingerprinting.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f4ef">
+<style>
+:root{
+  --paper:#f7f4ef; --paper-2:#efe9e0; --paper-3:#e5dccf;
+  --ink:#1a1612; --ink-2:#3a342c; --muted:#6b6258;
+  --cyan:#00b4d8; --cyan-deep:#0096b8; --cyan-soft:#e0f5fa;
+  --amber:#d97706; --amber-soft:#fef3e0;
+  --red:#c2410c; --green:#15803d;
+  --line:rgba(26,22,18,0.08);
+  --line-2:rgba(26,22,18,0.15);
+  --sans:-apple-system,BlinkMacSystemFont,'Inter','Söhne','Segoe UI',sans-serif;
+  --mono:'JetBrains Mono','SF Mono','Menlo',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100vh}
+body{padding:0;font-weight:400;font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+::selection{background:var(--cyan);color:var(--paper)}
+
+/* ── Top status bar ── */
+.topbar{position:sticky;top:0;z-index:50;background:var(--paper);border-bottom:1px solid var(--line);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{font-family:var(--mono);font-weight:600;letter-spacing:0.12em;font-size:14px}
+.brand-mark::before{content:"";display:inline-block;width:8px;height:8px;background:var(--cyan);margin-right:8px;vertical-align:1px;animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
+.brand-tag{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;padding:3px 6px;border:1px solid var(--line-2);border-radius:2px}
+.sensor-status{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted)}
+.sensor-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(21,128,61,0.5);animation:sensor-pulse 2.4s ease-out infinite}
+@keyframes sensor-pulse{0%{box-shadow:0 0 0 0 rgba(21,128,61,0.5)}80%,100%{box-shadow:0 0 0 8px rgba(21,128,61,0)}}
+
+/* ── Main grid ── */
+.wrap{max-width:760px;margin:0 auto;padding:20px 18px 80px}
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* ── Sniffing hero ── */
+.sniff{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px 22px;position:relative;overflow:hidden;margin-bottom:18px}
+.sniff-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:14px}
+.sniff-title{font-size:13px;color:var(--muted);font-family:var(--mono);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px}
+.sniff-room{font-size:22px;font-weight:600;letter-spacing:-0.01em}
+.sniff-time{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.08em;text-align:right}
+.sniff-anim{position:relative;height:90px;margin:6px 0 22px;display:flex;align-items:center;justify-content:center}
+.sniff-wave{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:3px}
+.sniff-wave span{display:inline-block;width:3px;background:var(--cyan);border-radius:2px;animation:sniff-bar 1.4s ease-in-out infinite}
+.sniff-wave span:nth-child(1){height:12px;animation-delay:0s}
+.sniff-wave span:nth-child(2){height:22px;animation-delay:.08s}
+.sniff-wave span:nth-child(3){height:38px;animation-delay:.16s}
+.sniff-wave span:nth-child(4){height:54px;animation-delay:.24s}
+.sniff-wave span:nth-child(5){height:62px;animation-delay:.32s}
+.sniff-wave span:nth-child(6){height:54px;animation-delay:.40s}
+.sniff-wave span:nth-child(7){height:38px;animation-delay:.48s}
+.sniff-wave span:nth-child(8){height:22px;animation-delay:.56s}
+.sniff-wave span:nth-child(9){height:12px;animation-delay:.64s}
+.sniff-wave span:nth-child(10){height:8px;animation-delay:.72s}
+.sniff-wave span:nth-child(11){height:14px;animation-delay:.80s}
+.sniff-wave span:nth-child(12){height:26px;animation-delay:.88s}
+.sniff-wave span:nth-child(13){height:42px;animation-delay:.96s}
+.sniff-wave span:nth-child(14){height:32px;animation-delay:1.04s}
+.sniff-wave span:nth-child(15){height:18px;animation-delay:1.12s}
+@keyframes sniff-bar{0%,100%{transform:scaleY(0.4);opacity:0.4}50%{transform:scaleY(1);opacity:1}}
+.sniff-label{position:absolute;bottom:-2px;font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted)}
+
+/* ── Readings grid ── */
+.readings{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.reading{padding:14px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);position:relative}
+.reading-label{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.reading-value{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-0.02em;line-height:1}
+.reading-unit{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:2px;font-weight:400}
+.reading-trend{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;margin-top:6px}
+.trend-up{color:var(--amber)}
+.trend-down{color:var(--green)}
+.trend-flat{color:var(--muted)}
+.reading.alert{border-color:var(--amber);background:var(--amber-soft)}
+.reading.alert .reading-value{color:var(--amber)}
+
+/* ── Source identified ── */
+.source-panel{background:var(--ink);color:var(--paper);border-radius:14px;padding:22px;margin-bottom:18px;position:relative;overflow:hidden}
+.source-panel::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),transparent);animation:source-scan 4s ease-in-out infinite}
+@keyframes source-scan{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.source-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.source-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--cyan)}
+.source-confidence{font-family:var(--mono);font-size:11px;color:var(--paper);letter-spacing:0.1em}
+.source-confidence b{color:var(--cyan);font-weight:600;font-size:14px}
+.source-name{font-size:24px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;margin-bottom:8px}
+.source-category{font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.08em;margin-bottom:18px}
+.source-action{display:flex;gap:12px;align-items:flex-start;padding:14px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:2px solid var(--cyan)}
+.source-action-icon{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:0.1em;padding-top:1px}
+.source-action-text{font-size:14px;line-height:1.5;color:var(--paper);flex:1}
+.source-severity{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa}
+.severity-dot{width:8px;height:8px;border-radius:50%}
+.severity-low{background:var(--green)}
+.severity-mid{background:var(--amber)}
+.severity-high{background:#dc2626}
+
+/* Source transitions */
+.source-content{transition:opacity 0.4s ease}
+.source-content.fade{opacity:0}
+
+/* ── Timeline chart ── */
+.timeline{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+.timeline-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+.timeline-title{font-size:14px;font-weight:600;letter-spacing:-0.01em}
+.timeline-sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+.timeline-svg{width:100%;height:120px;display:block}
+.timeline-axis{font-family:var(--mono);font-size:9px;fill:var(--muted);letter-spacing:0.05em}
+.timeline-area{fill:url(#tlGrad)}
+.timeline-line{fill:none;stroke:var(--cyan);stroke-width:1.5}
+.timeline-event{cursor:pointer}
+.timeline-event circle{transition:r 0.2s}
+.timeline-event:hover circle{r:7}
+.timeline-legend{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.05em}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* ── Recent log ── */
+.log{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+.log-title{font-size:14px;font-weight:600;margin-bottom:14px;letter-spacing:-0.01em}
+.log-row{display:grid;grid-template-columns:60px 1fr auto;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line);align-items:center}
+.log-row:last-child{border-bottom:none}
+.log-time{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.05em}
+.log-source{font-size:13px;color:var(--ink-2)}
+.log-source b{color:var(--ink);font-weight:600}
+.log-conf{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.05em;text-align:right}
+
+/* ── Action buttons ── */
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;font-family:var(--mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;border:1px solid var(--line-2);border-radius:8px;color:var(--ink);background:var(--paper);transition:all 0.15s;font-weight:500}
+.btn:hover{border-color:var(--cyan);color:var(--cyan-deep)}
+.btn.primary{background:var(--cyan);color:var(--paper);border-color:var(--cyan)}
+.btn.primary:hover{background:var(--cyan-deep);color:var(--paper)}
+
+/* ── Footer meta ── */
+.foot{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid var(--line)}
+
+/* ── Pairing modal (initial) ── */
+.pair-overlay{position:fixed;inset:0;background:var(--paper);z-index:200;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:30px;transition:opacity 0.6s}
+.pair-overlay.gone{opacity:0;pointer-events:none}
+.pair-orb{width:120px;height:120px;border-radius:50%;border:1px solid var(--cyan);position:relative;margin-bottom:30px;display:flex;align-items:center;justify-content:center}
+.pair-orb::before,.pair-orb::after{content:"";position:absolute;inset:0;border-radius:50%;border:1px solid var(--cyan);opacity:0.4;animation:pair-ring 2s ease-out infinite}
+.pair-orb::after{animation-delay:1s}
+@keyframes pair-ring{0%{transform:scale(0.6);opacity:0.7}100%{transform:scale(1.6);opacity:0}}
+.pair-orb-inner{width:10px;height:10px;background:var(--cyan);border-radius:50%;animation:pulse-dot 1.4s ease-in-out infinite}
+.pair-status{font-family:var(--mono);font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);text-align:center;line-height:1.7}
+.pair-status b{color:var(--ink);font-weight:600}
+
+@media (max-width:520px){
+  .readings{grid-template-columns:repeat(2,1fr)}
+  .sniff-room{font-size:20px}
+  .source-name{font-size:21px}
+  .wrap{padding:16px 14px 80px}
+}
+</style>
+</head>
+<body>
+
+<!-- BLE Pairing overlay -->
+<div class="pair-overlay" id="pairOverlay">
+  <div class="pair-orb"><div class="pair-orb-inner"></div></div>
+  <div class="pair-status" id="pairStatus">SCANNING&nbsp;FOR&nbsp;DEVICES…</div>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-mark">STACK</span>
+    <span class="brand-tag">v0.4 BETA</span>
+  </div>
+  <div class="sensor-status">
+    <span class="sensor-dot"></span>
+    <span id="sensorLabel">SENSOR · LIVING ROOM</span>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- Now sniffing -->
+  <div class="section-label">Now sniffing</div>
+  <section class="sniff">
+    <div class="sniff-header">
+      <div>
+        <div class="sniff-title">Active sample</div>
+        <div class="sniff-room">Living room · north window</div>
+      </div>
+      <div class="sniff-time">
+        <div id="liveClock">--:--:--</div>
+        <div style="color:var(--muted);margin-top:3px">~4s window</div>
+      </div>
+    </div>
+
+    <div class="sniff-anim">
+      <div class="sniff-wave" id="wave">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="readings">
+      <div class="reading" id="r-pm">
+        <div class="reading-label">PM2.5</div>
+        <div class="reading-value"><span id="v-pm">42</span><span class="reading-unit">µg/m³</span></div>
+        <div class="reading-trend trend-up" id="t-pm">↑ +18 in 4 min</div>
+      </div>
+      <div class="reading" id="r-voc">
+        <div class="reading-label">VOC</div>
+        <div class="reading-value"><span id="v-voc">312</span><span class="reading-unit">ppb</span></div>
+        <div class="reading-trend trend-up" id="t-voc">↑ rising</div>
+      </div>
+      <div class="reading" id="r-co2">
+        <div class="reading-label">CO₂</div>
+        <div class="reading-value"><span id="v-co2">820</span><span class="reading-unit">ppm</span></div>
+        <div class="reading-trend trend-flat" id="t-co2">→ steady</div>
+      </div>
+      <div class="reading" id="r-hum">
+        <div class="reading-label">RH</div>
+        <div class="reading-value"><span id="v-hum">58</span><span class="reading-unit">%</span></div>
+        <div class="reading-trend trend-flat" id="t-hum">→ normal</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Source identified -->
+  <div class="section-label">Source identified</div>
+  <section class="source-panel">
+    <div class="source-content" id="sourceContent">
+      <div class="source-header">
+        <span class="source-eyebrow">▮ MATCH FOUND</span>
+        <span class="source-confidence"><b id="confValue">87</b>% CONFIDENCE</span>
+      </div>
+      <div class="source-name" id="sourceName">Gas stove combustion</div>
+      <div class="source-category" id="sourceCategory">COMBUSTION · NO₂ + fine particulate signature</div>
+      <div class="source-action">
+        <div class="source-action-icon">DO →</div>
+        <div class="source-action-text" id="sourceAction">Open the north-facing window for 12 minutes. Turn on the range hood at high. Avoid the kitchen for 20 minutes if pregnant or asthmatic.</div>
+      </div>
+      <div class="source-severity">
+        <span class="severity-dot severity-mid" id="severityDot"></span>
+        <span id="severityLabel">MODERATE · LOG &amp; VENTILATE</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary" onclick="markFixed()">✓ Actioned · log it</button>
+    <button class="btn" onclick="resample()">↻ Re-sample now</button>
+    <button class="btn" onclick="snooze()">⏱ Snooze 15m</button>
+  </div>
+
+  <!-- Timeline -->
+  <div class="section-label">Last 24 hours</div>
+  <section class="timeline">
+    <div class="timeline-head">
+      <div class="timeline-title">Air-quality timeline</div>
+      <div class="timeline-sub" id="timelineMeta">7 EVENTS · PM2.5 PEAK 94</div>
+    </div>
+    <svg class="timeline-svg" viewBox="0 0 700 120" preserveAspectRatio="none" id="timelineSvg">
+      <defs>
+        <linearGradient id="tlGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#00b4d8" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#00b4d8" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- baseline -->
+      <line x1="0" y1="100" x2="700" y2="100" stroke="rgba(26,22,18,0.08)" stroke-dasharray="2 4"/>
+      <line x1="0" y1="60" x2="700" y2="60" stroke="rgba(26,22,18,0.05)" stroke-dasharray="2 4"/>
+      <line x1="0" y1="20" x2="700" y2="20" stroke="rgba(26,22,18,0.05)" stroke-dasharray="2 4"/>
+      <!-- thresholds label -->
+      <text x="2" y="18" class="timeline-axis">100µg</text>
+      <text x="2" y="58" class="timeline-axis">50µg</text>
+      <text x="2" y="98" class="timeline-axis">0</text>
+      <text x="640" y="118" class="timeline-axis">now</text>
+      <text x="2" y="118" class="timeline-axis">−24h</text>
+      <!-- area path -->
+      <path id="tlArea" class="timeline-area" d=""/>
+      <path id="tlLine" class="timeline-line" d=""/>
+      <g id="tlEvents"></g>
+    </svg>
+    <div class="timeline-legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Combustion</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--cyan)"></span>Chemical / VOC</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#15803d"></span>Biological</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#dc2626"></span>Severe</span>
+    </div>
+  </section>
+
+  <!-- Recent log -->
+  <div class="section-label">Recent identifications</div>
+  <section class="log">
+    <div class="log-title">Today &amp; yesterday</div>
+    <div id="logList"></div>
+  </section>
+
+  <div class="foot">STACK · S/N AQ-0291-44B · firmware 0.4.12 · data stays on this device</div>
+</main>
+
+<script>
+// ──────────── State ────────────
+const state = {
+  pm: 42, voc: 312, co2: 820, hum: 58,
+  detectionIdx: 0,
+  log: [],
+  history: []
+};
+
+// ──────────── Detection catalog ────────────
+const DETECTIONS = [
+  {
+    name: "Gas stove combustion",
+    category: "COMBUSTION · NO₂ + fine particulate signature",
+    confidence: 87,
+    action: "Open the north-facing window for 12 minutes. Turn on the range hood at high. Avoid the kitchen for 20 minutes if pregnant or asthmatic.",
+    severity: "mid", severityLabel: "MODERATE · LOG & VENTILATE",
+    bias: {pm:+45, voc:+80, co2:+150, hum:+2},
+    color: "var(--amber)"
+  },
+  {
+    name: "Mold spores — likely bathroom",
+    category: "BIOLOGICAL · Aspergillus/Cladosporium signature",
+    confidence: 72,
+    action: "Check tile grout and behind the toilet tank. Run the bathroom fan for 30 minutes after every shower for a week. If RH stays >65%, get a dehumidifier.",
+    severity: "mid", severityLabel: "MODERATE · INSPECT & DRY",
+    bias: {pm:+8, voc:+30, co2:0, hum:+15},
+    color: "#15803d"
+  },
+  {
+    name: "VOC off-gassing — new furniture",
+    category: "CHEMICAL · formaldehyde + xylene profile",
+    confidence: 91,
+    action: "Identify the new item (couch / desk / wardrobe?). Move it to a vented space for 72 hours. Activated carbon filter in the room overnight. Will dissipate in 2–6 weeks.",
+    severity: "low", severityLabel: "LOW · BACKGROUND IRRITANT",
+    bias: {pm:+5, voc:+220, co2:0, hum:0},
+    color: "var(--cyan)"
+  },
+  {
+    name: "Cooking aerosols — frying",
+    category: "COMBUSTION · oil vapor + PM2.5 spike",
+    confidence: 94,
+    action: "Range hood on max. Crack a window now. Spike will clear in ~25 minutes if vented. Switch to back burners next time — captures 60% more.",
+    severity: "mid", severityLabel: "MODERATE · ACUTE SPIKE",
+    bias: {pm:+60, voc:+50, co2:+90, hum:+8},
+    color: "var(--amber)"
+  },
+  {
+    name: "Dust resuspension — vacuum cycle",
+    category: "PARTICULATE · brief mechanical event",
+    confidence: 88,
+    action: "Brief spike, no action needed. Consider a HEPA-filter vacuum if this happens daily. Damp-mop hard floors weekly to reduce baseline dust.",
+    severity: "low", severityLabel: "LOW · TRANSIENT",
+    bias: {pm:+30, voc:+10, co2:0, hum:0},
+    color: "#dc2626"
+  },
+  {
+    name: "Cleaning chemical — bleach",
+    category: "CHEMICAL · chlorine + hypochlorite vapor",
+    confidence: 95,
+    action: "Ventilate immediately. NEVER mix with ammonia (creates chloramine). If irritated, leave the room for 15 minutes. Switch to enzyme cleaners where possible.",
+    severity: "high", severityLabel: "HIGH · LEAVE THE ROOM",
+    bias: {pm:+15, voc:+340, co2:0, hum:+4},
+    color: "#dc2626"
+  },
+  {
+    name: "Candle / incense soot",
+    category: "COMBUSTION · ultra-fine particulate + soot",
+    confidence: 81,
+    action: "Extinguish if you can. Paraffin candles release benzene and toluene — switch to beeswax or soy. Trim wick to 5mm to reduce soot 40%.",
+    severity: "mid", severityLabel: "MODERATE · CHRONIC IRRITANT",
+    bias: {pm:+35, voc:+90, co2:+30, hum:+2},
+    color: "var(--amber)"
+  },
+  {
+    name: "Pet dander — recent activity",
+    category: "BIOLOGICAL · Fel d 1 / Can f 1 allergens",
+    confidence: 76,
+    action: "Vacuum upholstery with HEPA. Wash pet bedding weekly at 60°C. If anyone's wheezing, keep one bedroom pet-free as a sanctuary.",
+    severity: "low", severityLabel: "LOW · ALLERGEN BACKGROUND",
+    bias: {pm:+12, voc:+5, co2:0, hum:+3},
+    color: "#15803d"
+  }
+];
+
+// ──────────── Live clock ────────────
+function tickClock(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('liveClock').textContent = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ──────────── Readings simulator ────────────
+function jitter(base, range){
+  return Math.max(0, Math.round(base + (Math.random()-0.5)*range));
+}
+
+function updateReadings(detection){
+  // drift toward detection bias
+  const targetPm = 18 + (detection?.bias.pm || 0);
+  const targetVoc = 180 + (detection?.bias.voc || 0);
+  const targetCo2 = 720 + (detection?.bias.co2 || 0);
+  const targetHum = 50 + (detection?.bias.hum || 0);
+
+  state.pm = Math.round(state.pm + (targetPm - state.pm) * 0.18 + (Math.random()-0.5)*4);
+  state.voc = Math.round(state.voc + (targetVoc - state.voc) * 0.18 + (Math.random()-0.5)*14);
+  state.co2 = Math.round(state.co2 + (targetCo2 - state.co2) * 0.15 + (Math.random()-0.5)*18);
+  state.hum = Math.max(20, Math.min(95, state.hum + (targetHum - state.hum) * 0.1 + (Math.random()-0.5)*1.4));
+
+  document.getElementById('v-pm').textContent = state.pm;
+  document.getElementById('v-voc').textContent = state.voc;
+  document.getElementById('v-co2').textContent = state.co2;
+  document.getElementById('v-hum').textContent = Math.round(state.hum);
+
+  // alert states
+  document.getElementById('r-pm').classList.toggle('alert', state.pm > 35);
+  document.getElementById('r-voc').classList.toggle('alert', state.voc > 400);
+  document.getElementById('r-co2').classList.toggle('alert', state.co2 > 1000);
+  document.getElementById('r-hum').classList.toggle('alert', state.hum > 70);
+
+  // history for chart
+  state.history.push({pm: state.pm, t: Date.now()});
+  if (state.history.length > 60) state.history.shift();
+}
+
+// ──────────── Source cycling ────────────
+const sourceContent = document.getElementById('sourceContent');
+
+function showDetection(idx){
+  const d = DETECTIONS[idx];
+  sourceContent.classList.add('fade');
+  setTimeout(() => {
+    document.getElementById('sourceName').textContent = d.name;
+    document.getElementById('sourceCategory').textContent = d.category;
+    document.getElementById('sourceAction').textContent = d.action;
+    document.getElementById('confValue').textContent = d.confidence;
+    document.getElementById('severityLabel').textContent = d.severityLabel;
+    const dot = document.getElementById('severityDot');
+    dot.className = 'severity-dot severity-' + d.severity;
+    sourceContent.classList.remove('fade');
+    // log entry
+    pushLog(d);
+  }, 380);
+}
+
+function pushLog(d){
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  state.log.unshift({time, name: d.name, conf: d.confidence, color: d.color, severity: d.severity});
+  if (state.log.length > 8) state.log.pop();
+  renderLog();
+}
+
+function renderLog(){
+  const list = document.getElementById('logList');
+  if (state.log.length === 0){
+    list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.1em;padding:14px 0;text-align:center">NO IDENTIFICATIONS YET</div>';
+    return;
+  }
+  // include seed history
+  const items = [...state.log, ...seedHistory];
+  list.innerHTML = items.slice(0, 7).map(item => `
+    <div class="log-row">
+      <div class="log-time">${item.time}</div>
+      <div class="log-source"><b>${item.name}</b></div>
+      <div class="log-conf">${item.conf}%</div>
+    </div>
+  `).join('');
+}
+
+const seedHistory = [
+  {time:'13:42', name:'Cooking aerosols — frying', conf:93},
+  {time:'11:18', name:'VOC off-gassing — new furniture', conf:88},
+  {time:'08:55', name:'Gas stove combustion', conf:85},
+  {time:'07:30', name:'Pet dander — morning activity', conf:74},
+];
+
+// ──────────── Timeline chart ────────────
+function buildTimeline(){
+  // 48 data points = 30min increments across 24h
+  const pts = [];
+  for (let i=0; i<48; i++){
+    // baseline curve with spikes
+    let v = 12 + Math.sin(i*0.4)*4 + Math.random()*6;
+    // morning cook spike
+    if (i >= 15 && i <= 17) v = 38 + Math.random()*12;
+    // lunch
+    if (i >= 24 && i <= 25) v = 28 + Math.random()*6;
+    // furniture VOC sustained mid-evening
+    if (i >= 30 && i <= 36) v = 22 + Math.random()*6;
+    // dinner spike
+    if (i >= 38 && i <= 41) v = 56 + Math.random()*14;
+    // candle in evening
+    if (i >= 43 && i <= 46) v = 32 + Math.random()*5;
+    pts.push(v);
+  }
+
+  const W = 700, H = 120;
+  const xStep = W / (pts.length - 1);
+  const maxY = 100;
+  const yMap = v => H - 20 - (v / maxY) * (H - 30);
+
+  let line = `M 0 ${yMap(pts[0])}`;
+  pts.forEach((v, i) => { if (i>0) line += ` L ${i*xStep} ${yMap(v)}`; });
+  let area = line + ` L ${W} ${H-20} L 0 ${H-20} Z`;
+
+  document.getElementById('tlLine').setAttribute('d', line);
+  document.getElementById('tlArea').setAttribute('d', area);
+
+  // event dots
+  const events = [
+    {i: 16, type:'amber', label:'Gas stove · 08:55'},
+    {i: 24, type:'cyan', label:'VOC · 12:30'},
+    {i: 33, type:'green', label:'Pet dander · 16:30'},
+    {i: 40, type:'amber', label:'Cooking · 19:30'},
+    {i: 44, type:'red', label:'Candle soot · 21:30'},
+    {i: 46, type:'amber', label:'Gas stove · 22:30'},
+    {i: 47, type:'cyan', label:'Now'},
+  ];
+  const colorMap = {amber:'#d97706', cyan:'#00b4d8', green:'#15803d', red:'#dc2626'};
+  const g = document.getElementById('tlEvents');
+  g.innerHTML = events.map(e => {
+    const x = e.i * xStep;
+    const y = yMap(pts[e.i]);
+    return `<g class="timeline-event">
+      <title>${e.label}</title>
+      <circle cx="${x}" cy="${y}" r="4" fill="${colorMap[e.type]}" stroke="#f7f4ef" stroke-width="2"/>
+    </g>`;
+  }).join('');
+}
+buildTimeline();
+
+// ──────────── Action buttons ────────────
+function markFixed(){
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = '✓ Logged';
+  btn.style.background = 'var(--green)';
+  btn.style.borderColor = 'var(--green)';
+  btn.style.color = 'var(--paper)';
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }, 1600);
+}
+
+function resample(){
+  const wave = document.getElementById('wave');
+  wave.style.animation = 'none';
+  setTimeout(() => { wave.style.animation = ''; }, 30);
+  // force next detection
+  state.detectionIdx = (state.detectionIdx + 1) % DETECTIONS.length;
+  showDetection(state.detectionIdx);
+}
+
+function snooze(){
+  const btn = event.target;
+  btn.textContent = '⏱ Snoozed';
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = '⏱ Snooze 15m'; btn.disabled = false; }, 1800);
+}
+
+// ──────────── BLE pairing intro ────────────
+const pairOverlay = document.getElementById('pairOverlay');
+const pairStatus = document.getElementById('pairStatus');
+const pairSteps = [
+  {t: 600, text: 'SCANNING FOR DEVICES…'},
+  {t: 1400, text: 'FOUND <b>STACK AQ-0291-44B</b>'},
+  {t: 2100, text: 'AUTHENTICATING SENSOR…'},
+  {t: 2900, text: 'CALIBRATING BASELINE'},
+  {t: 3700, text: 'CONNECTED · STARTING SNIFF'},
+];
+pairSteps.forEach(step => {
+  setTimeout(() => { pairStatus.innerHTML = step.text; }, step.t);
+});
+setTimeout(() => {
+  pairOverlay.classList.add('gone');
+  setTimeout(() => pairOverlay.remove(), 700);
+  // start cycling
+  startSniffing();
+}, 4400);
+
+// ──────────── Main loop ────────────
+function startSniffing(){
+  // immediate first detection
+  showDetection(0);
+  updateReadings(DETECTIONS[0]);
+
+  // readings tick every 1.4s
+  setInterval(() => {
+    updateReadings(DETECTIONS[state.detectionIdx]);
+  }, 1400);
+
+  // detection cycles every 8s
+  setInterval(() => {
+    state.detectionIdx = (state.detectionIdx + 1) % DETECTIONS.length;
+    showDetection(state.detectionIdx);
+  }, 8000);
+}
+
+renderLog();
+</script>
+</body>
+</html>
