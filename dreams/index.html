@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DREAMS — generative bedtime ritual</title>
+<meta name="description" content="A nightly ritual app. Compose your night. 4-7-8 breath pacer + generative soundscape + morning dream recall. On-device, AU$30 once.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0B0820">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DREAMS">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22DREAMS%22%2C%22short_name%22%3A%22DREAMS%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230B0820%22%2C%22theme_color%22%3A%220B0820%22%2C%22orientation%22%3A%22portrait%22%7D">
+<style>
+:root {
+  --bg:#0B0820; --bg-2:#15102e; --bg-3:#1f1840;
+  --ink:#f5f0e8; --soft:#bfb8cc; --muted:#8a8298;
+  --lavender:#e0c0ff; --violet:#9b6bff; --cyan:#c8e8ff; --gold:#ffe070;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit;background:transparent;border:1px solid rgba(224,192,255,0.3);padding:14px 18px;width:100%;border-radius:8px;font-size:16px}
+input:focus,textarea:focus{outline:none;border-color:var(--violet)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--violet);outline-offset:3px;border-radius:4px}
+::selection{background:var(--violet);color:var(--bg)}
+
+/* Layout: horizontal scroll-snap panels */
+.panels{display:flex;flex-direction:row;width:100vw;height:100vh;height:100dvh;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.panels::-webkit-scrollbar{display:none}
+.panel{flex:0 0 100vw;width:100vw;height:100vh;height:100dvh;overflow-y:auto;scroll-snap-align:start;display:flex;flex-direction:column;padding:6vh 7vw 12vh;position:relative}
+
+/* Dot pagination */
+.dots{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:9px;z-index:100;pointer-events:none}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.18);transition:all 0.3s}
+.dot.on{background:var(--violet);transform:scale(1.5);box-shadow:0 0 8px var(--violet)}
+
+/* Typography */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:var(--lavender);margin-bottom:18px}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(40px,9vw,72px);line-height:1.05;letter-spacing:-0.02em;color:var(--ink);margin-bottom:20px}
+h1 em{font-style:italic;color:var(--lavender)}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,6vw,44px);line-height:1.1;margin-bottom:14px}
+p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:520px}
+.lede{font-size:17px;color:var(--ink);margin-bottom:24px;max-width:520px}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:0.6em;padding:16px 28px;border:1px solid var(--violet);color:var(--lavender);font-family:var(--mono);font-size:12px;letter-spacing:0.2em;text-transform:uppercase;border-radius:50px;transition:all 0.3s;min-height:48px}
+.btn:hover,.btn:active{background:var(--violet);color:var(--bg)}
+.btn-primary{background:linear-gradient(135deg,var(--violet),var(--lavender));color:var(--bg);border-color:transparent}
+.btn-primary:hover,.btn-primary:active{background:var(--lavender);color:var(--bg)}
+.btn-ghost{border-color:rgba(224,192,255,0.3);color:var(--soft)}
+
+/* Brand top bar */
+.brand{position:fixed;top:max(16px,env(safe-area-inset-top));left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 7vw;z-index:90;pointer-events:none}
+.brand .mark{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--ink);letter-spacing:-0.01em}
+.brand .crumb{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase}
+
+/* Welcome / panel 1 */
+.welcome-hero{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;max-width:560px;margin:0 auto;width:100%}
+.glow-bg{position:absolute;top:50%;right:-20%;transform:translateY(-50%);width:90vw;height:90vw;max-width:800px;max-height:800px;background:radial-gradient(circle,rgba(155,107,255,0.25),transparent 65%);filter:blur(60px);pointer-events:none;z-index:0}
+.welcome-hero > *{position:relative;z-index:1}
+.welcome-cta-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+
+/* Intention panel */
+.intention-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:560px;margin:0 auto;width:100%}
+.intention-input{font-family:var(--serif);font-size:22px;line-height:1.4;color:var(--ink);background:rgba(255,255,255,0.04);border:1px solid rgba(224,192,255,0.2);border-radius:14px;padding:22px;min-height:160px;resize:none;width:100%}
+.intention-input::placeholder{color:var(--muted);font-style:italic}
+.intention-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;margin-bottom:24px}
+.chip{padding:8px 14px;border:1px solid rgba(224,192,255,0.25);border-radius:50px;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--soft);cursor:pointer;transition:all 0.2s}
+.chip:hover,.chip.on{background:var(--violet);color:var(--bg);border-color:var(--violet)}
+
+/* Ritual / player panel */
+.ritual-stage{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative}
+.breath-orb{width:min(60vw,300px);height:min(60vw,300px);border-radius:50%;background:radial-gradient(circle,rgba(155,107,255,0.6),rgba(224,192,255,0.2),transparent);position:relative;display:flex;align-items:center;justify-content:center;transition:transform 1s ease}
+.breath-orb::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(224,192,255,0.4);box-shadow:0 0 60px rgba(155,107,255,0.5)}
+.breath-label{font-family:var(--mono);font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--ink);text-align:center}
+.breath-count{font-family:var(--serif);font-size:38px;color:var(--ink);margin-top:6px;font-weight:300}
+.ritual-status{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-top:32px;text-align:center}
+.ritual-cycles{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;color:var(--lavender);margin-top:8px;text-align:center}
+.ritual-controls{display:flex;gap:14px;margin-top:32px;justify-content:center}
+.icon-btn{width:56px;height:56px;border-radius:50%;border:1px solid rgba(224,192,255,0.3);display:flex;align-items:center;justify-content:center;color:var(--lavender);font-size:18px;background:rgba(255,255,255,0.04)}
+.icon-btn:hover,.icon-btn:active{background:var(--violet);color:var(--bg);border-color:var(--violet)}
+
+/* Recall panel */
+.recall-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:600px;margin:0 auto;width:100%}
+.dream-textarea{font-family:var(--serif);font-size:18px;line-height:1.55;color:var(--ink);background:rgba(255,255,255,0.04);border:1px solid rgba(224,192,255,0.2);border-radius:14px;padding:22px;min-height:200px;resize:vertical;width:100%}
+.recall-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;margin-bottom:24px}
+
+/* History panel */
+.history-wrap{max-width:560px;margin:0 auto;width:100%}
+.history-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px;margin-top:20px}
+.stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(224,192,255,0.1);border-radius:14px;padding:18px;text-align:center}
+.stat-num{font-family:var(--serif);font-size:42px;font-weight:400;color:var(--lavender);line-height:1}
+.stat-label{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.session-list{display:flex;flex-direction:column;gap:10px}
+.session-card{background:rgba(255,255,255,0.03);border-left:2px solid var(--violet);padding:14px 18px;border-radius:8px}
+.session-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;margin-bottom:6px}
+.session-snippet{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink);line-height:1.4}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);font-style:italic}
+
+/* Settings panel */
+.settings-wrap{max-width:520px;margin:0 auto;width:100%}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{color:var(--ink);font-size:15px}
+.setting-value{font-family:var(--mono);font-size:11px;color:var(--lavender);letter-spacing:0.12em}
+.toggle{width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,0.1);position:relative;cursor:pointer;transition:background 0.3s}
+.toggle.on{background:var(--violet)}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--ink);transition:transform 0.3s}
+.toggle.on::after{transform:translateX(20px)}
+
+/* Breathing orb animations */
+.breath-orb.inhale{transform:scale(1.35)}
+.breath-orb.hold{transform:scale(1.35)}
+.breath-orb.exhale{transform:scale(0.75)}
+
+/* Swipe hint (first load only) */
+.swipe-hint{position:fixed;bottom:36px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:rgba(255,255,255,0.4);text-transform:uppercase;z-index:99;pointer-events:none;animation:hintFade 4s ease-in-out 1.5s forwards}
+@keyframes hintFade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
+
+@media (max-width:380px){
+  h1{font-size:36px}
+  .panel{padding:5vh 5vw 14vh}
+}
+</style>
+</head>
+<body>
+<div class="brand">
+  <span class="mark">RHYTHMIX FREQUENCY <em style="color:var(--lavender);font-weight:500">· DREAMS</em></span>
+  <span class="crumb">v1 · AU$30</span>
+</div>
+
+<div class="panels" id="panels">
+
+  <!-- Panel 1: Welcome -->
+  <section class="panel" aria-label="Welcome">
+    <div class="glow-bg"></div>
+    <div class="welcome-hero">
+      <div class="eyebrow">DREAMS · NIGHTLY RITUAL</div>
+      <h1>Compose your <em>night.</em></h1>
+      <p class="lede">A six-minute bedtime ritual. Set an intention, breathe with the orb, sleep to a soundscape composed for tonight. Wake with a moment of recall.</p>
+      <div class="welcome-cta-row">
+        <button class="btn btn-primary" onclick="goTo(1)">Begin the ritual →</button>
+        <button class="btn btn-ghost" onclick="goTo(3)">Morning recall</button>
+      </div>
+      <p class="mono" style="margin-top:30px;color:var(--muted)">Swipe → between screens. Or use arrow keys.</p>
+    </div>
+  </section>
+
+  <!-- Panel 2: Intention -->
+  <section class="panel" aria-label="Intention">
+    <div class="intention-wrap">
+      <div class="eyebrow">PANEL 2 · INTENTION</div>
+      <h2>What's tonight about?</h2>
+      <p>One line. The soundscape composes around it.</p>
+      <textarea class="intention-input" id="intention" placeholder="Tonight I want to remember…"></textarea>
+      <div class="intention-chips">
+        <span class="chip" onclick="setIntention('Tonight I want to let go of today.')">Let go</span>
+        <span class="chip" onclick="setIntention('Tonight I want to dream lucidly.')">Lucid</span>
+        <span class="chip" onclick="setIntention('Tonight I want a memory to return.')">Recall</span>
+        <span class="chip" onclick="setIntention('Tonight I want deep, uninterrupted rest.')">Rest</span>
+        <span class="chip" onclick="setIntention('Tonight I want to feel safe.')">Safe</span>
+      </div>
+      <button class="btn btn-primary" onclick="saveIntentionAndGo()">Take me to the breath →</button>
+    </div>
+  </section>
+
+  <!-- Panel 3: Ritual (4-7-8 breath + soundscape) -->
+  <section class="panel" aria-label="Ritual">
+    <div class="ritual-stage">
+      <div class="eyebrow" style="position:absolute;top:0">PANEL 3 · THE RITUAL</div>
+      <div class="breath-orb" id="orb">
+        <div>
+          <div class="breath-label" id="breathLabel">Tap to begin</div>
+          <div class="breath-count" id="breathCount">4–7–8</div>
+        </div>
+      </div>
+      <div class="ritual-status" id="ritualStatus">Six cycles. About one minute.</div>
+      <div class="ritual-cycles" id="ritualCycles"></div>
+      <div class="ritual-controls">
+        <button class="icon-btn" id="playBtn" onclick="toggleRitual()" aria-label="Play / pause">▶</button>
+        <button class="icon-btn" id="audioBtn" onclick="toggleAudio()" aria-label="Soundscape on/off">🔊</button>
+        <button class="icon-btn" onclick="resetRitual()" aria-label="Reset">↺</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 4: Morning recall -->
+  <section class="panel" aria-label="Morning recall">
+    <div class="recall-wrap">
+      <div class="eyebrow">PANEL 4 · MORNING RECALL</div>
+      <h2>What stayed with you?</h2>
+      <p>Two lines. A fragment is enough.</p>
+      <textarea class="dream-textarea" id="dreamEntry" placeholder="The room was warm. Someone was speaking but I couldn't see who. We were walking somewhere familiar…"></textarea>
+      <div class="recall-tags">
+        <span class="chip" onclick="addTag('lucid')">lucid</span>
+        <span class="chip" onclick="addTag('vivid')">vivid</span>
+        <span class="chip" onclick="addTag('flying')">flying</span>
+        <span class="chip" onclick="addTag('chase')">chase</span>
+        <span class="chip" onclick="addTag('peaceful')">peaceful</span>
+        <span class="chip" onclick="addTag('fragment')">fragment</span>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="saveDream()">Save to journal</button>
+        <button class="btn btn-ghost" onclick="goTo(4)">Skip · see history</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 5: History -->
+  <section class="panel" aria-label="History">
+    <div class="history-wrap">
+      <div class="eyebrow">PANEL 5 · YOUR JOURNAL</div>
+      <h2>Last nights.</h2>
+      <div class="history-stats">
+        <div class="stat-card"><div class="stat-num" id="statStreak">0</div><div class="stat-label">Streak</div></div>
+        <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Sessions</div></div>
+        <div class="stat-card"><div class="stat-num" id="statDreams">0</div><div class="stat-label">Recalled</div></div>
+      </div>
+      <div class="session-list" id="sessionList">
+        <div class="empty-state">No nights yet. Complete a ritual to begin.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 6: Settings -->
+  <section class="panel" aria-label="Settings">
+    <div class="settings-wrap">
+      <div class="eyebrow">PANEL 6 · SETTINGS</div>
+      <h2>Adjust the night.</h2>
+      <div class="setting-row">
+        <span class="setting-label">Soundscape on by default</span>
+        <div class="toggle on" id="setSound" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Voice-guided breath</span>
+        <div class="toggle" id="setVoice" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Breath cycle count</span>
+        <span class="setting-value">6 (recommended)</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Frequency base</span>
+        <span class="setting-value">432 Hz</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Data</span>
+        <span class="setting-value">Kept on this device</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Lifetime price</span>
+        <span class="setting-value">AU$30 · paid</span>
+      </div>
+      <div style="margin-top:30px;text-align:center">
+        <button class="btn btn-ghost" onclick="resetAll()">Reset all data</button>
+      </div>
+      <p style="text-align:center;margin-top:24px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.15em">RHYTHMIX FREQUENCY · DREAMS v1 · rhythmixapp.com.au/dreams</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="swipe-hint" id="swipeHint">swipe → to explore</div>
+
+<script>
+// ──── State ────
+const state = {
+  intention: '',
+  ritualActive: false,
+  ritualPhase: null,
+  cyclesDone: 0,
+  cyclesTarget: 6,
+  audioOn: false,
+  audioCtx: null,
+  oscillators: [],
+  currentDreamTags: []
+};
+
+// ──── Panel navigation ────
+const panels = document.getElementById('panels');
+const sections = document.querySelectorAll('.panel');
+const dotsContainer = document.getElementById('dots');
+sections.forEach((s, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.onclick = () => goTo(i);
+  d.style.pointerEvents = 'auto';
+  dotsContainer.appendChild(d);
+});
+function goTo(i){
+  panels.scrollTo({left: window.innerWidth * i, behavior: 'smooth'});
+}
+panels.addEventListener('scroll', () => {
+  const i = Math.round(panels.scrollLeft / window.innerWidth);
+  document.querySelectorAll('.dot').forEach((d, idx) => d.classList.toggle('on', idx === i));
+}, {passive:true});
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') panels.scrollBy({left: window.innerWidth, behavior: 'smooth'});
+  if (e.key === 'ArrowLeft') panels.scrollBy({left: -window.innerWidth, behavior: 'smooth'});
+});
+
+// ──── Intention ────
+function setIntention(text){
+  document.getElementById('intention').value = text;
+}
+function saveIntentionAndGo(){
+  state.intention = document.getElementById('intention').value;
+  localStorage.setItem('dreams.intention', state.intention);
+  goTo(2);
+}
+
+// ──── 4-7-8 breath ritual ────
+const orb = document.getElementById('orb');
+const breathLabel = document.getElementById('breathLabel');
+const breathCount = document.getElementById('breathCount');
+const ritualStatus = document.getElementById('ritualStatus');
+const ritualCycles = document.getElementById('ritualCycles');
+const playBtn = document.getElementById('playBtn');
+const audioBtn = document.getElementById('audioBtn');
+
+function setPhase(phase, label, secs){
+  orb.classList.remove('inhale','hold','exhale');
+  orb.classList.add(phase);
+  breathLabel.textContent = label;
+  return secs;
+}
+
+async function ritualLoop(){
+  state.cyclesDone = 0;
+  while (state.ritualActive && state.cyclesDone < state.cyclesTarget){
+    // Inhale 4s
+    if (!state.ritualActive) break;
+    setPhase('inhale', 'Inhale', 4);
+    await countdown(4);
+    if (!state.ritualActive) break;
+    // Hold 7s
+    setPhase('hold', 'Hold', 7);
+    await countdown(7);
+    if (!state.ritualActive) break;
+    // Exhale 8s
+    setPhase('exhale', 'Exhale', 8);
+    await countdown(8);
+    state.cyclesDone++;
+    ritualCycles.textContent = state.cyclesDone + ' / ' + state.cyclesTarget + ' cycles';
+    if (state.cyclesDone >= state.cyclesTarget){
+      finishRitual();
+      return;
+    }
+  }
+}
+
+function countdown(secs){
+  return new Promise(resolve => {
+    let n = secs;
+    breathCount.textContent = n;
+    const interval = setInterval(() => {
+      if (!state.ritualActive) { clearInterval(interval); resolve(); return; }
+      n--;
+      breathCount.textContent = n > 0 ? n : '';
+      if (n <= 0){ clearInterval(interval); resolve(); }
+    }, 1000);
+  });
+}
+
+function toggleRitual(){
+  if (state.ritualActive){
+    state.ritualActive = false;
+    playBtn.textContent = '▶';
+    ritualStatus.textContent = 'Paused. Tap ▶ to continue.';
+    if (state.audioOn) stopAudio();
+  } else {
+    state.ritualActive = true;
+    playBtn.textContent = '⏸';
+    ritualStatus.textContent = 'Breathing. Match the orb.';
+    if (state.audioOn) startAudio();
+    ritualLoop();
+  }
+}
+
+function resetRitual(){
+  state.ritualActive = false;
+  state.cyclesDone = 0;
+  playBtn.textContent = '▶';
+  breathLabel.textContent = 'Tap to begin';
+  breathCount.textContent = '4–7–8';
+  ritualStatus.textContent = 'Six cycles. About one minute.';
+  ritualCycles.textContent = '';
+  orb.classList.remove('inhale','hold','exhale');
+  if (state.audioOn) stopAudio();
+}
+
+function finishRitual(){
+  state.ritualActive = false;
+  playBtn.textContent = '▶';
+  breathLabel.textContent = 'Complete';
+  breathCount.textContent = '✓';
+  ritualStatus.textContent = 'Beautiful. Sleep well.';
+  ritualCycles.textContent = 'Session saved.';
+  if (state.audioOn) stopAudio();
+  saveSession();
+}
+
+// ──── Web Audio: generative soundscape ────
+function ensureAudio(){
+  if (state.audioCtx) return;
+  try {
+    state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e){ console.error('No Web Audio:', e); }
+}
+
+function startAudio(){
+  ensureAudio();
+  if (!state.audioCtx) return;
+  if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+  stopAudio();
+  // 432Hz base + harmonic 5th (perfect fifth ~648Hz) + sub-bass octave (216Hz)
+  // Layered low-amp drones, slow LFO modulation
+  const ctx = state.audioCtx;
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = 0.12;
+  masterGain.connect(ctx.destination);
+  state.masterGain = masterGain;
+  [216, 432, 648].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.frequency.value = freq;
+    osc.type = i === 0 ? 'sine' : 'triangle';
+    const g = ctx.createGain();
+    g.gain.value = i === 0 ? 0.5 : 0.25;
+    // Slow LFO on amplitude
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.07 + i * 0.03;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0.15;
+    lfo.connect(lfoGain).connect(g.gain);
+    lfo.start();
+    osc.connect(g).connect(masterGain);
+    osc.start();
+    state.oscillators.push(osc, lfo);
+  });
+}
+
+function stopAudio(){
+  state.oscillators.forEach(o => { try { o.stop(); o.disconnect(); } catch(e){} });
+  state.oscillators = [];
+}
+
+function toggleAudio(){
+  state.audioOn = !state.audioOn;
+  audioBtn.textContent = state.audioOn ? '🔊' : '🔇';
+  audioBtn.style.background = state.audioOn ? 'var(--violet)' : '';
+  audioBtn.style.color = state.audioOn ? 'var(--bg)' : '';
+  if (state.audioOn && state.ritualActive) startAudio();
+  else stopAudio();
+}
+
+// ──── Dream journal ────
+function addTag(tag){
+  if (state.currentDreamTags.includes(tag)){
+    state.currentDreamTags = state.currentDreamTags.filter(t => t !== tag);
+  } else {
+    state.currentDreamTags.push(tag);
+  }
+  document.querySelectorAll('#panels .panel:nth-child(4) .chip').forEach(chip => {
+    chip.classList.toggle('on', state.currentDreamTags.includes(chip.textContent));
+  });
+}
+
+function saveDream(){
+  const text = document.getElementById('dreamEntry').value.trim();
+  if (!text){
+    alert('Add a line or two before saving.');
+    return;
+  }
+  const dreams = JSON.parse(localStorage.getItem('dreams.journal') || '[]');
+  dreams.unshift({
+    text,
+    tags: [...state.currentDreamTags],
+    date: new Date().toISOString()
+  });
+  localStorage.setItem('dreams.journal', JSON.stringify(dreams.slice(0, 200)));
+  document.getElementById('dreamEntry').value = '';
+  state.currentDreamTags = [];
+  document.querySelectorAll('#panels .panel:nth-child(4) .chip').forEach(c => c.classList.remove('on'));
+  refreshHistory();
+  goTo(4);
+}
+
+function saveSession(){
+  const sessions = JSON.parse(localStorage.getItem('dreams.sessions') || '[]');
+  sessions.unshift({
+    intention: state.intention,
+    cycles: state.cyclesDone,
+    date: new Date().toISOString()
+  });
+  localStorage.setItem('dreams.sessions', JSON.stringify(sessions.slice(0, 200)));
+  refreshHistory();
+}
+
+function refreshHistory(){
+  const sessions = JSON.parse(localStorage.getItem('dreams.sessions') || '[]');
+  const dreams = JSON.parse(localStorage.getItem('dreams.journal') || '[]');
+  document.getElementById('statTotal').textContent = sessions.length;
+  document.getElementById('statDreams').textContent = dreams.length;
+  // Compute streak (consecutive days)
+  let streak = 0;
+  const days = new Set(sessions.map(s => s.date.slice(0,10)));
+  let d = new Date();
+  while (days.has(d.toISOString().slice(0,10))){
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  document.getElementById('statStreak').textContent = streak;
+  // Render session list (merged with dreams)
+  const list = document.getElementById('sessionList');
+  if (sessions.length === 0 && dreams.length === 0){
+    list.innerHTML = '<div class="empty-state">No nights yet. Complete a ritual to begin.</div>';
+    return;
+  }
+  const items = [];
+  sessions.slice(0, 10).forEach(s => {
+    items.push({date: s.date, type: 'session', text: s.intention || '(no intention set)', cycles: s.cycles});
+  });
+  dreams.slice(0, 10).forEach(d => {
+    items.push({date: d.date, type: 'dream', text: d.text, tags: d.tags});
+  });
+  items.sort((a,b) => b.date.localeCompare(a.date));
+  list.innerHTML = items.slice(0, 20).map(item => {
+    const dt = new Date(item.date);
+    const label = dt.toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'});
+    const time = dt.toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
+    const meta = item.type === 'session'
+      ? `${label} · ${time} · Ritual (${item.cycles} cycles)`
+      : `${label} · ${time} · Dream${item.tags && item.tags.length ? ' · ' + item.tags.join(' · ') : ''}`;
+    return `<div class="session-card"><div class="session-meta">${meta}</div><div class="session-snippet">${escapeHtml(item.text)}</div></div>`;
+  }).join('');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+}
+
+function resetAll(){
+  if (!confirm('Reset all sessions, dreams, and intention?')) return;
+  localStorage.removeItem('dreams.intention');
+  localStorage.removeItem('dreams.sessions');
+  localStorage.removeItem('dreams.journal');
+  refreshHistory();
+  document.getElementById('intention').value = '';
+}
+
+// ──── Init ────
+const saved = localStorage.getItem('dreams.intention');
+if (saved) document.getElementById('intention').value = saved;
+refreshHistory();
+
+// Hide swipe hint after first scroll
+let hintShown = true;
+panels.addEventListener('scroll', () => {
+  if (hintShown){
+    document.getElementById('swipeHint')?.remove();
+    hintShown = false;
+  }
+}, {passive:true, once: true});
+</script>
+</body>
+</html>
