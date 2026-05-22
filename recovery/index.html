@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Reset" />
+<meta name="theme-color" content="#000000" />
+<title>Reset — Recovery for Team Sport</title>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<style>
+  :root {
+    --bg: #000;
+    --surface: #0d0d10;
+    --surface-2: #16161b;
+    --border: #1f1f25;
+    --text: #f5f5f7;
+    --text-2: #a1a1aa;
+    --text-3: #71717a;
+    --ready: #34d399;
+    --ready-bg: rgba(52, 211, 153, .12);
+    --warn: #fbbf24;
+    --warn-bg: rgba(251, 191, 36, .12);
+    --fatigue: #f87171;
+    --fatigue-bg: rgba(248, 113, 113, .12);
+    --accent: #6366f1;
+    --safe-top: env(safe-area-inset-top, 0);
+    --safe-bot: env(safe-area-inset-bottom, 0);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+  body { min-height: 100vh; min-height: 100dvh; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
+  input, textarea { font: inherit; color: inherit; }
+  a { color: var(--accent); text-decoration: none; }
+
+  /* App shell */
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh; min-height: 100dvh;
+    position: relative;
+    padding-top: var(--safe-top);
+    padding-bottom: calc(72px + var(--safe-bot));
+  }
+
+  /* Screens */
+  .screen { display: none; padding: 8px 20px 24px; animation: fadeIn .22s ease both; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* Top bar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px 12px; margin-top: 4px;
+  }
+  .topbar h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .topbar .date { color: var(--text-3); font-size: 13px; margin-top: 2px; font-weight: 500; }
+  .topbar .icon-btn {
+    width: 36px; height: 36px; border-radius: 999px; background: var(--surface-2);
+    display: grid; place-items: center; color: var(--text-2);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--text-3); letter-spacing: .04em; text-transform: uppercase; }
+  .card .big { font-size: 36px; font-weight: 700; letter-spacing: -0.02em; }
+
+  /* Readiness ring */
+  .ring-wrap { display: flex; align-items: center; gap: 18px; padding: 8px 0 12px; }
+  .ring { position: relative; width: 144px; height: 144px; flex: 0 0 144px; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .num { position: absolute; inset: 0; display: grid; place-items: center; flex-direction: column; }
+  .ring .num strong { font-size: 44px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .ring .num small { font-size: 12px; color: var(--text-3); margin-top: 4px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+  .ring-info { flex: 1; }
+  .ring-info .label {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    margin-bottom: 8px;
+  }
+  .ring-info .label.ready { background: var(--ready-bg); color: var(--ready); }
+  .ring-info .label.fatigue { background: var(--fatigue-bg); color: var(--fatigue); }
+  .ring-info p { margin: 0; color: var(--text-2); font-size: 14px; line-height: 1.45; }
+
+  /* Component breakdown */
+  .components { margin-top: 10px; }
+  .comp-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-top: 1px solid var(--border);
+  }
+  .comp-row:first-child { border-top: 0; }
+  .comp-row .name { display: flex; align-items: center; gap: 10px; }
+  .comp-row .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ready); }
+  .comp-row .dot.warn { background: var(--warn); }
+  .comp-row .dot.fatigue { background: var(--fatigue); }
+  .comp-row .label { font-size: 15px; font-weight: 500; }
+  .comp-row .sub { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+  .comp-row .right { text-align: right; }
+  .comp-row .val { font-size: 15px; font-weight: 600; }
+  .comp-row .delta { font-size: 12px; color: var(--text-3); }
+  .comp-row .delta.bad { color: var(--fatigue); }
+  .comp-row .delta.good { color: var(--ready); }
+
+  /* Buttons */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px 16px;
+    background: var(--text); color: #000;
+    border-radius: 14px; font-weight: 600; font-size: 16px;
+    transition: transform .08s ease, opacity .15s;
+  }
+  .btn:active { transform: scale(0.98); opacity: .9; }
+  .btn.secondary { background: var(--surface-2); color: var(--text); }
+  .btn.outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; }
+
+  /* Pill bar */
+  .pills { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; margin: 4px -20px 14px; padding-left: 20px; padding-right: 20px; }
+  .pills::-webkit-scrollbar { display: none; }
+  .pill {
+    flex: 0 0 auto; padding: 8px 14px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--text-2);
+    white-space: nowrap;
+  }
+  .pill.active { background: var(--text); color: #000; border-color: var(--text); }
+
+  /* Protocol cards */
+  .protocol-card {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 16px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; margin-bottom: 10px;
+  }
+  .protocol-card .ic {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    border-radius: 12px; background: var(--surface-2);
+    display: grid; place-items: center; font-size: 22px;
+  }
+  .protocol-card .body { flex: 1; }
+  .protocol-card .ttl { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .protocol-card .tgt { color: var(--ready); font-size: 13px; font-weight: 600; }
+  .protocol-card .why { color: var(--text-3); font-size: 12px; line-height: 1.45; margin-top: 6px; }
+  .protocol-card .check {
+    width: 26px; height: 26px; border-radius: 999px; border: 1.5px solid var(--border);
+    display: grid; place-items: center; flex: 0 0 26px;
+  }
+  .protocol-card.done .check { background: var(--ready); border-color: var(--ready); color: #000; }
+  .protocol-card.done .ttl { text-decoration: line-through; color: var(--text-3); }
+
+  /* Bottom tab bar */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    max-width: 480px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    background: rgba(0,0,0,.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding-bottom: var(--safe-bot);
+    z-index: 50;
+  }
+  .tabbar button {
+    padding: 10px 0 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 500; color: var(--text-3);
+  }
+  .tabbar button.active { color: var(--text); }
+  .tabbar svg { width: 24px; height: 24px; }
+
+  /* Sliders for check-in */
+  .slider-row { margin: 18px 0 6px; }
+  .slider-row .lbl { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 500; }
+  .slider-row .lbl .v { color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .slider-row input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 6px; background: var(--surface-2);
+    border-radius: 999px; outline: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 24px; height: 24px; border-radius: 999px;
+    background: var(--text); cursor: pointer; box-shadow: 0 2px 8px rgba(255,255,255,.15);
+  }
+  .slider-row .scale { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: var(--text-3); }
+
+  /* Trends chart */
+  .chart {
+    display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 12px 4px;
+  }
+  .bar {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    color: var(--text-3); font-size: 11px;
+  }
+  .bar .b {
+    width: 100%; border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, var(--ready) 0%, rgba(52,211,153,.4) 100%);
+    transition: height .3s ease;
+  }
+  .bar .b.warn { background: linear-gradient(180deg, var(--warn) 0%, rgba(251,191,36,.4) 100%); }
+  .bar .b.fatigue { background: linear-gradient(180deg, var(--fatigue) 0%, rgba(248,113,113,.4) 100%); }
+
+  /* Coach chat */
+  .chat { display: flex; flex-direction: column; gap: 10px; padding-bottom: 80px; }
+  .msg { max-width: 82%; padding: 12px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; }
+  .msg.coach { background: var(--surface-2); border-bottom-left-radius: 6px; align-self: flex-start; }
+  .msg.user { background: var(--accent); color: white; border-bottom-right-radius: 6px; align-self: flex-end; }
+  .msg .meta { font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+  .quick-replies { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .quick-replies button {
+    padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 999px; font-size: 13px; color: var(--text-2);
+  }
+
+  /* Modals / sheets */
+  .sheet-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 100; animation: fadeBg .2s ease;
+  }
+  @keyframes fadeBg { from { opacity: 0; } to { opacity: 1; } }
+  .sheet-bg.open { display: flex; }
+  .sheet {
+    width: 100%; max-width: 480px; max-height: 92dvh; overflow-y: auto;
+    background: var(--surface); border-radius: 24px 24px 0 0;
+    padding: 12px 20px calc(28px + var(--safe-bot));
+    animation: slideUp .25s cubic-bezier(.2,.8,.3,1.2);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } }
+  .sheet .grip { width: 44px; height: 5px; background: var(--surface-2); border-radius: 999px; margin: 4px auto 14px; }
+  .sheet h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .sheet p.sub { margin: 0 0 18px; color: var(--text-2); font-size: 14px; }
+
+  /* Onboarding */
+  .onb { position: fixed; inset: 0; background: var(--bg); z-index: 200; display: none; flex-direction: column; padding: calc(48px + var(--safe-top)) 28px calc(28px + var(--safe-bot)); }
+  .onb.open { display: flex; }
+  .onb h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 12px; }
+  .onb p { color: var(--text-2); font-size: 16px; line-height: 1.5; margin: 0 0 24px; }
+  .onb .step { display: none; flex: 1; flex-direction: column; }
+  .onb .step.active { display: flex; }
+  .onb .dots { display: flex; gap: 6px; justify-content: center; margin: 20px 0 24px; }
+  .onb .dots span { width: 6px; height: 6px; border-radius: 999px; background: var(--surface-2); }
+  .onb .dots span.active { background: var(--text); width: 18px; }
+  .onb .choice-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .onb .choice {
+    padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px;
+    font-size: 15px; color: var(--text-2);
+  }
+  .onb .choice.active { border-color: var(--text); color: var(--text); background: var(--surface-2); }
+  .onb label { font-size: 13px; color: var(--text-3); display: block; margin-bottom: 6px; font-weight: 500; }
+  .onb input[type=number], .onb input[type=text] {
+    width: 100%; padding: 14px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; outline: none; font-size: 16px;
+  }
+  .onb input:focus { border-color: var(--accent); }
+  .onb .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Jump test */
+  .jump-test {
+    text-align: center; padding: 40px 16px;
+  }
+  .jump-test .countdown {
+    font-size: 96px; font-weight: 700; letter-spacing: -0.04em;
+    margin: 40px 0; color: var(--accent);
+  }
+  .jump-test .result {
+    font-size: 64px; font-weight: 700; letter-spacing: -0.03em;
+  }
+  .jump-test .result small { font-size: 18px; font-weight: 500; color: var(--text-3); letter-spacing: 0; }
+
+  /* Empty / hint text */
+  .hint { color: var(--text-3); font-size: 13px; line-height: 1.5; }
+  .hint strong { color: var(--text-2); font-weight: 600; }
+
+  /* Header context for today */
+  .ctx-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; margin: 0 0 14px;
+    background: var(--warn-bg); border-radius: 12px;
+    font-size: 13px; color: var(--warn); font-weight: 500;
+  }
+  .ctx-banner .ic { font-size: 16px; }
+
+  /* Stat tiles */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+  .stat-tile .k { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+  .stat-tile .v { font-size: 26px; font-weight: 700; margin-top: 4px; letter-spacing: -0.02em; }
+  .stat-tile .d { font-size: 12px; margin-top: 2px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .stat-tile .d.bad { color: var(--fatigue); }
+  .stat-tile .d.good { color: var(--ready); }
+
+  /* Section heading */
+  .sec-h { font-size: 13px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin: 18px 4px 10px; }
+
+  /* List items in log screen */
+  .log-item {
+    display: flex; align-items: center; gap: 12px; padding: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 8px;
+  }
+  .log-item .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; font-size: 18px; }
+  .log-item .meta { flex: 1; }
+  .log-item .t { font-weight: 600; font-size: 15px; }
+  .log-item .s { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+  .log-item .rpe {
+    padding: 4px 8px; border-radius: 8px; background: var(--surface-2);
+    font-size: 12px; font-weight: 600; color: var(--text-2);
+  }
+  .log-item .rpe.high { color: var(--fatigue); background: var(--fatigue-bg); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: calc(90px + var(--safe-bot)); left: 50%; transform: translateX(-50%);
+    background: var(--text); color: #000; padding: 10px 18px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .25s; z-index: 999;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer disclaimer */
+  .disclaim {
+    margin-top: 22px; padding: 12px; border-radius: 12px;
+    background: var(--surface-2); color: var(--text-3); font-size: 11px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<!-- Onboarding (first-launch only) -->
+<div class="onb" id="onb">
+  <div class="dots" id="onbDots">
+    <span class="active"></span><span></span><span></span><span></span>
+  </div>
+
+  <div class="step active" data-step="0">
+    <h1>Welcome to Reset.</h1>
+    <p>Most recovery apps give you a number. We give you a plan — built for the day after the game.</p>
+    <p>We read your Apple Watch, your check-ins, and your match context to tell you exactly what to eat, drink, and skip in the next 24 hours. No black boxes.</p>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="onbNext()">Get started</button>
+  </div>
+
+  <div class="step" data-step="1">
+    <h1>Which sport?</h1>
+    <p>We'll tune the protocols. Soccer and basketball have completely different recovery needs than running or lifting.</p>
+    <div class="choice-row" id="sportPick">
+      <button class="choice active" data-v="soccer">⚽ Soccer</button>
+      <button class="choice" data-v="basketball">🏀 Basketball</button>
+      <button class="choice" data-v="rugby">🏉 Rugby</button>
+      <button class="choice" data-v="hockey">🏒 Hockey</button>
+      <button class="choice" data-v="afl">🏈 AFL/NFL</button>
+      <button class="choice" data-v="cricket">🏏 Cricket</button>
+    </div>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="onbNext()">Next</button>
+  </div>
+
+  <div class="step" data-step="2">
+    <h1>About you.</h1>
+    <p>Dose math needs your weight. Sex changes our iron and energy advice. Both stay on your phone.</p>
+    <div class="grid2" style="margin-bottom: 18px">
+      <div>
+        <label>Weight (kg)</label>
+        <input type="number" id="onbWeight" value="72" min="30" max="200" />
+      </div>
+      <div>
+        <label>Age</label>
+        <input type="number" id="onbAge" value="24" min="13" max="80" />
+      </div>
+    </div>
+    <label>Sex</label>
+    <div class="choice-row" id="sexPick">
+      <button class="choice active" data-v="male">Male</button>
+      <button class="choice" data-v="female">Female</button>
+      <button class="choice" data-v="other">Prefer not to say</button>
+    </div>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="onbNext()">Next</button>
+  </div>
+
+  <div class="step" data-step="3">
+    <h1>Connect Apple Health.</h1>
+    <p>In the real app you'd grant access to sleep, HRV, heart rate, wrist temperature, and workouts. For this preview we'll simulate yesterday's match and today's morning data.</p>
+    <div class="card" style="margin-top: 12px">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: var(--fatigue-bg); display: grid; place-items: center; font-size: 22px;">❤️</div>
+        <div>
+          <div style="font-weight: 600;">Health &amp; Fitness</div>
+          <div style="color: var(--text-3); font-size: 13px;">Sleep · HRV · RHR · Wrist temp · Workouts</div>
+        </div>
+      </div>
+    </div>
+    <div class="hint" style="margin-top: 14px;">No data leaves your phone. We compute your readiness on-device using Apple Intelligence.</div>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="finishOnb()">Allow &amp; Continue</button>
+  </div>
+</div>
+
+<!-- Main app -->
+<div class="app">
+  <!-- ============ TODAY ============ -->
+  <section class="screen active" data-screen="today">
+    <div class="topbar">
+      <div>
+        <div class="date" id="todayDate">Sunday, 22 March</div>
+        <h1>Today</h1>
+      </div>
+      <button class="icon-btn" onclick="openSheet('settings')" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" width="20" height="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+
+    <div class="ctx-banner">
+      <span class="ic">⚽</span>
+      <span>Yesterday: Match · 90 min · RPE 8 · 11.4 km</span>
+    </div>
+
+    <div class="card">
+      <div class="ring-wrap">
+        <div class="ring">
+          <svg width="144" height="144" viewBox="0 0 144 144">
+            <circle cx="72" cy="72" r="62" stroke="var(--surface-2)" stroke-width="10" fill="none"/>
+            <circle id="ringFg" cx="72" cy="72" r="62" stroke="var(--warn)" stroke-width="10" fill="none"
+                    stroke-linecap="round" stroke-dasharray="389.56" stroke-dashoffset="140" />
+          </svg>
+          <div class="num"><strong id="scoreNum">64</strong><small>Readiness</small></div>
+        </div>
+        <div class="ring-info">
+          <span class="label" id="scoreLabel">Compromised</span>
+          <p id="scoreBlurb">Your nervous system is still cleaning up from yesterday's match. Carb-focused fueling, sleep extension, and skip heavy lower-body load today.</p>
+        </div>
+      </div>
+
+      <div class="components">
+        <div class="comp-row">
+          <div class="name"><span class="dot fatigue"></span><div><div class="label">HRV (SDNN)</div><div class="sub">vs 28-day baseline</div></div></div>
+          <div class="right"><div class="val">38 ms</div><div class="delta bad">-19% ↓</div></div>
+        </div>
+        <div class="comp-row">
+          <div class="name"><span class="dot warn"></span><div><div class="label">Resting HR</div><div class="sub">overnight</div></div></div>
+          <div class="right"><div class="val">64 bpm</div><div class="delta bad">+6 bpm ↑</div></div>
+        </div>
+        <div class="comp-row">
+          <div class="name"><span class="dot warn"></span><div><div class="label">Wrist temperature</div><div class="sub">vs baseline</div></div></div>
+          <div class="right"><div class="val">+0.34°C</div><div class="delta bad">elevated</div></div>
+        </div>
+        <div class="comp-row">
+          <div class="name"><span class="dot fatigue"></span><div><div class="label">Sleep</div><div class="sub">7h 12m / 8h 30m target</div></div></div>
+          <div class="right"><div class="val">85%</div><div class="delta bad">short</div></div>
+        </div>
+        <div class="comp-row">
+          <div class="name"><span class="dot ready"></span><div><div class="label">Heart rate recovery</div><div class="sub">1-min post-workout</div></div></div>
+          <div class="right"><div class="val">28 bpm</div><div class="delta good">strong</div></div>
+        </div>
+        <div class="comp-row" id="subjectiveRow">
+          <div class="name"><span class="dot warn"></span><div><div class="label">Subjective check-in</div><div class="sub" id="subjStatus">Not done yet</div></div></div>
+          <div class="right"><button class="pill active" onclick="openSheet('checkin')" style="padding: 6px 12px;">Start</button></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn" onclick="switchTab('recovery')" style="margin-bottom: 14px;">
+      See today's recovery plan →
+    </button>
+
+    <div class="sec-h">Today's targets</div>
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="k">Hydration</div><div class="v">1.8 L</div><div class="d">+ 540 mg sodium</div></div>
+      <div class="stat-tile"><div class="k">Protein</div><div class="v">115 g</div><div class="d">5 doses · ~25g each</div></div>
+      <div class="stat-tile"><div class="k">Carbs</div><div class="v">430 g</div><div class="d">6 g/kg · refeed</div></div>
+      <div class="stat-tile"><div class="k">Sleep tonight</div><div class="v">9 h</div><div class="d">+60 min extension</div></div>
+    </div>
+
+    <div class="sec-h">Quick actions</div>
+    <div class="btn-row">
+      <button class="btn outline" onclick="openSheet('jump')">📱 Jump test</button>
+      <button class="btn outline" onclick="openSheet('logQuick')">＋ Log session</button>
+    </div>
+
+    <div class="disclaim">
+      Reset is a wellness tool, not a medical device. The data shown is from a preview simulation; in the live app these values come from your Apple Watch via HealthKit and stay on your phone. Always consult a qualified clinician for medical decisions.
+    </div>
+  </section>
+
+  <!-- ============ LOG ============ -->
+  <section class="screen" data-screen="log">
+    <div class="topbar">
+      <div>
+        <div class="date">This week</div>
+        <h1>Log</h1>
+      </div>
+      <button class="icon-btn" onclick="openSheet('logQuick')" aria-label="Add">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+
+    <div class="pills">
+      <button class="pill active">All</button>
+      <button class="pill">Matches</button>
+      <button class="pill">Training</button>
+      <button class="pill">Strength</button>
+      <button class="pill">Recovery</button>
+    </div>
+
+    <div class="log-item">
+      <div class="ic">⚽</div>
+      <div class="meta">
+        <div class="t">Match · Eastside Rovers</div>
+        <div class="s">Sat 7:00pm · 90 min · 11.4 km · 28 sprints</div>
+      </div>
+      <div class="rpe high">RPE 8</div>
+    </div>
+    <div class="log-item">
+      <div class="ic">🏃</div>
+      <div class="meta">
+        <div class="t">Tempo run</div>
+        <div class="s">Fri 6:30am · 42 min · 7.8 km</div>
+      </div>
+      <div class="rpe">RPE 6</div>
+    </div>
+    <div class="log-item">
+      <div class="ic">🏋️</div>
+      <div class="meta">
+        <div class="t">Lower body strength</div>
+        <div class="s">Thu 5:00pm · 55 min · Trap bar, RDL, split squat</div>
+      </div>
+      <div class="rpe">RPE 7</div>
+    </div>
+    <div class="log-item">
+      <div class="ic">⚽</div>
+      <div class="meta">
+        <div class="t">Team training</div>
+        <div class="s">Wed 7:00pm · 75 min · Small-sided + finishing</div>
+      </div>
+      <div class="rpe">RPE 7</div>
+    </div>
+    <div class="log-item">
+      <div class="ic">🧘</div>
+      <div class="meta">
+        <div class="t">Mobility &amp; foam roll</div>
+        <div class="s">Tue 9:00am · 25 min</div>
+      </div>
+      <div class="rpe">RPE 2</div>
+    </div>
+
+    <div class="sec-h">7-day load</div>
+    <div class="card">
+      <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <div>
+          <div style="font-size: 13px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; font-weight: 600;">Acute vs Chronic</div>
+          <div style="font-size: 26px; font-weight: 700; margin-top: 4px;">412 <span style="font-size: 14px; color: var(--text-3); font-weight: 500;">/ 387 avg</span></div>
+        </div>
+        <div style="text-align: right; color: var(--ready); font-weight: 600; font-size: 14px;">+6% load</div>
+      </div>
+      <div class="hint" style="margin-top: 8px;">Reasonable. Big jumps (&gt;30%) raise injury risk — but the ACWR threshold itself isn't strongly evidence-based (Impellizzeri 2020). We show it for context, not as a verdict.</div>
+    </div>
+  </section>
+
+  <!-- ============ RECOVERY ============ -->
+  <section class="screen" data-screen="recovery">
+    <div class="topbar">
+      <div>
+        <div class="date">Post-match · Day 1 of 3</div>
+        <h1>Recovery</h1>
+      </div>
+      <button class="icon-btn" aria-label="Share">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      </button>
+    </div>
+
+    <div class="ctx-banner" style="background: var(--fatigue-bg); color: var(--fatigue);">
+      <span class="ic">⚠</span>
+      <span>Next session in 48h · prioritise glycogen + sleep</span>
+    </div>
+
+    <div class="sec-h">This morning (7am–11am)</div>
+
+    <div class="protocol-card">
+      <div class="ic">💧</div>
+      <div class="body">
+        <div class="ttl">Rehydrate — 600 ml with electrolytes</div>
+        <div class="tgt">600 ml · 180 mg sodium</div>
+        <div class="why">You lost ~1.2 kg in fluid yesterday. ACSM guideline: replace 125–150% with sodium. Plain water alone causes rapid diuresis.</div>
+      </div>
+      <button class="check" onclick="toggleDone(this)" aria-label="Mark done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <div class="protocol-card">
+      <div class="ic">🥚</div>
+      <div class="body">
+        <div class="ttl">Breakfast — 30 g protein + 70 g carbs</div>
+        <div class="tgt">~25 g protein dose hits leucine threshold</div>
+        <div class="why">Distribute 4–5 protein doses across the day. Oats + Greek yogurt + berries works. Skim through to Morton et al. 2018 in the science tab.</div>
+      </div>
+      <button class="check" onclick="toggleDone(this)" aria-label="Mark done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <div class="protocol-card">
+      <div class="ic">🍒</div>
+      <div class="body">
+        <div class="ttl">Tart cherry juice — 250 ml</div>
+        <div class="tgt">Anthocyanins · modest DOMS reduction</div>
+        <div class="why">Bell et al. meta-analyses show small-to-moderate effects on muscle soreness after eccentric load. Skip if next match is &gt;72h (it can blunt adaptation chronically — context matters).</div>
+      </div>
+      <button class="check" onclick="toggleDone(this)" aria-label="Mark done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <div class="sec-h">Midday (11am–3pm)</div>
+
+    <div class="protocol-card">
+      <div class="ic">🥗</div>
+      <div class="body">
+        <div class="ttl">Lunch — 30 g protein + 100 g carbs</div>
+        <div class="tgt">Lean meat or fish + rice/potato + greens</div>
+        <div class="why">Glycogen resynthesis is still your priority. Co-ingesting protein with carbs maintains MPS.</div>
+      </div>
+      <button class="check" onclick="toggleDone(this)" aria-label="Mark done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <div class="protocol-card">
+      <div class="ic">🐟</div>
+      <div class="body">
+        <div class="ttl">Omega-3 — 2 g EPA+DHA</div>
+        <div class="tgt">With food</div>
+        <div class="why">Small-to-moderate DOMS attenuation; sensitises MPS in older athletes. NSF-Certified if you're testable.</div>
+      </div>
+      <button class="check" onclick="toggleDone(this)" aria-label="Mark done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <div class="sec-h">Evening (6pm–10pm)</div>
+
+    <div class="protocol-card">
+      <div class="ic">🍝</div>
+      <div class="body">
+        <div class="ttl">Dinner — 30 g protein + 130 g carbs</div>
+        <div class="tgt">High-GI carb-forward</div>
+        <div class="why">Pasta or rice + lean protein. You're still under-fuelled from yesterday's expenditure.</div>
+      </div>
+      <button class="check" onclick="toggleDone(this)" aria-label="Mark done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <div class="protocol-card">
+      <div class="ic">🌙</div>
+      <div class="body">
+        <div class="ttl">Pre-sleep casein — 40 g</div>
+        <div class="tgt">30 min before bed</div>
+        <div class="why">Res &amp; Snijders et al.: slow-digesting protein sustains overnight MPS. The best-supported timing-specific protein dose in the literature.</div>
+      </div>
+      <button class="check" onclick="toggleDone(this)" aria-label="Mark done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <div class="protocol-card">
+      <div class="ic">😴</div>
+      <div class="body">
+        <div class="ttl">Sleep extension — in bed by 9:30pm</div>
+        <div class="tgt">9 h target · room ≤19°C · phone out of bed</div>
+        <div class="why">Sleep is the single highest-leverage recovery variable. Tonight's extra hour matters more than any supplement on this list.</div>
+      </div>
+      <button class="check" onclick="toggleDone(this)" aria-label="Mark done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <div class="sec-h">Today, skip</div>
+    <div class="card">
+      <div style="display:flex; gap: 10px; align-items: flex-start; margin-bottom: 12px;">
+        <div style="font-size: 18px;">🚫</div>
+        <div>
+          <div style="font-weight: 600; font-size: 15px;">Heavy lower-body eccentric load</div>
+          <div class="hint" style="margin-top: 4px;">Your CNS is still recovering. Light spin, mobility, pool work all fine. Save the squats for Tuesday.</div>
+        </div>
+      </div>
+      <div style="display:flex; gap: 10px; align-items: flex-start; margin-bottom: 12px;">
+        <div style="font-size: 18px;">🚫</div>
+        <div>
+          <div style="font-weight: 600; font-size: 15px;">Ice bath if next match is &gt;72h</div>
+          <div class="hint" style="margin-top: 4px;">Cold water immersion blunts hypertrophy &amp; mitochondrial adaptations chronically. Reserve it for tournament back-to-backs, not weekly use.</div>
+        </div>
+      </div>
+      <div style="display:flex; gap: 10px; align-items: flex-start;">
+        <div style="font-size: 18px;">🚫</div>
+        <div>
+          <div style="font-weight: 600; font-size: 15px;">High-dose vitamin C or E pills</div>
+          <div class="hint" style="margin-top: 4px;">Replicated finding (Paulsen, Ristow, Merry): chronic megadoses blunt training adaptation. Get antioxidants from food, not pills.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRENDS ============ -->
+  <section class="screen" data-screen="trends">
+    <div class="topbar">
+      <div>
+        <div class="date">Last 7 days</div>
+        <h1>Trends</h1>
+      </div>
+    </div>
+
+    <div class="pills">
+      <button class="pill active">Readiness</button>
+      <button class="pill">HRV</button>
+      <button class="pill">Sleep</button>
+      <button class="pill">RHR</button>
+      <button class="pill">Load</button>
+    </div>
+
+    <div class="card">
+      <h3>Readiness — 7d</h3>
+      <div class="chart" id="chart">
+        <div class="bar"><div class="b" style="height: 78%"></div><span>Mon</span></div>
+        <div class="bar"><div class="b" style="height: 82%"></div><span>Tue</span></div>
+        <div class="bar"><div class="b warn" style="height: 70%"></div><span>Wed</span></div>
+        <div class="bar"><div class="b warn" style="height: 65%"></div><span>Thu</span></div>
+        <div class="bar"><div class="b" style="height: 80%"></div><span>Fri</span></div>
+        <div class="bar"><div class="b warn" style="height: 75%"></div><span>Sat</span></div>
+        <div class="bar"><div class="b fatigue" style="height: 64%"></div><span>Sun</span></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px;">
+        <div><span style="color: var(--text-3);">7-day avg</span> <strong>73</strong></div>
+        <div><span style="color: var(--text-3);">28-day avg</span> <strong>76</strong></div>
+      </div>
+    </div>
+
+    <div class="sec-h">Personal insights</div>
+
+    <div class="card">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <span style="background: var(--accent); width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-size: 14px;">✨</span>
+        <strong style="font-size: 14px;">For you — last 60 days</strong>
+      </div>
+      <p style="margin: 0; line-height: 1.55; font-size: 14px;">When you sleep <strong>under 7 hours</strong>, your next-day HRV drops <strong>11 ms on average</strong> and your morning soreness rating climbs by <strong>+1.4 points</strong>. The relationship is statistically meaningful (n=14 paired nights).</p>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <span style="background: var(--accent); width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-size: 14px;">✨</span>
+        <strong style="font-size: 14px;">Match-day pattern</strong>
+      </div>
+      <p style="margin: 0; line-height: 1.55; font-size: 14px;">Your readiness <strong>doesn't return to baseline until day 3</strong> after a full match. Currently you train hard on day 2 — pushing recovery to day 4. Consider shifting heavy load to day 3.</p>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <span style="background: var(--accent); width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-size: 14px;">✨</span>
+        <strong style="font-size: 14px;">What's working</strong>
+      </div>
+      <p style="margin: 0; line-height: 1.55; font-size: 14px;">Pre-sleep casein (last 8 nights) → average <strong>+5 ms HRV</strong> and <strong>−0.7 soreness</strong> next morning vs nights without. Keep going.</p>
+    </div>
+
+    <div class="hint" style="margin-top: 16px; padding: 0 4px;">
+      Insights use simple n-of-1 statistics on paired observations from your own data — not a population model. Patterns strengthen as you log more.
+    </div>
+  </section>
+
+  <!-- ============ COACH ============ -->
+  <section class="screen" data-screen="coach">
+    <div class="topbar">
+      <div>
+        <div class="date">On-device · private</div>
+        <h1>Coach</h1>
+      </div>
+      <button class="icon-btn" aria-label="History">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+      </button>
+    </div>
+
+    <div class="hint" style="margin: 0 0 14px; display: flex; gap: 8px; align-items: center;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Runs on Apple Intelligence. No messages or health data leave your phone.
+    </div>
+
+    <div class="chat" id="chatBox">
+      <div class="msg coach">
+        <div class="meta">Coach · 8:14 AM</div>
+        Morning. Your readiness is <strong>64 / 100</strong> — compromised but not red. Yesterday's match plus a short sleep are the two big factors. I've built today's plan around glycogen refill and sleep extension. Want me to walk you through it?
+      </div>
+      <div class="msg user">Why is my HRV so low?</div>
+      <div class="msg coach">
+        <div class="meta">Coach</div>
+        Your nocturnal HRV averaged <strong>38 ms</strong> last night, against your 28-day baseline of <strong>47 ms</strong> — a 19% drop. This is expected after a 90-min match with high eccentric load. HRV typically recovers in 36–48 hours for you (based on your last 6 match weeks). Not a cause for alarm; a cause for a easier training day.
+      </div>
+      <div class="msg user">Should I take BCAAs?</div>
+      <div class="msg coach">
+        <div class="meta">Coach</div>
+        No. BCAAs are functionally redundant when your daily protein is adequate — and yours is. Wolfe (2017) and follow-ups make this clear: you need all essential amino acids together to sustain muscle protein synthesis. Save the money. Creatine monohydrate (3–5g/day) is a much better use of supplement budget for repeated-sprint sports.
+      </div>
+      <div class="msg user">What's the single highest-leverage thing today?</div>
+      <div class="msg coach">
+        <div class="meta">Coach</div>
+        <strong>Sleep extension tonight.</strong> One extra hour in bed is worth more than every supplement on your protocol card combined. In your own data: nights with 8.5h+ are followed by readiness scores 14 points higher than nights with under 7h. Phone out of the bedroom. Room cool. Tart cherry juice an hour before bed wouldn't hurt either.
+      </div>
+    </div>
+
+    <div class="quick-replies">
+      <button onclick="quickReply(this)">What about training tomorrow?</button>
+      <button onclick="quickReply(this)">Should I get a CGM?</button>
+      <button onclick="quickReply(this)">Iron supplement?</button>
+      <button onclick="quickReply(this)">Ice bath tonight?</button>
+    </div>
+  </section>
+
+  <!-- ============ Tab bar ============ -->
+  <nav class="tabbar">
+    <button class="active" data-tab="today" onclick="switchTab('today')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Today
+    </button>
+    <button data-tab="log" onclick="switchTab('log')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+      Log
+    </button>
+    <button data-tab="recovery" onclick="switchTab('recovery')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Recovery
+    </button>
+    <button data-tab="trends" onclick="switchTab('trends')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Trends
+    </button>
+    <button data-tab="coach" onclick="switchTab('coach')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Coach
+    </button>
+  </nav>
+</div>
+
+<!-- ============ Sheets ============ -->
+<div class="sheet-bg" id="sheet-checkin" onclick="closeSheetIf(event,'checkin')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="grip"></div>
+    <h2>Morning check-in</h2>
+    <p class="sub">30 seconds. Subjective inputs are the single best predictor of next-day performance — better than HRV alone (McLean et al. 2010).</p>
+
+    <div class="slider-row">
+      <div class="lbl"><span>Muscle soreness</span><span class="v" id="vSore">3</span></div>
+      <input type="range" min="1" max="10" value="3" id="sliderSore" oninput="document.getElementById('vSore').textContent=this.value" />
+      <div class="scale"><span>None</span><span>Severe</span></div>
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Sleep quality</span><span class="v" id="vSleep">3</span></div>
+      <input type="range" min="1" max="5" value="3" id="sliderSleep" oninput="document.getElementById('vSleep').textContent=this.value" />
+      <div class="scale"><span>Poor</span><span>Great</span></div>
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Energy</span><span class="v" id="vEn">3</span></div>
+      <input type="range" min="1" max="5" value="3" id="sliderEn" oninput="document.getElementById('vEn').textContent=this.value" />
+      <div class="scale"><span>Drained</span><span>Buzzing</span></div>
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Mood</span><span class="v" id="vMood">3</span></div>
+      <input type="range" min="1" max="5" value="3" id="sliderMood" oninput="document.getElementById('vMood').textContent=this.value" />
+      <div class="scale"><span>Flat</span><span>Bright</span></div>
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Motivation to train</span><span class="v" id="vMot">3</span></div>
+      <input type="range" min="1" max="5" value="3" id="sliderMot" oninput="document.getElementById('vMot').textContent=this.value" />
+      <div class="scale"><span>None</span><span>Hungry</span></div>
+    </div>
+
+    <div style="margin-top: 18px;">
+      <button class="btn" onclick="submitCheckin()">Submit check-in</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheet-jump" onclick="closeSheetIf(event,'jump')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="grip"></div>
+    <h2>Jump test</h2>
+    <p class="sub">Countermovement jump — the best-validated field marker of neuromuscular fatigue. Phone on the floor, camera facing up, jump 3 times.</p>
+
+    <div class="jump-test" id="jumpStage">
+      <div style="font-size: 64px; margin-bottom: 8px;">📱</div>
+      <div class="hint" style="margin: 12px 0 24px;">Place phone on the floor. Stand back so your full body fits in view. We'll count you down.</div>
+      <button class="btn" onclick="runJump()">Start countdown</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheet-logQuick" onclick="closeSheetIf(event,'logQuick')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="grip"></div>
+    <h2>Log session</h2>
+    <p class="sub">In the live app we'll auto-detect workouts from your Watch. You confirm the RPE and any context tags.</p>
+
+    <label style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin-bottom: 6px;">Type</label>
+    <div class="choice-row">
+      <button class="choice active">⚽ Match</button>
+      <button class="choice">⚽ Training</button>
+      <button class="choice">🏋️ Strength</button>
+      <button class="choice">🏃 Run</button>
+      <button class="choice">🚴 Cycle</button>
+      <button class="choice">🧘 Recovery</button>
+    </div>
+
+    <label style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin: 14px 0 6px;">Duration (min)</label>
+    <input type="number" value="90" style="width: 100%; padding: 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; outline: none; font-size: 16px;" />
+
+    <label style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin: 14px 0 6px;">RPE (1–10)</label>
+    <div class="slider-row">
+      <div class="lbl"><span>How hard?</span><span class="v" id="vRpe">8</span></div>
+      <input type="range" min="1" max="10" value="8" id="sliderRpe" oninput="document.getElementById('vRpe').textContent=this.value" />
+      <div class="scale"><span>Walk</span><span>Max</span></div>
+    </div>
+
+    <label style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin: 14px 0 6px;">Tags</label>
+    <div class="choice-row">
+      <button class="choice active">High eccentric</button>
+      <button class="choice active">Sprint-heavy</button>
+      <button class="choice">Hot conditions</button>
+      <button class="choice">Travel day</button>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <button class="btn" onclick="submitLog()">Save session</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheet-settings" onclick="closeSheetIf(event,'settings')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="grip"></div>
+    <h2>Settings</h2>
+    <p class="sub">Preview build.</p>
+
+    <div class="card">
+      <h3>Profile</h3>
+      <div style="font-size: 15px;">Soccer · 72 kg · 24 yo</div>
+    </div>
+
+    <div class="card">
+      <h3>Integrations</h3>
+      <div style="display:flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border);"><span>Apple Health</span><span style="color: var(--ready);">Connected</span></div>
+      <div style="display:flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border);"><span>Continuous glucose (Stelo/Lingo)</span><span style="color: var(--text-3);">Not linked</span></div>
+      <div style="display:flex; justify-content: space-between; padding: 10px 0;"><span>Whoop / Oura / Garmin</span><span style="color: var(--text-3);">Optional</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Privacy</h3>
+      <div class="hint" style="line-height: 1.55;">All HealthKit data stays on this device. Coach uses Apple Intelligence on-device. We never sell or share health data. <a href="#">Read the privacy policy</a>.</div>
+    </div>
+
+    <button class="btn outline" onclick="resetApp()" style="margin-top: 14px;">Restart onboarding</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Saved</div>
+
+<script>
+  // ------- Tab nav -------
+  function switchTab(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.dataset.screen === name));
+    document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    window.scrollTo(0, 0);
+  }
+
+  // ------- Sheets -------
+  function openSheet(name) {
+    document.getElementById('sheet-' + name).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSheet(name) {
+    document.getElementById('sheet-' + name).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function closeSheetIf(e, name) {
+    if (e.target === e.currentTarget) closeSheet(name);
+  }
+
+  // ------- Onboarding -------
+  const onb = document.getElementById('onb');
+  let onbStep = 0;
+  function onbNext() {
+    onbStep++;
+    document.querySelectorAll('.onb .step').forEach(s => s.classList.toggle('active', +s.dataset.step === onbStep));
+    document.querySelectorAll('#onbDots span').forEach((d, i) => d.classList.toggle('active', i === onbStep));
+  }
+  function finishOnb() {
+    localStorage.setItem('reset.onboarded', '1');
+    onb.classList.remove('open');
+  }
+  if (!localStorage.getItem('reset.onboarded')) {
+    onb.classList.add('open');
+  }
+
+  // Choice toggles for onboarding
+  document.querySelectorAll('#sportPick .choice, #sexPick .choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.parentElement.querySelectorAll('.choice').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Single-toggle choices in log sheet
+  document.querySelectorAll('#sheet-logQuick .choice-row:first-of-type .choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.parentElement.querySelectorAll('.choice').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  // Multi-toggle for tags
+  document.querySelectorAll('#sheet-logQuick .choice-row:last-of-type .choice').forEach(btn => {
+    btn.addEventListener('click', () => btn.classList.toggle('active'));
+  });
+
+  // ------- Done checkboxes -------
+  function toggleDone(el) {
+    el.closest('.protocol-card').classList.toggle('done');
+    if (navigator.vibrate) navigator.vibrate(8);
+  }
+
+  // ------- Check-in -------
+  function submitCheckin() {
+    const sore = +document.getElementById('sliderSore').value;
+    const sleep = +document.getElementById('sliderSleep').value;
+    const en = +document.getElementById('sliderEn').value;
+    const mood = +document.getElementById('sliderMood').value;
+    const mot = +document.getElementById('sliderMot').value;
+
+    // Crude composite: lower soreness, higher sleep/energy/mood/motivation = better
+    const subj = ((10 - sore) * 2 + sleep * 4 + en * 4 + mood * 2 + mot * 4) / 16; // ~ out of 10
+    document.getElementById('subjStatus').textContent = `Done · ${subj.toFixed(1)}/10 — soreness ${sore}/10`;
+
+    // Update overall readiness slightly based on subjective
+    const base = 64;
+    const delta = Math.round((subj - 5) * 2);
+    const newScore = Math.max(35, Math.min(95, base + delta));
+    document.getElementById('scoreNum').textContent = newScore;
+    document.getElementById('ringFg').setAttribute('stroke-dashoffset', String(389.56 - (389.56 * newScore / 100)));
+
+    const ring = document.getElementById('ringFg');
+    const label = document.getElementById('scoreLabel');
+    if (newScore >= 75) {
+      ring.setAttribute('stroke', 'var(--ready)');
+      label.textContent = 'Ready'; label.className = 'label ready';
+    } else if (newScore >= 55) {
+      ring.setAttribute('stroke', 'var(--warn)');
+      label.textContent = 'Compromised'; label.className = 'label';
+    } else {
+      ring.setAttribute('stroke', 'var(--fatigue)');
+      label.textContent = 'High fatigue'; label.className = 'label fatigue';
+    }
+
+    closeSheet('checkin');
+    showToast('Check-in saved · readiness updated');
+  }
+
+  function submitLog() {
+    closeSheet('logQuick');
+    showToast('Session logged');
+  }
+
+  function showToast(text) {
+    const t = document.getElementById('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ------- Jump test -------
+  function runJump() {
+    const stage = document.getElementById('jumpStage');
+    stage.innerHTML = '<div class="countdown" id="cd">3</div><div class="hint">Get ready. Three max-effort jumps.</div>';
+    let n = 3;
+    const tick = setInterval(() => {
+      n--;
+      const cd = document.getElementById('cd');
+      if (n > 0) { cd.textContent = n; }
+      else if (n === 0) { cd.textContent = 'JUMP'; cd.style.color = 'var(--ready)'; }
+      else {
+        clearInterval(tick);
+        const height = (38 + Math.random() * 4).toFixed(1);
+        const baseline = 42.6;
+        const delta = ((height - baseline) / baseline * 100).toFixed(1);
+        stage.innerHTML = `
+          <div class="result">${height}<small> cm</small></div>
+          <div class="hint" style="margin: 14px 0;">vs your 28-day baseline of <strong>${baseline} cm</strong></div>
+          <div class="label" style="display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--fatigue-bg); color: var(--fatigue); font-weight: 600;">${delta}% — neuromuscular fatigue</div>
+          <div class="hint" style="margin-top: 22px; text-align: left; line-height: 1.55;">Jump height is the field-validated proxy for CNS readiness in team sports (Claudino et al. 2017 meta-analysis). A drop of &gt;5% from baseline is the conventional threshold for "modify the session".</div>
+          <button class="btn" style="margin-top: 18px;" onclick="closeSheet('jump')">Done</button>
+        `;
+      }
+    }, 900);
+  }
+
+  // ------- Coach quick replies -------
+  function quickReply(btn) {
+    const text = btn.textContent;
+    const chat = document.getElementById('chatBox');
+    const u = document.createElement('div');
+    u.className = 'msg user'; u.textContent = text;
+    chat.appendChild(u);
+
+    let resp = '';
+    if (/tomorrow/i.test(text)) {
+      resp = 'Easy. Aim for an active-recovery session — pool, easy spin, or light technical work. Keep it under RPE 5. The data from your last 12 weeks shows that hard sessions on match-day +1 push your full recovery from day 3 to day 5. You can train tomorrow (day 2), but save peak intensity for Tuesday.';
+    } else if (/CGM/i.test(text)) {
+      resp = 'Maybe — depends on your goals. Dexcom Stelo is the OTC option (~$50/14-day sensor) and writes glucose straight to HealthKit. The real win for you would be seeing how last night\'s pasta refeed actually played out, and whether your sleep glucose is stable. Useful for 2-4 weeks of N-of-1 learning. Not a daily-tracking necessity for life.';
+    } else if (/iron/i.test(text)) {
+      resp = 'Don\'t supplement blind. Iron overload has real risks. Get a ferritin + transferrin saturation panel — if ferritin &lt;30 ng/mL or you\'re symptomatic (fatigue, low HRV trend, plateauing endurance), then yes. Test first.';
+    } else if (/ice/i.test(text)) {
+      resp = 'Skip it. Your next match is &gt;72h away, so today an ice bath would blunt the training adaptation from this week\'s lifting. Reserve cold-water immersion for tournament back-to-backs (next session within 24h) where the acute relief outweighs the chronic cost.';
+    } else {
+      resp = 'I\'d need a bit more context for that one. Try asking me about your training plan, supplements, or any specific symptom you\'re noticing.';
+    }
+
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'msg coach';
+      c.innerHTML = `<div class="meta">Coach</div>${resp}`;
+      chat.appendChild(c);
+      window.scrollTo(0, document.body.scrollHeight);
+    }, 350);
+
+    btn.remove();
+  }
+
+  // ------- Reset -------
+  function resetApp() {
+    localStorage.clear();
+    location.reload();
+  }
+
+  // ------- Date stamp -------
+  (function() {
+    const d = new Date();
+    const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+    document.getElementById('todayDate').textContent = d.toLocaleDateString('en-AU', opts);
+  })();
+</script>
+
+</body>
+</html>
