@@ -2,10 +2,11 @@
 // Audio processing is entirely client-side, so once the shell is cached
 // the app runs with no network at all.
 
-const CACHE = 'roomtone-v1';
+const CACHE = 'roomtone-v2';
 const SHELL = [
   './',
   './index.html',
+  './test.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
