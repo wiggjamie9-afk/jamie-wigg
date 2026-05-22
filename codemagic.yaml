@@ -1,0 +1,44 @@
+workflows:
+  ios-capacitor:
+    name: Reset iOS (Capacitor) — unsigned debug
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      node: 22
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install Capacitor dependencies
+        script: |
+          cd recovery-ios
+          npm ci
+      - name: Stage /recovery/ into www and sync iOS project
+        script: |
+          cd recovery-ios
+          rm -rf www
+          cp -r ../recovery www
+          npx cap sync ios
+      - name: pod install
+        script: |
+          cd recovery-ios/ios/App
+          pod install --repo-update
+      - name: Build iOS app (unsigned debug, just to prove it compiles)
+        script: |
+          cd recovery-ios/ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+    artifacts:
+      - recovery-ios/ios/App/build/Build/Products/Debug-iphonesimulator/*.app
+    publishing:
+      email:
+        recipients:
+          - wiggjamie9@gmail.com
+        notify:
+          success: true
+          failure: true
