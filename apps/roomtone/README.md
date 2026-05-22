@@ -20,6 +20,13 @@ Hysteresis: a scene change has to be detected twice in a row before Roomtone
 actually re-EQs, so a single shout in a quiet room won't flip you into
 Restaurant mode.
 
+## Install it like a real app
+
+Roomtone is a PWA — open the URL once, then **Share → Add to Home Screen**
+on iOS (or "Install app" on Android Chrome) and it lives on your home screen
+with an icon, no browser chrome, and a splash screen. Works offline after the
+first load.
+
 ## How to try it on your iPhone
 
 The browser will only enable the mic over **HTTPS** (or localhost). The
