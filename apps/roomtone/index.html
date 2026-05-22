@@ -7,8 +7,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Roomtone" />
-<title>Roomtone — live</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='none' stroke='%23f4a942' stroke-width='6'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%23f4a942'/%3E%3C/svg%3E" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="description" content="Real-time environmental EQ for your hearing aids. Listens to the room and re-tunes on the fly." />
+<title>Roomtone</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px)" href="icons/splash-iphone-se.png" />
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px)" href="icons/splash-iphone-portrait.png" />
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px)" href="icons/splash-iphone-pro-max.png" />
 <style>
   :root {
     --bg: #0d1117;
@@ -1015,6 +1024,43 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+// ---------- service worker (offline shell) ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* offline mode not available, no problem */ });
+  });
+}
+
+// ---------- one-time install hint on iOS Safari ----------
+function showInstallHintIfNeeded() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) return;
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) && !window.MSStream;
+  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  if (!(isIOS && isSafari)) return;
+  if (localStorage.getItem('roomtone:seen-install')) return;
+  const hint = document.createElement('div');
+  hint.style.cssText = `
+    margin: 16px 0 0; padding: 14px 16px;
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    color: var(--accent-2); border-radius: 14px; font-size: 14px;
+    line-height: 1.5;
+  `;
+  hint.innerHTML = `
+    <b>Install Roomtone:</b> tap <b>Share</b> &nbsp;⬆&nbsp; then <b>Add to Home Screen</b> —
+    runs fullscreen, no browser bars, launches like a real app.
+    <div style="margin-top:10px"><button id="roomtone-dismiss-install" style="background:transparent;border:1px solid var(--accent);color:var(--accent-2);padding:6px 12px;border-radius:10px;font-weight:600">Got it</button></div>
+  `;
+  const after = document.querySelector('.brand');
+  after.parentNode.insertBefore(hint, after.nextSibling);
+  document.getElementById('roomtone-dismiss-install').addEventListener('click', () => {
+    hint.remove();
+    localStorage.setItem('roomtone:seen-install', '1');
+  });
+}
+setTimeout(showInstallHintIfNeeded, 200);
 
 })();
 </script>
