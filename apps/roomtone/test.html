@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#0d1117" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Roomtone Test" />
+<title>Roomtone — Classifier Test</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b25;
+    --surface-2: #1f2735;
+    --line: #2a3344;
+    --accent: #f4a942;
+    --accent-2: #ffd58a;
+    --accent-soft: rgba(244, 169, 66, 0.14);
+    --text: #e6edf3;
+    --text-dim: #8b96a8;
+    --ok: #3fb950;
+    --danger: #f85149;
+    --info: #58a6ff;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 14px 16px 120px;
+  }
+  .topbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 2px 14px;
+  }
+  .mark {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 3px solid var(--accent); position: relative;
+  }
+  .mark::after {
+    content: ""; position: absolute; inset: 5px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .title { font-weight: 700; font-size: 18px; }
+  .subtitle { color: var(--text-dim); font-size: 13px; margin-left: auto; }
+
+  .winner {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .winner .label {
+    text-transform: uppercase; letter-spacing: 2.5px;
+    color: var(--text-dim); font-size: 11px; font-weight: 600;
+  }
+  .winner .name {
+    font-size: 36px; font-weight: 700; letter-spacing: -0.4px;
+    margin: 6px 0 2px;
+  }
+  .winner .conf { color: var(--accent-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .winner.locked .name { color: var(--accent); }
+
+  .btn {
+    margin-top: 14px;
+    width: 100%;
+    min-height: 60px;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #1a1206;
+    font-weight: 700;
+    font-size: 18px;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  .btn.secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--line);
+  }
+  .btn:disabled { opacity: 0.45; }
+  .btn:active { transform: scale(0.98); }
+
+  h2.section {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-dim);
+    margin: 22px 4px 10px;
+  }
+
+  /* spectrum */
+  .spectrum {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 8px;
+    height: 110px;
+  }
+  .spectrum canvas { width: 100%; height: 100%; display: block; }
+
+  /* feature grid */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .feat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .feat .k { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; }
+  .feat .v {
+    font-variant-numeric: tabular-nums;
+    font-size: 20px; font-weight: 700;
+    margin-top: 3px;
+  }
+  .feat .bar {
+    height: 4px; background: var(--surface-2); border-radius: 2px;
+    margin-top: 6px; overflow: hidden;
+  }
+  .feat .bar-fill {
+    height: 100%; background: var(--accent);
+    transition: width .15s;
+  }
+
+  /* scene scores */
+  .scores { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .score-row {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+  }
+  .score-row.win {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+  .score-row.gt {
+    border-color: var(--info);
+  }
+  .score-name {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 600; font-size: 15px;
+  }
+  .score-name .gt-pin {
+    display: none; color: var(--info); font-size: 12px;
+    border: 1px solid var(--info); padding: 1px 6px; border-radius: 8px;
+  }
+  .score-row.gt .gt-pin { display: inline; }
+  .score-bar {
+    height: 8px; background: var(--surface-2); border-radius: 4px;
+    margin-top: 4px; overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%; background: var(--text-dim);
+    transition: width .2s;
+  }
+  .score-row.win .score-bar-fill { background: var(--accent); }
+  .score-num {
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--text-dim);
+    min-width: 38px;
+    text-align: right;
+  }
+  .score-content { min-width: 0; }
+
+  /* ground-truth tagging */
+  .gt-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin-top: 4px;
+  }
+  .gt-btn {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 12px 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .gt-btn[aria-pressed="true"] {
+    background: rgba(88,166,255,0.12);
+    border-color: var(--info);
+    color: #c5dffd;
+  }
+  .gt-btn:active { transform: scale(0.97); }
+
+  /* logging */
+  .log-bar {
+    display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap;
+  }
+  .pill-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .pill-btn.rec {
+    background: rgba(248, 81, 73, 0.12);
+    border-color: var(--danger);
+    color: #ffb5b1;
+  }
+  .pill-btn.rec.live {
+    background: var(--danger);
+    color: white;
+    animation: rec-pulse 1.4s infinite;
+  }
+  @keyframes rec-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.5); }
+    50%      { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0); }
+  }
+  .log-status {
+    color: var(--text-dim);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 12px 18px; border-radius: 14px; font-size: 14px;
+    opacity: 0; transition: opacity .25s; pointer-events: none;
+    max-width: 90vw; text-align: center; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <div class="mark" aria-hidden="true"></div>
+    <div class="title">Classifier Test</div>
+    <div class="subtitle"><a href="index.html" style="color:var(--accent);text-decoration:none">← Roomtone</a></div>
+  </div>
+
+  <div class="winner" id="winner">
+    <div class="label">Current detection</div>
+    <div class="name" id="winner-name">—</div>
+    <div class="conf" id="winner-conf">tap Start to begin</div>
+  </div>
+
+  <button class="btn" id="start-btn">Start mic</button>
+
+  <h2 class="section">Live spectrum</h2>
+  <div class="spectrum"><canvas id="spec"></canvas></div>
+
+  <h2 class="section">Scene scores</h2>
+  <div class="scores" id="scores"></div>
+
+  <h2 class="section">Ground truth — tag what room you're actually in</h2>
+  <div class="gt-grid" id="gt-grid"></div>
+
+  <div class="log-bar">
+    <button class="pill-btn rec" id="rec-btn" disabled>● Record samples</button>
+    <span class="log-status" id="log-status">0 samples</span>
+    <button class="pill-btn" id="export-btn" disabled>Export JSON</button>
+    <button class="pill-btn" id="clear-btn" disabled>Clear</button>
+  </div>
+
+  <h2 class="section">Live features</h2>
+  <div class="features" id="features"></div>
+
+  <div class="footer">
+    Diagnostics for tuning the rule-based classifier. Tag a ground-truth scene,
+    hit Record, walk through the real environment for 30–60 seconds, then
+    Export. Paste the JSON back to me and I'll re-tune the rules.
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+const SCENES = {
+  quiet:      { name: 'Quiet' },
+  restaurant: { name: 'Restaurant' },
+  car:        { name: 'Car' },
+  music:      { name: 'Music' },
+  outdoor:    { name: 'Outdoors' },
+  reverb:     { name: 'Reverberant' },
+};
+const SCENE_KEYS = Object.keys(SCENES);
+
+const FEATURES = [
+  { key: 'rmsDb',     label: 'RMS dB',     fmt: v => v.toFixed(1) + ' dB',     scale: v => clamp((v + 70) / 70, 0, 1) },
+  { key: 'centroid',  label: 'Centroid',   fmt: v => Math.round(v) + ' Hz',    scale: v => clamp(v / 6000, 0, 1) },
+  { key: 'flatness',  label: 'Flatness',   fmt: v => v.toFixed(3),              scale: v => clamp(v, 0, 1) },
+  { key: 'zcr',       label: 'ZCR',        fmt: v => v.toFixed(3),              scale: v => clamp(v / 0.3, 0, 1) },
+  { key: 'lowR',      label: 'Low band',   fmt: v => (v * 100).toFixed(0) + '%', scale: v => v },
+  { key: 'midR',      label: 'Mid band',   fmt: v => (v * 100).toFixed(0) + '%', scale: v => v },
+  { key: 'highR',     label: 'High band',  fmt: v => (v * 100).toFixed(0) + '%', scale: v => v },
+  { key: 'peak',      label: 'Peak',       fmt: v => v.toFixed(2),              scale: v => v },
+];
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+const state = {
+  ctx: null,
+  stream: null,
+  mic: null,
+  analyser: null,
+  isLive: false,
+  groundTruth: null,
+  recording: false,
+  samples: [],          // { t, gt, features, scores, scene, confidence }
+  startedAt: 0,
+  loopTimer: null,
+  rafId: null,
+  lastWinner: null,
+  recentDetections: [],
+};
+
+// ---------- audio ----------
+async function start() {
+  if (state.isLive) return;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  state.ctx = new Ctx({ latencyHint: 'interactive' });
+  try {
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
+      video: false,
+    });
+  } catch (e) {
+    toast('Mic permission denied');
+    return;
+  }
+  await state.ctx.resume();
+  state.mic = state.ctx.createMediaStreamSource(state.stream);
+  state.analyser = state.ctx.createAnalyser();
+  state.analyser.fftSize = 2048;
+  state.analyser.smoothingTimeConstant = 0.4;
+  state.mic.connect(state.analyser);
+  state.isLive = true;
+  document.getElementById('start-btn').textContent = 'Stop mic';
+  document.getElementById('start-btn').classList.add('secondary');
+  document.getElementById('rec-btn').disabled = false;
+  startLoop();
+  drawSpectrum();
+}
+
+function stop() {
+  if (!state.isLive) return;
+  state.isLive = false;
+  if (state.loopTimer) { clearTimeout(state.loopTimer); state.loopTimer = null; }
+  if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+  try { state.stream.getTracks().forEach(t => t.stop()); } catch(_) {}
+  try { state.ctx.close(); } catch(_) {}
+  state.ctx = state.mic = state.analyser = state.stream = null;
+  state.recording = false;
+  state.recentDetections = [];
+  state.lastWinner = null;
+  document.getElementById('start-btn').textContent = 'Start mic';
+  document.getElementById('start-btn').classList.remove('secondary');
+  document.getElementById('rec-btn').disabled = true;
+  document.getElementById('rec-btn').classList.remove('live');
+  document.getElementById('rec-btn').textContent = '● Record samples';
+  document.getElementById('winner-name').textContent = '—';
+  document.getElementById('winner-conf').textContent = 'mic stopped';
+  document.getElementById('winner').classList.remove('locked');
+}
+
+// ---------- feature + classifier (mirrors main app) ----------
+function extractFeatures() {
+  const a = state.analyser;
+  if (!a) return null;
+  const bins = a.frequencyBinCount;
+  const freq = new Uint8Array(bins);
+  const time = new Uint8Array(bins);
+  a.getByteFrequencyData(freq);
+  a.getByteTimeDomainData(time);
+
+  const sr = state.ctx.sampleRate;
+  const binHz = (sr / 2) / bins;
+
+  let totalE = 0, centroidNum = 0, peak = 0;
+  let lowE = 0, midE = 0, highE = 0;
+  let logSum = 0, arithSum = 0, voicedN = 0;
+  for (let i = 1; i < bins; i++) {
+    const v = freq[i] / 255;
+    const e = v * v;
+    const hz = i * binHz;
+    totalE += e;
+    centroidNum += hz * e;
+    if (hz < 300) lowE += e;
+    else if (hz < 3500) midE += e;
+    else highE += e;
+    if (v > peak) peak = v;
+    if (v > 0.02) { logSum += Math.log(v + 1e-6); arithSum += v; voicedN++; }
+  }
+  const centroid = totalE > 0 ? centroidNum / totalE : 0;
+  const totalBand = lowE + midE + highE || 1e-9;
+  const flatness = voicedN > 4 ? Math.exp(logSum / voicedN) / ((arithSum / voicedN) + 1e-9) : 0;
+
+  let rms = 0;
+  for (let i = 0; i < time.length; i++) {
+    const s = (time[i] - 128) / 128;
+    rms += s * s;
+  }
+  rms = Math.sqrt(rms / time.length);
+  const rmsDb = 20 * Math.log10(rms + 1e-6);
+
+  let zc = 0;
+  for (let i = 1; i < time.length; i++) {
+    if ((time[i-1] < 128) !== (time[i] < 128)) zc++;
+  }
+  const zcr = zc / time.length;
+
+  return {
+    rmsDb, peak, centroid, zcr, flatness,
+    lowR: lowE / totalBand,
+    midR: midE / totalBand,
+    highR: highE / totalBand,
+    speechBand: midE / totalBand,
+  };
+}
+
+function classify(f) {
+  const s = { quiet: 0, restaurant: 0, car: 0, music: 0, outdoor: 0, reverb: 0 };
+
+  if (f.rmsDb < -52) s.quiet += 4;
+  else if (f.rmsDb < -42) s.quiet += 2;
+  else if (f.rmsDb < -36) s.quiet += 1;
+
+  if (f.lowR > 0.62 && f.centroid < 700) s.car += 3;
+  if (f.lowR > 0.55 && f.zcr < 0.04 && f.rmsDb > -38) s.car += 2;
+  if (f.lowR > 0.5 && f.centroid < 1000 && f.flatness > 0.25) s.car += 1;
+
+  if (f.midR > 0.5 && f.zcr > 0.07 && f.zcr < 0.18 && f.rmsDb > -38) s.restaurant += 3;
+  if (f.midR > 0.42 && f.flatness > 0.22 && f.flatness < 0.55 && f.rmsDb > -35) s.restaurant += 2;
+  if (f.speechBand > 0.45 && f.rmsDb > -32) s.restaurant += 1;
+
+  if (f.flatness < 0.14 && f.peak > 0.6 && f.rmsDb > -38) s.music += 3;
+  if (f.flatness < 0.18 && f.midR > 0.3 && f.lowR > 0.25 && f.highR > 0.1) s.music += 2;
+
+  if (f.lowR > 0.5 && f.flatness > 0.45) s.outdoor += 3;
+  if (f.lowR > 0.4 && f.flatness > 0.55 && f.zcr < 0.06) s.outdoor += 2;
+
+  if (f.highR > 0.18 && f.midR > 0.4 && f.zcr > 0.05 && f.zcr < 0.12 && f.flatness > 0.2 && f.flatness < 0.4) s.reverb += 2;
+
+  if (f.rmsDb > -32) s.quiet = 0;
+
+  let best = 'quiet', bestScore = 0;
+  for (const k of SCENE_KEYS) if (s[k] > bestScore) { best = k; bestScore = s[k]; }
+  const total = SCENE_KEYS.reduce((a,k) => a + s[k], 0) || 1;
+  const candidate = (bestScore >= 2) ? best : 'quiet';
+  return { scene: candidate, raw: best, score: bestScore, confidence: bestScore / total, all: s };
+}
+
+// ---------- loop ----------
+function startLoop() {
+  const tick = () => {
+    if (!state.isLive) return;
+    const f = extractFeatures();
+    if (f) {
+      const result = classify(f);
+      state.recentDetections.push(result.scene);
+      if (state.recentDetections.length > 3) state.recentDetections.shift();
+      const last2 = state.recentDetections.slice(-2);
+      let locked = false;
+      if (last2.length === 2 && last2[0] === last2[1]) {
+        if (last2[0] !== state.lastWinner) state.lastWinner = last2[0];
+        locked = true;
+      }
+      renderUI(f, result, locked);
+
+      if (state.recording) {
+        state.samples.push({
+          t: (performance.now() - state.startedAt) / 1000,
+          gt: state.groundTruth,
+          features: { ...f },
+          scores: { ...result.all },
+          scene: result.scene,
+          confidence: +result.confidence.toFixed(3),
+        });
+        updateLogStatus();
+      }
+    }
+    state.loopTimer = setTimeout(tick, 700);
+  };
+  tick();
+}
+
+function drawSpectrum() {
+  state.rafId = requestAnimationFrame(drawSpectrum);
+  const a = state.analyser;
+  if (!a) return;
+  const c = document.getElementById('spec');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth * dpr;
+  const H = c.clientHeight * dpr;
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const bins = a.frequencyBinCount;
+  const data = new Uint8Array(bins);
+  a.getByteFrequencyData(data);
+  // log-scale x — make speech band visible
+  const nyq = state.ctx.sampleRate / 2;
+  const bands = 64;
+  const grad = ctx.createLinearGradient(0, H, 0, 0);
+  grad.addColorStop(0, 'rgba(244,169,66,0.2)');
+  grad.addColorStop(1, 'rgba(244,169,66,1)');
+  ctx.fillStyle = grad;
+  for (let i = 0; i < bands; i++) {
+    const fromHz = 30 * Math.pow(nyq / 30, i / bands);
+    const toHz = 30 * Math.pow(nyq / 30, (i + 1) / bands);
+    const fromBin = Math.floor(fromHz / nyq * bins);
+    const toBin = Math.max(fromBin + 1, Math.floor(toHz / nyq * bins));
+    let sum = 0, n = 0;
+    for (let j = fromBin; j < toBin && j < bins; j++) { sum += data[j]; n++; }
+    const v = n > 0 ? sum / n / 255 : 0;
+    const bw = W / bands;
+    const bh = v * H;
+    ctx.fillRect(i * bw + 1, H - bh, bw - 2, bh);
+  }
+}
+
+// ---------- rendering ----------
+function renderUI(f, result, locked) {
+  // winner card
+  const w = document.getElementById('winner');
+  document.getElementById('winner-name').textContent =
+    SCENES[state.lastWinner || result.scene].name;
+  document.getElementById('winner-conf').textContent =
+    `${Math.round(result.confidence * 100)}% confidence · raw: ${result.raw} (${result.score})`;
+  w.classList.toggle('locked', locked);
+
+  // scores
+  const maxScore = Math.max(1, ...Object.values(result.all));
+  for (const k of SCENE_KEYS) {
+    const row = document.querySelector(`.score-row[data-scene="${k}"]`);
+    if (!row) continue;
+    const v = result.all[k];
+    row.querySelector('.score-bar-fill').style.width = `${(v / maxScore) * 100}%`;
+    row.querySelector('.score-num').textContent = v.toFixed(1);
+    row.classList.toggle('win', k === result.raw && result.score >= 2);
+    row.classList.toggle('gt', k === state.groundTruth);
+  }
+
+  // features
+  for (const fd of FEATURES) {
+    const cell = document.querySelector(`.feat[data-key="${fd.key}"]`);
+    if (!cell) continue;
+    const val = f[fd.key];
+    cell.querySelector('.v').textContent = fd.fmt(val);
+    cell.querySelector('.bar-fill').style.width = `${fd.scale(val) * 100}%`;
+  }
+}
+
+// ---------- build UI ----------
+function build() {
+  // scores
+  const scores = document.getElementById('scores');
+  for (const k of SCENE_KEYS) {
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.dataset.scene = k;
+    row.innerHTML = `
+      <div class="score-content">
+        <div class="score-name">
+          ${SCENES[k].name}
+          <span class="gt-pin">ground truth</span>
+        </div>
+        <div class="score-bar"><div class="score-bar-fill" style="width:0%"></div></div>
+      </div>
+      <div class="score-num">0</div>
+    `;
+    scores.appendChild(row);
+  }
+
+  // ground-truth grid
+  const gt = document.getElementById('gt-grid');
+  for (const k of SCENE_KEYS) {
+    const b = document.createElement('button');
+    b.className = 'gt-btn';
+    b.dataset.scene = k;
+    b.setAttribute('aria-pressed', 'false');
+    b.textContent = SCENES[k].name;
+    b.addEventListener('click', () => {
+      state.groundTruth = (state.groundTruth === k) ? null : k;
+      for (const btn of document.querySelectorAll('.gt-btn')) {
+        btn.setAttribute('aria-pressed', String(btn.dataset.scene === state.groundTruth));
+      }
+      toast(state.groundTruth ? `Tagging as: ${SCENES[k].name}` : 'No ground-truth tag');
+    });
+    gt.appendChild(b);
+  }
+
+  // features grid
+  const feats = document.getElementById('features');
+  for (const fd of FEATURES) {
+    const c = document.createElement('div');
+    c.className = 'feat';
+    c.dataset.key = fd.key;
+    c.innerHTML = `
+      <div class="k">${fd.label}</div>
+      <div class="v">—</div>
+      <div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+    `;
+    feats.appendChild(c);
+  }
+}
+
+// ---------- recording controls ----------
+function updateLogStatus() {
+  const n = state.samples.length;
+  const dur = n > 0 ? state.samples[n-1].t.toFixed(1) : '0';
+  const tagged = state.samples.filter(s => s.gt).length;
+  document.getElementById('log-status').textContent =
+    `${n} samples · ${dur}s · ${tagged} tagged`;
+  document.getElementById('export-btn').disabled = n === 0;
+  document.getElementById('clear-btn').disabled = n === 0;
+}
+
+function toggleRecording() {
+  if (!state.isLive) { toast('Start the mic first'); return; }
+  state.recording = !state.recording;
+  const btn = document.getElementById('rec-btn');
+  if (state.recording) {
+    if (state.samples.length === 0) state.startedAt = performance.now();
+    btn.classList.add('live');
+    btn.textContent = '■ Stop recording';
+    toast(state.groundTruth ? `Recording (tagged: ${SCENES[state.groundTruth].name})` : 'Recording (no tag)');
+  } else {
+    btn.classList.remove('live');
+    btn.textContent = '● Record samples';
+    toast('Paused');
+  }
+}
+
+function exportSamples() {
+  if (state.samples.length === 0) return;
+  const blob = new Blob([JSON.stringify({
+    version: 1,
+    capturedAt: new Date().toISOString(),
+    sampleRate: 'unknown',
+    userAgent: navigator.userAgent,
+    sampleCount: state.samples.length,
+    durationSec: state.samples[state.samples.length-1].t,
+    samples: state.samples,
+  }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().replace(/[:.]/g,'-');
+  a.href = url;
+  a.download = `roomtone-samples-${ts}.json`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  toast(`Exported ${state.samples.length} samples`);
+}
+
+function clearSamples() {
+  state.samples = [];
+  state.startedAt = 0;
+  updateLogStatus();
+  toast('Cleared');
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ---------- wire ----------
+build();
+document.getElementById('start-btn').addEventListener('click', () => {
+  if (state.isLive) stop(); else start();
+});
+document.getElementById('rec-btn').addEventListener('click', toggleRecording);
+document.getElementById('export-btn').addEventListener('click', exportSamples);
+document.getElementById('clear-btn').addEventListener('click', clearSamples);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+})();
+</script>
+</body>
+</html>

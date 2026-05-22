@@ -114,12 +114,32 @@ demo is here so you can feel the product loop before any of that ships.
 - **No real RT60 estimate**, so "Reverberant" is detected less reliably than
   the others — clap a few times in a bathroom and it'll catch up.
 
+## Classifier test app (`test.html`)
+
+A separate page for tuning the scene classifier without the EQ in the way.
+Shows the winning scene + confidence, all 6 per-scene scores as bars, the
+live spectrum, and every feature value (RMS, centroid, flatness, ZCR, band
+ratios, peak) updating in real time.
+
+The useful part: tap a **ground-truth** chip (what room you're actually in),
+hit **● Record samples**, walk around the real environment for 30–60 seconds,
+then **Export JSON**. You get a file with timestamped features, classifier
+scores, and your ground-truth tags. Paste it back to me and I'll re-tune the
+rules in `index.html`'s `classify()` against real data instead of my guesses.
+
+Same install, same URL — link is in the main app's footer, or hit
+`apps/roomtone/test.html` directly.
+
 ## File layout
 
 ```
 apps/roomtone/
-├── index.html     ← the whole app, self-contained
-└── README.md      ← this file
+├── index.html             ← the whole app, self-contained
+├── test.html              ← classifier diagnostics + ground-truth recorder
+├── manifest.webmanifest   ← PWA manifest
+├── sw.js                  ← offline-shell service worker
+├── icons/                 ← home-screen icons + iOS splashes
+└── README.md              ← this file
 ```
 
 If you want to fork the look-and-feel into the real iOS app later, the
