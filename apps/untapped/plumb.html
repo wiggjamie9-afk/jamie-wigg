@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PLUMB — AR punchlist for solo contractors</title>
+<meta name="description" content="Walk the job. Get the punchlist. AR auto-annotates defects, generates a client-ready report and change-order.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fde047">
+<style>
+:root{
+  --bg:#ffffff; --hivis:#fde047; --hivis-dark:#eab308;
+  --ink:#18181b; --ink-2:#3f3f46; --muted:#71717a; --rule:#27272a;
+  --alert:#f97316; --alert-deep:#ea580c; --critical:#dc2626;
+  --safe:#16a34a; --shadow:rgba(24,24,27,0.08);
+  --mono:ui-monospace,'SF Mono','Monaco','Consolas','Courier New',monospace;
+  --sans:-apple-system,'Inter',system-ui,'Helvetica Neue',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+::selection{background:var(--ink);color:var(--hivis)}
+
+/* ── Hi-vis caution-tape header ── */
+.tape{position:sticky;top:0;z-index:50;background:var(--hivis);border-bottom:2px solid var(--ink);height:48px;display:flex;align-items:center;padding:0 16px;gap:14px;overflow:hidden}
+.tape::before,.tape::after{content:"";flex:0 0 auto;width:24px;height:32px;background:repeating-linear-gradient(135deg,var(--ink) 0 6px,transparent 6px 12px)}
+.brand{font-family:var(--mono);font-weight:800;font-size:18px;letter-spacing:0.04em;color:var(--ink);text-transform:uppercase}
+.brand span{background:var(--ink);color:var(--hivis);padding:2px 6px;margin-right:4px}
+.tape .meta{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--ink);text-transform:uppercase;margin-left:auto;display:flex;gap:14px;align-items:center}
+.tape .meta b{font-weight:800}
+
+/* ── Layout ── */
+.shell{display:grid;grid-template-columns:1fr 380px;gap:0;min-height:calc(100vh - 48px)}
+@media (max-width:880px){.shell{grid-template-columns:1fr}}
+.stage{padding:24px 24px 60px;border-right:2px solid var(--ink);background:#fafafa;position:relative}
+@media (max-width:880px){.stage{border-right:none;border-bottom:2px solid var(--ink)}}
+.side{padding:24px;background:var(--bg);display:flex;flex-direction:column}
+
+/* ── Idle screen ── */
+.idle{display:flex;flex-direction:column;align-items:flex-start;max-width:560px;margin:40px auto 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:var(--ink-2);margin-bottom:18px;display:inline-flex;align-items:center;gap:8px}
+.eyebrow::before{content:"";width:8px;height:8px;background:var(--alert);border-radius:50%}
+.idle h1{font-family:var(--mono);font-weight:800;font-size:clamp(38px,7vw,64px);line-height:0.95;letter-spacing:-0.02em;text-transform:uppercase;color:var(--ink);margin-bottom:14px}
+.idle h1 mark{background:var(--hivis);color:var(--ink);padding:0 4px}
+.idle p.lede{font-size:17px;color:var(--ink-2);max-width:480px;margin-bottom:28px;line-height:1.5}
+.start-btn{font-family:var(--mono);font-weight:800;font-size:17px;letter-spacing:0.12em;text-transform:uppercase;background:var(--ink);color:var(--hivis);padding:22px 32px;border:3px solid var(--ink);box-shadow:6px 6px 0 var(--hivis);transition:transform 0.1s,box-shadow 0.1s;display:inline-flex;align-items:center;gap:14px}
+.start-btn:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--hivis)}
+.start-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--hivis)}
+.start-btn::after{content:"▶";font-size:14px}
+.idle .specs{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase;margin-top:24px;display:flex;gap:18px;flex-wrap:wrap}
+.idle .specs b{color:var(--ink);font-weight:800}
+
+/* ── Phone viewport (camera sim) ── */
+.viewport-wrap{display:flex;justify-content:center;padding-top:8px}
+.viewport{width:min(100%,360px);aspect-ratio:9/19;background:#000;border:4px solid var(--ink);border-radius:36px;position:relative;overflow:hidden;box-shadow:0 24px 60px -20px var(--shadow),0 0 0 4px var(--hivis)}
+.viewport::before{content:"";position:absolute;top:14px;left:50%;transform:translateX(-50%);width:84px;height:22px;background:var(--ink);border-radius:14px;z-index:6}
+.cam{position:absolute;inset:0}
+/* Room SVG fills the cam */
+.cam svg{width:100%;height:100%;display:block}
+/* Camera HUD */
+.hud{position:absolute;inset:0;pointer-events:none;z-index:3}
+.hud .corners{position:absolute;inset:48px 18px 80px;border:1.5px solid rgba(253,224,71,0.55);border-radius:4px}
+.hud .corner{position:absolute;width:18px;height:18px;border:2px solid var(--hivis)}
+.hud .corner.tl{top:-2px;left:-2px;border-right:none;border-bottom:none}
+.hud .corner.tr{top:-2px;right:-2px;border-left:none;border-bottom:none}
+.hud .corner.bl{bottom:-2px;left:-2px;border-right:none;border-top:none}
+.hud .corner.br{bottom:-2px;right:-2px;border-left:none;border-top:none}
+.hud .topbar{position:absolute;top:48px;left:18px;right:18px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--hivis);text-transform:uppercase}
+.hud .topbar .rec{display:inline-flex;align-items:center;gap:5px}
+.hud .topbar .rec::before{content:"";width:8px;height:8px;background:var(--critical);border-radius:50%;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.hud .botbar{position:absolute;bottom:30px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:flex-end;font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:#fff;text-transform:uppercase}
+.hud .level{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.55);padding:4px 8px;border-left:2px solid var(--hivis)}
+.hud .bubble{width:34px;height:6px;background:rgba(255,255,255,0.15);position:relative;border-radius:2px}
+.hud .bubble::after{content:"";position:absolute;left:14px;top:-2px;width:10px;height:10px;background:var(--hivis);border-radius:50%;animation:wobble 3s ease-in-out infinite}
+@keyframes wobble{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+.hud .counter{background:rgba(0,0,0,0.55);padding:4px 8px;border-left:2px solid var(--alert)}
+.hud .scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--hivis),transparent);animation:scan 3s linear infinite;opacity:0.6}
+@keyframes scan{0%{top:18%}100%{top:82%}}
+
+/* ── AR Markers ── */
+.marker{position:absolute;z-index:5;pointer-events:auto;cursor:pointer;animation:markerIn 0.45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes markerIn{0%{transform:scale(0) rotate(-15deg);opacity:0}60%{transform:scale(1.15) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+.crosshair{width:34px;height:34px;position:relative}
+.crosshair::before,.crosshair::after{content:"";position:absolute;background:var(--alert);box-shadow:0 0 0 1px var(--ink)}
+.crosshair::before{left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%)}
+.crosshair::after{top:50%;left:0;right:0;height:2px;transform:translateY(-50%)}
+.crosshair .ring{position:absolute;inset:0;border:2px solid var(--alert);border-radius:50%;box-shadow:0 0 0 1px var(--ink),0 0 12px rgba(249,115,22,0.6)}
+.crosshair .pulse{position:absolute;inset:-6px;border:1.5px solid var(--alert);border-radius:50%;animation:ring 1.6s ease-out infinite;opacity:0}
+@keyframes ring{0%{transform:scale(0.6);opacity:0.9}100%{transform:scale(2.2);opacity:0}}
+.marker .tag{position:absolute;top:-4px;left:42px;background:var(--ink);color:var(--hivis);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.06em;padding:5px 8px;text-transform:uppercase;white-space:nowrap;border-left:3px solid var(--alert);max-width:180px;text-overflow:ellipsis;overflow:hidden}
+.marker .tag .id{color:var(--alert);margin-right:4px}
+.marker.right .tag{left:auto;right:42px;border-left:none;border-right:3px solid var(--alert)}
+.marker.critical .crosshair::before,.marker.critical .crosshair::after,.marker.critical .crosshair .ring{background:var(--critical);border-color:var(--critical)}
+.marker.critical .tag{border-left-color:var(--critical)}
+
+/* ── Sidebar ── */
+.side h2{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink);margin-bottom:4px;display:flex;justify-content:space-between;align-items:baseline}
+.side h2 .count{background:var(--alert);color:#fff;font-size:11px;padding:2px 8px;letter-spacing:0.08em}
+.side .sub{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid var(--ink)}
+.punchlist{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:200px;max-height:60vh;margin-bottom:16px}
+.empty{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;text-align:center;padding:32px 16px;border:2px dashed var(--muted);margin-top:8px}
+.item{border:2px solid var(--ink);background:var(--bg);padding:12px;display:grid;grid-template-columns:42px 1fr;gap:12px;animation:slideIn 0.35s ease-out;position:relative}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.thumb{width:42px;height:42px;background:var(--ink);position:relative;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:800;color:var(--hivis)}
+.thumb .sev{position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg)}
+.item .body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.item .title{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25}
+.item .loc{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase}
+.item .fix{font-size:12px;color:var(--ink-2);line-height:1.35;margin-top:2px}
+.item .sev-row{display:flex;gap:4px;margin-top:6px}
+.sev-chip{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.08em;padding:3px 6px;text-transform:uppercase;border:1.5px solid var(--ink);cursor:pointer;color:var(--ink);background:var(--bg);transition:all 0.1s}
+.sev-chip:hover{background:var(--hivis)}
+.sev-chip.on{background:var(--ink);color:var(--hivis)}
+.sev-chip.on.crit{background:var(--critical);color:#fff;border-color:var(--critical)}
+.sev-chip.on.maj{background:var(--alert);color:#fff;border-color:var(--alert)}
+.sev-chip.on.min{background:var(--safe);color:#fff;border-color:var(--safe)}
+.dot-crit{background:var(--critical)} .dot-maj{background:var(--alert)} .dot-min{background:var(--safe)}
+
+/* Sidebar bottom actions */
+.actions{border-top:2px solid var(--ink);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.btn-primary{font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;background:var(--ink);color:var(--hivis);padding:14px 18px;border:2px solid var(--ink);text-align:left;display:flex;justify-content:space-between;align-items:center;transition:background 0.1s}
+.btn-primary:hover{background:var(--alert);color:#fff}
+.btn-primary[disabled]{opacity:0.4;cursor:not-allowed}
+.btn-primary[disabled]:hover{background:var(--ink);color:var(--hivis)}
+.btn-ghost{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-2);padding:8px 0;text-align:left}
+.btn-ghost:hover{color:var(--alert)}
+.summary{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;color:var(--ink);text-transform:uppercase;display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--ink);margin-bottom:10px}
+.summary b{font-size:14px;font-weight:800}
+
+/* Stage status badge */
+.stage-status{position:absolute;top:16px;left:16px;font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--ink);background:var(--hivis);padding:6px 10px;border:2px solid var(--ink);text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;z-index:10}
+.stage-status::before{content:"";width:8px;height:8px;background:var(--critical);border-radius:50%;animation:pulse 1s infinite}
+.stage-status.done::before{background:var(--safe);animation:none}
+
+/* ── Report view ── */
+.report{display:none;padding:32px 28px;background:#fff;max-width:780px;margin:0 auto;border:2px solid var(--ink);box-shadow:0 16px 40px -20px var(--shadow);position:relative}
+.report.on{display:block}
+.report::before{content:"PREVIEW";position:absolute;top:18px;right:-12px;background:var(--alert);color:#fff;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:0.2em;padding:4px 10px;transform:rotate(3deg)}
+.r-head{border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end}
+.r-head h3{font-family:var(--mono);font-weight:800;font-size:26px;letter-spacing:-0.01em;text-transform:uppercase;color:var(--ink);line-height:1}
+.r-head .sub{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;margin-top:6px}
+.r-head .meta{font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink);text-align:right}
+.r-head .meta b{display:block;color:var(--muted);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;font-weight:600}
+.r-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:2px solid var(--ink);margin-bottom:22px}
+.r-stat{padding:14px;border-right:2px solid var(--ink);text-align:center}
+.r-stat:last-child{border-right:none}
+.r-stat .n{font-family:var(--mono);font-weight:800;font-size:26px;color:var(--ink);line-height:1}
+.r-stat .l{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;margin-top:6px}
+.r-stat.alert .n{color:var(--alert)}
+.r-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:22px}
+.r-card{border:2px solid var(--ink);padding:10px;background:#fafafa}
+.r-card .ph{aspect-ratio:4/3;background:#27272a;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--hivis);text-transform:uppercase;position:relative;overflow:hidden}
+.r-card .ph::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(253,224,71,0.06) 8px 16px)}
+.r-card .ph svg{position:absolute;inset:0;width:100%;height:100%}
+.r-card .ph .pin{position:absolute;width:14px;height:14px;border:2px solid var(--alert);border-radius:50%;background:rgba(249,115,22,0.4);transform:translate(-50%,-50%)}
+.r-card .ph .pin::after{content:attr(data-n);position:absolute;left:18px;top:-4px;background:var(--ink);color:var(--hivis);font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 5px;letter-spacing:0.05em}
+.r-card .lbl{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:0.06em;margin-top:8px;line-height:1.3}
+.r-card .cost{font-family:var(--mono);font-size:10px;color:var(--alert);font-weight:700;letter-spacing:0.12em;margin-top:4px}
+.r-foot{border-top:3px solid var(--ink);padding-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:end}
+.r-foot .total{font-family:var(--mono);font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:0.12em}
+.r-foot .total b{display:block;font-size:32px;color:var(--ink);font-weight:800;margin-top:4px}
+.r-sig{border-top:2px solid var(--ink);padding-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase}
+
+.toggle-row{display:flex;gap:8px;margin-top:24px;flex-wrap:wrap}
+.toggle{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:10px 14px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.toggle .box{width:14px;height:14px;border:2px solid var(--ink);position:relative}
+.toggle.on{background:var(--hivis);color:var(--ink)}
+.toggle.on .box::after{content:"✓";position:absolute;inset:-3px 0;font-size:14px;text-align:center;font-weight:800;color:var(--ink)}
+.back-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-2);padding:8px 0;margin-bottom:16px;display:inline-flex;align-items:center;gap:6px}
+.back-btn:hover{color:var(--alert)}
+
+@media (max-width:560px){
+  .r-stats{grid-template-columns:repeat(2,1fr)}
+  .r-stat:nth-child(2){border-right:none}
+  .r-stat:nth-child(1),.r-stat:nth-child(2){border-bottom:2px solid var(--ink)}
+  .r-grid{grid-template-columns:1fr}
+  .r-foot{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Caution-tape brand bar ── -->
+<header class="tape">
+  <div class="brand"><span>P</span>LUMB</div>
+  <div class="meta">
+    <span><b>v0.4</b> · beta</span>
+    <span><b>•</b> on-device</span>
+    <span id="proj"><b>JOB</b> 1042 · Henderson reno</span>
+  </div>
+</header>
+
+<!-- ── Main shell ── -->
+<main class="shell" id="shell">
+
+  <!-- ── Stage (camera viewport / idle / report) ── -->
+  <section class="stage" id="stage">
+
+    <!-- IDLE -->
+    <div class="idle" id="idle">
+      <div class="eyebrow">AR Punchlist · Job 1042</div>
+      <h1>Walk the job.<br>Get the <mark>punchlist.</mark></h1>
+      <p class="lede">Point your phone. PLUMB auto-marks off-plumb walls, scratched paint, missing trim, code violations. Hands stay on the tools.</p>
+      <button class="start-btn" onclick="startWalk()">Start walkthrough</button>
+      <div class="specs">
+        <span><b>~90s</b> demo</span>
+        <span><b>8</b> defect types</span>
+        <span><b>iPhone Pro</b> LiDAR</span>
+        <span>offline-first</span>
+      </div>
+    </div>
+
+    <!-- CAMERA VIEW -->
+    <div class="viewport-wrap" id="cameraWrap" style="display:none">
+      <div class="stage-status" id="stageStatus">Scanning — Living Room</div>
+      <div class="viewport">
+        <div class="cam">
+          <!-- SVG room interior: a simplified plan/elevation -->
+          <svg viewBox="0 0 360 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs>
+              <linearGradient id="floor" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#3f3320"/>
+                <stop offset="1" stop-color="#1a1410"/>
+              </linearGradient>
+              <linearGradient id="wallL" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stop-color="#e8dccc"/>
+                <stop offset="1" stop-color="#c9bba6"/>
+              </linearGradient>
+              <linearGradient id="wallR" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stop-color="#c9bba6"/>
+                <stop offset="1" stop-color="#e8dccc"/>
+              </linearGradient>
+              <linearGradient id="wallC" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#dccfb9"/>
+                <stop offset="1" stop-color="#b9ab93"/>
+              </linearGradient>
+              <pattern id="dust" width="3" height="3" patternUnits="userSpaceOnUse">
+                <circle cx="1" cy="1" r="0.4" fill="rgba(255,255,255,0.06)"/>
+              </pattern>
+            </defs>
+            <!-- Ceiling -->
+            <polygon points="0,0 360,0 290,180 70,180" fill="#a89880"/>
+            <!-- Back wall -->
+            <polygon points="70,180 290,180 290,520 70,520" fill="url(#wallC)"/>
+            <!-- Left wall -->
+            <polygon points="0,0 70,180 70,520 0,650" fill="url(#wallL)"/>
+            <!-- Right wall -->
+            <polygon points="360,0 290,180 290,520 360,650" fill="url(#wallR)"/>
+            <!-- Floor -->
+            <polygon points="70,520 290,520 360,650 360,760 0,760 0,650" fill="url(#floor)"/>
+            <!-- Baseboard trim with visible gap (right wall) -->
+            <polygon points="290,510 360,640 360,650 290,520" fill="#f1e6d2"/>
+            <polygon points="70,510 290,510 290,520 70,520" fill="#f1e6d2"/>
+            <polygon points="0,640 70,510 70,520 0,650" fill="#f1e6d2"/>
+            <!-- Trim gap (notch) -->
+            <rect x="200" y="505" width="14" height="18" fill="#1a1410"/>
+            <!-- Window frame back wall -->
+            <rect x="115" y="230" width="130" height="160" fill="#a8c4dc" stroke="#fff" stroke-width="3"/>
+            <line x1="180" y1="230" x2="180" y2="390" stroke="#fff" stroke-width="3"/>
+            <line x1="115" y1="310" x2="245" y2="310" stroke="#fff" stroke-width="3"/>
+            <!-- Outlet (missing cover - dark hole on left wall) -->
+            <rect x="22" y="420" width="20" height="32" fill="#0a0a0a"/>
+            <rect x="22" y="420" width="20" height="32" fill="none" stroke="#5a4d3c" stroke-width="1"/>
+            <line x1="27" y1="430" x2="37" y2="430" stroke="#fbbf24" stroke-width="1.5"/>
+            <line x1="27" y1="438" x2="37" y2="438" stroke="#fbbf24" stroke-width="1.5"/>
+            <!-- Paint scuff (back wall lower) -->
+            <ellipse cx="240" cy="475" rx="22" ry="6" fill="#9a8b75" opacity="0.7"/>
+            <ellipse cx="232" cy="480" rx="14" ry="4" fill="#7a6c58" opacity="0.6"/>
+            <!-- Off-plumb wall hint: slight tilt indicator (back wall joint) -->
+            <line x1="262" y1="180" x2="270" y2="520" stroke="#8a7a60" stroke-width="1.2"/>
+            <!-- Door frame (right wall) - reveal gap -->
+            <rect x="295" y="200" width="60" height="280" fill="#8a7556" opacity="0.5"/>
+            <rect x="300" y="210" width="50" height="265" fill="#1a1410"/>
+            <!-- Drywall crack (right wall upper) -->
+            <path d="M 310 250 L 318 280 L 314 310 L 322 340" stroke="#6a5a48" stroke-width="1.2" fill="none"/>
+            <!-- Ceiling stain -->
+            <ellipse cx="180" cy="120" rx="32" ry="8" fill="#8a7a5a" opacity="0.5"/>
+            <!-- Floor scratches -->
+            <line x1="100" y1="600" x2="180" y2="640" stroke="#2a2018" stroke-width="1" opacity="0.6"/>
+            <line x1="120" y1="610" x2="200" y2="650" stroke="#2a2018" stroke-width="1" opacity="0.4"/>
+            <!-- Dust overlay -->
+            <rect width="360" height="760" fill="url(#dust)"/>
+          </svg>
+        </div>
+
+        <!-- HUD overlay -->
+        <div class="hud">
+          <div class="corners">
+            <div class="corner tl"></div><div class="corner tr"></div>
+            <div class="corner bl"></div><div class="corner br"></div>
+          </div>
+          <div class="topbar">
+            <span class="rec">REC · 00:<span id="recT">00</span></span>
+            <span>LiDAR · 1080P</span>
+          </div>
+          <div class="botbar">
+            <div class="level">PLUMB <div class="bubble"></div> <span id="lvlDeg">2.4°</span></div>
+            <div class="counter">DEFECTS · <span id="defN">0</span></div>
+          </div>
+          <div class="scan-line"></div>
+        </div>
+
+        <!-- AR markers injected here -->
+        <div id="markers" style="position:absolute;inset:0;z-index:4"></div>
+      </div>
+    </div>
+
+    <!-- REPORT VIEW -->
+    <div class="report" id="report">
+      <button class="back-btn" onclick="backToWalk()">← Back to walkthrough</button>
+      <div class="r-head">
+        <div>
+          <h3>Punchlist Report</h3>
+          <div class="sub">Job 1042 · 2114 Henderson Ave · Living room reno</div>
+        </div>
+        <div class="meta">
+          <b>Contractor</b>
+          R. Vega Carpentry<br>
+          <b>Date</b>
+          <span id="rDate">May 22 · 2026</span><br>
+          <b>Walkthrough</b>
+          0:47 · 1 zone
+        </div>
+      </div>
+      <div class="r-stats">
+        <div class="r-stat"><div class="n" id="rCount">0</div><div class="l">Defects</div></div>
+        <div class="r-stat alert"><div class="n" id="rCrit">0</div><div class="l">Critical</div></div>
+        <div class="r-stat"><div class="n" id="rEst">$0</div><div class="l">Est. fix</div></div>
+        <div class="r-stat"><div class="n" id="rHours">0h</div><div class="l">Labor</div></div>
+      </div>
+      <div class="r-grid" id="rGrid"></div>
+      <div class="r-foot">
+        <div class="total">Change-order total <b id="rTotal">$0</b></div>
+        <div class="r-sig">Client signature ────────────────────</div>
+      </div>
+      <div class="toggle-row">
+        <button class="toggle on" id="tSend" onclick="this.classList.toggle('on')"><span class="box"></span>Send to client</button>
+        <button class="toggle on" id="tInv" onclick="this.classList.toggle('on')"><span class="box"></span>Add to invoice</button>
+        <button class="toggle" id="tInsur" onclick="this.classList.toggle('on')"><span class="box"></span>Flag for insurance</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Sidebar punchlist ── -->
+  <aside class="side">
+    <h2>Punchlist <span class="count" id="sCount">0</span></h2>
+    <div class="sub" id="sStatus">Idle · awaiting walkthrough</div>
+    <div class="summary" id="sSummary" style="display:none">
+      <span>Critical <b style="color:var(--critical)" id="sCrit">0</b></span>
+      <span>Major <b style="color:var(--alert)" id="sMaj">0</b></span>
+      <span>Minor <b style="color:var(--safe)" id="sMin">0</b></span>
+    </div>
+    <div class="punchlist" id="list">
+      <div class="empty">No defects logged. Start a walkthrough.</div>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" id="genBtn" onclick="generateReport()" disabled>Generate report →</button>
+      <button class="btn-ghost" onclick="resetAll()">↺ Reset walkthrough</button>
+    </div>
+  </aside>
+
+</main>
+
+<script>
+// ── Defect library ──
+const DEFECTS = [
+  { id:'D1', label:'Wall 3° off-plumb · joint @ 4ft', loc:'Back wall · NE corner', fix:'Reset top plate, re-shim. ~2hr labor.', cost:185, sev:'major', x:'66%', y:'34%', side:'right' },
+  { id:'D2', label:'Outlet missing cover plate', loc:'Left wall · 36" AFF', fix:'Install standard duplex plate. <5min.', cost:12, sev:'critical', x:'13%', y:'56%', side:'left' },
+  { id:'D3', label:'Paint scuff — wall A near base', loc:'Back wall · 4ft from S corner', fix:'Spot-prime + touch-up matched.', cost:48, sev:'minor', x:'66%', y:'62%', side:'right' },
+  { id:'D4', label:'Trim gap > 1/8" (code)', loc:'Baseboard · back wall mid', fix:'Caulk gap, re-set quarter-round.', cost:35, sev:'major', x:'58%', y:'67%', side:'right' },
+  { id:'D5', label:'Drywall crack · vertical 8"', loc:'Right wall · upper near jamb', fix:'Tape, mud, sand. Re-paint section.', cost:120, sev:'major', x:'84%', y:'38%', side:'left' },
+  { id:'D6', label:'Ceiling stain · moisture flag', loc:'Center ceiling · 14sf', fix:'Investigate above. Kilz + paint.', cost:160, sev:'critical', x:'48%', y:'16%', side:'right' },
+  { id:'D7', label:'Floor scratch · refinish needed', loc:'Hardwood · entry path', fix:'Sand strip, stain match, poly.', cost:95, sev:'minor', x:'40%', y:'82%', side:'right' },
+  { id:'D8', label:'Window seal gap · air leak', loc:'Back wall window · top frame', fix:'Re-caulk perimeter, replace gasket.', cost:55, sev:'minor', x:'40%', y:'30%', side:'right' }
+];
+
+// ── State ──
+const state = { walking:false, defects:[], timer:null, recSec:0 };
+
+const $ = id => document.getElementById(id);
+const list = $('list'), markers = $('markers');
+
+function startWalk(){
+  $('idle').style.display = 'none';
+  $('cameraWrap').style.display = 'flex';
+  $('report').classList.remove('on');
+  state.walking = true;
+  state.defects = [];
+  state.recSec = 0;
+  markers.innerHTML = '';
+  renderList();
+  $('genBtn').disabled = true;
+  // Tick recording timer
+  state.timer = setInterval(() => {
+    state.recSec++;
+    $('recT').textContent = String(state.recSec).padStart(2,'0');
+    // Wobble the level reading for liveness
+    const deg = (Math.sin(state.recSec/2) * 1.8 + 2.4).toFixed(1);
+    $('lvlDeg').textContent = deg + '°';
+  }, 1000);
+  // Inject defects one by one
+  DEFECTS.forEach((d, i) => {
+    setTimeout(() => addDefect(d, i), 1800 + i * 1900);
+  });
+  // Finish state after the last one
+  setTimeout(() => {
+    $('stageStatus').textContent = 'Scan complete · ' + DEFECTS.length + ' defects logged';
+    $('stageStatus').classList.add('done');
+    if (state.timer) clearInterval(state.timer);
+  }, 1800 + DEFECTS.length * 1900 + 800);
+}
+
+function addDefect(d, idx){
+  if (!state.walking) return;
+  const m = document.createElement('div');
+  m.className = 'marker' + (d.sev === 'critical' ? ' critical' : '') + (d.side === 'right' ? ' right' : '');
+  m.style.left = d.x;
+  m.style.top = d.y;
+  m.innerHTML = `<div class="crosshair"><div class="ring"></div><div class="pulse"></div></div><div class="tag"><span class="id">${d.id}</span>${d.label}</div>`;
+  m.title = d.label;
+  m.onclick = () => { /* could open detail */ };
+  markers.appendChild(m);
+  state.defects.push({...d});
+  $('defN').textContent = state.defects.length;
+  renderList();
+  if (state.defects.length >= 3) $('genBtn').disabled = false;
+}
+
+function renderList(){
+  $('sCount').textContent = state.defects.length;
+  if (!state.defects.length){
+    list.innerHTML = '<div class="empty">No defects logged. Start a walkthrough.</div>';
+    $('sStatus').textContent = state.walking ? 'Scanning…' : 'Idle · awaiting walkthrough';
+    $('sSummary').style.display = 'none';
+    return;
+  }
+  $('sStatus').textContent = state.walking ? 'Live · auto-detecting' : 'Walkthrough complete';
+  $('sSummary').style.display = 'flex';
+  const crit = state.defects.filter(d => d.sev==='critical').length;
+  const maj  = state.defects.filter(d => d.sev==='major').length;
+  const min  = state.defects.filter(d => d.sev==='minor').length;
+  $('sCrit').textContent = crit; $('sMaj').textContent = maj; $('sMin').textContent = min;
+  list.innerHTML = state.defects.map((d, i) => {
+    const sevClass = d.sev === 'critical' ? 'crit' : d.sev === 'major' ? 'maj' : 'min';
+    const dotClass = d.sev === 'critical' ? 'dot-crit' : d.sev === 'major' ? 'dot-maj' : 'dot-min';
+    return `
+      <div class="item">
+        <div class="thumb">${d.id}<span class="sev ${dotClass}"></span></div>
+        <div class="body">
+          <div class="title">${escapeHtml(d.label)}</div>
+          <div class="loc">${escapeHtml(d.loc)}</div>
+          <div class="fix">${escapeHtml(d.fix)} <b style="color:var(--alert)">$${d.cost}</b></div>
+          <div class="sev-row">
+            <button class="sev-chip ${d.sev==='critical'?'on crit':''}" onclick="setSev(${i},'critical')">Critical</button>
+            <button class="sev-chip ${d.sev==='major'?'on maj':''}" onclick="setSev(${i},'major')">Major</button>
+            <button class="sev-chip ${d.sev==='minor'?'on min':''}" onclick="setSev(${i},'minor')">Minor</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function setSev(i, sev){
+  state.defects[i].sev = sev;
+  renderList();
+}
+
+function generateReport(){
+  state.walking = false;
+  if (state.timer) clearInterval(state.timer);
+  $('cameraWrap').style.display = 'none';
+  $('idle').style.display = 'none';
+  $('report').classList.add('on');
+  const total = state.defects.reduce((s,d) => s + d.cost, 0);
+  const crit = state.defects.filter(d => d.sev==='critical').length;
+  const hours = Math.ceil(state.defects.length * 0.8);
+  $('rCount').textContent = state.defects.length;
+  $('rCrit').textContent = crit;
+  $('rEst').textContent = '$' + total;
+  $('rHours').textContent = hours + 'h';
+  $('rTotal').textContent = '$' + total + '.00';
+  $('rDate').textContent = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}).replace(',', ' ·');
+  // Build photo grid: a stylized room thumbnail per defect with pin overlay
+  $('rGrid').innerHTML = state.defects.slice(0, 6).map((d, i) => {
+    const sevColor = d.sev==='critical' ? 'var(--critical)' : d.sev==='major' ? 'var(--alert)' : 'var(--safe)';
+    return `
+      <div class="r-card">
+        <div class="ph">
+          <svg viewBox="0 0 200 150" preserveAspectRatio="none">
+            <polygon points="0,0 200,0 165,40 35,40" fill="#a89880"/>
+            <polygon points="35,40 165,40 165,105 35,105" fill="#d8c9b3"/>
+            <polygon points="0,0 35,40 35,105 0,130" fill="#c4b598"/>
+            <polygon points="200,0 165,40 165,105 200,130" fill="#c4b598"/>
+            <polygon points="35,105 165,105 200,130 200,150 0,150 0,130" fill="#2c241a"/>
+            <rect x="60" y="55" width="40" height="35" fill="#8da8b8"/>
+          </svg>
+          <div class="pin" data-n="${d.id}" style="left:${d.x};top:${d.y};border-color:${sevColor};background:${sevColor}40"></div>
+        </div>
+        <div class="lbl">${escapeHtml(d.label)}</div>
+        <div class="cost">$${d.cost} · ${escapeHtml(d.loc)}</div>
+      </div>`;
+  }).join('');
+}
+
+function backToWalk(){
+  $('report').classList.remove('on');
+  if (state.defects.length) $('cameraWrap').style.display = 'flex';
+  else $('idle').style.display = 'flex';
+}
+
+function resetAll(){
+  state.walking = false;
+  state.defects = [];
+  state.recSec = 0;
+  if (state.timer) clearInterval(state.timer);
+  markers.innerHTML = '';
+  $('defN').textContent = '0';
+  $('recT').textContent = '00';
+  $('stageStatus').textContent = 'Scanning — Living Room';
+  $('stageStatus').classList.remove('done');
+  $('cameraWrap').style.display = 'none';
+  $('report').classList.remove('on');
+  $('idle').style.display = 'flex';
+  $('genBtn').disabled = true;
+  renderList();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+}
+</script>
+</body>
+</html>

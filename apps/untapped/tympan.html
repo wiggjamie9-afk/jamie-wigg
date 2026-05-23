@@ -1,0 +1,2449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TYMPAN — environmental EQ for hearing aids</title>
+<meta name="description" content="TYMPAN re-tunes your hearing aids for every room you walk into. Restaurant clatter, car cabin, church reverb — adapted in seconds.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#1c1c1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TYMPAN">
+<meta name="format-detection" content="telephone=no">
+
+<!-- Favicon (embedded SVG data URI) -->
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c1c1e'/><circle cx='16' cy='16' r='9' fill='none' stroke='%236b4f7a' stroke-width='2'/><circle cx='16' cy='16' r='2.6' fill='%236b4f7a'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%231c1c1e'/><circle cx='90' cy='90' r='52' fill='none' stroke='%236b4f7a' stroke-width='10'/><circle cx='90' cy='90' r='15' fill='%236b4f7a'/></svg>">
+
+<style>
+:root{
+  --bone:#fafaf7; --bone-2:#f1efea; --bone-3:#e6e3dc; --bone-4:#d8d4ca;
+  --ink:#1c1c1e; --ink-2:#3a3a3c; --ink-3:#545458; --ink-4:#6c6c70;
+  --muted:#86868b; --muted-2:#a6a6ab;
+  --aubergine:#6b4f7a; --aubergine-deep:#523c5e; --aubergine-soft:#efe9f0; --aubergine-fade:#f6f1f7;
+  --green:#4f8a5b; --amber:#b07d2c; --red:#a04545;
+  --line:rgba(28,28,30,0.08);
+  --line-2:rgba(28,28,30,0.16);
+  --line-3:rgba(28,28,30,0.28);
+  --sans:-apple-system,BlinkMacSystemFont,'Inter','SF Pro Text',system-ui,sans-serif;
+  --mono:'JetBrains Mono','SF Mono','Menlo',ui-monospace,monospace;
+  --serif:'Tinos','Iowan Old Style',Georgia,serif;
+  --safe-bottom:env(safe-area-inset-bottom,0);
+  --safe-top:env(safe-area-inset-top,0);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bone);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100vh;min-height:100dvh;overscroll-behavior-y:contain}
+body{font-weight:400;font-size:15px;line-height:1.5;padding-top:var(--safe-top)}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;touch-action:manipulation}
+input,select{font:inherit;color:inherit}
+::selection{background:var(--aubergine);color:var(--bone)}
+:focus-visible{outline:2px solid var(--aubergine);outline-offset:2px;border-radius:4px}
+button:focus-visible,a:focus-visible{outline:2px solid var(--aubergine);outline-offset:3px}
+
+/* ── Top bar ── */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,250,247,0.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:11px 18px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding-top:max(11px,var(--safe-top))}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{font-family:var(--mono);font-weight:600;letter-spacing:0.18em;font-size:13px;color:var(--ink)}
+.brand-mark::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--aubergine);margin-right:9px;vertical-align:1px;animation:pulse-dot 2.2s ease-in-out infinite}
+.brand-mark.muted::before{background:var(--muted-2);animation:none}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.55;transform:scale(0.82)}}
+
+.aid-status{display:flex;align-items:center;gap:8px;justify-self:center;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-3)}
+.aid-status .ble{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(79,138,91,0.5);animation:ble-pulse 2.6s ease-out infinite;flex-shrink:0}
+.aid-status .ble.demo{background:var(--amber);box-shadow:0 0 0 0 rgba(176,125,44,0.5);animation:ble-pulse 2.6s ease-out infinite}
+.aid-status .ble.off{background:var(--muted-2);box-shadow:none;animation:none}
+@keyframes ble-pulse{0%{box-shadow:0 0 0 0 rgba(79,138,91,0.45)}80%,100%{box-shadow:0 0 0 7px rgba(79,138,91,0)}}
+.aid-status b{color:var(--ink);font-weight:600}
+.aid-status-text{max-width:36vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.lr-block{display:flex;gap:9px;font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--ink-3)}
+.lr-ear{display:flex;align-items:center;gap:5px}
+.lr-ear .ear-id{color:var(--ink);font-weight:600}
+.batt{display:inline-block;width:18px;height:8px;border:1px solid var(--ink-3);border-radius:1px;position:relative;vertical-align:middle}
+.batt::after{content:"";position:absolute;right:-2px;top:1.5px;width:1.5px;height:3px;background:var(--ink-3);border-radius:0 1px 1px 0}
+.batt i{display:block;height:100%;background:var(--ink);transition:width 0.4s}
+.batt i.low{background:var(--amber)}
+.batt i.crit{background:var(--red)}
+
+@media (max-width:540px){
+  .aid-status-text{font-size:9px;letter-spacing:0.1em}
+  .topbar{grid-template-columns:auto 1fr auto;gap:9px;padding:10px 14px;padding-top:max(10px,var(--safe-top))}
+  .brand-mark{font-size:12px}
+}
+@media (max-width:380px){
+  .lr-block{font-size:9px}
+  .aid-status-text{display:none}
+}
+
+/* ── Layout ── */
+.app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.wrap{max-width:780px;margin:0 auto;padding:18px 18px calc(96px + var(--safe-bottom));width:100%;flex:1}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+.eyebrow.no-rule::after{display:none}
+
+/* ── Screen system ── */
+.screen{display:none}
+.screen.active{display:block;animation:screen-in .28s ease-out}
+@keyframes screen-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Live tuning ── */
+.hero{background:var(--bone);border:1px solid var(--line);border-radius:16px;padding:24px 22px 22px;margin-bottom:16px;position:relative;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:148px 1fr;gap:22px;align-items:center}
+@media (max-width:540px){.hero-grid{grid-template-columns:118px 1fr;gap:16px}}
+
+.orb-wrap{position:relative;width:148px;height:148px}
+@media (max-width:540px){.orb-wrap{width:118px;height:118px}}
+.orb-svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
+.orb-track{fill:none;stroke:var(--bone-3);stroke-width:2}
+.orb-arc{fill:none;stroke:var(--aubergine);stroke-width:2.5;stroke-linecap:round;transition:stroke-dashoffset 0.18s linear}
+.orb-peak{fill:none;stroke:var(--aubergine-deep);stroke-width:2;stroke-linecap:round;opacity:0.55;transition:stroke-dashoffset 0.6s cubic-bezier(.4,0,.2,1)}
+.orb-pulse{position:absolute;inset:0;border-radius:50%;border:1px solid var(--aubergine);opacity:0;animation:orb-ring 2.4s ease-out infinite;pointer-events:none}
+.orb-pulse.off{animation:none;opacity:0}
+@keyframes orb-ring{0%{transform:scale(0.7);opacity:0.35}100%{transform:scale(1.05);opacity:0}}
+.orb-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.orb-db{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:-0.02em;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
+@media (max-width:540px){.orb-db{font-size:24px}}
+.orb-unit{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;color:var(--muted);margin-top:4px;text-transform:uppercase}
+.orb-source{font-family:var(--mono);font-size:8px;letter-spacing:0.18em;color:var(--aubergine);margin-top:4px;text-transform:uppercase}
+.orb-source.demo{color:var(--amber)}
+
+.now-eye{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.now-room{font-family:var(--serif);font-size:26px;letter-spacing:-0.015em;line-height:1.15;color:var(--ink);margin-bottom:8px;transition:opacity 0.32s}
+.now-room.fade{opacity:0}
+.now-meta{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:0.06em;display:flex;flex-wrap:wrap;gap:12px 14px}
+.now-meta span b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ── Spectrum analyzer ── */
+.spectrum-card{background:var(--ink);color:var(--bone);border-radius:14px;padding:14px 14px 10px;margin-bottom:16px}
+.spec-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted-2)}
+.spec-head b{color:var(--aubergine);font-weight:600}
+.spec-canvas-wrap{position:relative;height:84px;display:block}
+canvas.spec-canvas{display:block;width:100%;height:100%;border-radius:6px}
+.spec-axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8.5px;color:var(--muted-2);letter-spacing:0.06em;padding:6px 0 0;opacity:0.65}
+
+/* ── EQ panel ── */
+.eq-panel{background:var(--ink);color:var(--bone);border-radius:16px;padding:22px 20px;margin-bottom:16px;position:relative;overflow:hidden}
+.eq-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:14px}
+.eq-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;color:var(--aubergine);text-transform:uppercase}
+.eq-conf{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;color:var(--muted-2);text-align:right}
+.eq-conf b{color:var(--bone);font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.eq-title{font-family:var(--serif);font-size:19px;letter-spacing:-0.01em;margin:4px 0 16px;color:var(--bone);transition:opacity 0.4s}
+.eq-title.fade{opacity:0}
+.eq-svg-wrap{position:relative;background:rgba(255,255,255,0.025);border-radius:10px;padding:12px 6px 4px;border:1px solid rgba(255,255,255,0.06)}
+.eq-svg{width:100%;height:160px;display:block;touch-action:none}
+.eq-grid{stroke:rgba(255,255,255,0.06);stroke-width:1}
+.eq-zero{stroke:rgba(255,255,255,0.18);stroke-dasharray:2 4;stroke-width:1}
+.eq-prev{fill:none;stroke:rgba(255,255,255,0.2);stroke-width:1.25;stroke-dasharray:3 3;pointer-events:none}
+.eq-curve{fill:none;stroke:var(--aubergine);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:d 0.6s cubic-bezier(.4,0,.2,1)}
+.eq-curve.snap{transition:none}
+.eq-fill{fill:url(#eqGrad);transition:d 0.6s cubic-bezier(.4,0,.2,1)}
+.eq-fill.snap{transition:none}
+.eq-dot{fill:var(--aubergine);transition:cy 0.6s cubic-bezier(.4,0,.2,1);cursor:ns-resize}
+.eq-dot.snap{transition:none}
+.eq-dot:hover{r:4}
+.eq-dot.active{fill:var(--bone);r:4.5}
+.eq-band-label{font-family:var(--mono);font-size:8.5px;letter-spacing:0.06em;fill:var(--muted-2)}
+.eq-db-axis{font-family:var(--mono);font-size:8.5px;fill:var(--muted-2);letter-spacing:0.04em}
+.eq-hit{fill:transparent;cursor:ns-resize}
+
+.changed{margin-top:14px;padding:13px 14px;background:rgba(107,79,122,0.14);border-radius:10px;border-left:2px solid var(--aubergine);display:flex;gap:12px;align-items:flex-start}
+.changed-tag{font-family:var(--mono);font-size:10px;color:var(--aubergine);letter-spacing:0.14em;padding-top:1px;flex-shrink:0;font-weight:600}
+.changed-text{font-size:13px;line-height:1.55;color:var(--bone);transition:opacity 0.4s;flex:1}
+.changed-text.fade{opacity:0}
+
+.eq-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.eq-action{padding:8px 14px;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;background:rgba(255,255,255,0.06);color:var(--bone);border-radius:8px;transition:all .15s;border:1px solid rgba(255,255,255,0.08)}
+.eq-action:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
+.eq-action.primary{background:var(--aubergine);border-color:var(--aubergine)}
+.eq-action.primary:hover{background:var(--aubergine-deep);border-color:var(--aubergine-deep)}
+
+/* ── Mode toggle ── */
+.modes{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;background:var(--bone-2);border-radius:12px;padding:4px;margin-bottom:16px;border:1px solid var(--line)}
+.mode-btn{padding:11px 4px;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;border-radius:8px;color:var(--ink-3);transition:all 0.18s;text-align:center;font-weight:500}
+.mode-btn.active{background:var(--ink);color:var(--bone)}
+.mode-btn:hover:not(.active){background:rgba(0,0,0,0.04);color:var(--ink)}
+@media (max-width:520px){.mode-btn{font-size:9px;letter-spacing:0.08em;padding:10px 2px}}
+
+/* ── Permission card ── */
+.perm-card{background:var(--bone);border:1px solid var(--line-2);border-radius:14px;padding:18px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px}
+.perm-card.warn{background:linear-gradient(180deg, #fdf6f1, var(--bone));border-color:rgba(176,125,44,0.32)}
+.perm-icon{width:32px;height:32px;border-radius:50%;background:var(--aubergine-soft);display:flex;align-items:center;justify-content:center;color:var(--aubergine);flex-shrink:0}
+.perm-head{display:flex;gap:12px;align-items:flex-start}
+.perm-title{font-size:15px;font-weight:600;letter-spacing:-0.005em;margin-bottom:2px}
+.perm-desc{font-size:13px;color:var(--ink-3);line-height:1.5}
+.perm-btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:11px 16px;border-radius:10px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:-0.005em;border:1px solid transparent;transition:all 0.15s;display:inline-flex;align-items:center;gap:7px;justify-content:center}
+.btn.primary{background:var(--ink);color:var(--bone)}
+.btn.primary:hover{background:var(--ink-2)}
+.btn.secondary{background:var(--bone-2);color:var(--ink);border-color:var(--line-2)}
+.btn.secondary:hover{background:var(--bone-3)}
+.btn.danger{background:transparent;color:var(--red);border-color:rgba(160,69,69,0.32)}
+.btn.danger:hover{background:rgba(160,69,69,0.06)}
+.btn.full{width:100%}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* ── Bottom tab bar ── */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(250,250,247,0.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 8px calc(8px + var(--safe-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 4px;gap:3px;border-radius:8px;color:var(--ink-3);transition:color .15s,background .15s;min-height:46px}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--aubergine)}
+.tab svg{width:20px;height:20px;flex-shrink:0}
+.tab-label{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:500}
+
+/* ── History view ── */
+.range-toggle{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:var(--bone-2);border-radius:12px;padding:4px;margin-bottom:14px;border:1px solid var(--line)}
+.range-btn{padding:10px 4px;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;border-radius:8px;color:var(--ink-3);transition:all 0.18s;text-align:center;font-weight:500}
+.range-btn.active{background:var(--ink);color:var(--bone)}
+
+.history{background:var(--bone);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.history-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+.history-title{font-size:14px;font-weight:600;letter-spacing:-0.01em}
+.history-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+.chip-row{display:flex;gap:2px;overflow-x:auto;padding-bottom:4px;margin:0 -2px 8px;scrollbar-width:thin}
+.chip-row::-webkit-scrollbar{height:4px}
+.chip-row::-webkit-scrollbar-thumb{background:var(--bone-3);border-radius:2px}
+.chip{flex:0 0 auto;width:10px;height:36px;border-radius:2px;position:relative;cursor:pointer;transition:transform .15s}
+.chip:hover{transform:scaleY(1.12)}
+.chip-axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.06em;padding:0 2px;margin-top:2px}
+.chip-legend{display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.legend-item{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:0.04em;color:var(--ink-3)}
+.legend-sq{width:9px;height:9px;border-radius:2px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--bone);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat-label{font-family:var(--mono);font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.stat-value{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;font-variant-numeric:tabular-nums}
+.stat-unit{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-left:2px;letter-spacing:0.06em}
+.stat-sub{font-size:11px;color:var(--ink-3);margin-top:6px;line-height:1.4}
+
+.env-bars{display:flex;flex-direction:column;gap:9px}
+.env-bar{display:grid;grid-template-columns:88px 1fr 56px;gap:10px;align-items:center;font-family:var(--mono);font-size:11px}
+.env-bar-name{color:var(--ink);letter-spacing:0.04em;text-transform:uppercase;font-size:10px;font-weight:600}
+.env-bar-track{height:8px;background:var(--bone-3);border-radius:4px;overflow:hidden;position:relative}
+.env-bar-fill{height:100%;background:var(--aubergine);border-radius:4px;transition:width .6s ease-out}
+.env-bar-val{color:var(--ink-3);text-align:right;font-variant-numeric:tabular-nums;letter-spacing:0.04em}
+
+.empty-state{text-align:center;padding:40px 24px;color:var(--ink-3)}
+.empty-state-icon{margin:0 auto 14px;width:48px;height:48px;color:var(--muted-2)}
+.empty-state-title{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.empty-state-text{font-size:13px;line-height:1.55;max-width:340px;margin:0 auto}
+
+/* ── Presets view ── */
+.preset-list{display:flex;flex-direction:column;gap:10px}
+.preset-card{background:var(--bone);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;transition:border-color .15s}
+.preset-card:hover{border-color:var(--line-2)}
+.preset-card.custom{border-left:3px solid var(--aubergine)}
+.preset-info{min-width:0}
+.preset-name{font-size:14px;font-weight:600;letter-spacing:-0.005em;margin-bottom:3px}
+.preset-tag{font-family:var(--mono);font-size:9.5px;color:var(--aubergine);letter-spacing:0.18em;text-transform:uppercase;margin-right:8px}
+.preset-meta{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);letter-spacing:0.04em;line-height:1.5}
+.preset-actions{display:flex;gap:6px;flex-shrink:0}
+.icon-btn{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);transition:all .15s;background:transparent}
+.icon-btn:hover{background:var(--bone-2);color:var(--ink)}
+.icon-btn.danger:hover{color:var(--red);background:rgba(160,69,69,0.08)}
+.icon-btn svg{width:16px;height:16px}
+
+/* ── Settings ── */
+.section{background:var(--bone);border:1px solid var(--line);border-radius:14px;padding:6px 0;margin-bottom:14px;overflow:hidden}
+.section-title{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase;padding:14px 18px 6px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-top:1px solid var(--line)}
+.section-title + .row{border-top:none}
+.row-label{font-size:14px;flex:1;min-width:0}
+.row-label small{display:block;font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.45;font-weight:400}
+.row-control{flex-shrink:0;display:flex;align-items:center;gap:8px}
+.row-control select,.row-control input[type="text"]{padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;background:var(--bone);font-size:13px;min-width:120px;max-width:200px}
+.row-control input[type="text"]{max-width:180px}
+.row.linked{cursor:pointer;transition:background .12s}
+.row.linked:hover{background:var(--bone-2)}
+.row.linked::after{content:"›";color:var(--muted-2);font-size:22px;line-height:1;flex-shrink:0;margin-left:4px}
+.row-value{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:0.06em}
+
+/* Toggle switch */
+.toggle{position:relative;width:42px;height:24px;background:var(--bone-3);border-radius:12px;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--aubergine)}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--bone);border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+.toggle.on::after{transform:translateX(18px)}
+
+/* ── Onboarding ── */
+.onboard-overlay{position:fixed;inset:0;background:var(--bone);z-index:200;display:flex;flex-direction:column;padding:max(24px,var(--safe-top)) 22px max(22px,calc(22px + var(--safe-bottom)));overflow-y:auto}
+.onboard-overlay.hidden{display:none}
+.onboard-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}
+.onboard-progress{display:flex;gap:6px;flex:1;max-width:140px}
+.onboard-prog-dot{flex:1;height:3px;border-radius:2px;background:var(--bone-3);transition:background .25s}
+.onboard-prog-dot.done{background:var(--aubergine)}
+.onboard-prog-dot.current{background:var(--aubergine);box-shadow:0 0 0 3px rgba(107,79,122,0.15)}
+.onboard-skip{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;color:var(--ink-3);text-transform:uppercase}
+.onboard-skip:hover{color:var(--ink)}
+.onboard-body{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:520px;margin:0 auto;width:100%}
+.onboard-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.22em;color:var(--aubergine);text-transform:uppercase;margin-bottom:14px}
+.onboard-title{font-family:var(--serif);font-size:30px;letter-spacing:-0.02em;line-height:1.15;margin-bottom:14px;color:var(--ink)}
+.onboard-desc{font-size:15px;line-height:1.55;color:var(--ink-3);margin-bottom:24px;max-width:440px}
+.onboard-form{display:flex;flex-direction:column;gap:14px;margin-bottom:8px}
+.onboard-field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.onboard-field input,.onboard-field select{width:100%;padding:13px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--bone);font-size:15px}
+.onboard-foot{display:flex;gap:10px;margin-top:24px}
+.onboard-foot .btn{flex:1}
+.calibrate-vis{display:flex;flex-direction:column;align-items:center;gap:18px;padding:18px 0 28px}
+.calibrate-circle{width:140px;height:140px;border-radius:50%;border:1.5px solid var(--aubergine);position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center, var(--aubergine-fade), transparent 70%)}
+.calibrate-circle::before{content:"";position:absolute;inset:-1.5px;border-radius:50%;border:1.5px solid var(--aubergine);animation:cal-pulse 1.6s ease-out infinite;opacity:0}
+.calibrate-circle.idle::before{animation:none}
+@keyframes cal-pulse{0%{transform:scale(0.95);opacity:0.4}100%{transform:scale(1.18);opacity:0}}
+.calibrate-bar{width:5px;background:var(--aubergine);border-radius:3px;transform-origin:center}
+.calibrate-bars{display:flex;align-items:center;gap:4px;height:60px}
+.calibrate-time{font-family:var(--mono);font-size:13px;letter-spacing:0.18em;color:var(--ink-3);text-transform:uppercase}
+.calibrate-time b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ── Pairing splash ── */
+.splash{position:fixed;inset:0;background:var(--bone);z-index:180;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:30px;transition:opacity .65s}
+.splash.gone{opacity:0;pointer-events:none}
+.splash-ears{display:flex;gap:42px;margin-bottom:36px}
+.splash-ear{width:54px;height:80px;border:1.5px solid var(--aubergine);border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;position:relative;animation:ear-pulse 1.8s ease-in-out infinite}
+.splash-ear.r{animation-delay:0.4s}
+@keyframes ear-pulse{0%,100%{box-shadow:0 0 0 0 rgba(107,79,122,0.4)}50%{box-shadow:0 0 0 14px rgba(107,79,122,0)}}
+.splash-ear::after{content:attr(data-side);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:11px;color:var(--aubergine);letter-spacing:0.16em}
+.splash-status{font-family:var(--mono);font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--ink-3);text-align:center;line-height:1.9;max-width:320px;min-height:50px}
+.splash-status b{color:var(--ink);font-weight:600}
+
+/* ── Toast ── */
+.toast-stack{position:fixed;left:50%;bottom:calc(80px + var(--safe-bottom));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:calc(100% - 40px);max-width:380px;align-items:center}
+.toast{background:var(--ink);color:var(--bone);padding:12px 18px;border-radius:10px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);animation:toast-in .25s cubic-bezier(.4,0,.2,1);max-width:100%;pointer-events:auto}
+.toast.exit{animation:toast-out .25s cubic-bezier(.4,0,.2,1) forwards}
+.toast .toast-dot{width:7px;height:7px;border-radius:50%;background:var(--aubergine);flex-shrink:0}
+.toast .toast-dot.green{background:var(--green)}
+.toast .toast-dot.amber{background:var(--amber)}
+@keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toast-out{to{opacity:0;transform:translateY(8px)}}
+
+/* ── Modal ── */
+.modal-bg{position:fixed;inset:0;background:rgba(28,28,30,0.42);z-index:160;display:none;align-items:flex-end;justify-content:center;padding:18px;padding-bottom:max(18px,var(--safe-bottom))}
+.modal-bg.open{display:flex;animation:modal-bg-in .2s ease-out}
+@keyframes modal-bg-in{from{opacity:0}to{opacity:1}}
+.modal{background:var(--bone);border-radius:16px;width:100%;max-width:520px;padding:20px;animation:modal-in .25s cubic-bezier(.4,0,.2,1);max-height:80vh;overflow-y:auto}
+@keyframes modal-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-title{font-family:var(--serif);font-size:20px;letter-spacing:-0.01em;margin-bottom:6px}
+.modal-desc{font-size:13.5px;line-height:1.55;color:var(--ink-3);margin-bottom:14px}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+
+/* ── Foot ── */
+.foot{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);line-height:1.7}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.08s !important;scroll-behavior:auto !important}
+  .orb-pulse{display:none}
+  .eq-curve,.eq-fill,.eq-dot{transition:none}
+}
+
+@media (max-width:520px){
+  .now-room{font-size:22px}
+  .eq-title{font-size:17px}
+  .wrap{padding:16px 14px calc(96px + var(--safe-bottom))}
+  .hero{padding:20px 18px 18px}
+  .eq-panel{padding:18px 16px}
+  .stat-value{font-size:20px}
+  .modal{padding:18px;border-radius:14px 14px 0 0}
+}
+
+@media (min-width:769px){
+  .tabs{position:sticky;bottom:0}
+}
+</style>
+</head>
+<body>
+
+<!-- ───────────────────────── ONBOARDING ───────────────────────── -->
+<div class="onboard-overlay hidden" id="onboard" role="dialog" aria-modal="true" aria-labelledby="onboardTitle">
+  <div class="onboard-head">
+    <div class="brand"><span class="brand-mark">TYMPAN</span></div>
+    <button class="onboard-skip" id="onboardSkip" aria-label="Skip onboarding">Skip</button>
+  </div>
+  <div class="onboard-progress" aria-label="Setup progress">
+    <span class="onboard-prog-dot current" data-step="0"></span>
+    <span class="onboard-prog-dot" data-step="1"></span>
+    <span class="onboard-prog-dot" data-step="2"></span>
+    <span class="onboard-prog-dot" data-step="3"></span>
+  </div>
+
+  <div class="onboard-body" id="onboardBody">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- ───────────────────────── PAIRING SPLASH ───────────────────────── -->
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="splash-ears">
+    <div class="splash-ear" data-side="L"></div>
+    <div class="splash-ear r" data-side="R"></div>
+  </div>
+  <div class="splash-status" id="splashStatus">SCANNING&nbsp;FOR&nbsp;PAIRED&nbsp;AIDS…</div>
+</div>
+
+<!-- ───────────────────────── APP ───────────────────────── -->
+<div class="app" id="app" hidden>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" id="brandMark">TYMPAN</span>
+  </div>
+  <div class="aid-status" aria-label="Hearing aid status">
+    <span class="ble" id="bleDot" aria-hidden="true"></span>
+    <span class="aid-status-text" id="aidStatusText">Connected · <b id="aidModelLabel">Phonak Audéo P90R</b> · L+R</span>
+  </div>
+  <div class="lr-block" aria-label="Battery levels">
+    <div class="lr-ear" title="Left aid battery"><span class="ear-id">L</span><span class="batt"><i id="battL" style="width:84%"></i></span></div>
+    <div class="lr-ear" title="Right aid battery"><span class="ear-id">R</span><span class="batt"><i id="battR" style="width:79%"></i></span></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ═══════════════════ SCREEN 1: TUNE ═══════════════════ -->
+  <section class="screen active" id="screen-tune" role="tabpanel" aria-labelledby="tab-tune">
+
+    <!-- Mic permission card (only shown if not granted / not denied yet) -->
+    <div class="perm-card" id="permCard" hidden>
+      <div class="perm-head">
+        <div class="perm-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </div>
+        <div>
+          <div class="perm-title">Enable your microphone</div>
+          <p class="perm-desc">TYMPAN listens to your environment to choose the right EQ in real time. Audio never leaves this device — there is no recording, upload, or storage.</p>
+        </div>
+      </div>
+      <div class="perm-btn-row">
+        <button class="btn primary" id="permGrant">Allow microphone</button>
+        <button class="btn secondary" id="permDemo">Continue in Demo</button>
+      </div>
+    </div>
+
+    <!-- Mic denied card -->
+    <div class="perm-card warn" id="deniedCard" hidden>
+      <div class="perm-head">
+        <div class="perm-icon" aria-hidden="true" style="background:rgba(176,125,44,0.15);color:var(--amber)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l22 22"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        </div>
+        <div>
+          <div class="perm-title">Microphone blocked</div>
+          <p class="perm-desc">TYMPAN is running in Demo mode using simulated environments. To use live classification, allow microphone access from your browser's site settings.</p>
+        </div>
+      </div>
+      <div class="perm-btn-row">
+        <button class="btn primary" id="retryMic">Try again</button>
+      </div>
+    </div>
+
+    <div class="eyebrow">Now listening</div>
+    <section class="hero" aria-label="Live sound level">
+      <div class="hero-grid">
+        <div class="orb-wrap">
+          <div class="orb-pulse" id="orbPulse"></div>
+          <svg class="orb-svg" viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="orb-track" cx="50" cy="50" r="44"/>
+            <circle class="orb-peak" id="orbPeak" cx="50" cy="50" r="44" stroke-dasharray="276.46" stroke-dashoffset="276.46"/>
+            <circle class="orb-arc" id="orbArc" cx="50" cy="50" r="44" stroke-dasharray="276.46" stroke-dashoffset="220"/>
+          </svg>
+          <div class="orb-center">
+            <div class="orb-db" id="dbVal">--</div>
+            <div class="orb-unit">dB SPL</div>
+            <div class="orb-source" id="orbSource">Awaiting input</div>
+          </div>
+        </div>
+        <div>
+          <div class="now-eye">Environment detected</div>
+          <div class="now-room" id="nowRoom" aria-live="polite">Standing by</div>
+          <div class="now-meta">
+            <span>conf · <b id="nowConf">—</b></span>
+            <span>dom · <b id="nowFreq">—</b></span>
+            <span><b id="nowDb">—</b> dB peak</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spectrum -->
+    <section class="spectrum-card" aria-label="Live spectrum analyzer">
+      <div class="spec-head">
+        <span><b>▮ SPECTRUM</b> · 32 BANDS · 80Hz–10kHz</span>
+        <span id="specRms">— dBFS RMS</span>
+      </div>
+      <div class="spec-canvas-wrap">
+        <canvas class="spec-canvas" id="specCanvas" width="600" height="84" aria-hidden="true"></canvas>
+      </div>
+      <div class="spec-axis"><span>80</span><span>250</span><span>500</span><span>1k</span><span>2k</span><span>4k</span><span>8k</span></div>
+    </section>
+
+    <!-- EQ panel -->
+    <div class="eyebrow">Adaptive EQ curve · sent to aids</div>
+    <section class="eq-panel" aria-label="Adaptive equalizer">
+      <div class="eq-head">
+        <span class="eq-eyebrow">▮ LIVE CURVE · 8 BANDS</span>
+        <span class="eq-conf"><b id="curveLatency">—</b> ms latency</span>
+      </div>
+      <div class="eq-title" id="eqTitle">Auto · awaiting classification</div>
+      <div class="eq-svg-wrap">
+        <svg class="eq-svg" viewBox="0 0 580 160" preserveAspectRatio="none" id="eqSvg">
+          <defs>
+            <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#6b4f7a" stop-opacity="0.32"/>
+              <stop offset="100%" stop-color="#6b4f7a" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line class="eq-grid" x1="40" y1="20" x2="570" y2="20"/>
+          <line class="eq-grid" x1="40" y1="50" x2="570" y2="50"/>
+          <line class="eq-zero" x1="40" y1="80" x2="570" y2="80"/>
+          <line class="eq-grid" x1="40" y1="110" x2="570" y2="110"/>
+          <line class="eq-grid" x1="40" y1="140" x2="570" y2="140"/>
+          <text class="eq-db-axis" x="6" y="23">+12</text>
+          <text class="eq-db-axis" x="6" y="53">+6</text>
+          <text class="eq-db-axis" x="10" y="83">0</text>
+          <text class="eq-db-axis" x="6" y="113">−6</text>
+          <text class="eq-db-axis" x="4" y="143">−12</text>
+          <path class="eq-prev" id="eqPrev" d=""/>
+          <path class="eq-fill" id="eqFill" d=""/>
+          <path class="eq-curve" id="eqCurve" d=""/>
+          <g id="eqDots"></g>
+          <g id="eqHits"></g>
+          <g id="eqBandLabels"></g>
+        </svg>
+      </div>
+      <div class="changed">
+        <span class="changed-tag">CHANGED</span>
+        <span class="changed-text" id="changedText">Waiting for microphone input. Grant permission to begin classifying your environment.</span>
+      </div>
+      <div class="eq-actions">
+        <button class="eq-action" id="resetEq">↺ Reset curve</button>
+        <button class="eq-action primary" id="savePreset">＋ Save as preset</button>
+      </div>
+    </section>
+
+    <!-- Mode toggle -->
+    <div class="eyebrow">Mode</div>
+    <div class="modes" id="modes" role="tablist" aria-label="EQ mode">
+      <button class="mode-btn active" data-mode="auto" role="tab" aria-selected="true">Auto</button>
+      <button class="mode-btn" data-mode="music" role="tab" aria-selected="false">Music</button>
+      <button class="mode-btn" data-mode="speech" role="tab" aria-selected="false">Speech</button>
+      <button class="mode-btn" data-mode="quiet" role="tab" aria-selected="false">Quiet</button>
+      <button class="mode-btn" data-mode="custom" role="tab" aria-selected="false">Custom</button>
+    </div>
+
+    <div class="foot">
+      TYMPAN · firmware 1.3.0 · on-device classifier · BLE LE Audio sync
+    </div>
+  </section>
+
+  <!-- ═══════════════════ SCREEN 2: HISTORY ═══════════════════ -->
+  <section class="screen" id="screen-history" role="tabpanel" aria-labelledby="tab-history">
+    <div class="eyebrow no-rule">Environment history</div>
+
+    <div class="range-toggle" role="tablist" aria-label="Time range">
+      <button class="range-btn active" data-range="day" role="tab" aria-selected="true">24 H</button>
+      <button class="range-btn" data-range="week" role="tab" aria-selected="false">7 DAYS</button>
+      <button class="range-btn" data-range="month" role="tab" aria-selected="false">30 DAYS</button>
+    </div>
+
+    <section class="history">
+      <div class="history-head">
+        <div class="history-title" id="historyTitleText">Today · rooms encountered</div>
+        <div class="history-meta" id="historyMeta">—</div>
+      </div>
+      <div class="chip-row" id="chipRow" role="img" aria-label="Environment timeline"></div>
+      <div class="chip-axis"><span id="axisStart">−24h</span><span id="axisMid">−12h</span><span>now</span></div>
+      <div class="chip-legend">
+        <span class="legend-item"><span class="legend-sq" style="background:#cdd5cf"></span>Quiet</span>
+        <span class="legend-item"><span class="legend-sq" style="background:#d3c4b5"></span>Conversation</span>
+        <span class="legend-item"><span class="legend-sq" style="background:#6b4f7a"></span>Restaurant</span>
+        <span class="legend-item"><span class="legend-sq" style="background:#3a3a3c"></span>Vehicle</span>
+        <span class="legend-item"><span class="legend-sq" style="background:#8c6ea0"></span>Music</span>
+        <span class="legend-item"><span class="legend-sq" style="background:#c9aa6f"></span>Outdoor</span>
+      </div>
+    </section>
+
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-label">Avg dB SPL</div>
+        <div class="stat-value" id="statAvgDb">—<span class="stat-unit">dB</span></div>
+        <div class="stat-sub" id="statAvgSub">Equivalent continuous level</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Time in loud</div>
+        <div class="stat-value" id="statLoud">—<span class="stat-unit">min</span></div>
+        <div class="stat-sub" id="statLoudSub">Above 75 dB SPL</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Distinct rooms</div>
+        <div class="stat-value" id="statRooms">—</div>
+        <div class="stat-sub">Unique environments</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Adaptations</div>
+        <div class="stat-value" id="statAdapt">—</div>
+        <div class="stat-sub">EQ profile changes</div>
+      </div>
+    </div>
+
+    <div class="eyebrow">Time per environment</div>
+    <section class="history">
+      <div class="env-bars" id="envBars"></div>
+    </section>
+  </section>
+
+  <!-- ═══════════════════ SCREEN 3: PRESETS ═══════════════════ -->
+  <section class="screen" id="screen-presets" role="tabpanel" aria-labelledby="tab-presets">
+    <div class="eyebrow no-rule">EQ presets</div>
+    <p style="font-size:13px;color:var(--ink-3);line-height:1.55;margin-bottom:16px;max-width:540px">Each environment has a base curve from TYMPAN's classifier. Tap a preset to apply it to the current room. Custom presets you've saved sit on top of the defaults.</p>
+
+    <div class="preset-list" id="presetList"></div>
+
+    <div class="foot" style="margin-top:18px">
+      Long-press a preset on the live screen to overwrite. Custom curves stay on this device.
+    </div>
+  </section>
+
+  <!-- ═══════════════════ SCREEN 4: SETTINGS ═══════════════════ -->
+  <section class="screen" id="screen-settings" role="tabpanel" aria-labelledby="tab-settings">
+    <div class="eyebrow no-rule">Settings</div>
+
+    <div class="section">
+      <div class="section-title">Profile</div>
+      <div class="row">
+        <div class="row-label">Name<small>Used in audiologist reports</small></div>
+        <div class="row-control"><input type="text" id="cfgName" placeholder="Your name"></div>
+      </div>
+      <div class="row">
+        <div class="row-label">Age bracket<small>Helps tune presbycusis compensation</small></div>
+        <div class="row-control">
+          <select id="cfgAge">
+            <option value="under-40">Under 40</option>
+            <option value="40-55">40–55</option>
+            <option value="55-70">55–70</option>
+            <option value="70-plus">70+</option>
+            <option value="prefer-not">Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Hearing aid</div>
+      <div class="row">
+        <div class="row-label">Brand<small>Determines BLE protocol</small></div>
+        <div class="row-control">
+          <select id="cfgBrand">
+            <option value="Phonak">Phonak</option>
+            <option value="Oticon">Oticon</option>
+            <option value="ReSound">ReSound</option>
+            <option value="Starkey">Starkey</option>
+            <option value="Widex">Widex</option>
+            <option value="Signia">Signia</option>
+            <option value="Lexie">Lexie</option>
+            <option value="Eargo">Eargo</option>
+            <option value="Sony">Sony</option>
+            <option value="Jabra Enhance">Jabra Enhance</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-label">Model<small>Aids paired by serial</small></div>
+        <div class="row-control"><input type="text" id="cfgModel" placeholder="e.g. Audéo P90R"></div>
+      </div>
+      <div class="row linked" id="rePair">
+        <div class="row-label">Re-run pairing<small>Simulate BLE discovery</small></div>
+        <div class="row-value">L · R</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Listening</div>
+      <div class="row">
+        <div class="row-label">Personal noise floor<small id="floorSub">Captured during onboarding</small></div>
+        <div class="row-value" id="floorValue">— dB</div>
+      </div>
+      <div class="row">
+        <div class="row-label">Haptic feedback<small>Vibrate on environment changes</small></div>
+        <div class="toggle" id="togHaptic" role="switch" aria-checked="true" tabindex="0"></div>
+      </div>
+      <div class="row">
+        <div class="row-label">Loud-environment alerts<small>Warn above 85 dB SPL</small></div>
+        <div class="toggle on" id="togLoud" role="switch" aria-checked="true" tabindex="0"></div>
+      </div>
+      <div class="row">
+        <div class="row-label">Reduce motion<small>Snap curve changes instead of animating</small></div>
+        <div class="toggle" id="togMotion" role="switch" aria-checked="false" tabindex="0"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Audiologist</div>
+      <div class="row linked" id="exportJSON">
+        <div class="row-label">Export listening report (JSON)<small>Anonymized 30-day exposure log</small></div>
+        <div class="row-value">.json</div>
+      </div>
+      <div class="row linked" id="exportHTML">
+        <div class="row-label">Export listening report (HTML)<small>Printable summary for your appointment</small></div>
+        <div class="row-value">.html</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">About</div>
+      <div class="row">
+        <div class="row-label">App version<small>TYMPAN client</small></div>
+        <div class="row-value">1.3.0</div>
+      </div>
+      <div class="row">
+        <div class="row-label">Firmware<small>Hearing aid</small></div>
+        <div class="row-value" id="cfgFw">1.3.0-LE</div>
+      </div>
+      <div class="row linked" id="installApp">
+        <div class="row-label">Install on home screen<small>Add TYMPAN as a PWA</small></div>
+        <div class="row-value" id="installState">Available</div>
+      </div>
+      <div class="row linked" id="rerunOnboard" style="border-bottom:none">
+        <div class="row-label">Re-run setup<small>Recalibrate noise floor</small></div>
+        <div class="row-value">↻</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Data</div>
+      <div class="row linked danger" id="clearData">
+        <div class="row-label" style="color:var(--red)">Reset all TYMPAN data<small style="color:var(--ink-3)">Profile, presets, and history</small></div>
+        <div class="row-value" style="color:var(--red)">Clear</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      Audio is processed locally · No accounts · No tracking · Open the report file to share with your audiologist
+    </div>
+  </section>
+
+</main>
+
+<!-- ─────────── Tab bar ─────────── -->
+<nav class="tabs" role="tablist" aria-label="Main navigation">
+  <button class="tab active" data-screen="tune" id="tab-tune" role="tab" aria-selected="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l3-8 4 16 3-12 2 6h3"/></svg>
+    <span class="tab-label">Tune</span>
+  </button>
+  <button class="tab" data-screen="history" id="tab-history" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <span class="tab-label">History</span>
+  </button>
+  <button class="tab" data-screen="presets" id="tab-presets" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="17" cy="12" r="2.4" fill="currentColor"/></svg>
+    <span class="tab-label">Presets</span>
+  </button>
+  <button class="tab" data-screen="settings" id="tab-settings" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 4.27 16.94l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span class="tab-label">Settings</span>
+  </button>
+</nav>
+
+</div><!-- /.app -->
+
+<!-- Toast container -->
+<div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modalBg" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Title</div>
+    <div class="modal-desc" id="modalDesc">Description</div>
+    <div id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   TYMPAN — Production-grade hearing-aid environmental EQ companion
+   ════════════════════════════════════════════════════════════════════ */
+
+'use strict';
+
+/* ─────────────────────── PWA Manifest (inline blob) ─────────────────────── */
+(function injectManifest(){
+  const manifest = {
+    name: 'TYMPAN — Environmental EQ',
+    short_name: 'TYMPAN',
+    description: 'Real-time hearing-aid environmental EQ companion',
+    start_url: '.',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#fafaf7',
+    theme_color: '#1c1c1e',
+    categories: ['health', 'medical', 'utilities'],
+    icons: [
+      { src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='42' fill='%231c1c1e'/><circle cx='96' cy='96' r='56' fill='none' stroke='%236b4f7a' stroke-width='10'/><circle cx='96' cy='96' r='16' fill='%236b4f7a'/></svg>",
+        sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='112' fill='%231c1c1e'/><circle cx='256' cy='256' r='148' fill='none' stroke='%236b4f7a' stroke-width='28'/><circle cx='256' cy='256' r='42' fill='%236b4f7a'/></svg>",
+        sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+    ]
+  };
+  try {
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = url;
+    document.head.appendChild(link);
+  } catch(e){ /* manifest injection failed — non-fatal */ }
+})();
+
+/* ─────────────────────── Storage ─────────────────────── */
+const STORAGE_KEY = 'tympan.v1';
+const DEFAULT_STATE = {
+  firstRunDone: false,
+  profile: {
+    name: '',
+    age: 'prefer-not',
+    brand: 'Phonak',
+    model: 'Audéo P90R',
+  },
+  prefs: {
+    haptic: false,
+    loudAlert: true,
+    reduceMotion: false,
+  },
+  noiseFloor: null,            // dB, calibrated
+  customPresets: {},           // { envKey: [eq…] }
+  userPresets: [],             // [{ id, name, envKey, eq, created }]
+  history: [],                 // [{ ts, envKey, label, color, dbAvg, dbPeak, durationSec }]
+};
+
+function loadState(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const parsed = JSON.parse(raw);
+    // shallow-merge with defaults to migrate
+    return deepMerge(JSON.parse(JSON.stringify(DEFAULT_STATE)), parsed);
+  } catch(e){
+    return JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+}
+function saveState(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(persistent)); } catch(e){}
+}
+function deepMerge(a, b){
+  for (const k in b){
+    if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && typeof a[k] === 'object'){
+      a[k] = deepMerge(a[k] || {}, b[k]);
+    } else if (b[k] !== undefined){
+      a[k] = b[k];
+    }
+  }
+  return a;
+}
+
+const persistent = loadState();
+
+/* ─────────────────────── Environment library ─────────────────────── */
+const BANDS = [250, 500, 1000, 2000, 3000, 4000, 6000, 8000];
+
+const ENVS = {
+  quiet: {
+    key: 'quiet', label: 'Quiet room',
+    color: '#cdd5cf', tag: 'quiet',
+    eq: [+1, +1, +2, +3, +4, +4, +3, +2],
+    summary: 'Calibrated for low ambient. Soft-knee compression around speech band. Tinnitus masking held at 4kHz +2dB.',
+    domHint: 'broadband'
+  },
+  conversation: {
+    key: 'conversation', label: 'Conversation',
+    color: '#d3c4b5', tag: 'speech',
+    eq: [-1, 0, +2, +5, +6, +5, +3, +1],
+    summary: 'Boosted 1–4kHz consonant region. Slight notch on low-mid to keep the voice in front of you.',
+    domHint: '1–2 kHz'
+  },
+  restaurant: {
+    key: 'restaurant', label: 'Crowded restaurant',
+    color: '#6b4f7a', tag: 'crowd',
+    eq: [-4, -3, +1, +5, +7, +6, +3, +1],
+    summary: 'Cut 250–500Hz babble bowl by 4dB. Boosted 2–4kHz consonant region +6dB. Beamforming narrowed toward front.',
+    domHint: '1.2 kHz babble'
+  },
+  vehicle: {
+    key: 'vehicle', label: 'In a vehicle',
+    color: '#3a3a3c', tag: 'vehicle',
+    eq: [-7, -5, -2, +4, +5, +3, +1, 0],
+    summary: 'Suppressed 180Hz road rumble −7dB. Held 2–3kHz at +5dB for passenger voice. Wind-screen on.',
+    domHint: '180 Hz rumble'
+  },
+  outdoor: {
+    key: 'outdoor', label: 'Outdoor',
+    color: '#c9aa6f', tag: 'outdoor',
+    eq: [0, +1, +2, +3, +3, +3, +2, +2],
+    summary: 'Wind-noise suppressor active. Flat, natural curve so birdsong, traffic, and conversation all pass through.',
+    domHint: 'broadband'
+  },
+  music: {
+    key: 'music', label: 'Music',
+    color: '#8c6ea0', tag: 'music',
+    eq: [+4, +3, +1, -1, -2, -1, +2, +4],
+    summary: 'Smile curve for music: bass shelf preserved, presence dip to avoid harshness, sparkle restored at 8kHz.',
+    domHint: 'broad spectrum'
+  }
+};
+const ENV_ORDER = ['quiet','conversation','restaurant','vehicle','outdoor','music'];
+
+const COLOR_BY_TAG = { quiet:'#cdd5cf', speech:'#d3c4b5', crowd:'#6b4f7a', vehicle:'#3a3a3c', music:'#8c6ea0', outdoor:'#c9aa6f' };
+
+/* ─────────────────────── Runtime state ─────────────────────── */
+const rt = {
+  // Audio
+  audioCtx: null,
+  analyser: null,
+  micStream: null,
+  freqData: null,
+  timeData: null,
+  micActive: false,
+  micDenied: false,
+  demoMode: false,
+  // Classification
+  currentEnvKey: null,
+  candidateEnvKey: null,
+  candidateSince: 0,
+  // Levels
+  dbInstant: 0,
+  dbSmooth: 0,
+  dbPeakHold: 0,
+  dbPeakHoldDecay: 0,
+  // EQ
+  activeEq: ENVS.quiet.eq.slice(),
+  prevEq: null,
+  mode: 'auto',
+  draggingDot: -1,
+  // History
+  envEnteredAt: 0,
+  lastHistoryWriteAt: 0,
+  // Range
+  historyRange: 'day',
+  // Misc
+  demoTimer: null,
+  deferredInstallPrompt: null,
+  loudWarnedAt: 0,
+  reducedMotion: false,
+};
+
+/* ─────────────────────── DOM cache ─────────────────────── */
+const $ = id => document.getElementById(id);
+const dom = {};
+[
+  'app','splash','splashStatus','onboard','onboardBody','onboardSkip',
+  'permCard','permGrant','permDemo','deniedCard','retryMic',
+  'dbVal','orbArc','orbPeak','orbPulse','orbSource',
+  'nowRoom','nowConf','nowFreq','nowDb','curveLatency','eqTitle','changedText',
+  'eqCurve','eqFill','eqPrev','eqDots','eqHits','eqBandLabels','eqSvg',
+  'specCanvas','specRms','resetEq','savePreset',
+  'modes','toastStack','modalBg','modalTitle','modalDesc','modalBody','modalFoot',
+  'aidStatusText','aidModelLabel','bleDot','battL','battR','brandMark',
+  'chipRow','historyMeta','historyTitleText','axisStart','axisMid',
+  'statAvgDb','statAvgSub','statLoud','statLoudSub','statRooms','statAdapt',
+  'envBars','presetList',
+  'cfgName','cfgAge','cfgBrand','cfgModel','cfgFw','floorValue','floorSub',
+  'togHaptic','togLoud','togMotion',
+  'exportJSON','exportHTML','rePair','installApp','installState','rerunOnboard','clearData'
+].forEach(id => { dom[id] = $(id); });
+
+/* ─────────────────────── Reduced motion ─────────────────────── */
+const mqReduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+function syncReducedMotion(){
+  rt.reducedMotion = !!persistent.prefs.reduceMotion || (mqReduce && mqReduce.matches);
+  const elList = [dom.eqCurve, dom.eqFill];
+  elList.forEach(el => el && el.classList.toggle('snap', rt.reducedMotion));
+  document.querySelectorAll('.eq-dot').forEach(el => el.classList.toggle('snap', rt.reducedMotion));
+  if (dom.orbPulse) dom.orbPulse.classList.toggle('off', rt.reducedMotion);
+}
+if (mqReduce) mqReduce.addEventListener('change', syncReducedMotion);
+
+/* ─────────────────────── Haptics ─────────────────────── */
+function haptic(pattern){
+  if (!persistent.prefs.haptic) return;
+  if (!navigator.vibrate) return;
+  try { navigator.vibrate(pattern); } catch(e){}
+}
+
+/* ─────────────────────── Toasts ─────────────────────── */
+function toast(msg, opts = {}){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  const dotClass = opts.kind === 'success' ? 'green' : opts.kind === 'warn' ? 'amber' : '';
+  el.innerHTML = `<span class="toast-dot ${dotClass}"></span><span>${msg}</span>`;
+  dom.toastStack.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('exit');
+    setTimeout(() => el.remove(), 280);
+  }, opts.duration || 2400);
+}
+
+/* ─────────────────────── Modal ─────────────────────── */
+function modal({ title, desc, body = '', buttons = [] }){
+  return new Promise(resolve => {
+    dom.modalTitle.textContent = title || '';
+    dom.modalDesc.textContent = desc || '';
+    dom.modalBody.innerHTML = body;
+    dom.modalFoot.innerHTML = '';
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = `btn ${b.kind || 'secondary'}`;
+      btn.textContent = b.label;
+      btn.addEventListener('click', () => {
+        dom.modalBg.classList.remove('open');
+        resolve(b.value);
+      });
+      dom.modalFoot.appendChild(btn);
+    });
+    dom.modalBg.classList.add('open');
+  });
+}
+dom.modalBg && dom.modalBg.addEventListener('click', (e) => {
+  if (e.target === dom.modalBg){ dom.modalBg.classList.remove('open'); }
+});
+
+/* ─────────────────────── EQ drawing ─────────────────────── */
+const EQ_W = 580, EQ_H = 160;
+const EQ_PAD_L = 40, EQ_PAD_R = 12, EQ_PAD_T = 14, EQ_PAD_B = 14;
+const EQ_INNER_W = EQ_W - EQ_PAD_L - EQ_PAD_R;
+const EQ_INNER_H = EQ_H - EQ_PAD_T - EQ_PAD_B;
+
+function bandX(i){ return EQ_PAD_L + (i / (BANDS.length - 1)) * EQ_INNER_W; }
+function dbY(db){ return EQ_PAD_T + (1 - (db + 12) / 24) * EQ_INNER_H; }
+function yToDb(y){
+  const v = 1 - (y - EQ_PAD_T) / EQ_INNER_H;
+  return Math.max(-12, Math.min(12, Math.round(v * 24 - 12)));
+}
+
+function buildBandLabels(){
+  dom.eqBandLabels.innerHTML = BANDS.map((b, i) => {
+    const label = b >= 1000 ? (b/1000) + 'k' : b;
+    return `<text class="eq-band-label" x="${bandX(i)}" y="158" text-anchor="middle">${label}</text>`;
+  }).join('');
+}
+
+function smoothPath(eq){
+  const pts = eq.map((v, i) => [bandX(i), dbY(v)]);
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++){
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2[0]} ${p2[1]}`;
+  }
+  return d;
+}
+
+function renderEq(){
+  const linePath = smoothPath(rt.activeEq);
+  const fillPath = linePath + ` L ${bandX(BANDS.length-1)} ${dbY(-12)} L ${bandX(0)} ${dbY(-12)} Z`;
+  dom.eqCurve.setAttribute('d', linePath);
+  dom.eqFill.setAttribute('d', fillPath);
+  dom.eqDots.innerHTML = rt.activeEq.map((v, i) =>
+    `<circle class="eq-dot${rt.reducedMotion?' snap':''}" data-band="${i}" cx="${bandX(i)}" cy="${dbY(v)}" r="2.8" tabindex="0" role="slider" aria-label="${BANDS[i]>=1000? (BANDS[i]/1000)+' kHz' : BANDS[i]+' Hz'} band" aria-valuemin="-12" aria-valuemax="12" aria-valuenow="${v}"/>`
+  ).join('');
+  // hit areas (wider for touch)
+  dom.eqHits.innerHTML = rt.activeEq.map((v, i) => {
+    const x = bandX(i);
+    return `<rect class="eq-hit" data-band="${i}" x="${x - EQ_INNER_W/(2*(BANDS.length-1))}" y="${EQ_PAD_T}" width="${EQ_INNER_W/(BANDS.length-1)}" height="${EQ_INNER_H}"/>`;
+  }).join('');
+  if (rt.prevEq){
+    dom.eqPrev.setAttribute('d', smoothPath(rt.prevEq));
+  } else {
+    dom.eqPrev.setAttribute('d', '');
+  }
+}
+
+/* EQ slider interactions */
+function bindEqDots(){
+  const svg = dom.eqSvg;
+  const startDrag = (band, clientY) => {
+    rt.draggingDot = band;
+    rt.mode = 'custom';
+    setActiveMode('custom');
+    document.querySelectorAll('.eq-dot').forEach(el => el.classList.remove('active'));
+    const dot = svg.querySelector(`.eq-dot[data-band="${band}"]`);
+    if (dot) dot.classList.add('active');
+    haptic(8);
+  };
+  const moveDrag = (clientY) => {
+    if (rt.draggingDot < 0) return;
+    const rect = svg.getBoundingClientRect();
+    const svgY = ((clientY - rect.top) / rect.height) * EQ_H;
+    const db = yToDb(svgY);
+    rt.activeEq[rt.draggingDot] = db;
+    renderEq();
+  };
+  const endDrag = () => {
+    if (rt.draggingDot >= 0){
+      const dot = svg.querySelector(`.eq-dot[data-band="${rt.draggingDot}"]`);
+      if (dot) dot.classList.remove('active');
+    }
+    rt.draggingDot = -1;
+  };
+
+  svg.addEventListener('mousedown', (e) => {
+    const target = e.target.closest('[data-band]');
+    if (!target) return;
+    e.preventDefault();
+    startDrag(parseInt(target.dataset.band, 10), e.clientY);
+    moveDrag(e.clientY);
+  });
+  window.addEventListener('mousemove', (e) => moveDrag(e.clientY));
+  window.addEventListener('mouseup', endDrag);
+
+  svg.addEventListener('touchstart', (e) => {
+    const target = e.target.closest('[data-band]');
+    if (!target) return;
+    e.preventDefault();
+    startDrag(parseInt(target.dataset.band, 10), e.touches[0].clientY);
+    moveDrag(e.touches[0].clientY);
+  }, { passive: false });
+  svg.addEventListener('touchmove', (e) => {
+    if (rt.draggingDot < 0) return;
+    e.preventDefault();
+    moveDrag(e.touches[0].clientY);
+  }, { passive: false });
+  svg.addEventListener('touchend', endDrag);
+  svg.addEventListener('touchcancel', endDrag);
+
+  // Keyboard: arrow keys nudge focused dot
+  svg.addEventListener('keydown', (e) => {
+    const target = e.target.closest('[data-band]');
+    if (!target) return;
+    const i = parseInt(target.dataset.band, 10);
+    let delta = 0;
+    if (e.key === 'ArrowUp') delta = 1;
+    else if (e.key === 'ArrowDown') delta = -1;
+    else return;
+    e.preventDefault();
+    rt.activeEq[i] = Math.max(-12, Math.min(12, rt.activeEq[i] + delta));
+    rt.mode = 'custom'; setActiveMode('custom');
+    renderEq();
+    target.focus();
+  });
+}
+
+/* ─────────────────────── Apply environment ─────────────────────── */
+function getEqForEnv(envKey, mode){
+  let base = (persistent.customPresets[envKey] || ENVS[envKey].eq).slice();
+  if (mode === 'music')   base = base.map((v,i)=> v + [+3,+2,0,-1,-1,0,+1,+2][i]);
+  if (mode === 'speech')  base = base.map((v,i)=> v + [-2,-1,+1,+3,+3,+2,0,0][i]);
+  if (mode === 'quiet')   base = base.map((v,i)=> v + [-1,-1,0,+1,+2,+2,+1,0][i]);
+  // 'auto' and 'custom' = no overlay (auto follows base; custom = user already edited)
+  base = base.map(v => Math.max(-12, Math.min(12, v)));
+  return base;
+}
+
+function applyEnvironment(envKey, opts = {}){
+  const env = ENVS[envKey];
+  if (!env) return;
+  const prevKey = rt.currentEnvKey;
+  if (prevKey === envKey && !opts.force) return;
+
+  // record duration of previous env
+  if (prevKey){
+    const dur = Math.round((Date.now() - rt.envEnteredAt) / 1000);
+    pushHistory(prevKey, dur);
+  }
+
+  rt.prevEq = rt.activeEq.slice();
+  rt.currentEnvKey = envKey;
+  rt.envEnteredAt = Date.now();
+
+  const targetEq = getEqForEnv(envKey, rt.mode === 'custom' ? 'auto' : rt.mode);
+  rt.activeEq = targetEq.slice();
+
+  // animate labels
+  dom.nowRoom.classList.add('fade');
+  dom.eqTitle.classList.add('fade');
+  dom.changedText.classList.add('fade');
+  setTimeout(() => {
+    dom.nowRoom.textContent = env.label;
+    dom.eqTitle.textContent = `${capitalize(rt.mode)} · ${env.label} profile`;
+    dom.changedText.textContent = env.summary;
+    dom.nowFreq.textContent = env.domHint;
+    dom.nowRoom.classList.remove('fade');
+    dom.eqTitle.classList.remove('fade');
+    dom.changedText.classList.remove('fade');
+  }, rt.reducedMotion ? 30 : 280);
+
+  renderEq();
+
+  // Haptic + toast on env change (skip initial)
+  if (prevKey && !opts.silent){
+    haptic([12, 60, 12]);
+    if (!opts.skipToast) toast(`Tuned for: ${env.label}`, { kind: 'success' });
+  }
+}
+
+/* ─────────────────────── History ─────────────────────── */
+function pushHistory(envKey, durationSec){
+  const env = ENVS[envKey];
+  if (!env || durationSec < 1) return;
+  persistent.history.push({
+    ts: Date.now(),
+    envKey,
+    label: env.label,
+    color: env.color,
+    dbAvg: Math.round(rt.dbSmooth || 0),
+    dbPeak: Math.round(rt.dbPeakHold || 0),
+    durationSec,
+  });
+  // Trim to last 30 days
+  const cutoff = Date.now() - 30 * 86400 * 1000;
+  persistent.history = persistent.history.filter(h => h.ts >= cutoff);
+  // Cap to 2000 entries
+  if (persistent.history.length > 2000) persistent.history = persistent.history.slice(-2000);
+  saveState();
+  if (currentScreen === 'history') renderHistoryScreen();
+}
+
+function seedHistoryIfEmpty(){
+  if (persistent.history.length > 0) return;
+  // Plausible seed: 7 days, varied
+  const now = Date.now();
+  const order = ['quiet','quiet','quiet','quiet','conversation','outdoor','quiet','conversation','vehicle','restaurant','conversation','quiet','music','quiet'];
+  for (let d = 6; d >= 0; d--){
+    let cursor = now - d * 86400000 - 14 * 3600000; // start morning
+    for (let i = 0; i < 22; i++){
+      const k = order[(d * 7 + i) % order.length];
+      const dur = 600 + Math.floor(Math.random() * 1800);
+      const env = ENVS[k];
+      const baseDb = { quiet: 40, conversation: 60, restaurant: 76, vehicle: 70, outdoor: 56, music: 72 }[k];
+      const dbAvg = Math.round(baseDb + (Math.random() - 0.5) * 8);
+      persistent.history.push({
+        ts: cursor,
+        envKey: k,
+        label: env.label,
+        color: env.color,
+        dbAvg,
+        dbPeak: dbAvg + 8 + Math.floor(Math.random() * 12),
+        durationSec: dur,
+      });
+      cursor += dur * 1000;
+    }
+  }
+  saveState();
+}
+
+/* ─────────────────────── Spectrum analyzer ─────────────────────── */
+const SPEC_CANVAS_DPR = Math.min(window.devicePixelRatio || 1, 2);
+function setupSpectrumCanvas(){
+  const cv = dom.specCanvas;
+  const dpr = SPEC_CANVAS_DPR;
+  const rect = cv.getBoundingClientRect();
+  cv.width = Math.max(200, Math.floor(rect.width * dpr));
+  cv.height = Math.floor(84 * dpr);
+}
+window.addEventListener('resize', setupSpectrumCanvas);
+
+function drawSpectrum(bands32){
+  const cv = dom.specCanvas;
+  const ctx = cv.getContext('2d');
+  const w = cv.width, h = cv.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Grid lines (very subtle)
+  ctx.strokeStyle = 'rgba(250,250,247,0.04)';
+  ctx.lineWidth = 1;
+  for (let y = h * 0.25; y < h; y += h * 0.25){
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // Bars
+  const n = bands32.length;
+  const barW = w / n;
+  const gap = Math.max(1, barW * 0.18);
+  for (let i = 0; i < n; i++){
+    const v = bands32[i];        // 0..1
+    const barH = Math.max(1, v * (h - 4));
+    const x = i * barW + gap / 2;
+    const y = h - barH - 2;
+    // gradient — aubergine top, deep base
+    const g = ctx.createLinearGradient(0, y, 0, h);
+    g.addColorStop(0, '#8c6ea0');
+    g.addColorStop(1, '#523c5e');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, barW - gap, barH);
+  }
+}
+
+/* ─────────────────────── Audio: getUserMedia + classifier ─────────────────────── */
+async function initMic(){
+  if (rt.micActive) return true;
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      throw new Error('mediaDevices API unavailable');
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        channelCount: 1
+      },
+      video: false
+    });
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) throw new Error('AudioContext unavailable');
+    rt.audioCtx = new AC();
+    if (rt.audioCtx.state === 'suspended') await rt.audioCtx.resume();
+    const src = rt.audioCtx.createMediaStreamSource(stream);
+    const analyser = rt.audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.55;
+    src.connect(analyser);
+    rt.analyser = analyser;
+    rt.freqData = new Uint8Array(analyser.frequencyBinCount);
+    rt.timeData = new Uint8Array(analyser.fftSize);
+    rt.micStream = stream;
+    rt.micActive = true;
+    rt.micDenied = false;
+    rt.demoMode = false;
+    if (rt.demoTimer){ clearInterval(rt.demoTimer); rt.demoTimer = null; }
+    dom.permCard.hidden = true;
+    dom.deniedCard.hidden = true;
+    dom.orbSource.textContent = 'Live · on-device';
+    dom.orbSource.classList.remove('demo');
+    dom.brandMark.classList.remove('muted');
+    setupSpectrumCanvas();
+    requestAnimationFrame(audioFrame);
+    toast('Microphone live · classifier on', { kind: 'success' });
+    return true;
+  } catch(err){
+    rt.micDenied = err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
+    rt.micActive = false;
+    if (rt.micDenied){
+      dom.permCard.hidden = true;
+      dom.deniedCard.hidden = false;
+    } else {
+      // Other error (e.g. no mic hardware)
+      dom.permCard.hidden = false;
+    }
+    startDemoMode();
+    return false;
+  }
+}
+
+function stopMic(){
+  if (rt.micStream){ rt.micStream.getTracks().forEach(t => t.stop()); rt.micStream = null; }
+  if (rt.audioCtx){ try { rt.audioCtx.close(); } catch(e){} rt.audioCtx = null; }
+  rt.analyser = null;
+  rt.micActive = false;
+}
+
+function startDemoMode(){
+  rt.demoMode = true;
+  dom.orbSource.textContent = 'Demo · simulated';
+  dom.orbSource.classList.add('demo');
+  dom.brandMark.classList.add('muted');
+  if (rt.demoTimer) clearInterval(rt.demoTimer);
+  // Cycle through demo environments every ~12s
+  const seq = ['quiet','conversation','restaurant','vehicle','outdoor','music'];
+  let idx = 0;
+  applyEnvironment(seq[0], { silent: true });
+  rt.demoTimer = setInterval(() => {
+    idx = (idx + 1) % seq.length;
+    applyEnvironment(seq[idx]);
+  }, 12000);
+  // Animated demo loop for orb + spectrum
+  requestAnimationFrame(demoFrame);
+}
+
+function demoFrame(){
+  if (!rt.demoMode) return;
+  const env = ENVS[rt.currentEnvKey || 'quiet'];
+  const baseDb = { quiet: 40, conversation: 60, restaurant: 76, vehicle: 70, outdoor: 56, music: 72 }[env.key] || 50;
+  rt.dbInstant = baseDb + (Math.sin(Date.now() / 240) * 3) + (Math.random() - 0.5) * 4;
+  rt.dbSmooth = rt.dbSmooth + (rt.dbInstant - rt.dbSmooth) * 0.18;
+  rt.dbPeakHold = Math.max(rt.dbPeakHold * 0.985, rt.dbInstant);
+  updateOrb();
+  // Fake spectrum bands
+  const bands = new Array(32);
+  for (let i = 0; i < 32; i++){
+    const center = { quiet: 5, conversation: 12, restaurant: 14, vehicle: 3, outdoor: 10, music: 18 }[env.key] || 12;
+    const dist = Math.abs(i - center);
+    const base = Math.max(0, 0.65 - dist * 0.04);
+    bands[i] = Math.min(1, base + Math.random() * 0.15);
+  }
+  drawSpectrum(bands);
+  // confidence simulated
+  dom.nowConf.textContent = Math.round(86 + Math.random() * 8) + '%';
+  dom.nowDb.textContent = Math.round(rt.dbPeakHold);
+  dom.curveLatency.textContent = (28 + Math.floor(Math.random() * 16));
+  requestAnimationFrame(demoFrame);
+}
+
+/* Audio frame: read analyser, compute level, classify */
+let _lastBatteryTick = 0;
+function audioFrame(){
+  if (!rt.micActive || !rt.analyser){ return; }
+
+  rt.analyser.getByteFrequencyData(rt.freqData);
+  rt.analyser.getByteTimeDomainData(rt.timeData);
+
+  // ── Compute RMS level from time domain
+  let sumSq = 0;
+  for (let i = 0; i < rt.timeData.length; i++){
+    const v = (rt.timeData[i] - 128) / 128;
+    sumSq += v * v;
+  }
+  const rms = Math.sqrt(sumSq / rt.timeData.length);
+  // Convert to dBFS, then offset to dB SPL with a calibration heuristic.
+  // Smartphone mic floor ≈ -60 dBFS ≈ 30 dB SPL ambient
+  const dbFs = rms > 0 ? 20 * Math.log10(rms) : -90;
+  let dbSpl = dbFs + 94; // mic referenced to ~94 dB SPL at 0 dBFS (rough)
+  // clamp
+  dbSpl = Math.max(20, Math.min(110, dbSpl));
+  // Apply noise-floor calibration offset
+  if (persistent.noiseFloor != null){
+    const wanted = persistent.noiseFloor;
+    // Pull the displayed value toward the user's calibrated floor when dbSpl is low
+    const blend = Math.max(0, Math.min(1, 1 - (dbSpl - 30) / 25));
+    dbSpl = dbSpl * (1 - blend * 0.4) + wanted * blend * 0.4;
+  }
+  rt.dbInstant = dbSpl;
+  rt.dbSmooth += (dbSpl - rt.dbSmooth) * 0.14;
+  rt.dbPeakHold = Math.max(rt.dbPeakHold * 0.992, dbSpl);
+
+  // Spectrum: bin the FFT output (1024 bins, 0..fs/2) into 32 log bands from 80 Hz to 10 kHz
+  const fftBins = rt.freqData.length;
+  const fs = rt.audioCtx.sampleRate;
+  const binHz = fs / 2 / fftBins;
+  const lo = 80, hi = 10000;
+  const bands32 = new Array(32).fill(0);
+  for (let b = 0; b < 32; b++){
+    const f0 = lo * Math.pow(hi / lo, b / 32);
+    const f1 = lo * Math.pow(hi / lo, (b + 1) / 32);
+    const i0 = Math.max(0, Math.floor(f0 / binHz));
+    const i1 = Math.min(fftBins - 1, Math.ceil(f1 / binHz));
+    let sum = 0, n = 0;
+    for (let i = i0; i <= i1; i++){ sum += rt.freqData[i]; n++; }
+    bands32[b] = n > 0 ? (sum / n) / 255 : 0;
+  }
+  drawSpectrum(bands32);
+
+  // ── Compute features for classifier
+  // Sum energy in 4 broad bands (relative)
+  let lowE = 0, midE = 0, highE = 0, total = 0;
+  for (let i = 0; i < fftBins; i++){
+    const hz = i * binHz;
+    const v = rt.freqData[i] / 255;
+    if (hz < 250) lowE += v;
+    else if (hz < 2000) midE += v;
+    else if (hz < 8000) highE += v;
+    total += v;
+  }
+  // Normalize
+  const sumE = lowE + midE + highE || 1;
+  const lowR = lowE / sumE, midR = midE / sumE, highR = highE / sumE;
+
+  // Peak-to-RMS proxy (variance over recent samples)
+  let peak = 0;
+  for (let i = 0; i < rt.timeData.length; i++){
+    const v = Math.abs(rt.timeData[i] - 128);
+    if (v > peak) peak = v;
+  }
+  const crest = rms > 0 ? (peak / 128) / rms : 1;
+
+  // Dominant frequency
+  let maxBin = 0, maxVal = 0;
+  for (let i = 1; i < fftBins; i++){
+    if (rt.freqData[i] > maxVal){ maxVal = rt.freqData[i]; maxBin = i; }
+  }
+  const domHz = Math.round(maxBin * binHz);
+
+  // Spectrum spread (variance proxy)
+  let mean = 0;
+  for (let i = 0; i < fftBins; i++) mean += rt.freqData[i];
+  mean /= fftBins;
+  let variance = 0;
+  for (let i = 0; i < fftBins; i++) variance += Math.pow(rt.freqData[i] - mean, 2);
+  variance /= fftBins;
+  const spread = Math.sqrt(variance) / 128; // 0..1ish
+
+  const features = { dbSpl: rt.dbSmooth, lowR, midR, highR, crest, spread, domHz };
+
+  // Classify
+  const cls = classify(features);
+  considerSwitch(cls.envKey, cls.confidence);
+  dom.nowConf.textContent = Math.round(cls.confidence * 100) + '%';
+  dom.nowDb.textContent = Math.round(rt.dbPeakHold);
+  dom.nowFreq.textContent = formatFreq(domHz);
+  dom.curveLatency.textContent = Math.round(20 + (rt.analyser.fftSize / 48000 * 1000));
+  dom.specRms.textContent = Math.round(dbFs * 10) / 10 + ' dBFS';
+
+  updateOrb();
+
+  // periodically save history of current env in case nothing changes
+  const now = Date.now();
+  if (now - rt.lastHistoryWriteAt > 60000 && rt.currentEnvKey){
+    const dur = Math.round((now - rt.envEnteredAt) / 1000);
+    if (dur >= 60){
+      pushHistory(rt.currentEnvKey, dur);
+      rt.envEnteredAt = now;
+      rt.lastHistoryWriteAt = now;
+    }
+  }
+
+  // Loud alert
+  if (persistent.prefs.loudAlert && rt.dbSmooth > 85 && (now - rt.loudWarnedAt) > 60000){
+    rt.loudWarnedAt = now;
+    toast('Loud environment · over 85 dB SPL', { kind: 'warn' });
+    haptic([20, 30, 20]);
+  }
+
+  // Battery drain simulation (once every ~10s)
+  if (now - _lastBatteryTick > 10000){
+    _lastBatteryTick = now;
+    tickBattery();
+  }
+
+  requestAnimationFrame(audioFrame);
+}
+
+function updateOrb(){
+  const db = Math.max(20, Math.min(100, rt.dbSmooth));
+  const peak = Math.max(20, Math.min(100, rt.dbPeakHold));
+  dom.dbVal.textContent = Math.round(db);
+  // map 30..90 dB to arc 0..276.46
+  const norm = Math.max(0, Math.min(1, (db - 30) / 60));
+  const peakNorm = Math.max(0, Math.min(1, (peak - 30) / 60));
+  dom.orbArc.setAttribute('stroke-dashoffset', 276.46 * (1 - norm));
+  dom.orbPeak.setAttribute('stroke-dashoffset', 276.46 * (1 - peakNorm));
+}
+
+function formatFreq(hz){
+  if (!hz || hz < 30) return '—';
+  if (hz >= 1000) return (hz / 1000).toFixed(1) + ' kHz';
+  return hz + ' Hz';
+}
+
+/* ─────────────────────── Classifier ─────────────────────── */
+/* Heuristic feature-based classifier with prototype distances. */
+const PROTOTYPES = [
+  { key: 'quiet',        v: { db: 38, low: 0.30, mid: 0.45, high: 0.25, crest: 3.5, spread: 0.18 } },
+  { key: 'conversation', v: { db: 62, low: 0.22, mid: 0.58, high: 0.20, crest: 5.0, spread: 0.32 } },
+  { key: 'restaurant',   v: { db: 76, low: 0.28, mid: 0.45, high: 0.27, crest: 5.5, spread: 0.45 } },
+  { key: 'vehicle',      v: { db: 71, low: 0.62, mid: 0.28, high: 0.10, crest: 2.5, spread: 0.20 } },
+  { key: 'outdoor',      v: { db: 55, low: 0.35, mid: 0.40, high: 0.25, crest: 4.5, spread: 0.30 } },
+  { key: 'music',        v: { db: 70, low: 0.32, mid: 0.38, high: 0.30, crest: 6.2, spread: 0.50 } },
+];
+
+function classify(f){
+  // Normalize/scale dB for distance
+  const distances = PROTOTYPES.map(p => {
+    const dDb    = Math.abs(f.dbSpl - p.v.db) / 30;
+    const dLow   = Math.abs(f.lowR  - p.v.low) * 2.2;
+    const dMid   = Math.abs(f.midR  - p.v.mid) * 2.2;
+    const dHigh  = Math.abs(f.highR - p.v.high) * 2.2;
+    const dCrest = Math.abs(f.crest - p.v.crest) / 6;
+    const dSpread = Math.abs(f.spread - p.v.spread) * 1.6;
+    const d2 = dDb*dDb + dLow*dLow + dMid*dMid + dHigh*dHigh + dCrest*dCrest*0.5 + dSpread*dSpread;
+    return { key: p.key, d: Math.sqrt(d2) };
+  });
+  distances.sort((a, b) => a.d - b.d);
+  const best = distances[0];
+  const second = distances[1];
+  // confidence = how much better the best is than the second
+  const ratio = best.d > 0 ? second.d / best.d : 2;
+  const conf = Math.max(0.45, Math.min(0.98, 0.5 + (ratio - 1) * 0.6));
+  return { envKey: best.key, confidence: conf };
+}
+
+const SWITCH_HOLD_MS = 2000;
+function considerSwitch(newKey, conf){
+  if (newKey === rt.currentEnvKey){
+    rt.candidateEnvKey = null;
+    rt.candidateSince = 0;
+    return;
+  }
+  // require sustained candidate for 2s
+  if (rt.candidateEnvKey !== newKey){
+    rt.candidateEnvKey = newKey;
+    rt.candidateSince = Date.now();
+    return;
+  }
+  if (Date.now() - rt.candidateSince >= SWITCH_HOLD_MS && conf > 0.55){
+    applyEnvironment(newKey);
+    rt.candidateEnvKey = null;
+    rt.candidateSince = 0;
+  }
+}
+
+/* ─────────────────────── UI: Modes ─────────────────────── */
+function setActiveMode(mode){
+  rt.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  if (rt.currentEnvKey && mode !== 'custom'){
+    rt.prevEq = rt.activeEq.slice();
+    rt.activeEq = getEqForEnv(rt.currentEnvKey, mode);
+    const env = ENVS[rt.currentEnvKey];
+    dom.eqTitle.classList.add('fade');
+    setTimeout(() => {
+      dom.eqTitle.textContent = `${capitalize(mode)} · ${env.label} profile`;
+      dom.eqTitle.classList.remove('fade');
+    }, rt.reducedMotion ? 30 : 220);
+    renderEq();
+  } else if (mode === 'custom'){
+    dom.eqTitle.textContent = `Custom · ${rt.currentEnvKey ? ENVS[rt.currentEnvKey].label : ''}`;
+  }
+}
+
+function bindModes(){
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      setActiveMode(b.dataset.mode);
+      haptic(8);
+    });
+  });
+}
+
+/* ─────────────────────── Tab navigation ─────────────────────── */
+let currentScreen = 'tune';
+function showScreen(name){
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === `screen-${name}`));
+  document.querySelectorAll('.tab').forEach(t => {
+    const on = t.dataset.screen === name;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  // lazy-render heavy screens
+  if (name === 'history') renderHistoryScreen();
+  if (name === 'presets') renderPresetsScreen();
+  if (name === 'settings') renderSettingsScreen();
+}
+function bindTabs(){
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      showScreen(t.dataset.screen);
+      haptic(6);
+      window.scrollTo({ top: 0, behavior: rt.reducedMotion ? 'auto' : 'smooth' });
+    });
+  });
+}
+
+/* ─────────────────────── History screen ─────────────────────── */
+function setHistoryRange(range){
+  rt.historyRange = range;
+  document.querySelectorAll('.range-btn').forEach(b => {
+    const on = b.dataset.range === range;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  renderHistoryScreen();
+}
+function bindRangeToggle(){
+  document.querySelectorAll('.range-btn').forEach(b => {
+    b.addEventListener('click', () => setHistoryRange(b.dataset.range));
+  });
+}
+
+function renderHistoryScreen(){
+  const range = rt.historyRange;
+  const now = Date.now();
+  const ms = range === 'day' ? 86400000 : range === 'week' ? 7 * 86400000 : 30 * 86400000;
+  const since = now - ms;
+  const items = persistent.history.filter(h => h.ts >= since);
+  // Bin into chips
+  const chipCount = range === 'day' ? 48 : range === 'week' ? 56 : 60;
+  const chipMs = ms / chipCount;
+  const chips = new Array(chipCount).fill(null);
+  for (const it of items){
+    const idx = Math.min(chipCount - 1, Math.floor((it.ts - since) / chipMs));
+    chips[idx] = chips[idx] || { ...it, duration: 0 };
+    chips[idx].duration += it.durationSec;
+  }
+  // axis labels
+  dom.axisStart.textContent = range === 'day' ? '−24h' : range === 'week' ? '−7d' : '−30d';
+  dom.axisMid.textContent = range === 'day' ? '−12h' : range === 'week' ? '−3.5d' : '−15d';
+  dom.historyTitleText.textContent = range === 'day' ? 'Today · rooms encountered' :
+    range === 'week' ? 'Past 7 days · rooms encountered' : 'Past 30 days · rooms encountered';
+
+  // Render chips
+  if (items.length === 0){
+    dom.chipRow.innerHTML = `<div class="empty-state" style="width:100%;padding:24px 16px">
+      <div class="empty-state-title">No history yet</div>
+      <div class="empty-state-text">Once TYMPAN starts classifying environments, you'll see a colored timeline here.</div>
+    </div>`;
+  } else {
+    dom.chipRow.innerHTML = chips.map(c => {
+      if (!c){
+        return `<span class="chip" style="background:var(--bone-3);opacity:0.4" title="No data"></span>`;
+      }
+      return `<span class="chip" style="background:${c.color}" title="${c.label} · ${Math.round(c.duration/60)} min"></span>`;
+    }).join('');
+  }
+
+  // Meta
+  const distinct = new Set(items.map(i => i.envKey));
+  const totalSec = items.reduce((a, b) => a + (b.durationSec || 0), 0);
+  const adaptCount = items.length;
+  dom.historyMeta.textContent = `${distinct.size} ENVS · ${formatHours(totalSec)} TRACKED`;
+
+  // Stats
+  let weightedDb = 0, totalDur = 0, loudSec = 0;
+  for (const it of items){
+    const d = it.durationSec || 0;
+    weightedDb += (it.dbAvg || 0) * d;
+    totalDur += d;
+    if ((it.dbAvg || 0) >= 75) loudSec += d;
+  }
+  const avgDb = totalDur > 0 ? weightedDb / totalDur : 0;
+  dom.statAvgDb.innerHTML = `${Math.round(avgDb)}<span class="stat-unit">dB</span>`;
+  dom.statLoud.innerHTML = `${Math.round(loudSec / 60)}<span class="stat-unit">min</span>`;
+  dom.statRooms.textContent = distinct.size;
+  dom.statAdapt.textContent = adaptCount;
+  dom.statAvgSub.textContent = `Across ${formatHours(totalDur)}`;
+  dom.statLoudSub.textContent = loudSec > 0 ? `${Math.round(100 * loudSec / Math.max(1, totalDur))}% of tracked time` : 'Below threshold — good';
+
+  // Per-environment time bars
+  const byEnv = {};
+  for (const it of items){
+    if (!byEnv[it.envKey]) byEnv[it.envKey] = { label: it.label, color: it.color, sec: 0 };
+    byEnv[it.envKey].sec += it.durationSec || 0;
+  }
+  const sorted = Object.entries(byEnv).sort((a, b) => b[1].sec - a[1].sec);
+  const max = sorted[0] ? sorted[0][1].sec : 1;
+  if (sorted.length === 0){
+    dom.envBars.innerHTML = `<div class="empty-state-text" style="text-align:center">No environments tracked in this range yet.</div>`;
+  } else {
+    dom.envBars.innerHTML = sorted.map(([k, v]) => `
+      <div class="env-bar">
+        <span class="env-bar-name" style="color:${v.color === '#cdd5cf' || v.color === '#d3c4b5' || v.color === '#c9aa6f' ? 'var(--ink-2)' : v.color}">${v.label}</span>
+        <span class="env-bar-track"><span class="env-bar-fill" style="width:${(v.sec / max) * 100}%;background:${v.color === '#cdd5cf' || v.color === '#d3c4b5' ? '#9da39e' : v.color}"></span></span>
+        <span class="env-bar-val">${formatDuration(v.sec)}</span>
+      </div>
+    `).join('');
+  }
+}
+
+function formatHours(sec){
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function formatDuration(sec){
+  if (sec >= 3600) return Math.floor(sec / 3600) + 'h ' + Math.floor((sec % 3600) / 60) + 'm';
+  if (sec >= 60) return Math.floor(sec / 60) + 'm';
+  return Math.floor(sec) + 's';
+}
+
+/* ─────────────────────── Presets screen ─────────────────────── */
+function renderPresetsScreen(){
+  // Built-ins + user customs
+  const cards = [];
+  ENV_ORDER.forEach(k => {
+    const env = ENVS[k];
+    const custom = persistent.customPresets[k];
+    const eq = custom || env.eq;
+    cards.push({
+      id: `built-${k}`,
+      name: env.label,
+      tag: env.tag,
+      envKey: k,
+      isCustom: !!custom,
+      eq,
+      builtin: true,
+    });
+  });
+  persistent.userPresets.forEach(p => {
+    cards.push({
+      id: p.id, name: p.name, tag: ENVS[p.envKey].tag,
+      envKey: p.envKey, isCustom: true, eq: p.eq, builtin: false,
+    });
+  });
+
+  dom.presetList.innerHTML = cards.map(c => {
+    const eqStr = c.eq.map(v => (v > 0 ? '+' : '') + v).join(' / ');
+    return `
+      <div class="preset-card${c.isCustom ? ' custom' : ''}" data-id="${c.id}" data-env="${c.envKey}">
+        <div class="preset-info">
+          <div class="preset-name"><span class="preset-tag">${c.tag}</span>${c.name}</div>
+          <div class="preset-meta">${eqStr} dB</div>
+        </div>
+        <div class="preset-actions">
+          <button class="icon-btn" data-action="apply" data-id="${c.id}" data-env="${c.envKey}" aria-label="Apply preset">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          ${c.builtin && !c.isCustom ? '' : `
+          <button class="icon-btn danger" data-action="delete" data-id="${c.id}" data-env="${c.envKey}" data-builtin="${c.builtin}" aria-label="${c.builtin ? 'Reset to default' : 'Delete preset'}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>`}
+        </div>
+      </div>`;
+  }).join('');
+
+  dom.presetList.querySelectorAll('[data-action="apply"]').forEach(b => {
+    b.addEventListener('click', () => {
+      const id = b.dataset.id;
+      const envKey = b.dataset.env;
+      if (id.startsWith('built-')){
+        applyEnvironment(envKey, { force: true });
+      } else {
+        const p = persistent.userPresets.find(u => u.id === id);
+        if (p){
+          rt.prevEq = rt.activeEq.slice();
+          rt.activeEq = p.eq.slice();
+          rt.currentEnvKey = p.envKey;
+          rt.mode = 'custom';
+          setActiveMode('custom');
+          dom.nowRoom.textContent = ENVS[p.envKey].label;
+          dom.eqTitle.textContent = `Custom · ${p.name}`;
+          dom.changedText.textContent = `Applied saved preset "${p.name}".`;
+          renderEq();
+        }
+      }
+      showScreen('tune');
+      haptic(10);
+    });
+  });
+  dom.presetList.querySelectorAll('[data-action="delete"]').forEach(b => {
+    b.addEventListener('click', async () => {
+      const id = b.dataset.id;
+      const envKey = b.dataset.env;
+      const isBuiltin = b.dataset.builtin === 'true';
+      const confirmed = await modal({
+        title: isBuiltin ? `Reset ${ENVS[envKey].label}?` : 'Delete preset?',
+        desc: isBuiltin
+          ? 'This will restore TYMPAN\'s default curve for this environment.'
+          : 'This custom preset will be permanently removed.',
+        buttons: [
+          { label: 'Cancel', value: false, kind: 'secondary' },
+          { label: isBuiltin ? 'Reset' : 'Delete', value: true, kind: 'danger' },
+        ]
+      });
+      if (!confirmed) return;
+      if (isBuiltin){
+        delete persistent.customPresets[envKey];
+      } else {
+        persistent.userPresets = persistent.userPresets.filter(p => p.id !== id);
+      }
+      saveState();
+      renderPresetsScreen();
+      toast(isBuiltin ? 'Reset to default' : 'Preset deleted');
+      haptic(12);
+    });
+  });
+}
+
+/* ─────────────────────── Save current EQ as preset ─────────────────────── */
+function bindEqActions(){
+  dom.resetEq.addEventListener('click', () => {
+    if (!rt.currentEnvKey) return;
+    rt.prevEq = rt.activeEq.slice();
+    rt.activeEq = ENVS[rt.currentEnvKey].eq.slice();
+    rt.mode = 'auto';
+    setActiveMode('auto');
+    renderEq();
+    toast('Curve reset to default');
+    haptic(8);
+  });
+  dom.savePreset.addEventListener('click', async () => {
+    if (!rt.currentEnvKey) return;
+    const env = ENVS[rt.currentEnvKey];
+    const choice = await modal({
+      title: `Save preset for ${env.label}`,
+      desc: 'You can overwrite the default curve for this environment, or save it as a new named preset that you can pick from the Presets tab.',
+      body: `
+        <div class="onboard-field" style="margin-top:6px">
+          <label for="presetName">Name (optional)</label>
+          <input type="text" id="presetName" placeholder="${env.label} · my version" value="">
+        </div>
+      `,
+      buttons: [
+        { label: 'Cancel', value: 'cancel', kind: 'secondary' },
+        { label: 'Overwrite default', value: 'overwrite', kind: 'secondary' },
+        { label: 'Save as new', value: 'new', kind: 'primary' },
+      ]
+    });
+    if (choice === 'cancel') return;
+    if (choice === 'overwrite'){
+      persistent.customPresets[rt.currentEnvKey] = rt.activeEq.slice();
+      saveState();
+      toast(`Default ${env.label} curve updated`, { kind: 'success' });
+      haptic([12, 40, 12]);
+    } else if (choice === 'new'){
+      const input = document.getElementById('presetName');
+      const name = (input && input.value.trim()) || `${env.label} · saved`;
+      const newP = {
+        id: 'usr-' + Date.now().toString(36),
+        name,
+        envKey: rt.currentEnvKey,
+        eq: rt.activeEq.slice(),
+        created: Date.now(),
+      };
+      persistent.userPresets.push(newP);
+      saveState();
+      toast(`Saved "${name}"`, { kind: 'success' });
+      haptic([12, 40, 12]);
+    }
+  });
+}
+
+/* ─────────────────────── Settings screen ─────────────────────── */
+function renderSettingsScreen(){
+  dom.cfgName.value = persistent.profile.name || '';
+  dom.cfgAge.value = persistent.profile.age || 'prefer-not';
+  dom.cfgBrand.value = persistent.profile.brand || 'Phonak';
+  dom.cfgModel.value = persistent.profile.model || '';
+  setToggle(dom.togHaptic, persistent.prefs.haptic);
+  setToggle(dom.togLoud, persistent.prefs.loudAlert);
+  setToggle(dom.togMotion, persistent.prefs.reduceMotion);
+  dom.floorValue.textContent = persistent.noiseFloor != null ? `${Math.round(persistent.noiseFloor)} dB SPL` : 'Not yet calibrated';
+  dom.floorSub.textContent = persistent.noiseFloor != null ? 'Captured during onboarding · re-run setup to redo' : 'Will be measured on first setup';
+}
+
+function setToggle(el, on){
+  el.classList.toggle('on', !!on);
+  el.setAttribute('aria-checked', on ? 'true' : 'false');
+}
+
+function bindSettings(){
+  dom.cfgName.addEventListener('input', () => { persistent.profile.name = dom.cfgName.value.trim(); saveState(); });
+  dom.cfgAge.addEventListener('change', () => { persistent.profile.age = dom.cfgAge.value; saveState(); });
+  dom.cfgBrand.addEventListener('change', () => {
+    persistent.profile.brand = dom.cfgBrand.value; saveState();
+    updateAidStatus();
+  });
+  dom.cfgModel.addEventListener('input', () => {
+    persistent.profile.model = dom.cfgModel.value.trim(); saveState();
+    updateAidStatus();
+  });
+
+  const bindToggle = (el, key, after) => {
+    const flip = () => {
+      persistent.prefs[key] = !persistent.prefs[key];
+      setToggle(el, persistent.prefs[key]);
+      saveState();
+      haptic(6);
+      if (after) after();
+    };
+    el.addEventListener('click', flip);
+    el.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); flip(); }});
+  };
+  bindToggle(dom.togHaptic, 'haptic', () => {
+    if (persistent.prefs.haptic) haptic(30);
+  });
+  bindToggle(dom.togLoud, 'loudAlert');
+  bindToggle(dom.togMotion, 'reduceMotion', syncReducedMotion);
+
+  dom.exportJSON.addEventListener('click', () => exportReport('json'));
+  dom.exportHTML.addEventListener('click', () => exportReport('html'));
+
+  dom.rePair.addEventListener('click', () => {
+    runPairingSplash().then(() => toast('Aids re-paired', { kind: 'success' }));
+  });
+
+  dom.installApp.addEventListener('click', triggerInstall);
+  dom.rerunOnboard.addEventListener('click', () => {
+    startOnboarding(true);
+  });
+
+  dom.clearData.addEventListener('click', async () => {
+    const ok = await modal({
+      title: 'Reset all TYMPAN data?',
+      desc: 'Your profile, presets, history, and noise-floor calibration will be permanently deleted from this device.',
+      buttons: [
+        { label: 'Cancel', value: false, kind: 'secondary' },
+        { label: 'Reset everything', value: true, kind: 'danger' },
+      ]
+    });
+    if (!ok) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    location.reload();
+  });
+}
+
+function updateAidStatus(){
+  const label = `${persistent.profile.brand}${persistent.profile.model ? ' ' + persistent.profile.model : ''}`;
+  dom.aidModelLabel.textContent = label;
+}
+
+/* ─────────────────────── Export report ─────────────────────── */
+function buildReportPayload(){
+  const now = Date.now();
+  const since = now - 30 * 86400 * 1000;
+  const items = persistent.history.filter(h => h.ts >= since);
+  let totalSec = 0, weightedDb = 0, loudSec = 0;
+  const byEnv = {};
+  for (const it of items){
+    const d = it.durationSec || 0;
+    totalSec += d;
+    weightedDb += (it.dbAvg || 0) * d;
+    if ((it.dbAvg || 0) >= 75) loudSec += d;
+    if (!byEnv[it.envKey]) byEnv[it.envKey] = { label: it.label, durationSec: 0, avgDb: 0, peakMax: 0 };
+    byEnv[it.envKey].durationSec += d;
+    byEnv[it.envKey].avgDb = (byEnv[it.envKey].avgDb * (byEnv[it.envKey].durationSec - d) + (it.dbAvg || 0) * d) / Math.max(1, byEnv[it.envKey].durationSec);
+    byEnv[it.envKey].peakMax = Math.max(byEnv[it.envKey].peakMax, it.dbPeak || 0);
+  }
+  return {
+    generatedAt: new Date().toISOString(),
+    rangeDays: 30,
+    profile: {
+      ageBracket: persistent.profile.age,
+      aidBrand: persistent.profile.brand,
+      aidModel: persistent.profile.model,
+    },
+    calibration: {
+      noiseFloorDb: persistent.noiseFloor,
+    },
+    fatigueIndicators: {
+      totalTrackedSeconds: totalSec,
+      avgDbSpl: totalSec > 0 ? Math.round(weightedDb / totalSec) : null,
+      timeAbove75dbSeconds: loudSec,
+      percentInLoud: totalSec > 0 ? Math.round(100 * loudSec / totalSec) : 0,
+    },
+    environments: byEnv,
+    presets: {
+      defaults: ENV_ORDER.reduce((a, k) => ({ ...a, [k]: ENVS[k].eq }), {}),
+      customOverrides: persistent.customPresets,
+      userSaved: persistent.userPresets,
+    },
+  };
+}
+
+function exportReport(fmt){
+  const p = buildReportPayload();
+  if (fmt === 'json'){
+    download('tympan-report.json', JSON.stringify(p, null, 2), 'application/json');
+  } else {
+    const html = renderReportHtml(p);
+    download('tympan-report.html', html, 'text/html');
+  }
+  toast('Report downloaded', { kind: 'success' });
+  haptic(10);
+}
+
+function renderReportHtml(p){
+  const envRows = Object.entries(p.environments).map(([k, v]) => `
+    <tr>
+      <td>${v.label}</td>
+      <td style="text-align:right">${Math.round(v.durationSec / 60)} min</td>
+      <td style="text-align:right">${Math.round(v.avgDb)} dB</td>
+      <td style="text-align:right">${Math.round(v.peakMax)} dB</td>
+    </tr>
+  `).join('');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>TYMPAN listening report</title>
+<style>
+  body{font-family:-apple-system,Segoe UI,sans-serif;background:#fafaf7;color:#1c1c1e;max-width:760px;margin:36px auto;padding:24px;line-height:1.55}
+  h1{font-weight:600;letter-spacing:-0.01em;margin-bottom:4px;font-size:26px}
+  .sub{color:#86868b;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:32px}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:0.18em;color:#6b4f7a;margin-top:32px;margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #e6e3dc}
+  th{color:#86868b;font-weight:500;font-size:11px;letter-spacing:0.1em;text-transform:uppercase}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:8px}
+  .kv{background:#f1efea;border-radius:10px;padding:14px}
+  .kv label{display:block;font-size:11px;color:#86868b;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px}
+  .kv b{font-size:22px;font-family:'JetBrains Mono',monospace;font-weight:600}
+  .foot{margin-top:48px;color:#86868b;font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;border-top:1px solid #e6e3dc;padding-top:18px}
+</style></head><body>
+<h1>TYMPAN listening report</h1>
+<div class="sub">Generated ${p.generatedAt} · ${p.rangeDays}-day window</div>
+<h2>Profile</h2>
+<div class="grid">
+  <div class="kv"><label>Age bracket</label><b>${p.profile.ageBracket || '—'}</b></div>
+  <div class="kv"><label>Hearing aid</label><b>${(p.profile.aidBrand || '') + ' ' + (p.profile.aidModel || '')}</b></div>
+  <div class="kv"><label>Personal noise floor</label><b>${p.calibration.noiseFloorDb != null ? Math.round(p.calibration.noiseFloorDb) + ' dB' : 'Not calibrated'}</b></div>
+  <div class="kv"><label>Tracked time</label><b>${Math.round(p.fatigueIndicators.totalTrackedSeconds / 3600)} h</b></div>
+</div>
+<h2>Listening exposure</h2>
+<div class="grid">
+  <div class="kv"><label>Average dB SPL</label><b>${p.fatigueIndicators.avgDbSpl ?? '—'} dB</b></div>
+  <div class="kv"><label>Time above 75 dB</label><b>${Math.round(p.fatigueIndicators.timeAbove75dbSeconds / 60)} min</b></div>
+  <div class="kv"><label>% time in loud</label><b>${p.fatigueIndicators.percentInLoud}%</b></div>
+  <div class="kv"><label>Environments encountered</label><b>${Object.keys(p.environments).length}</b></div>
+</div>
+<h2>Time per environment</h2>
+<table>
+  <thead><tr><th>Environment</th><th style="text-align:right">Duration</th><th style="text-align:right">Avg dB</th><th style="text-align:right">Peak</th></tr></thead>
+  <tbody>${envRows || '<tr><td colspan="4">No data yet</td></tr>'}</tbody>
+</table>
+<h2>EQ presets (custom overrides)</h2>
+<table>
+  <thead><tr><th>Environment</th><th>Curve (250 / 500 / 1k / 2k / 3k / 4k / 6k / 8k Hz, dB)</th></tr></thead>
+  <tbody>${
+    Object.keys(p.presets.customOverrides).length === 0
+      ? '<tr><td colspan="2">No custom overrides</td></tr>'
+      : Object.entries(p.presets.customOverrides).map(([k, eq]) => `<tr><td>${k}</td><td style="font-family:'JetBrains Mono',monospace">${eq.map(v => (v>0?'+':'')+v).join(' / ')}</td></tr>`).join('')
+  }</tbody>
+</table>
+<div class="foot">TYMPAN client v1.3.0 · All processing local to device · Anonymized export</div>
+</body></html>`;
+}
+
+function download(name, content, mime){
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ─────────────────────── PWA install ─────────────────────── */
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  rt.deferredInstallPrompt = e;
+  if (dom.installState) dom.installState.textContent = 'Available';
+});
+window.addEventListener('appinstalled', () => {
+  rt.deferredInstallPrompt = null;
+  if (dom.installState) dom.installState.textContent = 'Installed';
+  toast('TYMPAN installed', { kind: 'success' });
+});
+
+function triggerInstall(){
+  if (rt.deferredInstallPrompt){
+    rt.deferredInstallPrompt.prompt();
+    rt.deferredInstallPrompt.userChoice.then(c => {
+      if (c.outcome === 'accepted'){
+        toast('Installing TYMPAN…', { kind: 'success' });
+        rt.deferredInstallPrompt = null;
+        if (dom.installState) dom.installState.textContent = 'Installed';
+      }
+    });
+  } else {
+    modal({
+      title: 'Add to home screen',
+      desc: 'On iOS Safari: tap the Share button and choose "Add to Home Screen". On Android Chrome: the install prompt should appear automatically — if not, use the menu › Install app.',
+      buttons: [{ label: 'OK', value: true, kind: 'primary' }]
+    });
+  }
+}
+
+/* ─────────────────────── Battery sim ─────────────────────── */
+function tickBattery(){
+  ['battL','battR'].forEach(id => {
+    const el = $(id);
+    const cur = parseFloat(el.style.width);
+    const next = Math.max(8, cur - 0.04);
+    el.style.width = next + '%';
+    el.classList.toggle('low', next < 20 && next >= 10);
+    el.classList.toggle('crit', next < 10);
+  });
+}
+
+/* ─────────────────────── Splash / pairing ─────────────────────── */
+function runPairingSplash(){
+  return new Promise(resolve => {
+    dom.splash.classList.remove('gone');
+    dom.splash.style.display = '';
+    const brand = persistent.profile.brand || 'Phonak';
+    const model = persistent.profile.model || 'Audéo P90R';
+    const steps = [
+      { t: 400, text: 'SCANNING&nbsp;FOR&nbsp;PAIRED&nbsp;AIDS…' },
+      { t: 1200, text: `FOUND <b>${brand}${model ? ' ' + model : ''}</b>` },
+      { t: 1900, text: 'AUTHENTICATING&nbsp;L · R' },
+      { t: 2600, text: 'NEGOTIATING&nbsp;LE&nbsp;AUDIO · 24-BIT' },
+      { t: 3300, text: 'CALIBRATING&nbsp;TO&nbsp;ROOM' },
+    ];
+    const timers = [];
+    steps.forEach(s => timers.push(setTimeout(() => { dom.splashStatus.innerHTML = s.text; }, s.t)));
+    timers.push(setTimeout(() => {
+      dom.splash.classList.add('gone');
+      setTimeout(() => { dom.splash.style.display = 'none'; resolve(); }, 700);
+    }, 4100));
+  });
+}
+
+/* ─────────────────────── Onboarding ─────────────────────── */
+let onboardStep = 0;
+let onboardCalibrationCleanup = null;
+
+function startOnboarding(force){
+  if (!force && persistent.firstRunDone){
+    return false;
+  }
+  onboardStep = 0;
+  dom.onboard.classList.remove('hidden');
+  dom.app.hidden = true;
+  dom.splash.style.display = 'none';
+  renderOnboardStep();
+  return true;
+}
+
+function setOnboardProgress(step){
+  document.querySelectorAll('.onboard-prog-dot').forEach((d, i) => {
+    d.classList.toggle('done', i < step);
+    d.classList.toggle('current', i === step);
+  });
+}
+
+function renderOnboardStep(){
+  setOnboardProgress(onboardStep);
+  const b = dom.onboardBody;
+  if (onboardStep === 0){
+    b.innerHTML = `
+      <div class="onboard-eyebrow">Welcome</div>
+      <h2 class="onboard-title" id="onboardTitle">Your hearing aids, tuned to every room you walk into.</h2>
+      <p class="onboard-desc">TYMPAN listens to the environment around you — quiet hallway, espresso machine, car cabin — and re-tunes your aids in real time. Audio stays on this device.</p>
+      <div class="onboard-foot">
+        <button class="btn primary" id="ob_next">Get started</button>
+      </div>`;
+    $('ob_next').addEventListener('click', () => { onboardStep = 1; renderOnboardStep(); });
+  } else if (onboardStep === 1){
+    b.innerHTML = `
+      <div class="onboard-eyebrow">Microphone access</div>
+      <h2 class="onboard-title">Why we need to listen.</h2>
+      <p class="onboard-desc">TYMPAN's classifier needs a few hundred milliseconds of mic data to decide what kind of room you're in. Nothing is recorded, stored, or sent off the device — the audio is analyzed in real time and discarded.</p>
+      <p class="onboard-desc" style="font-size:13px;color:var(--ink-3)">You can decline and use Demo mode if you'd rather see how it works first.</p>
+      <div class="onboard-foot">
+        <button class="btn secondary" id="ob_skipmic">Skip · use Demo</button>
+        <button class="btn primary" id="ob_grant">Allow microphone</button>
+      </div>`;
+    $('ob_grant').addEventListener('click', async () => {
+      const ok = await initMic();
+      onboardStep = 2;
+      renderOnboardStep();
+    });
+    $('ob_skipmic').addEventListener('click', () => {
+      onboardStep = 2;
+      renderOnboardStep();
+    });
+  } else if (onboardStep === 2){
+    b.innerHTML = `
+      <div class="onboard-eyebrow">Your aids</div>
+      <h2 class="onboard-title">What are you wearing?</h2>
+      <p class="onboard-desc">This lets TYMPAN pick the right BLE profile and EQ resolution for your aids. You can change it any time from Settings.</p>
+      <div class="onboard-form">
+        <div class="onboard-field">
+          <label for="ob_name">Your name <span style="opacity:0.6">(optional)</span></label>
+          <input type="text" id="ob_name" placeholder="e.g. Alex" value="${escapeHtml(persistent.profile.name)}">
+        </div>
+        <div class="onboard-field">
+          <label for="ob_brand">Brand</label>
+          <select id="ob_brand">
+            ${['Phonak','Oticon','ReSound','Starkey','Widex','Signia','Lexie','Eargo','Sony','Jabra Enhance']
+              .map(b => `<option value="${b}" ${persistent.profile.brand===b?'selected':''}>${b}</option>`).join('')}
+          </select>
+        </div>
+        <div class="onboard-field">
+          <label for="ob_model">Model <span style="opacity:0.6">(optional)</span></label>
+          <input type="text" id="ob_model" placeholder="e.g. Audéo P90R" value="${escapeHtml(persistent.profile.model)}">
+        </div>
+        <div class="onboard-field">
+          <label for="ob_age">Age bracket</label>
+          <select id="ob_age">
+            ${[['under-40','Under 40'],['40-55','40–55'],['55-70','55–70'],['70-plus','70+'],['prefer-not','Prefer not to say']]
+              .map(([v,l]) => `<option value="${v}" ${persistent.profile.age===v?'selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="onboard-foot">
+        <button class="btn primary full" id="ob_next">Continue</button>
+      </div>`;
+    $('ob_next').addEventListener('click', () => {
+      persistent.profile.name  = $('ob_name').value.trim();
+      persistent.profile.brand = $('ob_brand').value;
+      persistent.profile.model = $('ob_model').value.trim();
+      persistent.profile.age   = $('ob_age').value;
+      saveState();
+      onboardStep = 3;
+      renderOnboardStep();
+    });
+  } else if (onboardStep === 3){
+    b.innerHTML = `
+      <div class="onboard-eyebrow">Calibration</div>
+      <h2 class="onboard-title">Let's measure your room.</h2>
+      <p class="onboard-desc">For the next 10 seconds, just stay where you'd normally use TYMPAN — couch, desk, kitchen — and speak or hum at a comfortable level. This sets your personal noise-floor reference.</p>
+      <div class="calibrate-vis">
+        <div class="calibrate-circle ${rt.micActive ? '' : 'idle'}" id="calCircle">
+          <div class="calibrate-bars" id="calBars">
+            <div class="calibrate-bar" style="height:10%"></div>
+            <div class="calibrate-bar" style="height:30%"></div>
+            <div class="calibrate-bar" style="height:60%"></div>
+            <div class="calibrate-bar" style="height:30%"></div>
+            <div class="calibrate-bar" style="height:10%"></div>
+          </div>
+        </div>
+        <div class="calibrate-time">Time left · <b id="calTime">10</b>s</div>
+      </div>
+      <div class="onboard-foot">
+        <button class="btn secondary" id="ob_skipcal">Skip</button>
+        <button class="btn primary" id="ob_startcal" ${rt.micActive ? '' : 'disabled'}>${rt.micActive ? 'Start listening' : 'Need microphone'}</button>
+      </div>`;
+    $('ob_skipcal').addEventListener('click', finishOnboarding);
+    $('ob_startcal').addEventListener('click', runCalibration);
+  } else if (onboardStep === 4){
+    b.innerHTML = `
+      <div class="onboard-eyebrow">All set</div>
+      <h2 class="onboard-title">TYMPAN is listening.</h2>
+      <p class="onboard-desc">${persistent.noiseFloor != null ? `Your room measures around <b style="color:var(--ink)">${Math.round(persistent.noiseFloor)} dB</b> when quiet. We'll watch how it changes through the day.` : 'You can re-run calibration any time from Settings.'}</p>
+      <p class="onboard-desc">Walk into a different room and you'll see the EQ curve morph. Tap the curve to override it for your environment, and save it as your preset.</p>
+      <div class="onboard-foot">
+        <button class="btn primary full" id="ob_done">Open TYMPAN</button>
+      </div>`;
+    $('ob_done').addEventListener('click', finishOnboarding);
+  }
+}
+
+function escapeHtml(s){ return (s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
+
+function runCalibration(){
+  if (!rt.micActive){
+    toast('Microphone required for calibration', { kind: 'warn' });
+    return;
+  }
+  const calCircle = $('calCircle');
+  const calBars = $('calBars');
+  const calTime = $('calTime');
+  if (calCircle) calCircle.classList.remove('idle');
+  let remaining = 10;
+  const samples = [];
+  const startTs = Date.now();
+  const tick = setInterval(() => {
+    samples.push(rt.dbSmooth);
+    // animate bars
+    if (calBars){
+      const norm = Math.max(0.05, Math.min(1, (rt.dbSmooth - 25) / 50));
+      [...calBars.children].forEach((bar, i) => {
+        const h = norm * (40 + Math.random() * 60);
+        bar.style.height = h + '%';
+      });
+    }
+    const left = Math.max(0, 10 - Math.floor((Date.now() - startTs) / 1000));
+    if (calTime) calTime.textContent = left;
+    if (Date.now() - startTs >= 10000){
+      clearInterval(tick);
+      // Compute median floor
+      const sorted = samples.slice().sort((a, b) => a - b);
+      const floor = sorted.length > 0 ? sorted[Math.floor(sorted.length * 0.2)] : null;
+      persistent.noiseFloor = floor;
+      saveState();
+      onboardStep = 4;
+      renderOnboardStep();
+      haptic([12, 60, 12]);
+    }
+  }, 200);
+  onboardCalibrationCleanup = () => clearInterval(tick);
+}
+
+function finishOnboarding(){
+  if (onboardCalibrationCleanup) onboardCalibrationCleanup();
+  persistent.firstRunDone = true;
+  saveState();
+  dom.onboard.classList.add('hidden');
+  dom.app.hidden = false;
+  // boot main app
+  bootMain();
+}
+
+dom.onboardSkip && dom.onboardSkip.addEventListener('click', () => {
+  // Skip from anywhere — accept current values, no calibration
+  persistent.firstRunDone = true;
+  saveState();
+  dom.onboard.classList.add('hidden');
+  dom.app.hidden = false;
+  bootMain();
+});
+
+/* ─────────────────────── Permission card buttons ─────────────────────── */
+dom.permGrant && dom.permGrant.addEventListener('click', () => { initMic(); });
+dom.permDemo && dom.permDemo.addEventListener('click', () => {
+  dom.permCard.hidden = true;
+  startDemoMode();
+});
+dom.retryMic && dom.retryMic.addEventListener('click', () => {
+  dom.deniedCard.hidden = true;
+  initMic();
+});
+
+/* ─────────────────────── Boot ─────────────────────── */
+function capitalize(s){ return s[0].toUpperCase() + s.slice(1); }
+
+let _booted = false;
+async function bootMain(){
+  if (_booted) return;
+  _booted = true;
+
+  buildBandLabels();
+  bindModes();
+  bindTabs();
+  bindRangeToggle();
+  bindEqDots();
+  bindEqActions();
+  bindSettings();
+  syncReducedMotion();
+  setupSpectrumCanvas();
+  updateAidStatus();
+  renderSettingsScreen();
+  seedHistoryIfEmpty();
+
+  // Pairing splash before main loop
+  await runPairingSplash();
+
+  // Initial environment: quiet if mic not yet active
+  applyEnvironment('quiet', { silent: true });
+
+  // Try to start mic if user hasn't decided yet
+  if (rt.micActive){
+    // already running from onboarding
+    dom.permCard.hidden = true;
+    dom.orbSource.textContent = 'Live · on-device';
+  } else if (!rt.demoMode && !rt.micDenied){
+    // Show permission card, do NOT auto-prompt (better UX); user can opt in
+    dom.permCard.hidden = false;
+    dom.orbSource.textContent = 'Standby · tap allow';
+  } else if (rt.micDenied){
+    dom.deniedCard.hidden = false;
+    startDemoMode();
+  } else {
+    startDemoMode();
+  }
+}
+
+/* Decide path on load */
+window.addEventListener('DOMContentLoaded', () => {
+  // Always render initial EQ skeleton so it's not empty
+  rt.activeEq = ENVS.quiet.eq.slice();
+  rt.currentEnvKey = null;
+  buildBandLabels();
+  renderEq();
+
+  if (!persistent.firstRunDone){
+    // First run → onboarding (splash is hidden during onboarding)
+    dom.splash.style.display = 'none';
+    startOnboarding();
+  } else {
+    dom.onboard.classList.add('hidden');
+    dom.app.hidden = false;
+    bootMain();
+  }
+});
+
+/* Pause classifier when tab hidden to save battery */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){
+    if (rt.audioCtx && rt.audioCtx.state === 'running'){
+      rt.audioCtx.suspend && rt.audioCtx.suspend();
+    }
+  } else {
+    if (rt.audioCtx && rt.audioCtx.state === 'suspended'){
+      rt.audioCtx.resume && rt.audioCtx.resume().then(() => {
+        if (rt.micActive) requestAnimationFrame(audioFrame);
+      });
+    }
+  }
+});
+
+</script>
+</body>
+</html>
