@@ -2,493 +2,1489 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SPOT — pet teledermatology triage</title>
-<meta name="description" content="Photo the lump, rash, or hot-spot. AI triage in 30 seconds: watch, schedule, or vet now. Connect to a remote vet if urgent.">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#fdf8f2">
-<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=">
+<title>SPOT — Pet Teledermatology Triage</title>
+<meta name="description" content="Photo the lump, rash, or hot-spot. Rule-based triage in 30 seconds: watch, schedule, or vet now. Multi-pet profiles. Visit history. Offline-first.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#14532d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%2314532d'/><circle cx='38' cy='38' r='7' fill='%23fdf8f2'/><circle cx='62' cy='38' r='7' fill='%23fdf8f2'/><circle cx='50' cy='54' r='9' fill='%23c2410c'/><circle cx='34' cy='62' r='5' fill='%23fdf8f2'/><circle cx='66' cy='62' r='5' fill='%23fdf8f2'/></svg>">
 <style>
+/* ── RESET + TOKENS ── */
 :root{
-  --cream:#fdf8f2; --cream-2:#f5ecdc; --cream-3:#ece0c8;
-  --forest:#14532d; --forest-2:#1d6b3c; --forest-soft:#2d7a4c;
-  --terra:#c2410c; --terra-soft:#e2693a;
-  --ink:#1a2419; --soft:#4a5a48; --muted:#8a9486; --hairline:#d8cdb6;
-  --amber:#ca8a04; --amber-soft:#f3e2a8;
-  --red:#a32f1d; --red-soft:#fadcd2;
-  --green:#15803d; --green-soft:#d3ead8;
-  --serif:'Lora','Cormorant Garamond',Georgia,serif;
-  --sans:'Inter',-apple-system,system-ui,sans-serif;
-  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --cream:#fdf8f2;--cream2:#f5ecdc;--cream3:#ece0c8;
+  --forest:#14532d;--forest2:#1d6b3c;--forest3:#2d7a4c;
+  --terra:#c2410c;--terra2:#e2693a;--terra-dim:rgba(194,65,12,0.1);
+  --ink:#1a2419;--soft:#4a5a48;--muted:#8a9486;--faint:#c4ccc2;
+  --hairline:#d8cdb6;--hairline2:#e8ddc6;
+  --green:#15803d;--green-bg:#d3ead8;--green-ink:#0a5c2b;
+  --amber:#ca8a04;--amber-bg:#fef6e7;--amber-ink:#7a5302;
+  --red:#a32f1d;--red-bg:#fadcd2;--red-ink:#6b1d10;
+  --serif:'Lora','Cormorant Garamond','Noto Serif',Georgia,serif;
+  --sans:'Inter',-apple-system,'Noto Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono','SF Mono',ui-monospace,monospace;
+  --r:14px;--r2:18px;--r3:26px;
+  --touch:48px;
+  --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100%}
-body{padding:0 0 60px;max-width:560px;margin:0 auto;position:relative}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-input,textarea,select{font:inherit}
+html,body{height:100%;background:var(--cream);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden}
+body{min-height:100vh;min-height:100dvh}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;min-height:var(--touch);min-width:var(--touch)}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--cream2);border:1px solid var(--hairline);border-radius:var(--r);padding:12px 14px;width:100%;font-size:16px}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--forest)}
+a{color:var(--terra);text-decoration:none}
 ::selection{background:var(--forest);color:var(--cream)}
+:focus-visible{outline:2px solid var(--terra);outline-offset:2px;border-radius:4px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
 
-/* Top bar */
-.bar{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 14px;border-bottom:1px solid var(--hairline)}
-.mark{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--forest);letter-spacing:-0.01em}
-.mark b{font-weight:600;font-style:normal}
-.crumb{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;color:var(--muted);text-transform:uppercase}
+/* ── HEADER ── */
+.hdr{position:sticky;top:0;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(253,248,242,0.88);border-bottom:1px solid var(--hairline2)}
+.brand{font-family:var(--serif);font-size:22px;color:var(--forest);font-weight:600;letter-spacing:-0.01em}
+.brand em{font-style:italic;color:var(--terra);font-weight:400}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.hdr-btn{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);padding:8px 12px;border:1px solid var(--hairline);border-radius:50px}
 
-/* Typography */
-.eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:0.26em;text-transform:uppercase;color:var(--terra);margin-bottom:10px}
-h1{font-family:var(--serif);font-weight:500;font-size:34px;line-height:1.08;letter-spacing:-0.015em;color:var(--forest);margin-bottom:8px}
-h1 em{font-style:italic;color:var(--terra)}
-h2{font-family:var(--serif);font-weight:500;font-size:22px;line-height:1.15;color:var(--forest);margin-bottom:10px;letter-spacing:-0.01em}
-h3{font-family:var(--serif);font-weight:500;font-size:17px;color:var(--forest);margin-bottom:6px}
-p{font-size:14.5px;line-height:1.55;color:var(--soft);margin-bottom:10px}
-.lede{font-size:15.5px;color:var(--ink);margin-bottom:16px}
-.mono{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+/* ── BOTTOM NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:90;display:flex;justify-content:space-around;align-items:center;padding:6px 0 calc(6px + var(--safe-b));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(253,248,242,0.92);border-top:1px solid var(--hairline2)}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--mono);font-size:8px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:8px 14px;border-radius:var(--r);transition:color 0.2s}
+.nav-btn.active{color:var(--forest)}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-/* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:0.5em;padding:14px 22px;border:1.5px solid var(--forest);color:var(--forest);font-family:var(--sans);font-size:14px;font-weight:500;border-radius:50px;transition:all 0.2s;min-height:48px;background:var(--cream)}
-.btn:hover,.btn:active{background:var(--forest);color:var(--cream)}
-.btn-primary{background:var(--forest);color:var(--cream);border-color:var(--forest)}
-.btn-primary:hover,.btn-primary:active{background:var(--forest-2);border-color:var(--forest-2)}
-.btn-terra{background:var(--terra);color:var(--cream);border-color:var(--terra)}
-.btn-terra:hover,.btn-terra:active{background:var(--terra-soft);border-color:var(--terra-soft)}
-.btn-ghost{background:transparent;border-color:var(--hairline);color:var(--soft)}
-.btn-block{width:100%}
+/* ── SCREENS ── */
+.screen{display:none;max-width:520px;margin:0 auto;padding:18px 18px calc(80px + var(--safe-b))}
+.screen.active{display:block;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* Section */
-.sec{padding:22px}
-.sec + .sec{padding-top:6px}
+/* ── ONBOARDING OVERLAY ── */
+.onboard{position:fixed;inset:0;z-index:200;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center}
+.onboard.hidden{display:none}
+.ob-step{display:none;flex-direction:column;align-items:center;gap:16px;max-width:380px;width:100%}
+.ob-step.active{display:flex}
+.ob-icon{font-size:56px;margin-bottom:4px}
+.ob-title{font-family:var(--serif);font-size:26px;line-height:1.2;color:var(--forest)}
+.ob-title em{font-style:italic;color:var(--terra)}
+.ob-desc{font-size:15px;color:var(--soft);line-height:1.5}
+.ob-input{width:100%;padding:14px 18px;background:var(--cream2);border:1px solid var(--hairline);border-radius:var(--r);color:var(--ink);font-size:16px}
+.ob-input:focus{border-color:var(--forest);outline:none}
+.ob-select{appearance:none;width:100%;padding:14px 18px;background:var(--cream2);border:1px solid var(--hairline);border-radius:var(--r);color:var(--ink);font-size:16px}
+.ob-row{display:flex;gap:8px;width:100%}
+.ob-row .ob-input,.ob-row .ob-select{flex:1}
+.btn-primary{width:100%;padding:16px;background:var(--forest);color:var(--cream);font-family:var(--serif);font-size:17px;font-weight:500;border-radius:var(--r3);margin-top:4px}
+.btn-secondary{width:100%;padding:14px;color:var(--muted);font-size:14px;margin-top:2px}
+.ob-dots{display:flex;gap:8px;margin-top:12px}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:var(--hairline)}
+.ob-dot.active{background:var(--forest)}
 
-/* Pet profile card */
-.pet-card{background:linear-gradient(135deg,var(--cream-2),var(--cream));border:1px solid var(--hairline);border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:18px}
-.pet-avatar{width:54px;height:54px;border-radius:50%;background:var(--forest);color:var(--cream);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;flex-shrink:0;font-style:italic;border:2px solid var(--cream-3)}
+/* ── TYPOGRAPHY ── */
+.eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:0.24em;text-transform:uppercase;color:var(--terra);margin-bottom:8px}
+h1.page-title{font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.15;letter-spacing:-0.01em;color:var(--forest);margin-bottom:6px}
+h1.page-title em{font-style:italic;color:var(--terra)}
+.page-sub{font-size:14.5px;color:var(--soft);line-height:1.5;margin-bottom:16px}
+
+/* ── CARDS ── */
+.card{background:white;border:1px solid var(--hairline2);border-radius:var(--r2);padding:16px;margin-bottom:14px}
+.card-title{font-family:var(--serif);font-size:17px;color:var(--forest);margin-bottom:8px;font-weight:500}
+
+/* ── EMERGENCY BANNER ── */
+.emergency{background:var(--red-bg);border:2px solid var(--red);border-radius:var(--r2);padding:16px;margin-bottom:16px;display:none}
+.emergency.show{display:block;animation:fadeIn 0.3s ease}
+.emergency-title{font-family:var(--serif);font-size:20px;color:var(--red);font-weight:600;margin-bottom:6px}
+.emergency-text{font-size:14px;color:var(--red-ink);line-height:1.5;margin-bottom:10px}
+.emergency-links{display:flex;flex-direction:column;gap:8px}
+.emergency-link{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--red);color:white;border-radius:var(--r);font-size:14px;font-weight:600;text-decoration:none;min-height:var(--touch)}
+
+/* ── PET CARD ── */
+.pet-card{background:linear-gradient(135deg,var(--cream2),var(--cream));border:1px solid var(--hairline);border-radius:var(--r2);padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:14px;cursor:pointer;transition:border-color 0.2s}
+.pet-card.selected{border-color:var(--forest);box-shadow:0 0 0 1px var(--forest)}
+.pet-avatar{width:48px;height:48px;border-radius:50%;background:var(--forest);color:var(--cream);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:22px;flex-shrink:0;font-style:italic}
 .pet-meta{flex:1;min-width:0}
-.pet-name{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--forest);line-height:1.1}
-.pet-detail{font-size:12px;color:var(--muted);font-family:var(--mono);letter-spacing:0.08em;margin-top:2px;text-transform:uppercase}
-.pet-switch{background:none;border:none;color:var(--terra);font-size:11px;font-family:var(--mono);letter-spacing:0.12em;text-transform:uppercase;padding:6px 10px;border-radius:20px;border:1px solid var(--hairline)}
+.pet-name{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--forest);line-height:1.1}
+.pet-detail{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.06em;margin-top:2px;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pet-actions{display:flex;gap:4px}
+.pet-action-btn{font-size:14px;padding:6px;color:var(--muted)}
 
-/* Species picker */
-.species-row{display:flex;gap:10px;margin-bottom:18px}
-.species-btn{flex:1;padding:14px;border:1.5px solid var(--hairline);border-radius:14px;background:var(--cream);display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s}
-.species-btn.on{border-color:var(--forest);background:var(--cream-2);color:var(--forest)}
-.species-emoji{font-size:28px;line-height:1}
-.species-label{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--soft)}
-.species-btn.on .species-label{color:var(--forest)}
+/* ── CHECK FLOW ── */
+.flow-step{display:none}
+.flow-step.active{display:block;animation:fadeIn 0.3s ease}
+.option-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.option-btn{padding:14px 12px;border:1.5px solid var(--hairline);border-radius:var(--r);background:white;text-align:center;font-size:13px;color:var(--ink);transition:all 0.2s;min-height:var(--touch);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;line-height:1.3}
+.option-btn:hover,.option-btn:focus{border-color:var(--forest);background:var(--cream2)}
+.option-btn.selected{border-color:var(--forest);background:rgba(20,83,45,0.08);color:var(--forest);font-weight:500}
+.option-btn .emoji{font-size:20px}
+.option-full{grid-column:span 2}
+.flow-nav{display:flex;gap:10px;margin-top:14px}
+.flow-nav button{flex:1;padding:14px;border-radius:var(--r);font-size:14px;font-weight:500;min-height:var(--touch)}
+.flow-back{border:1px solid var(--hairline);color:var(--soft)}
+.flow-next{background:var(--forest);color:var(--cream);border:none}
+.flow-next:disabled{opacity:0.4;cursor:not-allowed}
 
-/* Upload zone */
-.upload-zone{border:2px dashed var(--hairline);border-radius:18px;padding:30px 20px;text-align:center;background:var(--cream-2);transition:all 0.2s;margin-bottom:14px;position:relative;overflow:hidden}
-.upload-zone:hover{border-color:var(--forest);background:var(--cream-3)}
-.upload-icon{width:54px;height:54px;border-radius:50%;background:var(--cream);border:1.5px solid var(--hairline);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px}
-.upload-title{font-family:var(--serif);font-size:18px;color:var(--forest);margin-bottom:4px;font-weight:500}
-.upload-hint{font-size:12px;color:var(--muted)}
-.upload-actions{display:flex;gap:10px;margin-top:14px}
+/* ── PHOTO CAPTURE ── */
+.capture-zone{border:2px dashed var(--hairline);border-radius:var(--r2);padding:28px 18px;text-align:center;background:var(--cream2);margin-bottom:14px;position:relative;overflow:hidden}
+.capture-preview{width:100%;border-radius:var(--r);margin-bottom:10px;display:none;max-height:300px;object-fit:contain}
+.capture-actions{display:flex;gap:10px;justify-content:center}
+.capture-btn{padding:12px 20px;border:1.5px solid var(--forest);color:var(--forest);border-radius:50px;font-size:13px;font-weight:500;min-height:var(--touch);display:flex;align-items:center;gap:6px}
+.capture-btn.primary{background:var(--forest);color:var(--cream)}
+.hide-input{position:absolute;opacity:0;width:0;height:0;overflow:hidden}
 
-/* Analyzing overlay */
-.analyzing{padding:40px 22px;text-align:center;background:var(--cream-2);border:1px solid var(--hairline);border-radius:18px;margin-bottom:14px}
-.paw-trail{display:flex;justify-content:center;gap:14px;margin-bottom:18px}
-.paw{font-size:26px;opacity:0.2;animation:pawWalk 1.6s ease-in-out infinite}
-.paw:nth-child(2){animation-delay:0.2s}
-.paw:nth-child(3){animation-delay:0.4s}
-.paw:nth-child(4){animation-delay:0.6s}
-.paw:nth-child(5){animation-delay:0.8s}
-@keyframes pawWalk{0%,100%{opacity:0.15;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px);color:var(--terra)}}
-.analyzing-status{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--soft)}
-.analyzing-bar{margin-top:14px;height:3px;background:var(--cream-3);border-radius:2px;overflow:hidden}
-.analyzing-bar::after{content:"";display:block;height:100%;background:linear-gradient(90deg,var(--forest),var(--terra),var(--forest));background-size:200% 100%;animation:scan 2.4s linear infinite}
-@keyframes scan{0%{background-position:0% 0;transform:translateX(-100%)}100%{background-position:200% 0;transform:translateX(100%)}}
+/* ── TRIAGE RESULT ── */
+.triage-card{border-radius:var(--r2);padding:18px;margin-bottom:14px;border:2px solid}
+.triage-card.green{background:var(--green-bg);border-color:var(--green)}
+.triage-card.amber{background:var(--amber-bg);border-color:var(--amber)}
+.triage-card.red{background:var(--red-bg);border-color:var(--red)}
+.triage-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.triage-dot{font-size:20px;line-height:1}
+.triage-level{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;text-transform:uppercase;font-weight:600}
+.triage-card.green .triage-level{color:var(--green)}
+.triage-card.amber .triage-level{color:var(--amber)}
+.triage-card.red .triage-level{color:var(--red)}
+.triage-condition{font-family:var(--serif);font-size:20px;font-weight:500;color:var(--ink);margin-bottom:4px}
+.triage-desc{font-size:13px;color:var(--soft);line-height:1.5;margin-bottom:12px}
+.triage-score{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px}
 
-/* Image preview */
-.preview-wrap{margin-bottom:14px;border-radius:18px;overflow:hidden;border:1px solid var(--hairline);background:var(--cream-2);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;position:relative}
-.preview-wrap img{width:100%;height:100%;object-fit:cover;display:block}
-.preview-placeholder{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:36px;line-height:1;text-align:center;padding:30px}
-.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--terra),transparent);box-shadow:0 0 14px var(--terra);top:0;animation:scanLine 2s ease-in-out infinite}
-@keyframes scanLine{0%,100%{top:0;opacity:0.8}50%{top:calc(100% - 2px);opacity:1}}
-
-/* Triage result */
-.triage{border-radius:18px;padding:20px;margin-bottom:14px;border:1.5px solid}
-.triage.green{background:var(--green-soft);border-color:var(--green)}
-.triage.amber{background:var(--amber-soft);border-color:var(--amber)}
-.triage.red{background:var(--red-soft);border-color:var(--red)}
-.triage-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.triage-dot{font-size:22px;line-height:1}
-.triage-level{font-family:var(--mono);font-size:11px;letter-spacing:0.22em;text-transform:uppercase;font-weight:600}
-.triage.green .triage-level{color:var(--green)}
-.triage.amber .triage-level{color:var(--amber)}
-.triage.red .triage-level{color:var(--red)}
-.triage-condition{font-family:var(--serif);font-size:22px;font-weight:500;color:var(--ink);line-height:1.2;margin-bottom:6px}
-.triage-confidence{font-family:var(--mono);font-size:11px;color:var(--soft);letter-spacing:0.1em;margin-bottom:14px}
-.confidence-bar{height:4px;background:rgba(20,83,45,0.1);border-radius:2px;margin:8px 0 12px;overflow:hidden}
-.confidence-fill{height:100%;background:var(--forest);border-radius:2px}
-
-/* Action list */
-.action-list{list-style:none;margin-top:10px}
-.action-list li{display:flex;gap:10px;padding:10px 0;border-top:1px solid rgba(20,83,45,0.12);font-size:14px;color:var(--ink);line-height:1.45}
+/* ── ACTION LIST ── */
+.action-list{list-style:none;margin-top:8px}
+.action-list li{display:flex;gap:10px;padding:10px 0;border-top:1px solid rgba(20,83,45,0.1);font-size:13.5px;color:var(--ink);line-height:1.45}
 .action-list li:first-child{border-top:none}
 .action-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--forest);color:var(--cream);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600;margin-top:1px}
 
-/* Escalation card */
-.escalate{background:var(--cream-2);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-bottom:14px}
-.escalate-title{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--terra);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.escalate-list{list-style:none}
-.escalate-list li{font-size:13px;color:var(--soft);padding:6px 0 6px 22px;position:relative;line-height:1.45}
-.escalate-list li::before{content:"!";position:absolute;left:0;top:6px;width:16px;height:16px;border-radius:50%;background:var(--terra-soft);color:var(--cream);font-family:var(--mono);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+/* ── WATCHPOINTS ── */
+.watchpoints{background:var(--cream2);border:1px solid var(--hairline);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.watchpoints-title{font-family:var(--mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--terra);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.watchpoints ul{list-style:none}
+.watchpoints li{font-size:13px;color:var(--soft);padding:5px 0 5px 20px;position:relative;line-height:1.4}
+.watchpoints li::before{content:"!";position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--terra);color:white;font-family:var(--mono);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
 
-/* Vet modal */
-.vet-overlay{position:fixed;inset:0;background:rgba(20,36,25,0.6);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(4px)}
-.vet-overlay.on{display:flex}
-.vet-card{background:var(--cream);border-radius:20px;max-width:420px;width:100%;padding:24px;border:1px solid var(--hairline);max-height:90vh;overflow-y:auto}
-.vet-stage{display:none}
-.vet-stage.on{display:block}
-.vet-queue{text-align:center;padding:20px 0}
-.ring{width:90px;height:90px;border-radius:50%;border:3px solid var(--cream-3);border-top-color:var(--forest);margin:0 auto 18px;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.vet-queue-status{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
-.vet-queue-eta{font-family:var(--serif);font-size:34px;color:var(--forest);font-weight:500}
-.vet-profile{display:flex;align-items:center;gap:14px;padding:16px;background:var(--cream-2);border-radius:14px;margin-bottom:14px}
-.vet-photo{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--forest),var(--forest-soft));color:var(--cream);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;font-weight:600;flex-shrink:0}
-.vet-name{font-family:var(--serif);font-size:18px;font-weight:600;color:var(--forest);line-height:1.1}
-.vet-cred{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;margin-top:3px;text-transform:uppercase}
-.vet-bio{font-size:13px;color:var(--soft);line-height:1.5;margin-bottom:14px}
-.disclaimer{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--hairline)}
+/* ── DISCLAIMER ── */
+.disclaimer{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;line-height:1.6;padding:12px 14px;border:1px solid var(--hairline);border-radius:var(--r);margin-bottom:14px;text-align:center}
 
-/* Footer disclaimer */
-.foot{padding:20px 22px;text-align:center;border-top:1px solid var(--hairline);margin-top:20px}
-.foot p{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:4px}
+/* ── VISIT HISTORY ── */
+.visit-item{background:white;border:1px solid var(--hairline2);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.2s}
+.visit-item:hover{border-color:var(--forest)}
+.visit-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.visit-date{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.08em}
+.visit-badge{display:inline-flex;padding:3px 8px;border-radius:50px;font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600}
+.visit-badge.green{background:var(--green-bg);color:var(--green-ink)}
+.visit-badge.amber{background:var(--amber-bg);color:var(--amber-ink)}
+.visit-badge.red{background:var(--red-bg);color:var(--red-ink)}
+.visit-condition{font-family:var(--serif);font-size:15px;color:var(--forest);font-weight:500;margin-bottom:2px}
+.visit-pet{font-size:12px;color:var(--muted)}
+.visit-photo{width:60px;height:60px;border-radius:8px;object-fit:cover;border:1px solid var(--hairline);margin-top:6px}
 
-/* Hidden file input */
-.hide{display:none}
+/* ── SETTINGS ── */
+.setting-group{margin-bottom:18px}
+.sg-title{font-family:var(--mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--terra);margin-bottom:8px}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--hairline2)}
+.setting-row:last-child{border-bottom:none}
+.sr-label{font-size:14px;color:var(--ink)}
+.sr-value{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setting-btn{width:100%;padding:14px;border:1px solid var(--hairline);border-radius:var(--r);font-size:14px;color:var(--soft);margin-top:8px;font-family:var(--serif)}
+.setting-btn:active{background:var(--terra-dim)}
 
-/* Small responsive tweaks */
-@media (max-width:380px){
-  h1{font-size:30px}
-  .sec{padding:18px}
-  .upload-zone{padding:24px 16px}
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;z-index:150;background:rgba(26,36,25,0.6);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.on{display:flex}
+.modal{background:var(--cream);border-radius:var(--r3) var(--r3) 0 0;padding:24px 20px calc(24px + var(--safe-b));width:100%;max-width:520px;max-height:85vh;overflow-y:auto}
+.modal-title{font-family:var(--serif);font-size:20px;color:var(--forest);margin-bottom:14px;font-weight:500}
+.modal-field{margin-bottom:12px}
+.modal-field label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions button{flex:1;padding:14px;border-radius:var(--r);font-size:15px;min-height:var(--touch)}
+.modal-save{background:var(--forest);color:var(--cream);font-weight:500}
+.modal-cancel{border:1px solid var(--hairline);color:var(--muted)}
+.modal-delete{border:1px solid var(--red);color:var(--red);margin-top:8px;width:100%;padding:12px;border-radius:var(--r);font-size:13px;display:block;text-align:center}
+
+/* ── PROGRESS DOTS ── */
+.progress-bar{display:flex;gap:6px;margin-bottom:16px;justify-content:center}
+.progress-dot{width:8px;height:8px;border-radius:50%;background:var(--hairline)}
+.progress-dot.done{background:var(--forest)}
+.progress-dot.current{background:var(--terra)}
+
+/* ── ANALYZING ── */
+.analyzing{text-align:center;padding:30px 0}
+.paw-trail{display:flex;justify-content:center;gap:12px;margin-bottom:16px}
+.paw{font-size:24px;opacity:0.2;animation:pawWalk 1.6s ease-in-out infinite}
+.paw:nth-child(2){animation-delay:0.2s}
+.paw:nth-child(3){animation-delay:0.4s}
+.paw:nth-child(4){animation-delay:0.6s}
+@keyframes pawWalk{0%,100%{opacity:0.15;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+.analyze-text{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--soft)}
+.analyze-bar{margin-top:12px;height:3px;background:var(--cream3);border-radius:2px;overflow:hidden}
+.analyze-bar::after{content:"";display:block;height:100%;background:linear-gradient(90deg,var(--forest),var(--terra),var(--forest));background-size:200% 100%;animation:scan 2s linear infinite}
+@keyframes scan{0%{background-position:0% 0;transform:translateX(-100%)}100%{background-position:200% 0;transform:translateX(100%)}}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:15px;line-height:1.5}
+
+/* ── FOOTER ── */
+.foot{text-align:center;margin-top:20px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;line-height:2}
+
+/* ── VISIT DETAIL MODAL ── */
+.detail-section{margin-bottom:14px}
+.detail-section h3{font-family:var(--serif);font-size:16px;color:var(--forest);margin-bottom:6px;font-weight:500}
+.detail-list{list-style:none}
+.detail-list li{font-size:13px;color:var(--soft);padding:4px 0;line-height:1.4}
+.detail-list li::before{content:"→ ";color:var(--terra)}
+
+@media(max-width:380px){
+  h1.page-title{font-size:24px}
+  .option-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 
-<div class="bar">
-  <span class="mark"><b>SPOT</b> <em>· pet teledermatology</em></span>
-  <span class="crumb">v0.4 · beta</span>
+<!-- ═══ PWA MANIFEST (inline via blob) ═══ -->
+<script>
+(function(){
+  const m={name:"SPOT",short_name:"SPOT",start_url:".",display:"standalone",background_color:"#fdf8f2",theme_color:"#14532d",icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%2314532d'/><circle cx='200' cy='200' r='36' fill='%23fdf8f2'/><circle cx='312' cy='200' r='36' fill='%23fdf8f2'/><circle cx='256' cy='280' r='44' fill='%23c2410c'/><circle cx='180' cy='330' r='26' fill='%23fdf8f2'/><circle cx='332' cy='330' r='26' fill='%23fdf8f2'/></svg>",sizes:"512x512",type:"image/svg+xml"}]};
+  const b=new Blob([JSON.stringify(m)],{type:'application/json'});
+  const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
+  document.head.appendChild(l);
+})();
+</script>
+
+<!-- ═══ HEADER ═══ -->
+<header class="hdr" role="banner">
+  <div class="brand">SPOT <em>· pet triage</em></div>
+  <div class="hdr-right">
+    <span class="hdr-btn" id="petCountBadge">1 pet</span>
+  </div>
+</header>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div class="onboard" id="onboard" role="dialog" aria-label="Welcome to SPOT">
+  <div class="ob-step active" data-step="0">
+    <div class="ob-icon">🐾</div>
+    <div class="ob-title">Photo the spot. Get a <em>triage in 30 seconds.</em></div>
+    <div class="ob-desc">SPOT uses a rule-based triage engine to tell you: watch at home, schedule a vet, or go now. No account needed. Everything stays on your phone.</div>
+    <button class="btn-primary" onclick="obNext()">Get started</button>
+    <button class="btn-secondary" onclick="obSkip()">Skip for now</button>
+    <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+  </div>
+  <div class="ob-step" data-step="1">
+    <div class="ob-icon">🐕</div>
+    <div class="ob-title">Add your <em>first pet.</em></div>
+    <input class="ob-input" id="obPetName" placeholder="Pet's name" autocomplete="off">
+    <div class="ob-row">
+      <select class="ob-select" id="obSpecies"><option value="dog">Dog</option><option value="cat">Cat</option><option value="rabbit">Rabbit</option><option value="other">Other</option></select>
+      <input class="ob-input" id="obBreed" placeholder="Breed (optional)">
+    </div>
+    <div class="ob-row">
+      <input class="ob-input" id="obAge" type="number" min="0" max="30" placeholder="Age (years)">
+      <input class="ob-input" id="obWeight" placeholder="Weight (lbs)">
+    </div>
+    <input class="ob-input" id="obVetPhone" placeholder="Vet's phone (optional)" type="tel">
+    <button class="btn-primary" onclick="obNext()">Next</button>
+    <button class="btn-secondary" onclick="obSkip()">Skip for now</button>
+    <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div></div>
+  </div>
+  <div class="ob-step" data-step="2">
+    <div class="ob-icon">⚕️</div>
+    <div class="ob-title"><em>Important:</em> SPOT is not a vet.</div>
+    <div class="ob-desc">SPOT provides decision support, not diagnosis. It helps you decide urgency — watch, schedule, or go now. If your pet is bleeding, seizing, struggling to breathe, or collapsed, skip the app and go to an emergency vet immediately. By using SPOT, you acknowledge this.</div>
+    <button class="btn-primary" onclick="obFinish()">I understand — let's go</button>
+    <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div></div>
+  </div>
 </div>
 
-<section class="sec">
-  <div class="eyebrow">step 01 · pet profile</div>
-  <h1>Is it a vet visit?</h1>
-  <p class="lede">Snap the spot. We'll tell you in 30 seconds whether to watch, schedule, or go now.</p>
+<!-- ═══ SCREEN: CHECK ═══ -->
+<main class="screen active" id="screenCheck" role="main" aria-label="Check">
+  <div class="eyebrow">Check a concern</div>
+  <h1 class="page-title">Is it a <em>vet visit?</em></h1>
+  <p class="page-sub">Snap the spot. Answer a few questions. Get a triage in 30 seconds.</p>
 
-  <div class="pet-card">
-    <div class="pet-avatar" id="petAvatar">B</div>
-    <div class="pet-meta">
-      <div class="pet-name" id="petName">Biscuit</div>
-      <div class="pet-detail" id="petDetail">Labrador · 4 yr · 68 lb</div>
-    </div>
-    <button class="pet-switch" onclick="switchPet()">Switch</button>
-  </div>
-
-  <div class="species-row" id="speciesRow">
-    <button class="species-btn on" data-species="dog" onclick="setSpecies('dog')">
-      <span class="species-emoji">🐕</span>
-      <span class="species-label">Dog</span>
-    </button>
-    <button class="species-btn" data-species="cat" onclick="setSpecies('cat')">
-      <span class="species-emoji">🐈</span>
-      <span class="species-label">Cat</span>
-    </button>
-  </div>
-</section>
-
-<section class="sec" id="captureSec">
-  <div class="eyebrow">step 02 · the photo</div>
-  <h2>Where's the concern?</h2>
-  <p>Good light. Close enough to see texture. Avoid blur.</p>
-
-  <div class="upload-zone" id="uploadZone">
-    <div class="upload-icon">📷</div>
-    <div class="upload-title">Snap or upload</div>
-    <div class="upload-hint">JPEG or PNG · stays on your device until you ask for a vet</div>
-    <div class="upload-actions">
-      <input type="file" id="fileIn" class="hide" accept="image/*" onchange="onUpload(event)">
-      <input type="file" id="cameraIn" class="hide" accept="image/*" capture="environment" onchange="onUpload(event)">
-      <button class="btn btn-primary btn-block" onclick="document.getElementById('cameraIn').click()">Take photo</button>
-      <button class="btn btn-ghost btn-block" onclick="document.getElementById('fileIn').click()">Upload</button>
+  <div id="emergencyBanner" class="emergency" role="alert">
+    <div class="emergency-title">🚨 STOP. Go to an emergency vet.</div>
+    <div class="emergency-text" id="emergencyText">The symptoms you described need immediate veterinary attention. Do not wait.</div>
+    <div class="emergency-links">
+      <a class="emergency-link" href="https://www.google.com/maps/search/emergency+vet+near+me" target="_blank" rel="noopener">📍 Find emergency vet near me</a>
+      <a class="emergency-link" href="tel:+18884264435">☎️ ASPCA Poison Control: (888) 426-4435</a>
     </div>
   </div>
 
-  <button class="btn btn-ghost btn-block" onclick="runSample()" style="margin-top:6px">Try the sample case →</button>
-</section>
+  <div id="activePetCard"></div>
 
-<section class="sec" id="resultSec" style="display:none">
-  <div class="eyebrow">step 03 · triage</div>
-  <h2 id="resultHeading">Reading the photo…</h2>
-
-  <div class="preview-wrap" id="previewWrap">
-    <div class="preview-placeholder">🐾</div>
-  </div>
-
-  <div class="analyzing" id="analyzing">
-    <div class="paw-trail">
-      <span class="paw">🐾</span><span class="paw">🐾</span><span class="paw">🐾</span><span class="paw">🐾</span><span class="paw">🐾</span>
-    </div>
-    <div class="analyzing-status" id="analyzeStatus">Scanning · checking colour, edge, hair pattern…</div>
-    <div class="analyzing-bar"></div>
-  </div>
-
-  <div id="resultCard" style="display:none">
-    <div class="triage" id="triageCard">
-      <div class="triage-head">
-        <span class="triage-dot" id="triageDot">🟡</span>
-        <span class="triage-level" id="triageLevel">Schedule within 48 hours</span>
+  <div id="checkFlow">
+    <!-- Step 0: Emergency screen -->
+    <div class="flow-step active" data-flow="0">
+      <div class="card">
+        <div class="card-title">First — any of these?</div>
+        <p style="font-size:13px;color:var(--soft);margin-bottom:10px">Tap any that apply. These skip the questionnaire and go straight to emergency.</p>
+        <div class="option-grid" id="emergencyOptions"></div>
       </div>
-      <div class="triage-condition" id="triageCondition">Possible hot spot</div>
-      <p style="font-size:13px;color:var(--ink);margin-bottom:6px" id="triageDesc">Moist pyotraumatic dermatitis — common surface infection from licking.</p>
-      <div class="triage-confidence" id="triageConfidence">Model confidence · 73%</div>
-      <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width:73%"></div></div>
-      <h3 style="margin-top:10px">Do these three things now</h3>
-      <ol class="action-list" id="actionList"></ol>
-    </div>
-
-    <div class="escalate">
-      <div class="escalate-title"><span>⚠</span> Go to a vet if you see</div>
-      <ul class="escalate-list" id="escalateList"></ul>
-    </div>
-
-    <button class="btn btn-terra btn-block" onclick="openVet()" id="vetBtn">Connect to a vet now · $19</button>
-    <button class="btn btn-ghost btn-block" onclick="resetApp()" style="margin-top:10px">Start over</button>
-  </div>
-</section>
-
-<div class="foot">
-  <p><b>Not a substitute for emergency care.</b> If your pet is bleeding heavily, struggling to breathe, collapsed, or seizing — go to an ER vet now.</p>
-  <p style="margin-top:6px"><span class="mono">SPOT · backed by a board of licensed DVMs · audit log retained 7 yrs</span></p>
-</div>
-
-<!-- Vet call overlay -->
-<div class="vet-overlay" id="vetOverlay">
-  <div class="vet-card">
-    <div class="vet-stage on" id="vetQueueStage">
-      <div class="vet-queue">
-        <div class="ring"></div>
-        <div class="vet-queue-status">Connecting you to the on-call vet</div>
-        <div class="vet-queue-eta" id="vetEta">≈ 2 min</div>
-        <p style="margin-top:14px;color:var(--soft);font-size:13px">Triage info, photo, and Biscuit's profile are being shared with the next available vet.</p>
-        <button class="btn btn-ghost" style="margin-top:18px" onclick="closeVet()">Cancel</button>
+      <div class="flow-nav">
+        <button class="flow-next" onclick="flowNext()" style="flex:1">None of these — continue</button>
       </div>
     </div>
-    <div class="vet-stage" id="vetLiveStage">
-      <div class="eyebrow" style="margin-bottom:6px">Now connected</div>
-      <h2 style="margin-bottom:14px">Live call · audio + video</h2>
-      <div class="vet-profile">
-        <div class="vet-photo">RB</div>
-        <div>
-          <div class="vet-name">Dr. Rosa Bellamy, DVM</div>
-          <div class="vet-cred">Lic. CA #14722 · Derm-focused</div>
+
+    <!-- Step 1: Body location -->
+    <div class="flow-step" data-flow="1">
+      <div class="progress-bar" id="progressBar1"></div>
+      <div class="card">
+        <div class="card-title">Where on the body?</div>
+        <div class="option-grid" id="locationOptions"></div>
+      </div>
+      <div class="flow-nav">
+        <button class="flow-back" onclick="flowBack()">Back</button>
+        <button class="flow-next" id="locNext" onclick="flowNext()" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Concern type -->
+    <div class="flow-step" data-flow="2">
+      <div class="progress-bar" id="progressBar2"></div>
+      <div class="card">
+        <div class="card-title">What does it look like?</div>
+        <div class="option-grid" id="concernOptions"></div>
+      </div>
+      <div class="flow-nav">
+        <button class="flow-back" onclick="flowBack()">Back</button>
+        <button class="flow-next" id="conNext" onclick="flowNext()" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Duration -->
+    <div class="flow-step" data-flow="3">
+      <div class="progress-bar" id="progressBar3"></div>
+      <div class="card">
+        <div class="card-title">How long has this been present?</div>
+        <div class="option-grid" id="durationOptions"></div>
+      </div>
+      <div class="flow-nav">
+        <button class="flow-back" onclick="flowBack()">Back</button>
+        <button class="flow-next" id="durNext" onclick="flowNext()" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Changes -->
+    <div class="flow-step" data-flow="4">
+      <div class="progress-bar" id="progressBar4"></div>
+      <div class="card">
+        <div class="card-title">Has it changed recently?</div>
+        <div class="option-grid" id="changeOptions"></div>
+      </div>
+      <div class="flow-nav">
+        <button class="flow-back" onclick="flowBack()">Back</button>
+        <button class="flow-next" id="chgNext" onclick="flowNext()" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Behavior -->
+    <div class="flow-step" data-flow="5">
+      <div class="progress-bar" id="progressBar5"></div>
+      <div class="card">
+        <div class="card-title">Behavior changes?</div>
+        <p style="font-size:13px;color:var(--soft);margin-bottom:10px">Select all that apply.</p>
+        <div class="option-grid" id="behaviorOptions"></div>
+      </div>
+      <div class="flow-nav">
+        <button class="flow-back" onclick="flowBack()">Back</button>
+        <button class="flow-next" onclick="flowNext()">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 6: Photo -->
+    <div class="flow-step" data-flow="6">
+      <div class="progress-bar" id="progressBar6"></div>
+      <div class="card">
+        <div class="card-title">Photo the concern</div>
+        <p style="font-size:13px;color:var(--soft);margin-bottom:10px">Good light, close enough to see texture. Stays on your device.</p>
+        <img class="capture-preview" id="capturePreview" alt="Captured photo">
+        <div class="capture-actions" id="captureActions">
+          <input type="file" id="fileInput" class="hide-input" accept="image/*" aria-label="Upload photo">
+          <input type="file" id="cameraInput" class="hide-input" accept="image/*" capture="environment" aria-label="Take photo">
+          <button class="capture-btn primary" onclick="document.getElementById('cameraInput').click()" aria-label="Take photo">📷 Take photo</button>
+          <button class="capture-btn" onclick="document.getElementById('fileInput').click()" aria-label="Upload file">📁 Upload</button>
+        </div>
+        <button class="capture-btn" id="retakeBtn" style="display:none;margin:10px auto 0" onclick="retakePhoto()">Retake</button>
+      </div>
+      <div class="flow-nav">
+        <button class="flow-back" onclick="flowBack()">Back</button>
+        <button class="flow-next" onclick="runTriage()">Run triage</button>
+      </div>
+    </div>
+
+    <!-- Step 7: Analyzing -->
+    <div class="flow-step" data-flow="7">
+      <div class="card">
+        <div class="analyzing">
+          <div class="paw-trail"><span class="paw">🐾</span><span class="paw">🐾</span><span class="paw">🐾</span><span class="paw">🐾</span></div>
+          <div class="analyze-text" id="analyzeText">Analyzing symptoms...</div>
+          <div class="analyze-bar"></div>
         </div>
       </div>
-      <p class="vet-bio">Dr. Bellamy has practiced small-animal dermatology for 11 years and consults for the SPOT panel. She'll review Biscuit's photo, ask a few questions, and can call in a script to your pharmacy if needed.</p>
-      <button class="btn btn-primary btn-block">Start video call</button>
-      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeVet()">End</button>
-      <div class="disclaimer">Demo · Dr. Bellamy is fictional</div>
     </div>
+
+    <!-- Step 8: Result -->
+    <div class="flow-step" data-flow="8">
+      <div id="triageResult"></div>
+      <div class="disclaimer">SPOT provides decision support only — not veterinary diagnosis. Always consult a licensed veterinarian for medical decisions. If in doubt, see a vet.</div>
+      <div class="flow-nav" style="flex-direction:column;gap:8px">
+        <a id="findVetLink" class="flow-next" style="text-align:center;text-decoration:none;display:block;padding:14px;border-radius:var(--r);color:var(--cream);background:var(--forest)" href="https://www.google.com/maps/search/veterinarian+near+me" target="_blank" rel="noopener">📍 Find a vet near me</a>
+        <button class="flow-back" onclick="resetCheck()" style="flex:none;width:100%">Start a new check</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ═══ SCREEN: PETS ═══ -->
+<div class="screen" id="screenPets" aria-label="Pets">
+  <div class="eyebrow">Your pets</div>
+  <h1 class="page-title">Pet <em>profiles</em></h1>
+  <p class="page-sub">Add and manage your pet profiles. Triage results are saved per pet.</p>
+  <div id="petList"></div>
+  <button class="btn-primary" onclick="openPetModal()" style="margin-top:10px">+ Add a pet</button>
+</div>
+
+<!-- ═══ SCREEN: HISTORY ═══ -->
+<div class="screen" id="screenHistory" aria-label="History">
+  <div class="eyebrow">Visit history</div>
+  <h1 class="page-title">Past <em>checks</em></h1>
+  <p class="page-sub">Tap any visit to see the full triage result.</p>
+  <div id="petFilterBar" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"></div>
+  <div id="historyList"></div>
+</div>
+
+<!-- ═══ SCREEN: SETTINGS ═══ -->
+<div class="screen" id="screenSettings" aria-label="Settings">
+  <div class="eyebrow">Settings</div>
+  <h1 class="page-title">Preferences</h1>
+
+  <div class="setting-group" id="sgAbout">
+    <div class="sg-title">About SPOT</div>
+    <div class="setting-row"><span class="sr-label">Version</span><span class="sr-value">2.0</span></div>
+    <div class="setting-row"><span class="sr-label">Data storage</span><span class="sr-value">On-device only</span></div>
+  </div>
+  <div class="setting-group" id="sgData">
+    <div class="sg-title">Data</div>
+  </div>
+  <button class="setting-btn" onclick="exportAllHistory()">Export all visit history</button>
+  <button class="setting-btn" onclick="clearAllData()" style="color:var(--red);border-color:var(--red)">Clear all data</button>
+
+  <p class="foot">SPOT v2 · on-device triage · decision support, not diagnosis<br>ASPCA Poison Control: (888) 426-4435</p>
+</div>
+
+<!-- ═══ PET MODAL ═══ -->
+<div class="modal-overlay" id="petModal">
+  <div class="modal">
+    <div class="modal-title" id="petModalTitle">Add pet</div>
+    <div class="modal-field"><label>Name</label><input id="pmName" placeholder="Pet's name" autocomplete="off"></div>
+    <div class="modal-field"><label>Species</label>
+      <select id="pmSpecies"><option value="dog">Dog</option><option value="cat">Cat</option><option value="rabbit">Rabbit</option><option value="other">Other</option></select>
+    </div>
+    <div class="modal-field"><label>Breed</label><input id="pmBreed" placeholder="Breed (optional)"></div>
+    <div style="display:flex;gap:8px">
+      <div class="modal-field" style="flex:1"><label>Age (years)</label><input id="pmAge" type="number" min="0" max="30" placeholder="Age"></div>
+      <div class="modal-field" style="flex:1"><label>Weight (lbs)</label><input id="pmWeight" placeholder="Weight"></div>
+    </div>
+    <div class="modal-field"><label>Vet phone</label><input id="pmVetPhone" type="tel" placeholder="(555) 123-4567"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closePetModal()">Cancel</button>
+      <button class="modal-save" onclick="savePet()">Save</button>
+    </div>
+    <button class="modal-delete" id="pmDelete" style="display:none" onclick="deletePet()">Delete this pet</button>
   </div>
 </div>
 
+<!-- ═══ VISIT DETAIL MODAL ═══ -->
+<div class="modal-overlay" id="visitModal">
+  <div class="modal" id="visitModalContent"></div>
+</div>
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <button class="nav-btn active" data-screen="Check" aria-label="Check">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>Check</span>
+  </button>
+  <button class="nav-btn" data-screen="Pets" aria-label="Pets">
+    <svg viewBox="0 0 24 24"><path d="M12 21c-4 0-7-2-7-5 0-2 2-3 3.5-4.5C10 10 10 8 10 6c0-2 1-4 2-4s2 2 2 4c0 2 0 4 1.5 5.5C17 13 19 14 19 16c0 3-3 5-7 5z"/></svg>
+    <span>Pets</span>
+  </button>
+  <button class="nav-btn" data-screen="History" aria-label="History">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>History</span>
+  </button>
+  <button class="nav-btn" data-screen="Settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Settings</span>
+  </button>
+</nav>
+
 <script>
-// ──── Sample case data (Labrador hot spot) ────
-const samples = {
-  dog: {
-    name: 'Biscuit', breed: 'Labrador', age: '4 yr', weight: '68 lb', avatar: 'B',
-    level: 'amber',
-    dot: '🟡',
-    levelText: 'Schedule within 48 hours',
-    condition: 'Possible hot spot',
-    desc: 'Moist pyotraumatic dermatitis — a common surface infection that starts when licking or scratching breaks the skin barrier.',
-    confidence: 73,
-    actions: [
-      'Gently clip the hair around the spot with blunt scissors — air helps it dry.',
-      'Clean once with cool saline (¼ tsp salt in a cup of warm water). Pat dry.',
-      'Stop the licking. A cone, a clean t-shirt, or a bitter spray all work tonight.'
-    ],
-    escalate: [
-      'Spot grows wider than 4 cm in 24 hours',
-      'Pus, yellow discharge, or a strong yeasty smell',
-      'Biscuit becomes lethargic, off food, or feverish to the touch',
-      'Open bleeding that doesn\'t stop in 5 minutes'
-    ]
-  },
-  cat: {
-    name: 'Miso', breed: 'Domestic shorthair', age: '7 yr', weight: '9 lb', avatar: 'M',
-    level: 'green',
-    dot: '🟢',
-    levelText: 'Watch · re-check in 48 hours',
-    condition: 'Likely benign — barber\'s itch pattern',
-    desc: 'Symmetric belly hair loss in cats is most often over-grooming from stress or mild allergy, not skin disease.',
-    confidence: 81,
-    actions: [
-      'Photograph the same patch tomorrow at the same time of day — compare.',
-      'Check for fleas with a fine comb at the base of the tail.',
-      'Note any new stressor: a move, a visitor, a litter change, a new food.'
-    ],
-    escalate: [
-      'Skin becomes red, scabbed, or weepy',
-      'Miso starts vomiting or stops eating',
-      'Hair loss spreads to face, ears, or paws',
-      'You see live fleas or flea dirt'
-    ]
-  }
+// ═══════════════════════════════════════════════════════════════
+// SPOT v2 — Pet Teledermatology Triage — single-file PWA
+// ═══════════════════════════════════════════════════════════════
+
+const $=id=>document.getElementById(id);
+
+// ─── STATE ───
+let state = {
+  onboarded: false,
+  pets: [],
+  activePetId: null,
+  visits: []
 };
 
-let currentSpecies = 'dog';
-let analyzing = false;
+function loadState(){
+  try { const s = localStorage.getItem('spot_state'); if(s) state = JSON.parse(s); } catch(e){}
+}
+function saveState(){
+  try { localStorage.setItem('spot_state', JSON.stringify(state)); } catch(e){}
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
-// ──── Species + pet ────
-function setSpecies(s){
-  currentSpecies = s;
-  document.querySelectorAll('.species-btn').forEach(b => b.classList.toggle('on', b.dataset.species === s));
-  const p = samples[s];
-  document.getElementById('petName').textContent = p.name;
-  document.getElementById('petDetail').textContent = `${p.breed} · ${p.age} · ${p.weight}`;
-  document.getElementById('petAvatar').textContent = p.avatar;
+// ─── CONDITION DATABASE (~30 conditions) ───
+const CONDITIONS = {
+  lump: [
+    {name:'Lipoma (fatty lump)',desc:'Soft, moveable subcutaneous mass. Very common in middle-aged dogs. Usually benign.',urgency:1,species:['dog','cat','rabbit','other']},
+    {name:'Sebaceous cyst',desc:'Firm, round, sometimes draining yellowish material. Blocked sebaceous gland.',urgency:2,species:['dog','cat','other']},
+    {name:'Mast cell tumor',desc:'Firm, irregular, sometimes ulcerated. Can change size rapidly. Needs vet biopsy.',urgency:5,species:['dog','cat','other']},
+    {name:'Histiocytoma',desc:'Small, red, button-like. Common in young dogs. Usually resolves on its own.',urgency:1,species:['dog']},
+    {name:'Abscess',desc:'Warm, painful, fluctuant swelling. Often from a bite or puncture wound.',urgency:4,species:['dog','cat','rabbit','other']},
+  ],
+  rash: [
+    {name:'Contact dermatitis',desc:'Red, itchy, flat areas where skin contacts an irritant (grass, chemicals, fabric).',urgency:2,species:['dog','cat','other']},
+    {name:'Hot spot (moist dermatitis)',desc:'Moist, red, possibly oozing area from licking or scratching. Bacterial surface infection.',urgency:3,species:['dog','cat']},
+    {name:'Flea allergy dermatitis',desc:'Red bumps and hair loss, especially at tail base. Check for flea dirt.',urgency:2,species:['dog','cat','rabbit']},
+    {name:'Ringworm (dermatophytosis)',desc:'Circular patches of hair loss with scaly edges. Fungal, potentially zoonotic.',urgency:3,species:['dog','cat','rabbit','other']},
+    {name:'Atopic dermatitis',desc:'Chronic itching, redness in ears, paws, groin, armpits. Environmental allergy.',urgency:2,species:['dog','cat']},
+  ],
+  wound: [
+    {name:'Superficial laceration',desc:'Shallow cut, edges visible, minimal bleeding. May need cleaning and monitoring.',urgency:2,species:['dog','cat','rabbit','other']},
+    {name:'Puncture wound',desc:'Small entry point, potentially deep. Risk of infection, especially from bites.',urgency:5,species:['dog','cat','rabbit','other']},
+    {name:'Abrasion',desc:'Surface skin scrape. Clean, apply light wound care. Watch for infection signs.',urgency:1,species:['dog','cat','rabbit','other']},
+    {name:'Deep laceration',desc:'Wound exposing tissue below skin. May need sutures. Control bleeding.',urgency:6,species:['dog','cat','rabbit','other']},
+  ],
+  swelling: [
+    {name:'Insect bite/sting reaction',desc:'Localized swelling, sometimes with hive pattern. May need antihistamines.',urgency:3,species:['dog','cat','rabbit','other']},
+    {name:'Hematoma',desc:'Firm, fluid-filled swelling under skin, often ears. From trauma or head-shaking.',urgency:3,species:['dog','cat']},
+    {name:'Lymph node enlargement',desc:'Firm swelling near jaw, armpit, or groin. Needs vet evaluation.',urgency:5,species:['dog','cat','other']},
+    {name:'Allergic reaction (facial)',desc:'Swelling around eyes, muzzle. Can progress. May need urgent attention.',urgency:5,species:['dog','cat']},
+  ],
+  hair_loss: [
+    {name:'Seasonal shedding',desc:'Symmetric, no redness or itching. Normal coat turnover.',urgency:0,species:['dog','cat','rabbit']},
+    {name:'Mange (demodex/sarcoptes)',desc:'Patchy hair loss, may be itchy, crusty. Mites. Needs vet diagnosis.',urgency:4,species:['dog','cat','rabbit']},
+    {name:'Hormonal alopecia',desc:'Symmetric hair loss, thickened skin, no itch. May indicate thyroid or adrenal issues.',urgency:3,species:['dog','cat']},
+    {name:'Over-grooming (psychogenic)',desc:'Hair loss from excessive licking. Often stress-related. Skin appears normal underneath.',urgency:2,species:['cat','rabbit']},
+  ],
+  eye: [
+    {name:'Conjunctivitis',desc:'Red, watery or goopy eye. Discharge may be clear or colored. Very common.',urgency:3,species:['dog','cat','rabbit','other']},
+    {name:'Corneal ulcer',desc:'Squinting, tearing, possible cloudiness. Painful. Needs prompt vet care.',urgency:6,species:['dog','cat','rabbit']},
+    {name:'Cherry eye',desc:'Red, bulging tissue at inner corner of eye. Prolapsed gland of the third eyelid.',urgency:3,species:['dog']},
+  ],
+  ear: [
+    {name:'Ear infection (otitis)',desc:'Head shaking, scratching, redness, odor or discharge from ear canal.',urgency:3,species:['dog','cat','rabbit']},
+    {name:'Ear mites',desc:'Dark, crumbly discharge. Intense itching. Very contagious between pets.',urgency:3,species:['dog','cat','rabbit']},
+    {name:'Aural hematoma',desc:'Swollen, puffy ear flap. From vigorous head-shaking. Needs vet draining.',urgency:4,species:['dog','cat']},
+  ],
+};
+
+const BODY_LOCATIONS = [
+  {id:'head',label:'Head / Face',emoji:'🐾'},
+  {id:'ear',label:'Ears',emoji:'👂'},
+  {id:'eye',label:'Eyes',emoji:'👁️'},
+  {id:'neck',label:'Neck / Throat',emoji:'🔗'},
+  {id:'chest',label:'Chest / Belly',emoji:'💛'},
+  {id:'back',label:'Back / Spine',emoji:'🦴'},
+  {id:'leg',label:'Legs / Paws',emoji:'🦿'},
+  {id:'tail',label:'Tail / Rear',emoji:'🐕'},
+  {id:'groin',label:'Groin / Underside',emoji:'⬇️'},
+  {id:'other',label:'Other / Multiple',emoji:'📍'},
+];
+
+const CONCERN_TYPES = [
+  {id:'lump',label:'Lump / Mass',emoji:'🔴'},
+  {id:'rash',label:'Rash / Irritation',emoji:'🟠'},
+  {id:'wound',label:'Wound / Cut',emoji:'🩸'},
+  {id:'swelling',label:'Swelling',emoji:'🫧'},
+  {id:'hair_loss',label:'Hair Loss',emoji:'🐑'},
+  {id:'eye',label:'Eye Issue',emoji:'👁️'},
+  {id:'ear',label:'Ear Issue',emoji:'👂'},
+];
+
+const DURATIONS = [
+  {id:'hours',label:'Just noticed (hours)',score:0},
+  {id:'1-2days',label:'1-2 days',score:1},
+  {id:'3-7days',label:'3-7 days',score:1},
+  {id:'1-2weeks',label:'1-2 weeks',score:2},
+  {id:'weeks+',label:'Several weeks+',score:2},
+  {id:'months',label:'Months / chronic',score:1},
+];
+
+const CHANGES = [
+  {id:'growing',label:'Getting bigger',score:3},
+  {id:'spreading',label:'Spreading',score:3},
+  {id:'color_change',label:'Changing color',score:2},
+  {id:'bleeding',label:'Started bleeding',score:4},
+  {id:'discharge',label:'Oozing / discharge',score:3},
+  {id:'same',label:'Staying the same',score:0},
+  {id:'improving',label:'Getting better',score:-1},
+];
+
+const BEHAVIORS = [
+  {id:'itching',label:'Excessive itching / licking',score:1},
+  {id:'lethargy',label:'Lethargy / low energy',score:3},
+  {id:'appetite',label:'Not eating',score:3},
+  {id:'limping',label:'Limping / pain',score:2},
+  {id:'vomiting',label:'Vomiting / diarrhea',score:2},
+  {id:'none',label:'Acting normal',score:0},
+];
+
+const EMERGENCIES = [
+  {id:'bleeding_heavy',label:'Heavy bleeding',score:10},
+  {id:'breathing',label:'Struggling to breathe',score:10},
+  {id:'seizure',label:'Seizure / collapse',score:10},
+  {id:'poison',label:'Ate something toxic',score:10},
+  {id:'bloat',label:'Swollen belly, retching, can\'t vomit',score:10},
+  {id:'unconscious',label:'Unconscious / unresponsive',score:10},
+];
+
+// ─── CHECK FLOW STATE ───
+let flowStep = 0;
+let checkData = {
+  location: null,
+  concern: null,
+  duration: null,
+  changes: null,
+  behaviors: [],
+  photo: null,
+};
+
+function resetCheckData(){
+  flowStep = 0;
+  checkData = {location:null,concern:null,duration:null,changes:null,behaviors:[],photo:null};
+  $('emergencyBanner').classList.remove('show');
+  $('capturePreview').style.display = 'none';
+  $('captureActions').style.display = 'flex';
+  $('retakeBtn').style.display = 'none';
 }
 
-function switchPet(){
-  setSpecies(currentSpecies === 'dog' ? 'cat' : 'dog');
+// ─── NAV ───
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const screen = btn.dataset.screen;
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    $('screen'+screen).classList.add('active');
+    if(screen==='Pets') renderPetList();
+    if(screen==='History') renderHistory();
+    if(screen==='Check') renderActivePet();
+    window.scrollTo(0,0);
+  });
+});
+
+// ─── ONBOARDING ───
+let obStep = 0;
+function obNext(){
+  if(obStep === 1){
+    const name = $('obPetName').value.trim();
+    if(name){
+      const pet = {
+        id: uid(),
+        name: name,
+        species: $('obSpecies').value,
+        breed: $('obBreed').value.trim(),
+        age: $('obAge').value,
+        weight: $('obWeight').value.trim(),
+        vetPhone: $('obVetPhone').value.trim(),
+      };
+      state.pets.push(pet);
+      state.activePetId = pet.id;
+    }
+  }
+  obStep++;
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  const next = document.querySelector(`.ob-step[data-step="${obStep}"]`);
+  if(next) next.classList.add('active');
+}
+function obSkip(){
+  if(obStep < 2){
+    obStep = 2;
+    document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+    document.querySelector('.ob-step[data-step="2"]').classList.add('active');
+  } else {
+    obFinish();
+  }
+}
+function obFinish(){
+  state.onboarded = true;
+  if(state.pets.length === 0){
+    state.pets.push({id:uid(),name:'Biscuit',species:'dog',breed:'Labrador Retriever',age:'4',weight:'68',vetPhone:''});
+    state.activePetId = state.pets[0].id;
+  }
+  if(!state.activePetId && state.pets.length) state.activePetId = state.pets[0].id;
+  saveState();
+  $('onboard').classList.add('hidden');
+  renderAll();
 }
 
-// ──── Upload + analyze ────
-function onUpload(e){
+// ─── FLOW RENDERING ───
+function renderFlowOptions(){
+  // Emergency options
+  const emGrid = $('emergencyOptions');
+  emGrid.innerHTML = EMERGENCIES.map(e=>`<button class="option-btn" data-id="${e.id}" onclick="triggerEmergency('${e.id}')" aria-label="${e.label}"><span class="emoji">🚨</span>${e.label}</button>`).join('');
+
+  // Location
+  const locGrid = $('locationOptions');
+  locGrid.innerHTML = BODY_LOCATIONS.map(l=>`<button class="option-btn" data-id="${l.id}" onclick="selectOption('location','${l.id}',this,'locNext')" aria-label="${l.label}"><span class="emoji">${l.emoji}</span>${l.label}</button>`).join('');
+
+  // Concern
+  const conGrid = $('concernOptions');
+  conGrid.innerHTML = CONCERN_TYPES.map(c=>`<button class="option-btn" data-id="${c.id}" onclick="selectOption('concern','${c.id}',this,'conNext')" aria-label="${c.label}"><span class="emoji">${c.emoji}</span>${c.label}</button>`).join('');
+
+  // Duration
+  const durGrid = $('durationOptions');
+  durGrid.innerHTML = DURATIONS.map(d=>`<button class="option-btn" data-id="${d.id}" onclick="selectOption('duration','${d.id}',this,'durNext')" aria-label="${d.label}">${d.label}</button>`).join('');
+
+  // Changes
+  const chgGrid = $('changeOptions');
+  chgGrid.innerHTML = CHANGES.map(c=>`<button class="option-btn" data-id="${c.id}" onclick="selectOption('changes','${c.id}',this,'chgNext')" aria-label="${c.label}">${c.label}</button>`).join('');
+
+  // Behaviors (multi-select)
+  const behGrid = $('behaviorOptions');
+  behGrid.innerHTML = BEHAVIORS.map(b=>`<button class="option-btn" data-id="${b.id}" onclick="toggleBehavior('${b.id}',this)" aria-label="${b.label}">${b.label}</button>`).join('');
+}
+
+function selectOption(field, value, el, nextBtnId){
+  checkData[field] = value;
+  el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  if(nextBtnId) $(nextBtnId).disabled = false;
+}
+
+function toggleBehavior(id, el){
+  if(id === 'none'){
+    checkData.behaviors = ['none'];
+    el.parentElement.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+    el.classList.add('selected');
+    return;
+  }
+  checkData.behaviors = checkData.behaviors.filter(b=>b!=='none');
+  el.parentElement.querySelector('[data-id="none"]')?.classList.remove('selected');
+  if(checkData.behaviors.includes(id)){
+    checkData.behaviors = checkData.behaviors.filter(b=>b!==id);
+    el.classList.remove('selected');
+  } else {
+    checkData.behaviors.push(id);
+    el.classList.add('selected');
+  }
+}
+
+function triggerEmergency(id){
+  const em = EMERGENCIES.find(e=>e.id===id);
+  $('emergencyBanner').classList.add('show');
+  $('emergencyText').textContent = `"${em.label}" requires immediate emergency veterinary care. Do not wait for a triage — go now.`;
+  $('emergencyBanner').scrollIntoView({behavior:'smooth',block:'start'});
+  // Also save as a visit
+  const pet = getActivePet();
+  if(pet){
+    const visit = {
+      id: uid(),
+      petId: pet.id,
+      date: new Date().toISOString(),
+      level: 'red',
+      levelText: 'VET NOW',
+      score: 10,
+      condition: em.label + ' (Emergency)',
+      desc: 'Emergency override — directed to emergency vet immediately.',
+      answers: {emergency: id},
+      photo: null,
+      actions: ['Go to the nearest emergency vet immediately.','Call ahead if possible so they can prepare.','Keep your pet as calm and still as possible during transport.'],
+      watchpoints: [],
+    };
+    state.visits.unshift(visit);
+    saveState();
+  }
+}
+
+function renderProgressBar(stepNum){
+  const totalSteps = 6;
+  const bar = $('progressBar'+stepNum);
+  if(!bar) return;
+  let html = '';
+  for(let i=1;i<=totalSteps;i++){
+    const cls = i < stepNum ? 'done' : (i===stepNum ? 'current' : '');
+    html += `<div class="progress-dot ${cls}"></div>`;
+  }
+  bar.innerHTML = html;
+}
+
+function showFlowStep(n){
+  flowStep = n;
+  document.querySelectorAll('.flow-step').forEach(s=>s.classList.remove('active'));
+  const step = document.querySelector(`.flow-step[data-flow="${n}"]`);
+  if(step) step.classList.add('active');
+  // Render progress bars
+  for(let i=1;i<=6;i++) renderProgressBar(i);
+}
+
+function flowNext(){
+  showFlowStep(flowStep + 1);
+}
+function flowBack(){
+  if(flowStep > 0) showFlowStep(flowStep - 1);
+}
+
+// ─── PHOTO CAPTURE ───
+$('fileInput').addEventListener('change', handlePhoto);
+$('cameraInput').addEventListener('change', handlePhoto);
+
+function handlePhoto(e){
   const file = e.target.files && e.target.files[0];
-  if (!file) return;
+  if(!file) return;
   const reader = new FileReader();
-  reader.onload = ev => startAnalysis(ev.target.result);
+  reader.onload = function(ev){
+    resizeImage(ev.target.result, 1000, function(dataUrl){
+      checkData.photo = dataUrl;
+      $('capturePreview').src = dataUrl;
+      $('capturePreview').style.display = 'block';
+      $('captureActions').style.display = 'none';
+      $('retakeBtn').style.display = 'block';
+    });
+  };
   reader.readAsDataURL(file);
 }
 
-function runSample(){
-  // Inline SVG sample image — soft warm gradient with a "concern" patch
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
-    <defs>
-      <radialGradient id="fur" cx="50%" cy="40%" r="70%">
-        <stop offset="0%" stop-color="#d4a574"/>
-        <stop offset="60%" stop-color="#a07242"/>
-        <stop offset="100%" stop-color="#5a3e21"/>
-      </radialGradient>
-      <radialGradient id="hot" cx="55%" cy="55%" r="22%">
-        <stop offset="0%" stop-color="#c2410c"/>
-        <stop offset="50%" stop-color="#a32f1d" stop-opacity="0.7"/>
-        <stop offset="100%" stop-color="#5a3e21" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <rect width="400" height="300" fill="url(#fur)"/>
-    <g opacity="0.4">
-      ${Array.from({length:80}).map((_,i)=>`<line x1="${Math.random()*400}" y1="${Math.random()*300}" x2="${Math.random()*400+10}" y2="${Math.random()*300+20}" stroke="#3d2812" stroke-width="0.8"/>`).join('')}
-    </g>
-    <ellipse cx="220" cy="165" rx="55" ry="42" fill="url(#hot)"/>
-    <ellipse cx="220" cy="165" rx="32" ry="22" fill="#8b1c0e" opacity="0.5"/>
-  </svg>`;
-  const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
-  startAnalysis(dataUrl);
+function resizeImage(dataUrl, maxSize, cb){
+  const img = new Image();
+  img.onload = function(){
+    const canvas = document.createElement('canvas');
+    let w = img.width, h = img.height;
+    if(w > maxSize || h > maxSize){
+      if(w > h){ h = Math.round(h * maxSize / w); w = maxSize; }
+      else { w = Math.round(w * maxSize / h); h = maxSize; }
+    }
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    cb(canvas.toDataURL('image/jpeg', 0.8));
+  };
+  img.src = dataUrl;
 }
 
-function startAnalysis(dataUrl){
-  if (analyzing) return;
-  analyzing = true;
-  document.getElementById('resultSec').style.display = 'block';
-  document.getElementById('resultCard').style.display = 'none';
-  document.getElementById('analyzing').style.display = 'block';
-  document.getElementById('resultHeading').textContent = 'Reading the photo…';
-  const wrap = document.getElementById('previewWrap');
-  wrap.innerHTML = `<img src="${dataUrl}" alt="uploaded concern"><div class="scan-line"></div>`;
-  document.getElementById('resultSec').scrollIntoView({behavior:'smooth', block:'start'});
+function retakePhoto(){
+  checkData.photo = null;
+  $('capturePreview').style.display = 'none';
+  $('captureActions').style.display = 'flex';
+  $('retakeBtn').style.display = 'none';
+  $('fileInput').value = '';
+  $('cameraInput').value = '';
+}
 
+// ─── TRIAGE ENGINE ───
+function runTriage(){
+  showFlowStep(7); // analyzing
   const stages = [
-    'Scanning · checking colour, edge, hair pattern…',
-    'Comparing against 14,000 vet-labelled images…',
-    'Cross-referencing with Biscuit\'s breed + age…',
-    'Triaging severity…'
+    'Evaluating symptom profile...',
+    'Cross-referencing condition database...',
+    'Scoring urgency factors...',
+    'Generating triage result...',
   ];
   let i = 0;
-  const statusEl = document.getElementById('analyzeStatus');
-  const tick = setInterval(() => {
+  $('analyzeText').textContent = stages[0];
+  const tick = setInterval(()=>{
     i++;
-    if (i < stages.length) statusEl.textContent = stages[i];
-  }, 750);
-
-  setTimeout(() => {
-    clearInterval(tick);
-    showResult();
-    analyzing = false;
-  }, 3000);
-}
-
-function showResult(){
-  const r = samples[currentSpecies];
-  document.getElementById('analyzing').style.display = 'none';
-  document.getElementById('resultCard').style.display = 'block';
-  document.getElementById('resultHeading').textContent = 'Here\'s what we see';
-  document.querySelector('#previewWrap .scan-line')?.remove();
-
-  const card = document.getElementById('triageCard');
-  card.classList.remove('green','amber','red');
-  card.classList.add(r.level);
-  document.getElementById('triageDot').textContent = r.dot;
-  document.getElementById('triageLevel').textContent = r.levelText;
-  document.getElementById('triageCondition').textContent = r.condition;
-  document.getElementById('triageDesc').textContent = r.desc;
-  document.getElementById('triageConfidence').textContent = `Model confidence · ${r.confidence}%`;
-  document.getElementById('confidenceFill').style.width = r.confidence + '%';
-
-  const actions = document.getElementById('actionList');
-  actions.innerHTML = r.actions.map((a, idx) => `<li><span class="action-num">${idx+1}</span><span>${a}</span></li>`).join('');
-
-  const esc = document.getElementById('escalateList');
-  esc.innerHTML = r.escalate.map(e => `<li>${e}</li>`).join('');
-
-  // CTA text per severity
-  const btn = document.getElementById('vetBtn');
-  if (r.level === 'red'){ btn.textContent = 'Connect to a vet — urgent · $19'; btn.style.background = 'var(--red)'; btn.style.borderColor = 'var(--red)'; }
-  else if (r.level === 'amber'){ btn.textContent = 'Connect to a vet now · $19'; btn.style.background = ''; btn.style.borderColor = ''; }
-  else { btn.textContent = 'Ask a vet anyway · $19'; btn.style.background = ''; btn.style.borderColor = ''; }
-}
-
-function resetApp(){
-  document.getElementById('resultSec').style.display = 'none';
-  document.getElementById('fileIn').value = '';
-  document.getElementById('cameraIn').value = '';
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-// ──── Vet call simulation ────
-function openVet(){
-  document.getElementById('vetOverlay').classList.add('on');
-  document.getElementById('vetQueueStage').classList.add('on');
-  document.getElementById('vetLiveStage').classList.remove('on');
-  let s = 120;
-  const eta = document.getElementById('vetEta');
-  eta.textContent = '≈ 2 min';
-  const timer = setInterval(() => {
-    s -= 6;
-    if (s <= 0){
-      clearInterval(timer);
-      document.getElementById('vetQueueStage').classList.remove('on');
-      document.getElementById('vetLiveStage').classList.add('on');
-      return;
-    }
-    const m = Math.floor(s/60), sec = s%60;
-    eta.textContent = m > 0 ? `≈ ${m}:${String(sec).padStart(2,'0')}` : `${sec}s`;
+    if(i < stages.length) $('analyzeText').textContent = stages[i];
   }, 600);
-  document.getElementById('vetOverlay').dataset.timer = timer;
+
+  setTimeout(()=>{
+    clearInterval(tick);
+    const result = computeTriage();
+    renderTriageResult(result);
+    // Save visit
+    const pet = getActivePet();
+    const visit = {
+      id: uid(),
+      petId: pet ? pet.id : null,
+      date: new Date().toISOString(),
+      level: result.level,
+      levelText: result.levelText,
+      score: result.score,
+      condition: result.conditions[0]?.name || 'Unknown concern',
+      desc: result.conditions[0]?.desc || '',
+      answers: {...checkData, behaviors: [...checkData.behaviors]},
+      photo: checkData.photo,
+      actions: result.actions,
+      watchpoints: result.watchpoints,
+      conditions: result.conditions.map(c=>({name:c.name,desc:c.desc})),
+    };
+    state.visits.unshift(visit);
+    saveState();
+    showFlowStep(8);
+  }, 2500);
 }
 
-function closeVet(){
-  const o = document.getElementById('vetOverlay');
-  o.classList.remove('on');
-  clearInterval(parseInt(o.dataset.timer || 0));
+function computeTriage(){
+  let score = 0;
+  const pet = getActivePet();
+  const species = pet ? pet.species : 'dog';
+
+  // Duration score
+  const dur = DURATIONS.find(d=>d.id===checkData.duration);
+  if(dur) score += dur.score;
+
+  // Changes score
+  const chg = CHANGES.find(c=>c.id===checkData.changes);
+  if(chg) score += chg.score;
+
+  // Behavior score
+  checkData.behaviors.forEach(bId=>{
+    const beh = BEHAVIORS.find(b=>b.id===bId);
+    if(beh) score += beh.score;
+  });
+
+  // Get matching conditions
+  const concernType = checkData.concern || 'rash';
+  let pool = CONDITIONS[concernType] || CONDITIONS.rash;
+  pool = pool.filter(c=>c.species.includes(species));
+  if(pool.length === 0) pool = CONDITIONS[concernType] || CONDITIONS.rash;
+
+  // Sort by urgency match
+  pool.sort((a,b)=>Math.abs(a.urgency - score/2) - Math.abs(b.urgency - score/2));
+  const top3 = pool.slice(0,3);
+
+  // Add condition-inherent urgency
+  if(top3[0]) score += top3[0].urgency;
+
+  // Clamp score
+  score = Math.max(0, Math.min(10, score));
+
+  // Determine level
+  let level, levelText, dot;
+  if(score <= 3){
+    level = 'green'; levelText = 'WATCH AT HOME'; dot = '🟢';
+  } else if(score <= 6){
+    level = 'amber'; levelText = 'SCHEDULE A VET VISIT'; dot = '🟡';
+  } else {
+    level = 'red'; levelText = 'SEE A VET NOW'; dot = '🔴';
+  }
+
+  // Generate actions
+  const actions = generateActions(concernType, checkData.location, level, top3[0]);
+  const watchpoints = generateWatchpoints(concernType, level, top3[0]);
+
+  return { score, level, levelText, dot, conditions: top3, actions, watchpoints };
 }
 
-// Click outside vet card to close
-document.getElementById('vetOverlay').addEventListener('click', e => {
-  if (e.target.id === 'vetOverlay') closeVet();
-});
+function generateActions(concern, location, level, topCondition){
+  const actions = [];
+
+  // Universal photo/monitor action
+  actions.push('Take a clear photo now and compare in 24-48 hours for any changes in size, color, or shape.');
+
+  // Concern-specific actions
+  switch(concern){
+    case 'lump':
+      actions.push('Gently feel the mass — note if it\'s firm, soft, moveable, or fixed. Measure it with a ruler if possible.');
+      actions.push('Do not squeeze, lance, or apply ointment to lumps without vet guidance.');
+      break;
+    case 'rash':
+      actions.push('Keep the area clean and dry. Prevent licking with a cone or t-shirt if needed.');
+      actions.push('Check for fleas — run a fine comb through the coat at the tail base and look for black specks.');
+      break;
+    case 'wound':
+      actions.push('Clean gently with lukewarm saline (1/4 tsp salt per cup of warm water). Pat dry.');
+      actions.push('Apply gentle pressure with a clean cloth if there\'s mild bleeding. Do not use hydrogen peroxide.');
+      break;
+    case 'swelling':
+      actions.push('Apply a cool compress (wrapped in a cloth) for 5-10 minutes if tolerated.');
+      actions.push('Check for signs of allergic reaction — swelling spreading, difficulty breathing, hives.');
+      break;
+    case 'hair_loss':
+      actions.push('Photograph the affected area with a ruler for scale. Check if the skin underneath is red, flaky, or normal.');
+      actions.push('Note if your pet is itching, licking, or chewing the area — this changes the likely cause.');
+      break;
+    case 'eye':
+      actions.push('Gently wipe discharge with a damp, warm cloth from inner corner outward. Use a fresh cloth for each eye.');
+      actions.push('Do not use human eye drops. Check if the eye is squinting, cloudy, or has visible redness.');
+      break;
+    case 'ear':
+      actions.push('Do not insert anything into the ear canal. Gently clean the outer ear with a damp cloth.');
+      actions.push('Note the type of discharge (color, odor, amount) — this helps the vet narrow the cause.');
+      break;
+    default:
+      actions.push('Keep the area clean and prevent your pet from aggravating it.');
+  }
+
+  // Level-specific actions
+  if(level === 'red'){
+    actions.push('Call your vet or nearest emergency animal hospital now. Bring this triage summary with you.');
+  } else if(level === 'amber'){
+    actions.push('Schedule a vet appointment within 24-48 hours. Monitor for worsening in the meantime.');
+  } else {
+    actions.push('Re-check in 48 hours. If it resolves on its own, no vet visit needed. If unchanged or worse, schedule a vet.');
+  }
+
+  return actions;
+}
+
+function generateWatchpoints(concern, level, topCondition){
+  const watchpoints = [];
+  watchpoints.push('The area grows rapidly in size (doubles in 24h)');
+  watchpoints.push('Your pet becomes lethargic, stops eating, or develops a fever');
+
+  switch(concern){
+    case 'lump':
+      watchpoints.push('The lump starts bleeding, oozing, or ulcerating');
+      watchpoints.push('New lumps appear in other locations');
+      break;
+    case 'rash':
+      watchpoints.push('The rash spreads to the face, paws, or becomes widespread');
+      watchpoints.push('Skin becomes weepy, crusted, or has a strong odor');
+      break;
+    case 'wound':
+      watchpoints.push('Wound edges become red, swollen, or drain colored/smelly fluid');
+      watchpoints.push('Bleeding restarts or doesn\'t stop with gentle pressure');
+      break;
+    case 'swelling':
+      watchpoints.push('Swelling spreads, especially to the face or throat');
+      watchpoints.push('Your pet has difficulty breathing, collapses, or seems disoriented');
+      break;
+    case 'hair_loss':
+      watchpoints.push('Hair loss becomes patchy, asymmetric, or spreads rapidly');
+      watchpoints.push('Skin turns dark, thickened, or develops sores');
+      break;
+    case 'eye':
+      watchpoints.push('Eye becomes completely cloudy, swollen shut, or bleeds');
+      watchpoints.push('Your pet starts bumping into things or pawing at the eye intensely');
+      break;
+    case 'ear':
+      watchpoints.push('Head tilt, loss of balance, or circling behavior develops');
+      watchpoints.push('Ear flap becomes hot, swollen, or puffy (possible hematoma)');
+      break;
+    default:
+      watchpoints.push('Symptoms worsen or new symptoms appear');
+  }
+
+  return watchpoints;
+}
+
+function renderTriageResult(result){
+  const pet = getActivePet();
+  const petName = pet ? pet.name : 'Your pet';
+
+  let conditionsHtml = result.conditions.map((c,i)=>{
+    if(i===0) return `<div class="triage-condition">${c.name}</div><div class="triage-desc">${c.desc}</div>`;
+    return `<div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);letter-spacing:0.06em">ALSO POSSIBLE: ${c.name}</div>`;
+  }).join('');
+
+  let actionsHtml = result.actions.map((a,i)=>`<li><span class="action-num">${i+1}</span><span>${a}</span></li>`).join('');
+
+  let watchHtml = result.watchpoints.map(w=>`<li>${w}</li>`).join('');
+
+  const html = `
+    <div class="triage-card ${result.level}">
+      <div class="triage-header">
+        <span class="triage-dot">${result.dot}</span>
+        <span class="triage-level">${result.levelText}</span>
+      </div>
+      ${conditionsHtml}
+      <div class="triage-score">Triage score: ${result.score} / 10 · for ${petName}</div>
+      <h3 style="font-family:var(--serif);font-size:15px;color:var(--forest);margin-top:10px;margin-bottom:4px">What to do now</h3>
+      <ol class="action-list">${actionsHtml}</ol>
+    </div>
+    <div class="watchpoints">
+      <div class="watchpoints-title"><span>⚠️</span> Go to a vet sooner if you see</div>
+      <ul>${watchHtml}</ul>
+    </div>
+  `;
+  $('triageResult').innerHTML = html;
+}
+
+function resetCheck(){
+  resetCheckData();
+  renderFlowOptions();
+  showFlowStep(0);
+}
+
+// ─── PET MANAGEMENT ───
+function getActivePet(){
+  return state.pets.find(p=>p.id===state.activePetId) || state.pets[0] || null;
+}
+
+function renderActivePet(){
+  const pet = getActivePet();
+  const el = $('activePetCard');
+  if(!pet){ el.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:14px">No pet added yet. <a href="#" onclick="event.preventDefault();navTo(\'Pets\')">Add one</a></p>'; return; }
+  const speciesEmoji = {dog:'🐕',cat:'🐈',rabbit:'🐇',other:'🐾'}[pet.species]||'🐾';
+  el.innerHTML=`
+    <div class="pet-card selected" onclick="openPetPicker()">
+      <div class="pet-avatar">${speciesEmoji}</div>
+      <div class="pet-meta">
+        <div class="pet-name">${esc(pet.name)}</div>
+        <div class="pet-detail">${esc(pet.species)}${pet.breed?' · '+esc(pet.breed):''}${pet.age?' · '+pet.age+'y':''}${pet.weight?' · '+pet.weight+'lb':''}</div>
+      </div>
+      <span style="font-size:12px;color:var(--muted)">▾</span>
+    </div>`;
+  $('petCountBadge').textContent = state.pets.length + (state.pets.length===1?' pet':' pets');
+}
+
+function openPetPicker(){
+  if(state.pets.length <= 1) return;
+  const next = state.pets.find(p=>p.id!==state.activePetId);
+  // Cycle through pets
+  const idx = state.pets.findIndex(p=>p.id===state.activePetId);
+  const nextIdx = (idx+1) % state.pets.length;
+  state.activePetId = state.pets[nextIdx].id;
+  saveState();
+  renderActivePet();
+}
+
+function renderPetList(){
+  const el = $('petList');
+  if(state.pets.length===0){
+    el.innerHTML='<div class="empty-state">No pets yet. Add your first pet to get started.</div>';
+    return;
+  }
+  el.innerHTML = state.pets.map(pet=>{
+    const speciesEmoji = {dog:'🐕',cat:'🐈',rabbit:'🐇',other:'🐾'}[pet.species]||'🐾';
+    const active = pet.id === state.activePetId;
+    const visits = state.visits.filter(v=>v.petId===pet.id).length;
+    return `
+      <div class="pet-card ${active?'selected':''}" onclick="selectActivePet('${pet.id}')">
+        <div class="pet-avatar">${speciesEmoji}</div>
+        <div class="pet-meta">
+          <div class="pet-name">${esc(pet.name)}${active?' ✓':''}</div>
+          <div class="pet-detail">${esc(pet.species)}${pet.breed?' · '+esc(pet.breed):''}${pet.age?' · '+pet.age+'y':''}${pet.weight?' · '+pet.weight+'lb':''} · ${visits} visit${visits!==1?'s':''}</div>
+          ${pet.vetPhone?'<div class="pet-detail">Vet: '+esc(pet.vetPhone)+'</div>':''}
+        </div>
+        <div class="pet-actions">
+          <button class="pet-action-btn" onclick="event.stopPropagation();editPet('${pet.id}')" aria-label="Edit ${esc(pet.name)}">✏️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function selectActivePet(id){
+  state.activePetId = id;
+  saveState();
+  renderPetList();
+  renderActivePet();
+}
+
+let editingPetId = null;
+function openPetModal(petId){
+  editingPetId = petId || null;
+  $('petModalTitle').textContent = petId ? 'Edit pet' : 'Add pet';
+  $('pmDelete').style.display = petId ? 'block' : 'none';
+  if(petId){
+    const pet = state.pets.find(p=>p.id===petId);
+    if(!pet) return;
+    $('pmName').value = pet.name;
+    $('pmSpecies').value = pet.species;
+    $('pmBreed').value = pet.breed || '';
+    $('pmAge').value = pet.age || '';
+    $('pmWeight').value = pet.weight || '';
+    $('pmVetPhone').value = pet.vetPhone || '';
+  } else {
+    $('pmName').value=''; $('pmSpecies').value='dog'; $('pmBreed').value=''; $('pmAge').value=''; $('pmWeight').value=''; $('pmVetPhone').value='';
+  }
+  $('petModal').classList.add('on');
+}
+
+function closePetModal(){
+  $('petModal').classList.remove('on');
+  editingPetId = null;
+}
+
+function editPet(id){ openPetModal(id); }
+
+function savePet(){
+  const name = $('pmName').value.trim();
+  if(!name){ $('pmName').focus(); return; }
+  const data = {
+    name: name,
+    species: $('pmSpecies').value,
+    breed: $('pmBreed').value.trim(),
+    age: $('pmAge').value,
+    weight: $('pmWeight').value.trim(),
+    vetPhone: $('pmVetPhone').value.trim(),
+  };
+  if(editingPetId){
+    const pet = state.pets.find(p=>p.id===editingPetId);
+    if(pet) Object.assign(pet, data);
+  } else {
+    const pet = {id: uid(), ...data};
+    state.pets.push(pet);
+    if(!state.activePetId) state.activePetId = pet.id;
+  }
+  saveState();
+  closePetModal();
+  renderPetList();
+  renderActivePet();
+}
+
+function deletePet(){
+  if(!editingPetId) return;
+  if(!confirm('Delete this pet and all their visit history?')) return;
+  state.pets = state.pets.filter(p=>p.id!==editingPetId);
+  state.visits = state.visits.filter(v=>v.petId!==editingPetId);
+  if(state.activePetId === editingPetId){
+    state.activePetId = state.pets.length ? state.pets[0].id : null;
+  }
+  saveState();
+  closePetModal();
+  renderPetList();
+  renderActivePet();
+}
+
+// Click outside modals to close
+$('petModal').addEventListener('click', e=>{ if(e.target.id==='petModal') closePetModal(); });
+$('visitModal').addEventListener('click', e=>{ if(e.target.id==='visitModal') closeVisitModal(); });
+
+// ─── HISTORY ───
+let historyFilter = 'all';
+
+function renderHistory(){
+  // Pet filter bar
+  const filterBar = $('petFilterBar');
+  let filterHtml = `<button class="hdr-btn ${historyFilter==='all'?'style="background:var(--forest);color:var(--cream);border-color:var(--forest)"':''}" onclick="setHistoryFilter('all')">All</button>`;
+  state.pets.forEach(p=>{
+    const active = historyFilter===p.id;
+    filterHtml += `<button class="hdr-btn ${active?'style="background:var(--forest);color:var(--cream);border-color:var(--forest)"':''}" onclick="setHistoryFilter('${p.id}')">${esc(p.name)}</button>`;
+  });
+  filterBar.innerHTML = filterHtml;
+
+  // Visit list
+  const el = $('historyList');
+  let visits = state.visits;
+  if(historyFilter !== 'all') visits = visits.filter(v=>v.petId===historyFilter);
+
+  if(visits.length === 0){
+    el.innerHTML = '<div class="empty-state">No visit history yet. Use the Check tab to run your first triage.</div>';
+    return;
+  }
+
+  el.innerHTML = visits.map(v=>{
+    const pet = state.pets.find(p=>p.id===v.petId);
+    const petName = pet ? pet.name : 'Unknown pet';
+    const d = new Date(v.date);
+    const dateStr = d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) + ' · ' + d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    return `
+      <div class="visit-item" onclick="openVisitDetail('${v.id}')" tabindex="0" role="button" aria-label="View visit from ${dateStr}">
+        <div class="visit-header">
+          <span class="visit-date">${dateStr}</span>
+          <span class="visit-badge ${v.level}">${v.levelText}</span>
+        </div>
+        <div class="visit-condition">${esc(v.condition)}</div>
+        <div class="visit-pet">${esc(petName)} · Score ${v.score}/10</div>
+        ${v.photo?'<img class="visit-photo" src="'+v.photo+'" alt="Visit photo" loading="lazy">':''}
+      </div>`;
+  }).join('');
+}
+
+function setHistoryFilter(f){
+  historyFilter = f;
+  renderHistory();
+}
+
+function openVisitDetail(visitId){
+  const v = state.visits.find(x=>x.id===visitId);
+  if(!v) return;
+  const pet = state.pets.find(p=>p.id===v.petId);
+  const petName = pet ? pet.name : 'Unknown pet';
+  const d = new Date(v.date);
+  const dateStr = d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'}) + ' at ' + d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+
+  let conditionsHtml = '';
+  if(v.conditions && v.conditions.length){
+    conditionsHtml = v.conditions.map((c,i)=>`<li>${c.name}${c.desc?' — '+c.desc:''}</li>`).join('');
+  }
+
+  let actionsHtml = '';
+  if(v.actions && v.actions.length){
+    actionsHtml = v.actions.map(a=>`<li>${a}</li>`).join('');
+  }
+
+  let watchHtml = '';
+  if(v.watchpoints && v.watchpoints.length){
+    watchHtml = v.watchpoints.map(w=>`<li>${w}</li>`).join('');
+  }
+
+  $('visitModalContent').innerHTML = `
+    <div class="modal-title">${esc(v.condition)}</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:14px">${dateStr} · ${esc(petName)}</div>
+    <div class="triage-card ${v.level}" style="margin-bottom:14px">
+      <div class="triage-header">
+        <span class="triage-level">${v.levelText}</span>
+      </div>
+      <div class="triage-score">Score: ${v.score} / 10</div>
+    </div>
+    ${v.photo?'<img src="'+v.photo+'" alt="Visit photo" style="width:100%;border-radius:var(--r);margin-bottom:14px;max-height:250px;object-fit:contain">':''}
+    ${conditionsHtml?'<div class="detail-section"><h3>Possible conditions</h3><ul class="detail-list">'+conditionsHtml+'</ul></div>':''}
+    ${actionsHtml?'<div class="detail-section"><h3>Recommended actions</h3><ul class="detail-list">'+actionsHtml+'</ul></div>':''}
+    ${watchHtml?'<div class="detail-section"><h3>Watch for</h3><ul class="detail-list">'+watchHtml+'</ul></div>':''}
+    <div class="disclaimer" style="margin-top:14px">SPOT provides decision support only — not veterinary diagnosis.</div>
+    <button class="btn-primary" onclick="closeVisitModal()" style="margin-top:10px">Close</button>
+  `;
+  $('visitModal').classList.add('on');
+}
+
+function closeVisitModal(){
+  $('visitModal').classList.remove('on');
+}
+
+// ─── EXPORT ───
+function exportAllHistory(){
+  if(state.visits.length === 0){ alert('No visit history to export.'); return; }
+  let html = '<!doctype html><html><head><meta charset="utf-8"><title>SPOT Visit History Export</title><style>body{font-family:system-ui;max-width:700px;margin:40px auto;padding:0 20px;color:#1a2419;background:#fdf8f2}h1{color:#14532d}h2{color:#c2410c;margin-top:24px}.visit{border:1px solid #d8cdb6;border-radius:12px;padding:16px;margin:12px 0}.badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600}.green{background:#d3ead8;color:#0a5c2b}.amber{background:#fef6e7;color:#7a5302}.red{background:#fadcd2;color:#6b1d10}img{max-width:200px;border-radius:8px;margin:8px 0}li{margin:4px 0}</style></head><body>';
+  html += '<h1>SPOT — Visit History Export</h1>';
+  html += '<p>Exported: ' + new Date().toLocaleString() + '</p>';
+
+  // Group by pet
+  const petMap = {};
+  state.visits.forEach(v=>{
+    const key = v.petId || 'unknown';
+    if(!petMap[key]) petMap[key] = [];
+    petMap[key].push(v);
+  });
+
+  Object.entries(petMap).forEach(([petId, visits])=>{
+    const pet = state.pets.find(p=>p.id===petId);
+    const petName = pet ? pet.name : 'Unknown';
+    html += `<h2>${esc(petName)}</h2>`;
+    if(pet){
+      html += `<p>${esc(pet.species)}${pet.breed?' · '+esc(pet.breed):''}${pet.age?' · '+pet.age+' years':''}${pet.weight?' · '+pet.weight+' lbs':''}</p>`;
+    }
+    visits.forEach(v=>{
+      const d = new Date(v.date);
+      html += `<div class="visit">`;
+      html += `<p><strong>${d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</strong> · <span class="badge ${v.level}">${v.levelText}</span> · Score ${v.score}/10</p>`;
+      html += `<p><strong>${esc(v.condition)}</strong></p>`;
+      if(v.desc) html += `<p>${esc(v.desc)}</p>`;
+      if(v.photo) html += `<img src="${v.photo}" alt="Visit photo">`;
+      if(v.actions && v.actions.length){
+        html += '<p><strong>Actions:</strong></p><ul>';
+        v.actions.forEach(a=>html+=`<li>${esc(a)}</li>`);
+        html += '</ul>';
+      }
+      html += '</div>';
+    });
+  });
+
+  html += '<p style="margin-top:30px;font-size:11px;color:#8a9486">SPOT provides decision support only — not veterinary diagnosis. Always consult a licensed veterinarian.</p>';
+  html += '</body></html>';
+
+  const blob = new Blob([html],{type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'spot-visit-history-' + new Date().toISOString().slice(0,10) + '.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportPetHistory(petId){
+  const pet = state.pets.find(p=>p.id===petId);
+  if(!pet) return;
+  const visits = state.visits.filter(v=>v.petId===petId);
+  if(visits.length===0){ alert('No visits for '+pet.name); return; }
+
+  let html = '<!doctype html><html><head><meta charset="utf-8"><title>SPOT — '+esc(pet.name)+' Visit History</title><style>body{font-family:system-ui;max-width:700px;margin:40px auto;padding:0 20px;color:#1a2419;background:#fdf8f2}h1{color:#14532d}.visit{border:1px solid #d8cdb6;border-radius:12px;padding:16px;margin:12px 0}.badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600}.green{background:#d3ead8;color:#0a5c2b}.amber{background:#fef6e7;color:#7a5302}.red{background:#fadcd2;color:#6b1d10}img{max-width:200px;border-radius:8px;margin:8px 0}li{margin:4px 0}</style></head><body>';
+  html += `<h1>${esc(pet.name)} — Visit History</h1>`;
+  html += `<p>${esc(pet.species)}${pet.breed?' · '+esc(pet.breed):''}${pet.age?' · '+pet.age+' years':''}${pet.weight?' · '+pet.weight+' lbs':''}</p>`;
+  html += '<p>Exported: ' + new Date().toLocaleString() + '</p>';
+
+  visits.forEach(v=>{
+    const d = new Date(v.date);
+    html += `<div class="visit">`;
+    html += `<p><strong>${d.toLocaleDateString()}</strong> · <span class="badge ${v.level}">${v.levelText}</span> · Score ${v.score}/10</p>`;
+    html += `<p><strong>${esc(v.condition)}</strong></p>`;
+    if(v.desc) html += `<p>${esc(v.desc)}</p>`;
+    if(v.photo) html += `<img src="${v.photo}" alt="Visit photo">`;
+    if(v.actions && v.actions.length){
+      html += '<p><strong>Actions:</strong></p><ul>';
+      v.actions.forEach(a=>html+=`<li>${esc(a)}</li>`);
+      html += '</ul>';
+    }
+    html += '</div>';
+  });
+
+  html += '<p style="margin-top:30px;font-size:11px;color:#8a9486">SPOT provides decision support only — not veterinary diagnosis.</p>';
+  html += '</body></html>';
+
+  const blob = new Blob([html],{type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'spot-'+pet.name.toLowerCase().replace(/\s+/g,'-')+'-history-' + new Date().toISOString().slice(0,10) + '.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function clearAllData(){
+  if(!confirm('Are you sure? This removes all pets, visit history, and photos from this device.')) return;
+  if(!confirm('This cannot be undone. Continue?')) return;
+  localStorage.removeItem('spot_state');
+  state = {onboarded:false,pets:[],activePetId:null,visits:[]};
+  location.reload();
+}
+
+// ─── SETTINGS DATA ───
+function renderSettings(){
+  const sg = $('sgData');
+  sg.innerHTML = `<div class="sg-title">Data</div>
+    <div class="setting-row"><span class="sr-label">Pets saved</span><span class="sr-value">${state.pets.length}</span></div>
+    <div class="setting-row"><span class="sr-label">Visit records</span><span class="sr-value">${state.visits.length}</span></div>
+    <div class="setting-row"><span class="sr-label">Storage used</span><span class="sr-value">${estimateStorage()}</span></div>`;
+}
+
+function estimateStorage(){
+  try{
+    const bytes = new Blob([JSON.stringify(state)]).size;
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1048576).toFixed(1) + ' MB';
+  }catch(e){ return 'unknown'; }
+}
+
+// ─── NAV HELPER ───
+function navTo(screen){
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.screen===screen);
+  });
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('screen'+screen).classList.add('active');
+  if(screen==='Pets') renderPetList();
+  if(screen==='History') renderHistory();
+  if(screen==='Check') renderActivePet();
+  window.scrollTo(0,0);
+}
+
+// ─── UTILITY ───
+function esc(s){ if(!s) return ''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+// ─── RENDER ALL ───
+function renderAll(){
+  renderActivePet();
+  renderFlowOptions();
+  renderPetList();
+  renderHistory();
+  renderSettings();
+}
+
+// ─── INIT ───
+function init(){
+  loadState();
+
+  if(!state.onboarded){
+    $('onboard').classList.remove('hidden');
+  } else {
+    $('onboard').classList.add('hidden');
+  }
+
+  // Ensure sample pet if onboarded but no pets
+  if(state.onboarded && state.pets.length === 0){
+    state.pets.push({id:uid(),name:'Biscuit',species:'dog',breed:'Labrador Retriever',age:'4',weight:'68',vetPhone:''});
+    state.activePetId = state.pets[0].id;
+    saveState();
+  }
+
+  renderAll();
+  showFlowStep(0);
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
