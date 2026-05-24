@@ -2,532 +2,2226 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>PLUMB — AR punchlist for solo contractors</title>
-<meta name="description" content="Walk the job. Get the punchlist. AR auto-annotates defects, generates a client-ready report and change-order.">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#fde047">
+<title>PLUMB — Digital Punchlist</title>
+<meta name="description" content="Walk the job. Snap defects. Send the punchlist. All from your phone.">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#18181b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%2318181b'/%3E%3Cline x1='16' y1='4' x2='16' y2='28' stroke='%23f97316' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='24' r='3' fill='%23f97316'/%3E%3Cline x1='8' y1='14' x2='24' y2='14' stroke='%23fff' stroke-width='1.5' stroke-dasharray='2 2'/%3E%3C/svg%3E">
 <style>
+/* ══════════════════════════════════════════════════════════
+   PLUMB — Digital Punchlist PWA
+   Palette: white #ffffff bg, charcoal #18181b text,
+   safety-orange #f97316 alert/accent.
+   Stencil-style mono headings. Blueprint-markup meets PPE.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── RESET + VARS ── */
 :root{
-  --bg:#ffffff; --hivis:#fde047; --hivis-dark:#eab308;
-  --ink:#18181b; --ink-2:#3f3f46; --muted:#71717a; --rule:#27272a;
-  --alert:#f97316; --alert-deep:#ea580c; --critical:#dc2626;
-  --safe:#16a34a; --shadow:rgba(24,24,27,0.08);
+  --bg:#ffffff;
+  --ink:#18181b;
+  --ink2:#3f3f46;
+  --muted:#71717a;
+  --rule:#d4d4d8;
+  --alert:#f97316;
+  --alert-dark:#ea580c;
+  --critical:#dc2626;
+  --critical-dark:#991b1b;
+  --safe:#16a34a;
+  --surface:#f4f4f5;
+  --overlay:rgba(24,24,27,0.7);
   --mono:ui-monospace,'SF Mono','Monaco','Consolas','Courier New',monospace;
   --sans:-apple-system,'Inter',system-ui,'Helvetica Neue',sans-serif;
+  --radius:6px;
+  --tab-h:64px;
+  --header-h:52px;
+  --safe-b:env(safe-area-inset-bottom,0px);
 }
+
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-::selection{background:var(--ink);color:var(--hivis)}
+html,body{
+  background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;
+  line-height:1.45;-webkit-font-smoothing:antialiased;
+  height:100%;overflow:hidden;
+  touch-action:manipulation;
+}
+button,input,select,textarea{
+  font:inherit;color:inherit;background:none;border:none;cursor:pointer;outline:none;
+}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--alert);outline-offset:2px;
+}
+::selection{background:var(--ink);color:var(--alert)}
+input,select,textarea{
+  background:var(--surface);border:2px solid var(--rule);
+  padding:12px;border-radius:var(--radius);font-size:15px;width:100%;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--alert)}
+select{
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2371717a' fill='none' stroke-width='2'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+}
 
-/* ── Hi-vis caution-tape header ── */
-.tape{position:sticky;top:0;z-index:50;background:var(--hivis);border-bottom:2px solid var(--ink);height:48px;display:flex;align-items:center;padding:0 16px;gap:14px;overflow:hidden}
-.tape::before,.tape::after{content:"";flex:0 0 auto;width:24px;height:32px;background:repeating-linear-gradient(135deg,var(--ink) 0 6px,transparent 6px 12px)}
-.brand{font-family:var(--mono);font-weight:800;font-size:18px;letter-spacing:0.04em;color:var(--ink);text-transform:uppercase}
-.brand span{background:var(--ink);color:var(--hivis);padding:2px 6px;margin-right:4px}
-.tape .meta{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--ink);text-transform:uppercase;margin-left:auto;display:flex;gap:14px;align-items:center}
-.tape .meta b{font-weight:800}
+/* ── REDUCED MOTION ── */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:0.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:0.01ms!important;
+  }
+}
 
-/* ── Layout ── */
-.shell{display:grid;grid-template-columns:1fr 380px;gap:0;min-height:calc(100vh - 48px)}
-@media (max-width:880px){.shell{grid-template-columns:1fr}}
-.stage{padding:24px 24px 60px;border-right:2px solid var(--ink);background:#fafafa;position:relative}
-@media (max-width:880px){.stage{border-right:none;border-bottom:2px solid var(--ink)}}
-.side{padding:24px;background:var(--bg);display:flex;flex-direction:column}
+/* ── APP SHELL ── */
+#app{display:flex;flex-direction:column;height:100%;overflow:hidden}
 
-/* ── Idle screen ── */
-.idle{display:flex;flex-direction:column;align-items:flex-start;max-width:560px;margin:40px auto 0}
-.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:var(--ink-2);margin-bottom:18px;display:inline-flex;align-items:center;gap:8px}
-.eyebrow::before{content:"";width:8px;height:8px;background:var(--alert);border-radius:50%}
-.idle h1{font-family:var(--mono);font-weight:800;font-size:clamp(38px,7vw,64px);line-height:0.95;letter-spacing:-0.02em;text-transform:uppercase;color:var(--ink);margin-bottom:14px}
-.idle h1 mark{background:var(--hivis);color:var(--ink);padding:0 4px}
-.idle p.lede{font-size:17px;color:var(--ink-2);max-width:480px;margin-bottom:28px;line-height:1.5}
-.start-btn{font-family:var(--mono);font-weight:800;font-size:17px;letter-spacing:0.12em;text-transform:uppercase;background:var(--ink);color:var(--hivis);padding:22px 32px;border:3px solid var(--ink);box-shadow:6px 6px 0 var(--hivis);transition:transform 0.1s,box-shadow 0.1s;display:inline-flex;align-items:center;gap:14px}
-.start-btn:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--hivis)}
-.start-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--hivis)}
-.start-btn::after{content:"▶";font-size:14px}
-.idle .specs{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase;margin-top:24px;display:flex;gap:18px;flex-wrap:wrap}
-.idle .specs b{color:var(--ink);font-weight:800}
+/* ══════════════════════════════════════════════════════════
+   HEADER — charcoal bar, orange accent stripe
+   ══════════════════════════════════════════════════════════ */
+.hdr{
+  height:var(--header-h);min-height:var(--header-h);
+  background:var(--ink);color:#fff;display:flex;align-items:center;
+  padding:0 12px;gap:10px;z-index:100;flex-shrink:0;
+  border-bottom:3px solid var(--alert);
+}
+.hdr-brand{
+  font-family:var(--mono);font-weight:900;font-size:18px;
+  letter-spacing:0.08em;text-transform:uppercase;color:var(--alert);
+  display:flex;align-items:center;gap:6px;
+}
+.hdr-brand svg{width:22px;height:22px;flex-shrink:0}
+.hdr-job{
+  margin-left:auto;font-family:var(--mono);font-size:11px;
+  letter-spacing:0.06em;color:var(--muted);text-align:right;
+  max-width:50%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;text-transform:uppercase;
+}
+.hdr-job b{color:#fff;font-weight:700}
 
-/* ── Phone viewport (camera sim) ── */
-.viewport-wrap{display:flex;justify-content:center;padding-top:8px}
-.viewport{width:min(100%,360px);aspect-ratio:9/19;background:#000;border:4px solid var(--ink);border-radius:36px;position:relative;overflow:hidden;box-shadow:0 24px 60px -20px var(--shadow),0 0 0 4px var(--hivis)}
-.viewport::before{content:"";position:absolute;top:14px;left:50%;transform:translateX(-50%);width:84px;height:22px;background:var(--ink);border-radius:14px;z-index:6}
-.cam{position:absolute;inset:0}
-/* Room SVG fills the cam */
-.cam svg{width:100%;height:100%;display:block}
-/* Camera HUD */
-.hud{position:absolute;inset:0;pointer-events:none;z-index:3}
-.hud .corners{position:absolute;inset:48px 18px 80px;border:1.5px solid rgba(253,224,71,0.55);border-radius:4px}
-.hud .corner{position:absolute;width:18px;height:18px;border:2px solid var(--hivis)}
-.hud .corner.tl{top:-2px;left:-2px;border-right:none;border-bottom:none}
-.hud .corner.tr{top:-2px;right:-2px;border-left:none;border-bottom:none}
-.hud .corner.bl{bottom:-2px;left:-2px;border-right:none;border-top:none}
-.hud .corner.br{bottom:-2px;right:-2px;border-left:none;border-top:none}
-.hud .topbar{position:absolute;top:48px;left:18px;right:18px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--hivis);text-transform:uppercase}
-.hud .topbar .rec{display:inline-flex;align-items:center;gap:5px}
-.hud .topbar .rec::before{content:"";width:8px;height:8px;background:var(--critical);border-radius:50%;animation:pulse 1s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-.hud .botbar{position:absolute;bottom:30px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:flex-end;font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:#fff;text-transform:uppercase}
-.hud .level{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.55);padding:4px 8px;border-left:2px solid var(--hivis)}
-.hud .bubble{width:34px;height:6px;background:rgba(255,255,255,0.15);position:relative;border-radius:2px}
-.hud .bubble::after{content:"";position:absolute;left:14px;top:-2px;width:10px;height:10px;background:var(--hivis);border-radius:50%;animation:wobble 3s ease-in-out infinite}
-@keyframes wobble{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
-.hud .counter{background:rgba(0,0,0,0.55);padding:4px 8px;border-left:2px solid var(--alert)}
-.hud .scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--hivis),transparent);animation:scan 3s linear infinite;opacity:0.6}
-@keyframes scan{0%{top:18%}100%{top:82%}}
+/* ══════════════════════════════════════════════════════════
+   SCREENS — flex column, only one active at a time
+   ══════════════════════════════════════════════════════════ */
+.screen{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  display:none;flex-direction:column;
+  -webkit-overflow-scrolling:touch;
+}
+.screen.active{display:flex}
 
-/* ── AR Markers ── */
-.marker{position:absolute;z-index:5;pointer-events:auto;cursor:pointer;animation:markerIn 0.45s cubic-bezier(.34,1.56,.64,1)}
-@keyframes markerIn{0%{transform:scale(0) rotate(-15deg);opacity:0}60%{transform:scale(1.15) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
-.crosshair{width:34px;height:34px;position:relative}
-.crosshair::before,.crosshair::after{content:"";position:absolute;background:var(--alert);box-shadow:0 0 0 1px var(--ink)}
-.crosshair::before{left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%)}
-.crosshair::after{top:50%;left:0;right:0;height:2px;transform:translateY(-50%)}
-.crosshair .ring{position:absolute;inset:0;border:2px solid var(--alert);border-radius:50%;box-shadow:0 0 0 1px var(--ink),0 0 12px rgba(249,115,22,0.6)}
-.crosshair .pulse{position:absolute;inset:-6px;border:1.5px solid var(--alert);border-radius:50%;animation:ring 1.6s ease-out infinite;opacity:0}
-@keyframes ring{0%{transform:scale(0.6);opacity:0.9}100%{transform:scale(2.2);opacity:0}}
-.marker .tag{position:absolute;top:-4px;left:42px;background:var(--ink);color:var(--hivis);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.06em;padding:5px 8px;text-transform:uppercase;white-space:nowrap;border-left:3px solid var(--alert);max-width:180px;text-overflow:ellipsis;overflow:hidden}
-.marker .tag .id{color:var(--alert);margin-right:4px}
-.marker.right .tag{left:auto;right:42px;border-left:none;border-right:3px solid var(--alert)}
-.marker.critical .crosshair::before,.marker.critical .crosshair::after,.marker.critical .crosshair .ring{background:var(--critical);border-color:var(--critical)}
-.marker.critical .tag{border-left-color:var(--critical)}
+/* ══════════════════════════════════════════════════════════
+   TAB BAR — bottom nav, industrial feel
+   ══════════════════════════════════════════════════════════ */
+.tabs{
+  display:flex;height:var(--tab-h);min-height:var(--tab-h);
+  background:var(--ink);border-top:2px solid #27272a;
+  padding-bottom:var(--safe-b);flex-shrink:0;z-index:100;
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;color:var(--muted);
+  font-family:var(--mono);font-size:9px;letter-spacing:0.12em;
+  text-transform:uppercase;min-height:48px;
+  transition:color 0.15s;position:relative;
+}
+.tab.active{color:var(--alert)}
+.tab.active::before{
+  content:"";position:absolute;top:0;left:20%;right:20%;
+  height:3px;background:var(--alert);
+}
+.tab svg{width:22px;height:22px}
+.tab-badge{
+  position:absolute;top:6px;right:calc(50% - 18px);
+  background:var(--critical);color:#fff;font-size:9px;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;padding:0 4px;
+}
 
-/* ── Sidebar ── */
-.side h2{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink);margin-bottom:4px;display:flex;justify-content:space-between;align-items:baseline}
-.side h2 .count{background:var(--alert);color:#fff;font-size:11px;padding:2px 8px;letter-spacing:0.08em}
-.side .sub{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid var(--ink)}
-.punchlist{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:200px;max-height:60vh;margin-bottom:16px}
-.empty{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;text-align:center;padding:32px 16px;border:2px dashed var(--muted);margin-top:8px}
-.item{border:2px solid var(--ink);background:var(--bg);padding:12px;display:grid;grid-template-columns:42px 1fr;gap:12px;animation:slideIn 0.35s ease-out;position:relative}
-@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
-.thumb{width:42px;height:42px;background:var(--ink);position:relative;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:800;color:var(--hivis)}
-.thumb .sev{position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg)}
-.item .body{display:flex;flex-direction:column;gap:3px;min-width:0}
-.item .title{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25}
-.item .loc{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase}
-.item .fix{font-size:12px;color:var(--ink-2);line-height:1.35;margin-top:2px}
-.item .sev-row{display:flex;gap:4px;margin-top:6px}
-.sev-chip{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.08em;padding:3px 6px;text-transform:uppercase;border:1.5px solid var(--ink);cursor:pointer;color:var(--ink);background:var(--bg);transition:all 0.1s}
-.sev-chip:hover{background:var(--hivis)}
-.sev-chip.on{background:var(--ink);color:var(--hivis)}
-.sev-chip.on.crit{background:var(--critical);color:#fff;border-color:var(--critical)}
-.sev-chip.on.maj{background:var(--alert);color:#fff;border-color:var(--alert)}
-.sev-chip.on.min{background:var(--safe);color:#fff;border-color:var(--safe)}
-.dot-crit{background:var(--critical)} .dot-maj{background:var(--alert)} .dot-min{background:var(--safe)}
+/* ══════════════════════════════════════════════════════════
+   SECTION + LAYOUT HELPERS
+   ══════════════════════════════════════════════════════════ */
+.pad{padding:16px}
+.pad-b{padding-bottom:calc(16px + var(--safe-b))}
+.section-title{
+  font-family:var(--mono);font-weight:900;font-size:13px;
+  letter-spacing:0.14em;text-transform:uppercase;color:var(--ink);
+  margin-bottom:4px;display:flex;align-items:center;
+  justify-content:space-between;
+}
+.section-sub{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.12em;
+  color:var(--muted);text-transform:uppercase;margin-bottom:12px;
+}
+.divider{height:2px;background:var(--ink);margin:16px 0}
+.card{
+  background:var(--bg);border:2px solid var(--ink);
+  padding:14px;margin-bottom:10px;border-radius:var(--radius);
+}
 
-/* Sidebar bottom actions */
-.actions{border-top:2px solid var(--ink);padding-top:14px;display:flex;flex-direction:column;gap:8px}
-.btn-primary{font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;background:var(--ink);color:var(--hivis);padding:14px 18px;border:2px solid var(--ink);text-align:left;display:flex;justify-content:space-between;align-items:center;transition:background 0.1s}
-.btn-primary:hover{background:var(--alert);color:#fff}
-.btn-primary[disabled]{opacity:0.4;cursor:not-allowed}
-.btn-primary[disabled]:hover{background:var(--ink);color:var(--hivis)}
-.btn-ghost{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-2);padding:8px 0;text-align:left}
-.btn-ghost:hover{color:var(--alert)}
-.summary{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;color:var(--ink);text-transform:uppercase;display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--ink);margin-bottom:10px}
-.summary b{font-size:14px;font-weight:800}
+/* ══════════════════════════════════════════════════════════
+   BUTTONS — chunky, stencil feel, 48px+ touch targets
+   ══════════════════════════════════════════════════════════ */
+.btn{
+  font-family:var(--mono);font-weight:800;font-size:13px;
+  letter-spacing:0.1em;text-transform:uppercase;
+  padding:16px 20px;border:2px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:52px;border-radius:var(--radius);
+  transition:all 0.1s;width:100%;
+}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:var(--ink);color:var(--alert)}
+.btn-primary:hover,.btn-primary:active{background:#27272a}
+.btn-alert{background:var(--alert);color:#fff;border-color:var(--alert)}
+.btn-alert:hover,.btn-alert:active{background:var(--alert-dark)}
+.btn-ghost{background:transparent;color:var(--ink2);border-color:var(--rule)}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-sm{padding:10px 14px;font-size:11px;min-height:40px;width:auto}
+.btn-danger{background:var(--critical);color:#fff;border-color:var(--critical)}
+.btn-danger:hover{background:var(--critical-dark)}
+.btn[disabled]{opacity:0.35;pointer-events:none}
 
-/* Stage status badge */
-.stage-status{position:absolute;top:16px;left:16px;font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--ink);background:var(--hivis);padding:6px 10px;border:2px solid var(--ink);text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;z-index:10}
-.stage-status::before{content:"";width:8px;height:8px;background:var(--critical);border-radius:50%;animation:pulse 1s infinite}
-.stage-status.done::before{background:var(--safe);animation:none}
+/* ══════════════════════════════════════════════════════════
+   CAPTURE SCREEN — camera + snap button + recent strip
+   ══════════════════════════════════════════════════════════ */
+.capture-zone{
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  padding:20px 16px;flex:1;
+}
+.cam-preview{
+  width:100%;max-width:400px;aspect-ratio:3/4;background:#000;
+  border:3px solid var(--ink);border-radius:var(--radius);
+  position:relative;overflow:hidden;
+}
+.cam-preview video,.cam-preview canvas,.cam-preview img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
+.cam-preview .hud-overlay{
+  position:absolute;inset:0;pointer-events:none;z-index:2;
+  border:2px solid rgba(249,115,22,0.3);
+}
+.cam-preview .hud-overlay::before,.cam-preview .hud-overlay::after{
+  content:"";position:absolute;width:28px;height:28px;border:2px solid var(--alert);
+}
+.cam-preview .hud-overlay::before{top:8px;left:8px;border-right:none;border-bottom:none}
+.cam-preview .hud-overlay::after{bottom:8px;right:8px;border-left:none;border-top:none}
+.cam-no-access{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;color:var(--muted);
+  font-family:var(--mono);font-size:11px;text-transform:uppercase;
+  letter-spacing:0.1em;gap:8px;padding:20px;text-align:center;
+}
+.snap-row{display:flex;gap:10px;width:100%;max-width:400px}
+.snap-btn{
+  flex:1;background:var(--alert);color:#fff;border:3px solid var(--ink);
+  font-family:var(--mono);font-weight:900;font-size:14px;
+  letter-spacing:0.1em;text-transform:uppercase;
+  padding:18px 12px;border-radius:var(--radius);min-height:56px;
+}
+.snap-btn:active{transform:scale(0.97)}
+.upload-btn{
+  width:56px;min-width:56px;background:var(--surface);border:3px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;border-radius:var(--radius);
+}
+.upload-btn:active{background:var(--rule)}
 
-/* ── Report view ── */
-.report{display:none;padding:32px 28px;background:#fff;max-width:780px;margin:0 auto;border:2px solid var(--ink);box-shadow:0 16px 40px -20px var(--shadow);position:relative}
-.report.on{display:block}
-.report::before{content:"PREVIEW";position:absolute;top:18px;right:-12px;background:var(--alert);color:#fff;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:0.2em;padding:4px 10px;transform:rotate(3deg)}
-.r-head{border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end}
-.r-head h3{font-family:var(--mono);font-weight:800;font-size:26px;letter-spacing:-0.01em;text-transform:uppercase;color:var(--ink);line-height:1}
-.r-head .sub{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;margin-top:6px}
-.r-head .meta{font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink);text-align:right}
-.r-head .meta b{display:block;color:var(--muted);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;font-weight:600}
-.r-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:2px solid var(--ink);margin-bottom:22px}
-.r-stat{padding:14px;border-right:2px solid var(--ink);text-align:center}
-.r-stat:last-child{border-right:none}
-.r-stat .n{font-family:var(--mono);font-weight:800;font-size:26px;color:var(--ink);line-height:1}
-.r-stat .l{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;margin-top:6px}
-.r-stat.alert .n{color:var(--alert)}
-.r-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:22px}
-.r-card{border:2px solid var(--ink);padding:10px;background:#fafafa}
-.r-card .ph{aspect-ratio:4/3;background:#27272a;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--hivis);text-transform:uppercase;position:relative;overflow:hidden}
-.r-card .ph::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(253,224,71,0.06) 8px 16px)}
-.r-card .ph svg{position:absolute;inset:0;width:100%;height:100%}
-.r-card .ph .pin{position:absolute;width:14px;height:14px;border:2px solid var(--alert);border-radius:50%;background:rgba(249,115,22,0.4);transform:translate(-50%,-50%)}
-.r-card .ph .pin::after{content:attr(data-n);position:absolute;left:18px;top:-4px;background:var(--ink);color:var(--hivis);font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 5px;letter-spacing:0.05em}
-.r-card .lbl{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:0.06em;margin-top:8px;line-height:1.3}
-.r-card .cost{font-family:var(--mono);font-size:10px;color:var(--alert);font-weight:700;letter-spacing:0.12em;margin-top:4px}
-.r-foot{border-top:3px solid var(--ink);padding-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:end}
-.r-foot .total{font-family:var(--mono);font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:0.12em}
-.r-foot .total b{display:block;font-size:32px;color:var(--ink);font-weight:800;margin-top:4px}
-.r-sig{border-top:2px solid var(--ink);padding-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase}
+/* ── Stats bar on capture screen ── */
+.capture-stats{
+  display:flex;gap:0;width:100%;max-width:400px;
+  border:2px solid var(--ink);border-radius:var(--radius);overflow:hidden;
+}
+.capture-stat{
+  flex:1;text-align:center;padding:8px 4px;
+  border-right:1px solid var(--rule);
+}
+.capture-stat:last-child{border-right:none}
+.capture-stat .n{font-family:var(--mono);font-weight:900;font-size:18px;color:var(--ink)}
+.capture-stat .l{font-family:var(--mono);font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em}
+.capture-stat.alert .n{color:var(--alert)}
+.capture-stat.crit .n{color:var(--critical)}
 
-.toggle-row{display:flex;gap:8px;margin-top:24px;flex-wrap:wrap}
-.toggle{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:10px 14px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-.toggle .box{width:14px;height:14px;border:2px solid var(--ink);position:relative}
-.toggle.on{background:var(--hivis);color:var(--ink)}
-.toggle.on .box::after{content:"✓";position:absolute;inset:-3px 0;font-size:14px;text-align:center;font-weight:800;color:var(--ink)}
-.back-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-2);padding:8px 0;margin-bottom:16px;display:inline-flex;align-items:center;gap:6px}
-.back-btn:hover{color:var(--alert)}
+/* ── Recent captures strip ── */
+.recent-strip{
+  width:100%;overflow-x:auto;display:flex;gap:8px;
+  padding:4px 0;flex-shrink:0;
+}
+.recent-thumb{
+  width:64px;height:64px;min-width:64px;border:2px solid var(--ink);
+  border-radius:var(--radius);overflow:hidden;position:relative;cursor:pointer;
+}
+.recent-thumb img{width:100%;height:100%;object-fit:cover}
+.recent-thumb .badge{
+  position:absolute;bottom:2px;right:2px;background:var(--alert);color:#fff;
+  font-family:var(--mono);font-size:9px;font-weight:700;
+  width:18px;height:18px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
 
-@media (max-width:560px){
-  .r-stats{grid-template-columns:repeat(2,1fr)}
-  .r-stat:nth-child(2){border-right:none}
-  .r-stat:nth-child(1),.r-stat:nth-child(2){border-bottom:2px solid var(--ink)}
-  .r-grid{grid-template-columns:1fr}
-  .r-foot{grid-template-columns:1fr}
+/* ══════════════════════════════════════════════════════════
+   ANNOTATION SCREEN — full-screen canvas overlay
+   ══════════════════════════════════════════════════════════ */
+.annotate-screen{
+  position:fixed;inset:0;z-index:200;background:var(--ink);
+  display:none;flex-direction:column;
+}
+.annotate-screen.active{display:flex}
+.annotate-top{
+  display:flex;align-items:center;padding:8px 12px;gap:10px;
+  background:rgba(24,24,27,0.95);z-index:10;min-height:48px;
+}
+.annotate-top .title{
+  font-family:var(--mono);font-size:12px;color:#fff;
+  text-transform:uppercase;letter-spacing:0.08em;flex:1;
+}
+.annotate-canvas-wrap{
+  flex:1;position:relative;overflow:hidden;touch-action:none;
+}
+.annotate-canvas-wrap canvas{position:absolute;top:0;left:0}
+.annotate-bottom{
+  background:rgba(24,24,27,0.95);padding:10px 12px;z-index:10;
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  padding-bottom:calc(10px + var(--safe-b));
+}
+.annotate-info{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.08em;width:100%;
+  margin-bottom:4px;
+}
+
+/* ── Marker circles rendered on canvas ── */
+.marker-circle{
+  position:absolute;width:32px;height:32px;border-radius:50%;
+  border:3px solid;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:11px;font-weight:900;color:#fff;
+  transform:translate(-50%,-50%);cursor:pointer;z-index:5;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+}
+.sev-1{border-color:var(--alert);background:rgba(249,115,22,0.7)}
+.sev-2{border-color:var(--critical);background:rgba(220,38,38,0.7)}
+.sev-3{border-color:#7f1d1d;background:rgba(127,29,29,0.8)}
+
+/* ══════════════════════════════════════════════════════════
+   MARKER EDIT MODAL — bottom sheet
+   ══════════════════════════════════════════════════════════ */
+.marker-modal{
+  position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.6);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.marker-modal.active{display:flex}
+.marker-modal-inner{
+  background:var(--bg);width:100%;max-width:480px;padding:20px 16px;
+  border-top:3px solid var(--alert);border-radius:12px 12px 0 0;
+  max-height:70vh;overflow-y:auto;
+  padding-bottom:calc(20px + var(--safe-b));
+}
+.marker-modal-inner h3{
+  font-family:var(--mono);font-weight:900;font-size:14px;
+  text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+}
+.field{margin-bottom:12px}
+.field label{
+  display:block;font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:4px;
+}
+.sev-picker{display:flex;gap:6px}
+.sev-opt{
+  flex:1;text-align:center;padding:12px 8px;border:2px solid var(--rule);
+  border-radius:var(--radius);font-family:var(--mono);font-size:11px;
+  font-weight:700;text-transform:uppercase;letter-spacing:0.06em;
+  min-height:48px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px;transition:all 0.1s;
+}
+.sev-opt:active{transform:scale(0.95)}
+.sev-opt.sel-1{border-color:var(--alert);background:rgba(249,115,22,0.1);color:var(--alert)}
+.sev-opt.sel-2{border-color:var(--critical);background:rgba(220,38,38,0.1);color:var(--critical)}
+.sev-opt.sel-3{border-color:#7f1d1d;background:rgba(127,29,29,0.1);color:#7f1d1d}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.modal-actions .btn{flex:1}
+
+/* ══════════════════════════════════════════════════════════
+   PUNCHLIST SCREEN — filter chips, sort bar, item list
+   ══════════════════════════════════════════════════════════ */
+.filter-row{
+  display:flex;gap:6px;overflow-x:auto;padding:12px 16px 8px;
+  flex-shrink:0;
+}
+.filter-chip{
+  font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;
+  padding:8px 12px;border:2px solid var(--rule);
+  border-radius:20px;white-space:nowrap;min-height:36px;
+  display:flex;align-items:center;gap:4px;
+  transition:all 0.1s;
+}
+.filter-chip:active{transform:scale(0.95)}
+.filter-chip.active{background:var(--ink);color:var(--alert);border-color:var(--ink)}
+.sort-bar{display:flex;gap:6px;padding:4px 16px 8px}
+.sort-btn{
+  font-family:var(--mono);font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.06em;
+  padding:5px 8px;border:1px solid var(--rule);border-radius:3px;
+  min-height:28px;transition:all 0.1s;
+}
+.sort-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ── Punchlist items ── */
+.punch-item{
+  display:flex;gap:10px;padding:14px 16px;
+  border-bottom:1px solid var(--rule);align-items:flex-start;
+  cursor:pointer;min-height:72px;transition:background 0.1s;
+}
+.punch-item:active{background:var(--surface)}
+.punch-thumb{
+  width:56px;height:56px;min-width:56px;border:2px solid var(--ink);
+  border-radius:var(--radius);overflow:hidden;position:relative;
+  background:var(--surface);
+}
+.punch-thumb img{width:100%;height:100%;object-fit:cover}
+.punch-thumb .count{
+  position:absolute;bottom:0;right:0;background:var(--alert);color:#fff;
+  font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 4px;
+}
+.punch-body{flex:1;min-width:0}
+.punch-title{font-weight:700;font-size:14px;line-height:1.3;margin-bottom:2px}
+.punch-meta{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.06em;
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+}
+.punch-sev{
+  display:inline-block;padding:2px 6px;border-radius:3px;
+  font-family:var(--mono);font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.06em;
+}
+.punch-sev-1{background:rgba(249,115,22,0.15);color:var(--alert)}
+.punch-sev-2{background:rgba(220,38,38,0.15);color:var(--critical)}
+.punch-sev-3{background:rgba(127,29,29,0.2);color:#7f1d1d}
+.punch-status{
+  font-family:var(--mono);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.06em;
+  padding:2px 6px;border-radius:3px;cursor:pointer;
+  min-height:24px;display:inline-flex;align-items:center;
+}
+.status-open{background:rgba(249,115,22,0.15);color:var(--alert)}
+.status-fixed{background:rgba(22,163,106,0.15);color:var(--safe)}
+.status-disputed{background:rgba(220,38,38,0.15);color:var(--critical)}
+.punch-cost{
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  color:var(--alert);margin-top:2px;
+}
+.punch-actions{
+  display:flex;gap:6px;margin-top:6px;
+}
+.punch-action-btn{
+  font-family:var(--mono);font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.06em;
+  padding:4px 8px;border:1px solid var(--rule);border-radius:3px;
+  color:var(--muted);min-height:28px;
+}
+.punch-action-btn:hover{border-color:var(--ink);color:var(--ink)}
+.punch-action-btn.del:hover{border-color:var(--critical);color:var(--critical)}
+
+/* ── Empty state ── */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:48px 24px;text-align:center;flex:1;
+}
+.empty-state svg{width:48px;height:48px;color:var(--muted);margin-bottom:12px}
+.empty-state p{
+  font-family:var(--mono);font-size:12px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.08em;line-height:1.6;
+}
+
+/* ══════════════════════════════════════════════════════════
+   REPORT SCREEN
+   ══════════════════════════════════════════════════════════ */
+.report-preview{
+  background:#fff;padding:24px 16px;max-width:600px;margin:0 auto;width:100%;
+}
+.rpt-cover{
+  border:2px solid var(--ink);padding:20px;margin-bottom:16px;
+  text-align:center;position:relative;
+}
+.rpt-cover::before{
+  content:"";position:absolute;inset:0;opacity:0.03;
+  background:repeating-linear-gradient(
+    45deg,var(--ink) 0 1px,transparent 1px 8px
+  );pointer-events:none;
+}
+.rpt-cover h2{
+  font-family:var(--mono);font-weight:900;font-size:22px;
+  text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;
+}
+.rpt-cover .sub{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;
+}
+.rpt-cover .info{font-size:13px;line-height:1.8;text-align:left;position:relative;z-index:1}
+.rpt-cover .info b{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.1em;display:block;
+}
+.rpt-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+  border:2px solid var(--ink);margin-bottom:16px;
+}
+.rpt-stat{
+  padding:12px;text-align:center;border-right:2px solid var(--ink);
+}
+.rpt-stat:last-child{border-right:none}
+.rpt-stat .n{font-family:var(--mono);font-weight:900;font-size:22px;color:var(--ink)}
+.rpt-stat .l{
+  font-family:var(--mono);font-size:9px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.12em;margin-top:2px;
+}
+.rpt-stat.alert .n{color:var(--alert)}
+.rpt-stat.crit .n{color:var(--critical)}
+
+/* ── Per-room section ── */
+.rpt-room{margin-bottom:20px}
+.rpt-room h3{
+  font-family:var(--mono);font-weight:900;font-size:12px;
+  text-transform:uppercase;letter-spacing:0.1em;
+  padding:8px 12px;background:var(--ink);color:var(--alert);
+  margin-bottom:8px;display:flex;justify-content:space-between;
+}
+.rpt-photo-wrap{position:relative;margin-bottom:8px}
+.rpt-photo{width:100%;border:2px solid var(--ink);display:block}
+.rpt-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+.rpt-table th{
+  font-family:var(--mono);font-size:10px;text-transform:uppercase;
+  letter-spacing:0.08em;text-align:left;padding:6px 8px;
+  border-bottom:2px solid var(--ink);color:var(--muted);
+}
+.rpt-table td{padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+.rpt-room-total{
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  text-align:right;color:var(--alert);padding:4px 8px;
+  border-top:2px solid var(--ink);
+}
+
+/* ── Report footer ── */
+.rpt-footer{border-top:3px solid var(--ink);padding-top:16px;margin-top:16px}
+.rpt-total{font-family:var(--mono);font-weight:900;font-size:20px;margin-bottom:6px}
+.rpt-breakdown{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  margin-bottom:16px;line-height:1.8;
+}
+.rpt-sig{margin-top:24px}
+.rpt-sig p{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;
+}
+.rpt-sig-line{border-bottom:1px solid var(--ink);height:40px;margin-bottom:4px}
+
+/* ══════════════════════════════════════════════════════════
+   JOBS SCREEN
+   ══════════════════════════════════════════════════════════ */
+.job-card{
+  border:2px solid var(--ink);padding:14px;margin:0 16px 10px;
+  border-radius:var(--radius);cursor:pointer;
+  display:flex;align-items:center;gap:12px;min-height:64px;
+  transition:all 0.1s;
+}
+.job-card:active{background:var(--surface)}
+.job-card.active-job{border-color:var(--alert);border-width:3px}
+.job-icon{
+  width:40px;height:40px;min-width:40px;background:var(--ink);
+  color:var(--alert);display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius);font-family:var(--mono);font-weight:900;font-size:14px;
+}
+.job-info{flex:1;min-width:0}
+.job-name{font-weight:700;font-size:14px}
+.job-client{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.06em;
+}
+.job-status-badge{
+  font-family:var(--mono);font-size:9px;font-weight:700;
+  text-transform:uppercase;padding:3px 8px;border-radius:3px;
+  letter-spacing:0.06em;
+}
+.job-active{background:rgba(249,115,22,0.15);color:var(--alert)}
+.job-complete{background:rgba(22,163,106,0.15);color:var(--safe)}
+.job-invoiced{background:var(--surface);color:var(--muted)}
+.job-actions-row{
+  display:flex;gap:6px;margin-top:6px;
+}
+
+/* ── Cost reference table ── */
+.cost-table{width:100%;border-collapse:collapse;font-size:12px}
+.cost-table th{
+  font-family:var(--mono);font-size:10px;text-transform:uppercase;
+  letter-spacing:0.06em;text-align:left;padding:8px;
+  border-bottom:2px solid var(--ink);color:var(--muted);
+}
+.cost-table td{padding:8px;border-bottom:1px solid var(--rule)}
+.cost-range{font-family:var(--mono);font-weight:700;color:var(--alert)}
+
+/* ── Contractor profile ── */
+.profile-section{padding:0 0 16px}
+.profile-section .field{margin-bottom:14px}
+
+/* ══════════════════════════════════════════════════════════
+   ONBOARDING OVERLAY
+   ══════════════════════════════════════════════════════════ */
+.onboard-overlay{
+  position:fixed;inset:0;z-index:500;background:var(--bg);
+  display:none;flex-direction:column;overflow-y:auto;
+}
+.onboard-overlay.active{display:flex}
+.onboard-inner{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:24px;max-width:420px;
+  margin:0 auto;width:100%;
+}
+.onboard-inner h1{
+  font-family:var(--mono);font-weight:900;font-size:32px;
+  text-transform:uppercase;letter-spacing:0.04em;color:var(--ink);
+  margin-bottom:4px;text-align:center;
+}
+.onboard-inner h1 span{color:var(--alert)}
+.onboard-inner p.sub{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.14em;
+  margin-bottom:28px;text-align:center;
+}
+.onboard-step{width:100%;display:none;flex-direction:column;gap:14px}
+.onboard-step.active{display:flex}
+.step-indicator{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.12em;text-align:center;
+  margin-bottom:8px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ══════════════════════════════════════════════════════════ */
+.toast-container{
+  position:fixed;top:calc(var(--header-h) + 8px);left:50%;
+  transform:translateX(-50%);z-index:400;
+  display:flex;flex-direction:column;gap:6px;align-items:center;
+  pointer-events:none;width:90%;max-width:360px;
+}
+.toast{
+  background:var(--ink);color:#fff;font-family:var(--mono);
+  font-size:12px;letter-spacing:0.06em;padding:12px 16px;
+  border-radius:var(--radius);border-left:4px solid var(--alert);
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+  animation:toastIn 0.3s ease-out,toastOut 0.3s ease-in 2.2s forwards;
+  pointer-events:auto;width:100%;
+}
+.toast.success{border-left-color:var(--safe)}
+.toast.error{border-left-color:var(--critical)}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-10px)}}
+
+/* ══════════════════════════════════════════════════════════
+   CONFIRM DIALOG
+   ══════════════════════════════════════════════════════════ */
+.confirm-overlay{
+  position:fixed;inset:0;z-index:350;background:rgba(0,0,0,0.5);
+  display:none;align-items:center;justify-content:center;padding:24px;
+}
+.confirm-overlay.active{display:flex}
+.confirm-box{
+  background:var(--bg);border:2px solid var(--ink);padding:24px;
+  border-radius:var(--radius);max-width:340px;width:100%;
+}
+.confirm-box p{
+  font-family:var(--mono);font-size:13px;text-transform:uppercase;
+  letter-spacing:0.06em;margin-bottom:16px;line-height:1.5;
+}
+.confirm-box .actions{display:flex;gap:8px}
+.confirm-box .actions .btn{flex:1}
+
+/* ══════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ══════════════════════════════════════════════════════════ */
+.hidden{display:none!important}
+.flex-1{flex:1}
+.gap-8{gap:8px}
+.row{display:flex}
+.mt-8{margin-top:8px}
+.mt-16{margin-top:16px}
+.mb-8{margin-bottom:8px}
+.mb-16{margin-bottom:16px}
+.text-center{text-align:center}
+.text-muted{color:var(--muted)}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — tablet breakpoint
+   ══════════════════════════════════════════════════════════ */
+@media(min-width:768px){
+  .capture-zone{padding:24px}
+  .cam-preview{max-width:480px}
+  .capture-stats{max-width:480px}
+  .snap-row{max-width:480px}
+  .rpt-stats{grid-template-columns:repeat(4,1fr)}
 }
 </style>
 </head>
 <body>
 
-<!-- ── Caution-tape brand bar ── -->
-<header class="tape">
-  <div class="brand"><span>P</span>LUMB</div>
-  <div class="meta">
-    <span><b>v0.4</b> · beta</span>
-    <span><b>•</b> on-device</span>
-    <span id="proj"><b>JOB</b> 1042 · Henderson reno</span>
-  </div>
-</header>
-
-<!-- ── Main shell ── -->
-<main class="shell" id="shell">
-
-  <!-- ── Stage (camera viewport / idle / report) ── -->
-  <section class="stage" id="stage">
-
-    <!-- IDLE -->
-    <div class="idle" id="idle">
-      <div class="eyebrow">AR Punchlist · Job 1042</div>
-      <h1>Walk the job.<br>Get the <mark>punchlist.</mark></h1>
-      <p class="lede">Point your phone. PLUMB auto-marks off-plumb walls, scratched paint, missing trim, code violations. Hands stay on the tools.</p>
-      <button class="start-btn" onclick="startWalk()">Start walkthrough</button>
-      <div class="specs">
-        <span><b>~90s</b> demo</span>
-        <span><b>8</b> defect types</span>
-        <span><b>iPhone Pro</b> LiDAR</span>
-        <span>offline-first</span>
-      </div>
+<div id="app">
+  <!-- ══════════════════════════════════════════════════════
+       HEADER
+       ══════════════════════════════════════════════════════ -->
+  <header class="hdr" role="banner">
+    <div class="hdr-brand" aria-label="PLUMB digital punchlist">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+        <line x1="12" y1="2" x2="12" y2="22"/>
+        <circle cx="12" cy="19" r="2.5" fill="currentColor"/>
+        <line x1="6" y1="10" x2="18" y2="10" stroke-dasharray="2 2" stroke-width="1.5"/>
+      </svg>
+      PLUMB
     </div>
+    <div class="hdr-job" id="hdrJob" aria-live="polite">No active job</div>
+  </header>
 
-    <!-- CAMERA VIEW -->
-    <div class="viewport-wrap" id="cameraWrap" style="display:none">
-      <div class="stage-status" id="stageStatus">Scanning — Living Room</div>
-      <div class="viewport">
-        <div class="cam">
-          <!-- SVG room interior: a simplified plan/elevation -->
-          <svg viewBox="0 0 360 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <defs>
-              <linearGradient id="floor" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stop-color="#3f3320"/>
-                <stop offset="1" stop-color="#1a1410"/>
-              </linearGradient>
-              <linearGradient id="wallL" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stop-color="#e8dccc"/>
-                <stop offset="1" stop-color="#c9bba6"/>
-              </linearGradient>
-              <linearGradient id="wallR" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stop-color="#c9bba6"/>
-                <stop offset="1" stop-color="#e8dccc"/>
-              </linearGradient>
-              <linearGradient id="wallC" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stop-color="#dccfb9"/>
-                <stop offset="1" stop-color="#b9ab93"/>
-              </linearGradient>
-              <pattern id="dust" width="3" height="3" patternUnits="userSpaceOnUse">
-                <circle cx="1" cy="1" r="0.4" fill="rgba(255,255,255,0.06)"/>
-              </pattern>
-            </defs>
-            <!-- Ceiling -->
-            <polygon points="0,0 360,0 290,180 70,180" fill="#a89880"/>
-            <!-- Back wall -->
-            <polygon points="70,180 290,180 290,520 70,520" fill="url(#wallC)"/>
-            <!-- Left wall -->
-            <polygon points="0,0 70,180 70,520 0,650" fill="url(#wallL)"/>
-            <!-- Right wall -->
-            <polygon points="360,0 290,180 290,520 360,650" fill="url(#wallR)"/>
-            <!-- Floor -->
-            <polygon points="70,520 290,520 360,650 360,760 0,760 0,650" fill="url(#floor)"/>
-            <!-- Baseboard trim with visible gap (right wall) -->
-            <polygon points="290,510 360,640 360,650 290,520" fill="#f1e6d2"/>
-            <polygon points="70,510 290,510 290,520 70,520" fill="#f1e6d2"/>
-            <polygon points="0,640 70,510 70,520 0,650" fill="#f1e6d2"/>
-            <!-- Trim gap (notch) -->
-            <rect x="200" y="505" width="14" height="18" fill="#1a1410"/>
-            <!-- Window frame back wall -->
-            <rect x="115" y="230" width="130" height="160" fill="#a8c4dc" stroke="#fff" stroke-width="3"/>
-            <line x1="180" y1="230" x2="180" y2="390" stroke="#fff" stroke-width="3"/>
-            <line x1="115" y1="310" x2="245" y2="310" stroke="#fff" stroke-width="3"/>
-            <!-- Outlet (missing cover - dark hole on left wall) -->
-            <rect x="22" y="420" width="20" height="32" fill="#0a0a0a"/>
-            <rect x="22" y="420" width="20" height="32" fill="none" stroke="#5a4d3c" stroke-width="1"/>
-            <line x1="27" y1="430" x2="37" y2="430" stroke="#fbbf24" stroke-width="1.5"/>
-            <line x1="27" y1="438" x2="37" y2="438" stroke="#fbbf24" stroke-width="1.5"/>
-            <!-- Paint scuff (back wall lower) -->
-            <ellipse cx="240" cy="475" rx="22" ry="6" fill="#9a8b75" opacity="0.7"/>
-            <ellipse cx="232" cy="480" rx="14" ry="4" fill="#7a6c58" opacity="0.6"/>
-            <!-- Off-plumb wall hint: slight tilt indicator (back wall joint) -->
-            <line x1="262" y1="180" x2="270" y2="520" stroke="#8a7a60" stroke-width="1.2"/>
-            <!-- Door frame (right wall) - reveal gap -->
-            <rect x="295" y="200" width="60" height="280" fill="#8a7556" opacity="0.5"/>
-            <rect x="300" y="210" width="50" height="265" fill="#1a1410"/>
-            <!-- Drywall crack (right wall upper) -->
-            <path d="M 310 250 L 318 280 L 314 310 L 322 340" stroke="#6a5a48" stroke-width="1.2" fill="none"/>
-            <!-- Ceiling stain -->
-            <ellipse cx="180" cy="120" rx="32" ry="8" fill="#8a7a5a" opacity="0.5"/>
-            <!-- Floor scratches -->
-            <line x1="100" y1="600" x2="180" y2="640" stroke="#2a2018" stroke-width="1" opacity="0.6"/>
-            <line x1="120" y1="610" x2="200" y2="650" stroke="#2a2018" stroke-width="1" opacity="0.4"/>
-            <!-- Dust overlay -->
-            <rect width="360" height="760" fill="url(#dust)"/>
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN: CAPTURE
+       ══════════════════════════════════════════════════════ -->
+  <div class="screen active" id="screenCapture" role="main" aria-label="Capture defects">
+    <div class="capture-zone">
+      <!-- Stats bar -->
+      <div class="capture-stats" id="captureStats">
+        <div class="capture-stat"><div class="n" id="statPhotos">0</div><div class="l">Photos</div></div>
+        <div class="capture-stat alert"><div class="n" id="statDefects">0</div><div class="l">Defects</div></div>
+        <div class="capture-stat crit"><div class="n" id="statSafety">0</div><div class="l">Safety</div></div>
+        <div class="capture-stat"><div class="n" id="statCost">$0</div><div class="l">Est.</div></div>
+      </div>
+
+      <!-- Camera preview -->
+      <div class="cam-preview" id="camPreview">
+        <video id="camVideo" autoplay playsinline muted></video>
+        <canvas id="camCanvas" class="hidden"></canvas>
+        <div class="cam-no-access hidden" id="camNoAccess">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M8 5V3h8v2"/><line x1="2" y1="2" x2="22" y2="22" stroke-width="2"/></svg>
+          Camera unavailable. Use upload button.
+        </div>
+        <div class="hud-overlay"></div>
+      </div>
+
+      <!-- Snap + upload buttons -->
+      <div class="snap-row">
+        <button class="snap-btn" id="btnSnap" onclick="snapPhoto()" aria-label="Snap defect photo">
+          SNAP DEFECT
+        </button>
+        <button class="upload-btn" id="btnUpload" onclick="document.getElementById('fileInput').click()" aria-label="Upload photo from gallery">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
           </svg>
-        </div>
-
-        <!-- HUD overlay -->
-        <div class="hud">
-          <div class="corners">
-            <div class="corner tl"></div><div class="corner tr"></div>
-            <div class="corner bl"></div><div class="corner br"></div>
-          </div>
-          <div class="topbar">
-            <span class="rec">REC · 00:<span id="recT">00</span></span>
-            <span>LiDAR · 1080P</span>
-          </div>
-          <div class="botbar">
-            <div class="level">PLUMB <div class="bubble"></div> <span id="lvlDeg">2.4°</span></div>
-            <div class="counter">DEFECTS · <span id="defN">0</span></div>
-          </div>
-          <div class="scan-line"></div>
-        </div>
-
-        <!-- AR markers injected here -->
-        <div id="markers" style="position:absolute;inset:0;z-index:4"></div>
+        </button>
+        <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden" onchange="handleFileUpload(event)">
       </div>
-    </div>
 
-    <!-- REPORT VIEW -->
-    <div class="report" id="report">
-      <button class="back-btn" onclick="backToWalk()">← Back to walkthrough</button>
-      <div class="r-head">
-        <div>
-          <h3>Punchlist Report</h3>
-          <div class="sub">Job 1042 · 2114 Henderson Ave · Living room reno</div>
-        </div>
-        <div class="meta">
-          <b>Contractor</b>
-          R. Vega Carpentry<br>
-          <b>Date</b>
-          <span id="rDate">May 22 · 2026</span><br>
-          <b>Walkthrough</b>
-          0:47 · 1 zone
+      <!-- Recent captures -->
+      <div class="section-title mt-16">
+        Recent captures
+        <span id="captureCount" style="font-size:11px;color:var(--alert)">0</span>
+      </div>
+      <div class="recent-strip" id="recentStrip">
+        <div class="empty-state" style="padding:16px;width:100%">
+          <p>No photos yet. Snap or upload a defect.</p>
         </div>
       </div>
-      <div class="r-stats">
-        <div class="r-stat"><div class="n" id="rCount">0</div><div class="l">Defects</div></div>
-        <div class="r-stat alert"><div class="n" id="rCrit">0</div><div class="l">Critical</div></div>
-        <div class="r-stat"><div class="n" id="rEst">$0</div><div class="l">Est. fix</div></div>
-        <div class="r-stat"><div class="n" id="rHours">0h</div><div class="l">Labor</div></div>
-      </div>
-      <div class="r-grid" id="rGrid"></div>
-      <div class="r-foot">
-        <div class="total">Change-order total <b id="rTotal">$0</b></div>
-        <div class="r-sig">Client signature ────────────────────</div>
-      </div>
-      <div class="toggle-row">
-        <button class="toggle on" id="tSend" onclick="this.classList.toggle('on')"><span class="box"></span>Send to client</button>
-        <button class="toggle on" id="tInv" onclick="this.classList.toggle('on')"><span class="box"></span>Add to invoice</button>
-        <button class="toggle" id="tInsur" onclick="this.classList.toggle('on')"><span class="box"></span>Flag for insurance</button>
-      </div>
     </div>
-  </section>
+  </div>
 
-  <!-- ── Sidebar punchlist ── -->
-  <aside class="side">
-    <h2>Punchlist <span class="count" id="sCount">0</span></h2>
-    <div class="sub" id="sStatus">Idle · awaiting walkthrough</div>
-    <div class="summary" id="sSummary" style="display:none">
-      <span>Critical <b style="color:var(--critical)" id="sCrit">0</b></span>
-      <span>Major <b style="color:var(--alert)" id="sMaj">0</b></span>
-      <span>Minor <b style="color:var(--safe)" id="sMin">0</b></span>
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN: PUNCHLIST
+       ══════════════════════════════════════════════════════ -->
+  <div class="screen" id="screenPunch" role="main" aria-label="Punchlist">
+    <div class="filter-row" id="filterRow"></div>
+    <div class="sort-bar">
+      <button class="sort-btn active" data-sort="date" onclick="setSort('date')">Date</button>
+      <button class="sort-btn" data-sort="severity" onclick="setSort('severity')">Severity</button>
+      <button class="sort-btn" data-sort="room" onclick="setSort('room')">Room</button>
     </div>
-    <div class="punchlist" id="list">
-      <div class="empty">No defects logged. Start a walkthrough.</div>
+    <div id="punchSummary" class="pad" style="padding-top:0;padding-bottom:8px"></div>
+    <div id="punchList" class="flex-1"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN: REPORT
+       ══════════════════════════════════════════════════════ -->
+  <div class="screen" id="screenReport" role="main" aria-label="Report">
+    <div class="pad">
+      <div class="section-title mb-8">Report Preview</div>
+      <div class="section-sub" id="reportSub">Generate a branded punchlist for your client</div>
+      <div id="reportContent"></div>
+      <div class="row gap-8 mt-16" style="flex-wrap:wrap">
+        <button class="btn btn-alert flex-1" onclick="downloadReport()" id="btnDownloadReport" style="min-width:140px">
+          Download Report
+        </button>
+        <button class="btn btn-ghost flex-1" onclick="downloadJSON()" style="min-width:140px">
+          Export JSON Backup
+        </button>
+      </div>
     </div>
+    <div class="pad pad-b"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN: JOBS + SETTINGS
+       ══════════════════════════════════════════════════════ -->
+  <div class="screen" id="screenJobs" role="main" aria-label="Jobs and Settings">
+    <div class="pad">
+      <div class="section-title mb-8">
+        Jobs
+        <button class="btn btn-sm btn-primary" onclick="showJobWizard()">+ New Job</button>
+      </div>
+    </div>
+    <div id="jobsList"></div>
+    <div class="divider" style="margin:8px 16px"></div>
+    <div class="pad">
+      <div class="section-title mb-8">Contractor Profile</div>
+      <div class="profile-section" id="profileSection"></div>
+    </div>
+    <div class="divider" style="margin:8px 16px"></div>
+    <div class="pad">
+      <div class="section-title mb-8">Cost Reference (per defect type)</div>
+      <table class="cost-table">
+        <thead><tr><th>Defect Type</th><th>Low</th><th>Mid</th><th>High</th></tr></thead>
+        <tbody id="costRefTable"></tbody>
+      </table>
+    </div>
+    <div class="pad">
+      <div class="section-title mb-8">Data</div>
+      <button class="btn btn-ghost mb-8" onclick="exportAllJobs()">Export All Jobs (JSON)</button>
+      <button class="btn btn-danger" onclick="confirmClearAll()">Clear All Data</button>
+    </div>
+    <div class="pad pad-b"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB BAR
+       ══════════════════════════════════════════════════════ -->
+  <nav class="tabs" role="tablist" aria-label="Main navigation">
+    <button class="tab active" role="tab" aria-selected="true" data-screen="screenCapture" onclick="switchTab(this)" aria-label="Capture">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M8 5V3h8v2"/></svg>
+      Capture
+    </button>
+    <button class="tab" role="tab" aria-selected="false" data-screen="screenPunch" onclick="switchTab(this)" aria-label="Punchlist">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      Punchlist
+      <span class="tab-badge hidden" id="punchBadge">0</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" data-screen="screenReport" onclick="switchTab(this)" aria-label="Report">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Report
+    </button>
+    <button class="tab" role="tab" aria-selected="false" data-screen="screenJobs" onclick="switchTab(this)" aria-label="Jobs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+      Jobs
+    </button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TOAST CONTAINER
+     ══════════════════════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     ANNOTATION OVERLAY
+     ══════════════════════════════════════════════════════ -->
+<div class="annotate-screen" id="annotateScreen" role="dialog" aria-label="Annotate photo" aria-modal="true">
+  <div class="annotate-top">
+    <button class="btn btn-sm btn-ghost" onclick="cancelAnnotation()" style="border-color:#555;color:#fff" aria-label="Cancel annotation">Cancel</button>
+    <div class="title">Tap to place markers</div>
+    <button class="btn btn-sm btn-alert" onclick="saveAnnotation()" aria-label="Save annotated photo">Save</button>
+  </div>
+  <div class="annotate-canvas-wrap" id="annotateWrap">
+    <canvas id="annotateCanvas"></canvas>
+  </div>
+  <div class="annotate-bottom">
+    <div class="annotate-info" id="annotateInfo">0 markers placed</div>
+    <select id="annotateRoom" style="flex:1;min-width:120px;background:var(--ink);color:#fff;border-color:#555" aria-label="Room tag">
+      <option value="kitchen">Kitchen</option>
+      <option value="bath">Bathroom</option>
+      <option value="bedroom">Bedroom</option>
+      <option value="living">Living Room</option>
+      <option value="hallway">Hallway</option>
+      <option value="exterior">Exterior</option>
+      <option value="garage">Garage</option>
+      <option value="basement">Basement</option>
+      <option value="other">Other</option>
+    </select>
+    <button class="btn btn-sm" onclick="undoLastMarker()" style="border-color:#555;color:#fff;width:auto" aria-label="Undo last marker">Undo</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MARKER EDIT MODAL
+     ══════════════════════════════════════════════════════ -->
+<div class="marker-modal" id="markerModal" role="dialog" aria-label="Edit defect marker" aria-modal="true">
+  <div class="marker-modal-inner">
+    <h3>
+      <span style="background:var(--alert);color:#fff;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px" id="modalMarkerNum">1</span>
+      Defect Details
+    </h3>
+    <div class="field">
+      <label for="markerType">Defect Type</label>
+      <select id="markerType">
+        <option value="off-plumb">Off-plumb</option>
+        <option value="paint-defect">Paint defect</option>
+        <option value="trim-gap">Trim gap</option>
+        <option value="missing-cover">Missing cover plate</option>
+        <option value="drywall-damage">Drywall damage</option>
+        <option value="fixture-issue">Fixture issue</option>
+        <option value="cleanup-needed">Cleanup needed</option>
+        <option value="code-violation">Code violation</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Severity</label>
+      <div class="sev-picker" id="sevPicker">
+        <button class="sev-opt sel-1" data-sev="1" onclick="pickSev(1)" aria-label="Cosmetic severity">
+          <span style="font-size:16px">1</span>
+          Cosmetic
+        </button>
+        <button class="sev-opt" data-sev="2" onclick="pickSev(2)" aria-label="Functional severity">
+          <span style="font-size:16px">2</span>
+          Functional
+        </button>
+        <button class="sev-opt" data-sev="3" onclick="pickSev(3)" aria-label="Safety severity">
+          <span style="font-size:16px">3</span>
+          Safety
+        </button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="markerNote">Note</label>
+      <textarea id="markerNote" rows="3" placeholder="Describe the defect..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" onclick="deleteCurrentMarker()" id="btnDeleteMarker" aria-label="Delete this marker">Delete</button>
+      <button class="btn btn-primary" onclick="saveMarkerDetails()" aria-label="Save marker details">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ONBOARDING
+     ══════════════════════════════════════════════════════ -->
+<div class="onboard-overlay" id="onboardOverlay">
+  <div class="onboard-inner">
+    <h1>P<span>L</span>UMB</h1>
+    <p class="sub">Your digital punchlist</p>
+
+    <!-- Step 1: Profile -->
+    <div class="onboard-step active" id="onboardStep1">
+      <div class="step-indicator">Step 1 of 3 -- Your info</div>
+      <div class="field"><label for="obName">Your Name</label><input id="obName" placeholder="e.g. R. Vega" autocomplete="name"></div>
+      <div class="field"><label for="obCompany">Company</label><input id="obCompany" placeholder="e.g. Vega Carpentry" autocomplete="organization"></div>
+      <div class="field"><label for="obPhone">Phone</label><input id="obPhone" type="tel" placeholder="(555) 123-4567" autocomplete="tel"></div>
+      <div class="field"><label for="obEmail">Email</label><input id="obEmail" type="email" placeholder="you@company.com" autocomplete="email"></div>
+      <div class="field"><label for="obLicense">License # (optional)</label><input id="obLicense" placeholder=""></div>
+      <button class="btn btn-primary mt-8" onclick="onboardNext(1)">Next</button>
+    </div>
+
+    <!-- Step 2: First job -->
+    <div class="onboard-step" id="onboardStep2">
+      <div class="step-indicator">Step 2 of 3 -- First job</div>
+      <div class="field"><label for="obJobName">Project Name</label><input id="obJobName" placeholder="e.g. Henderson kitchen reno"></div>
+      <div class="field"><label for="obClient">Client Name</label><input id="obClient" placeholder="e.g. Sarah Henderson"></div>
+      <div class="field"><label for="obAddress">Address</label><input id="obAddress" placeholder="e.g. 2114 Henderson Ave"></div>
+      <button class="btn btn-primary mt-8" onclick="onboardNext(2)">Create Job</button>
+    </div>
+
+    <!-- Step 3: Ready -->
+    <div class="onboard-step" id="onboardStep3">
+      <div class="step-indicator">Step 3 of 3 -- Ready</div>
+      <div style="text-align:center;padding:20px 0">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--safe)" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <p style="font-family:var(--mono);font-size:13px;margin-top:12px;text-transform:uppercase;letter-spacing:0.08em">
+          You're set. Go snap some defects.
+        </p>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px">
+          Sample job loaded with 4 annotated photos.
+        </p>
+      </div>
+      <button class="btn btn-alert mt-8" onclick="finishOnboard()">Start Working</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     JOB WIZARD MODAL
+     ══════════════════════════════════════════════════════ -->
+<div class="marker-modal" id="jobWizard" role="dialog" aria-label="New Job" aria-modal="true">
+  <div class="marker-modal-inner">
+    <h3>New Job</h3>
+    <div class="field"><label for="wizJobName">Project Name</label><input id="wizJobName" placeholder="Kitchen reno phase 2"></div>
+    <div class="field"><label for="wizClient">Client Name</label><input id="wizClient" placeholder="Client name"></div>
+    <div class="field"><label for="wizAddress">Address</label><input id="wizAddress" placeholder="123 Main St"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="hideJobWizard()">Cancel</button>
+      <button class="btn btn-primary" onclick="createJobFromWizard()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CONFIRM DIALOG
+     ══════════════════════════════════════════════════════ -->
+<div class="confirm-overlay" id="confirmOverlay" role="alertdialog" aria-modal="true">
+  <div class="confirm-box">
+    <p id="confirmMsg">Are you sure?</p>
     <div class="actions">
-      <button class="btn-primary" id="genBtn" onclick="generateReport()" disabled>Generate report →</button>
-      <button class="btn-ghost" onclick="resetAll()">↺ Reset walkthrough</button>
+      <button class="btn btn-ghost btn-sm" onclick="confirmCancel()">Cancel</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmOk()" id="confirmOkBtn">Confirm</button>
     </div>
-  </aside>
-
-</main>
+  </div>
+</div>
 
 <script>
-// ── Defect library ──
-const DEFECTS = [
-  { id:'D1', label:'Wall 3° off-plumb · joint @ 4ft', loc:'Back wall · NE corner', fix:'Reset top plate, re-shim. ~2hr labor.', cost:185, sev:'major', x:'66%', y:'34%', side:'right' },
-  { id:'D2', label:'Outlet missing cover plate', loc:'Left wall · 36" AFF', fix:'Install standard duplex plate. <5min.', cost:12, sev:'critical', x:'13%', y:'56%', side:'left' },
-  { id:'D3', label:'Paint scuff — wall A near base', loc:'Back wall · 4ft from S corner', fix:'Spot-prime + touch-up matched.', cost:48, sev:'minor', x:'66%', y:'62%', side:'right' },
-  { id:'D4', label:'Trim gap > 1/8" (code)', loc:'Baseboard · back wall mid', fix:'Caulk gap, re-set quarter-round.', cost:35, sev:'major', x:'58%', y:'67%', side:'right' },
-  { id:'D5', label:'Drywall crack · vertical 8"', loc:'Right wall · upper near jamb', fix:'Tape, mud, sand. Re-paint section.', cost:120, sev:'major', x:'84%', y:'38%', side:'left' },
-  { id:'D6', label:'Ceiling stain · moisture flag', loc:'Center ceiling · 14sf', fix:'Investigate above. Kilz + paint.', cost:160, sev:'critical', x:'48%', y:'16%', side:'right' },
-  { id:'D7', label:'Floor scratch · refinish needed', loc:'Hardwood · entry path', fix:'Sand strip, stain match, poly.', cost:95, sev:'minor', x:'40%', y:'82%', side:'right' },
-  { id:'D8', label:'Window seal gap · air leak', loc:'Back wall window · top frame', fix:'Re-caulk perimeter, replace gasket.', cost:55, sev:'minor', x:'40%', y:'30%', side:'right' }
-];
+/* ══════════════════════════════════════════════════════════
+   PLUMB — Digital Punchlist PWA
+   Single-file, no dependencies, localStorage persistence.
+   All inline. No build. No npm. Vanilla CSS + JS.
+   ══════════════════════════════════════════════════════════ */
 
-// ── State ──
-const state = { walking:false, defects:[], timer:null, recSec:0 };
+// ══════════════════════════════════════════════════════════
+// COST LOOKUP TABLE — typical fix costs by defect type
+// ══════════════════════════════════════════════════════════
+const COST_TABLE = {
+  'off-plumb':       { label:'Off-plumb wall',          low:150, mid:350, high:800 },
+  'paint-defect':    { label:'Paint touch-up',          low:25,  mid:75,  high:200 },
+  'trim-gap':        { label:'Trim re-nail + caulk',    low:35,  mid:75,  high:150 },
+  'missing-cover':   { label:'Replace outlet cover',    low:5,   mid:10,  high:25  },
+  'drywall-damage':  { label:'Drywall patch + texture', low:75,  mid:150, high:350 },
+  'fixture-issue':   { label:'Fixture repair/replace',  low:50,  mid:150, high:400 },
+  'cleanup-needed':  { label:'General cleanup',         low:25,  mid:60,  high:150 },
+  'code-violation':  { label:'Code violation fix',      low:100, mid:300, high:800 },
+  'other':           { label:'Other repair',            low:50,  mid:125, high:300 },
+};
 
+// ══════════════════════════════════════════════════════════
+// CONSTANTS — rooms, labels, severity
+// ══════════════════════════════════════════════════════════
+const ROOMS = ['kitchen','bath','bedroom','living','hallway','exterior','garage','basement','other'];
+const ROOM_LABELS = {
+  kitchen:'Kitchen', bath:'Bathroom', bedroom:'Bedroom',
+  living:'Living Room', hallway:'Hallway', exterior:'Exterior',
+  garage:'Garage', basement:'Basement', other:'Other'
+};
+const SEV_LABELS = { 1:'Cosmetic', 2:'Functional', 3:'Safety' };
+const DEFECT_LABELS = {
+  'off-plumb':'Off-plumb', 'paint-defect':'Paint defect',
+  'trim-gap':'Trim gap', 'missing-cover':'Missing cover plate',
+  'drywall-damage':'Drywall damage', 'fixture-issue':'Fixture issue',
+  'cleanup-needed':'Cleanup needed', 'code-violation':'Code violation',
+  'other':'Other'
+};
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let db = { profile:{}, jobs:[], activeJobId:null };
+let camStream = null;
+let annotateState = {
+  photoData:null, markers:[], editingIdx:-1,
+  itemId:null, imgW:0, imgH:0, dragging:-1
+};
+let currentSort = 'date';
+let currentRoomFilter = 'all';
+let confirmCallback = null;
+
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
 const $ = id => document.getElementById(id);
-const list = $('list'), markers = $('markers');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const today = () => new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 
-function startWalk(){
-  $('idle').style.display = 'none';
-  $('cameraWrap').style.display = 'flex';
-  $('report').classList.remove('on');
-  state.walking = true;
-  state.defects = [];
-  state.recSec = 0;
-  markers.innerHTML = '';
-  renderList();
-  $('genBtn').disabled = true;
-  // Tick recording timer
-  state.timer = setInterval(() => {
-    state.recSec++;
-    $('recT').textContent = String(state.recSec).padStart(2,'0');
-    // Wobble the level reading for liveness
-    const deg = (Math.sin(state.recSec/2) * 1.8 + 2.4).toFixed(1);
-    $('lvlDeg').textContent = deg + '°';
-  }, 1000);
-  // Inject defects one by one
-  DEFECTS.forEach((d, i) => {
-    setTimeout(() => addDefect(d, i), 1800 + i * 1900);
+function save() {
+  try { localStorage.setItem('plumb_db', JSON.stringify(db)); }
+  catch(e) { console.warn('Storage full', e); toast('Storage full. Delete old jobs.', 'error'); }
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem('plumb_db');
+    if (d) db = JSON.parse(d);
+  } catch(e) { console.warn('Failed to load data', e); }
+}
+
+function activeJob() {
+  return db.jobs.find(j => j.id === db.activeJobId) || null;
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST NOTIFICATIONS
+// ══════════════════════════════════════════════════════════
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  el.setAttribute('role', 'status');
+  $('toastContainer').appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 2600);
+}
+
+// ══════════════════════════════════════════════════════════
+// CONFIRM DIALOG
+// ══════════════════════════════════════════════════════════
+function showConfirm(msg, cb) {
+  $('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  $('confirmOverlay').classList.add('active');
+}
+function confirmOk() {
+  $('confirmOverlay').classList.remove('active');
+  if (confirmCallback) confirmCallback();
+  confirmCallback = null;
+}
+function confirmCancel() {
+  $('confirmOverlay').classList.remove('active');
+  confirmCallback = null;
+}
+
+// ══════════════════════════════════════════════════════════
+// PWA MANIFEST (inline blob URL)
+// ══════════════════════════════════════════════════════════
+function installManifest() {
+  const iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">'
+    + '<rect width="192" height="192" rx="24" fill="#18181b"/>'
+    + '<line x1="96" y1="32" x2="96" y2="160" stroke="#f97316" stroke-width="16" stroke-linecap="round"/>'
+    + '<circle cx="96" cy="144" r="14" fill="#f97316"/>'
+    + '<line x1="56" y1="88" x2="136" y2="88" stroke="#fff" stroke-width="6" stroke-dasharray="8 8"/>'
+    + '</svg>';
+  const m = {
+    name: 'PLUMB',
+    short_name: 'PLUMB',
+    description: 'Digital punchlist for contractors',
+    start_url: location.href,
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#18181b',
+    theme_color: '#18181b',
+    icons: [{
+      src: 'data:image/svg+xml,' + encodeURIComponent(iconSvg),
+      sizes: '192x192',
+      type: 'image/svg+xml'
+    }]
+  };
+  const b = new Blob([JSON.stringify(m)], { type: 'application/manifest+json' });
+  const l = document.createElement('link');
+  l.rel = 'manifest';
+  l.href = URL.createObjectURL(b);
+  document.head.appendChild(l);
+}
+
+// ══════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ══════════════════════════════════════════════════════════
+function switchTab(el) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.remove('active');
+    t.setAttribute('aria-selected', 'false');
   });
-  // Finish state after the last one
-  setTimeout(() => {
-    $('stageStatus').textContent = 'Scan complete · ' + DEFECTS.length + ' defects logged';
-    $('stageStatus').classList.add('done');
-    if (state.timer) clearInterval(state.timer);
-  }, 1800 + DEFECTS.length * 1900 + 800);
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  el.setAttribute('aria-selected', 'true');
+  $(el.dataset.screen).classList.add('active');
+
+  if (el.dataset.screen === 'screenCapture') { startCamera(); updateCaptureStats(); }
+  else stopCamera();
+  if (el.dataset.screen === 'screenPunch') renderPunchlist();
+  if (el.dataset.screen === 'screenReport') renderReport();
+  if (el.dataset.screen === 'screenJobs') { renderJobs(); renderProfile(); renderCostRef(); }
 }
 
-function addDefect(d, idx){
-  if (!state.walking) return;
-  const m = document.createElement('div');
-  m.className = 'marker' + (d.sev === 'critical' ? ' critical' : '') + (d.side === 'right' ? ' right' : '');
-  m.style.left = d.x;
-  m.style.top = d.y;
-  m.innerHTML = `<div class="crosshair"><div class="ring"></div><div class="pulse"></div></div><div class="tag"><span class="id">${d.id}</span>${d.label}</div>`;
-  m.title = d.label;
-  m.onclick = () => { /* could open detail */ };
-  markers.appendChild(m);
-  state.defects.push({...d});
-  $('defN').textContent = state.defects.length;
-  renderList();
-  if (state.defects.length >= 3) $('genBtn').disabled = false;
+// ══════════════════════════════════════════════════════════
+// CAMERA — getUserMedia with rear-cam preference
+// ══════════════════════════════════════════════════════════
+async function startCamera() {
+  if (camStream) return;
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1920 } },
+      audio: false
+    });
+    $('camVideo').srcObject = camStream;
+    $('camVideo').classList.remove('hidden');
+    $('camNoAccess').classList.add('hidden');
+  } catch(e) {
+    console.warn('Camera unavailable:', e);
+    $('camVideo').classList.add('hidden');
+    $('camNoAccess').classList.remove('hidden');
+  }
 }
 
-function renderList(){
-  $('sCount').textContent = state.defects.length;
-  if (!state.defects.length){
-    list.innerHTML = '<div class="empty">No defects logged. Start a walkthrough.</div>';
-    $('sStatus').textContent = state.walking ? 'Scanning…' : 'Idle · awaiting walkthrough';
-    $('sSummary').style.display = 'none';
+function stopCamera() {
+  if (camStream) {
+    camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
+    $('camVideo').srcObject = null;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// PHOTO CAPTURE — snap from live feed or file upload
+// ══════════════════════════════════════════════════════════
+function snapPhoto() {
+  const job = activeJob();
+  if (!job) { toast('Create a job first', 'error'); return; }
+  const v = $('camVideo');
+  if (!camStream || !v.videoWidth) {
+    $('fileInput').click();
     return;
   }
-  $('sStatus').textContent = state.walking ? 'Live · auto-detecting' : 'Walkthrough complete';
-  $('sSummary').style.display = 'flex';
-  const crit = state.defects.filter(d => d.sev==='critical').length;
-  const maj  = state.defects.filter(d => d.sev==='major').length;
-  const min  = state.defects.filter(d => d.sev==='minor').length;
-  $('sCrit').textContent = crit; $('sMaj').textContent = maj; $('sMin').textContent = min;
-  list.innerHTML = state.defects.map((d, i) => {
-    const sevClass = d.sev === 'critical' ? 'crit' : d.sev === 'major' ? 'maj' : 'min';
-    const dotClass = d.sev === 'critical' ? 'dot-crit' : d.sev === 'major' ? 'dot-maj' : 'dot-min';
-    return `
-      <div class="item">
-        <div class="thumb">${d.id}<span class="sev ${dotClass}"></span></div>
-        <div class="body">
-          <div class="title">${escapeHtml(d.label)}</div>
-          <div class="loc">${escapeHtml(d.loc)}</div>
-          <div class="fix">${escapeHtml(d.fix)} <b style="color:var(--alert)">$${d.cost}</b></div>
-          <div class="sev-row">
-            <button class="sev-chip ${d.sev==='critical'?'on crit':''}" onclick="setSev(${i},'critical')">Critical</button>
-            <button class="sev-chip ${d.sev==='major'?'on maj':''}" onclick="setSev(${i},'major')">Major</button>
-            <button class="sev-chip ${d.sev==='minor'?'on min':''}" onclick="setSev(${i},'minor')">Minor</button>
-          </div>
+  const c = document.createElement('canvas');
+  const maxW = 1200;
+  let w = v.videoWidth, h = v.videoHeight;
+  if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(v, 0, 0, w, h);
+  const data = c.toDataURL('image/jpeg', 0.82);
+  openAnnotation(data);
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const job = activeJob();
+  if (!job) { toast('Create a job first', 'error'); e.target.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const c = document.createElement('canvas');
+      const maxW = 1200;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      openAnnotation(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+// ══════════════════════════════════════════════════════════
+// CAPTURE STATS — summary bar on capture screen
+// ══════════════════════════════════════════════════════════
+function updateCaptureStats() {
+  const job = activeJob();
+  if (!job) {
+    $('statPhotos').textContent = '0';
+    $('statDefects').textContent = '0';
+    $('statSafety').textContent = '0';
+    $('statCost').textContent = '$0';
+    return;
+  }
+  const photos = job.items.length;
+  let defects = 0, safety = 0, costLow = 0;
+  job.items.forEach(item => {
+    item.markers.forEach(m => {
+      defects++;
+      if (m.severity === 3) safety++;
+      const ct = COST_TABLE[m.type] || COST_TABLE.other;
+      costLow += ct.mid;
+    });
+  });
+  $('statPhotos').textContent = photos;
+  $('statDefects').textContent = defects;
+  $('statSafety').textContent = safety;
+  $('statCost').textContent = '$' + costLow;
+}
+
+// ══════════════════════════════════════════════════════════
+// ANNOTATION — full-screen canvas for placing markers
+// ══════════════════════════════════════════════════════════
+function openAnnotation(photoData, existingItem) {
+  annotateState = {
+    photoData, markers: [],
+    editingIdx: -1,
+    itemId: existingItem ? existingItem.id : null,
+    imgW: 0, imgH: 0, dragging: -1
+  };
+  if (existingItem) {
+    annotateState.markers = JSON.parse(JSON.stringify(existingItem.markers || []));
+    $('annotateRoom').value = existingItem.room || 'kitchen';
+  }
+  $('annotateScreen').classList.add('active');
+  const img = new Image();
+  img.onload = function() {
+    annotateState.imgW = img.width;
+    annotateState.imgH = img.height;
+    layoutAnnotateCanvas();
+    drawAnnotation();
+    updateAnnotateInfo();
+  };
+  img.src = photoData;
+  window.addEventListener('resize', layoutAnnotateCanvas);
+}
+
+function layoutAnnotateCanvas() {
+  const wrap = $('annotateWrap');
+  const canvas = $('annotateCanvas');
+  const ww = wrap.clientWidth, wh = wrap.clientHeight;
+  const iw = annotateState.imgW, ih = annotateState.imgH;
+  if (!iw || !ih) return;
+  const scale = Math.min(ww / iw, wh / ih);
+  const cw = Math.round(iw * scale), ch = Math.round(ih * scale);
+  canvas.width = cw; canvas.height = ch;
+  canvas.style.width = cw + 'px';
+  canvas.style.height = ch + 'px';
+  canvas.style.left = Math.round((ww - cw) / 2) + 'px';
+  canvas.style.top = Math.round((wh - ch) / 2) + 'px';
+  drawAnnotation();
+}
+
+function drawAnnotation() {
+  const canvas = $('annotateCanvas');
+  const ctx = canvas.getContext('2d');
+  const cw = canvas.width, ch = canvas.height;
+  ctx.clearRect(0, 0, cw, ch);
+  const img = new Image();
+  img.onload = function() {
+    ctx.drawImage(img, 0, 0, cw, ch);
+    // Draw each marker
+    annotateState.markers.forEach((m, i) => {
+      const x = m.xPct * cw / 100;
+      const y = m.yPct * ch / 100;
+      const colors = { 1: '#f97316', 2: '#dc2626', 3: '#7f1d1d' };
+      const col = colors[m.severity] || colors[1];
+      // Outer glow
+      ctx.beginPath();
+      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.fillStyle = col + '33';
+      ctx.fill();
+      // Circle
+      ctx.beginPath();
+      ctx.arc(x, y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = col + 'CC';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+      // Number
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(i + 1), x, y + 0.5);
+    });
+  };
+  img.src = annotateState.photoData;
+}
+
+function updateAnnotateInfo() {
+  const n = annotateState.markers.length;
+  $('annotateInfo').textContent = n + ' marker' + (n !== 1 ? 's' : '') + ' placed';
+}
+
+// ── Canvas pointer events: place, tap-to-edit, drag ──
+(function setupAnnotateEvents() {
+  const canvas = $('annotateCanvas');
+  let pointerStartTime = 0;
+  let pointerMoved = false;
+
+  canvas.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    const rect = this.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const cw = this.width, ch = this.height;
+    const sx = cw / rect.width, sy = ch / rect.height;
+    const cx = px * sx, cy = py * sy;
+    pointerStartTime = Date.now();
+    pointerMoved = false;
+
+    // Check if hitting existing marker (within radius)
+    for (let i = annotateState.markers.length - 1; i >= 0; i--) {
+      const mx = annotateState.markers[i].xPct * cw / 100;
+      const my = annotateState.markers[i].yPct * ch / 100;
+      if (Math.hypot(cx - mx, cy - my) < 22) {
+        annotateState.dragging = i;
+        return;
+      }
+    }
+    annotateState.dragging = -1;
+  });
+
+  canvas.addEventListener('pointermove', function(e) {
+    if (annotateState.dragging < 0) return;
+    e.preventDefault();
+    pointerMoved = true;
+    const rect = this.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const xPct = Math.max(0, Math.min(100, px / rect.width * 100));
+    const yPct = Math.max(0, Math.min(100, py / rect.height * 100));
+    annotateState.markers[annotateState.dragging].xPct = xPct;
+    annotateState.markers[annotateState.dragging].yPct = yPct;
+    drawAnnotation();
+  });
+
+  canvas.addEventListener('pointerup', function(e) {
+    e.preventDefault();
+    const rect = this.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const cw = this.width, ch = this.height;
+    const sx = cw / rect.width, sy = ch / rect.height;
+    const cx = px * sx, cy = py * sy;
+    const elapsed = Date.now() - pointerStartTime;
+
+    if (annotateState.dragging >= 0) {
+      if (!pointerMoved && elapsed < 300) {
+        // Tap on existing marker → edit
+        openMarkerModal(annotateState.dragging);
+      }
+      annotateState.dragging = -1;
+      return;
+    }
+
+    // Tap on empty space → place new marker
+    const xPct = px / rect.width * 100;
+    const yPct = py / rect.height * 100;
+    annotateState.markers.push({
+      xPct, yPct, type: 'other', severity: 1, note: ''
+    });
+    drawAnnotation();
+    updateAnnotateInfo();
+    openMarkerModal(annotateState.markers.length - 1);
+  });
+
+  canvas.addEventListener('pointercancel', function() {
+    annotateState.dragging = -1;
+  });
+})();
+
+// ══════════════════════════════════════════════════════════
+// MARKER MODAL — edit type, severity, note
+// ══════════════════════════════════════════════════════════
+function openMarkerModal(idx) {
+  annotateState.editingIdx = idx;
+  const m = annotateState.markers[idx];
+  $('modalMarkerNum').textContent = idx + 1;
+  $('markerType').value = m.type;
+  $('markerNote').value = m.note || '';
+  pickSev(m.severity);
+  $('btnDeleteMarker').classList.toggle('hidden', annotateState.markers.length <= 0);
+  $('markerModal').classList.add('active');
+}
+
+function pickSev(s) {
+  annotateState._tempSev = s;
+  document.querySelectorAll('.sev-opt').forEach(el => {
+    const sv = parseInt(el.dataset.sev);
+    el.className = 'sev-opt' + (sv === s ? ' sel-' + s : '');
+  });
+}
+
+function saveMarkerDetails() {
+  const idx = annotateState.editingIdx;
+  if (idx < 0) return;
+  const m = annotateState.markers[idx];
+  m.type = $('markerType').value;
+  m.severity = annotateState._tempSev || 1;
+  m.note = $('markerNote').value.trim();
+  $('markerModal').classList.remove('active');
+  drawAnnotation();
+  updateAnnotateInfo();
+}
+
+function deleteCurrentMarker() {
+  const idx = annotateState.editingIdx;
+  if (idx < 0) return;
+  annotateState.markers.splice(idx, 1);
+  $('markerModal').classList.remove('active');
+  drawAnnotation();
+  updateAnnotateInfo();
+}
+
+function undoLastMarker() {
+  if (annotateState.markers.length) {
+    annotateState.markers.pop();
+    drawAnnotation();
+    updateAnnotateInfo();
+  }
+}
+
+function cancelAnnotation() {
+  $('annotateScreen').classList.remove('active');
+  $('markerModal').classList.remove('active');
+  window.removeEventListener('resize', layoutAnnotateCanvas);
+}
+
+function saveAnnotation() {
+  const job = activeJob();
+  if (!job) return;
+  const item = {
+    id: annotateState.itemId || uid(),
+    photo: annotateState.photoData,
+    markers: annotateState.markers,
+    room: $('annotateRoom').value,
+    notes: '',
+    status: 'open',
+    date: annotateState.itemId
+      ? (job.items.find(it => it.id === annotateState.itemId) || {}).date || new Date().toISOString()
+      : new Date().toISOString()
+  };
+  if (annotateState.itemId) {
+    const idx = job.items.findIndex(it => it.id === item.id);
+    if (idx >= 0) job.items[idx] = item;
+  } else {
+    job.items.push(item);
+  }
+  save();
+  $('annotateScreen').classList.remove('active');
+  $('markerModal').classList.remove('active');
+  window.removeEventListener('resize', layoutAnnotateCanvas);
+  renderRecentStrip();
+  updateBadge();
+  updateCaptureStats();
+  toast(annotateState.itemId ? 'Photo updated' : 'Defect captured', 'success');
+}
+
+// ══════════════════════════════════════════════════════════
+// RECENT STRIP — thumbnails on capture screen
+// ══════════════════════════════════════════════════════════
+function renderRecentStrip() {
+  const job = activeJob();
+  const strip = $('recentStrip');
+  if (!job || !job.items.length) {
+    strip.innerHTML = '<div class="empty-state" style="padding:16px;width:100%"><p>No photos yet. Snap or upload a defect.</p></div>';
+    $('captureCount').textContent = '0';
+    return;
+  }
+  $('captureCount').textContent = job.items.length;
+  strip.innerHTML = job.items.slice().reverse().map(it => `
+    <div class="recent-thumb" onclick="editItem('${it.id}')" aria-label="Edit photo in ${ROOM_LABELS[it.room] || it.room}">
+      <img src="${it.photo}" alt="Defect photo" loading="lazy">
+      <div class="badge">${it.markers.length}</div>
+    </div>
+  `).join('');
+}
+
+function editItem(itemId) {
+  const job = activeJob();
+  if (!job) return;
+  const item = job.items.find(it => it.id === itemId);
+  if (!item) return;
+  openAnnotation(item.photo, item);
+}
+
+// ══════════════════════════════════════════════════════════
+// PUNCHLIST SCREEN
+// ══════════════════════════════════════════════════════════
+function renderPunchlist() {
+  const job = activeJob();
+  renderFilters();
+  renderPunchSummary();
+  const list = $('punchList');
+
+  if (!job || !job.items.length) {
+    list.innerHTML = '<div class="empty-state">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M8 5V3h8v2"/></svg>'
+      + '<p>No defects yet.<br>Go to Capture to start.</p></div>';
+    return;
+  }
+
+  // Build flat list: one entry per photo (not per marker)
+  let entries = job.items.slice();
+
+  // Filter by room
+  if (currentRoomFilter !== 'all') {
+    entries = entries.filter(e => e.room === currentRoomFilter);
+  }
+
+  // Sort
+  if (currentSort === 'severity') {
+    entries.sort((a, b) => {
+      const maxSevA = a.markers.length ? Math.max(...a.markers.map(m => m.severity)) : 0;
+      const maxSevB = b.markers.length ? Math.max(...b.markers.map(m => m.severity)) : 0;
+      return maxSevB - maxSevA;
+    });
+  } else if (currentSort === 'room') {
+    entries.sort((a, b) => a.room.localeCompare(b.room));
+  } else {
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty-state"><p>No defects match this filter.</p></div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(item => {
+    const maxSev = item.markers.length ? Math.max(...item.markers.map(m => m.severity)) : 1;
+    const types = [...new Set(item.markers.map(m => DEFECT_LABELS[m.type] || m.type))];
+    const typeSummary = types.slice(0, 2).join(', ') + (types.length > 2 ? '...' : '');
+    const costTotal = item.markers.reduce((s, m) => {
+      const c = COST_TABLE[m.type] || COST_TABLE.other;
+      return s + c.mid;
+    }, 0);
+    const statusClass = item.status === 'fixed' ? 'status-fixed'
+      : item.status === 'disputed' ? 'status-disputed' : 'status-open';
+
+    return `<div class="punch-item">
+      <div class="punch-thumb" onclick="editItem('${item.id}')">
+        <img src="${item.photo}" alt="" loading="lazy">
+        <div class="count">${item.markers.length}</div>
+      </div>
+      <div class="punch-body">
+        <div class="punch-title">${esc(typeSummary || 'No markers')}</div>
+        <div class="punch-meta">
+          <span class="punch-sev punch-sev-${maxSev}">${SEV_LABELS[maxSev]}</span>
+          <span>${ROOM_LABELS[item.room] || item.room}</span>
+          <span>${item.markers.length} defect${item.markers.length !== 1 ? 's' : ''}</span>
         </div>
-      </div>`;
+        <div class="punch-meta mt-8">
+          <span class="punch-status ${statusClass}" onclick="event.stopPropagation();cycleStatus('${item.id}')">${item.status}</span>
+          <span class="punch-cost">$${costTotal}</span>
+        </div>
+        <div class="punch-actions">
+          <button class="punch-action-btn" onclick="event.stopPropagation();editItem('${item.id}')">Edit</button>
+          <button class="punch-action-btn del" onclick="event.stopPropagation();deleteItem('${item.id}')">Delete</button>
+        </div>
+      </div>
+    </div>`;
   }).join('');
 }
 
-function setSev(i, sev){
-  state.defects[i].sev = sev;
-  renderList();
+function renderPunchSummary() {
+  const job = activeJob();
+  const el = $('punchSummary');
+  if (!job || !job.items.length) { el.innerHTML = ''; return; }
+
+  let total = 0, sev1 = 0, sev2 = 0, sev3 = 0, costLow = 0, costHigh = 0;
+  job.items.forEach(item => {
+    item.markers.forEach(m => {
+      total++;
+      if (m.severity === 1) sev1++;
+      else if (m.severity === 2) sev2++;
+      else sev3++;
+      const c = COST_TABLE[m.type] || COST_TABLE.other;
+      costLow += c.low; costHigh += c.high;
+    });
+  });
+
+  el.innerHTML = `<div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap">
+    <span>${total} defects</span>
+    <span style="color:var(--alert)">${sev1} cosmetic</span>
+    <span style="color:var(--critical)">${sev2} functional</span>
+    <span style="color:#7f1d1d">${sev3} safety</span>
+    <span style="color:var(--alert);font-weight:700">$${costLow}-${costHigh}</span>
+  </div>`;
 }
 
-function generateReport(){
-  state.walking = false;
-  if (state.timer) clearInterval(state.timer);
-  $('cameraWrap').style.display = 'none';
-  $('idle').style.display = 'none';
-  $('report').classList.add('on');
-  const total = state.defects.reduce((s,d) => s + d.cost, 0);
-  const crit = state.defects.filter(d => d.sev==='critical').length;
-  const hours = Math.ceil(state.defects.length * 0.8);
-  $('rCount').textContent = state.defects.length;
-  $('rCrit').textContent = crit;
-  $('rEst').textContent = '$' + total;
-  $('rHours').textContent = hours + 'h';
-  $('rTotal').textContent = '$' + total + '.00';
-  $('rDate').textContent = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}).replace(',', ' ·');
-  // Build photo grid: a stylized room thumbnail per defect with pin overlay
-  $('rGrid').innerHTML = state.defects.slice(0, 6).map((d, i) => {
-    const sevColor = d.sev==='critical' ? 'var(--critical)' : d.sev==='major' ? 'var(--alert)' : 'var(--safe)';
-    return `
-      <div class="r-card">
-        <div class="ph">
-          <svg viewBox="0 0 200 150" preserveAspectRatio="none">
-            <polygon points="0,0 200,0 165,40 35,40" fill="#a89880"/>
-            <polygon points="35,40 165,40 165,105 35,105" fill="#d8c9b3"/>
-            <polygon points="0,0 35,40 35,105 0,130" fill="#c4b598"/>
-            <polygon points="200,0 165,40 165,105 200,130" fill="#c4b598"/>
-            <polygon points="35,105 165,105 200,130 200,150 0,150 0,130" fill="#2c241a"/>
-            <rect x="60" y="55" width="40" height="35" fill="#8da8b8"/>
-          </svg>
-          <div class="pin" data-n="${d.id}" style="left:${d.x};top:${d.y};border-color:${sevColor};background:${sevColor}40"></div>
+function cycleStatus(itemId) {
+  const job = activeJob(); if (!job) return;
+  const item = job.items.find(it => it.id === itemId); if (!item) return;
+  const cycle = ['open', 'fixed', 'disputed'];
+  item.status = cycle[(cycle.indexOf(item.status) + 1) % cycle.length];
+  save();
+  renderPunchlist();
+  toast('Status: ' + item.status, 'success');
+}
+
+function deleteItem(itemId) {
+  showConfirm('Delete this photo and all its markers?', function() {
+    const job = activeJob(); if (!job) return;
+    job.items = job.items.filter(it => it.id !== itemId);
+    save();
+    renderPunchlist();
+    renderRecentStrip();
+    updateBadge();
+    updateCaptureStats();
+    toast('Photo deleted', 'success');
+  });
+}
+
+function renderFilters() {
+  const job = activeJob();
+  const row = $('filterRow');
+  if (!job) { row.innerHTML = ''; return; }
+  const rooms = new Set(job.items.map(it => it.room));
+  let html = `<button class="filter-chip${currentRoomFilter === 'all' ? ' active' : ''}" onclick="setRoomFilter('all')">All</button>`;
+  rooms.forEach(r => {
+    const count = job.items.filter(it => it.room === r).length;
+    html += `<button class="filter-chip${currentRoomFilter === r ? ' active' : ''}" onclick="setRoomFilter('${r}')">${ROOM_LABELS[r] || r} (${count})</button>`;
+  });
+  row.innerHTML = html;
+}
+
+function setRoomFilter(r) { currentRoomFilter = r; renderPunchlist(); }
+function setSort(s) {
+  currentSort = s;
+  document.querySelectorAll('.sort-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.sort === s);
+  });
+  renderPunchlist();
+}
+
+function updateBadge() {
+  const job = activeJob();
+  const count = job ? job.items.reduce((s, it) => s + it.markers.length, 0) : 0;
+  const badge = $('punchBadge');
+  badge.textContent = count;
+  badge.classList.toggle('hidden', count === 0);
+}
+
+// ══════════════════════════════════════════════════════════
+// REPORT — composites annotated photos, generates printable HTML
+// ══════════════════════════════════════════════════════════
+function renderReport() {
+  const job = activeJob();
+  const el = $('reportContent');
+  if (!job || !job.items.length) {
+    el.innerHTML = '<div class="empty-state"><p>No defects to report.<br>Capture some first.</p></div>';
+    $('btnDownloadReport').disabled = true;
+    return;
+  }
+  $('btnDownloadReport').disabled = false;
+
+  const profile = db.profile || {};
+
+  // Aggregate stats
+  let totalLow = 0, totalMid = 0, totalHigh = 0, totalItems = 0;
+  const bySev = { 1: 0, 2: 0, 3: 0 };
+  const byRoom = {};
+  job.items.forEach(item => {
+    if (!byRoom[item.room]) byRoom[item.room] = [];
+    byRoom[item.room].push(item);
+    item.markers.forEach(m => {
+      totalItems++;
+      bySev[m.severity] = (bySev[m.severity] || 0) + 1;
+      const c = COST_TABLE[m.type] || COST_TABLE.other;
+      totalLow += c.low;
+      totalMid += c.mid;
+      totalHigh += c.high;
+    });
+  });
+
+  // Cover page
+  let html = `
+    <div class="rpt-cover">
+      <h2>Punchlist Report</h2>
+      <div class="sub">${esc(job.name)}</div>
+      <div class="info">
+        <b>Contractor</b>${esc(profile.name || '--')}${profile.company ? ' / ' + esc(profile.company) : ''}
+        ${profile.phone ? '<br><b>Phone</b>' + esc(profile.phone) : ''}
+        ${profile.license ? '<br><b>License</b>' + esc(profile.license) : ''}
+        <br><b>Client</b>${esc(job.client || '--')}
+        <br><b>Address</b>${esc(job.address || '--')}
+        <br><b>Date</b>${today()}
+        <br><b>Total Items</b>${totalItems}
+      </div>
+    </div>`;
+
+  // Stats row
+  html += `
+    <div class="rpt-stats">
+      <div class="rpt-stat"><div class="n">${totalItems}</div><div class="l">Defects</div></div>
+      <div class="rpt-stat crit"><div class="n">${bySev[3] || 0}</div><div class="l">Safety</div></div>
+      <div class="rpt-stat alert"><div class="n">$${totalMid}</div><div class="l">Est. Cost</div></div>
+    </div>`;
+
+  // Per-room sections
+  for (const room of Object.keys(byRoom)) {
+    const items = byRoom[room];
+    let roomLow = 0, roomHigh = 0;
+    items.forEach(it => it.markers.forEach(m => {
+      const c = COST_TABLE[m.type] || COST_TABLE.other;
+      roomLow += c.low; roomHigh += c.high;
+    }));
+
+    html += `<div class="rpt-room"><h3><span>${ROOM_LABELS[room] || room}</span><span>${items.reduce((s, it) => s + it.markers.length, 0)} defects</span></h3>`;
+
+    items.forEach(item => {
+      // Render photo with marker overlay using canvas compositing
+      html += `<div class="rpt-photo-wrap"><canvas class="rpt-photo" data-photo="${item.id}"></canvas></div>`;
+
+      if (item.markers.length) {
+        html += `<table class="rpt-table"><thead><tr><th>#</th><th>Type</th><th>Sev.</th><th>Note</th><th>Est.</th></tr></thead><tbody>`;
+        item.markers.forEach((m, i) => {
+          const c = COST_TABLE[m.type] || COST_TABLE.other;
+          html += `<tr>
+            <td style="font-family:var(--mono);font-weight:700">${i + 1}</td>
+            <td>${esc(DEFECT_LABELS[m.type] || m.type)}</td>
+            <td><span class="punch-sev punch-sev-${m.severity}">${SEV_LABELS[m.severity]}</span></td>
+            <td>${esc(m.note || '--')}</td>
+            <td class="cost-range">$${c.low}-${c.high}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+    });
+
+    html += `<div class="rpt-room-total">Room subtotal: $${roomLow} - $${roomHigh}</div></div>`;
+  }
+
+  // Footer
+  html += `
+    <div class="rpt-footer">
+      <div class="rpt-total">Estimated Total: $${totalLow} - $${totalHigh}</div>
+      <div class="rpt-breakdown">
+        Cosmetic: ${bySev[1] || 0} items<br>
+        Functional: ${bySev[2] || 0} items<br>
+        Safety: ${bySev[3] || 0} items
+      </div>
+      <div class="rpt-sig">
+        <p>Client Acknowledgment</p>
+        <div class="rpt-sig-line"></div>
+        <p>Signature _________________________________ Date: _______________</p>
+      </div>
+    </div>`;
+
+  el.innerHTML = html;
+
+  // Render annotated photos onto canvases
+  setTimeout(() => renderReportPhotos(job), 50);
+}
+
+function renderReportPhotos(job) {
+  document.querySelectorAll('canvas[data-photo]').forEach(canvas => {
+    const itemId = canvas.dataset.photo;
+    const item = job.items.find(it => it.id === itemId);
+    if (!item) return;
+    const img = new Image();
+    img.onload = function() {
+      // Scale to fit report width (max ~560px display, render at 2x for quality)
+      const maxW = 560;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+      canvas.width = w;
+      canvas.height = h;
+      canvas.style.width = '100%';
+      canvas.style.height = 'auto';
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // Draw markers
+      item.markers.forEach((m, i) => {
+        const x = m.xPct * w / 100;
+        const y = m.yPct * h / 100;
+        const colors = { 1: '#f97316', 2: '#dc2626', 3: '#7f1d1d' };
+        const col = colors[m.severity] || colors[1];
+        ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2);
+        ctx.fillStyle = col + 'CC'; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), x, y + 0.5);
+      });
+    };
+    img.src = item.photo;
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// DOWNLOAD REPORT — as standalone HTML file
+// ══════════════════════════════════════════════════════════
+function downloadReport() {
+  const job = activeJob(); if (!job) return;
+  const profile = db.profile || {};
+  const css = 'body{font-family:-apple-system,system-ui,sans-serif;font-size:14px;color:#18181b;max-width:800px;margin:0 auto;padding:20px;line-height:1.5}img,canvas{max-width:100%;height:auto}table{width:100%;border-collapse:collapse;margin:8px 0 16px}th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#71717a;padding:6px 8px;border-bottom:2px solid #18181b}td{padding:6px 8px;border-bottom:1px solid #d4d4d8;font-size:12px}h2,h3{font-family:ui-monospace,monospace}.cover{border:2px solid #18181b;padding:20px;margin-bottom:16px;text-align:center}.cover h2{font-weight:900;font-size:22px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}.sub{font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}.info{font-size:13px;line-height:1.8;text-align:left}.info b{font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:.1em;display:block}.stats{display:grid;grid-template-columns:repeat(3,1fr);border:2px solid #18181b;margin-bottom:16px}.stat{padding:12px;text-align:center;border-right:2px solid #18181b}.stat:last-child{border-right:none}.stat .n{font-family:ui-monospace,monospace;font-weight:900;font-size:22px}.stat .l{font-size:9px;color:#71717a;text-transform:uppercase;letter-spacing:.12em;margin-top:2px}.room h3{background:#18181b;color:#f97316;padding:8px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;display:flex;justify-content:space-between}.photo{width:100%;border:2px solid #18181b;margin-bottom:8px}.footer{border-top:3px solid #18181b;padding-top:16px;margin-top:16px}.total{font-family:ui-monospace,monospace;font-weight:900;font-size:20px;margin-bottom:6px}.sig{margin-top:24px;font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:.1em}.sig-line{border-bottom:1px solid #18181b;height:40px;margin-bottom:4px}.sev{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase}.sev-1{background:rgba(249,115,22,.15);color:#f97316}.sev-2{background:rgba(220,38,38,.15);color:#dc2626}.sev-3{background:rgba(127,29,29,.2);color:#7f1d1d}.cost{font-family:ui-monospace,monospace;font-weight:700;color:#f97316}.room-total{font-family:ui-monospace,monospace;font-size:11px;font-weight:700;text-align:right;color:#f97316;padding:4px 8px;border-top:2px solid #18181b}@media print{body{padding:0}img,canvas{break-inside:avoid}.room{break-inside:avoid}}';
+  let r = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Punchlist - ${esc(job.name)}</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body>`;
+  // Aggregate
+  let tL=0,tM=0,tH=0,tI=0; const bS={1:0,2:0,3:0},bR={};
+  job.items.forEach(it=>{if(!bR[it.room])bR[it.room]=[];bR[it.room].push(it);it.markers.forEach(m=>{tI++;bS[m.severity]=(bS[m.severity]||0)+1;const c=COST_TABLE[m.type]||COST_TABLE.other;tL+=c.low;tM+=c.mid;tH+=c.high})});
+  r+=`<div class="cover"><h2>Punchlist Report</h2><div class="sub">${esc(job.name)}</div><div class="info"><b>Contractor</b>${esc(profile.name||'--')}${profile.company?' / '+esc(profile.company):''}${profile.phone?'<br><b>Phone</b>'+esc(profile.phone):''}${profile.license?'<br><b>License</b>'+esc(profile.license):''}<br><b>Client</b>${esc(job.client||'--')}<br><b>Address</b>${esc(job.address||'--')}<br><b>Date</b>${today()}<br><b>Total Items</b>${tI}</div></div>`;
+  r+=`<div class="stats"><div class="stat"><div class="n">${tI}</div><div class="l">Defects</div></div><div class="stat"><div class="n" style="color:#dc2626">${bS[3]||0}</div><div class="l">Safety</div></div><div class="stat"><div class="n" style="color:#f97316">$${tM}</div><div class="l">Est. Cost</div></div></div>`;
+  for(const room of Object.keys(bR)){const items=bR[room];let rL=0,rH=0;items.forEach(it=>it.markers.forEach(m=>{const c=COST_TABLE[m.type]||COST_TABLE.other;rL+=c.low;rH+=c.high}));r+=`<div class="room"><h3><span>${ROOM_LABELS[room]||room}</span><span>${items.reduce((s,it)=>s+it.markers.length,0)} defects</span></h3>`;items.forEach(item=>{r+=`<img class="photo" src="${item.photo}" alt="Defect photo">`;if(item.markers.length){r+=`<table><thead><tr><th>#</th><th>Type</th><th>Sev.</th><th>Note</th><th>Est.</th></tr></thead><tbody>`;item.markers.forEach((m,i)=>{const c=COST_TABLE[m.type]||COST_TABLE.other;r+=`<tr><td style="font-family:ui-monospace,monospace;font-weight:700">${i+1}</td><td>${esc(DEFECT_LABELS[m.type]||m.type)}</td><td><span class="sev sev-${m.severity}">${SEV_LABELS[m.severity]}</span></td><td>${esc(m.note||'--')}</td><td class="cost">$${c.low}-${c.high}</td></tr>`});r+=`</tbody></table>`}});r+=`<div class="room-total">Room subtotal: $${rL} - $${rH}</div></div>`}
+  r+=`<div class="footer"><div class="total">Estimated Total: $${tL} - $${tH}</div><p style="font-size:11px;color:#71717a;margin-bottom:16px;line-height:1.8">Cosmetic: ${bS[1]||0} | Functional: ${bS[2]||0} | Safety: ${bS[3]||0}</p><div class="sig"><p>Client Acknowledgment</p><div class="sig-line"></div><p>Signature _________________________________ Date: _______________</p></div></div></body></html>`;
+  const blob=new Blob([r],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`punchlist-${job.name.replace(/\s+/g,'-').toLowerCase()}-${Date.now()}.html`;a.click();URL.revokeObjectURL(a.href);
+  toast('Report downloaded','success');
+}
+
+// ══════════════════════════════════════════════════════════
+// EXPORT — JSON backup
+// ══════════════════════════════════════════════════════════
+function downloadJSON() {
+  const job = activeJob();
+  if (!job) { toast('No active job', 'error'); return; }
+  const exportData = {
+    job,
+    profile: db.profile,
+    exportDate: new Date().toISOString(),
+    version: '1.0'
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `plumb-${job.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('JSON exported', 'success');
+}
+
+function exportAllJobs() {
+  const exportData = {
+    ...db,
+    exportDate: new Date().toISOString(),
+    version: '1.0'
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `plumb-all-jobs-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('All jobs exported', 'success');
+}
+
+function confirmClearAll() {
+  showConfirm('Delete ALL data? This cannot be undone.', function() {
+    localStorage.removeItem('plumb_db');
+    db = { profile: {}, jobs: [], activeJobId: null };
+    updateHeader();
+    renderRecentStrip();
+    updateBadge();
+    updateCaptureStats();
+    toast('All data cleared', 'success');
+    renderJobs();
+    renderProfile();
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// JOBS SCREEN
+// ══════════════════════════════════════════════════════════
+function renderJobs() {
+  const el = $('jobsList');
+  if (!db.jobs.length) {
+    el.innerHTML = '<div class="pad"><p style="font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">No jobs yet. Create one to get started.</p></div>';
+    return;
+  }
+  el.innerHTML = db.jobs.map(j => {
+    const isActive = j.id === db.activeJobId;
+    const statusClass = j.status === 'complete' ? 'job-complete'
+      : j.status === 'invoiced' ? 'job-invoiced' : 'job-active';
+    const itemCount = j.items ? j.items.length : 0;
+    const markerCount = j.items ? j.items.reduce((s, it) => s + (it.markers ? it.markers.length : 0), 0) : 0;
+
+    return `<div class="job-card${isActive ? ' active-job' : ''}" onclick="setActiveJob('${j.id}')">
+      <div class="job-icon">${itemCount}</div>
+      <div class="job-info">
+        <div class="job-name">${esc(j.name)}</div>
+        <div class="job-client">${esc(j.client || '--')} | ${markerCount} defects</div>
+        <div class="job-actions-row">
+          <button class="punch-action-btn" onclick="event.stopPropagation();cycleJobStatus('${j.id}')">${j.status}</button>
+          <button class="punch-action-btn del" onclick="event.stopPropagation();deleteJob('${j.id}')">Delete</button>
         </div>
-        <div class="lbl">${escapeHtml(d.label)}</div>
-        <div class="cost">$${d.cost} · ${escapeHtml(d.loc)}</div>
-      </div>`;
+      </div>
+      <span class="job-status-badge ${statusClass}">${isActive ? 'ACTIVE' : ''}</span>
+    </div>`;
   }).join('');
 }
 
-function backToWalk(){
-  $('report').classList.remove('on');
-  if (state.defects.length) $('cameraWrap').style.display = 'flex';
-  else $('idle').style.display = 'flex';
+function setActiveJob(id) {
+  db.activeJobId = id;
+  save();
+  updateHeader();
+  renderJobs();
+  renderRecentStrip();
+  updateBadge();
+  updateCaptureStats();
+  toast('Switched to: ' + (activeJob() || {}).name, 'success');
 }
 
-function resetAll(){
-  state.walking = false;
-  state.defects = [];
-  state.recSec = 0;
-  if (state.timer) clearInterval(state.timer);
-  markers.innerHTML = '';
-  $('defN').textContent = '0';
-  $('recT').textContent = '00';
-  $('stageStatus').textContent = 'Scanning — Living Room';
-  $('stageStatus').classList.remove('done');
-  $('cameraWrap').style.display = 'none';
-  $('report').classList.remove('on');
-  $('idle').style.display = 'flex';
-  $('genBtn').disabled = true;
-  renderList();
+function cycleJobStatus(id) {
+  const job = db.jobs.find(j => j.id === id);
+  if (!job) return;
+  const cycle = ['active', 'complete', 'invoiced'];
+  job.status = cycle[(cycle.indexOf(job.status) + 1) % cycle.length];
+  save();
+  renderJobs();
+  toast('Job status: ' + job.status, 'success');
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+function deleteJob(id) {
+  showConfirm('Delete this job and all its data?', function() {
+    db.jobs = db.jobs.filter(j => j.id !== id);
+    if (db.activeJobId === id) {
+      db.activeJobId = db.jobs.length ? db.jobs[0].id : null;
+    }
+    save();
+    updateHeader();
+    renderJobs();
+    renderRecentStrip();
+    updateBadge();
+    updateCaptureStats();
+    toast('Job deleted', 'success');
+  });
 }
+
+function showJobWizard() {
+  $('jobWizard').classList.add('active');
+  $('wizJobName').value = '';
+  $('wizClient').value = '';
+  $('wizAddress').value = '';
+  setTimeout(() => $('wizJobName').focus(), 100);
+}
+function hideJobWizard() { $('jobWizard').classList.remove('active'); }
+
+function createJobFromWizard() {
+  const name = $('wizJobName').value.trim();
+  if (!name) { $('wizJobName').focus(); return; }
+  const job = {
+    id: uid(),
+    name,
+    client: $('wizClient').value.trim(),
+    address: $('wizAddress').value.trim(),
+    date: new Date().toISOString(),
+    status: 'active',
+    items: []
+  };
+  db.jobs.push(job);
+  db.activeJobId = job.id;
+  save();
+  hideJobWizard();
+  updateHeader();
+  renderJobs();
+  renderRecentStrip();
+  updateBadge();
+  updateCaptureStats();
+  toast('Job created: ' + name, 'success');
+}
+
+function updateHeader() {
+  const job = activeJob();
+  $('hdrJob').innerHTML = job
+    ? `<b>${esc(job.name)}</b> | ${esc(job.client || '--')}`
+    : 'No active job';
+}
+
+// ══════════════════════════════════════════════════════════
+// PROFILE
+// ══════════════════════════════════════════════════════════
+function renderProfile() {
+  const p = db.profile || {};
+  $('profileSection').innerHTML = `
+    <div class="field"><label>Name</label><input value="${esc(p.name || '')}" onchange="updateProfile('name',this.value)"></div>
+    <div class="field"><label>Company</label><input value="${esc(p.company || '')}" onchange="updateProfile('company',this.value)"></div>
+    <div class="field"><label>Phone</label><input type="tel" value="${esc(p.phone || '')}" onchange="updateProfile('phone',this.value)"></div>
+    <div class="field"><label>Email</label><input type="email" value="${esc(p.email || '')}" onchange="updateProfile('email',this.value)"></div>
+    <div class="field"><label>License #</label><input value="${esc(p.license || '')}" onchange="updateProfile('license',this.value)"></div>
+  `;
+}
+
+function updateProfile(key, val) {
+  db.profile[key] = val.trim();
+  save();
+}
+
+// ══════════════════════════════════════════════════════════
+// COST REFERENCE TABLE
+// ══════════════════════════════════════════════════════════
+function renderCostRef() {
+  $('costRefTable').innerHTML = Object.entries(COST_TABLE).map(([k, v]) => `
+    <tr>
+      <td>${esc(v.label)}</td>
+      <td>$${v.low}</td>
+      <td>$${v.mid}</td>
+      <td class="cost-range">$${v.high}</td>
+    </tr>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// ONBOARDING — first-run wizard
+// ══════════════════════════════════════════════════════════
+function checkOnboarding() {
+  if (!db.profile.name && !db.jobs.length) {
+    $('onboardOverlay').classList.add('active');
+  }
+}
+
+function onboardNext(step) {
+  if (step === 1) {
+    const name = $('obName').value.trim();
+    if (!name) { $('obName').focus(); return; }
+    db.profile = {
+      name,
+      company: $('obCompany').value.trim(),
+      phone: $('obPhone').value.trim(),
+      email: $('obEmail').value.trim(),
+      license: $('obLicense').value.trim()
+    };
+    save();
+    $('onboardStep1').classList.remove('active');
+    $('onboardStep2').classList.add('active');
+    setTimeout(() => $('obJobName').focus(), 100);
+  } else if (step === 2) {
+    const jn = $('obJobName').value.trim();
+    if (!jn) { $('obJobName').focus(); return; }
+    const job = {
+      id: uid(),
+      name: jn,
+      client: $('obClient').value.trim(),
+      address: $('obAddress').value.trim(),
+      date: new Date().toISOString(),
+      status: 'active',
+      items: []
+    };
+    db.jobs.push(job);
+    db.activeJobId = job.id;
+    loadSampleData(job);
+    save();
+    $('onboardStep2').classList.remove('active');
+    $('onboardStep3').classList.add('active');
+  }
+}
+
+function finishOnboard() {
+  $('onboardOverlay').classList.remove('active');
+  updateHeader();
+  renderRecentStrip();
+  updateBadge();
+  updateCaptureStats();
+}
+
+// ══════════════════════════════════════════════════════════
+// SAMPLE DATA — 4 canvas-generated room photos with markers
+// ══════════════════════════════════════════════════════════
+function loadSampleData(job) {
+  const sampleDefects = [
+    {
+      room: 'kitchen',
+      markers: [
+        { xPct: 30, yPct: 25, type: 'paint-defect', severity: 1, note: 'Scuff mark near upper cabinets' },
+        { xPct: 65, yPct: 70, type: 'trim-gap', severity: 2, note: 'Baseboard gap > 1/8 inch at corner' }
+      ]
+    },
+    {
+      room: 'kitchen',
+      markers: [
+        { xPct: 45, yPct: 55, type: 'missing-cover', severity: 3, note: 'Exposed wiring -- no outlet cover plate' }
+      ]
+    },
+    {
+      room: 'bath',
+      markers: [
+        { xPct: 50, yPct: 40, type: 'fixture-issue', severity: 2, note: 'Faucet drips, washer needs replacement' },
+        { xPct: 20, yPct: 80, type: 'cleanup-needed', severity: 1, note: 'Grout haze on floor tiles' }
+      ]
+    },
+    {
+      room: 'living',
+      markers: [
+        { xPct: 70, yPct: 30, type: 'drywall-damage', severity: 2, note: 'Vertical crack near door frame, 6 inches' },
+        { xPct: 35, yPct: 15, type: 'off-plumb', severity: 1, note: 'Ceiling line slightly off-level' }
+      ]
+    }
+  ];
+
+  const roomColors = {
+    kitchen: '#d4c5a9', bath: '#b8ccd4', living: '#c9bba6',
+    bedroom: '#c4b8d4', hallway: '#bbb', exterior: '#a0b0a0',
+    garage: '#999', basement: '#888', other: '#aaa'
+  };
+
+  sampleDefects.forEach(sd => {
+    const c = document.createElement('canvas');
+    c.width = 600; c.height = 800;
+    const ctx = c.getContext('2d');
+
+    // Wall
+    ctx.fillStyle = roomColors[sd.room] || '#ccc';
+    ctx.fillRect(0, 0, 600, 800);
+
+    // Floor
+    ctx.fillStyle = '#3f3320';
+    ctx.fillRect(0, 550, 600, 250);
+
+    // Wall texture lines
+    ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 800; i += 18) {
+      ctx.beginPath();
+      ctx.moveTo(0, i);
+      ctx.lineTo(600, i);
+      ctx.stroke();
+    }
+
+    // Baseboard
+    ctx.fillStyle = '#e8dcc8';
+    ctx.fillRect(0, 540, 600, 14);
+
+    // Window
+    ctx.fillStyle = '#a8c4dc';
+    ctx.fillRect(180, 150, 240, 200);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(180, 150, 240, 200);
+    ctx.beginPath(); ctx.moveTo(300, 150); ctx.lineTo(300, 350); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(180, 250); ctx.lineTo(420, 250); ctx.stroke();
+
+    // Room label watermark
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.font = 'bold 48px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText((ROOM_LABELS[sd.room] || sd.room).toUpperCase(), 300, 420);
+
+    // SAMPLE stamp
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';
+    ctx.font = 'bold 20px ui-monospace, monospace';
+    ctx.fillText('SAMPLE PHOTO', 300, 460);
+
+    const photo = c.toDataURL('image/jpeg', 0.7);
+    job.items.push({
+      id: uid(),
+      photo,
+      markers: sd.markers,
+      room: sd.room,
+      notes: '',
+      status: 'open',
+      date: new Date().toISOString()
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// KEYBOARD NAVIGATION — arrow keys between tabs
+// ══════════════════════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if ($('markerModal').classList.contains('active')) {
+      $('markerModal').classList.remove('active');
+    } else if ($('annotateScreen').classList.contains('active')) {
+      cancelAnnotation();
+    } else if ($('jobWizard').classList.contains('active')) {
+      hideJobWizard();
+    } else if ($('confirmOverlay').classList.contains('active')) {
+      confirmCancel();
+    }
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+// INIT — boot on DOMContentLoaded
+// ══════════════════════════════════════════════════════════
+function init() {
+  installManifest();
+  load();
+  checkOnboarding();
+  updateHeader();
+  renderRecentStrip();
+  updateBadge();
+  updateCaptureStats();
+  startCamera();
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
