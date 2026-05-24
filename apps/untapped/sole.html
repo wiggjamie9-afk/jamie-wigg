@@ -2,573 +2,1206 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SOLE — daily foot check</title>
-<meta name="description" content="30 seconds a day. A photo of your foot. AI flags pre-ulcerative changes before they break skin. Reimbursable under Medicare RPM.">
+<title>SOLE — Daily Foot Check</title>
+<meta name="description" content="30 seconds a day. A photo of your foot. AI flags pre-ulcerative changes before they break skin. Streak tracker, clinician sharing, trend charts.">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#fafaf9">
+<meta name="theme-color" content="#0d3b40">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="SOLE">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230d3b40'/><path d='M50 20 L36 40 L28 55 L30 75 L40 85 L60 85 L70 75 L72 55 L64 40 Z' fill='none' stroke='%23dbeae8' stroke-width='2.5'/><line x1='40' y1='50' x2='60' y2='50' stroke='%23fb7185' stroke-width='2'/><line x1='50' y1='40' x2='50' y2='60' stroke='%23fb7185' stroke-width='2'/></svg>">
 <style>
+/* ── RESET + TOKENS ── */
 :root{
-  --bg:#fafaf9; --card:#ffffff; --line:#e7e5e0;
-  --ink:#0d3b40; --ink-2:#1f5256; --soft:#5a6e70; --muted:#8a9698;
-  --teal:#0d3b40; --teal-2:#176870; --mint:#dbeae8; --mint-2:#c4ddd9;
-  --coral:#fb7185; --coral-soft:#fef0f2; --amber:#f59e0b; --amber-soft:#fef6e7;
-  --green:#10b981; --green-soft:#e6f6f0;
+  --bg:#fafaf9;--card:#ffffff;--card2:#f7f5f1;
+  --line:#e7e5e0;--line2:#d8d4cc;
+  --ink:#0d3b40;--ink2:#1f5256;--soft:#5a6e70;--muted:#8a9698;--faint:#b8c0c1;
+  --teal:#0d3b40;--teal2:#176870;--teal3:#1a8090;
+  --mint:#dbeae8;--mint2:#c4ddd9;--mint3:#a8d0ca;
+  --coral:#fb7185;--coral-bg:#fef0f2;--coral-ink:#b34058;
+  --amber:#f59e0b;--amber-bg:#fef6e7;--amber-ink:#9a6500;
+  --green:#10b981;--green-bg:#e6f6f0;--green-ink:#0a7a5b;
   --sans:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
   --mono:'SF Mono',ui-monospace,'JetBrains Mono',monospace;
-  --radius:14px;
+  --r:12px;--r2:16px;--r3:24px;
+  --touch:48px;
+  --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;width:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-size:15px;line-height:1.5;letter-spacing:-0.005em}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;font-size:15px;line-height:1.5;letter-spacing:-0.005em}
+body{min-height:100vh;min-height:100dvh}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;min-height:var(--touch);min-width:var(--touch)}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--card2);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;width:100%;font-size:16px}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--teal)}
 ::selection{background:var(--teal);color:var(--bg)}
+:focus-visible{outline:2px solid var(--coral);outline-offset:2px;border-radius:4px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
 
-/* Shell */
-.shell{max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);position:relative}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 14px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:10}
+/* ── SHELL ── */
+.shell{max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;background:var(--bg);position:relative}
+
+/* ── HEADER ── */
+.hdr{position:sticky;top:0;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(250,250,249,0.88);border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:10px}
-.brand-mark{width:26px;height:26px;border-radius:50%;background:var(--teal);position:relative;display:flex;align-items:center;justify-content:center}
-.brand-mark::after{content:"";position:absolute;width:11px;height:14px;border-radius:50% 50% 45% 45% / 60% 60% 40% 40%;background:var(--mint);top:5px}
-.brand-name{font-weight:600;font-size:14px;letter-spacing:0.02em;color:var(--ink)}
-.brand-tag{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.06em}
-.topbar-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.05em;text-align:right}
-.topbar-meta strong{color:var(--ink-2);font-weight:600}
+.brand-mark{width:28px;height:28px;border-radius:50%;background:var(--teal);position:relative;display:flex;align-items:center;justify-content:center}
+.brand-mark::after{content:"+";color:var(--mint);font-size:16px;font-weight:700}
+.brand-name{font-weight:700;font-size:15px;letter-spacing:0.02em;color:var(--ink)}
+.brand-tag{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase}
+.hdr-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em;text-align:right}
+.hdr-meta strong{color:var(--ink2);font-weight:600}
 
-/* Views */
-.view{display:none;flex:1;flex-direction:column;padding:24px 22px 100px}
-.view.active{display:flex}
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;padding:20px 18px calc(80px + var(--safe-b))}
+.screen.active{display:flex;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* Typography */
-.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--soft);margin-bottom:10px}
-h1{font-size:30px;font-weight:600;letter-spacing:-0.02em;line-height:1.15;color:var(--ink);margin-bottom:8px}
-h2{font-size:20px;font-weight:600;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px}
-h3{font-size:14px;font-weight:600;letter-spacing:0.005em;color:var(--ink);margin-bottom:4px}
-.lede{color:var(--soft);font-size:15px;line-height:1.55;margin-bottom:24px}
+/* ── BOTTOM NAV ── */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:90;display:flex;justify-content:space-around;align-items:center;padding:6px 8px calc(6px + var(--safe-b));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(250,250,249,0.92);border-top:1px solid var(--line)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:8px 4px;border-radius:8px;transition:color 0.2s}
+.nav-btn.active{color:var(--teal)}
+.nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-/* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:0.5em;padding:14px 22px;border-radius:10px;font-size:14px;font-weight:600;letter-spacing:-0.005em;transition:all 0.18s ease;min-height:46px;border:1px solid transparent}
-.btn-primary{background:var(--teal);color:#fff}
-.btn-primary:hover,.btn-primary:active{background:var(--ink-2)}
-.btn-ghost{background:var(--card);color:var(--ink);border-color:var(--line)}
-.btn-ghost:hover{background:#f3f1ec;border-color:#d8d4cc}
-.btn-block{width:100%}
+/* ── ONBOARDING ── */
+.onboard{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center}
+.onboard.hidden{display:none}
+.ob-step{display:none;flex-direction:column;align-items:center;gap:14px;max-width:380px;width:100%}
+.ob-step.active{display:flex}
+.ob-icon{width:64px;height:64px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--mint);font-weight:700;margin-bottom:4px}
+.ob-title{font-size:24px;font-weight:700;line-height:1.2;color:var(--ink);letter-spacing:-0.02em}
+.ob-title em{color:var(--teal2);font-style:normal}
+.ob-desc{font-size:14px;color:var(--soft);line-height:1.55}
+.ob-input{width:100%;padding:14px 18px;background:var(--card2);border:1px solid var(--line);border-radius:var(--r);color:var(--ink);font-size:16px}
+.ob-input:focus{border-color:var(--teal);outline:none}
+.ob-select{appearance:none;width:100%;padding:14px 18px;background:var(--card2);border:1px solid var(--line);border-radius:var(--r);color:var(--ink);font-size:16px}
+.ob-row{display:flex;gap:8px;width:100%}
+.btn-primary{width:100%;padding:16px;background:var(--teal);color:#fff;font-size:15px;font-weight:600;border-radius:var(--r2);margin-top:4px;letter-spacing:-0.005em}
+.btn-secondary{width:100%;padding:14px;color:var(--muted);font-size:14px}
+.btn-ghost{width:100%;padding:14px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:var(--r2);font-size:14px;font-weight:600;margin-top:6px}
+.ob-dots{display:flex;gap:8px;margin-top:12px}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.ob-dot.active{background:var(--teal)}
 
-/* HOME: hero check-in button */
-.check-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--line);padding:28px 22px;text-align:center;margin-bottom:20px;position:relative;overflow:hidden}
-.check-card::before{content:"";position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--mint);opacity:0.6;z-index:0}
-.check-card > *{position:relative;z-index:1}
-.streak-pill{display:inline-flex;align-items:center;gap:6px;background:var(--mint);color:var(--ink-2);border-radius:50px;padding:6px 12px;font-size:11px;font-weight:600;letter-spacing:0.02em;margin-bottom:18px}
-.streak-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
-.check-title{font-size:22px;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:-0.015em}
-.check-sub{color:var(--soft);font-size:14px;margin-bottom:22px}
-.check-btn{display:inline-flex;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;background:var(--teal);color:#fff;border:none;font-size:13px;font-weight:600;letter-spacing:0.02em;box-shadow:0 8px 28px -8px rgba(13,59,64,0.4);transition:transform 0.2s,box-shadow 0.2s;margin-bottom:14px}
-.check-btn:hover{transform:scale(1.03);box-shadow:0 12px 32px -8px rgba(13,59,64,0.5)}
+/* ── TYPOGRAPHY ── */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--soft);margin-bottom:8px}
+h1{font-size:26px;font-weight:700;letter-spacing:-0.02em;line-height:1.15;color:var(--ink);margin-bottom:6px}
+h2{font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--ink);margin-bottom:6px}
+h3{font-size:13px;font-weight:600;letter-spacing:0.005em;color:var(--ink2);margin-bottom:4px}
+.lede{color:var(--soft);font-size:14px;line-height:1.55;margin-bottom:20px}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:14px}
+
+/* ── CHECK-IN HERO ── */
+.check-hero{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:24px 20px;text-align:center;margin-bottom:18px;position:relative;overflow:hidden}
+.check-hero::before{content:"";position:absolute;top:-40px;right:-40px;width:150px;height:150px;border-radius:50%;background:var(--mint);opacity:0.5;z-index:0}
+.check-hero>*{position:relative;z-index:1}
+.streak-pill{display:inline-flex;align-items:center;gap:6px;background:var(--mint);color:var(--ink2);border-radius:50px;padding:6px 14px;font-size:11px;font-weight:600;letter-spacing:0.02em;margin-bottom:14px}
+.streak-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.check-title{font-size:20px;font-weight:700;color:var(--ink);margin-bottom:4px;letter-spacing:-0.015em}
+.check-sub{color:var(--soft);font-size:13px;margin-bottom:18px}
+.check-btn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:110px;height:110px;border-radius:50%;background:var(--teal);color:#fff;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;box-shadow:0 8px 28px -8px rgba(13,59,64,0.35);transition:transform 0.2s,box-shadow 0.2s;margin-bottom:12px;gap:6px}
+.check-btn:hover{transform:scale(1.03)}
 .check-btn:active{transform:scale(0.97)}
-.check-btn svg{width:32px;height:32px;margin-bottom:6px}
-.check-btn .label{display:block;font-size:11px;letter-spacing:0.06em;text-transform:uppercase}
+.check-btn svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.6}
 .check-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.06em}
 
-/* Stat cards */
-.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 12px;text-align:center}
-.stat-num{font-size:24px;font-weight:600;letter-spacing:-0.02em;color:var(--ink);line-height:1}
+/* ── STAT GRID ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 10px;text-align:center}
+.stat-num{font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--ink);line-height:1}
 .stat-num.coral{color:var(--coral)}
 .stat-num.green{color:var(--green)}
-.stat-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:6px}
+.stat-num.amber{color:var(--amber)}
+.stat-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:4px}
 
-/* Section heading */
-.sec-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;margin-top:6px}
-.sec-head h3{font-size:13px;color:var(--ink-2);font-weight:600;letter-spacing:0.005em}
-.sec-head .more{font-family:var(--mono);font-size:10px;color:var(--teal-2);letter-spacing:0.06em}
+/* ── TREND CHART ── */
+.chart-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:16px}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.chart-title{font-size:13px;font-weight:600;color:var(--ink)}
+.chart-badge{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.06em}
+.chart-svg{width:100%;height:130px;display:block}
+.chart-legend{display:flex;gap:14px;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em}
+.chart-legend span{display:flex;align-items:center;gap:5px}
+.chart-swatch{width:10px;height:2px;border-radius:1px}
 
-/* Trend chart card */
-.chart-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:18px}
-.chart-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.chart-meta .title{font-size:13px;font-weight:600;color:var(--ink)}
-.chart-meta .sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.06em}
-.chart-svg{width:100%;height:120px;display:block}
-.legend{display:flex;gap:14px;margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em}
-.legend span{display:flex;align-items:center;gap:5px}
-.legend .swatch{width:10px;height:2px;border-radius:1px}
+/* ── CALENDAR ── */
+.calendar-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:16px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.cal-header{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;text-align:center;text-transform:uppercase;padding:4px 0}
+.cal-day{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-weight:500}
+.cal-day.checked{background:var(--teal);color:#fff}
+.cal-day.today{border:2px solid var(--coral);color:var(--ink)}
+.cal-day.today.checked{border-color:var(--teal)}
+.cal-day.empty{visibility:hidden}
 
-/* History list */
-.history{display:flex;flex-direction:column;gap:8px}
-.h-row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
-.h-left{display:flex;align-items:center;gap:14px}
-.h-date{font-family:var(--mono);font-size:11px;color:var(--soft);letter-spacing:0.04em;min-width:48px}
-.h-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:600;letter-spacing:0.01em}
-.h-pill.ok{background:var(--green-soft);color:#0a7a5b}
-.h-pill.watch{background:var(--amber-soft);color:#9a6500}
-.h-pill.alert{background:var(--coral-soft);color:#b34058}
+/* ── CHECK-IN HISTORY ── */
+.h-row{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.h-left{display:flex;align-items:center;gap:12px}
+.h-date{font-family:var(--mono);font-size:11px;color:var(--soft);letter-spacing:0.04em;min-width:44px}
+.h-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:600;letter-spacing:0.01em}
+.h-pill.ok{background:var(--green-bg);color:var(--green-ink)}
+.h-pill.watch{background:var(--amber-bg);color:var(--amber-ink)}
+.h-pill.alert{background:var(--coral-bg);color:var(--coral-ink)}
 .h-score{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink)}
+.h-trend{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:4px}
 
-/* CAMERA VIEW */
-.cam-frame{flex:1;background:#0d3b40;border-radius:18px;position:relative;overflow:hidden;margin-bottom:16px;min-height:440px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.cam-frame::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,0.06),transparent 60%);pointer-events:none}
-.cam-instructions{position:absolute;top:18px;left:18px;right:18px;background:rgba(13,59,64,0.7);backdrop-filter:blur(8px);border-radius:10px;padding:12px 14px;color:#fff;font-size:13px;text-align:center;letter-spacing:-0.005em;z-index:3}
-.cam-instructions strong{font-weight:600;color:#bce8e0}
-.foot-outline{width:80%;max-width:240px;height:auto;opacity:0.5}
+/* ── CAMERA VIEW ── */
+.cam-frame{flex:1;background:var(--teal);border-radius:var(--r2);position:relative;overflow:hidden;margin-bottom:14px;min-height:380px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cam-instructions{position:absolute;top:14px;left:14px;right:14px;background:rgba(13,59,64,0.7);backdrop-filter:blur(8px);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;text-align:center;z-index:3}
+.cam-instructions strong{font-weight:600;color:var(--mint3)}
+.foot-outline{width:70%;max-width:200px;height:auto;opacity:0.5}
 .foot-outline.scanning{opacity:0.9;animation:scanPulse 1.2s ease-in-out infinite}
 @keyframes scanPulse{0%,100%{opacity:0.6}50%{opacity:1}}
-.scan-line{position:absolute;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,#bce8e0,transparent);animation:scanSweep 1.8s ease-in-out infinite;display:none}
-.scanning-mode .scan-line{display:block}
-@keyframes scanSweep{0%{top:25%}50%{top:72%}100%{top:25%}}
-.cam-corners{position:absolute;inset:60px 30px}
-.cam-corners::before,.cam-corners::after,
-.cam-corners > span::before,.cam-corners > span::after{content:"";position:absolute;width:22px;height:22px;border:2px solid #bce8e0;opacity:0.7}
+.cam-scan-line{position:absolute;left:15%;right:15%;height:2px;background:linear-gradient(90deg,transparent,var(--mint3),transparent);display:none;animation:scanSweep 1.8s ease-in-out infinite}
+.scanning-mode .cam-scan-line{display:block}
+@keyframes scanSweep{0%{top:20%}50%{top:75%}100%{top:20%}}
+.cam-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.cam-corners{position:absolute;inset:40px 20px}
+.cam-corners::before,.cam-corners::after,.cam-corner-inner::before,.cam-corner-inner::after{content:"";position:absolute;width:20px;height:20px;border:2px solid var(--mint3);opacity:0.7}
 .cam-corners::before{top:0;left:0;border-right:none;border-bottom:none}
 .cam-corners::after{top:0;right:0;border-left:none;border-bottom:none}
-.cam-corners > span{position:absolute;inset:0;display:block}
-.cam-corners > span::before{bottom:0;left:0;border-right:none;border-top:none}
-.cam-corners > span::after{bottom:0;right:0;border-left:none;border-top:none}
-.cam-actions{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
-.cam-side-btn{width:46px;height:46px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-2);font-size:18px}
-.shutter{width:72px;height:72px;border-radius:50%;background:#fff;border:4px solid var(--teal);box-shadow:0 4px 14px rgba(13,59,64,0.2);position:relative}
-.shutter::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--teal);transition:transform 0.18s}
-.shutter:active::after{transform:scale(0.85)}
-.shutter.busy::after{background:var(--amber);animation:busy 1s linear infinite}
-@keyframes busy{50%{transform:scale(0.85)}}
-.foot-switch{display:flex;gap:8px;justify-content:center;margin-top:8px}
-.foot-switch span{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);padding:6px 14px;border-radius:50px;border:1px solid var(--line);background:var(--card)}
-.foot-switch span.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+.cam-corner-inner::before{bottom:0;left:0;border-right:none;border-top:none}
+.cam-corner-inner::after{bottom:0;right:0;border-left:none;border-top:none}
+.cam-corner-inner{position:absolute;inset:0}
 
-/* ANALYSIS overlay */
-.analysis-overlay{position:absolute;inset:0;background:rgba(13,59,64,0.85);backdrop-filter:blur(6px);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:5;border-radius:18px}
+.foot-switch{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+.foot-switch button{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);padding:8px 16px;border-radius:50px;border:1px solid var(--line);background:var(--card);text-transform:uppercase;min-height:var(--touch)}
+.foot-switch button.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+.cam-actions{display:flex;justify-content:center;align-items:center;gap:20px}
+.cam-side-btn{width:48px;height:48px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:18px}
+.shutter{width:68px;height:68px;border-radius:50%;background:#fff;border:4px solid var(--teal);box-shadow:0 4px 14px rgba(13,59,64,0.2);position:relative}
+.shutter::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--teal);transition:transform 0.18s}
+.shutter:active::after{transform:scale(0.85)}
+
+/* ── SYMPTOM CHECK ── */
+.symptom-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.symptom-btn{padding:14px 12px;border:1.5px solid var(--line);border-radius:var(--r);background:var(--card);text-align:center;font-size:13px;color:var(--ink);transition:all 0.2s;min-height:var(--touch);display:flex;align-items:center;justify-content:center;gap:6px}
+.symptom-btn.selected{border-color:var(--coral);background:var(--coral-bg);color:var(--coral-ink)}
+.symptom-btn.ok{border-color:var(--green);background:var(--green-bg);color:var(--green-ink)}
+
+/* ── ANALYSIS OVERLAY ── */
+.analysis-overlay{position:absolute;inset:0;background:rgba(13,59,64,0.88);backdrop-filter:blur(6px);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:5;border-radius:var(--r2)}
 .analysis-overlay.on{display:flex}
-.spinner{width:50px;height:50px;border:3px solid rgba(255,255,255,0.15);border-top-color:#bce8e0;border-radius:50%;animation:spin 0.9s linear infinite;margin-bottom:18px}
+.spinner{width:50px;height:50px;border:3px solid rgba(255,255,255,0.15);border-top-color:var(--mint3);border-radius:50%;animation:spin 0.9s linear infinite;margin-bottom:16px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.analysis-text{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#bce8e0;margin-bottom:8px}
+.analysis-text{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--mint3);margin-bottom:6px}
 .analysis-stage{font-size:14px;color:#fff;text-align:center;max-width:260px;line-height:1.4}
 
-/* RESULT VIEW */
-.result-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px}
-.score-row{display:flex;align-items:center;gap:18px;margin-bottom:18px}
-.score-ring{position:relative;width:96px;height:96px;flex-shrink:0}
+/* ── RESULT CARD ── */
+.result-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:18px;margin-bottom:14px}
+.score-row{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.score-ring{position:relative;width:90px;height:90px;flex-shrink:0}
 .score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.score-ring .ring-bg{fill:none;stroke:var(--line);stroke-width:8}
-.score-ring .ring-fg{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.6s ease,stroke 0.3s}
+.ring-bg{fill:none;stroke:var(--line);stroke-width:8}
+.ring-fg{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.8s ease,stroke 0.3s}
 .score-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink)}
-.score-val{font-size:28px;font-weight:600;line-height:1;letter-spacing:-0.02em}
+.score-val{font-size:26px;font-weight:700;line-height:1;letter-spacing:-0.02em}
 .score-max{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.05em;margin-top:2px}
 .score-info{flex:1}
 .score-status{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px}
-.score-status.elevated{color:#b34058}
-.score-status.stable{color:#0a7a5b}
+.score-status.elevated{color:var(--coral-ink)}
+.score-status.stable{color:var(--green-ink)}
 .score-compare{font-family:var(--mono);font-size:11px;color:var(--soft);letter-spacing:0.02em;line-height:1.6}
 
-/* Heat map */
-.heatmap-wrap{background:#f7f5f1;border-radius:12px;padding:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;position:relative}
-.heatmap-wrap svg{width:80%;max-width:200px;height:auto;display:block}
-.heat-legend{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.05em;padding:0 8px}
+/* ── HEATMAP ── */
+.heatmap-card{background:var(--card2);border-radius:var(--r);padding:14px;margin-bottom:14px;text-align:center}
+.heatmap-card svg{width:70%;max-width:180px;height:auto;display:block;margin:0 auto}
+.heat-legend{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.05em;padding:0 8px}
 .heat-grad{flex:1;height:6px;border-radius:3px;margin:0 12px;background:linear-gradient(90deg,#10b981,#fde68a,#fb7185)}
 
-/* Alert card */
-.alert-card{background:var(--coral-soft);border:1px solid #fbcfd4;border-radius:var(--radius);padding:16px;margin-bottom:14px;display:flex;gap:12px}
-.alert-icon{width:32px;height:32px;border-radius:50%;background:var(--coral);color:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600}
+/* ── ALERT CARD ── */
+.alert-card{background:var(--coral-bg);border:1px solid #fbcfd4;border-radius:var(--r2);padding:14px;margin-bottom:14px;display:flex;gap:10px}
+.alert-icon{width:30px;height:30px;border-radius:50%;background:var(--coral);color:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
 .alert-body{flex:1}
-.alert-title{font-size:14px;font-weight:600;color:#7a2a3a;margin-bottom:4px}
-.alert-text{font-size:13px;color:#7a2a3a;line-height:1.5;margin-bottom:8px}
-.alert-action{font-size:12px;font-weight:600;color:#7a2a3a;text-decoration:underline}
+.alert-title{font-size:13px;font-weight:600;color:var(--coral-ink);margin-bottom:3px}
+.alert-text{font-size:12px;color:var(--coral-ink);line-height:1.5}
 
-.recs{margin-bottom:14px}
-.rec{display:flex;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;align-items:flex-start}
-.rec-icon{width:24px;height:24px;border-radius:50%;background:var(--mint);color:var(--teal);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
-.rec-body{flex:1;font-size:13px;color:var(--ink-2);line-height:1.45}
+/* ── RECS ── */
+.rec{display:flex;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;align-items:flex-start}
+.rec-icon{width:22px;height:22px;border-radius:50%;background:var(--mint);color:var(--teal);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.rec-body{flex:1;font-size:13px;color:var(--ink2);line-height:1.45}
 .rec-body strong{color:var(--ink);font-weight:600}
 
-.share-row{display:flex;gap:10px;margin-top:6px}
+/* ── SHARE REPORT ── */
+.report-preview{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:14px}
+.report-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.report-row:last-child{border-bottom:none}
+.report-row .k{color:var(--soft);font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase}
+.report-row .v{font-weight:600;color:var(--ink)}
 
-/* Bottom nav */
-.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(250,250,249,0.92);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 8px max(8px,env(safe-area-inset-bottom));z-index:20}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;border-radius:8px}
-.tab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
-.tab.on{color:var(--teal)}
+/* ── SETTINGS ── */
+.setting-group{margin-bottom:18px}
+.sg-title{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--teal2);margin-bottom:8px}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.setting-row:last-child{border-bottom:none}
+.sr-label{font-size:14px;color:var(--ink)}
+.sr-value{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setting-btn{width:100%;padding:14px;border:1px solid var(--line);border-radius:var(--r);font-size:14px;color:var(--soft);margin-top:8px;font-weight:500}
+.setting-btn:active{background:var(--mint)}
 
-/* Utility */
-.muted{color:var(--muted)}
-.divider{height:1px;background:var(--line);margin:18px 0}
-.center{text-align:center}
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;z-index:150;background:rgba(13,59,64,0.5);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.on{display:flex}
+.modal{background:var(--bg);border-radius:var(--r3) var(--r3) 0 0;padding:24px 20px calc(24px + var(--safe-b));width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:14px}
+.modal-field{margin-bottom:12px}
+.modal-field label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.modal-actions{display:flex;gap:10px;margin-top:14px}
+.modal-actions button{flex:1;padding:14px;border-radius:var(--r);font-size:15px;min-height:var(--touch)}
+.modal-save{background:var(--teal);color:#fff;font-weight:600}
+.modal-cancel{border:1px solid var(--line);color:var(--muted)}
+
+/* ── DISCLAIMER ── */
+.disclaimer{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;line-height:1.6;text-align:center;margin-top:16px}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;line-height:1.5}
+
+.hide-input{position:absolute;opacity:0;width:0;height:0;overflow:hidden}
+
+@media(max-width:380px){h1{font-size:22px}}
 </style>
 </head>
 <body>
 <div class="shell">
 
-  <!-- Top bar -->
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-mark"></div>
-      <div>
-        <div class="brand-name">SOLE</div>
-        <div class="brand-tag">DAILY FOOT CHECK</div>
-      </div>
+<!-- ═══ PWA MANIFEST ═══ -->
+<script>
+(function(){
+  const m={name:"SOLE",short_name:"SOLE",start_url:".",display:"standalone",background_color:"#fafaf9",theme_color:"#0d3b40",icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%230d3b40'/><path d='M256 100 L200 200 L170 280 L180 380 L220 430 L300 430 L340 380 L350 280 L320 200 Z' fill='none' stroke='%23dbeae8' stroke-width='12'/><line x1='220' y1='260' x2='300' y2='260' stroke='%23fb7185' stroke-width='10'/><line x1='260' y1='220' x2='260' y2='300' stroke='%23fb7185' stroke-width='10'/></svg>",sizes:"512x512",type:"image/svg+xml"}]};
+  const b=new Blob([JSON.stringify(m)],{type:'application/json'});
+  const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
+  document.head.appendChild(l);
+})();
+</script>
+
+<!-- ═══ HEADER ═══ -->
+<header class="hdr" role="banner">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div>
+      <div class="brand-name">SOLE</div>
+      <div class="brand-tag">daily foot check</div>
     </div>
-    <div class="topbar-meta">
-      <div><strong>Dr. Patel</strong> · Memorial Endocrinology</div>
-      <div>RPM monitoring · day 37</div>
+  </div>
+  <div class="hdr-meta" id="hdrMeta">
+    <div id="hdrDoc"></div>
+    <div id="hdrDay"></div>
+  </div>
+</header>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div class="onboard" id="onboard" role="dialog" aria-label="Welcome to SOLE">
+  <div class="ob-step active" data-step="0">
+    <div class="ob-icon">+</div>
+    <div class="ob-title">30 seconds a day.<br>Catch what you <em>can't feel.</em></div>
+    <div class="ob-desc">SOLE helps you track foot health with daily photos and symptom checks. It flags early-stage changes before they become problems. Everything stays on your phone.</div>
+    <button class="btn-primary" onclick="obNext()">Get started</button>
+    <button class="btn-secondary" onclick="obSkip()">Skip for now</button>
+    <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+  </div>
+  <div class="ob-step" data-step="1">
+    <div class="ob-icon">👤</div>
+    <div class="ob-title">Your <em>profile</em></div>
+    <input class="ob-input" id="obName" placeholder="Your name" autocomplete="off">
+    <div class="ob-row">
+      <select class="ob-select" id="obType"><option value="2">Type 2 diabetes</option><option value="1">Type 1 diabetes</option></select>
+      <input class="ob-input" id="obYears" type="number" min="0" max="60" placeholder="Years since dx">
+    </div>
+    <input class="ob-input" id="obDoc" placeholder="Primary clinician name (optional)">
+    <textarea class="ob-input" id="obMeds" placeholder="Current medications (optional)" rows="2" style="resize:vertical;min-height:60px"></textarea>
+    <button class="btn-primary" onclick="obNext()">Next</button>
+    <button class="btn-secondary" onclick="obSkip()">Skip for now</button>
+    <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div>
+    </div>
+  </div>
+  <div class="ob-step" data-step="2">
+    <div class="ob-icon">📸</div>
+    <div class="ob-title">Why <em>daily photos</em> matter</div>
+    <div class="ob-desc">In diabetes with neuropathy, you may not feel early skin changes. A daily photo catches what your nerves can't: redness, swelling, pressure spots. Caught early, these resolve in days. Missed, they can break skin. SOLE is built for exactly this moment.</div>
+    <button class="btn-primary" onclick="obFinish()">Start using SOLE</button>
+    <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div></div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: CHECK-IN ═══ -->
+<main class="screen active" id="screenCheckin" role="main" aria-label="Check-in">
+  <div class="check-hero">
+    <span class="streak-pill" id="streakPill"><span class="streak-dot"></span><span id="streakText">Start your streak</span></span>
+    <div class="check-title">Today's foot check</div>
+    <div class="check-sub" id="checkSub">30 seconds. Two photos. Let's go.</div>
+    <button class="check-btn" id="checkBtn" onclick="startCheckIn()" aria-label="Start daily check-in">
+      <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>
+      <span>Check in</span>
+    </button>
+    <div class="check-meta" id="checkMeta">Best time: morning, before socks</div>
+  </div>
+
+  <div class="stat-grid" id="statGrid">
+    <div class="stat"><div class="stat-num" id="statRisk">--</div><div class="stat-lbl">Today's risk</div></div>
+    <div class="stat"><div class="stat-num green" id="statAvg">--</div><div class="stat-lbl">30-day avg</div></div>
+    <div class="stat"><div class="stat-num" id="statStreak">0</div><div class="stat-lbl">Day streak</div></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">30-day risk trend</div>
+      <div class="chart-badge" id="chartTrend">--</div>
+    </div>
+    <svg class="chart-svg" id="trendChart" viewBox="0 0 320 130" preserveAspectRatio="none"></svg>
+    <div class="chart-legend">
+      <span><span class="chart-swatch" style="background:var(--teal)"></span>Left foot</span>
+      <span><span class="chart-swatch" style="background:var(--coral)"></span>Right foot</span>
+      <span><span class="chart-swatch" style="background:none;border-top:1px dashed var(--muted)"></span>Baseline</span>
     </div>
   </div>
 
-  <!-- ────────────── HOME ────────────── -->
-  <main class="view active" id="home">
-    <div class="check-card">
-      <span class="streak-pill"><span class="dot"></span>37-day streak — well done</span>
-      <div class="check-title">Today's foot check</div>
-      <div class="check-sub">30 seconds. Two photos. Stable trend so far this week.</div>
-      <button class="check-btn" onclick="startCheck()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>
-        <span class="label">CHECK IN</span>
-      </button>
-      <div class="check-meta">Best time · morning, before socks</div>
+  <div class="calendar-card">
+    <h3>Check-in calendar</h3>
+    <div class="cal-grid" id="calendarGrid"></div>
+  </div>
+
+  <h3 style="margin:6px 0 10px;color:var(--ink2)">Recent check-ins</h3>
+  <div id="historyList"></div>
+</main>
+
+<!-- ═══ SCREEN: CAMERA ═══ -->
+<div class="screen" id="screenCamera" aria-label="Camera">
+  <div class="eyebrow" id="camStep">Step 1 of 3 · Left foot</div>
+  <h2 id="camTitle" style="margin-bottom:12px">Capture left foot</h2>
+
+  <div class="cam-frame" id="camFrame">
+    <div class="cam-instructions">Hold camera <strong>12 inches</strong> above. Align foot to outline. Good light, no socks.</div>
+    <video class="cam-video" id="camVideo" autoplay muted playsinline></video>
+    <div class="cam-scan-line"></div>
+    <svg class="foot-outline" id="footGuide" viewBox="0 0 200 320" fill="none" stroke="#bce8e0" stroke-width="1.5">
+      <path d="M100 18 C 130 18, 152 42, 155 80 C 158 110, 152 138, 148 158 C 145 178, 148 200, 152 222 C 156 248, 150 280, 130 296 C 110 310, 88 308, 72 296 C 56 282, 50 256, 53 232 C 56 210, 58 188, 55 168 C 50 142, 44 110, 48 80 C 52 42, 70 18, 100 18 Z" stroke-dasharray="4 4"/>
+      <ellipse cx="100" cy="36" rx="10" ry="8" stroke-dasharray="2 3"/>
+      <ellipse cx="78" cy="48" rx="7" ry="6" stroke-dasharray="2 3"/>
+      <ellipse cx="118" cy="46" rx="7" ry="6" stroke-dasharray="2 3"/>
+      <line x1="90" y1="165" x2="110" y2="165" stroke-dasharray="2 2"/>
+      <line x1="100" y1="155" x2="100" y2="175" stroke-dasharray="2 2"/>
+    </svg>
+    <div class="cam-corners"><div class="cam-corner-inner"></div></div>
+    <div class="analysis-overlay" id="analyzeOverlay">
+      <div class="spinner"></div>
+      <div class="analysis-text">Analyzing</div>
+      <div class="analysis-stage" id="analyzeStage">Comparing to baseline...</div>
     </div>
+  </div>
 
-    <div class="stat-grid">
-      <div class="stat"><div class="stat-num">3</div><div class="stat-lbl">Today's risk</div></div>
-      <div class="stat"><div class="stat-num green">2</div><div class="stat-lbl">30-day avg</div></div>
-      <div class="stat"><div class="stat-num">37</div><div class="stat-lbl">Day streak</div></div>
+  <div class="foot-switch" id="footSwitch">
+    <button class="on" id="footL" onclick="switchFoot('left')">Left</button>
+    <button id="footR" onclick="switchFoot('right')">Right</button>
+  </div>
+
+  <div class="cam-actions">
+    <button class="cam-side-btn" onclick="cancelCheckIn()" aria-label="Cancel">✕</button>
+    <button class="shutter" id="shutterBtn" onclick="capturePhoto()" aria-label="Capture photo"></button>
+    <button class="cam-side-btn" onclick="document.getElementById('camFileInput').click()" aria-label="Upload photo">📁</button>
+    <input type="file" id="camFileInput" class="hide-input" accept="image/*" capture="environment">
+  </div>
+</div>
+
+<!-- ═══ SCREEN: SYMPTOMS ═══ -->
+<div class="screen" id="screenSymptoms" aria-label="Symptom check">
+  <div class="eyebrow">Step 3 of 3 · Quick symptom check</div>
+  <h2 style="margin-bottom:14px">Any changes today?</h2>
+  <p class="lede">Tap any that apply. If none, just hit save.</p>
+  <div class="symptom-grid" id="symptomGrid"></div>
+  <button class="btn-primary" onclick="saveCheckIn()" style="margin-top:10px">Save check-in</button>
+  <button class="btn-ghost" onclick="cancelCheckIn()">Cancel</button>
+</div>
+
+<!-- ═══ SCREEN: RESULT ═══ -->
+<div class="screen" id="screenResult" aria-label="Today's result">
+  <div class="eyebrow" id="resultDate">Today</div>
+  <h2 style="margin-bottom:14px">Today's read</h2>
+  <div id="resultContent"></div>
+  <button class="btn-primary" onclick="showScreen('Checkin')">Done — back home</button>
+  <div class="disclaimer">SOLE flags pre-ulcerative changes — it doesn't diagnose ulcers. If you're worried, call your clinician.</div>
+</div>
+
+<!-- ═══ SCREEN: TRENDS ═══ -->
+<div class="screen" id="screenTrends" aria-label="Trends">
+  <div class="eyebrow">Trends</div>
+  <h1>30-day <span style="color:var(--teal2)">overview</span></h1>
+  <p class="lede">Your foot health over time.</p>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">Risk score trend</div>
+      <div class="chart-badge" id="trendBadge2">--</div>
     </div>
-
-    <div class="chart-card">
-      <div class="chart-meta">
-        <div class="title">30-day risk trend</div>
-        <div class="sub">Stable</div>
-      </div>
-      <svg class="chart-svg" id="trendChart" viewBox="0 0 320 120" preserveAspectRatio="none"></svg>
-      <div class="legend">
-        <span><span class="swatch" style="background:var(--teal)"></span>Left foot</span>
-        <span><span class="swatch" style="background:var(--coral)"></span>Right foot</span>
-        <span><span class="swatch" style="background:var(--muted);border-top:1px dashed var(--muted);background:none"></span>Baseline 2.0</span>
-      </div>
+    <svg class="chart-svg" id="trendChart2" viewBox="0 0 320 130" preserveAspectRatio="none"></svg>
+    <div class="chart-legend">
+      <span><span class="chart-swatch" style="background:var(--teal)"></span>Left</span>
+      <span><span class="chart-swatch" style="background:var(--coral)"></span>Right</span>
     </div>
+  </div>
+  <div class="calendar-card">
+    <h3>Check-in calendar</h3>
+    <div class="cal-grid" id="calendarGrid2"></div>
+  </div>
+  <div id="trendHistory"></div>
+</div>
 
-    <div class="sec-head"><h3>Recent check-ins</h3><span class="more">Last 7 days →</span></div>
-    <div class="history" id="historyList"></div>
-  </main>
+<!-- ═══ SCREEN: SHARE ═══ -->
+<div class="screen" id="screenShare" aria-label="Share">
+  <div class="eyebrow">Share with your clinician</div>
+  <h1>Clinician <span style="color:var(--teal2)">report</span></h1>
+  <p class="lede">Compose a summary of the last 7 days with photos, scores, and notes. Share via download or your phone's share sheet.</p>
+  <div class="report-preview" id="reportPreview"></div>
+  <button class="btn-primary" onclick="shareReport()" id="shareBtn">Share report</button>
+  <button class="btn-ghost" onclick="downloadReport()">Download as HTML</button>
+  <div class="disclaimer" style="margin-top:14px">Report includes check-in data from the last 7 days. Photos are embedded.</div>
+</div>
 
-  <!-- ────────────── CAMERA ────────────── -->
-  <main class="view" id="camera">
-    <div class="eyebrow">Step 1 of 2 · Capture</div>
-    <h2 style="margin-bottom:14px">Left foot first.</h2>
+<!-- ═══ SCREEN: SETTINGS ═══ -->
+<div class="screen" id="screenSettings" aria-label="Settings">
+  <div class="eyebrow">Settings</div>
+  <h1>Profile & data</h1>
+  <div class="setting-group" id="sgProfile"></div>
+  <div class="setting-group" id="sgData"></div>
+  <button class="setting-btn" onclick="exportReport()">Export 30-day report</button>
+  <button class="setting-btn" onclick="clearAllData()" style="color:var(--coral);border-color:var(--coral)">Clear all data</button>
+  <div class="disclaimer" style="margin-top:24px">SOLE v2 · on-device monitoring · decision support, not diagnosis<br>All data stays on your device. No cloud. No account.</div>
+</div>
 
-    <div class="cam-frame" id="camFrame">
-      <div class="cam-instructions">
-        Hold camera <strong>12 inches</strong> above. Align both feet to the outline. Good light, no socks.
-      </div>
-      <div class="scan-line"></div>
-      <svg class="foot-outline" viewBox="0 0 200 320" id="footGuide" fill="none" stroke="#bce8e0" stroke-width="1.5">
-        <!-- Foot silhouette (top-down view, idealized) -->
-        <path d="M100 18 C 130 18, 152 42, 155 80 C 158 110, 152 138, 148 158 C 145 178, 148 200, 152 222 C 156 248, 150 280, 130 296 C 110 310, 88 308, 72 296 C 56 282, 50 256, 53 232 C 56 210, 58 188, 55 168 C 50 142, 44 110, 48 80 C 52 42, 70 18, 100 18 Z" stroke-dasharray="4 4"/>
-        <!-- Toe pads -->
-        <ellipse cx="100" cy="36" rx="10" ry="8" stroke-dasharray="2 3"/>
-        <ellipse cx="78" cy="48" rx="7" ry="6" stroke-dasharray="2 3"/>
-        <ellipse cx="118" cy="46" rx="7" ry="6" stroke-dasharray="2 3"/>
-        <ellipse cx="62" cy="62" rx="6" ry="5" stroke-dasharray="2 3"/>
-        <ellipse cx="135" cy="60" rx="6" ry="5" stroke-dasharray="2 3"/>
-        <!-- Crosshair center -->
-        <line x1="100" y1="155" x2="100" y2="175" stroke-dasharray="2 2"/>
-        <line x1="90" y1="165" x2="110" y2="165" stroke-dasharray="2 2"/>
-      </svg>
-      <div class="cam-corners"><span></span></div>
-
-      <div class="analysis-overlay" id="analyseOverlay">
-        <div class="spinner"></div>
-        <div class="analysis-text">ANALYZING</div>
-        <div class="analysis-stage" id="analyseStage">Comparing to baseline…</div>
-      </div>
+<!-- ═══ PROFILE MODAL ═══ -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <div class="modal-title">Edit profile</div>
+    <div class="modal-field"><label>Name</label><input id="pmName"></div>
+    <div class="modal-field"><label>Diabetes type</label>
+      <select id="pmType"><option value="2">Type 2</option><option value="1">Type 1</option></select>
     </div>
-
-    <div class="foot-switch">
-      <span class="on" id="footL">LEFT</span>
-      <span id="footR">RIGHT</span>
+    <div class="modal-field"><label>Years since diagnosis</label><input id="pmYears" type="number" min="0" max="60"></div>
+    <div class="modal-field"><label>Primary clinician</label><input id="pmDoc"></div>
+    <div class="modal-field"><label>Medications</label><textarea id="pmMeds" rows="3" style="resize:vertical"></textarea></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeProfileModal()">Cancel</button>
+      <button class="modal-save" onclick="saveProfile()">Save</button>
     </div>
+  </div>
+</div>
 
-    <div class="cam-actions" style="margin-top:14px">
-      <button class="cam-side-btn" onclick="show('home')" aria-label="Cancel">✕</button>
-      <button class="shutter" id="shutter" onclick="capture()" aria-label="Capture"></button>
-      <button class="cam-side-btn" aria-label="Light tips">💡</button>
-    </div>
-  </main>
+<!-- ═══ BOTTOM NAV ═══ -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <button class="nav-btn active" data-screen="Checkin" aria-label="Check-in">
+    <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>
+    <span>Check-in</span>
+  </button>
+  <button class="nav-btn" data-screen="Trends" aria-label="Trends">
+    <svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h16M8 16l3-5 3 3 4-7"/></svg>
+    <span>Trends</span>
+  </button>
+  <button class="nav-btn" data-screen="Share" aria-label="Share">
+    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    <span>Share</span>
+  </button>
+  <button class="nav-btn" data-screen="Settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Settings</span>
+  </button>
+</nav>
 
-  <!-- ────────────── RESULT ────────────── -->
-  <main class="view" id="result">
-    <div class="eyebrow">Today · Tuesday, May 22</div>
-    <h2 style="margin-bottom:18px">Today's read</h2>
+</div>
 
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SOLE v2 — Diabetic Foot-Ulcer Monitoring — single-file PWA
+// ═══════════════════════════════════════════════════════════════
+
+const $=id=>document.getElementById(id);
+
+// ─── STATE ───
+let state = {
+  onboarded: false,
+  profile: { name:'', type:'2', years:'', doc:'', meds:'' },
+  checkins: [], // {id,date,leftPhoto,rightPhoto,symptoms:[],riskScore,leftScore,rightScore,notes}
+};
+
+function loadState(){ try{ const s=localStorage.getItem('sole_state'); if(s) state=JSON.parse(s); }catch(e){} }
+function saveState(){ try{ localStorage.setItem('sole_state',JSON.stringify(state)); }catch(e){} }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){ if(!s)return''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+// ─── NAV ───
+function showScreen(name){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('screen'+name).classList.add('active');
+  window.scrollTo(0,0);
+  if(name==='Checkin') renderHome();
+  if(name==='Trends') renderTrends();
+  if(name==='Share') renderSharePreview();
+  if(name==='Settings') renderSettings();
+}
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>showScreen(btn.dataset.screen));
+});
+
+// ─── ONBOARDING ───
+let obStep=0;
+function obNext(){
+  if(obStep===1){
+    state.profile.name=$('obName').value.trim();
+    state.profile.type=$('obType').value;
+    state.profile.years=$('obYears').value;
+    state.profile.doc=$('obDoc').value.trim();
+    state.profile.meds=$('obMeds').value.trim();
+  }
+  obStep++;
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  const next=document.querySelector(`.ob-step[data-step="${obStep}"]`);
+  if(next) next.classList.add('active');
+}
+function obSkip(){
+  if(obStep<2){ obStep=2; document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active')); document.querySelector('.ob-step[data-step="2"]').classList.add('active'); }
+  else obFinish();
+}
+function obFinish(){
+  state.onboarded=true;
+  if(!state.profile.name) state.profile.name='';
+  // Seed sample data
+  if(state.checkins.length===0) seedData();
+  saveState();
+  $('onboard').classList.add('hidden');
+  renderAll();
+}
+
+function seedData(){
+  const now=new Date();
+  for(let i=36;i>=1;i--){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const leftScore=Math.max(0,Math.min(10, 2 + (Math.random()-0.5)*1.5 + (i<5?(5-i)*0.3:0)));
+    const rightScore=Math.max(0,Math.min(10, 1.8 + (Math.random()-0.5)*1.2));
+    const risk=Math.round(Math.max(leftScore,rightScore)*10)/10;
+    const symptoms=[];
+    if(Math.random()<0.1) symptoms.push('redness');
+    if(i<4 && Math.random()<0.3) symptoms.push('warmth');
+    state.checkins.push({
+      id:uid(), date:d.toISOString(),
+      leftPhoto:null, rightPhoto:null,
+      symptoms, riskScore:Math.round(risk*10)/10,
+      leftScore:Math.round(leftScore*10)/10,
+      rightScore:Math.round(rightScore*10)/10,
+      notes:''
+    });
+  }
+}
+
+// ─── CHECK-IN FLOW ───
+let checkInData = { leftPhoto:null, rightPhoto:null, currentFoot:'left', symptoms:[] };
+let camStream = null;
+
+const SYMPTOMS = [
+  {id:'pain',label:'Any pain',score:2,emoji:'😣'},
+  {id:'redness',label:'New redness',score:3,emoji:'🔴'},
+  {id:'warmth',label:'Warmth / hot spot',score:3,emoji:'🌡️'},
+  {id:'numbness',label:'Numbness change',score:2,emoji:'🫥'},
+  {id:'swelling',label:'Swelling',score:3,emoji:'🫧'},
+  {id:'discharge',label:'Discharge / odor',score:4,emoji:'⚠️'},
+  {id:'blister',label:'Blister / callus',score:2,emoji:'🩹'},
+  {id:'none',label:'All clear!',score:0,emoji:'✅'},
+];
+
+function startCheckIn(){
+  checkInData = {leftPhoto:null, rightPhoto:null, currentFoot:'left', symptoms:[]};
+  updateCamUI();
+  showScreen('Camera');
+  startCamera();
+}
+
+function cancelCheckIn(){
+  stopCamera();
+  showScreen('Checkin');
+}
+
+function updateCamUI(){
+  const isLeft = checkInData.currentFoot==='left';
+  $('camStep').textContent = isLeft ? 'Step 1 of 3 · Left foot' : 'Step 2 of 3 · Right foot';
+  $('camTitle').textContent = isLeft ? 'Capture left foot' : 'Now the right foot';
+  $('footL').classList.toggle('on', isLeft);
+  $('footR').classList.toggle('on', !isLeft);
+}
+
+function switchFoot(foot){
+  checkInData.currentFoot = foot;
+  updateCamUI();
+}
+
+async function startCamera(){
+  try{
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:960}},audio:false});
+    const v=$('camVideo');
+    v.srcObject=camStream;
+    v.style.display='block';
+    $('footGuide').style.display='none';
+    $('camFrame').classList.add('scanning-mode');
+  }catch(e){
+    // Fallback — show upload button
+    $('camVideo').style.display='none';
+    $('footGuide').style.display='block';
+  }
+}
+
+function stopCamera(){
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  $('camVideo').style.display='none';
+  $('camVideo').srcObject=null;
+  $('camFrame').classList.remove('scanning-mode');
+}
+
+// File upload fallback
+$('camFileInput').addEventListener('change', function(e){
+  const file=e.target.files&&e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    resizeImage(ev.target.result, 1000, function(dataUrl){
+      if(checkInData.currentFoot==='left'){
+        checkInData.leftPhoto=dataUrl;
+        checkInData.currentFoot='right';
+        updateCamUI();
+      } else {
+        checkInData.rightPhoto=dataUrl;
+        stopCamera();
+        showSymptomScreen();
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+});
+
+function capturePhoto(){
+  // If we have a live camera, grab from video
+  const video=$('camVideo');
+  let dataUrl=null;
+  if(camStream && video.videoWidth>0){
+    const canvas=document.createElement('canvas');
+    const w=Math.min(video.videoWidth,1000);
+    const h=Math.round(video.videoHeight * w / video.videoWidth);
+    canvas.width=w; canvas.height=h;
+    canvas.getContext('2d').drawImage(video,0,0,w,h);
+    dataUrl=canvas.toDataURL('image/jpeg',0.8);
+  }
+
+  // Simulate analysis
+  const overlay=$('analyzeOverlay');
+  const stage=$('analyzeStage');
+  overlay.classList.add('on');
+  const stages=['Normalizing lighting...','Detecting tissue regions...','Comparing to baseline...','Scoring risk...'];
+  let i=0; stage.textContent=stages[0];
+  const tick=setInterval(()=>{ i=(i+1)%stages.length; stage.textContent=stages[i]; },500);
+
+  setTimeout(()=>{
+    clearInterval(tick);
+    overlay.classList.remove('on');
+
+    if(checkInData.currentFoot==='left'){
+      checkInData.leftPhoto=dataUrl;
+      checkInData.currentFoot='right';
+      updateCamUI();
+    } else {
+      checkInData.rightPhoto=dataUrl;
+      stopCamera();
+      showSymptomScreen();
+    }
+  }, 1800);
+}
+
+function showSymptomScreen(){
+  // Render symptom buttons
+  const grid=$('symptomGrid');
+  grid.innerHTML=SYMPTOMS.map(s=>`<button class="symptom-btn" data-id="${s.id}" onclick="toggleSymptom('${s.id}',this)" aria-label="${s.label}">${s.emoji} ${s.label}</button>`).join('');
+  showScreen('Symptoms');
+}
+
+function toggleSymptom(id, el){
+  if(id==='none'){
+    checkInData.symptoms=['none'];
+    $('symptomGrid').querySelectorAll('.symptom-btn').forEach(b=>{b.classList.remove('selected');b.classList.remove('ok')});
+    el.classList.add('ok');
+    return;
+  }
+  checkInData.symptoms=checkInData.symptoms.filter(s=>s!=='none');
+  $('symptomGrid').querySelector('[data-id="none"]')?.classList.remove('ok');
+  if(checkInData.symptoms.includes(id)){
+    checkInData.symptoms=checkInData.symptoms.filter(s=>s!==id);
+    el.classList.remove('selected');
+  } else {
+    checkInData.symptoms.push(id);
+    el.classList.add('selected');
+  }
+}
+
+function saveCheckIn(){
+  // Compute risk score
+  let symptomScore=0;
+  checkInData.symptoms.forEach(sid=>{
+    const s=SYMPTOMS.find(x=>x.id===sid);
+    if(s) symptomScore+=s.score;
+  });
+
+  // Base score from streak + baseline
+  const streak=getStreak();
+  const baseLeft = 2 + (Math.random()-0.4)*1.2 + symptomScore*0.5;
+  const baseRight = 1.8 + (Math.random()-0.4)*1.0 + symptomScore*0.3;
+  const leftScore = Math.round(Math.max(0,Math.min(10,baseLeft))*10)/10;
+  const rightScore = Math.round(Math.max(0,Math.min(10,baseRight))*10)/10;
+  const riskScore = Math.round(Math.max(leftScore,rightScore)*10)/10;
+
+  const checkin = {
+    id: uid(),
+    date: new Date().toISOString(),
+    leftPhoto: checkInData.leftPhoto,
+    rightPhoto: checkInData.rightPhoto,
+    symptoms: checkInData.symptoms.filter(s=>s!=='none'),
+    riskScore, leftScore, rightScore,
+    notes: ''
+  };
+
+  state.checkins.push(checkin);
+  saveState();
+
+  // Show result
+  renderResult(checkin);
+  showScreen('Result');
+}
+
+// ─── RISK SCORING / TREND ───
+function getStreak(){
+  let streak=0;
+  const today=new Date(); today.setHours(0,0,0,0);
+  for(let i=0;i<60;i++){
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    const dayStr=d.toISOString().slice(0,10);
+    const has=state.checkins.some(c=>c.date.slice(0,10)===dayStr);
+    if(has) streak++;
+    else if(i>0) break;
+  }
+  return streak;
+}
+
+function get30DayData(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const data=[];
+  for(let i=29;i>=0;i--){
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    const dayStr=d.toISOString().slice(0,10);
+    const dayCheckins=state.checkins.filter(c=>c.date.slice(0,10)===dayStr);
+    if(dayCheckins.length>0){
+      const last=dayCheckins[dayCheckins.length-1];
+      data.push({day:i,date:d,left:last.leftScore,right:last.rightScore,risk:last.riskScore,checked:true});
+    } else {
+      data.push({day:i,date:d,left:null,right:null,risk:null,checked:false});
+    }
+  }
+  return data;
+}
+
+function getAvgRisk(){
+  const data=get30DayData().filter(d=>d.risk!==null);
+  if(data.length===0) return 0;
+  return Math.round(data.reduce((a,d)=>a+d.risk,0)/data.length*10)/10;
+}
+
+function getTrend(){
+  const data=get30DayData().filter(d=>d.risk!==null);
+  if(data.length<7) return 'New';
+  const recent=data.slice(-7);
+  const prior=data.slice(-14,-7);
+  if(prior.length===0) return 'New';
+  const recentAvg=recent.reduce((a,d)=>a+d.risk,0)/recent.length;
+  const priorAvg=prior.reduce((a,d)=>a+d.risk,0)/prior.length;
+  const diff=recentAvg-priorAvg;
+  if(diff>0.5) return 'Rising';
+  if(diff<-0.5) return 'Falling';
+  return 'Stable';
+}
+
+// ─── RENDER HOME ───
+function renderHome(){
+  const streak=getStreak();
+  const today=new Date().toISOString().slice(0,10);
+  const checkedToday=state.checkins.some(c=>c.date.slice(0,10)===today);
+  const todayCheckin=state.checkins.filter(c=>c.date.slice(0,10)===today).pop();
+
+  $('streakText').textContent=streak>0 ? streak+'-day streak'+(streak>=7?' — keep it up!':' — building momentum') : 'Start your streak today';
+  $('statStreak').textContent=streak;
+  $('statRisk').textContent=todayCheckin ? todayCheckin.riskScore.toFixed(1) : '--';
+  $('statRisk').className='stat-num'+(todayCheckin ? (todayCheckin.riskScore>=5?' coral':(todayCheckin.riskScore>=2.5?' amber':' green')):'');
+  $('statAvg').textContent=getAvgRisk().toFixed(1);
+  $('chartTrend').textContent=getTrend();
+  $('checkSub').textContent=checkedToday ? 'Already checked in today. Check again anytime.' : '30 seconds. Two photos. Let\'s go.';
+  $('checkMeta').textContent=checkedToday ? 'Last check: '+new Date(todayCheckin.date).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}) : 'Best time: morning, before socks';
+
+  // Header
+  $('hdrDoc').textContent=state.profile.doc ? state.profile.doc : '';
+  $('hdrDay').textContent='Day '+streak;
+
+  renderChart('trendChart');
+  renderCalendar('calendarGrid');
+  renderHistoryList('historyList',7);
+}
+
+// ─── CHART ───
+function renderChart(svgId){
+  const svg=$(svgId);
+  const data=get30DayData();
+  const W=320,H=130,pL=24,pR=8,pT=12,pB=22;
+  const xStep=(W-pL-pR)/29;
+  const yMax=6;
+  const y=v=>pT+(H-pT-pB)*(1-Math.min(v,yMax)/yMax);
+  const x=i=>pL+i*xStep;
+
+  let grid='';
+  for(let g=0;g<=3;g++){
+    const yv=pT+(H-pT-pB)*(g/3);
+    grid+=`<line x1="${pL}" x2="${W-pR}" y1="${yv}" y2="${yv}" stroke="#e7e5e0" stroke-width="1"/>`;
+  }
+  const baselineY=y(2);
+  grid+=`<line x1="${pL}" x2="${W-pR}" y1="${baselineY}" y2="${baselineY}" stroke="#8a9698" stroke-width="1" stroke-dasharray="3 3"/>`;
+  grid+=`<text x="4" y="${pT+4}" font-family="ui-monospace" font-size="9" fill="#8a9698">6</text>`;
+  grid+=`<text x="4" y="${y(2)+3}" font-family="ui-monospace" font-size="9" fill="#8a9698">2</text>`;
+  grid+=`<text x="4" y="${H-pB+4}" font-family="ui-monospace" font-size="9" fill="#8a9698">0</text>`;
+
+  const leftPts=[],rightPts=[];
+  data.forEach((p,i)=>{
+    if(p.left!==null) leftPts.push(`${x(i)},${y(p.left)}`);
+    if(p.right!==null) rightPts.push(`${x(i)},${y(p.right)}`);
+  });
+
+  const lPath=leftPts.length>1?`<polyline points="${leftPts.join(' ')}" fill="none" stroke="#0d3b40" stroke-width="2" stroke-linejoin="round"/>`:'';
+  const rPath=rightPts.length>1?`<polyline points="${rightPts.join(' ')}" fill="none" stroke="#fb7185" stroke-width="1.6" stroke-linejoin="round" opacity="0.6"/>`:'';
+
+  let markers='';
+  const last=data.filter(d=>d.left!==null).pop();
+  if(last){
+    const i=data.indexOf(last);
+    markers+=`<circle cx="${x(i)}" cy="${y(last.left)}" r="4" fill="#0d3b40"/>`;
+    markers+=`<circle cx="${x(i)}" cy="${y(last.left)}" r="7" fill="none" stroke="#0d3b40" stroke-width="1" opacity="0.3"/>`;
+    if(last.right!==null) markers+=`<circle cx="${x(i)}" cy="${y(last.right)}" r="3" fill="#fb7185"/>`;
+  }
+
+  svg.innerHTML=grid+rPath+lPath+markers;
+}
+
+// ─── CALENDAR ───
+function renderCalendar(gridId){
+  const grid=$(gridId);
+  const today=new Date(); today.setHours(0,0,0,0);
+  const monthStart=new Date(today.getFullYear(),today.getMonth(),1);
+  const startDay=monthStart.getDay();
+  const daysInMonth=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
+
+  const headers=['S','M','T','W','T','F','S'];
+  let html=headers.map(h=>`<div class="cal-header">${h}</div>`).join('');
+
+  for(let i=0;i<startDay;i++) html+='<div class="cal-day empty"></div>';
+
+  for(let d=1;d<=daysInMonth;d++){
+    const date=new Date(today.getFullYear(),today.getMonth(),d);
+    const dayStr=date.toISOString().slice(0,10);
+    const checked=state.checkins.some(c=>c.date.slice(0,10)===dayStr);
+    const isToday=d===today.getDate();
+    const cls=['cal-day'];
+    if(checked) cls.push('checked');
+    if(isToday) cls.push('today');
+    html+=`<div class="${cls.join(' ')}">${d}</div>`;
+  }
+
+  grid.innerHTML=html;
+}
+
+// ─── HISTORY LIST ───
+function renderHistoryList(containerId, limit){
+  const el=$(containerId);
+  const data=get30DayData().filter(d=>d.checked).reverse().slice(0,limit||30);
+  if(data.length===0){
+    el.innerHTML='<div class="empty-state">No check-ins yet. Start your first daily check.</div>';
+    return;
+  }
+  el.innerHTML=data.map(h=>{
+    const dayLabel=h.day===0?'Today':(h.day===1?'Yesterday':h.date.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}));
+    let pillClass='ok',pillLabel='Stable';
+    if(h.risk>=5){pillClass='alert';pillLabel='Watch';}
+    else if(h.risk>=2.5){pillClass='watch';pillLabel='Elevated';}
+    return `<div class="h-row"><div class="h-left"><div class="h-date">${dayLabel}</div><span class="h-pill ${pillClass}">${pillLabel}</span></div><div class="h-score">${h.risk.toFixed(1)}<span class="h-trend"> / 10</span></div></div>`;
+  }).join('');
+}
+
+// ─── RESULT ───
+function renderResult(checkin){
+  const score=checkin.riskScore;
+  let statusText='Low risk — looking good';
+  let statusClass='stable';
+  let ringColor='var(--green)';
+  if(score>=5){statusText='Elevated — monitor closely';statusClass='elevated';ringColor='var(--coral)';}
+  else if(score>=2.5){statusText='Slightly elevated';statusClass='elevated';ringColor='var(--amber)';}
+
+  const circ=2*Math.PI*42;
+  const offset=circ*(1-score/10);
+
+  const trend=getTrend();
+  const avg=getAvgRisk();
+
+  // Generate heatmap zones based on score
+  const hotOpacity=Math.min(score/8,0.85);
+  const warmOpacity=Math.min(score/12,0.7);
+
+  let alerts='';
+  if(checkin.symptoms.length>0 && !checkin.symptoms.includes('none')){
+    const symptomNames=checkin.symptoms.map(s=>{const sym=SYMPTOMS.find(x=>x.id===s);return sym?sym.label:s;}).join(', ');
+    alerts=`<div class="alert-card"><div class="alert-icon">!</div><div class="alert-body"><div class="alert-title">Symptoms reported</div><div class="alert-text">${esc(symptomNames)}. Compare to yesterday's photo. If spreading or worsening, contact your clinician.</div></div></div>`;
+  }
+
+  const recs=[
+    {n:'1',text:score>=3?'<strong>Offload the pressure area</strong> — felt pad or cushioned insole for 24h.':'<strong>Keep checking daily.</strong> Consistency catches changes early.'},
+    {n:'2',text:'<strong>Re-check tomorrow</strong> at the same time. SOLE will flag if the area spreads or changes.'},
+    {n:'3',text:score>=4?'<strong>Call '+esc(state.profile.doc||'your clinician')+'</strong> if redness spreads, you see fluid, or feel any pain — even mild.':'<strong>Share your report</strong> with '+esc(state.profile.doc||'your clinician')+' at your next visit.'},
+  ];
+
+  $('resultDate').textContent=new Date(checkin.date).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+
+  $('resultContent').innerHTML=`
     <div class="result-card">
       <div class="score-row">
         <div class="score-ring">
           <svg viewBox="0 0 100 100">
             <circle class="ring-bg" cx="50" cy="50" r="42"/>
-            <circle class="ring-fg" id="ringFg" cx="50" cy="50" r="42" stroke="var(--amber)" stroke-dasharray="263.9" stroke-dashoffset="184.7"/>
+            <circle class="ring-fg" cx="50" cy="50" r="42" stroke="${ringColor}" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"/>
           </svg>
           <div class="score-text">
-            <div class="score-val" id="riskScore">3</div>
+            <div class="score-val">${score.toFixed(1)}</div>
             <div class="score-max">OF 10</div>
           </div>
         </div>
         <div class="score-info">
-          <div class="score-status elevated" id="riskStatus">Slightly elevated</div>
+          <div class="score-status ${statusClass}">${statusText}</div>
           <div class="score-compare">
-            Today &nbsp;<strong style="color:var(--ink)">3</strong><br>
-            Baseline &nbsp;<strong style="color:var(--ink)">2</strong><br>
-            7-day trend &nbsp;<strong style="color:var(--ink)">stable</strong>
+            Today <strong style="color:var(--ink)">${score.toFixed(1)}</strong><br>
+            Baseline <strong style="color:var(--ink)">${avg.toFixed(1)}</strong><br>
+            7-day trend <strong style="color:var(--ink)">${trend.toLowerCase()}</strong>
           </div>
         </div>
       </div>
-
-      <div class="heatmap-wrap">
-        <svg viewBox="0 0 200 320" id="heatmap">
+      <div class="heatmap-card">
+        <svg viewBox="0 0 200 320" id="resultHeatmap">
           <defs>
-            <radialGradient id="hot" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fb7185" stop-opacity="0.85"/><stop offset="60%" stop-color="#fb7185" stop-opacity="0.35"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0"/></radialGradient>
-            <radialGradient id="warm" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#f59e0b" stop-opacity="0.7"/><stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/></radialGradient>
-            <radialGradient id="cool" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#10b981" stop-opacity="0.55"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></radialGradient>
+            <radialGradient id="hot"><stop offset="0%" stop-color="#fb7185" stop-opacity="${hotOpacity}"/><stop offset="60%" stop-color="#fb7185" stop-opacity="${hotOpacity*0.4}"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0"/></radialGradient>
+            <radialGradient id="warm"><stop offset="0%" stop-color="#f59e0b" stop-opacity="${warmOpacity}"/><stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/></radialGradient>
+            <radialGradient id="cool"><stop offset="0%" stop-color="#10b981" stop-opacity="0.5"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></radialGradient>
           </defs>
-          <!-- Foot outline (same as guide) -->
           <path d="M100 18 C 130 18, 152 42, 155 80 C 158 110, 152 138, 148 158 C 145 178, 148 200, 152 222 C 156 248, 150 280, 130 296 C 110 310, 88 308, 72 296 C 56 282, 50 256, 53 232 C 56 210, 58 188, 55 168 C 50 142, 44 110, 48 80 C 52 42, 70 18, 100 18 Z" fill="#fdfaf3" stroke="#0d3b40" stroke-width="1.2"/>
-          <!-- Toes -->
           <ellipse cx="100" cy="36" rx="10" ry="8" fill="#fdfaf3" stroke="#0d3b40" stroke-width="0.8"/>
           <ellipse cx="78" cy="48" rx="7" ry="6" fill="#fdfaf3" stroke="#0d3b40" stroke-width="0.8"/>
           <ellipse cx="118" cy="46" rx="7" ry="6" fill="#fdfaf3" stroke="#0d3b40" stroke-width="0.8"/>
-          <ellipse cx="62" cy="62" rx="6" ry="5" fill="#fdfaf3" stroke="#0d3b40" stroke-width="0.8"/>
-          <ellipse cx="135" cy="60" rx="6" ry="5" fill="#fdfaf3" stroke="#0d3b40" stroke-width="0.8"/>
-          <!-- Heat zones -->
           <circle cx="86" cy="88" r="34" fill="url(#hot)"/>
           <circle cx="118" cy="170" r="42" fill="url(#warm)"/>
           <circle cx="92" cy="250" r="38" fill="url(#cool)"/>
-          <!-- Pin marker on hotspot -->
-          <circle cx="86" cy="88" r="5" fill="#fb7185" stroke="#fff" stroke-width="2"/>
-          <line x1="86" y1="88" x2="170" y2="64" stroke="#fb7185" stroke-width="1" stroke-dasharray="2 2"/>
-          <text x="172" y="62" font-family="SF Mono,monospace" font-size="8" fill="#fb7185" letter-spacing="0.5">MT-2</text>
+          ${score>=3?'<circle cx="86" cy="88" r="5" fill="#fb7185" stroke="#fff" stroke-width="2"/>':''}
         </svg>
-      </div>
-      <div class="heat-legend">
-        <span>Cool</span><div class="heat-grad"></div><span>Warm</span>
+        <div class="heat-legend"><span>Cool</span><div class="heat-grad"></div><span>Warm</span></div>
       </div>
     </div>
-
-    <!-- Alert -->
-    <div class="alert-card">
-      <div class="alert-icon">!</div>
-      <div class="alert-body">
-        <div class="alert-title">Pressure point detected · left metatarsal 2</div>
-        <div class="alert-text">Localized erythema, likely from shoe friction. Skin is intact. No swelling. Catching this stage is the whole point.</div>
-        <a class="alert-action" onclick="showWhy()">Why does this matter? →</a>
-      </div>
-    </div>
-
-    <h3 style="margin:14px 0 8px;color:var(--ink-2);font-size:13px">Recommended today</h3>
-    <div class="recs">
-      <div class="rec"><div class="rec-icon">1</div><div class="rec-body"><strong>Add a felt pad</strong> over the ball of your left foot. The pressure zone needs offloading for 24h.</div></div>
-      <div class="rec"><div class="rec-icon">2</div><div class="rec-body"><strong>Re-check tomorrow</strong> at the same time. We'll flag if the area spreads or darkens.</div></div>
-      <div class="rec"><div class="rec-icon">3</div><div class="rec-body"><strong>Call Dr. Patel</strong> if you see redness spreading, fluid, or feel pain — even mild. Don't wait.</div></div>
-    </div>
-
-    <div class="share-row">
-      <button class="btn btn-primary btn-block" onclick="shareToDoc()">Share with Dr. Patel</button>
-    </div>
-    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="show('home')">Done — back home</button>
-
-    <p style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em;text-align:center;margin-top:18px;line-height:1.6">
-      SOLE flags pre-ulcerative changes — it doesn't diagnose ulcers.<br>
-      If you're worried, call your clinician.
-    </p>
-  </main>
-
-  <!-- Bottom tab bar -->
-  <nav class="tabbar">
-    <button class="tab on" onclick="show('home')">
-      <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>
-      Home
-    </button>
-    <button class="tab" onclick="startCheck()">
-      <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.5"/></svg>
-      Check
-    </button>
-    <button class="tab" onclick="show('home')">
-      <svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h16M8 16l3-5 3 3 4-7"/></svg>
-      Trend
-    </button>
-    <button class="tab" onclick="alert('Care team\\n\\nDr. Sarita Patel — Endocrinology\\nMemorial Health · last review 3 days ago\\n\\nLast shared report received & acknowledged.')">
-      <svg viewBox="0 0 24 24"><path d="M16 14a4 4 0 1 0-8 0M12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM4 21c0-3 4-5 8-5s8 2 8 5"/></svg>
-      Care
-    </button>
-  </nav>
-
-</div>
-
-<script>
-// ─────────────── View routing ───────────────
-function show(id){
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
-  const map = {home:0, camera:1, result:2};
-  const idx = id === 'result' ? 2 : map[id] ?? 0;
-  document.querySelectorAll('.tab')[idx === 2 ? 2 : (id === 'camera' ? 1 : 0)]?.classList.add('on');
-  window.scrollTo(0,0);
-}
-
-// ─────────────── Sample data ───────────────
-// 30 day risk history. Left/right foot. Today is elevated (3).
-function generateHistory(){
-  const days = 30;
-  const arr = [];
-  let l = 2, r = 2;
-  for (let i = days - 1; i >= 0; i--){
-    // Random walk, bounded 0-10
-    l = Math.max(0, Math.min(10, l + (Math.random() - 0.5) * 0.8));
-    r = Math.max(0, Math.min(10, r + (Math.random() - 0.5) * 0.8));
-    // Trend left foot up slightly approaching today (showing the catch)
-    if (i < 5) l += (5 - i) * 0.18;
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    arr.push({day: i, date: d, left: Math.round(l * 10)/10, right: Math.round(r * 10)/10});
-  }
-  // Force today's reading to be 3 (left) and 2 (right) to match alert
-  arr[arr.length - 1].left = 3.0;
-  arr[arr.length - 1].right = 2.0;
-  return arr;
-}
-const history = generateHistory();
-
-// ─────────────── Trend chart (SVG line) ───────────────
-function renderChart(){
-  const svg = document.getElementById('trendChart');
-  const W = 320, H = 120, padL = 24, padR = 8, padT = 12, padB = 22;
-  const xs = history.length;
-  const xStep = (W - padL - padR) / (xs - 1);
-  const yMax = 6; // visible ceiling
-  const y = v => padT + (H - padT - padB) * (1 - Math.min(v, yMax) / yMax);
-  const x = i => padL + i * xStep;
-
-  // Gridlines
-  let grid = '';
-  for (let g = 0; g <= 3; g++){
-    const yv = padT + (H - padT - padB) * (g / 3);
-    grid += `<line x1="${padL}" x2="${W - padR}" y1="${yv}" y2="${yv}" stroke="#e7e5e0" stroke-width="1"/>`;
-  }
-  // Baseline
-  const baselineY = y(2);
-  grid += `<line x1="${padL}" x2="${W - padR}" y1="${baselineY}" y2="${baselineY}" stroke="#8a9698" stroke-width="1" stroke-dasharray="3 3"/>`;
-  // Y labels
-  grid += `<text x="4" y="${padT + 4}" font-family="SF Mono,monospace" font-size="9" fill="#8a9698">6</text>`;
-  grid += `<text x="4" y="${y(2) + 3}" font-family="SF Mono,monospace" font-size="9" fill="#8a9698">2</text>`;
-  grid += `<text x="4" y="${H - padB + 4}" font-family="SF Mono,monospace" font-size="9" fill="#8a9698">0</text>`;
-  // X labels
-  const tics = [0, 7, 14, 21, 29];
-  tics.forEach(t => {
-    const lbl = t === 29 ? 'today' : `−${29 - t}d`;
-    grid += `<text x="${x(t) - 12}" y="${H - 4}" font-family="SF Mono,monospace" font-size="9" fill="#8a9698">${lbl}</text>`;
-  });
-
-  // Left foot path
-  const lPath = history.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(p.left)}`).join(' ');
-  const rPath = history.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(p.right)}`).join(' ');
-
-  // Today markers
-  const tx = x(history.length - 1);
-  const tly = y(history[history.length - 1].left);
-  const try_ = y(history[history.length - 1].right);
-
-  svg.innerHTML = `
-    ${grid}
-    <path d="${rPath}" fill="none" stroke="#fb7185" stroke-width="1.6" stroke-linejoin="round" opacity="0.55"/>
-    <path d="${lPath}" fill="none" stroke="#0d3b40" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="${tx}" cy="${try_}" r="3" fill="#fb7185"/>
-    <circle cx="${tx}" cy="${tly}" r="4" fill="#0d3b40"/>
-    <circle cx="${tx}" cy="${tly}" r="7" fill="none" stroke="#0d3b40" stroke-width="1" opacity="0.3"/>
+    ${alerts}
+    <h3 style="margin:10px 0 8px;color:var(--ink2)">Recommended today</h3>
+    ${recs.map(r=>`<div class="rec"><div class="rec-icon">${r.n}</div><div class="rec-body">${r.text}</div></div>`).join('')}
   `;
 }
 
-// ─────────────── History list ───────────────
-function renderHistoryList(){
-  const list = document.getElementById('historyList');
-  const recent = history.slice(-7).reverse();
-  list.innerHTML = recent.map(h => {
-    const dayLabel = h.day === 0 ? 'Today' : (h.day === 1 ? 'Yest.' : new Date(h.date).toLocaleDateString(undefined,{weekday:'short'}));
-    const score = h.left;
-    let pillClass = 'ok', pillLabel = 'Stable';
-    if (score >= 5){ pillClass = 'alert'; pillLabel = 'Watch'; }
-    else if (score >= 2.8){ pillClass = 'watch'; pillLabel = 'Elevated'; }
-    return `<div class="h-row">
-      <div class="h-left">
-        <div class="h-date">${dayLabel}</div>
-        <span class="h-pill ${pillClass}">${pillLabel}</span>
-      </div>
-      <div class="h-score">${score.toFixed(1)} / 10</div>
-    </div>`;
-  }).join('');
+// ─── TRENDS ───
+function renderTrends(){
+  $('trendBadge2').textContent=getTrend();
+  renderChart('trendChart2');
+  renderCalendar('calendarGrid2');
+  renderHistoryList('trendHistory',30);
 }
 
-// ─────────────── Check-in flow ───────────────
-function startCheck(){
-  show('camera');
-  document.getElementById('camFrame').classList.add('scanning-mode');
+// ─── SHARE / REPORT ───
+function renderSharePreview(){
+  const last7=state.checkins.filter(c=>{
+    const d=new Date(c.date);
+    const now=new Date();
+    return (now-d)/(1000*60*60*24)<=7;
+  });
+  const avg=last7.length>0?Math.round(last7.reduce((a,c)=>a+c.riskScore,0)/last7.length*10)/10:0;
+  const trend=getTrend();
+  const photoCount=last7.filter(c=>c.leftPhoto||c.rightPhoto).length;
+
+  $('reportPreview').innerHTML=`
+    <h3 style="margin-bottom:10px">7-day summary</h3>
+    <div class="report-row"><span class="k">Patient</span><span class="v">${esc(state.profile.name||'Not set')}</span></div>
+    <div class="report-row"><span class="k">Diabetes type</span><span class="v">Type ${state.profile.type}</span></div>
+    <div class="report-row"><span class="k">Clinician</span><span class="v">${esc(state.profile.doc||'Not set')}</span></div>
+    <div class="report-row"><span class="k">Check-ins (7d)</span><span class="v">${last7.length}</span></div>
+    <div class="report-row"><span class="k">Avg risk</span><span class="v">${avg.toFixed(1)} / 10</span></div>
+    <div class="report-row"><span class="k">Trend</span><span class="v">${trend}</span></div>
+    <div class="report-row"><span class="k">Photos included</span><span class="v">${photoCount} sets</span></div>
+    <div class="report-row"><span class="k">Streak</span><span class="v">${getStreak()} days</span></div>
+  `;
 }
 
-function capture(){
-  const shutter = document.getElementById('shutter');
-  const overlay = document.getElementById('analyseOverlay');
-  const stage = document.getElementById('analyseStage');
-  shutter.classList.add('busy');
-  overlay.classList.add('on');
-  const stages = [
-    'Normalizing lighting & color…',
-    'Detecting tissue regions…',
-    'Comparing to your baseline…',
-    'Scoring risk indicators…'
-  ];
-  let s = 0;
-  stage.textContent = stages[s];
-  const tick = setInterval(() => {
-    s = (s + 1) % stages.length;
-    stage.textContent = stages[s];
-  }, 500);
-  setTimeout(() => {
-    clearInterval(tick);
-    shutter.classList.remove('busy');
-    overlay.classList.remove('on');
-    document.getElementById('camFrame').classList.remove('scanning-mode');
-    show('result');
-    animateScore(3);
-  }, 2200);
+function generateReportHTML(days){
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-days);
+  const checkins=state.checkins.filter(c=>new Date(c.date)>=cutoff);
+
+  let html='<!doctype html><html><head><meta charset="utf-8"><title>SOLE Report — '+esc(state.profile.name)+'</title><style>body{font-family:system-ui;max-width:700px;margin:40px auto;padding:0 20px;color:#0d3b40;background:#fafaf9}h1{color:#0d3b40}h2{color:#176870;margin-top:20px}.meta{background:#f7f5f1;border-radius:10px;padding:14px;margin:12px 0;font-size:13px}.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e7e5e0}.row:last-child{border-bottom:none}.k{color:#5a6e70;font-size:12px;text-transform:uppercase;letter-spacing:0.08em}.v{font-weight:600}img{max-width:200px;border-radius:8px;margin:8px 8px 8px 0}.badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600}.green{background:#e6f6f0;color:#0a7a5b}.amber{background:#fef6e7;color:#9a6500}.red{background:#fef0f2;color:#b34058}</style></head><body>';
+  html+=`<h1>SOLE — Foot Health Report</h1>`;
+  html+=`<div class="meta">`;
+  html+=`<div class="row"><span class="k">Patient</span><span class="v">${esc(state.profile.name)}</span></div>`;
+  html+=`<div class="row"><span class="k">Diabetes</span><span class="v">Type ${state.profile.type}${state.profile.years?' · '+state.profile.years+' years':''}</span></div>`;
+  html+=`<div class="row"><span class="k">Clinician</span><span class="v">${esc(state.profile.doc||'Not specified')}</span></div>`;
+  html+=`<div class="row"><span class="k">Medications</span><span class="v">${esc(state.profile.meds||'Not specified')}</span></div>`;
+  html+=`<div class="row"><span class="k">Period</span><span class="v">Last ${days} days · ${checkins.length} check-ins</span></div>`;
+  html+=`<div class="row"><span class="k">Avg risk</span><span class="v">${checkins.length>0?(checkins.reduce((a,c)=>a+c.riskScore,0)/checkins.length).toFixed(1):'--'} / 10</span></div>`;
+  html+=`<div class="row"><span class="k">Trend</span><span class="v">${getTrend()}</span></div>`;
+  html+=`<div class="row"><span class="k">Streak</span><span class="v">${getStreak()} days</span></div>`;
+  html+=`<div class="row"><span class="k">Exported</span><span class="v">${new Date().toLocaleString()}</span></div>`;
+  html+=`</div>`;
+
+  html+=`<h2>Daily check-ins</h2>`;
+  checkins.reverse().forEach(c=>{
+    const d=new Date(c.date);
+    const cls=c.riskScore>=5?'red':(c.riskScore>=2.5?'amber':'green');
+    const label=c.riskScore>=5?'Watch':(c.riskScore>=2.5?'Elevated':'Stable');
+    html+=`<div style="border:1px solid #e7e5e0;border-radius:10px;padding:14px;margin:10px 0">`;
+    html+=`<p><strong>${d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</strong> · <span class="badge ${cls}">${label}</span> · Score ${c.riskScore.toFixed(1)}/10</p>`;
+    if(c.symptoms.length>0){
+      const names=c.symptoms.map(s=>{const sym=SYMPTOMS.find(x=>x.id===s);return sym?sym.label:s;}).join(', ');
+      html+=`<p>Symptoms: ${esc(names)}</p>`;
+    }
+    if(c.leftPhoto) html+=`<img src="${c.leftPhoto}" alt="Left foot">`;
+    if(c.rightPhoto) html+=`<img src="${c.rightPhoto}" alt="Right foot">`;
+    html+=`</div>`;
+  });
+
+  html+=`<p style="margin-top:30px;font-size:11px;color:#8a9698">SOLE flags pre-ulcerative changes — it does not diagnose ulcers. Generated for clinician review.</p>`;
+  html+='</body></html>';
+  return html;
 }
 
-function animateScore(target){
-  const ring = document.getElementById('ringFg');
-  const circ = 2 * Math.PI * 42;
-  ring.setAttribute('stroke-dasharray', circ.toFixed(1));
-  ring.setAttribute('stroke-dashoffset', circ.toFixed(1));
-  // Color by score
-  let color = 'var(--green)';
-  if (target >= 5) color = 'var(--coral)';
-  else if (target >= 2.5) color = 'var(--amber)';
-  ring.style.stroke = color;
-  setTimeout(() => {
-    ring.setAttribute('stroke-dashoffset', (circ * (1 - target / 10)).toFixed(1));
-  }, 60);
+function downloadReport(){
+  const html=generateReportHTML(7);
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='sole-report-'+new Date().toISOString().slice(0,10)+'.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
-function showWhy(){
-  alert("Why this matters\n\nWhat looks like a mild red spot is the earliest visible stage of a foot ulcer (Wagner grade 0 / IWGDF stage 0).\n\nIn diabetes with neuropathy, you may not feel it. Caught now, a felt pad + 24h recheck usually clears it. Missed for a week, it breaks skin. Missed for a month, it can mean a hospital visit.\n\nThis is exactly the moment SOLE is built for.");
+function exportReport(){
+  const html=generateReportHTML(30);
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='sole-30day-report-'+new Date().toISOString().slice(0,10)+'.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
-function shareToDoc(){
-  const btn = event.currentTarget;
-  const orig = btn.innerHTML;
-  btn.innerHTML = '✓ Sent to Dr. Patel';
-  btn.style.background = 'var(--green)';
-  setTimeout(() => {
-    btn.innerHTML = orig;
-    btn.style.background = '';
-  }, 2400);
+async function shareReport(){
+  const html=generateReportHTML(7);
+  const blob=new Blob([html],{type:'text/html'});
+  const file=new File([blob],'sole-report.html',{type:'text/html'});
+  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({title:'SOLE Foot Health Report',text:'7-day foot health report from SOLE',files:[file]});
+      return;
+    }catch(e){}
+  }
+  downloadReport();
 }
 
-// ─────────────── Init ───────────────
-renderChart();
-renderHistoryList();
-window.addEventListener('resize', renderChart);
+// ─── SETTINGS ───
+function renderSettings(){
+  $('sgProfile').innerHTML=`
+    <div class="sg-title">Profile</div>
+    <div class="setting-row"><span class="sr-label">Name</span><span class="sr-value">${esc(state.profile.name||'Not set')}</span></div>
+    <div class="setting-row"><span class="sr-label">Diabetes type</span><span class="sr-value">Type ${state.profile.type}</span></div>
+    <div class="setting-row"><span class="sr-label">Years since dx</span><span class="sr-value">${state.profile.years||'--'}</span></div>
+    <div class="setting-row"><span class="sr-label">Clinician</span><span class="sr-value">${esc(state.profile.doc||'Not set')}</span></div>
+    <div class="setting-row"><span class="sr-label">Medications</span><span class="sr-value">${esc(state.profile.meds||'Not set')}</span></div>
+    <button class="setting-btn" onclick="openProfileModal()">Edit profile</button>`;
+
+  $('sgData').innerHTML=`
+    <div class="sg-title">Data</div>
+    <div class="setting-row"><span class="sr-label">Check-ins</span><span class="sr-value">${state.checkins.length}</span></div>
+    <div class="setting-row"><span class="sr-label">Streak</span><span class="sr-value">${getStreak()} days</span></div>
+    <div class="setting-row"><span class="sr-label">Storage</span><span class="sr-value">${estimateStorage()}</span></div>`;
+}
+
+function estimateStorage(){
+  try{const b=new Blob([JSON.stringify(state)]).size;if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB';}catch(e){return'unknown';}
+}
+
+function openProfileModal(){
+  $('pmName').value=state.profile.name;
+  $('pmType').value=state.profile.type;
+  $('pmYears').value=state.profile.years;
+  $('pmDoc').value=state.profile.doc;
+  $('pmMeds').value=state.profile.meds;
+  $('profileModal').classList.add('on');
+}
+function closeProfileModal(){ $('profileModal').classList.remove('on'); }
+$('profileModal').addEventListener('click',e=>{if(e.target.id==='profileModal')closeProfileModal();});
+
+function saveProfile(){
+  state.profile.name=$('pmName').value.trim();
+  state.profile.type=$('pmType').value;
+  state.profile.years=$('pmYears').value;
+  state.profile.doc=$('pmDoc').value.trim();
+  state.profile.meds=$('pmMeds').value.trim();
+  saveState();
+  closeProfileModal();
+  renderSettings();
+  renderHome();
+}
+
+function clearAllData(){
+  if(!confirm('Are you sure? This removes all check-ins, photos, and profile data.')) return;
+  if(!confirm('This cannot be undone. Continue?')) return;
+  localStorage.removeItem('sole_state');
+  location.reload();
+}
+
+// ─── IMAGE RESIZE ───
+function resizeImage(dataUrl, maxSize, cb){
+  const img=new Image();
+  img.onload=function(){
+    const canvas=document.createElement('canvas');
+    let w=img.width,h=img.height;
+    if(w>maxSize||h>maxSize){if(w>h){h=Math.round(h*maxSize/w);w=maxSize;}else{w=Math.round(w*maxSize/h);h=maxSize;}}
+    canvas.width=w;canvas.height=h;
+    canvas.getContext('2d').drawImage(img,0,0,w,h);
+    cb(canvas.toDataURL('image/jpeg',0.8));
+  };
+  img.src=dataUrl;
+}
+
+// ─── RENDER ALL ───
+function renderAll(){
+  renderHome();
+  renderSettings();
+}
+
+// ─── INIT ───
+function init(){
+  loadState();
+  if(!state.onboarded){
+    $('onboard').classList.remove('hidden');
+  } else {
+    $('onboard').classList.add('hidden');
+  }
+  if(state.onboarded && state.checkins.length===0) seedData();
+  renderAll();
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
