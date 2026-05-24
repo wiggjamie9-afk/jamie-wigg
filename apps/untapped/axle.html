@@ -3,813 +3,583 @@
 <head>
 <meta charset="utf-8">
 <title>AXLE — Owner-operator trucker safety</title>
-<meta name="description" content="Fleet-grade driver safety for solo truckers. Fatigue detection, lane warnings, posture coaching, HOS logbook. $19/mo.">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="description" content="Fleet-grade driver safety for solo truckers. Fatigue scoring, HOS logbook, safe-driving score, insurance discount calculator. $19/mo.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%228%22 fill=%22%230a0a0a%22/><circle cx=%2232%22 cy=%2232%22 r=%2218%22 stroke=%22%23fbbf24%22 stroke-width=%224%22 fill=%22none%22/><circle cx=%2232%22 cy=%2232%22 r=%223%22 fill=%22%23fbbf24%22/></svg>">
 <style>
 :root{
-  --asphalt:#0a0a0a; --asphalt-2:#141414; --asphalt-3:#1c1c1c; --asphalt-4:#262626;
-  --line:#2a2a2a; --line-2:#3a3a3a;
-  --yellow:#fbbf24; --yellow-dim:#a47e15;
-  --green:#10b981; --green-dim:#0a7a55;
-  --red:#dc2626; --red-dim:#7a1313;
-  --amber:#f59e0b;
-  --ink:#f4f4f5; --soft:#a1a1aa; --muted:#71717a;
-  --cond:'Oswald','Barlow Condensed','Roboto Condensed',Impact,system-ui,sans-serif;
-  --sans:-apple-system,'Inter','Helvetica Neue',Arial,system-ui,sans-serif;
-  --mono:ui-monospace,'JetBrains Mono','SF Mono',Menlo,monospace;
+  --bg:#0a0a0a;--bg2:#141414;--bg3:#1e1e1e;
+  --line:#2a2a2a;--line2:#3a3a3a;
+  --yellow:#fbbf24;--yellow-dim:#a47e15;
+  --green:#10b981;--red:#dc2626;--amber:#f59e0b;
+  --ink:#f4f4f5;--soft:#a1a1aa;--muted:#71717a;
+  --cond:'Oswald','Barlow Condensed','Roboto Condensed',Impact,sans-serif;
+  --sans:-apple-system,'Inter',system-ui,sans-serif;
+  --mono:ui-monospace,'SF Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{min-height:100%;background:var(--asphalt);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
-body{
-  background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(251,191,36,0.04), transparent 60%),
-    repeating-linear-gradient(180deg, var(--asphalt) 0 92px, var(--asphalt-2) 92px 93px),
-    var(--asphalt);
-  min-height:100vh;
-  padding-bottom:env(safe-area-inset-bottom);
-}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100%;-webkit-font-smoothing:antialiased}
+body{padding-bottom:68px;max-width:600px;margin:0 auto}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-::selection{background:var(--yellow);color:var(--asphalt)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--yellow)}
+::selection{background:var(--yellow);color:var(--bg)}
 
-/* ===== TOP STATUS BAR (CB radio vibe) ===== */
-.cab{
-  position:sticky;top:0;z-index:50;
-  background:linear-gradient(180deg,#000,#0a0a0a 80%);
-  border-bottom:1px solid var(--line);
-  padding:10px max(14px,env(safe-area-inset-left)) 10px max(14px,env(safe-area-inset-right));
-  display:flex;align-items:center;gap:14px;
-}
-.logo{
-  font-family:var(--cond);font-weight:700;font-size:26px;letter-spacing:0.06em;
-  color:var(--yellow);line-height:1;
-  text-shadow:0 0 18px rgba(251,191,36,0.25);
-}
-.logo .dot{display:inline-block;width:9px;height:9px;background:var(--red);border-radius:50%;margin-right:8px;vertical-align:middle;
-  box-shadow:0 0 8px var(--red);animation:rec 1.2s infinite}
-@keyframes rec{50%{opacity:0.35}}
-.callsign{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase}
-.callsign b{color:var(--green)}
-.cab-right{margin-left:auto;display:flex;gap:14px;align-items:center}
-.pill{
-  font-family:var(--mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;
-  padding:5px 10px;border-radius:3px;border:1px solid var(--line-2);color:var(--soft);
-}
-.pill.ok{color:var(--green);border-color:var(--green-dim);background:rgba(16,185,129,0.07)}
-.pill.warn{color:var(--yellow);border-color:var(--yellow-dim);background:rgba(251,191,36,0.07)}
-.pill.bad{color:var(--red);border-color:var(--red-dim);background:rgba(220,38,38,0.08)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,10,10,.92);backdrop-filter:blur(8px);z-index:40}
+.logo{font-family:var(--cond);font-weight:700;font-size:22px;letter-spacing:.04em;display:flex;align-items:center;gap:8px}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0}
+.top-right{display:flex;gap:12px;align-items:center}
+.lang-btn{font-family:var(--mono);font-size:11px;color:var(--muted);padding:6px 10px;border:1px solid var(--line);border-radius:6px}
 
-/* ===== TABS ===== */
-.tabs{
-  display:flex;border-bottom:2px solid var(--line);
-  background:var(--asphalt-2);
-  position:sticky;top:46px;z-index:40;
-  overflow-x:auto;scrollbar-width:none;
-}
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  font-family:var(--cond);font-weight:600;font-size:15px;letter-spacing:0.08em;text-transform:uppercase;
-  padding:14px 18px;color:var(--soft);border-bottom:3px solid transparent;
-  white-space:nowrap;transition:all 0.15s;
-}
-.tab.on{color:var(--yellow);border-bottom-color:var(--yellow);background:rgba(251,191,36,0.05)}
-.tab:hover{color:var(--ink)}
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg);border-top:1px solid var(--line);z-index:50;max-width:600px;margin:0 auto}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;font-size:10px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);transition:color .15s}
+.tab.active{color:var(--yellow)}
+.tab svg{width:22px;height:22px}
 
-/* ===== GRID ===== */
-.wrap{
-  max-width:1200px;margin:0 auto;padding:16px;
-  display:grid;gap:14px;
-  grid-template-columns:repeat(12,1fr);
-}
-.tile{
-  background:linear-gradient(180deg, var(--asphalt-2), var(--asphalt-3));
-  border:1px solid var(--line);
-  border-radius:6px;
-  padding:14px;
-  position:relative;
-}
-.tile-hd{
-  display:flex;align-items:center;justify-content:space-between;
-  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:10px;
-}
-.tile-hd .dotg{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;box-shadow:0 0 6px var(--green)}
-.tile-hd .doty{background:var(--yellow);box-shadow:0 0 6px var(--yellow)}
-.tile-hd .dotr{background:var(--red);box-shadow:0 0 6px var(--red)}
+.screen{display:none;padding:18px;min-height:70vh}
+.screen.active{display:block}
 
-.span-12{grid-column:span 12}
-.span-8{grid-column:span 8}
-.span-6{grid-column:span 6}
-.span-5{grid-column:span 5}
-.span-4{grid-column:span 4}
-.span-3{grid-column:span 3}
-@media (max-width:880px){
-  .span-12,.span-8,.span-6,.span-5,.span-4,.span-3{grid-column:span 12}
-  .span-half{grid-column:span 6}
-}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:14px}
+.card-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
 
-/* ===== SPEED & BIG NUMBERS ===== */
-.speedo{display:flex;align-items:baseline;gap:10px}
-.bignum{
-  font-family:var(--cond);font-weight:700;font-size:96px;line-height:0.85;letter-spacing:-0.02em;
-  color:var(--ink);
-}
-.bignum.y{color:var(--yellow)}
-.bignum.g{color:var(--green)}
-.bignum.r{color:var(--red)}
-.bigunit{font-family:var(--cond);font-size:22px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase}
-.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
-.kv:last-child{border:none}
-.kv .k{font-family:var(--mono);font-size:11px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase}
-.kv .v{font-family:var(--cond);font-size:18px;color:var(--ink)}
+.big-num{font-family:var(--cond);font-weight:700;font-size:64px;line-height:1;letter-spacing:-.02em}
+.big-num.green{color:var(--green)}
+.big-num.amber{color:var(--amber)}
+.big-num.red{color:var(--red)}
+.big-num small{font-size:18px;color:var(--soft);font-family:var(--sans);font-weight:400;margin-left:4px}
 
-/* ===== GAUGE BAR ===== */
-.gauge{margin-top:8px}
-.gauge-bar{
-  height:10px;background:var(--asphalt-4);border-radius:2px;overflow:hidden;
-  border:1px solid var(--line);
-}
-.gauge-fill{height:100%;background:var(--green);transition:width 0.6s ease, background 0.4s}
-.gauge-fill.warn{background:var(--yellow)}
-.gauge-fill.bad{background:var(--red)}
-.gauge-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 24px;border-radius:8px;font-weight:600;font-size:14px;transition:transform .1s;min-height:48px}
+.btn:active{transform:scale(.97)}
+.btn-yellow{background:var(--yellow);color:var(--bg)}
+.btn-ghost{border:1px solid var(--line2);color:var(--ink)}
+.btn-red{background:var(--red);color:white}
+.btn-block{display:flex;width:100%}
 
-/* ===== DRIVER CAM ===== */
-.cam-wrap{position:relative;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#000;aspect-ratio:4/3}
-.cam-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.cam-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%, #1a1a1a, #000)}
-.cam-fallback svg{width:60%;max-width:240px;opacity:0.55}
-.cam-overlay{position:absolute;inset:0;pointer-events:none}
-.cam-marker{
-  position:absolute;border:1.5px solid var(--green);border-radius:4px;
-  font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--green);
-  padding:1px 5px;text-transform:uppercase;background:rgba(0,0,0,0.4);
-  transition:all 0.4s;
-}
-.cam-marker.eye-l{top:32%;left:24%;width:22%;height:9%}
-.cam-marker.eye-r{top:32%;left:56%;width:22%;height:9%}
-.cam-marker.face{top:18%;left:18%;width:64%;height:54%;border-style:dashed;font-size:9px;display:flex;align-items:flex-end;justify-content:flex-end;padding:4px}
-.cam-marker.warn{border-color:var(--yellow);color:var(--yellow)}
-.cam-marker.bad{border-color:var(--red);color:var(--red);animation:pulseBad 0.7s infinite}
-@keyframes pulseBad{50%{background:rgba(220,38,38,0.25)}}
-.cam-hud{
-  position:absolute;left:8px;bottom:8px;right:8px;display:flex;justify-content:space-between;align-items:center;
-  font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:var(--ink);text-transform:uppercase;
-  background:linear-gradient(180deg,transparent, rgba(0,0,0,0.85));padding:18px 6px 4px;
-}
-.cam-hud .left{color:var(--soft)}
-.cam-hud .right{color:var(--green);font-weight:600}
-.cam-hud .right.warn{color:var(--yellow)}
-.cam-hud .right.bad{color:var(--red)}
-.cam-btn{
-  position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:9px;letter-spacing:0.14em;
-  background:rgba(0,0,0,0.6);border:1px solid var(--line-2);padding:5px 9px;color:var(--soft);
-  text-transform:uppercase;border-radius:3px;
-}
-.cam-btn:hover{color:var(--yellow);border-color:var(--yellow-dim)}
+.status-row{display:flex;gap:2px;margin:14px 0}
+.status-seg{flex:1;height:36px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;letter-spacing:.08em;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.status-seg.driving{background:#1e3a5f;color:#60a5fa}
+.status-seg.on-duty{background:#3b2a15;color:var(--amber)}
+.status-seg.sleeper{background:#1a2e1a;color:var(--green)}
+.status-seg.off-duty{background:var(--bg3);color:var(--soft)}
+.status-seg.active-status{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow)}
 
-/* ===== LANE SCHEMATIC ===== */
-.road{position:relative;height:140px;background:#1a1a1a;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
-.road .lane-line{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:0.4}
-.road .center{left:50%;transform:translateX(-50%);background:repeating-linear-gradient(180deg,var(--yellow) 0 18px, transparent 18px 32px);width:3px;opacity:0.9}
-.road .edge-l{left:15%}
-.road .edge-r{right:15%}
-.truck-icon{
-  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
-  width:46px;height:74px;transition:left 0.6s ease, transform 0.6s ease;
-}
-.truck-icon rect, .truck-icon path{fill:var(--yellow);stroke:#000;stroke-width:1}
-.truck-icon .cab-r{fill:var(--asphalt-2);stroke:var(--yellow)}
-.lane-status{
-  position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;
-  color:var(--green);text-transform:uppercase;
-}
-.lane-status.warn{color:var(--yellow)}
-.lane-status.bad{color:var(--red)}
+.timeline-bar{display:flex;height:28px;border-radius:6px;overflow:hidden;margin:12px 0;background:var(--bg3)}
+.tl-seg{min-width:2px;display:flex;align-items:center;justify-content:center;font-size:8px;font-family:var(--mono);overflow:hidden}
 
-/* ===== ALERTS FEED ===== */
-.alerts{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px}
-.alerts::-webkit-scrollbar{width:5px}
-.alerts::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
-.alert{
-  display:flex;gap:10px;padding:9px 11px;border-radius:3px;
-  background:var(--asphalt-3);border-left:3px solid var(--line-2);
-  animation:alertIn 0.4s ease;
-}
-@keyframes alertIn{from{opacity:0;transform:translateX(-12px)}}
-.alert.ok{border-left-color:var(--green)}
-.alert.warn{border-left-color:var(--yellow)}
-.alert.bad{border-left-color:var(--red);background:rgba(220,38,38,0.07)}
-.alert .at{font-family:var(--mono);font-size:10px;color:var(--muted);min-width:38px}
-.alert .msg{font-size:13px;color:var(--ink);line-height:1.35}
-.alert.bad .msg{color:#fecaca;font-weight:500}
+.q-row{margin-bottom:16px}
+.q-row label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--soft);margin-bottom:6px;text-transform:uppercase}
+.q-row input[type=range]{width:100%;accent-color:var(--yellow)}
 
-/* ===== STAT TILES ===== */
-.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.stat{padding:14px;background:var(--asphalt-3);border-radius:4px;border:1px solid var(--line)}
-.stat .lbl{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
-.stat .val{font-family:var(--cond);font-size:34px;line-height:1;font-weight:700;color:var(--ink)}
-.stat .val.g{color:var(--green)}
-.stat .val.y{color:var(--yellow)}
-.stat .sub{font-family:var(--mono);font-size:10px;color:var(--soft);margin-top:4px;letter-spacing:0.08em}
-.stat.discount{background:linear-gradient(135deg, rgba(16,185,129,0.12), var(--asphalt-3));border-color:var(--green-dim)}
+.score-ring{width:140px;height:140px;position:relative;margin:0 auto 16px}
+.score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.score-ring .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--cond);font-size:48px;font-weight:700}
 
-/* ===== LOGBOOK ===== */
-.duty-grid{
-  display:grid;grid-template-columns:120px 1fr;gap:0;
-  font-family:var(--mono);font-size:11px;
-}
-.duty-row{display:contents}
-.duty-label{padding:8px 10px;color:var(--soft);letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid var(--line);display:flex;align-items:center}
-.duty-bar{position:relative;height:32px;border-bottom:1px solid var(--line);background:var(--asphalt-3)}
-.duty-seg{position:absolute;top:4px;bottom:4px;border-radius:2px}
-.duty-seg.off{background:var(--asphalt-4)}
-.duty-seg.sleep{background:#3b82f6}
-.duty-seg.drive{background:var(--green)}
-.duty-seg.duty{background:var(--yellow)}
-.duty-hours{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);padding:6px 10px 2px 130px;letter-spacing:0.1em}
-.duty-key{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-family:var(--mono);font-size:10px;letter-spacing:0.12em;color:var(--soft);text-transform:uppercase}
-.duty-key span{display:flex;align-items:center;gap:5px}
-.duty-key i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.chart-wrap{height:120px;position:relative;margin:14px 0}
+.chart-wrap svg{width:100%;height:100%}
 
-/* ===== MAP MINI ===== */
-.map-wrap{position:relative;background:#101010;border:1px solid var(--line);border-radius:4px;height:240px;overflow:hidden}
-.map-wrap svg{width:100%;height:100%;display:block}
-.map-info{
-  position:absolute;left:10px;bottom:10px;right:10px;
-  background:rgba(0,0,0,0.78);border:1px solid var(--line-2);padding:8px 10px;border-radius:3px;
-  display:flex;justify-content:space-between;align-items:center;
-}
-.map-info .dest{font-family:var(--cond);font-size:15px;color:var(--ink);letter-spacing:0.06em}
-.map-info .eta{font-family:var(--mono);font-size:10px;color:var(--yellow);letter-spacing:0.14em;text-transform:uppercase}
+.log-entry{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.log-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.log-time{font-family:var(--mono);font-size:12px;color:var(--soft);min-width:52px}
+.log-text{font-size:14px;flex:1}
 
-/* ===== UTILITIES ===== */
-.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.row-cols-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.btn-yellow{
-  background:var(--yellow);color:#000;font-family:var(--cond);font-weight:700;font-size:13px;
-  letter-spacing:0.14em;text-transform:uppercase;padding:11px 18px;border-radius:3px;
-}
-.btn-yellow:hover{background:#fcd34d}
-.btn-outline{
-  border:1px solid var(--line-2);color:var(--soft);font-family:var(--cond);font-size:13px;
-  letter-spacing:0.14em;text-transform:uppercase;padding:10px 16px;border-radius:3px;
-}
-.btn-outline:hover{color:var(--yellow);border-color:var(--yellow-dim)}
-.hide{display:none}
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--bg2);border:1px solid var(--line);color:var(--ink);padding:12px 24px;border-radius:10px;font-size:14px;z-index:99;opacity:0;transition:all .3s;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:var(--green)}
+.toast.error{border-color:var(--red)}
 
-/* ===== FOOTER ===== */
-footer{
-  text-align:center;padding:30px 14px;color:var(--muted);
-  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;
-  border-top:1px solid var(--line);margin-top:14px;
-}
-footer b{color:var(--yellow)}
+.onboard{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center}
+.onboard h1{font-family:var(--cond);font-size:48px;font-weight:700;text-transform:uppercase;margin-bottom:16px}
+.onboard h1 span{color:var(--yellow)}
+.onboard p{color:var(--soft);font-size:16px;line-height:1.55;max-width:400px;margin-bottom:28px}
+.onboard .step{margin-bottom:20px;width:100%;max-width:360px;text-align:left}
+
+.calc-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line)}
+.calc-label{font-size:14px;color:var(--soft)}
+.calc-val{font-family:var(--cond);font-size:28px;font-weight:700}
+.calc-val.green{color:var(--green)}
+
+.empty{text-align:center;padding:48px 24px;color:var(--muted);font-size:15px}
+
+.lang-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:55;display:none;align-items:center;justify-content:center}
+.lang-modal.open{display:flex}
+.lang-box{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:24px;width:90%;max-width:320px}
+.lang-opt{display:block;width:100%;padding:14px;text-align:left;border-radius:8px;font-size:16px;margin-bottom:6px}
+.lang-opt:hover,.lang-opt.sel{background:var(--bg3);color:var(--yellow)}
+
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media(min-width:768px){body{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
 </style>
 </head>
 <body>
 
-<!-- ===== TOP CAB BAR ===== -->
-<header class="cab">
-  <div class="logo"><span class="dot"></span>AXLE</div>
-  <div class="callsign">UNIT <b>KW-9842</b> · I-40 EB · <span id="clock">--:--</span></div>
-  <div class="cab-right">
-    <span class="pill ok" id="dotPill">DOT READY</span>
-    <span class="pill" id="rollPill">ROLLING</span>
+<header class="top">
+  <div class="logo"><div class="logo-dot" id="statusDot"></div>AXLE</div>
+  <div class="top-right">
+    <button class="lang-btn" id="langBtn" aria-label="Change language">EN</button>
   </div>
 </header>
 
-<!-- ===== TABS ===== -->
-<nav class="tabs" id="tabs">
-  <button class="tab on" data-tab="dash">Dashboard</button>
-  <button class="tab" data-tab="logbook">Logbook</button>
-  <button class="tab" data-tab="trip">Trip</button>
-  <button class="tab" data-tab="rig">My Rig</button>
+<div id="screenDash" class="screen active">
+  <div class="card">
+    <div class="card-label" data-t="fatigueScore">FATIGUE SCORE</div>
+    <div class="score-ring" id="scoreRing">
+      <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="10"/><circle id="scoreArc" cx="60" cy="60" r="52" fill="none" stroke="var(--green)" stroke-width="10" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="327"/></svg>
+      <div class="val" id="scoreVal">--</div>
+    </div>
+    <p style="text-align:center;color:var(--soft);font-size:13px" id="scoreSummary" data-t="takeTest">Take a fatigue test to see your score</p>
+    <button class="btn btn-yellow btn-block" style="margin-top:14px" onclick="startFatigueTest()" id="testBtn" data-t="startTest">START FATIGUE TEST</button>
+  </div>
+  <div class="card">
+    <div class="card-label" data-t="currentStatus">CURRENT DUTY STATUS</div>
+    <div class="status-row" id="statusRow">
+      <div class="status-seg driving" onclick="setDuty('driving')" data-t="driving">DRIVING</div>
+      <div class="status-seg on-duty" onclick="setDuty('on-duty')" data-t="onDuty">ON-DUTY</div>
+      <div class="status-seg sleeper" onclick="setDuty('sleeper')" data-t="sleeper">SLEEPER</div>
+      <div class="status-seg off-duty active-status" onclick="setDuty('off-duty')" data-t="offDuty">OFF-DUTY</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px">
+      <div><span style="font-family:var(--mono);font-size:10px;color:var(--muted)" data-t="driveWindow">14H WINDOW</span><br><span id="windowLeft" style="font-family:var(--cond);font-size:28px;font-weight:700">14:00</span></div>
+      <div style="text-align:right"><span style="font-family:var(--mono);font-size:10px;color:var(--muted)" data-t="cycleHrs">70H / 8-DAY</span><br><span id="cycleLeft" style="font-family:var(--cond);font-size:28px;font-weight:700">70:00</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label" data-t="todayTimeline">TODAY'S TIMELINE</div>
+    <div class="timeline-bar" id="timeline"></div>
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted)"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+  </div>
+  <div class="card">
+    <div class="card-label" data-t="insDiscount">INSURANCE DISCOUNT ESTIMATE</div>
+    <div id="discountCalc"></div>
+  </div>
+</div>
+
+<div id="screenLog" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h2 style="font-family:var(--cond);font-size:28px;font-weight:700;text-transform:uppercase" data-t="logbook">LOGBOOK</h2>
+    <button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="exportLog()" data-t="export">EXPORT</button>
+  </div>
+  <div id="logList"></div>
+</div>
+
+<div id="screenScore" class="screen">
+  <h2 style="font-family:var(--cond);font-size:28px;font-weight:700;text-transform:uppercase;margin-bottom:16px" data-t="safeScore">SAFE-DRIVING SCORE</h2>
+  <div class="card">
+    <div class="card-label" data-t="weeklyTrend">WEEKLY TREND</div>
+    <div class="chart-wrap" id="weekChart"></div>
+  </div>
+  <div class="card">
+    <div class="card-label" data-t="testHistory">FATIGUE TEST HISTORY</div>
+    <div id="testHistory"></div>
+  </div>
+</div>
+
+<div id="screenSettings" class="screen">
+  <h2 style="font-family:var(--cond);font-size:28px;font-weight:700;text-transform:uppercase;margin-bottom:16px" data-t="settings">SETTINGS</h2>
+  <div class="card">
+    <div class="card-label" data-t="driverProfile">DRIVER PROFILE</div>
+    <div class="q-row"><label data-t="yourName">YOUR NAME</label><input id="sName" placeholder="Name"></div>
+    <div class="q-row"><label>CDL #</label><input id="sCdl" placeholder="CDL number"></div>
+    <div class="q-row"><label data-t="truckType">TRUCK TYPE</label><input id="sTruck" placeholder="e.g. Freightliner Cascadia"></div>
+    <div class="q-row"><label data-t="insCarrier">INSURANCE CARRIER</label><input id="sIns" placeholder="e.g. Progressive Commercial"></div>
+    <div class="q-row"><label data-t="annualPremium">ANNUAL PREMIUM ($)</label><input id="sPremium" type="number" placeholder="7200"></div>
+    <button class="btn btn-yellow btn-block" onclick="saveProfile()" data-t="saveProfile">SAVE PROFILE</button>
+  </div>
+  <div class="card">
+    <div class="card-label" data-t="dataManagement">DATA MANAGEMENT</div>
+    <button class="btn btn-ghost btn-block" style="margin-bottom:10px" onclick="exportAll()" data-t="exportAll">EXPORT ALL DATA (JSON)</button>
+    <button class="btn btn-ghost btn-block" style="margin-bottom:10px" onclick="exportLog()" data-t="exportLogHtml">EXPORT LOGBOOK (HTML)</button>
+    <button class="btn btn-red btn-block" onclick="clearAll()" data-t="clearAll">CLEAR ALL DATA</button>
+  </div>
+  <div class="card">
+    <div class="card-label" data-t="restStop">REST STOP FINDER</div>
+    <a href="https://www.google.com/maps/search/truck+stop+near+me" target="_blank" rel="noopener" class="btn btn-ghost btn-block" data-t="findStop">FIND NEAREST TRUCK STOP</a>
+  </div>
+  <p style="margin-top:24px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em">AXLE v1.0 · FOR THE DRIVER, NOT THE DISPATCHER</p>
+</div>
+
+<!-- Fatigue test modal -->
+<div id="fatigueModal" style="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:55;display:none;overflow-y:auto">
+  <div style="max-width:480px;margin:0 auto;padding:24px">
+    <h2 style="font-family:var(--cond);font-size:32px;font-weight:700;text-transform:uppercase;margin-bottom:4px;color:var(--yellow)" data-t="fatigueTest">FATIGUE CHECK</h2>
+    <p style="color:var(--soft);font-size:13px;margin-bottom:24px" data-t="answerHonest">Answer honestly — this is for your safety, not a dispatcher.</p>
+    <div class="q-row"><label data-t="hrsSleep">HOURS OF SLEEP LAST NIGHT</label><input type="range" id="fSleep" min="0" max="12" value="7" oninput="this.nextElementSibling.textContent=this.value+'h'"><span style="font-family:var(--cond);font-size:20px;margin-left:8px">7h</span></div>
+    <div class="q-row"><label data-t="hrsRoad">HOURS ON THE ROAD TODAY</label><input type="range" id="fRoad" min="0" max="16" value="2" oninput="this.nextElementSibling.textContent=this.value+'h'"><span style="font-family:var(--cond);font-size:20px;margin-left:8px">2h</span></div>
+    <div class="q-row"><label data-t="caffeine">CAFFEINE TODAY (CUPS)</label><input type="range" id="fCaff" min="0" max="8" value="1" oninput="this.nextElementSibling.textContent=this.value"><span style="font-family:var(--cond);font-size:20px;margin-left:8px">1</span></div>
+    <div class="q-row"><label data-t="eyeStrain">EYE STRAIN / DRYNESS</label><input type="range" id="fEyes" min="0" max="10" value="2" oninput="this.nextElementSibling.textContent=this.value+'/10'"><span style="font-family:var(--cond);font-size:20px;margin-left:8px">2/10</span></div>
+    <div class="q-row"><label data-t="alertness">SUBJECTIVE ALERTNESS</label><input type="range" id="fAlert" min="1" max="10" value="8" oninput="this.nextElementSibling.textContent=this.value+'/10'"><span style="font-family:var(--cond);font-size:20px;margin-left:8px">8/10</span></div>
+    <div style="display:flex;gap:10px;margin-top:24px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeFatigueTest()" data-t="cancel">CANCEL</button>
+      <button class="btn btn-yellow" style="flex:2" onclick="submitFatigueTest()" data-t="getScore">GET MY SCORE</button>
+    </div>
+  </div>
+</div>
+
+<!-- Language modal -->
+<div class="lang-modal" id="langModal">
+  <div class="lang-box">
+    <div class="card-label" style="margin-bottom:14px">LANGUAGE</div>
+    <button class="lang-opt sel" onclick="setLang(0)">English</button>
+    <button class="lang-opt" onclick="setLang(1)">Español</button>
+    <button class="lang-opt" onclick="setLang(2)">Português</button>
+    <button class="lang-opt" onclick="setLang(3)">हिंदी</button>
+    <button class="btn btn-ghost btn-block" style="margin-top:12px" onclick="closeLangModal()">CLOSE</button>
+  </div>
+</div>
+
+<!-- Onboarding -->
+<div class="onboard" id="onboard" style="display:none">
+  <h1>YOUR TRUCK.<br><span>YOUR SAFETY.</span></h1>
+  <p>AXLE gives you fleet-grade fatigue scoring, an ELD-compliant logbook, and insurance discount data — all from your phone. Built for the driver, not the dispatcher.</p>
+  <div class="step">
+    <div class="q-row"><label>YOUR NAME</label><input id="obName" placeholder="Name" style="width:100%"></div>
+    <div class="q-row"><label>CDL # (OPTIONAL)</label><input id="obCdl" placeholder="CDL number" style="width:100%"></div>
+    <div class="q-row"><label>ANNUAL INSURANCE PREMIUM ($)</label><input id="obPremium" type="number" placeholder="7200" style="width:100%"></div>
+  </div>
+  <button class="btn btn-yellow btn-block" style="max-width:360px" onclick="finishOnboard()">START ROLLING →</button>
+  <button style="margin-top:14px;color:var(--muted);font-size:13px" onclick="finishOnboard()">Skip for now</button>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" onclick="navTo('Dash')" aria-label="Dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span data-t="dashboard">DASH</span>
+  </button>
+  <button class="tab" onclick="navTo('Log')" aria-label="Logbook">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    <span data-t="logTab">LOG</span>
+  </button>
+  <button class="tab" onclick="navTo('Score')" aria-label="Score">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01z"/></svg>
+    <span data-t="scoreTab">SCORE</span>
+  </button>
+  <button class="tab" onclick="navTo('Settings')" aria-label="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span data-t="settingsTab">SET</span>
+  </button>
 </nav>
 
-<!-- ============== DASHBOARD ============== -->
-<main class="wrap" id="tab-dash">
-
-  <!-- Speed + lane mini map -->
-  <section class="tile span-5">
-    <div class="tile-hd"><span><span class="dotg" id="speedDot"></span>SPEED</span><span id="speedZone">55 ZONE</span></div>
-    <div class="speedo">
-      <div class="bignum y" id="speed">62</div>
-      <div>
-        <div class="bigunit">MPH</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;margin-top:6px">CRUISE · 14.2 MPG</div>
-      </div>
-    </div>
-    <div class="row" style="margin-top:14px;gap:18px">
-      <div><div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em">TODAY</div>
-        <div style="font-family:var(--cond);font-size:22px">412 <span style="color:var(--muted);font-size:13px">MI</span></div></div>
-      <div><div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em">RUNTIME</div>
-        <div style="font-family:var(--cond);font-size:22px">6h 47m</div></div>
-      <div><div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em">FUEL</div>
-        <div style="font-family:var(--cond);font-size:22px;color:var(--green)">3/4</div></div>
-    </div>
-  </section>
-
-  <!-- Lane status -->
-  <section class="tile span-4">
-    <div class="tile-hd"><span><span class="dotg" id="laneDot"></span>LANE KEEPING</span><span id="laneState">HOLDING CENTER</span></div>
-    <div class="road" id="road">
-      <div class="lane-status" id="laneText">CENTER · HOLDING LINE</div>
-      <div class="lane-line edge-l"></div>
-      <div class="lane-line center"></div>
-      <div class="lane-line edge-r"></div>
-      <svg class="truck-icon" id="truck" viewBox="0 0 46 74" xmlns="http://www.w3.org/2000/svg">
-        <rect x="6" y="18" width="34" height="46" rx="2"></rect>
-        <rect class="cab-r" x="9" y="4" width="28" height="18" rx="2"></rect>
-        <rect x="11" y="7" width="24" height="9" fill="#0a0a0a" stroke="none"></rect>
-        <rect x="6" y="62" width="34" height="6" fill="#1a1a1a" stroke="#000"></rect>
-        <circle cx="11" cy="68" r="3" fill="#0a0a0a"/>
-        <circle cx="35" cy="68" r="3" fill="#0a0a0a"/>
-      </svg>
-    </div>
-    <div class="kv" style="margin-top:10px"><span class="k">Drift</span><span class="v" id="driftVal">0.4 ft</span></div>
-    <div class="kv"><span class="k">Following Dist</span><span class="v">3.2 sec · safe</span></div>
-  </section>
-
-  <!-- Fatigue score -->
-  <section class="tile span-3">
-    <div class="tile-hd"><span><span class="dotg" id="fatDot"></span>FATIGUE</span><span id="fatTag">FRESH</span></div>
-    <div class="bignum g" id="fatScore" style="font-size:84px">94</div>
-    <div class="bigunit">OF 100</div>
-    <div class="gauge">
-      <div class="gauge-bar"><div class="gauge-fill" id="fatGauge" style="width:94%"></div></div>
-      <div class="gauge-labels"><span>tired</span><span>alert</span></div>
-    </div>
-    <div class="kv" style="margin-top:10px"><span class="k">Blink rate</span><span class="v" id="blinkRate">14/min</span></div>
-    <div class="kv"><span class="k">Head pose</span><span class="v" id="headPose">+2° L</span></div>
-  </section>
-
-  <!-- DRIVER CAM -->
-  <section class="tile span-5">
-    <div class="tile-hd"><span><span class="dotr"></span>DRIVER CAM · LIVE</span><span id="camStatus">ANALYZING…</span></div>
-    <div class="cam-wrap" id="camWrap">
-      <video id="camVid" autoplay muted playsinline class="hide"></video>
-      <div class="cam-fallback" id="camFallback">
-        <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
-          <!-- Driver silhouette w/ trucker cap -->
-          <path d="M30 160 C30 110, 60 80, 100 80 C140 80, 170 110, 170 160 Z" fill="#2a2a2a"/>
-          <ellipse cx="100" cy="62" rx="32" ry="38" fill="#3a3a3a"/>
-          <path d="M62 50 Q100 22, 138 50 L142 64 L58 64 Z" fill="#fbbf24"/>
-          <rect x="58" y="62" width="84" height="6" fill="#1a1a1a"/>
-          <circle cx="88" cy="70" r="2.5" fill="#000"/>
-          <circle cx="112" cy="70" r="2.5" fill="#000"/>
-          <path d="M88 88 Q100 94, 112 88" stroke="#1a1a1a" stroke-width="2" fill="none"/>
-        </svg>
-      </div>
-      <div class="cam-overlay" id="camOverlay">
-        <div class="cam-marker eye-l" id="eyeL">L · OPEN</div>
-        <div class="cam-marker eye-r" id="eyeR">R · OPEN</div>
-        <div class="cam-marker face">FACE · TRACKED</div>
-        <div class="cam-hud">
-          <span class="left">EYE 0.96 · POSE +2° · YAWN 0.04</span>
-          <span class="right" id="alertness">ALERT</span>
-        </div>
-        <button class="cam-btn" id="camToggle">USE CAMERA</button>
-      </div>
-    </div>
-    <div class="kv" style="margin-top:10px"><span class="k">Detection model</span><span class="v">on-device · v3.1</span></div>
-    <div class="kv"><span class="k">Posture (lumbar)</span><span class="v" id="postureVal">tilt 6° · ok</span></div>
-  </section>
-
-  <!-- ALERTS FEED -->
-  <section class="tile span-4">
-    <div class="tile-hd"><span><span class="doty"></span>LIVE ALERTS</span><span id="alertCount">0 TODAY</span></div>
-    <div class="alerts" id="alertsList">
-      <!-- populated by JS -->
-    </div>
-  </section>
-
-  <!-- STATS / DISCOUNT -->
-  <section class="tile span-3">
-    <div class="tile-hd"><span><span class="dotg"></span>SAFE-DRIVING</span><span>WEEK</span></div>
-    <div class="stats-grid">
-      <div class="stat">
-        <div class="lbl">Today</div>
-        <div class="val g" id="todayScore">96</div>
-        <div class="sub">+2 vs avg</div>
-      </div>
-      <div class="stat">
-        <div class="lbl">7-day</div>
-        <div class="val y">91</div>
-        <div class="sub">trending up</div>
-      </div>
-      <div class="stat discount" style="grid-column:span 2">
-        <div class="lbl">Insurance Discount Earned</div>
-        <div class="val g">$74<span style="font-size:18px;color:var(--soft)">/mo</span></div>
-        <div class="sub">Progressive Commercial UBI · Tier 3</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- HOS COUNTDOWN -->
-  <section class="tile span-6">
-    <div class="tile-hd"><span><span class="doty"></span>HOURS OF SERVICE</span><span>FMCSA 11-HR · 14-HR</span></div>
-    <div class="row" style="gap:30px;align-items:flex-end">
-      <div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em">DRIVE LEFT</div>
-        <div class="bignum y" id="driveLeft" style="font-size:72px">4:13</div>
-      </div>
-      <div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em">ON-DUTY LEFT</div>
-        <div class="bignum" style="font-size:48px;color:var(--soft)" id="dutyLeft">7:13</div>
-      </div>
-      <div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em">NEXT BREAK</div>
-        <div class="bignum r" style="font-size:48px" id="breakIn">0:42</div>
-      </div>
-    </div>
-    <div class="gauge" style="margin-top:14px">
-      <div class="gauge-bar"><div class="gauge-fill warn" style="width:38%"></div></div>
-      <div class="gauge-labels"><span>0h</span><span>30-min break required at 8h</span><span>11h</span></div>
-    </div>
-  </section>
-
-  <!-- MAP / NEXT REST STOP -->
-  <section class="tile span-6">
-    <div class="tile-hd"><span><span class="dotg"></span>ROUTE · NEXT SAFE STOP</span><span>I-40 · OK</span></div>
-    <div class="map-wrap">
-      <svg viewBox="0 0 600 240" xmlns="http://www.w3.org/2000/svg">
-        <!-- terrain hint -->
-        <rect width="600" height="240" fill="#0e0e0e"/>
-        <path d="M0 180 Q150 165 300 175 T 600 170 L 600 240 L 0 240 Z" fill="#161616"/>
-        <path d="M0 200 Q150 195 300 205 T 600 200 L 600 240 L 0 240 Z" fill="#1c1c1c"/>
-        <!-- highway -->
-        <path d="M20 200 C 120 200, 200 80, 320 110 C 440 140, 500 60, 580 70"
-              stroke="#2a2a2a" stroke-width="22" fill="none" stroke-linecap="round"/>
-        <path d="M20 200 C 120 200, 200 80, 320 110 C 440 140, 500 60, 580 70"
-              stroke="#fbbf24" stroke-width="2" fill="none" stroke-dasharray="6 10" stroke-linecap="round"/>
-        <!-- truck pos -->
-        <circle cx="220" cy="148" r="9" fill="#fbbf24" stroke="#000" stroke-width="2"/>
-        <circle cx="220" cy="148" r="16" fill="none" stroke="#fbbf24" stroke-opacity="0.4"/>
-        <text x="220" y="138" font-family="ui-monospace,Menlo" font-size="9" fill="#fbbf24" text-anchor="middle">YOU</text>
-        <!-- rest stop -->
-        <rect x="430" y="100" width="22" height="22" fill="#10b981" stroke="#000" stroke-width="1.5"/>
-        <text x="441" y="115" font-family="Oswald,Impact" font-size="14" fill="#000" font-weight="700" text-anchor="middle">P</text>
-        <text x="441" y="92" font-family="ui-monospace,Menlo" font-size="9" fill="#10b981" text-anchor="middle">REST</text>
-        <!-- city markers -->
-        <circle cx="60" cy="198" r="3" fill="#71717a"/>
-        <text x="60" y="218" font-family="ui-monospace,Menlo" font-size="8" fill="#71717a" text-anchor="middle">AMARILLO</text>
-        <circle cx="560" cy="72" r="3" fill="#71717a"/>
-        <text x="540" y="62" font-family="ui-monospace,Menlo" font-size="8" fill="#71717a">OKC</text>
-      </svg>
-      <div class="map-info">
-        <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.14em">NEXT SAFE STOP</div>
-          <div class="dest">PETRO · ELK CITY, OK · EXIT 32</div>
-        </div>
-        <div class="eta">42 MI · ETA 0:42</div>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<!-- ============== LOGBOOK ============== -->
-<main class="wrap hide" id="tab-logbook">
-  <section class="tile span-12">
-    <div class="tile-hd"><span><span class="dotg"></span>ELD LOGBOOK · TODAY</span><span id="todayDate">--</span></div>
-    <p style="font-family:var(--mono);font-size:11px;color:var(--soft);letter-spacing:0.06em;margin-bottom:14px">
-      FMCSA-compliant. Auto-synced. Tap a status to switch when you stop / start the engine.
-    </p>
-
-    <div class="duty-grid">
-      <div class="duty-row">
-        <div class="duty-label">Off-Duty</div>
-        <div class="duty-bar">
-          <div class="duty-seg off" style="left:0%;width:25%"></div>
-          <div class="duty-seg off" style="left:75%;width:8%"></div>
-        </div>
-      </div>
-      <div class="duty-row">
-        <div class="duty-label">Sleeper</div>
-        <div class="duty-bar">
-          <div class="duty-seg sleep" style="left:0%;width:0%"></div>
-        </div>
-      </div>
-      <div class="duty-row">
-        <div class="duty-label">Driving</div>
-        <div class="duty-bar">
-          <div class="duty-seg drive" style="left:25%;width:18%"></div>
-          <div class="duty-seg drive" style="left:48%;width:25%"></div>
-          <div class="duty-seg drive" style="left:83%;width:5%"></div>
-        </div>
-      </div>
-      <div class="duty-row">
-        <div class="duty-label">On-Duty</div>
-        <div class="duty-bar">
-          <div class="duty-seg duty" style="left:43%;width:5%"></div>
-          <div class="duty-seg duty" style="left:73%;width:2%"></div>
-        </div>
-      </div>
-    </div>
-    <div class="duty-hours">
-      <span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span>
-    </div>
-
-    <div class="duty-key">
-      <span><i style="background:var(--asphalt-4);border:1px solid var(--line-2)"></i>OFF-DUTY</span>
-      <span><i style="background:#3b82f6"></i>SLEEPER</span>
-      <span><i style="background:var(--green)"></i>DRIVING</span>
-      <span><i style="background:var(--yellow)"></i>ON-DUTY (not driving)</span>
-    </div>
-  </section>
-
-  <section class="tile span-6">
-    <div class="tile-hd"><span>WEEK TOTAL</span><span>70-HR / 8-DAY</span></div>
-    <div class="bignum y" style="font-size:64px">48:22</div>
-    <div class="bigunit">USED · 21:38 REMAINING</div>
-    <div class="gauge" style="margin-top:12px">
-      <div class="gauge-bar"><div class="gauge-fill warn" style="width:69%"></div></div>
-      <div class="gauge-labels"><span>0</span><span>70</span></div>
-    </div>
-  </section>
-
-  <section class="tile span-6">
-    <div class="tile-hd"><span>QUICK STATUS</span><span>TAP TO LOG</span></div>
-    <div class="row-cols-2" style="gap:10px">
-      <button class="btn-outline">Off-Duty</button>
-      <button class="btn-outline">Sleeper</button>
-      <button class="btn-yellow">Driving</button>
-      <button class="btn-outline">On-Duty</button>
-    </div>
-    <p style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-top:14px">
-      LAST CHANGED · 09:14 AM · DRIVING (auto-detected from speed)
-    </p>
-  </section>
-</main>
-
-<!-- ============== TRIP ============== -->
-<main class="wrap hide" id="tab-trip">
-  <section class="tile span-12">
-    <div class="tile-hd"><span>CURRENT LOAD</span><span>DRY VAN · 38,400 LB</span></div>
-    <div class="row" style="gap:30px">
-      <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em">PICK</div>
-        <div style="font-family:var(--cond);font-size:22px">FORT WORTH, TX</div></div>
-      <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em">DROP</div>
-        <div style="font-family:var(--cond);font-size:22px">JOLIET, IL</div></div>
-      <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em">RATE</div>
-        <div style="font-family:var(--cond);font-size:22px;color:var(--green)">$3.42/MI</div></div>
-      <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em">DEADLINE</div>
-        <div style="font-family:var(--cond);font-size:22px;color:var(--yellow)">TOMORROW 14:00</div></div>
-    </div>
-  </section>
-</main>
-
-<!-- ============== RIG ============== -->
-<main class="wrap hide" id="tab-rig">
-  <section class="tile span-6">
-    <div class="tile-hd"><span>UNIT</span><span>KW-9842</span></div>
-    <div class="kv"><span class="k">Tractor</span><span class="v">2019 Kenworth T680</span></div>
-    <div class="kv"><span class="k">VIN</span><span class="v">1XKYD49X4KJ************</span></div>
-    <div class="kv"><span class="k">DOT #</span><span class="v">3221984</span></div>
-    <div class="kv"><span class="k">Trailer</span><span class="v">53' Dry Van</span></div>
-    <div class="kv"><span class="k">Annual mi</span><span class="v">112,400</span></div>
-  </section>
-  <section class="tile span-6">
-    <div class="tile-hd"><span>INSURANCE</span><span>PROGRESSIVE COMMERCIAL</span></div>
-    <div class="kv"><span class="k">Policy</span><span class="v">CMRC-44820-A</span></div>
-    <div class="kv"><span class="k">UBI Tier</span><span class="v" style="color:var(--green)">3 of 4 · safe</span></div>
-    <div class="kv"><span class="k">Monthly discount</span><span class="v" style="color:var(--green)">−$74</span></div>
-    <div class="kv"><span class="k">Telematics share</span><span class="v">on · anon driving data only</span></div>
-  </section>
-</main>
-
-<footer>
-  AXLE · v0.4 demo · <b>FLEET-GRADE SAFETY · SINGLE-TRUCK PRICE</b> · $19/mo solo
-</footer>
+<div class="toast" id="toast"></div>
 
 <script>
-// ============== TAB SWITCHING ==============
-const tabs = document.querySelectorAll('.tab');
-const panels = {
-  dash: document.getElementById('tab-dash'),
-  logbook: document.getElementById('tab-logbook'),
-  trip: document.getElementById('tab-trip'),
-  rig: document.getElementById('tab-rig'),
+const STORE='axle-v1';
+const LANGS=['EN','ES','PT','HI'];
+const LANG_LABELS=['English','Español','Português','हिंदी'];
+const T={
+  EN:{fatigueScore:'FATIGUE SCORE',takeTest:'Take a fatigue test to see your score',startTest:'START FATIGUE TEST',currentStatus:'CURRENT DUTY STATUS',driving:'DRIVING',onDuty:'ON-DUTY',sleeper:'SLEEPER',offDuty:'OFF-DUTY',driveWindow:'14H WINDOW',cycleHrs:'70H / 8-DAY',todayTimeline:"TODAY'S TIMELINE",insDiscount:'INSURANCE DISCOUNT ESTIMATE',logbook:'LOGBOOK',export:'EXPORT',safeScore:'SAFE-DRIVING SCORE',weeklyTrend:'WEEKLY TREND',testHistory:'FATIGUE TEST HISTORY',settings:'SETTINGS',driverProfile:'DRIVER PROFILE',yourName:'YOUR NAME',truckType:'TRUCK TYPE',insCarrier:'INSURANCE CARRIER',annualPremium:'ANNUAL PREMIUM ($)',saveProfile:'SAVE PROFILE',dataManagement:'DATA MANAGEMENT',exportAll:'EXPORT ALL DATA (JSON)',exportLogHtml:'EXPORT LOGBOOK (HTML)',clearAll:'CLEAR ALL DATA',restStop:'REST STOP FINDER',findStop:'FIND NEAREST TRUCK STOP',fatigueTest:'FATIGUE CHECK',answerHonest:'Answer honestly — this is for your safety, not a dispatcher.',hrsSleep:'HOURS OF SLEEP LAST NIGHT',hrsRoad:'HOURS ON THE ROAD TODAY',caffeine:'CAFFEINE TODAY (CUPS)',eyeStrain:'EYE STRAIN / DRYNESS',alertness:'SUBJECTIVE ALERTNESS',cancel:'CANCEL',getScore:'GET MY SCORE',dashboard:'DASH',logTab:'LOG',scoreTab:'SCORE',settingsTab:'SET',noTests:'No fatigue tests yet. Take one from the dashboard.',premium12:'12% DISCOUNT',premium15:'15% DISCOUNT',premium18:'18% DISCOUNT',enterPremium:'Enter your annual premium in Settings to see discount estimates.',pullOver:'Consider pulling over at the next safe stop.',keepRolling:'Looking good. Keep rolling safely.',watchIt:'Getting fatigued. Take a break soon.',good:'GOOD',caution:'CAUTION',danger:'DANGER — PULL OVER',savedOk:'Saved.',clearedOk:'All data cleared.',exportedOk:'Exported.',confClear:'Delete ALL data? This cannot be undone.'},
+  ES:{fatigueScore:'PUNTAJE DE FATIGA',takeTest:'Haz una prueba de fatiga para ver tu puntaje',startTest:'INICIAR PRUEBA',currentStatus:'ESTADO DE SERVICIO ACTUAL',driving:'MANEJANDO',onDuty:'EN SERVICIO',sleeper:'LITERA',offDuty:'FUERA DE SERVICIO',driveWindow:'VENTANA 14H',cycleHrs:'70H / 8 DÍAS',todayTimeline:'LÍNEA DE TIEMPO HOY',insDiscount:'DESCUENTO DE SEGURO',logbook:'BITÁCORA',export:'EXPORTAR',safeScore:'PUNTAJE DE CONDUCCIÓN SEGURA',weeklyTrend:'TENDENCIA SEMANAL',testHistory:'HISTORIAL DE PRUEBAS',settings:'AJUSTES',driverProfile:'PERFIL DEL CONDUCTOR',yourName:'TU NOMBRE',truckType:'TIPO DE CAMIÓN',insCarrier:'ASEGURADORA',annualPremium:'PRIMA ANUAL ($)',saveProfile:'GUARDAR PERFIL',dataManagement:'GESTIÓN DE DATOS',exportAll:'EXPORTAR TODO (JSON)',exportLogHtml:'EXPORTAR BITÁCORA (HTML)',clearAll:'BORRAR TODO',restStop:'PARADA DE DESCANSO',findStop:'BUSCAR PARADA CERCANA',fatigueTest:'CONTROL DE FATIGA',answerHonest:'Responde honestamente — esto es por tu seguridad.',hrsSleep:'HORAS DE SUEÑO ANOCHE',hrsRoad:'HORAS EN RUTA HOY',caffeine:'CAFEÍNA HOY (TAZAS)',eyeStrain:'CANSANCIO OCULAR',alertness:'ALERTA SUBJETIVA',cancel:'CANCELAR',getScore:'VER MI PUNTAJE',dashboard:'PANEL',logTab:'BITÁC',scoreTab:'PUNT',settingsTab:'AJUS',noTests:'Sin pruebas aún. Haz una desde el panel.',premium12:'DESCUENTO 12%',premium15:'DESCUENTO 15%',premium18:'DESCUENTO 18%',enterPremium:'Ingresa tu prima anual en Ajustes.',pullOver:'Considera detenerte en la próxima parada segura.',keepRolling:'Todo bien. Sigue rodando con seguridad.',watchIt:'Fatiga creciente. Toma un descanso pronto.',good:'BIEN',caution:'PRECAUCIÓN',danger:'PELIGRO — DETENTE',savedOk:'Guardado.',clearedOk:'Datos borrados.',exportedOk:'Exportado.',confClear:'¿Borrar TODOS los datos? No se puede deshacer.'},
+  PT:{fatigueScore:'PONTUAÇÃO DE FADIGA',takeTest:'Faça um teste de fadiga para ver sua pontuação',startTest:'INICIAR TESTE',currentStatus:'STATUS DE SERVIÇO ATUAL',driving:'DIRIGINDO',onDuty:'EM SERVIÇO',sleeper:'CABINE',offDuty:'FORA DE SERVIÇO',driveWindow:'JANELA 14H',cycleHrs:'70H / 8 DIAS',todayTimeline:'LINHA DO TEMPO HOJE',insDiscount:'DESCONTO DO SEGURO',logbook:'DIÁRIO DE BORDO',export:'EXPORTAR',safeScore:'PONTUAÇÃO DE DIREÇÃO SEGURA',weeklyTrend:'TENDÊNCIA SEMANAL',testHistory:'HISTÓRICO DE TESTES',settings:'CONFIGURAÇÕES',driverProfile:'PERFIL DO MOTORISTA',yourName:'SEU NOME',truckType:'TIPO DE CAMINHÃO',insCarrier:'SEGURADORA',annualPremium:'PRÊMIO ANUAL ($)',saveProfile:'SALVAR PERFIL',dataManagement:'GESTÃO DE DADOS',exportAll:'EXPORTAR TUDO (JSON)',exportLogHtml:'EXPORTAR DIÁRIO (HTML)',clearAll:'APAGAR TUDO',restStop:'PARADA DE DESCANSO',findStop:'ENCONTRAR PARADA PRÓXIMA',fatigueTest:'VERIFICAÇÃO DE FADIGA',answerHonest:'Responda honestamente — é pela sua segurança.',hrsSleep:'HORAS DE SONO ONTEM',hrsRoad:'HORAS NA ESTRADA HOJE',caffeine:'CAFEÍNA HOJE (XÍCARAS)',eyeStrain:'CANSAÇO VISUAL',alertness:'ALERTA SUBJETIVA',cancel:'CANCELAR',getScore:'VER PONTUAÇÃO',dashboard:'PAINEL',logTab:'DIÁRIO',scoreTab:'PONT',settingsTab:'CONF',noTests:'Sem testes ainda. Faça um no painel.',premium12:'DESCONTO 12%',premium15:'DESCONTO 15%',premium18:'DESCONTO 18%',enterPremium:'Insira seu prêmio anual nas Configurações.',pullOver:'Considere parar no próximo ponto seguro.',keepRolling:'Tudo certo. Continue rodando com segurança.',watchIt:'Fadiga crescente. Faça uma pausa em breve.',good:'BOM',caution:'CUIDADO',danger:'PERIGO — PARE',savedOk:'Salvo.',clearedOk:'Dados apagados.',exportedOk:'Exportado.',confClear:'Apagar TODOS os dados? Não pode ser desfeito.'},
+  HI:{fatigueScore:'थकान स्कोर',takeTest:'अपना स्कोर देखने के लिए थकान परीक्षा दें',startTest:'परीक्षा शुरू करें',currentStatus:'वर्तमान ड्यूटी स्थिति',driving:'ड्राइविंग',onDuty:'ड्यूटी पर',sleeper:'स्लीपर',offDuty:'ड्यूटी से बाहर',driveWindow:'14 घंटे विंडो',cycleHrs:'70 घंटे / 8 दिन',todayTimeline:'आज की समयरेखा',insDiscount:'बीमा छूट अनुमान',logbook:'लॉगबुक',export:'निर्यात',safeScore:'सुरक्षित ड्राइविंग स्कोर',weeklyTrend:'साप्ताहिक रुझान',testHistory:'परीक्षा इतिहास',settings:'सेटिंग्स',driverProfile:'ड्राइवर प्रोफ़ाइल',yourName:'आपका नाम',truckType:'ट्रक प्रकार',insCarrier:'बीमा कंपनी',annualPremium:'वार्षिक प्रीमियम ($)',saveProfile:'प्रोफ़ाइल सहेजें',dataManagement:'डेटा प्रबंधन',exportAll:'सभी डेटा निर्यात (JSON)',exportLogHtml:'लॉगबुक निर्यात (HTML)',clearAll:'सभी डेटा मिटाएं',restStop:'विश्राम स्थान',findStop:'निकटतम ट्रक स्टॉप खोजें',fatigueTest:'थकान जांच',answerHonest:'ईमानदारी से जवाब दें — यह आपकी सुरक्षा के लिए है।',hrsSleep:'कल रात नींद के घंटे',hrsRoad:'आज सड़क पर घंटे',caffeine:'आज कैफीन (कप)',eyeStrain:'आंखों का तनाव',alertness:'सतर्कता',cancel:'रद्द करें',getScore:'स्कोर देखें',dashboard:'डैश',logTab:'लॉग',scoreTab:'स्कोर',settingsTab:'सेट',noTests:'अभी तक कोई परीक्षा नहीं। डैशबोर्ड से एक लें।',premium12:'12% छूट',premium15:'15% छूट',premium18:'18% छूट',enterPremium:'छूट अनुमान के लिए सेटिंग्स में प्रीमियम दर्ज करें।',pullOver:'अगले सुरक्षित स्थान पर रुकने पर विचार करें।',keepRolling:'सब ठीक है। सुरक्षित रहें।',watchIt:'थकान बढ़ रही है। जल्दी आराम करें।',good:'अच्छा',caution:'सावधानी',danger:'खतरा — रुकें',savedOk:'सहेजा गया।',clearedOk:'सभी डेटा मिटा दिया।',exportedOk:'निर्यात किया।',confClear:'सभी डेटा मिटाएं? यह पूर्ववत नहीं किया जा सकता।'}
 };
-tabs.forEach(t => t.onclick = () => {
-  tabs.forEach(x => x.classList.remove('on'));
-  t.classList.add('on');
-  Object.values(panels).forEach(p => p.classList.add('hide'));
-  panels[t.dataset.tab].classList.remove('hide');
-});
 
-// ============== CLOCK ==============
-function tickClock(){
-  const d = new Date();
-  document.getElementById('clock').textContent =
-    String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-  document.getElementById('todayDate').textContent =
-    d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}).toUpperCase();
+let state={profile:null,log:[],tests:[],currentDuty:'off-duty',dutyStart:Date.now(),weekScores:[],langIdx:0,meta:{firstRun:true,v:'1.0'}};
+let toastTimer=null;
+
+function t(k){return(T[LANGS[state.langIdx]]&&T[LANGS[state.langIdx]][k])||T.EN[k]||k}
+
+function load(){try{const d=JSON.parse(localStorage.getItem(STORE));if(d){state=Object.assign(state,d)}}catch(_){}}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(state))}catch(e){toast('Storage full — export and clear old data','error')}}
+
+function toast(msg,kind,ms){
+  const el=document.getElementById('toast');
+  clearTimeout(toastTimer);
+  el.textContent=msg;el.className='toast on'+(kind?' '+kind:'');
+  toastTimer=setTimeout(()=>el.classList.remove('on'),ms||2400);
 }
-tickClock();
-setInterval(tickClock, 30000);
 
-// ============== DRIVER CAM (getUserMedia + fallback) ==============
-const camVid = document.getElementById('camVid');
-const camFallback = document.getElementById('camFallback');
-const camToggle = document.getElementById('camToggle');
-const camStatus = document.getElementById('camStatus');
-let camStream = null;
-async function startCam(){
+function navTo(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen'+name).classList.add('active');
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active',['Dash','Log','Score','Settings'][i]===name);
+  });
+  if(name==='Dash')renderDash();
+  if(name==='Log')renderLog();
+  if(name==='Score')renderScore();
+  if(name==='Settings')loadSettings();
+}
+
+function applyLang(){
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    const k=el.getAttribute('data-t');
+    const v=t(k);if(v)el.textContent=v;
+  });
+  document.getElementById('langBtn').textContent=LANGS[state.langIdx];
+}
+
+function setLang(i){
+  state.langIdx=i;save();applyLang();closeLangModal();
+  document.querySelectorAll('.lang-opt').forEach((o,j)=>o.classList.toggle('sel',j===i));
+}
+document.getElementById('langBtn').onclick=()=>document.getElementById('langModal').classList.add('open');
+function closeLangModal(){document.getElementById('langModal').classList.remove('open')}
+
+function setDuty(d){
+  const now=Date.now();
+  state.log.push({ts:state.dutyStart,end:now,duty:state.currentDuty});
+  state.currentDuty=d;state.dutyStart=now;save();
+  renderDash();
+}
+
+function renderDash(){
+  // status row
+  document.querySelectorAll('.status-seg').forEach(s=>{
+    const d=s.getAttribute('onclick').match(/'(.+)'/)[1];
+    s.classList.toggle('active-status',d===state.currentDuty);
+  });
+  // timeline
+  renderTimeline();
+  // HOS calcs
+  renderHOS();
+  // score ring
+  renderScoreRing();
+  // discount
+  renderDiscount();
+}
+
+function renderTimeline(){
+  const el=document.getElementById('timeline');
+  const now=new Date();
+  const dayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  const dayMs=24*60*60*1000;
+  const todayLogs=state.log.filter(l=>l.end>dayStart);
+  // add current
+  const all=[...todayLogs,{ts:state.dutyStart,end:Date.now(),duty:state.currentDuty}];
+  const colors={driving:'#1e3a5f','on-duty':'#3b2a15',sleeper:'#1a2e1a','off-duty':'var(--bg3)'};
+  el.innerHTML='';
+  all.forEach(l=>{
+    const s=Math.max(0,(l.ts-dayStart)/dayMs*100);
+    const e=Math.min(100,(l.end-dayStart)/dayMs*100);
+    const w=e-s;if(w<=0)return;
+    const div=document.createElement('div');div.className='tl-seg';
+    div.style.cssText=`width:${w}%;background:${colors[l.duty]||'var(--bg3)'}`;
+    el.appendChild(div);
+  });
+}
+
+function renderHOS(){
+  const now=Date.now();const dayMs=24*60*60*1000;
+  const dayStart=new Date().setHours(0,0,0,0);
+  // 14h window: hours of driving+on-duty since first duty status today
+  const todayEntries=[...state.log.filter(l=>l.end>dayStart),{ts:state.dutyStart,end:now,duty:state.currentDuty}];
+  let driveOnDutyMs=0;
+  todayEntries.forEach(l=>{if(l.duty==='driving'||l.duty==='on-duty')driveOnDutyMs+=l.end-Math.max(l.ts,dayStart)});
+  const windowLeftMs=Math.max(0,14*3600000-driveOnDutyMs);
+  const wH=Math.floor(windowLeftMs/3600000);const wM=Math.floor((windowLeftMs%3600000)/60000);
+  document.getElementById('windowLeft').textContent=`${String(wH).padStart(2,'0')}:${String(wM).padStart(2,'0')}`;
+  document.getElementById('windowLeft').style.color=wH<2?'var(--red)':wH<4?'var(--amber)':'var(--ink)';
+
+  // 70h/8-day
+  const eightDaysAgo=now-8*dayMs;
+  const weekEntries=state.log.filter(l=>l.end>eightDaysAgo);
+  let totalDriveMs=0;
+  weekEntries.forEach(l=>{if(l.duty==='driving')totalDriveMs+=l.end-Math.max(l.ts,eightDaysAgo)});
+  if(state.currentDuty==='driving')totalDriveMs+=now-Math.max(state.dutyStart,eightDaysAgo);
+  const cycleLeftMs=Math.max(0,70*3600000-totalDriveMs);
+  const cH=Math.floor(cycleLeftMs/3600000);const cM=Math.floor((cycleLeftMs%3600000)/60000);
+  document.getElementById('cycleLeft').textContent=`${String(cH).padStart(2,'0')}:${String(cM).padStart(2,'0')}`;
+  document.getElementById('cycleLeft').style.color=cH<8?'var(--red)':cH<20?'var(--amber)':'var(--ink)';
+}
+
+function renderScoreRing(){
+  const tests=state.tests;
+  const arc=document.getElementById('scoreArc');
+  const val=document.getElementById('scoreVal');
+  const sum=document.getElementById('scoreSummary');
+  if(!tests.length){arc.style.strokeDashoffset='327';val.textContent='--';sum.textContent=t('takeTest');return;}
+  const latest=tests[tests.length-1];
+  const score=latest.score;
+  const offset=327-(score/100)*327;
+  arc.style.strokeDashoffset=offset;
+  arc.style.stroke=score>=70?'var(--green)':score>=40?'var(--amber)':'var(--red)';
+  val.textContent=score;val.style.color=score>=70?'var(--green)':score>=40?'var(--amber)':'var(--red)';
+  sum.textContent=score>=70?t('keepRolling'):score>=40?t('watchIt'):t('pullOver');
+  document.getElementById('statusDot').style.background=score>=70?'var(--green)':score>=40?'var(--amber)':'var(--red)';
+}
+
+function renderDiscount(){
+  const el=document.getElementById('discountCalc');
+  const premium=state.profile&&state.profile.premium?parseFloat(state.profile.premium):0;
+  if(!premium){el.innerHTML=`<p style="color:var(--muted);font-size:13px">${t('enterPremium')}</p>`;return;}
+  const d12=Math.round(premium*.12);const d15=Math.round(premium*.15);const d18=Math.round(premium*.18);
+  el.innerHTML=`
+    <div class="calc-row"><span class="calc-label">${t('premium12')}</span><span class="calc-val green">$${d12}<small style="font-size:14px;color:var(--soft)">/yr</small></span></div>
+    <div class="calc-row"><span class="calc-label">${t('premium15')}</span><span class="calc-val green">$${d15}<small style="font-size:14px;color:var(--soft)">/yr</small></span></div>
+    <div class="calc-row"><span class="calc-label">${t('premium18')}</span><span class="calc-val green">$${d18}<small style="font-size:14px;color:var(--soft)">/yr</small></span></div>
+  `;
+}
+
+function startFatigueTest(){document.getElementById('fatigueModal').style.display='block'}
+function closeFatigueTest(){document.getElementById('fatigueModal').style.display='none'}
+
+function submitFatigueTest(){
+  const sleep=+document.getElementById('fSleep').value;
+  const road=+document.getElementById('fRoad').value;
+  const caff=+document.getElementById('fCaff').value;
+  const eyes=+document.getElementById('fEyes').value;
+  const alert=+document.getElementById('fAlert').value;
+
+  // Score: 0-100 (higher = safer)
+  let score=50;
+  score+=Math.min(20,(sleep/8)*20); // 0-8h → 0-20pts
+  score-=Math.min(20,(road/14)*20); // 0-14h → 0-20pt penalty
+  score+=Math.min(10,(caff>0&&caff<=3)?10:caff>3?5:0); // moderate caffeine helps
+  score-=(eyes/10)*15; // eye strain penalty
+  score+=(alert/10)*15; // alertness bonus
+  score=Math.max(0,Math.min(100,Math.round(score)));
+
+  state.tests.push({ts:Date.now(),score,sleep,road,caff,eyes,alert});
+  // update week scores
+  const dayKey=new Date().toISOString().slice(0,10);
+  const existing=state.weekScores.find(w=>w.day===dayKey);
+  if(existing){existing.score=score}else{state.weekScores.push({day:dayKey,score})}
+  if(state.weekScores.length>56)state.weekScores=state.weekScores.slice(-56);
+
+  save();closeFatigueTest();renderDash();
+  if(score<40){toast(t('pullOver'),'error',4000)}
+  else if(score<70){toast(t('watchIt'),'',3000)}
+  else{toast(t('keepRolling'),'success')}
+  if(navigator.vibrate)navigator.vibrate(score<40?[200,100,200]:50);
+}
+
+function renderLog(){
+  const el=document.getElementById('logList');
+  const today=state.log.filter(l=>l.end>Date.now()-24*60*60*1000);
+  const all=[...today,{ts:state.dutyStart,end:Date.now(),duty:state.currentDuty}];
+  if(!all.length){el.innerHTML=`<div class="empty">${t('noTests')}</div>`;return;}
+  const colors={driving:'#60a5fa','on-duty':'var(--amber)',sleeper:'var(--green)','off-duty':'var(--soft)'};
+  const labels={driving:t('driving'),'on-duty':t('onDuty'),sleeper:t('sleeper'),'off-duty':t('offDuty')};
+  el.innerHTML=all.map(l=>{
+    const start=new Date(l.ts);const dur=Math.round((l.end-l.ts)/60000);
+    const hh=String(start.getHours()).padStart(2,'0');const mm=String(start.getMinutes()).padStart(2,'0');
+    return`<div class="log-entry"><div class="log-dot" style="background:${colors[l.duty]||'var(--soft)'}"></div><span class="log-time">${hh}:${mm}</span><span class="log-text">${labels[l.duty]||l.duty}</span><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${dur}m</span></div>`;
+  }).reverse().join('');
+}
+
+function renderScore(){
+  // weekly chart
+  const wrap=document.getElementById('weekChart');
+  const scores=state.weekScores.slice(-7);
+  if(!scores.length){wrap.innerHTML=`<div class="empty">${t('noTests')}</div>`;
+  }else{
+    const max=100;const w=100;const h=100;const bw=100/Math.max(scores.length,1)*0.6;const gap=100/Math.max(scores.length,1)*0.4;
+    let bars='';scores.forEach((s,i)=>{
+      const x=i*(bw+gap)+gap/2;const bh=(s.score/max)*85;
+      const col=s.score>=70?'var(--green)':s.score>=40?'var(--amber)':'var(--red)';
+      bars+=`<rect x="${x}%" y="${85-bh}%" width="${bw}%" height="${bh}%" rx="3" fill="${col}"/>`;
+      bars+=`<text x="${x+bw/2}%" y="${85-bh-2}%" fill="var(--soft)" font-size="8" font-family="var(--mono)" text-anchor="middle">${s.score}</text>`;
+      bars+=`<text x="${x+bw/2}%" y="98%" fill="var(--muted)" font-size="7" font-family="var(--mono)" text-anchor="middle">${s.day.slice(5)}</text>`;
+    });
+    wrap.innerHTML=`<svg viewBox="0 0 100 100" preserveAspectRatio="none">${bars}</svg>`;
+  }
+  // test history
+  const hist=document.getElementById('testHistory');
+  if(!state.tests.length){hist.innerHTML=`<div class="empty">${t('noTests')}</div>`;return;}
+  hist.innerHTML=state.tests.slice(-10).reverse().map(tt=>{
+    const d=new Date(tt.ts);const col=tt.score>=70?'var(--green)':tt.score>=40?'var(--amber)':'var(--red)';
+    const label=tt.score>=70?t('good'):tt.score>=40?t('caution'):t('danger');
+    return`<div class="log-entry"><span class="log-time">${d.toLocaleDateString()}</span><span class="log-text" style="color:${col};font-family:var(--cond);font-size:20px;font-weight:700">${tt.score}</span><span style="font-family:var(--mono);font-size:10px;color:${col}">${label}</span></div>`;
+  }).join('');
+}
+
+function loadSettings(){
+  if(state.profile){
+    document.getElementById('sName').value=state.profile.name||'';
+    document.getElementById('sCdl').value=state.profile.cdl||'';
+    document.getElementById('sTruck').value=state.profile.truck||'';
+    document.getElementById('sIns').value=state.profile.ins||'';
+    document.getElementById('sPremium').value=state.profile.premium||'';
+  }
+}
+function saveProfile(){
+  state.profile={
+    name:document.getElementById('sName').value,
+    cdl:document.getElementById('sCdl').value,
+    truck:document.getElementById('sTruck').value,
+    ins:document.getElementById('sIns').value,
+    premium:document.getElementById('sPremium').value
+  };save();toast(t('savedOk'),'success');renderDash();
+}
+
+function exportLog(){
+  const now=new Date();
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>AXLE Logbook — ${now.toLocaleDateString()}</title><style>body{font-family:sans-serif;max-width:800px;margin:0 auto;padding:24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left;font-size:13px}th{background:#f5f5f5}h1{font-size:24px}h2{font-size:18px;margin-top:24px}</style></head><body><h1>AXLE Logbook Export</h1><p>Driver: ${state.profile?state.profile.name:'—'} | CDL: ${state.profile?state.profile.cdl:'—'} | Generated: ${now.toLocaleString()}</p><h2>Duty Log (Last 24h)</h2><table><tr><th>Start</th><th>End</th><th>Status</th><th>Duration</th></tr>${state.log.slice(-50).map(l=>`<tr><td>${new Date(l.ts).toLocaleString()}</td><td>${new Date(l.end).toLocaleString()}</td><td>${l.duty}</td><td>${Math.round((l.end-l.ts)/60000)} min</td></tr>`).join('')}</table><h2>Fatigue Tests</h2><table><tr><th>Date</th><th>Score</th><th>Sleep</th><th>Road Hrs</th><th>Alertness</th></tr>${state.tests.slice(-20).map(tt=>`<tr><td>${new Date(tt.ts).toLocaleString()}</td><td>${tt.score}/100</td><td>${tt.sleep}h</td><td>${tt.road}h</td><td>${tt.alert}/10</td></tr>`).join('')}</table><p style="margin-top:32px;font-size:11px;color:#888">Generated by AXLE · axle-trucker-safety · DOT-ready format</p></body></html>`;
+  const blob=new Blob([html],{type:'text/html'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=`axle-logbook-${now.toISOString().slice(0,10)}.html`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast(t('exportedOk'),'success');
+}
+function exportAll(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=`axle-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast(t('exportedOk'),'success');
+}
+function clearAll(){
+  if(!confirm(t('confClear')))return;if(!confirm(t('confClear')))return;
+  localStorage.removeItem(STORE);
+  state={profile:null,log:[],tests:[],currentDuty:'off-duty',dutyStart:Date.now(),weekScores:[],langIdx:0,meta:{firstRun:true,v:'1.0'}};
+  toast(t('clearedOk'),'success');startOnboard();
+}
+
+function seedSampleData(){
+  const now=Date.now();const h=3600000;
+  state.log=[
+    {ts:now-10*h,end:now-9.5*h,duty:'off-duty'},
+    {ts:now-9.5*h,end:now-9*h,duty:'on-duty'},
+    {ts:now-9*h,end:now-5*h,duty:'driving'},
+    {ts:now-5*h,end:now-4.5*h,duty:'on-duty'},
+    {ts:now-4.5*h,end:now-4*h,duty:'off-duty'},
+    {ts:now-4*h,end:now-1*h,duty:'driving'},
+    {ts:now-1*h,end:now-.5*h,duty:'on-duty'},
+  ];
+  state.tests=[
+    {ts:now-9*h,score:82,sleep:7,road:0,caff:1,eyes:2,alert:8},
+  ];
+  state.weekScores=[
+    {day:new Date(now-6*86400000).toISOString().slice(0,10),score:75},
+    {day:new Date(now-5*86400000).toISOString().slice(0,10),score:68},
+    {day:new Date(now-4*86400000).toISOString().slice(0,10),score:85},
+    {day:new Date(now-3*86400000).toISOString().slice(0,10),score:72},
+    {day:new Date(now-2*86400000).toISOString().slice(0,10),score:90},
+    {day:new Date(now-1*86400000).toISOString().slice(0,10),score:78},
+    {day:new Date(now).toISOString().slice(0,10),score:82},
+  ];
+  state.currentDuty='off-duty';state.dutyStart=now-.5*h;
+}
+
+function startOnboard(){
+  document.getElementById('onboard').style.display='flex';
+}
+function finishOnboard(){
+  const name=document.getElementById('obName').value;
+  const cdl=document.getElementById('obCdl').value;
+  const premium=document.getElementById('obPremium').value;
+  state.profile={name,cdl,truck:'',ins:'',premium};
+  state.meta.firstRun=false;
+  seedSampleData();save();
+  document.getElementById('onboard').style.display='none';
+  applyLang();renderDash();
+}
+
+function init(){
+  load();
+  // PWA manifest
   try{
-    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user', width:480, height:360}, audio:false});
-    camVid.srcObject = camStream;
-    camVid.classList.remove('hide');
-    camFallback.style.display = 'none';
-    camToggle.textContent = 'STOP CAM';
-    camStatus.textContent = 'LIVE';
-    camStatus.style.color = 'var(--green)';
-  } catch(e){
-    camStatus.textContent = 'NO CAM · DEMO';
-    camStatus.style.color = 'var(--yellow)';
-    alert('Camera access denied or unavailable.\nDemo will continue with simulated driver monitoring.');
-  }
-}
-function stopCam(){
-  if (camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream = null; }
-  camVid.classList.add('hide');
-  camFallback.style.display = '';
-  camToggle.textContent = 'USE CAMERA';
-  camStatus.textContent = 'SIMULATED';
-  camStatus.style.color = 'var(--muted)';
-}
-camToggle.onclick = () => camStream ? stopCam() : startCam();
+    const m={name:'AXLE — Trucker Safety',short_name:'AXLE',start_url:'.',display:'standalone',background_color:'#0a0a0a',theme_color:'#0a0a0a',
+      icons:[{src:'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%228%22 fill=%22%230a0a0a%22/><circle cx=%2232%22 cy=%2232%22 r=%2218%22 stroke=%22%23fbbf24%22 stroke-width=%224%22 fill=%22none%22/><circle cx=%2232%22 cy=%2232%22 r=%223%22 fill=%22%23fbbf24%22/></svg>',sizes:'64x64',type:'image/svg+xml'}]};
+    const blob=new Blob([JSON.stringify(m)],{type:'application/json'});
+    const link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(blob);
+    document.head.appendChild(link);
+  }catch(_){}
 
-// ============== SIMULATED DRIVE (telemetry loop) ==============
-const speedEl = document.getElementById('speed');
-const speedDot = document.getElementById('speedDot');
-const fatScoreEl = document.getElementById('fatScore');
-const fatGauge = document.getElementById('fatGauge');
-const fatTag = document.getElementById('fatTag');
-const fatDot = document.getElementById('fatDot');
-const truck = document.getElementById('truck');
-const laneText = document.getElementById('laneText');
-const laneState = document.getElementById('laneState');
-const laneDot = document.getElementById('laneDot');
-const driftVal = document.getElementById('driftVal');
-const blinkRate = document.getElementById('blinkRate');
-const headPose = document.getElementById('headPose');
-const postureVal = document.getElementById('postureVal');
-const alertness = document.getElementById('alertness');
-const eyeL = document.getElementById('eyeL');
-const eyeR = document.getElementById('eyeR');
-const driveLeft = document.getElementById('driveLeft');
-const breakIn = document.getElementById('breakIn');
-const dutyLeft = document.getElementById('dutyLeft');
-const alertsList = document.getElementById('alertsList');
-const alertCount = document.getElementById('alertCount');
-const todayScore = document.getElementById('todayScore');
+  applyLang();
+  if(state.meta&&state.meta.firstRun){startOnboard()}
+  else{renderDash()}
 
-// Scripted scenario so the demo is impressive
-const script = [
-  // [seconds, speed, fatigue, lane(-1..1), event?, postureTilt, blinkR ]
-  { t:0,  speed:62, fat:94, lane:0,    posture:6,  blink:14, alertness:'ALERT' },
-  { t:6,  speed:64, fat:93, lane:0.1,  posture:7,  blink:14, alertness:'ALERT' },
-  { t:12, speed:65, fat:89, lane:-0.2, posture:8,  blink:15, alertness:'ALERT',
-    event:{type:'ok', msg:'Following distance increased to 3.2s — nice.'} },
-  { t:18, speed:64, fat:84, lane:-0.5, posture:10, blink:17, alertness:'ALERT' },
-  { t:24, speed:63, fat:78, lane:-0.7, posture:12, blink:19, alertness:'ALERT',
-    event:{type:'warn', msg:'Lane drift left detected — 0.7 ft toward centerline.'} },
-  { t:30, speed:63, fat:72, lane:-0.3, posture:14, blink:21, alertness:'ALERT' },
-  { t:36, speed:62, fat:66, lane:0.1,  posture:16, blink:23, alertness:'WATCH',
-    event:{type:'warn', msg:'Posture: lumbar slumped 16° — sit up, roll shoulders.'} },
-  { t:42, speed:62, fat:61, lane:0.0,  posture:14, blink:22, alertness:'WATCH' },
-  { t:48, speed:60, fat:55, lane:0.3,  posture:13, blink:24, alertness:'WATCH',
-    event:{type:'warn', msg:'Blink rate climbing (24/min). Stay with us, driver.'} },
-  { t:54, speed:60, fat:48, lane:0.6,  posture:15, blink:28, alertness:'TIRED',
-    event:{type:'bad', msg:'Eye closure > 1.4s — PULL OVER at next exit.'} },
-  { t:60, speed:58, fat:52, lane:0.2,  posture:13, blink:22, alertness:'WATCH',
-    event:{type:'warn', msg:'Slowing for exit. Petro Elk City in 8 mi.'} },
-  { t:66, speed:55, fat:60, lane:0.0,  posture:11, blink:18, alertness:'WATCH' },
-  { t:72, speed:0,  fat:72, lane:0.0,  posture:10, blink:15, alertness:'ALERT',
-    event:{type:'ok', msg:'Stopped. Logbook auto-switched to ON-DUTY (not driving).'} },
-  { t:80, speed:0,  fat:84, lane:0.0,  posture:9,  blink:14, alertness:'ALERT',
-    event:{type:'ok', msg:'30-min break logged. Drive clock paused.'} },
-  { t:90, speed:62, fat:96, lane:0,    posture:6,  blink:14, alertness:'ALERT',
-    event:{type:'ok', msg:'Rolling again. Sharp & rested — safe-driving score +4.'} },
-];
-
-let scriptIdx = 0;
-let tickT = 0;
-let alertId = 0;
-let alertTotal = 0;
-
-function pushAlert(type, msg){
-  alertId++;
-  alertTotal++;
-  alertCount.textContent = alertTotal + ' TODAY';
-  const d = new Date();
-  const tStr = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-  const el = document.createElement('div');
-  el.className = 'alert ' + type;
-  el.innerHTML = `<span class="at">${tStr}</span><span class="msg">${msg}</span>`;
-  alertsList.prepend(el);
-  while (alertsList.children.length > 14) alertsList.removeChild(alertsList.lastChild);
+  // update timeline every 30s
+  setInterval(()=>{if(document.querySelector('#screenDash.active')){renderTimeline();renderHOS()}},30000);
 }
 
-// Seed history alerts so feed isn't empty on load
-['Engine started · cold-fluid check OK',
- 'Pre-trip inspection logged · 0 defects',
- 'Speed limit zone entered: 70 mph'
-].forEach(m => pushAlert('ok', m));
-
-function applyState(s){
-  // Speed
-  speedEl.textContent = s.speed;
-  speedEl.classList.toggle('y', s.speed > 0 && s.speed < 70);
-  speedEl.classList.toggle('g', s.speed === 0);
-  speedEl.classList.toggle('r', s.speed >= 70);
-  speedDot.className = s.speed === 0 ? 'doty' : 'dotg';
-
-  // Fatigue
-  fatScoreEl.textContent = s.fat;
-  fatScoreEl.classList.remove('g','y','r');
-  fatGauge.classList.remove('warn','bad');
-  if (s.fat >= 80){ fatScoreEl.classList.add('g'); fatTag.textContent = 'FRESH'; fatTag.style.color='var(--green)'; fatDot.className='dotg'; }
-  else if (s.fat >= 60){ fatScoreEl.classList.add('y'); fatGauge.classList.add('warn'); fatTag.textContent='WATCH'; fatTag.style.color='var(--yellow)'; fatDot.className='doty'; }
-  else { fatScoreEl.classList.add('r'); fatGauge.classList.add('bad'); fatTag.textContent='TIRED'; fatTag.style.color='var(--red)'; fatDot.className='dotr'; }
-  fatGauge.style.width = s.fat + '%';
-
-  // Lane
-  const offsetPx = s.lane * 60; // -60..60
-  truck.style.left = `calc(50% + ${offsetPx}px)`;
-  driftVal.textContent = (Math.abs(s.lane) * 1.4).toFixed(1) + ' ft';
-  laneText.classList.remove('warn','bad');
-  laneDot.className = 'dotg';
-  if (Math.abs(s.lane) > 0.6){ laneText.classList.add('bad'); laneText.textContent = (s.lane<0?'LEFT':'RIGHT') + ' · DRIFT WARNING'; laneState.textContent='DRIFTING'; laneState.style.color='var(--red)'; laneDot.className='dotr'; }
-  else if (Math.abs(s.lane) > 0.3){ laneText.classList.add('warn'); laneText.textContent = (s.lane<0?'LEFT':'RIGHT') + ' · WATCH LINE'; laneState.textContent='WATCH'; laneState.style.color='var(--yellow)'; laneDot.className='doty'; }
-  else { laneText.textContent = 'CENTER · HOLDING LINE'; laneState.textContent='HOLDING CENTER'; laneState.style.color='var(--green)'; }
-
-  // Eyes / pose / posture
-  blinkRate.textContent = s.blink + '/min';
-  headPose.textContent = (s.posture > 0 ? '+' : '') + s.posture + '° ' + (s.posture > 0 ? 'L' : 'R');
-  postureVal.textContent = 'tilt ' + s.posture + '° · ' + (s.posture > 12 ? 'slumped' : 'ok');
-
-  // Alertness HUD
-  alertness.classList.remove('warn','bad');
-  if (s.alertness === 'WATCH'){ alertness.classList.add('warn'); }
-  if (s.alertness === 'TIRED'){ alertness.classList.add('bad'); }
-  alertness.textContent = s.alertness;
-
-  // Eye markers — close them briefly on TIRED
-  if (s.alertness === 'TIRED'){
-    eyeL.textContent = 'L · CLOSED'; eyeR.textContent = 'R · CLOSED';
-    eyeL.classList.add('bad'); eyeR.classList.add('bad');
-    eyeL.classList.remove('warn'); eyeR.classList.remove('warn');
-  } else if (s.alertness === 'WATCH'){
-    eyeL.textContent = 'L · DROOP'; eyeR.textContent = 'R · DROOP';
-    eyeL.classList.add('warn'); eyeR.classList.add('warn');
-    eyeL.classList.remove('bad'); eyeR.classList.remove('bad');
-  } else {
-    eyeL.textContent = 'L · OPEN'; eyeR.textContent = 'R · OPEN';
-    eyeL.classList.remove('warn','bad'); eyeR.classList.remove('warn','bad');
-  }
-
-  // HOS countdowns drift down
-  // (we just decrement a baseline once a second elsewhere)
-}
-
-function step(){
-  // Advance through scenario; loop after end
-  const cur = script[scriptIdx];
-  applyState(cur);
-  if (cur.event) pushAlert(cur.event.type, cur.event.msg);
-  scriptIdx = (scriptIdx + 1) % script.length;
-
-  // Update today score based on alertness
-  if (cur.alertness === 'TIRED' && Math.random() < 0.6){
-    todayScore.textContent = Math.max(80, parseInt(todayScore.textContent,10) - 1);
-  }
-}
-
-// First tick & schedule
-step();
-setInterval(step, 4500);
-
-// HOS counter (just drift driveLeft & breakIn every 5s for liveness)
-let driveSec = 4*3600 + 13*60;
-let breakSec = 42*60;
-let dutySec = 7*3600 + 13*60;
-function hms(s){
-  s = Math.max(0,s);
-  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
-  return h + ':' + String(m).padStart(2,'0');
-}
-setInterval(() => {
-  driveSec -= 9;
-  breakSec -= 9;
-  dutySec  -= 9;
-  if (breakSec <= 0) breakSec = 30*60;
-  driveLeft.textContent = hms(driveSec);
-  breakIn.textContent  = hms(breakSec);
-  dutyLeft.textContent = hms(dutySec);
-}, 5000);
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init)}else{init()}
 </script>
 </body>
 </html>
