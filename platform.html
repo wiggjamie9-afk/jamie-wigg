@@ -1,0 +1,1778 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RHYTHMIX — Platform</title>
+  <meta name="description" content="Your AI music command center. Create, discover, and manage your entire music library from one place.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas: #08050d;
+      --surface: #1a1325;
+      --surface-2: #120e1a;
+      --surface-3: #221a30;
+      --magenta: #ff1f5a;
+      --purple: #7c3aed;
+      --cyan: #00d8ff;
+      --green: #00e887;
+      --gold: #f5c000;
+      --pink: #ff6fc8;
+      --white: #ffffff;
+      --muted: #a0a0b0;
+      --dim: #555;
+      --border: rgba(255,255,255,.06);
+      --border-2: rgba(255,255,255,.1);
+      --sidebar-w: 240px;
+      --header-h: 64px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--canvas);
+      color: var(--white);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Layout Shell ── */
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      grid-template-rows: var(--header-h) 1fr;
+      height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      grid-row: 1 / -1;
+      background: var(--surface-2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      z-index: 10;
+    }
+    .sidebar-logo {
+      padding: 20px 24px;
+      font-size: 22px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--magenta), var(--purple), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo small {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      -webkit-text-fill-color: var(--muted);
+      margin-top: 2px;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .sidebar-nav {
+      flex: 1;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sidebar-section {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--dim);
+      padding: 16px 12px 8px;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s ease;
+      text-decoration: none;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.04); color: var(--white); }
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(0,216,255,.08));
+      color: var(--white);
+      border: 1px solid rgba(124,58,237,.2);
+    }
+    .nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .nav-item .badge {
+      margin-left: auto;
+      background: var(--magenta);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 100px;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .user-card:hover { background: rgba(255,255,255,.04); }
+    .user-avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--magenta), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px;
+    }
+    .user-info { font-size: 13px; font-weight: 600; }
+    .user-info span { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,5,13,.85);
+      backdrop-filter: blur(12px);
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-title { font-size: 18px; font-weight: 800; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .search-bar {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: 10px;
+      padding: 8px 14px;
+      width: 320px;
+    }
+    .search-bar svg { width: 16px; height: 16px; color: var(--dim); flex-shrink: 0; }
+    .search-bar input {
+      background: none; border: none; outline: none;
+      color: var(--white); font-size: 13px; width: 100%;
+      font-family: inherit;
+    }
+    .search-bar input::placeholder { color: var(--dim); }
+    .search-bar kbd {
+      font-size: 10px; color: var(--dim);
+      border: 1px solid var(--border-2);
+      padding: 2px 5px; border-radius: 4px;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .header-btn {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--muted);
+      transition: all .15s ease;
+    }
+    .header-btn:hover { border-color: var(--purple); color: var(--white); }
+    .header-btn svg { width: 18px; height: 18px; }
+    .btn-create {
+      display: flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--gold), #ff8800);
+      color: #000; font-weight: 800; font-size: 13px;
+      padding: 8px 18px; border-radius: 10px;
+      border: none; cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ── Main Content ── */
+    .main {
+      overflow-y: auto;
+      padding: 28px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--surface-3) transparent;
+    }
+    .main::-webkit-scrollbar { width: 6px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Cards & Grids ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .stat-card .label {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--dim);
+      font-family: "JetBrains Mono", monospace;
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-size: 32px; font-weight: 900; line-height: 1;
+    }
+    .stat-card .change {
+      font-size: 12px; margin-top: 6px;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 600;
+    }
+    .stat-card .change.up { color: var(--green); }
+    .stat-card .change.down { color: var(--magenta); }
+
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-header h2 {
+      font-size: 20px; font-weight: 800;
+    }
+    .section-header a, .section-header button {
+      font-size: 13px; color: var(--purple);
+      text-decoration: none; font-weight: 600;
+      background: none; border: none; cursor: pointer;
+      font-family: inherit;
+    }
+
+    .track-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .track-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .track-card:hover {
+      border-color: var(--purple);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124,58,237,.15);
+    }
+    .track-cover {
+      width: 100%; aspect-ratio: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .track-cover-art {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .cover-gradient {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; font-weight: 900;
+      color: rgba(255,255,255,.08);
+    }
+    .track-play {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(8,5,13,.5);
+      opacity: 0;
+      transition: opacity .2s ease;
+    }
+    .track-card:hover .track-play { opacity: 1; }
+    .play-btn {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--magenta);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(255,31,90,.4);
+    }
+    .play-btn svg { width: 20px; height: 20px; color: #fff; margin-left: 2px; }
+    .track-info {
+      padding: 14px;
+    }
+    .track-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .track-meta {
+      font-size: 12px; color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .track-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--dim); }
+    .genre-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; padding: 3px 8px;
+      border-radius: 6px; display: inline-block;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .genre-tag.electronic { background: rgba(0,216,255,.12); color: var(--cyan); }
+    .genre-tag.hiphop { background: rgba(255,31,90,.12); color: var(--magenta); }
+    .genre-tag.ambient { background: rgba(124,58,237,.12); color: var(--purple); }
+    .genre-tag.pop { background: rgba(255,111,200,.12); color: var(--pink); }
+    .genre-tag.cinematic { background: rgba(245,192,0,.12); color: var(--gold); }
+    .genre-tag.lofi { background: rgba(0,232,135,.12); color: var(--green); }
+
+    /* ── Welcome Banner ── */
+    .welcome-banner {
+      background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(0,216,255,.08));
+      border: 1px solid rgba(124,58,237,.2);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .welcome-text h1 {
+      font-size: 28px; font-weight: 900; margin-bottom: 8px;
+    }
+    .welcome-text h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--magenta), var(--purple), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .welcome-text p { color: var(--muted); font-size: 15px; max-width: 500px; }
+    .welcome-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .welcome-actions .btn {
+      padding: 10px 20px; border-radius: 10px; font-size: 13px;
+      font-weight: 700; text-decoration: none; border: none; cursor: pointer;
+      font-family: inherit;
+    }
+    .welcome-actions .btn-primary {
+      background: linear-gradient(135deg, var(--gold), #ff8800);
+      color: #000;
+    }
+    .welcome-actions .btn-outline {
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border-2);
+      color: var(--white);
+    }
+    .welcome-visual {
+      width: 180px; height: 130px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      border-radius: 14px; opacity: .6;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .welcome-visual svg { width: 64px; height: 64px; color: rgba(255,255,255,.3); }
+
+    /* ── Activity Feed ── */
+    .feed-list {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 32px;
+    }
+    .feed-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .feed-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .feed-icon.create { background: rgba(0,232,135,.1); }
+    .feed-icon.play { background: rgba(0,216,255,.1); }
+    .feed-icon.like { background: rgba(255,31,90,.1); }
+    .feed-icon.share { background: rgba(124,58,237,.1); }
+    .feed-content { flex: 1; }
+    .feed-content strong { font-weight: 700; }
+    .feed-content p { font-size: 13px; color: var(--muted); }
+    .feed-time {
+      font-size: 11px; color: var(--dim);
+      font-family: "JetBrains Mono", monospace;
+      flex-shrink: 0;
+    }
+
+    /* ── Discover View ── */
+    .mood-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .mood-card {
+      border-radius: 14px;
+      padding: 24px 18px;
+      cursor: pointer;
+      transition: all .2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .mood-card:hover { transform: translateY(-2px); }
+    .mood-card h3 { font-size: 16px; font-weight: 800; position: relative; z-index: 1; }
+    .mood-card p {
+      font-size: 12px; color: rgba(255,255,255,.7);
+      margin-top: 4px; position: relative; z-index: 1;
+    }
+    .mood-card .mood-count {
+      font-size: 11px; color: rgba(255,255,255,.5);
+      margin-top: 12px; position: relative; z-index: 1;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .mood-energetic { background: linear-gradient(135deg, #ff1f5a, #ff6fc8); }
+    .mood-chill { background: linear-gradient(135deg, #7c3aed, #00d8ff); }
+    .mood-dark { background: linear-gradient(135deg, #1a1325, #2d1b4e); border: 1px solid var(--border-2); }
+    .mood-uplifting { background: linear-gradient(135deg, #f5c000, #ff8800); }
+    .mood-melancholy { background: linear-gradient(135deg, #0d2847, #7c3aed); }
+    .mood-focus { background: linear-gradient(135deg, #00e887, #00878a); }
+
+    .ai-prompt-box {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .ai-prompt-box h3 {
+      font-size: 16px; font-weight: 800; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ai-prompt-box h3 span {
+      background: linear-gradient(135deg, var(--magenta), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .ai-input-row {
+      display: flex; gap: 10px;
+    }
+    .ai-input {
+      flex: 1; background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--white);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+    .ai-input:focus { border-color: var(--purple); }
+    .ai-input::placeholder { color: var(--dim); }
+    .ai-go {
+      background: linear-gradient(135deg, var(--magenta), var(--purple));
+      color: #fff; border: none; border-radius: 10px;
+      padding: 12px 24px; font-weight: 800;
+      cursor: pointer; font-family: inherit; font-size: 14px;
+      white-space: nowrap;
+    }
+
+    /* ── Library View ── */
+    .library-tabs {
+      display: flex; gap: 8px;
+      margin-bottom: 20px;
+    }
+    .library-tab {
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 700;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+      font-family: inherit;
+      transition: all .15s ease;
+    }
+    .library-tab.active {
+      background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(0,216,255,.08));
+      border-color: rgba(124,58,237,.3);
+      color: var(--white);
+    }
+
+    .track-list-item {
+      display: grid;
+      grid-template-columns: 48px 1fr 120px 80px 60px;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background .15s ease;
+    }
+    .track-list-item:hover { background: var(--surface); }
+    .track-list-thumb {
+      width: 48px; height: 48px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+      color: rgba(255,255,255,.15);
+    }
+    .track-list-info .title { font-size: 14px; font-weight: 700; }
+    .track-list-info .artist { font-size: 12px; color: var(--muted); }
+    .track-list-genre { font-size: 12px; color: var(--muted); }
+    .track-list-duration {
+      font-size: 12px; color: var(--dim);
+      font-family: "JetBrains Mono", monospace;
+      text-align: right;
+    }
+    .track-list-actions {
+      display: flex; gap: 6px; justify-content: flex-end;
+    }
+    .track-list-actions button {
+      background: none; border: none; color: var(--dim);
+      cursor: pointer; padding: 4px;
+    }
+    .track-list-actions button:hover { color: var(--white); }
+    .track-list-header {
+      display: grid;
+      grid-template-columns: 48px 1fr 120px 80px 60px;
+      gap: 14px;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dim);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* ── Studio View ── */
+    .studio-hero {
+      text-align: center;
+      padding: 48px 24px;
+      background: linear-gradient(135deg, rgba(124,58,237,.1), rgba(255,31,90,.05));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      margin-bottom: 28px;
+    }
+    .studio-hero h2 {
+      font-size: 32px; font-weight: 900; margin-bottom: 10px;
+    }
+    .studio-hero h2 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--magenta), var(--purple), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .studio-hero p { color: var(--muted); font-size: 15px; margin-bottom: 24px; }
+    .studio-prompt {
+      max-width: 600px; margin: 0 auto;
+    }
+    .studio-prompt textarea {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: 14px;
+      padding: 16px 20px;
+      color: var(--white);
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      height: 100px;
+      outline: none;
+    }
+    .studio-prompt textarea:focus { border-color: var(--purple); }
+    .studio-prompt textarea::placeholder { color: var(--dim); }
+    .studio-controls {
+      display: flex; gap: 10px; margin-top: 12px;
+      justify-content: center; flex-wrap: wrap;
+    }
+    .studio-controls select {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--white);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+    }
+    .studio-generate {
+      background: linear-gradient(135deg, var(--gold), #ff8800);
+      color: #000; border: none; border-radius: 10px;
+      padding: 10px 28px; font-weight: 800;
+      font-size: 14px; cursor: pointer;
+      font-family: inherit;
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .template-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .template-card:hover {
+      border-color: var(--purple);
+      transform: translateY(-2px);
+    }
+    .template-icon { font-size: 28px; margin-bottom: 12px; }
+    .template-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+    .template-card p { font-size: 12px; color: var(--muted); }
+    .template-card .template-tag {
+      display: inline-block; margin-top: 10px;
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(124,58,237,.12); color: var(--purple);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* ── Community View ── */
+    .creator-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .creator-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .creator-card:hover {
+      border-color: var(--purple);
+      transform: translateY(-2px);
+    }
+    .creator-avatar {
+      width: 56px; height: 56px; border-radius: 14px;
+      margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 20px;
+    }
+    .creator-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+    .creator-card .creator-genre { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+    .creator-stats {
+      display: flex; justify-content: center; gap: 20px;
+    }
+    .creator-stat { text-align: center; }
+    .creator-stat .num {
+      font-size: 16px; font-weight: 800;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .creator-stat .lbl {
+      font-size: 10px; color: var(--dim);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .follow-btn {
+      margin-top: 14px;
+      background: rgba(124,58,237,.12);
+      border: 1px solid rgba(124,58,237,.3);
+      color: var(--purple);
+      padding: 7px 20px; border-radius: 8px;
+      font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .follow-btn:hover {
+      background: var(--purple); color: #fff;
+    }
+
+    /* ── Trending Chart ── */
+    .chart-list { margin-bottom: 32px; }
+    .chart-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .chart-item:hover { background: var(--surface); }
+    .chart-rank {
+      font-size: 18px; font-weight: 900;
+      width: 32px; text-align: center;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .chart-rank.gold { color: var(--gold); }
+    .chart-rank.silver { color: #c0c0c0; }
+    .chart-rank.bronze { color: #cd7f32; }
+    .chart-thumb {
+      width: 44px; height: 44px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px;
+      color: rgba(255,255,255,.15);
+    }
+    .chart-info { flex: 1; }
+    .chart-info .title { font-size: 14px; font-weight: 700; }
+    .chart-info .artist { font-size: 12px; color: var(--muted); }
+    .chart-plays {
+      font-size: 12px; color: var(--dim);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* ── Settings View ── */
+    .settings-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .settings-section h3 {
+      font-size: 16px; font-weight: 800; margin-bottom: 16px;
+    }
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-size: 14px; font-weight: 600; }
+    .setting-label span { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+    .toggle {
+      width: 44px; height: 24px; border-radius: 12px;
+      background: var(--surface-3); cursor: pointer;
+      position: relative; transition: background .2s ease;
+      border: none;
+    }
+    .toggle::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--white);
+      transition: transform .2s ease;
+    }
+    .toggle.on { background: var(--purple); }
+    .toggle.on::after { transform: translateX(20px); }
+
+    /* ── Player Bar ── */
+    .player-bar {
+      position: fixed; bottom: 0; left: var(--sidebar-w); right: 0;
+      height: 72px;
+      background: var(--surface-2);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 24px;
+      gap: 20px;
+      z-index: 20;
+      backdrop-filter: blur(16px);
+    }
+    .player-track {
+      display: flex; align-items: center; gap: 12px;
+      width: 240px; flex-shrink: 0;
+    }
+    .player-thumb {
+      width: 48px; height: 48px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px;
+      color: rgba(255,255,255,.15);
+    }
+    .player-info .title { font-size: 13px; font-weight: 700; }
+    .player-info .artist { font-size: 11px; color: var(--muted); }
+    .player-controls {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 6px;
+    }
+    .player-buttons {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .player-buttons button {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; padding: 4px;
+      transition: color .15s ease;
+    }
+    .player-buttons button:hover { color: var(--white); }
+    .player-buttons .play-main {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--white); color: var(--canvas);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .player-buttons .play-main svg { margin-left: 2px; }
+    .player-progress {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; max-width: 500px;
+    }
+    .player-progress .time {
+      font-size: 11px; color: var(--dim);
+      font-family: "JetBrains Mono", monospace;
+      width: 36px; text-align: center;
+    }
+    .progress-bar {
+      flex: 1; height: 4px; background: var(--surface-3);
+      border-radius: 2px; position: relative; cursor: pointer;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--magenta), var(--purple));
+      width: 35%;
+    }
+    .player-extra {
+      width: 180px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+    }
+    .player-extra button {
+      background: none; border: none; color: var(--dim);
+      cursor: pointer; padding: 4px;
+    }
+    .player-extra button:hover { color: var(--white); }
+    .volume-bar {
+      width: 80px; height: 4px; background: var(--surface-3);
+      border-radius: 2px; cursor: pointer;
+    }
+    .volume-fill {
+      height: 100%; width: 70%; border-radius: 2px;
+      background: var(--muted);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .player-bar { left: 0; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .welcome-visual { display: none; }
+      .track-list-header,
+      .track-list-item { grid-template-columns: 48px 1fr 80px; }
+      .track-list-genre, .track-list-actions { display: none; }
+    }
+    @media (max-width: 600px) {
+      .stat-grid { grid-template-columns: 1fr; }
+      .search-bar { width: 180px; }
+      .player-track { width: auto; }
+      .player-extra { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      RHYTHMIX
+      <small>Platform</small>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div>
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-view="discover">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Discover
+        <span class="badge">AI</span>
+      </button>
+      <button class="nav-item" data-view="library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        Library
+      </button>
+      <button class="nav-item" data-view="studio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        Studio
+        <span class="badge">New</span>
+      </button>
+
+      <div class="sidebar-section">Social</div>
+      <button class="nav-item" data-view="community">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Community
+      </button>
+      <button class="nav-item" data-view="charts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        Charts
+      </button>
+
+      <div class="sidebar-section">Account</div>
+      <button class="nav-item" data-view="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">J</div>
+        <div class="user-info">
+          Jamie W.
+          <span>Pro Plan</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="header-left">
+      <h1 class="header-title" id="pageTitle">Dashboard</h1>
+    </div>
+    <div class="header-right">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Search tracks, artists, moods...">
+        <kbd>/</kbd>
+      </div>
+      <button class="header-btn" title="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+      <button class="btn-create" onclick="switchView('studio')">+ Create</button>
+    </div>
+  </header>
+
+  <!-- ── Main Content ── -->
+  <main class="main" style="padding-bottom: 100px;">
+
+    <!-- Dashboard View -->
+    <div class="view active" id="view-dashboard">
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h1>Welcome back, <em>Jamie</em></h1>
+          <p>Your AI music command center. You have 3 tracks in progress and 12 new plays since yesterday.</p>
+          <div class="welcome-actions">
+            <button class="btn btn-primary" onclick="switchView('studio')">Create New Track</button>
+            <button class="btn btn-outline" onclick="switchView('discover')">Discover Music</button>
+          </div>
+        </div>
+        <div class="welcome-visual">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Total Tracks</div>
+          <div class="value" style="color:var(--cyan)">47</div>
+          <div class="change up">+5 this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Plays</div>
+          <div class="value" style="color:var(--magenta)">2,841</div>
+          <div class="change up">+18% vs last week</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Followers</div>
+          <div class="value" style="color:var(--purple)">324</div>
+          <div class="change up">+12 new</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Revenue</div>
+          <div class="value" style="color:var(--gold)">$89</div>
+          <div class="change up">+$23 this month</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Recent Tracks</h2>
+        <button onclick="switchView('library')">View All</button>
+      </div>
+      <div class="track-grid">
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#ff1f5a,#7c3aed)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Neon Pulse</div>
+            <div class="track-meta">
+              <span class="genre-tag electronic">Electronic</span>
+              <span class="dot"></span>
+              <span>3:24</span>
+            </div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#00d8ff,#7c3aed)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Midnight Circuit</div>
+            <div class="track-meta">
+              <span class="genre-tag ambient">Ambient</span>
+              <span class="dot"></span>
+              <span>4:12</span>
+            </div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#f5c000,#ff8800)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Golden Hour</div>
+            <div class="track-meta">
+              <span class="genre-tag cinematic">Cinematic</span>
+              <span class="dot"></span>
+              <span>2:58</span>
+            </div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#00e887,#00878a)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Lo-Fi Rain</div>
+            <div class="track-meta">
+              <span class="genre-tag lofi">Lo-Fi</span>
+              <span class="dot"></span>
+              <span>5:30</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Recent Activity</h2>
+        <button>View All</button>
+      </div>
+      <div class="feed-list">
+        <div class="feed-item">
+          <div class="feed-icon create">&#127926;</div>
+          <div class="feed-content"><p><strong>You</strong> created a new track &mdash; "Neon Pulse"</p></div>
+          <span class="feed-time">2h ago</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-icon play">&#9654;</div>
+          <div class="feed-content"><p><strong>@beatmaker_lex</strong> played your track "Midnight Circuit"</p></div>
+          <span class="feed-time">4h ago</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-icon like">&#10084;</div>
+          <div class="feed-content"><p><strong>@vocalsynth</strong> liked "Golden Hour"</p></div>
+          <span class="feed-time">6h ago</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-icon share">&#128279;</div>
+          <div class="feed-content"><p><strong>@producer_nina</strong> shared your track "Lo-Fi Rain"</p></div>
+          <span class="feed-time">1d ago</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Discover View -->
+    <div class="view" id="view-discover">
+      <div class="ai-prompt-box">
+        <h3><span>&#10024; AI Music Discovery</span></h3>
+        <p style="color:var(--muted); font-size:13px; margin-bottom:14px;">Describe the mood, vibe, or scene you want music for. RHYTHMIX AI will find the perfect tracks.</p>
+        <div class="ai-input-row">
+          <input class="ai-input" type="text" placeholder='Try: "late night drive through Tokyo" or "upbeat workout energy"'>
+          <button class="ai-go">Discover</button>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Browse by Mood</h2>
+      </div>
+      <div class="mood-grid">
+        <div class="mood-card mood-energetic">
+          <h3>Energetic</h3>
+          <p>High BPM, driving beats</p>
+          <div class="mood-count">2,340 tracks</div>
+        </div>
+        <div class="mood-card mood-chill">
+          <h3>Chill</h3>
+          <p>Relaxed, ambient grooves</p>
+          <div class="mood-count">3,120 tracks</div>
+        </div>
+        <div class="mood-card mood-dark">
+          <h3>Dark</h3>
+          <p>Moody, atmospheric</p>
+          <div class="mood-count">1,890 tracks</div>
+        </div>
+        <div class="mood-card mood-uplifting">
+          <h3>Uplifting</h3>
+          <p>Feel-good, euphoric</p>
+          <div class="mood-count">2,780 tracks</div>
+        </div>
+        <div class="mood-card mood-melancholy">
+          <h3>Melancholy</h3>
+          <p>Emotional, reflective</p>
+          <div class="mood-count">1,560 tracks</div>
+        </div>
+        <div class="mood-card mood-focus">
+          <h3>Focus</h3>
+          <p>Deep work, concentration</p>
+          <div class="mood-count">2,100 tracks</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Curated Playlists</h2>
+        <button>View All</button>
+      </div>
+      <div class="track-grid">
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#7c3aed,#ff1f5a)">
+            <div class="cover-gradient" style="font-size:32px;">&#127911;</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Midnight Synthwave</div>
+            <div class="track-meta"><span>24 tracks</span><span class="dot"></span><span>1h 42m</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#00d8ff,#00e887)">
+            <div class="cover-gradient" style="font-size:32px;">&#127793;</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Morning Lo-Fi</div>
+            <div class="track-meta"><span>18 tracks</span><span class="dot"></span><span>1h 15m</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#f5c000,#ff1f5a)">
+            <div class="cover-gradient" style="font-size:32px;">&#128293;</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Producer's Toolkit</div>
+            <div class="track-meta"><span>32 tracks</span><span class="dot"></span><span>2h 08m</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#1a1325,#7c3aed)">
+            <div class="cover-gradient" style="font-size:32px;">&#127769;</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Sleep Ambient</div>
+            <div class="track-meta"><span>15 tracks</span><span class="dot"></span><span>3h 20m</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Recommended For You</h2>
+        <button>Refresh</button>
+      </div>
+      <div class="track-grid">
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#ff6fc8,#7c3aed)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Crystal Waves</div>
+            <div class="track-meta"><span>@synthcloud</span><span class="dot"></span><span>4:01</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#00878a,#00d8ff)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Deep Currents</div>
+            <div class="track-meta"><span>@basswave</span><span class="dot"></span><span>3:45</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#ff8800,#ff1f5a)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Firelight</div>
+            <div class="track-meta"><span>@ember_audio</span><span class="dot"></span><span>2:33</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#2d1b4e,#ff6fc8)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Velvet Echo</div>
+            <div class="track-meta"><span>@dreamprod</span><span class="dot"></span><span>5:12</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Library View -->
+    <div class="view" id="view-library">
+      <div class="library-tabs">
+        <button class="library-tab active">All Tracks</button>
+        <button class="library-tab">Favorites</button>
+        <button class="library-tab">Playlists</button>
+        <button class="library-tab">Downloads</button>
+      </div>
+
+      <div class="track-list-header">
+        <span></span>
+        <span>Title / Artist</span>
+        <span>Genre</span>
+        <span>Duration</span>
+        <span></span>
+      </div>
+
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#ff1f5a,#7c3aed)">R</div>
+        <div class="track-list-info">
+          <div class="title">Neon Pulse</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag electronic">Electronic</span></div>
+        <div class="track-list-duration">3:24</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#00d8ff,#7c3aed)">R</div>
+        <div class="track-list-info">
+          <div class="title">Midnight Circuit</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag ambient">Ambient</span></div>
+        <div class="track-list-duration">4:12</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#f5c000,#ff8800)">R</div>
+        <div class="track-list-info">
+          <div class="title">Golden Hour</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag cinematic">Cinematic</span></div>
+        <div class="track-list-duration">2:58</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#00e887,#00878a)">R</div>
+        <div class="track-list-info">
+          <div class="title">Lo-Fi Rain</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag lofi">Lo-Fi</span></div>
+        <div class="track-list-duration">5:30</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#ff6fc8,#7c3aed)">R</div>
+        <div class="track-list-info">
+          <div class="title">Vapor Dreams</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag electronic">Electronic</span></div>
+        <div class="track-list-duration">3:48</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#2d1b4e,#00d8ff)">R</div>
+        <div class="track-list-info">
+          <div class="title">Astral Drift</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag ambient">Ambient</span></div>
+        <div class="track-list-duration">6:02</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#ff8800,#f5c000)">R</div>
+        <div class="track-list-info">
+          <div class="title">Desert Highway</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag cinematic">Cinematic</span></div>
+        <div class="track-list-duration">4:35</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#ff1f5a,#ff6fc8)">R</div>
+        <div class="track-list-info">
+          <div class="title">Heart Rate</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag pop">Pop</span></div>
+        <div class="track-list-duration">3:12</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#7c3aed,#00d8ff)">R</div>
+        <div class="track-list-info">
+          <div class="title">Quantum Beat</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag hiphop">Hip-Hop</span></div>
+        <div class="track-list-duration">2:55</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="track-list-item">
+        <div class="track-list-thumb" style="background:linear-gradient(135deg,#00e887,#f5c000)">R</div>
+        <div class="track-list-info">
+          <div class="title">Sunny Side</div>
+          <div class="artist">You</div>
+        </div>
+        <div class="track-list-genre"><span class="genre-tag pop">Pop</span></div>
+        <div class="track-list-duration">3:38</div>
+        <div class="track-list-actions">
+          <button title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Studio View -->
+    <div class="view" id="view-studio">
+      <div class="studio-hero">
+        <h2>Create with <em>AI</em></h2>
+        <p>Describe the track you want to make. RHYTHMIX AI generates studio-quality music from your imagination.</p>
+        <div class="studio-prompt">
+          <textarea placeholder="Describe your track... e.g. 'A dreamy lo-fi beat with soft piano, vinyl crackle, and gentle rain sounds. 90 BPM, perfect for late night studying.'"></textarea>
+          <div class="studio-controls">
+            <select>
+              <option>Genre: Auto-detect</option>
+              <option>Electronic</option>
+              <option>Hip-Hop</option>
+              <option>Ambient</option>
+              <option>Pop</option>
+              <option>Cinematic</option>
+              <option>Lo-Fi</option>
+              <option>Rock</option>
+              <option>Jazz</option>
+              <option>Classical</option>
+            </select>
+            <select>
+              <option>Duration: 30s</option>
+              <option>Duration: 60s</option>
+              <option>Duration: 2 min</option>
+              <option>Duration: 3 min</option>
+              <option>Duration: 5 min</option>
+            </select>
+            <select>
+              <option>Quality: Standard</option>
+              <option>Quality: High</option>
+              <option>Quality: Ultra</option>
+            </select>
+            <button class="studio-generate">Generate Track</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Quick Start Templates</h2>
+      </div>
+      <div class="template-grid">
+        <div class="template-card">
+          <div class="template-icon">&#127928;</div>
+          <h3>Beat Maker</h3>
+          <p>Generate drums, bass, and percussion patterns. Perfect for producers looking for a foundation.</p>
+          <span class="template-tag">Popular</span>
+        </div>
+        <div class="template-card">
+          <div class="template-icon">&#127929;</div>
+          <h3>Melody Generator</h3>
+          <p>AI-composed melodies across any key and scale. Layer on top of your existing beats.</p>
+          <span class="template-tag">Creative</span>
+        </div>
+        <div class="template-card">
+          <div class="template-icon">&#127908;</div>
+          <h3>Vocal Synth</h3>
+          <p>Generate AI vocals, harmonies, and backing tracks. Choose from dozens of voice styles.</p>
+          <span class="template-tag">Beta</span>
+        </div>
+        <div class="template-card">
+          <div class="template-icon">&#127925;</div>
+          <h3>Full Song</h3>
+          <p>Complete song generation: intro, verse, chorus, bridge, outro. The fastest way to a finished track.</p>
+          <span class="template-tag">Pro</span>
+        </div>
+        <div class="template-card">
+          <div class="template-icon">&#127916;</div>
+          <h3>Soundtrack</h3>
+          <p>Cinematic scores and background music. Describe a scene and get the perfect audio.</p>
+          <span class="template-tag">Cinematic</span>
+        </div>
+        <div class="template-card">
+          <div class="template-icon">&#128187;</div>
+          <h3>Remix Engine</h3>
+          <p>Upload an existing track and transform it. Change genre, tempo, key, or vibe entirely.</p>
+          <span class="template-tag">Advanced</span>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>In Progress</h2>
+      </div>
+      <div class="feed-list">
+        <div class="feed-item">
+          <div class="feed-icon create">&#9881;</div>
+          <div class="feed-content">
+            <p><strong>Cyber Groove</strong> &mdash; Generating... 78% complete</p>
+          </div>
+          <span class="feed-time" style="color:var(--gold)">Processing</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-icon create">&#9881;</div>
+          <div class="feed-content">
+            <p><strong>Ocean Drift</strong> &mdash; Generating... 34% complete</p>
+          </div>
+          <span class="feed-time" style="color:var(--gold)">Processing</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-icon play">&#10003;</div>
+          <div class="feed-content">
+            <p><strong>Neon Pulse</strong> &mdash; Generation complete. Ready to play.</p>
+          </div>
+          <span class="feed-time" style="color:var(--green)">Done</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Community View -->
+    <div class="view" id="view-community">
+      <div class="section-header">
+        <h2>Top Creators</h2>
+        <button>View All</button>
+      </div>
+      <div class="creator-grid">
+        <div class="creator-card">
+          <div class="creator-avatar" style="background:linear-gradient(135deg,#ff1f5a,#ff6fc8)">A</div>
+          <h3>@audioalchemy</h3>
+          <div class="creator-genre">Electronic / Ambient</div>
+          <div class="creator-stats">
+            <div class="creator-stat"><div class="num" style="color:var(--cyan)">142</div><div class="lbl">Tracks</div></div>
+            <div class="creator-stat"><div class="num" style="color:var(--magenta)">8.2K</div><div class="lbl">Plays</div></div>
+            <div class="creator-stat"><div class="num" style="color:var(--gold)">1.1K</div><div class="lbl">Followers</div></div>
+          </div>
+          <button class="follow-btn">Follow</button>
+        </div>
+        <div class="creator-card">
+          <div class="creator-avatar" style="background:linear-gradient(135deg,#7c3aed,#00d8ff)">B</div>
+          <h3>@beatmaker_lex</h3>
+          <div class="creator-genre">Hip-Hop / Lo-Fi</div>
+          <div class="creator-stats">
+            <div class="creator-stat"><div class="num" style="color:var(--cyan)">89</div><div class="lbl">Tracks</div></div>
+            <div class="creator-stat"><div class="num" style="color:var(--magenta)">12.4K</div><div class="lbl">Plays</div></div>
+            <div class="creator-stat"><div class="num" style="color:var(--gold)">2.3K</div><div class="lbl">Followers</div></div>
+          </div>
+          <button class="follow-btn">Follow</button>
+        </div>
+        <div class="creator-card">
+          <div class="creator-avatar" style="background:linear-gradient(135deg,#f5c000,#ff8800)">V</div>
+          <h3>@vocalsynth</h3>
+          <div class="creator-genre">Pop / R&B</div>
+          <div class="creator-stats">
+            <div class="creator-stat"><div class="num" style="color:var(--cyan)">67</div><div class="lbl">Tracks</div></div>
+            <div class="creator-stat"><div class="num" style="color:var(--magenta)">5.6K</div><div class="lbl">Plays</div></div>
+            <div class="creator-stat"><div class="num" style="color:var(--gold)">890</div><div class="lbl">Followers</div></div>
+          </div>
+          <button class="follow-btn">Follow</button>
+        </div>
+        <div class="creator-card">
+          <div class="creator-avatar" style="background:linear-gradient(135deg,#00e887,#00878a)">N</div>
+          <h3>@producer_nina</h3>
+          <div class="creator-genre">Cinematic / Orchestral</div>
+          <div class="creator-stats">
+            <div class="creator-stat"><div class="num" style="color:var(--cyan)">213</div><div class="lbl">Tracks</div></div>
+            <div class="creator-stat"><div class="num" style="color:var(--magenta)">18.9K</div><div class="lbl">Plays</div></div>
+            <div class="creator-stat"><div class="num" style="color:var(--gold)">4.7K</div><div class="lbl">Followers</div></div>
+          </div>
+          <button class="follow-btn">Follow</button>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Trending in Community</h2>
+      </div>
+      <div class="track-grid">
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#ff1f5a,#f5c000)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Solar Flare</div>
+            <div class="track-meta"><span>@audioalchemy</span><span class="dot"></span><span>3:18</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#7c3aed,#ff6fc8)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Purple Haze Machine</div>
+            <div class="track-meta"><span>@beatmaker_lex</span><span class="dot"></span><span>4:45</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#00d8ff,#7c3aed)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Ice Protocol</div>
+            <div class="track-meta"><span>@vocalsynth</span><span class="dot"></span><span>2:56</span></div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div class="track-cover" style="background:linear-gradient(135deg,#00e887,#f5c000)">
+            <div class="cover-gradient">R</div>
+            <div class="track-play"><div class="play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+          </div>
+          <div class="track-info">
+            <div class="track-title">Earth Tone</div>
+            <div class="track-meta"><span>@producer_nina</span><span class="dot"></span><span>5:40</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts View -->
+    <div class="view" id="view-charts">
+      <div class="section-header">
+        <h2>Top 10 This Week</h2>
+        <button>All Time</button>
+      </div>
+      <div class="chart-list">
+        <div class="chart-item">
+          <div class="chart-rank gold">1</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#ff1f5a,#f5c000)">R</div>
+          <div class="chart-info"><div class="title">Solar Flare</div><div class="artist">@audioalchemy</div></div>
+          <div class="chart-plays">24.5K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank silver">2</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#7c3aed,#00d8ff)">R</div>
+          <div class="chart-info"><div class="title">Quantum Beat</div><div class="artist">@beatmaker_lex</div></div>
+          <div class="chart-plays">19.2K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank bronze">3</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#00e887,#00878a)">R</div>
+          <div class="chart-info"><div class="title">Forest Floor</div><div class="artist">@producer_nina</div></div>
+          <div class="chart-plays">15.8K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank" style="color:var(--muted)">4</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#ff6fc8,#7c3aed)">R</div>
+          <div class="chart-info"><div class="title">Velvet Echo</div><div class="artist">@dreamprod</div></div>
+          <div class="chart-plays">12.1K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank" style="color:var(--muted)">5</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#f5c000,#ff8800)">R</div>
+          <div class="chart-info"><div class="title">Golden Hour</div><div class="artist">@jamie_w</div></div>
+          <div class="chart-plays">10.4K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank" style="color:var(--muted)">6</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#00d8ff,#00e887)">R</div>
+          <div class="chart-info"><div class="title">Tide Pool</div><div class="artist">@synthcloud</div></div>
+          <div class="chart-plays">8.9K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank" style="color:var(--muted)">7</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#1a1325,#7c3aed)">R</div>
+          <div class="chart-info"><div class="title">Shadow Run</div><div class="artist">@darkbeats</div></div>
+          <div class="chart-plays">7.3K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank" style="color:var(--muted)">8</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#ff1f5a,#ff6fc8)">R</div>
+          <div class="chart-info"><div class="title">Heart Rate</div><div class="artist">@jamie_w</div></div>
+          <div class="chart-plays">6.8K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank" style="color:var(--muted)">9</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#ff8800,#ff1f5a)">R</div>
+          <div class="chart-info"><div class="title">Firelight</div><div class="artist">@ember_audio</div></div>
+          <div class="chart-plays">5.5K plays</div>
+        </div>
+        <div class="chart-item">
+          <div class="chart-rank" style="color:var(--muted)">10</div>
+          <div class="chart-thumb" style="background:linear-gradient(135deg,#00878a,#00d8ff)">R</div>
+          <div class="chart-info"><div class="title">Deep Currents</div><div class="artist">@basswave</div></div>
+          <div class="chart-plays">4.2K plays</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings View -->
+    <div class="view" id="view-settings">
+      <div class="settings-section">
+        <h3>Profile</h3>
+        <div class="setting-row">
+          <div class="setting-label">Display Name<span>Jamie W.</span></div>
+          <button class="follow-btn" style="margin-top:0">Edit</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Username<span>@jamie_w</span></div>
+          <button class="follow-btn" style="margin-top:0">Edit</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Plan<span>Pro &mdash; $149 lifetime</span></div>
+          <button class="follow-btn" style="margin-top:0;color:var(--gold);border-color:rgba(245,192,0,.3);background:rgba(245,192,0,.08)">Manage</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Preferences</h3>
+        <div class="setting-row">
+          <div class="setting-label">AI Quality<span>Higher quality uses more credits per generation</span></div>
+          <select style="background:var(--surface-3);border:1px solid var(--border-2);border-radius:8px;padding:6px 12px;color:var(--white);font-family:inherit;font-size:13px;">
+            <option>Ultra</option>
+            <option selected>High</option>
+            <option>Standard</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Default Genre<span>Pre-fill genre when creating new tracks</span></div>
+          <select style="background:var(--surface-3);border:1px solid var(--border-2);border-radius:8px;padding:6px 12px;color:var(--white);font-family:inherit;font-size:13px;">
+            <option selected>Auto-detect</option>
+            <option>Electronic</option>
+            <option>Hip-Hop</option>
+            <option>Ambient</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Auto-save drafts<span>Save work-in-progress tracks automatically</span></div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Notifications</h3>
+        <div class="setting-row">
+          <div class="setting-label">New followers<span>Get notified when someone follows you</span></div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Track plays<span>Notify when your tracks hit milestones</span></div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Community mentions<span>When someone tags you in a comment</span></div>
+          <button class="toggle" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Marketing emails<span>Product updates and feature announcements</span></div>
+          <button class="toggle" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Connected Services</h3>
+        <div class="setting-row">
+          <div class="setting-label">Spotify<span>Sync your listening history for better AI recommendations</span></div>
+          <button class="follow-btn" style="margin-top:0;color:var(--green);border-color:rgba(0,232,135,.3);background:rgba(0,232,135,.08)">Connect</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Apple Music<span>Import playlists and favorites</span></div>
+          <button class="follow-btn" style="margin-top:0;color:var(--green);border-color:rgba(0,232,135,.3);background:rgba(0,232,135,.08)">Connect</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">SoundCloud<span>Cross-post your AI-generated tracks</span></div>
+          <button class="follow-btn" style="margin-top:0;color:var(--green);border-color:rgba(0,232,135,.3);background:rgba(0,232,135,.08)">Connect</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Player Bar ── -->
+<div class="player-bar">
+  <div class="player-track">
+    <div class="player-thumb" style="background:linear-gradient(135deg,#ff1f5a,#7c3aed)">R</div>
+    <div class="player-info">
+      <div class="title">Neon Pulse</div>
+      <div class="artist">You</div>
+    </div>
+  </div>
+  <div class="player-controls">
+    <div class="player-buttons">
+      <button title="Shuffle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></button>
+      <button title="Previous"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></button>
+      <button class="play-main" title="Play"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+      <button title="Next"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
+      <button title="Repeat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+    </div>
+    <div class="player-progress">
+      <span class="time">1:12</span>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <span class="time">3:24</span>
+    </div>
+  </div>
+  <div class="player-extra">
+    <button title="Queue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+    <button title="Volume"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+    <div class="volume-bar"><div class="volume-fill"></div></div>
+  </div>
+</div>
+
+<script>
+  const viewTitles = {
+    dashboard: 'Dashboard',
+    discover: 'Discover',
+    library: 'Library',
+    studio: 'Studio',
+    community: 'Community',
+    charts: 'Charts',
+    settings: 'Settings'
+  };
+
+  function switchView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    const view = document.getElementById('view-' + name);
+    if (view) view.classList.add('active');
+
+    const nav = document.querySelector('[data-view="' + name + '"]');
+    if (nav) nav.classList.add('active');
+
+    document.getElementById('pageTitle').textContent = viewTitles[name] || name;
+    document.querySelector('.main').scrollTop = 0;
+  }
+
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.getAttribute('data-view');
+      if (view) switchView(view);
+    });
+  });
+
+  document.querySelectorAll('.library-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.library-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
