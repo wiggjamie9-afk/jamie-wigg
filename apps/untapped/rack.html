@@ -2,428 +2,1323 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>RACK — auto-grading thrift cross-poster</title>
-<meta name="description" content="Dump a pile. Photograph the lot. RACK grades, prices, and cross-posts each item to the right channel.">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f3efe9">
+<title>RACK — Grade. Price. List. Repeat.</title>
+<meta name="description" content="Professional reseller grading, pricing, and inventory tool. Grade, price, and queue 40 items in under 30 minutes.">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231a1a1a'/%3E%3Cpath d='M50 15 L50 45 M35 20 L65 20 M30 45 Q30 75 50 85 Q70 75 70 45' stroke='%2339ff14' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
 :root{
-  --bg:#f3efe9; --paper:#ece7df; --ink:#1a1a1a; --ink-2:#2a2a2a;
-  --muted:#6b6b6b; --line:#1a1a1a;
-  --green:#39ff14; --green-ink:#0d3d05;
-  --red:#d63a2f; --amber:#e0a72c;
+  --bg:#f3efe9;--paper:#ece7df;--ink:#1a1a1a;--ink2:#2a2a2a;
+  --muted:#6b6b6b;--line:rgba(26,26,26,.15);--line-s:rgba(26,26,26,.08);
+  --green:#39ff14;--green-dim:rgba(57,255,20,.15);--green-ink:#0d3d05;
+  --red:#d63a2f;--amber:#e0a72c;--blue:#2d7ff9;
   --sans:'Helvetica Neue',Helvetica,Arial,sans-serif;
   --mono:ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace;
+  --nav-h:60px;--safe-b:env(safe-area-inset-bottom,0px);
+  --radius:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100vh}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+html{background:var(--ink);height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;
+  min-height:100%;padding-bottom:calc(var(--nav-h) + var(--safe-b) + 8px);overflow-x:hidden}
 ::selection{background:var(--green);color:var(--ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+input,select,textarea{background:var(--bg);border:1.5px solid var(--line);border-radius:var(--radius);padding:12px 14px;width:100%;font-size:16px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-dim)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--muted);border-radius:2px}
+
+/* ── Motion ── */
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ── Utility ── */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.screen{display:none;padding:16px 16px 24px}
+.screen.active{display:block}
+
+/* ── Bottom nav ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + var(--safe-b));
+  background:var(--ink);display:flex;z-index:100;padding-bottom:var(--safe-b);
+  border-top:1px solid rgba(255,255,255,.08)}
+.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;color:var(--muted);font-size:10px;font-family:var(--mono);letter-spacing:.12em;
+  text-transform:uppercase;min-height:48px;transition:color .15s}
+.bottom-nav button.active{color:var(--green)}
+.bottom-nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ── Top bar ── */
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:50}
-.brand{font-weight:900;letter-spacing:-0.02em;font-size:24px;display:flex;align-items:center;gap:10px}
-.brand-dot{width:12px;height:12px;background:var(--green);border-radius:50%;box-shadow:0 0 8px rgba(57,255,20,0.6)}
-.topnav{display:flex;gap:24px;font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
-.topnav span{cursor:pointer}
-.topnav span.on{color:var(--ink);border-bottom:2px solid var(--green);padding-bottom:4px}
-.user{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);display:flex;align-items:center;gap:10px}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;
+  position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--line)}
+.brand{font-weight:900;font-size:22px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.brand-dot{width:10px;height:10px;background:var(--green);border-radius:50%;box-shadow:0 0 8px rgba(57,255,20,.6)}
+.topbar-right{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em}
 
-/* ── Layout ── */
-.wrap{max-width:1400px;margin:0 auto;padding:32px}
-.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.24em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.h1{font-size:clamp(36px,5vw,56px);font-weight:900;letter-spacing:-0.035em;line-height:0.95;margin-bottom:8px}
-.h1 em{font-style:normal;background:var(--green);padding:0 8px;margin-left:-4px}
-.subhead{font-size:16px;color:var(--muted);max-width:560px;margin-bottom:32px;line-height:1.45}
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;
+  border-radius:var(--radius);font-weight:700;font-size:15px;min-height:48px;
+  border:1.5px solid var(--ink);transition:all .15s;cursor:pointer}
+.btn-primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn-primary:active{background:var(--ink2)}
+.btn-green{background:var(--green);color:var(--ink);border-color:var(--green);font-weight:800}
+.btn-green:active{background:#2de010}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-sm{padding:10px 14px;font-size:13px;min-height:40px}
+.btn-block{width:100%}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
 
-/* ── Dropzone ── */
-.dropzone{border:2px dashed var(--ink);background:var(--paper);border-radius:6px;padding:48px 32px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;margin-bottom:24px}
-.dropzone:hover,.dropzone.drag{background:#e4ddd1;border-color:var(--green);box-shadow:0 0 0 4px rgba(57,255,20,0.15)}
-.dropzone .icon{font-size:38px;margin-bottom:12px;display:block}
-.dropzone h2{font-size:22px;font-weight:800;letter-spacing:-0.01em;margin-bottom:6px}
-.dropzone p{font-family:var(--mono);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted)}
-.dropzone input[type=file]{display:none}
-
-/* ── Scanning state ── */
-.scanning{display:none;background:var(--ink);color:var(--bg);padding:28px 32px;border-radius:6px;margin-bottom:24px;align-items:center;gap:24px}
-.scanning.on{display:flex}
-.scanning .spinner{width:36px;height:36px;border:3px solid rgba(243,239,233,0.18);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
-.scanning h3{font-size:18px;font-weight:800;margin-bottom:4px}
-.scanning .progress-info{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(243,239,233,0.55)}
-.scanning .progress-info b{color:var(--green);font-weight:600}
-.scanning .bar{flex:1;height:4px;background:rgba(243,239,233,0.12);border-radius:2px;overflow:hidden;margin-left:auto;max-width:240px}
-.scanning .bar > div{height:100%;background:var(--green);width:0;transition:width 0.3s}
-
-/* ── Stats strip (forecast) ── */
-.forecast{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);background:var(--bg);margin-bottom:32px;border-radius:6px;overflow:hidden}
-.forecast > div{padding:22px 24px;border-right:1px solid var(--line);position:relative}
-.forecast > div:last-child{border-right:none}
-.forecast .stat-label{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.forecast .stat-num{font-size:34px;font-weight:900;letter-spacing:-0.03em;line-height:1}
-.forecast .stat-sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-top:6px}
-.forecast .highlight .stat-num{color:var(--green-ink);background:var(--green);display:inline-block;padding:2px 8px;margin-left:-4px}
-
-/* ── Item grid ── */
-.grid-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:12px}
-.grid-header h2{font-size:30px;font-weight:900;letter-spacing:-0.025em}
-.grid-header h2 .count{background:var(--ink);color:var(--bg);padding:2px 10px;margin-left:6px;font-size:18px;vertical-align:middle;border-radius:4px}
-.list-all{background:var(--green);color:var(--ink);padding:14px 22px;font-weight:800;letter-spacing:-0.01em;border-radius:4px;font-size:15px;display:inline-flex;align-items:center;gap:10px;transition:all 0.15s}
-.list-all:hover{background:var(--ink);color:var(--green);box-shadow:0 4px 0 var(--green)}
-.list-all .arrow{font-weight:900;font-size:18px}
-
-.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;margin-bottom:48px}
-.card{background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;transition:transform 0.15s}
-.card:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}
+/* ── Cards ── */
+.card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
 .card-img{aspect-ratio:4/5;background:var(--paper);position:relative;overflow:hidden}
 .card-img img{width:100%;height:100%;object-fit:cover;display:block}
-.card-img .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;opacity:0.25;font-family:var(--sans);font-weight:900}
-.grade-tag{position:absolute;top:10px;left:10px;background:var(--ink);color:var(--bg);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;font-family:var(--mono)}
-.grade-tag.A{background:var(--green);color:var(--ink)}
-.grade-tag.B{background:var(--amber);color:var(--ink)}
-.grade-tag.C{background:var(--red);color:var(--bg)}
-.channel-tag{position:absolute;top:10px;right:10px;background:rgba(26,26,26,0.92);color:var(--bg);padding:6px 10px;border-radius:3px;font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600}
-.card-body{padding:16px;flex:1;display:flex;flex-direction:column;gap:8px}
-.card-brand{font-size:15px;font-weight:800;letter-spacing:-0.01em;line-height:1.2}
-.card-desc{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);line-height:1.4}
-.card-meta{display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;padding-top:8px;border-top:1px solid rgba(26,26,26,0.08)}
-.card-price{font-size:20px;font-weight:900;letter-spacing:-0.02em}
-.card-price .range{font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:400;display:block;letter-spacing:0.06em}
-.card-reasoning{font-size:12px;color:var(--ink-2);line-height:1.35;background:var(--paper);padding:8px 10px;border-radius:3px;margin-top:4px;border-left:2px solid var(--green)}
-.card-status{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
-.card-status .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
-.card-status.live .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
-.card-status.live{color:var(--green-ink)}
-.card-status.posting .dot{background:var(--amber);animation:pulse 0.8s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.card-img .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:40px;font-weight:900;color:var(--muted);opacity:.3}
+.grade-badge{position:absolute;top:8px;left:8px;width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;
+  font-family:var(--mono);background:var(--ink);color:var(--bg)}
+.grade-badge.A{background:var(--green);color:var(--ink)}
+.grade-badge.B{background:var(--amber);color:var(--ink)}
+.grade-badge.C{background:var(--red);color:#fff}
+.grade-badge.D{background:#444;color:#fff}
+.channel-badge{position:absolute;top:8px;right:8px;background:rgba(26,26,26,.9);color:var(--bg);
+  padding:4px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;font-weight:600}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.status-dot.new{background:var(--blue)}
+.status-dot.listed{background:var(--green);box-shadow:0 0 6px var(--green)}
+.status-dot.sold{background:var(--amber)}
+.status-dot.archived{background:var(--muted)}
+.card-body{padding:12px;display:flex;flex-direction:column;gap:6px}
+.card-brand{font-weight:800;font-size:14px;letter-spacing:-.01em}
+.card-detail{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.card-price{font-weight:900;font-size:18px;letter-spacing:-.02em}
+.card-price .range{font-family:var(--mono);font-size:9px;color:var(--muted);font-weight:400;display:block}
 
-/* ── Posting modal / overlay ── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(26,26,26,0.85);z-index:200;align-items:center;justify-content:center;padding:24px}
-.modal-bg.on{display:flex}
-.modal{background:var(--bg);border:1px solid var(--line);border-radius:8px;max-width:560px;width:100%;padding:32px;box-shadow:8px 8px 0 var(--green)}
-.modal h3{font-size:24px;font-weight:900;letter-spacing:-0.02em;margin-bottom:6px}
-.modal .sub{color:var(--muted);font-size:14px;margin-bottom:24px}
-.channel-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(26,26,26,0.08);font-size:14px}
-.channel-row:last-of-type{border-bottom:none}
-.channel-row .name{font-weight:700;display:flex;align-items:center;gap:10px}
-.channel-row .count{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.1em}
-.channel-row .state{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
-.channel-row .state .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.channel-row .state.posting .dot{background:var(--amber);animation:pulse 0.8s ease-in-out infinite}
-.channel-row .state.done{color:var(--green-ink)}
-.channel-row .state.done .dot{background:var(--green)}
-.channel-logo{width:24px;height:24px;border-radius:4px;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;font-family:var(--mono)}
-.modal-cta{margin-top:24px;display:flex;gap:10px;justify-content:flex-end}
-.btn{padding:12px 20px;border-radius:4px;font-weight:700;font-size:14px;cursor:pointer;border:1px solid var(--line)}
-.btn-primary{background:var(--ink);color:var(--bg)}
-.btn-ghost{background:transparent;color:var(--ink)}
+/* ── Stats strip ── */
+.stats-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+.stats-strip>div{background:var(--bg);padding:14px 12px}
+.stats-strip .label{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.stats-strip .val{font-size:24px;font-weight:900;letter-spacing:-.03em}
+.stats-strip .val.green{color:var(--green-ink);background:var(--green);display:inline-block;padding:1px 6px;margin:-1px -3px}
 
-/* ── Footer ── */
-footer{padding:32px;border-top:1px solid var(--line);text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-top:48px}
+/* ── Grading flow ── */
+.grade-option{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1.5px solid var(--line);
+  border-radius:var(--radius);cursor:pointer;transition:all .12s;margin-bottom:8px;min-height:48px}
+.grade-option:active,.grade-option.selected{border-color:var(--green);background:var(--green-dim)}
+.grade-option .g-letter{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:900;font-size:18px;font-family:var(--mono);flex-shrink:0}
+.grade-option .g-letter.A{background:var(--green);color:var(--ink)}
+.grade-option .g-letter.B{background:var(--amber);color:var(--ink)}
+.grade-option .g-letter.C{background:var(--red);color:#fff}
+.grade-option .g-letter.D{background:#444;color:#fff}
+.grade-option .g-title{font-weight:700;font-size:14px;margin-bottom:2px}
+.grade-option .g-desc{font-size:12px;color:var(--muted);line-height:1.35}
 
-@media (max-width:720px){
-  .topbar{padding:14px 18px}
-  .topnav{display:none}
-  .wrap{padding:18px}
-  .forecast{grid-template-columns:repeat(2,1fr)}
-  .forecast > div{border-bottom:1px solid var(--line)}
-  .forecast > div:nth-child(2){border-right:none}
-  .scanning{flex-wrap:wrap}
-  .scanning .bar{max-width:100%;width:100%}
-  .grid-header h2{font-size:24px}
+/* ── Searchable select ── */
+.search-select{position:relative}
+.search-select input{padding-right:36px}
+.search-select .dd{position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;
+  background:var(--bg);border:1.5px solid var(--green);border-top:none;border-radius:0 0 var(--radius) var(--radius);
+  z-index:20;display:none;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.search-select .dd.open{display:block}
+.search-select .dd-item{padding:12px 14px;font-size:14px;cursor:pointer;min-height:44px;
+  display:flex;align-items:center;border-bottom:1px solid var(--line-s)}
+.search-select .dd-item:active,.search-select .dd-item.hl{background:var(--green-dim)}
+
+/* ── Modal / overlay ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(26,26,26,.85);z-index:200;
+  align-items:flex-end;justify-content:center;padding:0}
+.overlay.on{display:flex}
+.modal{background:var(--bg);width:100%;max-width:480px;max-height:92vh;overflow-y:auto;
+  border-radius:16px 16px 0 0;padding:24px 16px calc(24px + var(--safe-b))}
+.modal-title{font-size:20px;font-weight:900;letter-spacing:-.02em;margin-bottom:4px}
+.modal-sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.modal-close{position:absolute;top:16px;right:16px;width:36px;height:36px;display:flex;
+  align-items:center;justify-content:center;font-size:20px;border-radius:50%;background:var(--paper)}
+
+/* ── Camera ── */
+#cameraOverlay{z-index:300;background:#000;align-items:center;justify-content:center;flex-direction:column}
+#cameraOverlay.on{display:flex}
+#cameraOverlay video{width:100%;max-height:80vh;object-fit:cover}
+.cam-controls{position:absolute;bottom:calc(24px + var(--safe-b));left:0;right:0;display:flex;
+  justify-content:center;gap:24px;padding:0 16px}
+.cam-btn{width:64px;height:64px;border-radius:50%;background:var(--green);border:3px solid #fff;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(57,255,20,.4)}
+.cam-close{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.15);
+  color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px}
+
+/* ── Onboarding ── */
+#onboarding{position:fixed;inset:0;z-index:500;background:var(--ink);color:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;text-align:center}
+#onboarding h1{font-size:36px;font-weight:900;letter-spacing:-.03em;margin-bottom:8px}
+#onboarding .sub{color:rgba(243,239,233,.55);font-size:14px;margin-bottom:32px;max-width:320px}
+#onboarding .accent{color:var(--green)}
+.ob-step{display:none;width:100%;max-width:360px;text-align:left}
+.ob-step.active{display:block}
+.ob-step h2{font-size:20px;font-weight:800;margin-bottom:16px;text-align:center;color:var(--bg)}
+.channel-check{display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid rgba(255,255,255,.12);
+  border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:all .12s;min-height:48px}
+.channel-check.selected{border-color:var(--green);background:rgba(57,255,20,.08)}
+.channel-check .ch-name{font-weight:700;font-size:15px;color:var(--bg)}
+.channel-check .ch-box{width:22px;height:22px;border:2px solid rgba(255,255,255,.25);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto}
+.channel-check.selected .ch-box{background:var(--green);border-color:var(--green);color:var(--ink)}
+
+/* ── Inventory grid ── */
+.inv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.inv-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.inv-toolbar select{width:auto;padding:8px 12px;font-size:13px;min-height:40px}
+.inv-toolbar .count{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.1em;margin-left:auto}
+.view-toggle{display:flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.view-toggle button{padding:8px 12px;font-size:12px;min-height:40px}
+.view-toggle button.active{background:var(--ink);color:var(--bg)}
+.inv-list .card{display:flex;flex-direction:row}
+.inv-list .card .card-img{width:80px;min-width:80px;aspect-ratio:1}
+.inv-list .card .card-body{flex:1}
+
+/* ── Earnings chart ── */
+.chart-wrap{background:var(--paper);border-radius:var(--radius);padding:16px;margin:16px 0}
+.chart-wrap svg{width:100%;height:auto}
+.chart-bar{fill:var(--green);rx:3}
+.chart-label{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+.chart-val{font-family:var(--mono);font-size:10px;fill:var(--ink);font-weight:700}
+
+/* ── Eyebrow ── */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.section-title{font-size:22px;font-weight:900;letter-spacing:-.02em;margin-bottom:16px}
+.section-title .ct{background:var(--ink);color:var(--bg);padding:1px 8px;font-size:14px;border-radius:4px;vertical-align:middle;margin-left:4px}
+
+/* ── Quick-grade flow steps ── */
+.qg-step{display:none}
+.qg-step.active{display:block}
+.qg-progress{display:flex;gap:4px;margin-bottom:16px}
+.qg-progress .pip{height:3px;flex:1;background:var(--line);border-radius:2px}
+.qg-progress .pip.done{background:var(--green)}
+.qg-progress .pip.current{background:var(--ink)}
+
+/* ── Price result card ── */
+.price-result{background:var(--paper);border-radius:var(--radius);padding:20px;text-align:center;margin:16px 0}
+.price-result .price-main{font-size:40px;font-weight:900;letter-spacing:-.03em;margin-bottom:4px}
+.price-result .price-range{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em}
+.price-result .channel-rec{margin-top:16px;padding:12px;background:var(--bg);border-radius:var(--radius);
+  border-left:3px solid var(--green);text-align:left}
+.price-result .channel-rec .ch-name{font-weight:800;font-size:15px;margin-bottom:2px}
+.price-result .channel-rec .ch-reason{font-size:12px;color:var(--muted);line-height:1.4}
+
+/* ── Settings ── */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;
+  border-bottom:1px solid var(--line-s);min-height:48px}
+.setting-row .s-label{font-weight:700;font-size:14px}
+.setting-row .s-sub{font-size:12px;color:var(--muted)}
+.storage-bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.storage-bar>div{height:100%;background:var(--green);border-radius:3px;transition:width .3s}
+
+/* ── Empty state ── */
+.empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:.3}
+.empty-state p{font-size:14px;margin-bottom:16px}
+
+/* ── Responsive ── */
+@media(min-width:480px){
+  .inv-grid{grid-template-columns:repeat(3,1fr)}
+  .modal{border-radius:16px;margin:auto;max-height:85vh}
+  .overlay{align-items:center;padding:24px}
+}
+@media(min-width:768px){
+  .inv-grid{grid-template-columns:repeat(4,1fr)}
+  .stats-strip{grid-template-columns:repeat(4,1fr)}
 }
 </style>
 </head>
 <body>
 
-<header class="topbar">
-  <div class="brand"><span class="brand-dot"></span>RACK</div>
-  <nav class="topnav">
-    <span class="on">PILE</span>
-    <span>LISTINGS</span>
-    <span>SOLD</span>
-    <span>ANALYTICS</span>
-  </nav>
-  <div class="user">@vintage_kate <div class="avatar">VK</div></div>
-</header>
-
-<main class="wrap">
-
-  <div class="eyebrow">SESSION · 2026-05-22 · 11:42 AM</div>
-  <h1 class="h1">Dump the pile. <em>Cash out.</em></h1>
-  <p class="subhead">Drop a phone photo of your pile. RACK identifies each item, grades condition, prices against current comp data, and routes to the channel that pays most.</p>
-
-  <!-- Dropzone -->
-  <div class="dropzone" id="dropzone">
-    <span class="icon">▦</span>
-    <h2>Drop pile photos here</h2>
-    <p>or click — accepts up to 40 images · auto-segmented</p>
-    <input type="file" id="fileInput" accept="image/*" multiple>
+<!-- ════════ ONBOARDING ════════ -->
+<div id="onboarding" role="dialog" aria-label="Welcome to RACK">
+  <div class="ob-step active" id="ob1">
+    <h1>RACK<span class="accent">.</span></h1>
+    <p class="sub">Grade. Price. List. Repeat.<br>The fastest way to move your inventory.</p>
+    <button class="btn btn-green btn-block" onclick="obNext(2)" style="max-width:320px;margin:0 auto">Get started</button>
   </div>
-
-  <!-- Scanning state -->
-  <div class="scanning" id="scanning">
-    <div class="spinner"></div>
-    <div>
-      <h3 id="scanTitle">Scanning pile…</h3>
-      <div class="progress-info"><b id="scanCount">0</b> items detected · brand identification · condition grading · comp pricing</div>
-    </div>
-    <div class="bar"><div id="scanBar"></div></div>
+  <div class="ob-step" id="ob2">
+    <h2>Where do you sell?</h2>
+    <div id="obChannels"></div>
+    <button class="btn btn-green btn-block" onclick="obNext(3)" style="margin-top:16px">Continue</button>
   </div>
-
-  <!-- Forecast strip -->
-  <section class="forecast" id="forecast">
-    <div class="highlight">
-      <div class="stat-label">30-DAY CLEARED FORECAST</div>
-      <div class="stat-num" id="fcCleared">$487</div>
-      <div class="stat-sub">net of channel fees + shipping</div>
+  <div class="ob-step" id="ob3">
+    <h2>Weekly volume?</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px" id="obVolume">
+      <div class="channel-check" data-vol="1-10" onclick="pickVol(this)"><span class="ch-name">1–10 items</span><span class="ch-box"></span></div>
+      <div class="channel-check" data-vol="11-25" onclick="pickVol(this)"><span class="ch-name">11–25 items</span><span class="ch-box"></span></div>
+      <div class="channel-check" data-vol="26-50" onclick="pickVol(this)"><span class="ch-name">26–50 items</span><span class="ch-box"></span></div>
+      <div class="channel-check" data-vol="50+" onclick="pickVol(this)"><span class="ch-name">50+ items</span><span class="ch-box"></span></div>
     </div>
-    <div>
-      <div class="stat-label">ITEMS LISTED</div>
-      <div class="stat-num" id="fcItems">12</div>
-      <div class="stat-sub">avg $58 / item</div>
-    </div>
-    <div>
-      <div class="stat-label">TIME SAVED</div>
-      <div class="stat-num">7h 18m</div>
-      <div class="stat-sub">vs manual cross-listing</div>
-    </div>
-    <div>
-      <div class="stat-label">SELL-THROUGH</div>
-      <div class="stat-num">68%</div>
-      <div class="stat-sub">predicted in 30d</div>
-    </div>
-  </section>
-
-  <!-- Grid header -->
-  <div class="grid-header">
-    <h2>Detected items <span class="count" id="itemCount">12</span></h2>
-    <button class="list-all" id="listAll">List all items <span class="arrow">→</span></button>
-  </div>
-
-  <!-- Grid -->
-  <section class="items" id="items"></section>
-
-</main>
-
-<!-- Cross-posting modal -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal">
-    <h3>Cross-posting <span id="modalCount">12</span> items</h3>
-    <div class="sub" id="modalSub">Routing each item to its best channel based on category, brand, and 30-day comp velocity.</div>
-    <div id="channelList"></div>
-    <div class="modal-cta">
-      <button class="btn btn-ghost" id="closeModal">Close</button>
-      <button class="btn btn-primary" id="viewListings" style="display:none">View listings →</button>
-    </div>
+    <button class="btn btn-green btn-block" onclick="obFinish()">Launch RACK</button>
   </div>
 </div>
 
-<footer>RACK · v0.4 · auto-grading thrift cross-poster · rack.app</footer>
+<!-- ════════ CAMERA OVERLAY ════════ -->
+<div id="cameraOverlay" class="overlay" role="dialog" aria-label="Camera">
+  <video id="camVideo" autoplay playsinline></video>
+  <div class="cam-controls">
+    <button class="cam-close" onclick="closeCamera()" aria-label="Close camera">&times;</button>
+    <button class="cam-btn" onclick="capturePhoto()" aria-label="Take photo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ════════ TOPBAR ════════ -->
+<header class="topbar">
+  <div class="brand"><span class="brand-dot"></span>RACK</div>
+  <div class="topbar-right" id="topbarDate"></div>
+</header>
+
+<!-- ════════ SCREEN: SCAN ════════ -->
+<div class="screen active" id="screenScan" role="main">
+  <div class="eyebrow">QUICK GRADE</div>
+  <h1 class="section-title" style="margin-bottom:12px">Snap &amp; Grade</h1>
+  <p style="color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.5">Photograph an item, grade condition, get instant pricing + channel recommendation. Under 60 seconds per item.</p>
+
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <button class="btn btn-green" style="flex:1" onclick="openCamera()" id="btnCamera">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Snap item
+    </button>
+    <button class="btn btn-primary" style="flex:1" onclick="document.getElementById('fileInput').click()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Upload
+    </button>
+  </div>
+  <input type="file" id="fileInput" accept="image/*" multiple style="display:none" aria-label="Upload photos">
+
+  <!-- Quick-grade flow -->
+  <div id="qgFlow" style="display:none">
+    <div class="qg-progress" id="qgProgress"></div>
+    <div id="qgSteps"></div>
+  </div>
+
+  <!-- Photo queue preview -->
+  <div id="photoQueue" style="display:none;margin-top:20px">
+    <div class="eyebrow">QUEUED PHOTOS</div>
+    <div style="display:flex;gap:8px;overflow-x:auto;padding:8px 0" id="photoQueueList"></div>
+  </div>
+</div>
+
+<!-- ════════ SCREEN: INVENTORY ════════ -->
+<div class="screen" id="screenInventory">
+  <div class="eyebrow">INVENTORY</div>
+  <h1 class="section-title">Your Rack <span class="ct" id="invCount">0</span></h1>
+
+  <div class="stats-strip" id="invStats"></div>
+
+  <div class="inv-toolbar">
+    <select id="filterStatus" aria-label="Filter by status" onchange="renderInventory()">
+      <option value="all">All</option>
+      <option value="new">New</option>
+      <option value="listed">Listed</option>
+      <option value="sold">Sold</option>
+      <option value="archived">Archived</option>
+    </select>
+    <select id="sortBy" aria-label="Sort by" onchange="renderInventory()">
+      <option value="date-desc">Newest</option>
+      <option value="date-asc">Oldest</option>
+      <option value="price-desc">Price: high</option>
+      <option value="price-asc">Price: low</option>
+      <option value="grade-asc">Grade: best</option>
+    </select>
+    <div class="view-toggle">
+      <button class="active" id="viewGrid" onclick="setView('grid')" aria-label="Grid view">Grid</button>
+      <button id="viewList" onclick="setView('list')" aria-label="List view">List</button>
+    </div>
+  </div>
+  <button class="btn btn-green btn-sm" onclick="bulkListNew()" style="margin-bottom:12px" id="bulkListBtn">List all new items</button>
+
+  <div class="inv-grid" id="invGrid"></div>
+  <div class="empty-state" id="invEmpty" style="display:none">
+    <div class="icon">&#x1f3f7;</div>
+    <p>No items yet. Head to Scan to start grading.</p>
+    <button class="btn btn-green" onclick="switchTab('scan')">Start scanning</button>
+  </div>
+</div>
+
+<!-- ════════ SCREEN: EARNINGS ════════ -->
+<div class="screen" id="screenEarnings">
+  <div class="eyebrow">EARNINGS</div>
+  <h1 class="section-title">P&amp;L</h1>
+  <div class="stats-strip" id="earnStats"></div>
+  <div class="eyebrow" style="margin-top:16px">WEEKLY EARNINGS (LAST 8 WEEKS)</div>
+  <div class="chart-wrap" id="earnChart"></div>
+  <div class="eyebrow" style="margin-top:16px">TOP BRANDS BY REVENUE</div>
+  <div id="topBrands" style="margin-top:8px"></div>
+  <div class="eyebrow" style="margin-top:16px">TOP CHANNELS BY REVENUE</div>
+  <div id="topChannels" style="margin-top:8px"></div>
+</div>
+
+<!-- ════════ SCREEN: SETTINGS ════════ -->
+<div class="screen" id="screenSettings">
+  <div class="eyebrow">SETTINGS</div>
+  <h1 class="section-title">Settings</h1>
+
+  <div class="setting-row">
+    <div>
+      <div class="s-label">Selling Channels</div>
+      <div class="s-sub" id="settingChannels">-</div>
+    </div>
+    <button class="btn btn-sm btn-ghost" onclick="editChannels()">Edit</button>
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="s-label">Storage Used</div>
+      <div class="s-sub" id="storageUsed">-</div>
+      <div class="storage-bar" style="width:160px"><div id="storageBar"></div></div>
+    </div>
+  </div>
+  <div class="setting-row">
+    <div><div class="s-label">Export Inventory (CSV)</div><div class="s-sub">Download full inventory spreadsheet</div></div>
+    <button class="btn btn-sm btn-ghost" onclick="exportCSV()">Export</button>
+  </div>
+  <div class="setting-row">
+    <div><div class="s-label">Export Catalog (HTML)</div><div class="s-sub">Formatted visual catalog</div></div>
+    <button class="btn btn-sm btn-ghost" onclick="exportHTML()">Export</button>
+  </div>
+  <div class="setting-row">
+    <div><div class="s-label">Archive Sold Items</div><div class="s-sub">Free up storage by archiving sold items</div></div>
+    <button class="btn btn-sm btn-danger" onclick="archiveSold()">Archive</button>
+  </div>
+  <div class="setting-row">
+    <div><div class="s-label">Reset All Data</div><div class="s-sub">Delete everything and start fresh</div></div>
+    <button class="btn btn-sm btn-danger" onclick="resetAll()">Reset</button>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.2em">RACK v1.0 &middot; GRADE. PRICE. LIST. REPEAT.</p>
+</div>
+
+<!-- ════════ ITEM DETAIL OVERLAY ════════ -->
+<div class="overlay" id="itemOverlay" role="dialog" aria-label="Item details">
+  <div class="modal" id="itemModal"></div>
+</div>
+
+<!-- ════════ BOTTOM NAV ════════ -->
+<nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+  <button onclick="switchTab('scan')" id="tabScan" class="active" aria-label="Scan">
+    <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Scan
+  </button>
+  <button onclick="switchTab('inventory')" id="tabInventory" aria-label="Inventory">
+    <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M2 8h20M8 2v20"/></svg>
+    Rack
+  </button>
+  <button onclick="switchTab('earnings')" id="tabEarnings" aria-label="Earnings">
+    <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    Earn
+  </button>
+  <button onclick="switchTab('settings')" id="tabSettings" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Settings
+  </button>
+</nav>
+
+<!-- ════════ PWA MANIFEST (inline) ════════ -->
+<script>
+(function(){
+  const m={name:"RACK",short_name:"RACK",description:"Professional reseller grading & pricing",
+    start_url:".",display:"standalone",background_color:"#1a1a1a",theme_color:"#1a1a1a",
+    icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%231a1a1a'/%3E%3Cpath d='M256 80v160M180 100h152M150 240Q150 380 256 440Q362 380 362 240' stroke='%2339ff14' stroke-width='28' fill='none' stroke-linecap='round'/%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml"}]};
+  const b=new Blob([JSON.stringify(m)],{type:'application/json'});
+  const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
+  document.head.appendChild(l);
+})();
+</script>
 
 <script>
-// ──── Sample data — the pile ────
-const SAMPLE = [
-  {brand:"Levi's 501",detail:"Original Fit · W32 L30 · indigo",grade:"A",gradeReason:"minor fade · no stains · selvedge intact",lo:62,hi:78,priceShow:70,channel:"Depop",chColor:"#d12671",reasoning:"Depop pays 18% more for vintage 501s in this fit vs Poshmark.",cat:"denim"},
-  {brand:"Carhartt WIP Detroit",detail:"Hamilton Brown · M · 2019",grade:"A",gradeReason:"barely worn · lining intact",lo:115,hi:145,priceShow:130,channel:"Grailed",chColor:"#000",reasoning:"Grailed buyers index 2× on Carhartt WIP archive pieces.",cat:"outerwear"},
-  {brand:"Lululemon Align",detail:"25\" leggings · size 6 · black",grade:"B",gradeReason:"light pilling inner thigh · no holes",lo:38,hi:48,priceShow:42,channel:"Poshmark",chColor:"#86222b",reasoning:"Poshmark moves Lulu in <14d at 92% sell-through.",cat:"athleisure"},
-  {brand:"Coach Willis 18",detail:"Tan leather crossbody · vintage",grade:"A",gradeReason:"patina · no cracking · clean lining",lo:85,hi:110,priceShow:95,channel:"eBay",chColor:"#0064d2",reasoning:"eBay vintage Coach comps run higher than Posh for this model.",cat:"bags"},
-  {brand:"Nike Dunk Low",detail:"Panda · M9 · 2022",grade:"B",gradeReason:"creased toe box · clean soles",lo:78,hi:98,priceShow:85,channel:"eBay",chColor:"#0064d2",reasoning:"eBay Authenticated reduces buyer friction on sneaker resale.",cat:"sneakers"},
-  {brand:"Aritzia Wilfred",detail:"Effortless Pant · 4 · black",grade:"A",gradeReason:"like new · tags removed",lo:42,hi:55,priceShow:48,channel:"Poshmark",chColor:"#86222b",reasoning:"Aritzia indexes strongest on Poshmark in this category.",cat:"workwear"},
-  {brand:"Patagonia Synchilla",detail:"Snap-T fleece · L · classic navy",grade:"B",gradeReason:"some pilling · vintage label",lo:55,hi:72,priceShow:62,channel:"Depop",chColor:"#d12671",reasoning:"Depop's Gen Z buyer pool pays premium for 90s outdoor.",cat:"outerwear"},
-  {brand:"Ralph Lauren Polo",detail:"Big Pony · M · ivory",grade:"C",gradeReason:"small mark on placket · disclosed",lo:18,hi:26,priceShow:22,channel:"Mercari",chColor:"#ff6b00",reasoning:"Mercari moves graded-C items faster · less buyer scrutiny.",cat:"shirts"},
-  {brand:"Madewell Perfect",detail:"Vintage Jean · 27 · sea-salt",grade:"A",gradeReason:"unworn · sticker on pocket",lo:48,hi:60,priceShow:54,channel:"Poshmark",chColor:"#86222b",reasoning:"Madewell denim moves in 9d avg on Poshmark.",cat:"denim"},
-  {brand:"Vintage Champion",detail:"Reverse Weave · XL · 90s · grey",grade:"B",gradeReason:"single tag · soft fade",lo:42,hi:58,priceShow:48,channel:"Depop",chColor:"#d12671",reasoning:"Vintage Champion is Depop's #3 search term YTD.",cat:"sweats"},
-  {brand:"Lucky Brand 363",detail:"Vintage Straight · 34×32 · dark",grade:"C",gradeReason:"hem wear · stretched waistband",lo:12,hi:18,priceShow:14,channel:"Vinted",chColor:"#09b1ba",reasoning:"Vinted's free-list model better fits low-margin items.",cat:"denim"},
-  {brand:"Free People Tunic",detail:"Embroidered · S · cream",grade:"A",gradeReason:"NWOT · boho buyer favorite",lo:38,hi:52,priceShow:44,channel:"Poshmark",chColor:"#86222b",reasoning:"Free People + Poshmark = highest sell-through on platform.",cat:"tops"}
+// ═══════════════════════════════════════════
+// RACK — GOD MODE
+// ═══════════════════════════════════════════
+
+// ── CONSTANTS ──
+
+const BRANDS_RAW = [
+  // Luxury
+  {n:'Gucci',t:'luxury'},{n:'Louis Vuitton',t:'luxury'},{n:'Chanel',t:'luxury'},{n:'Prada',t:'luxury'},
+  {n:'Burberry',t:'luxury'},{n:'Dior',t:'luxury'},{n:'Balenciaga',t:'luxury'},{n:'Saint Laurent',t:'luxury'},
+  {n:'Fendi',t:'luxury'},{n:'Givenchy',t:'luxury'},{n:'Valentino',t:'luxury'},{n:'Versace',t:'luxury'},
+  {n:'Bottega Veneta',t:'luxury'},{n:'Celine',t:'luxury'},{n:'Hermes',t:'luxury'},{n:'Moncler',t:'luxury'},
+  {n:'Off-White',t:'luxury'},{n:'Alexander McQueen',t:'luxury'},
+  // Premium
+  {n:'Coach',t:'premium'},{n:'Kate Spade',t:'premium'},{n:'Michael Kors',t:'premium'},
+  {n:'Tory Burch',t:'premium'},{n:'Marc Jacobs',t:'premium'},{n:'Ralph Lauren',t:'premium'},
+  {n:'Polo Ralph Lauren',t:'premium'},{n:'Tommy Hilfiger',t:'premium'},{n:'Calvin Klein',t:'premium'},
+  {n:'Lululemon',t:'premium'},{n:'Patagonia',t:'premium'},{n:'The North Face',t:'premium'},
+  {n:'Arc\'teryx',t:'premium'},{n:'Canada Goose',t:'premium'},
+  {n:'AllSaints',t:'premium'},{n:'Ted Baker',t:'premium'},{n:'Hugo Boss',t:'premium'},
+  {n:'Cole Haan',t:'premium'},{n:'Stuart Weitzman',t:'premium'},{n:'Vince',t:'premium'},
+  {n:'Theory',t:'premium'},{n:'Eileen Fisher',t:'premium'},{n:'Reformation',t:'premium'},
+  {n:'Aritzia',t:'premium'},{n:'Sezane',t:'premium'},{n:'Alo Yoga',t:'premium'},
+  // Mid
+  {n:'Nike',t:'mid'},{n:'Adidas',t:'mid'},{n:'New Balance',t:'mid'},{n:'Converse',t:'mid'},
+  {n:'Vans',t:'mid'},{n:'Puma',t:'mid'},{n:'Reebok',t:'mid'},{n:'Jordan',t:'mid'},
+  {n:'Levi\'s',t:'mid'},{n:'Madewell',t:'mid'},{n:'J.Crew',t:'mid'},{n:'Banana Republic',t:'mid'},
+  {n:'Brooks Brothers',t:'mid'},{n:'Anthropologie',t:'mid'},{n:'Free People',t:'mid'},
+  {n:'Urban Outfitters',t:'mid'},{n:'Abercrombie',t:'mid'},{n:'Carhartt',t:'mid'},
+  {n:'Carhartt WIP',t:'premium'},{n:'Dr. Martens',t:'mid'},{n:'Birkenstock',t:'mid'},
+  {n:'UGG',t:'mid'},{n:'Timberland',t:'mid'},{n:'Columbia',t:'mid'},
+  {n:'Under Armour',t:'mid'},{n:'Champion',t:'mid'},{n:'Dickies',t:'mid'},
+  {n:'Wrangler',t:'mid'},{n:'Lee',t:'mid'},{n:'Guess',t:'mid'},{n:'Lacoste',t:'mid'},
+  {n:'Nautica',t:'mid'},{n:'Lucky Brand',t:'mid'},{n:'DKNY',t:'mid'},
+  // Value
+  {n:'Gap',t:'value'},{n:'Old Navy',t:'value'},{n:'American Eagle',t:'value'},
+  {n:'Hollister',t:'value'},{n:'Express',t:'value'},{n:'Ann Taylor',t:'value'},
+  {n:'LOFT',t:'value'},{n:'Banana Republic Factory',t:'value'},
+  // Fast fashion
+  {n:'Zara',t:'fast'},{n:'H&M',t:'fast'},{n:'Uniqlo',t:'fast'},{n:'SHEIN',t:'fast'},
+  {n:'Forever 21',t:'fast'},{n:'ASOS',t:'fast'},{n:'Mango',t:'fast'},{n:'Topshop',t:'fast'},
+  {n:'Primark',t:'fast'},{n:'Pull & Bear',t:'fast'},{n:'Bershka',t:'fast'},
+  // Vintage / generic
+  {n:'Vintage (unlabeled)',t:'mid'},{n:'Other',t:'value'}
 ];
 
-const CHANNEL_LOGOS = {
-  "Poshmark":"PO","Depop":"DE","eBay":"eB","Mercari":"ME","Vinted":"VI","Grailed":"GR"
+const CATEGORIES = ['Tops','Bottoms','Dresses','Outerwear','Shoes','Bags','Accessories','Activewear','Swimwear','Vintage','Other'];
+const CHANNELS = ['Poshmark','Depop','eBay','Mercari','Vinted'];
+const GRADES = [
+  {g:'A',title:'Like New',desc:'Tags on or pristine, no wear, no defects'},
+  {g:'B',title:'Gently Used',desc:'Minor signs of wear, no notable defects'},
+  {g:'C',title:'Visibly Worn',desc:'Minor stains/pilling, functional, priced to sell'},
+  {g:'D',title:'Damaged',desc:'Stains, holes, heavy wear — parts or craft only'}
+];
+
+// ── PRICING ENGINE ──
+// Base price matrix: [luxury, premium, mid, value, fast] × category × grade multiplier
+const BASE_PRICES = {
+  // [low, high] for mid-tier Grade B — scaled from here
+  Tops:      {luxury:[120,220],premium:[25,45],mid:[12,22],value:[6,12],fast:[4,8]},
+  Bottoms:   {luxury:[140,260],premium:[28,48],mid:[14,25],value:[7,14],fast:[4,9]},
+  Dresses:   {luxury:[200,400],premium:[35,65],mid:[16,30],value:[8,16],fast:[5,10]},
+  Outerwear: {luxury:[250,500],premium:[45,90],mid:[22,45],value:[10,22],fast:[6,14]},
+  Shoes:     {luxury:[180,380],premium:[35,70],mid:[18,35],value:[8,18],fast:[5,12]},
+  Bags:      {luxury:[280,550],premium:[40,85],mid:[15,30],value:[6,14],fast:[4,8]},
+  Accessories:{luxury:[80,180],premium:[18,38],mid:[8,18],value:[4,10],fast:[3,6]},
+  Activewear:{luxury:[100,200],premium:[28,50],mid:[12,24],value:[6,14],fast:[4,8]},
+  Swimwear:  {luxury:[90,180],premium:[20,40],mid:[8,18],value:[4,10],fast:[3,6]},
+  Vintage:   {luxury:[150,350],premium:[30,65],mid:[15,35],value:[8,18],fast:[5,12]},
+  Other:     {luxury:[100,200],premium:[20,40],mid:[10,20],value:[5,12],fast:[3,8]}
 };
 
-// ──── State ────
-let items = [];
+const GRADE_MULT = {A:1.35, B:1.0, C:0.55, D:0.2};
 
-// ──── Render items ────
-function renderItems(){
-  const grid = document.getElementById('items');
-  grid.innerHTML = items.map((it,i) => `
-    <article class="card" data-i="${i}">
+function getPrice(brandTier, category, grade) {
+  const cat = BASE_PRICES[category] || BASE_PRICES.Other;
+  const base = cat[brandTier] || cat.mid;
+  const m = GRADE_MULT[grade] || 1;
+  const low = Math.round(base[0] * m);
+  const high = Math.round(base[1] * m);
+  const mid = Math.round((low + high) / 2);
+  return {low, mid, high};
+}
+
+function getBrandTier(brandName) {
+  const b = BRANDS_RAW.find(x => x.n === brandName);
+  return b ? b.t : 'value';
+}
+
+function getBestChannel(category, brandTier, grade) {
+  // Rule-based channel recommendation
+  if (brandTier === 'luxury') {
+    if (category === 'Bags' || category === 'Accessories') return {ch:'eBay',reason:'eBay Authenticity Guarantee reduces buyer friction on luxury accessories.'};
+    return {ch:'Poshmark',reason:'Poshmark luxury buyers pay top dollar with strong authentication support.'};
+  }
+  if (category === 'Activewear') return {ch:'Poshmark',reason:'Poshmark dominates athletic resale — 92% sell-through on premium activewear.'};
+  if (category === 'Vintage') return {ch:'Depop',reason:'Depop\'s Gen Z buyer pool pays premium for vintage and one-of-a-kind pieces.'};
+  if (category === 'Shoes') return {ch:'eBay',reason:'eBay Authenticated sneaker program reduces returns and increases buyer confidence.'};
+  if (brandTier === 'fast' || grade === 'D') return {ch:'Mercari',reason:'Mercari moves value items fastest — less buyer scrutiny, quick sales.'};
+  if (grade === 'C') return {ch:'Mercari',reason:'Mercari\'s casual buyer base is more forgiving on condition-graded items.'};
+  if (brandTier === 'premium') {
+    if (['Tops','Dresses','Bottoms'].includes(category)) return {ch:'Poshmark',reason:'Poshmark is strongest for premium women\'s apparel — avg 14-day sell-through.'};
+    return {ch:'Depop',reason:'Depop\'s curated feed algorithm surfaces premium brands effectively.'};
+  }
+  if (category === 'Outerwear') return {ch:'Depop',reason:'Depop buyers index 2x on outerwear and layering pieces.'};
+  return {ch:'Poshmark',reason:'Poshmark offers the best all-around sell-through for this category and tier.'};
+}
+
+// ── STATE ──
+let DB = {items:[], settings:{channels:[], volume:'', onboarded:false}};
+let cameraStream = null;
+let currentView = 'grid';
+let qgPhotos = []; // photos being graded in current flow
+let qgCurrentIdx = 0;
+let qgStep = 0; // 0=brand, 1=category, 2=size, 3=grade, 4=result
+let qgItem = {}; // item being built
+
+function save() {
+  try {
+    localStorage.setItem('rack_db', JSON.stringify(DB));
+  } catch(e) {
+    if (e.name === 'QuotaExceededError') {
+      alert('Storage full! Export your data and archive old items in Settings to free space.');
+    }
+  }
+}
+function load() {
+  try {
+    const d = localStorage.getItem('rack_db');
+    if (d) DB = JSON.parse(d);
+  } catch(e) {}
+}
+
+// ── PHOTO COMPRESSION ──
+function compressPhoto(dataUrl, maxDim, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality || 0.7));
+    };
+    img.src = dataUrl;
+  });
+}
+
+// ── CAMERA ──
+async function openCamera() {
+  const ov = document.getElementById('cameraOverlay');
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {facingMode:'environment', width:{ideal:1280}, height:{ideal:960}}
+    });
+    document.getElementById('camVideo').srcObject = cameraStream;
+    ov.classList.add('on');
+  } catch(e) {
+    // Fallback to file input
+    document.getElementById('fileInput').click();
+  }
+}
+
+function closeCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  document.getElementById('cameraOverlay').classList.remove('on');
+}
+
+async function capturePhoto() {
+  const video = document.getElementById('camVideo');
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video, 0, 0);
+  const raw = c.toDataURL('image/jpeg', 0.85);
+  const compressed = await compressPhoto(raw, 800, 0.7);
+  closeCamera();
+  qgPhotos = [compressed];
+  qgCurrentIdx = 0;
+  startQuickGrade();
+}
+
+// ── FILE UPLOAD ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('fileInput').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files).slice(0, 40);
+    if (!files.length) return;
+    const photos = [];
+    for (const f of files) {
+      const raw = await readFile(f);
+      const compressed = await compressPhoto(raw, 800, 0.7);
+      photos.push(compressed);
+    }
+    e.target.value = '';
+    if (photos.length === 1) {
+      qgPhotos = photos;
+      qgCurrentIdx = 0;
+      startQuickGrade();
+    } else {
+      qgPhotos = photos;
+      qgCurrentIdx = 0;
+      showPhotoQueue();
+      startQuickGrade();
+    }
+  });
+});
+
+function readFile(f) {
+  return new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.readAsDataURL(f);
+  });
+}
+
+// ── PHOTO QUEUE ──
+function showPhotoQueue() {
+  const q = document.getElementById('photoQueue');
+  const list = document.getElementById('photoQueueList');
+  q.style.display = 'block';
+  list.innerHTML = qgPhotos.map((p, i) => `
+    <div style="width:60px;height:60px;border-radius:6px;overflow:hidden;flex-shrink:0;border:2px solid ${i < qgCurrentIdx ? 'var(--green)' : i === qgCurrentIdx ? 'var(--ink)' : 'var(--line)'};position:relative">
+      <img src="${p}" style="width:100%;height:100%;object-fit:cover">
+      ${i < qgCurrentIdx ? '<div style="position:absolute;inset:0;background:rgba(57,255,20,.3);display:flex;align-items:center;justify-content:center;color:var(--ink);font-weight:900;font-size:16px">&#10003;</div>' : ''}
+      ${i === qgCurrentIdx ? '<div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div>' : ''}
+    </div>
+  `).join('');
+}
+
+// ── QUICK GRADE FLOW ──
+function startQuickGrade() {
+  qgStep = 0;
+  qgItem = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    photos: [qgPhotos[qgCurrentIdx]],
+    brand: '', category: '', size: '', condition: 'B', conditionNotes: '',
+    suggestedPrice: {low:0, mid:0, high:0},
+    bestChannel: '', channelReason: '',
+    status: 'new', listDate: null, soldPrice: null, notes: '',
+    createdAt: new Date().toISOString()
+  };
+  renderQGStep();
+  document.getElementById('qgFlow').style.display = 'block';
+  if (qgPhotos.length > 1) showPhotoQueue();
+}
+
+function renderQGStep() {
+  const steps = document.getElementById('qgSteps');
+  const prog = document.getElementById('qgProgress');
+  const totalSteps = 5;
+  prog.innerHTML = Array.from({length:totalSteps}, (_, i) =>
+    `<div class="pip ${i < qgStep ? 'done' : i === qgStep ? 'current' : ''}"></div>`
+  ).join('');
+
+  if (qgStep === 0) { // Brand
+    steps.innerHTML = `
+      <div class="qg-step active">
+        <div style="width:100%;aspect-ratio:16/9;border-radius:var(--radius);overflow:hidden;margin-bottom:16px;background:var(--paper)">
+          <img src="${qgItem.photos[0]}" style="width:100%;height:100%;object-fit:cover">
+        </div>
+        <label style="font-weight:700;font-size:14px;margin-bottom:6px;display:block">Brand</label>
+        <div class="search-select" id="brandSelect">
+          <input type="text" placeholder="Search brands..." id="brandInput" autocomplete="off">
+          <div class="dd" id="brandDD"></div>
+        </div>
+      </div>`;
+    setupBrandSearch();
+  } else if (qgStep === 1) { // Category
+    steps.innerHTML = `
+      <div class="qg-step active">
+        <label style="font-weight:700;font-size:14px;margin-bottom:6px;display:block">Category</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${CATEGORIES.map(c => `<button class="btn btn-ghost btn-sm" onclick="pickCategory('${c}')" style="flex:0 0 auto">${c}</button>`).join('')}
+        </div>
+      </div>`;
+  } else if (qgStep === 2) { // Size
+    steps.innerHTML = `
+      <div class="qg-step active">
+        <label style="font-weight:700;font-size:14px;margin-bottom:6px;display:block">Size</label>
+        <input type="text" id="sizeInput" placeholder="e.g. M, 8, 32x30, OS" value="${qgItem.size}">
+        <button class="btn btn-green btn-block" onclick="pickSize()" style="margin-top:12px">Continue</button>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+          ${['XS','S','M','L','XL','XXL','OS'].map(s => `<button class="btn btn-ghost btn-sm" onclick="document.getElementById('sizeInput').value='${s}';pickSize()">${s}</button>`).join('')}
+        </div>
+      </div>`;
+    setTimeout(() => document.getElementById('sizeInput').focus(), 100);
+  } else if (qgStep === 3) { // Condition
+    steps.innerHTML = `
+      <div class="qg-step active">
+        <label style="font-weight:700;font-size:14px;margin-bottom:10px;display:block">Condition Grade</label>
+        ${GRADES.map(g => `
+          <div class="grade-option ${qgItem.condition === g.g ? 'selected' : ''}" onclick="pickGrade('${g.g}')" role="button" tabindex="0" aria-label="Grade ${g.g}: ${g.title}">
+            <div class="g-letter ${g.g}">${g.g}</div>
+            <div><div class="g-title">${g.title}</div><div class="g-desc">${g.desc}</div></div>
+          </div>
+        `).join('')}
+        <label style="font-weight:700;font-size:13px;margin:12px 0 6px;display:block">Condition Notes (optional)</label>
+        <textarea id="condNotes" rows="2" placeholder="e.g. small stain on collar, pilling on sleeves">${qgItem.conditionNotes}</textarea>
+        <button class="btn btn-green btn-block" onclick="confirmGrade()" style="margin-top:12px">Get Price</button>
+      </div>`;
+  } else if (qgStep === 4) { // Result
+    const tier = getBrandTier(qgItem.brand);
+    const price = getPrice(tier, qgItem.category, qgItem.condition);
+    const rec = getBestChannel(qgItem.category, tier, qgItem.condition);
+    qgItem.suggestedPrice = price;
+    qgItem.bestChannel = rec.ch;
+    qgItem.channelReason = rec.reason;
+
+    const isLast = qgCurrentIdx >= qgPhotos.length - 1;
+    steps.innerHTML = `
+      <div class="qg-step active">
+        <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+          <div style="width:80px;height:80px;border-radius:var(--radius);overflow:hidden;flex-shrink:0;background:var(--paper)">
+            <img src="${qgItem.photos[0]}" style="width:100%;height:100%;object-fit:cover">
+          </div>
+          <div>
+            <div style="font-weight:800;font-size:16px">${qgItem.brand}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">${qgItem.category} &middot; ${qgItem.size} &middot; Grade ${qgItem.condition}</div>
+          </div>
+        </div>
+        <div class="price-result">
+          <div class="price-main">$${price.mid}</div>
+          <div class="price-range">$${price.low} — $${price.high}</div>
+          <div class="channel-rec">
+            <div class="ch-name">Best on ${rec.ch}</div>
+            <div class="ch-reason">${rec.reason}</div>
+          </div>
+        </div>
+        <button class="btn btn-green btn-block" onclick="saveItem()">
+          Save to Rack${!isLast ? ' & Grade Next' : ''}
+        </button>
+        ${qgStep > 0 ? '<button class="btn btn-ghost btn-block" onclick="qgBack()" style="margin-top:8px">Back</button>' : ''}
+      </div>`;
+  }
+}
+
+function setupBrandSearch() {
+  const input = document.getElementById('brandInput');
+  const dd = document.getElementById('brandDD');
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase();
+    const matches = q.length > 0 ? BRANDS_RAW.filter(b => b.n.toLowerCase().includes(q)).slice(0, 12) : BRANDS_RAW.slice(0, 12);
+    dd.innerHTML = matches.map(b => `<div class="dd-item" onclick="selectBrand('${b.n.replace(/'/g, "\\'")}')">${b.n}<span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase">${b.t}</span></div>`).join('');
+    dd.classList.add('open');
+  });
+  input.addEventListener('focus', () => {
+    if (!dd.innerHTML) input.dispatchEvent(new Event('input'));
+    dd.classList.add('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#brandSelect')) dd.classList.remove('open');
+  });
+  if (qgItem.brand) input.value = qgItem.brand;
+}
+
+function selectBrand(name) {
+  qgItem.brand = name;
+  document.getElementById('brandDD').classList.remove('open');
+  qgStep = 1;
+  renderQGStep();
+}
+
+function pickCategory(cat) {
+  qgItem.category = cat;
+  qgStep = 2;
+  renderQGStep();
+}
+
+function pickSize() {
+  const v = document.getElementById('sizeInput').value.trim();
+  qgItem.size = v || 'OS';
+  qgStep = 3;
+  renderQGStep();
+}
+
+function pickGrade(g) {
+  qgItem.condition = g;
+  document.querySelectorAll('.grade-option').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+
+function confirmGrade() {
+  const notes = document.getElementById('condNotes');
+  if (notes) qgItem.conditionNotes = notes.value;
+  qgStep = 4;
+  renderQGStep();
+}
+
+function qgBack() {
+  if (qgStep > 0) { qgStep--; renderQGStep(); }
+}
+
+function saveItem() {
+  const item = {...qgItem};
+  DB.items.unshift(item);
+  save();
+
+  qgCurrentIdx++;
+  if (qgCurrentIdx < qgPhotos.length) {
+    // Next photo
+    qgItem = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      photos: [qgPhotos[qgCurrentIdx]],
+      brand: qgItem.brand, // keep last brand as default
+      category: qgItem.category,
+      size: '',
+      condition: 'B', conditionNotes: '',
+      suggestedPrice: {low:0,mid:0,high:0},
+      bestChannel: '', channelReason: '',
+      status: 'new', listDate: null, soldPrice: null, notes: '',
+      createdAt: new Date().toISOString()
+    };
+    qgStep = 0;
+    renderQGStep();
+    showPhotoQueue();
+  } else {
+    // Done
+    document.getElementById('qgFlow').style.display = 'none';
+    document.getElementById('photoQueue').style.display = 'none';
+    qgPhotos = [];
+    switchTab('inventory');
+  }
+}
+
+// ── INVENTORY ──
+function renderInventory() {
+  const grid = document.getElementById('invGrid');
+  const empty = document.getElementById('invEmpty');
+  const countEl = document.getElementById('invCount');
+  const filter = document.getElementById('filterStatus').value;
+  const sort = document.getElementById('sortBy').value;
+
+  let items = DB.items.slice();
+  if (filter !== 'all') items = items.filter(it => it.status === filter);
+
+  items.sort((a, b) => {
+    switch(sort) {
+      case 'date-desc': return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'date-asc': return new Date(a.createdAt) - new Date(b.createdAt);
+      case 'price-desc': return (b.suggestedPrice?.mid||0) - (a.suggestedPrice?.mid||0);
+      case 'price-asc': return (a.suggestedPrice?.mid||0) - (b.suggestedPrice?.mid||0);
+      case 'grade-asc': return (a.condition||'D').localeCompare(b.condition||'D');
+      default: return 0;
+    }
+  });
+
+  countEl.textContent = DB.items.length;
+
+  if (!items.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.className = currentView === 'list' ? 'inv-grid inv-list' : 'inv-grid';
+  if (currentView === 'list') grid.style.gridTemplateColumns = '1fr';
+  else grid.style.gridTemplateColumns = '';
+
+  grid.innerHTML = items.map(it => `
+    <article class="card" onclick="openItem('${it.id}')" tabindex="0" role="button" aria-label="${it.brand} ${it.category}">
       <div class="card-img">
-        ${it.thumb ? `<img src="${it.thumb}" alt="">` : `<div class="placeholder">${it.brand[0]}</div>`}
-        <div class="grade-tag ${it.grade}">${it.grade}</div>
-        <div class="channel-tag" style="background:${it.chColor}">${it.channel}</div>
+        ${it.photos && it.photos[0] ? `<img src="${it.photos[0]}" alt="${it.brand}" loading="lazy">` : `<div class="ph">${(it.brand||'?')[0]}</div>`}
+        <div class="grade-badge ${it.condition}">${it.condition}</div>
+        <div class="channel-badge">${it.bestChannel||''}</div>
       </div>
       <div class="card-body">
         <div class="card-brand">${it.brand}</div>
-        <div class="card-desc">${it.detail}</div>
-        <div class="card-reasoning">${it.reasoning}</div>
-        <div class="card-meta">
-          <div class="card-price">
-            $${it.priceShow}
-            <span class="range">RANGE $${it.lo}–${it.hi}</span>
-          </div>
-          <div class="card-status ${it.status || ''}" id="cs-${i}">
-            <span class="dot"></span><span>${it.statusLabel || 'Ready'}</span>
-          </div>
-        </div>
+        <div class="card-detail">${it.category} &middot; ${it.size} &middot; <span class="status-dot ${it.status}"></span>${it.status}</div>
+        <div class="card-price">$${it.suggestedPrice?.mid||0}<span class="range">$${it.suggestedPrice?.low||0}–$${it.suggestedPrice?.high||0}</span></div>
       </div>
     </article>
   `).join('');
+
+  // Stats
+  renderInvStats();
+  // Bulk list button visibility
+  const newCount = DB.items.filter(i => i.status === 'new').length;
+  document.getElementById('bulkListBtn').style.display = newCount > 0 ? '' : 'none';
 }
 
-function updateForecast(){
-  document.getElementById('fcItems').textContent = items.length;
-  document.getElementById('itemCount').textContent = items.length;
-  document.getElementById('modalCount').textContent = items.length;
-  // Forecast: sum of midpoint × predicted sell-through (~68%) minus ~12% fees
-  const gross = items.reduce((s,it)=>s+it.priceShow,0);
-  const cleared = Math.round(gross * 0.68 * 0.88);
-  document.getElementById('fcCleared').textContent = '$' + cleared;
+function renderInvStats() {
+  const items = DB.items;
+  const total = items.length;
+  const estValue = items.reduce((s, i) => s + (i.suggestedPrice?.mid || 0), 0);
+  const listed = items.filter(i => i.status === 'listed').length;
+  const sold = items.filter(i => i.status === 'sold').length;
+  const earned = items.filter(i => i.status === 'sold').reduce((s, i) => s + (i.soldPrice || 0), 0);
+
+  document.getElementById('invStats').innerHTML = `
+    <div><div class="label">TOTAL ITEMS</div><div class="val">${total}</div></div>
+    <div><div class="label">EST. VALUE</div><div class="val green">$${estValue}</div></div>
+    <div><div class="label">LISTED</div><div class="val">${listed}</div></div>
+    <div><div class="label">SOLD / EARNED</div><div class="val">${sold} / $${earned}</div></div>
+  `;
 }
 
-// ──── Initial load with sample ────
-items = SAMPLE.slice();
-renderItems();
-updateForecast();
+function setView(v) {
+  currentView = v;
+  document.getElementById('viewGrid').classList.toggle('active', v === 'grid');
+  document.getElementById('viewList').classList.toggle('active', v === 'list');
+  renderInventory();
+}
 
-// ──── Dropzone + file upload ────
-const dz = document.getElementById('dropzone');
-const fi = document.getElementById('fileInput');
-dz.addEventListener('click', () => fi.click());
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-dz.addEventListener('drop', e => {
-  e.preventDefault(); dz.classList.remove('drag');
-  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
-});
-fi.addEventListener('change', e => {
-  if (e.target.files.length) handleFiles(e.target.files);
-});
-
-function handleFiles(files){
-  const arr = Array.from(files).slice(0,40);
-  // Read previews
-  const thumbs = [];
-  let loaded = 0;
-  arr.forEach((file,i) => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      thumbs[i] = ev.target.result;
-      loaded++;
-      if (loaded === arr.length) startScan(thumbs);
-    };
-    reader.readAsDataURL(file);
+function bulkListNew() {
+  const today = new Date().toISOString().split('T')[0];
+  let count = 0;
+  DB.items.forEach(it => {
+    if (it.status === 'new') { it.status = 'listed'; it.listDate = today; count++; }
   });
+  save();
+  renderInventory();
+  if (count) alert(`${count} items marked as listed.`);
 }
 
-function startScan(thumbs){
-  const scanEl = document.getElementById('scanning');
-  scanEl.classList.add('on');
-  const bar = document.getElementById('scanBar');
-  const countEl = document.getElementById('scanCount');
-  const titleEl = document.getElementById('scanTitle');
-  const total = thumbs.length;
-  let n = 0;
-  const stages = ['Detecting items…','Identifying brands…','Grading condition…','Pulling comp prices…','Routing to best channels…'];
-  let stageIdx = 0;
-  titleEl.textContent = stages[0];
+// ── ITEM DETAIL ──
+function openItem(id) {
+  const it = DB.items.find(i => i.id === id);
+  if (!it) return;
+  const ov = document.getElementById('itemOverlay');
+  const modal = document.getElementById('itemModal');
 
-  const tick = setInterval(() => {
-    n++;
-    countEl.textContent = n;
-    bar.style.width = (n / total * 100) + '%';
-    if (n % Math.max(1, Math.ceil(total / stages.length)) === 0 && stageIdx < stages.length - 1){
-      stageIdx++;
-      titleEl.textContent = stages[stageIdx];
-    }
-    if (n >= total){
-      clearInterval(tick);
-      setTimeout(() => {
-        scanEl.classList.remove('on');
-        // Replace items: map detected to sample structure (cycle thru SAMPLE if more than 12)
-        items = thumbs.map((thumb,i) => {
-          const base = SAMPLE[i % SAMPLE.length];
-          return {...base, thumb, status:'', statusLabel:'Ready'};
-        });
-        renderItems();
-        updateForecast();
-        // Scroll to grid
-        document.getElementById('items').scrollIntoView({behavior:'smooth', block:'start'});
-      }, 500);
-    }
-  }, Math.max(120, 2400 / total));
-}
-
-// ──── List all → modal cross-post animation ────
-const modalBg = document.getElementById('modalBg');
-const channelList = document.getElementById('channelList');
-const closeModal = document.getElementById('closeModal');
-const viewListings = document.getElementById('viewListings');
-
-document.getElementById('listAll').addEventListener('click', () => {
-  // Group items by channel
-  const groups = {};
-  items.forEach((it,i) => {
-    if (!groups[it.channel]) groups[it.channel] = {color: it.chColor, idxs: []};
-    groups[it.channel].idxs.push(i);
-  });
-  const channels = Object.keys(groups);
-  channelList.innerHTML = channels.map(ch => `
-    <div class="channel-row" data-ch="${ch}">
-      <div class="name">
-        <span class="channel-logo" style="background:${groups[ch].color}">${CHANNEL_LOGOS[ch] || ch.slice(0,2).toUpperCase()}</span>
-        ${ch}
-        <span class="count">${groups[ch].idxs.length} items</span>
+  modal.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div>
+        <div class="modal-title">${it.brand}</div>
+        <div class="modal-sub">${it.category} &middot; ${it.size} &middot; Grade ${it.condition}</div>
       </div>
-      <div class="state" id="state-${ch}"><span class="dot"></span><span>Queued</span></div>
+      <button class="btn btn-sm btn-ghost" onclick="closeItemOverlay()">&times;</button>
     </div>
-  `).join('');
-  viewListings.style.display = 'none';
-  document.getElementById('modalSub').textContent = 'Routing each item to its best channel based on category, brand, and 30-day comp velocity.';
-  modalBg.classList.add('on');
+    ${it.photos && it.photos[0] ? `<div style="width:100%;aspect-ratio:4/5;border-radius:var(--radius);overflow:hidden;margin-bottom:16px;background:var(--paper)"><img src="${it.photos[0]}" style="width:100%;height:100%;object-fit:cover"></div>` : ''}
 
-  // Sequential posting per channel
-  let chIdx = 0;
-  function postNext(){
-    if (chIdx >= channels.length){
-      document.getElementById('modalSub').textContent = `Done. ${items.length} items live across ${channels.length} channels. Estimated cleared in 30 days: $${document.getElementById('fcCleared').textContent.slice(1)}.`;
-      viewListings.style.display = 'inline-flex';
-      return;
-    }
-    const ch = channels[chIdx];
-    const stateEl = document.getElementById('state-' + ch);
-    stateEl.className = 'state posting';
-    stateEl.innerHTML = '<span class="dot"></span><span>Posting…</span>';
-    // Mark items in card grid as posting
-    groups[ch].idxs.forEach(idx => {
-      const cs = document.getElementById('cs-' + idx);
-      if (cs){ cs.className = 'card-status posting'; cs.innerHTML = '<span class="dot"></span><span>Posting</span>'; }
-    });
-    setTimeout(() => {
-      stateEl.className = 'state done';
-      stateEl.innerHTML = `<span class="dot"></span><span>Live · ${groups[ch].idxs.length} posted</span>`;
-      groups[ch].idxs.forEach(idx => {
-        const cs = document.getElementById('cs-' + idx);
-        if (cs){ cs.className = 'card-status live'; cs.innerHTML = '<span class="dot"></span><span>Live</span>'; }
-      });
-      chIdx++;
-      postNext();
-    }, 900 + Math.random() * 700);
+    <div class="price-result" style="margin:0 0 16px">
+      <div class="price-main">$${it.suggestedPrice?.mid||0}</div>
+      <div class="price-range">$${it.suggestedPrice?.low||0} — $${it.suggestedPrice?.high||0}</div>
+      <div class="channel-rec">
+        <div class="ch-name">Best on ${it.bestChannel}</div>
+        <div class="ch-reason">${it.channelReason}</div>
+      </div>
+    </div>
+
+    ${it.conditionNotes ? `<div style="font-size:13px;color:var(--muted);margin-bottom:16px;padding:10px;background:var(--paper);border-radius:var(--radius)"><strong>Condition notes:</strong> ${it.conditionNotes}</div>` : ''}
+
+    <div style="margin-bottom:12px">
+      <label style="font-weight:700;font-size:13px;display:block;margin-bottom:4px">Status</label>
+      <select id="itemStatusSel" style="font-size:15px">
+        <option value="new" ${it.status==='new'?'selected':''}>New</option>
+        <option value="listed" ${it.status==='listed'?'selected':''}>Listed</option>
+        <option value="sold" ${it.status==='sold'?'selected':''}>Sold</option>
+        <option value="archived" ${it.status==='archived'?'selected':''}>Archived</option>
+      </select>
+    </div>
+    <div id="soldPriceRow" style="display:${it.status==='sold'?'block':'none'};margin-bottom:12px">
+      <label style="font-weight:700;font-size:13px;display:block;margin-bottom:4px">Sold Price</label>
+      <input type="number" id="soldPriceInput" value="${it.soldPrice||''}" placeholder="Actual sold price">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-weight:700;font-size:13px;display:block;margin-bottom:4px">Notes</label>
+      <textarea id="itemNotes" rows="2" placeholder="Listing notes...">${it.notes||''}</textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-green" style="flex:1" onclick="saveItemDetail('${it.id}')">Save</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteItem('${it.id}')">Delete</button>
+    </div>
+  `;
+
+  // Wire status change to show/hide sold price
+  document.getElementById('itemStatusSel').addEventListener('change', (e) => {
+    document.getElementById('soldPriceRow').style.display = e.target.value === 'sold' ? 'block' : 'none';
+  });
+
+  ov.classList.add('on');
+}
+
+function closeItemOverlay() {
+  document.getElementById('itemOverlay').classList.remove('on');
+}
+
+function saveItemDetail(id) {
+  const it = DB.items.find(i => i.id === id);
+  if (!it) return;
+  it.status = document.getElementById('itemStatusSel').value;
+  if (it.status === 'sold') {
+    it.soldPrice = parseFloat(document.getElementById('soldPriceInput').value) || 0;
   }
-  setTimeout(postNext, 350);
+  if (it.status === 'listed' && !it.listDate) {
+    it.listDate = new Date().toISOString().split('T')[0];
+  }
+  it.notes = document.getElementById('itemNotes').value;
+  save();
+  closeItemOverlay();
+  renderInventory();
+}
+
+function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  DB.items = DB.items.filter(i => i.id !== id);
+  save();
+  closeItemOverlay();
+  renderInventory();
+}
+
+// Close overlay on backdrop click or escape
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'itemOverlay') closeItemOverlay();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeItemOverlay();
 });
 
-closeModal.addEventListener('click', () => modalBg.classList.remove('on'));
-viewListings.addEventListener('click', () => { modalBg.classList.remove('on'); });
-modalBg.addEventListener('click', e => { if (e.target === modalBg) modalBg.classList.remove('on'); });
+// ── EARNINGS ──
+function renderEarnings() {
+  const sold = DB.items.filter(i => i.status === 'sold');
+  const totalEarned = sold.reduce((s, i) => s + (i.soldPrice || 0), 0);
+  const avgPrice = sold.length ? Math.round(totalEarned / sold.length) : 0;
 
-// ──── Keyboard ────
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && modalBg.classList.contains('on')) modalBg.classList.remove('on');
-});
+  // Best brand
+  const brandRev = {};
+  sold.forEach(i => { brandRev[i.brand] = (brandRev[i.brand]||0) + (i.soldPrice||0); });
+  const bestBrand = Object.entries(brandRev).sort((a,b) => b[1]-a[1])[0];
+
+  // Best channel
+  const chRev = {};
+  sold.forEach(i => { chRev[i.bestChannel] = (chRev[i.bestChannel]||0) + (i.soldPrice||0); });
+  const bestCh = Object.entries(chRev).sort((a,b) => b[1]-a[1])[0];
+
+  document.getElementById('earnStats').innerHTML = `
+    <div><div class="label">TOTAL EARNED</div><div class="val green">$${totalEarned}</div></div>
+    <div><div class="label">ITEMS SOLD</div><div class="val">${sold.length}</div></div>
+    <div><div class="label">AVG PRICE</div><div class="val">$${avgPrice}</div></div>
+    <div><div class="label">BEST BRAND</div><div class="val" style="font-size:16px">${bestBrand ? bestBrand[0] : '-'}</div></div>
+  `;
+
+  // Weekly chart (last 8 weeks)
+  renderWeeklyChart(sold);
+
+  // Top brands
+  const brandEntries = Object.entries(brandRev).sort((a,b) => b[1]-a[1]).slice(0,5);
+  document.getElementById('topBrands').innerHTML = brandEntries.length ? brandEntries.map(([name, rev]) =>
+    `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-s)"><span style="font-weight:700">${name}</span><span style="font-weight:900;color:var(--green-ink)">$${rev}</span></div>`
+  ).join('') : '<div class="empty-state"><p>No sales yet.</p></div>';
+
+  // Top channels
+  const chEntries = Object.entries(chRev).sort((a,b) => b[1]-a[1]);
+  document.getElementById('topChannels').innerHTML = chEntries.length ? chEntries.map(([name, rev]) =>
+    `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-s)"><span style="font-weight:700">${name}</span><span style="font-weight:900;color:var(--green-ink)">$${rev}</span></div>`
+  ).join('') : '<div class="empty-state"><p>No channel data yet.</p></div>';
+}
+
+function renderWeeklyChart(sold) {
+  const weeks = [];
+  const now = new Date();
+  for (let i = 7; i >= 0; i--) {
+    const start = new Date(now);
+    start.setDate(start.getDate() - (i+1)*7);
+    const end = new Date(now);
+    end.setDate(end.getDate() - i*7);
+    const label = `W${8-i}`;
+    const revenue = sold.filter(s => {
+      const d = new Date(s.createdAt);
+      return d >= start && d < end;
+    }).reduce((sum, s) => sum + (s.soldPrice||0), 0);
+    weeks.push({label, revenue});
+  }
+  const maxRev = Math.max(...weeks.map(w => w.revenue), 1);
+  const barW = 100 / weeks.length;
+  const chartH = 140;
+  const barMaxH = 100;
+
+  const bars = weeks.map((w, i) => {
+    const h = Math.max(2, (w.revenue / maxRev) * barMaxH);
+    const x = i * barW + barW * 0.15;
+    const y = chartH - h - 20;
+    const width = barW * 0.7;
+    return `
+      <rect class="chart-bar" x="${x}%" y="${y}" width="${width}%" height="${h}" rx="3"/>
+      <text class="chart-val" x="${x + width/2}%" y="${y - 4}" text-anchor="middle">${w.revenue > 0 ? '$'+w.revenue : ''}</text>
+      <text class="chart-label" x="${x + width/2}%" y="${chartH - 4}" text-anchor="middle">${w.label}</text>
+    `;
+  }).join('');
+
+  document.getElementById('earnChart').innerHTML = `<svg viewBox="0 0 400 ${chartH}" preserveAspectRatio="none">${bars}</svg>`;
+}
+
+// ── SETTINGS ──
+function renderSettings() {
+  document.getElementById('settingChannels').textContent = DB.settings.channels.length ? DB.settings.channels.join(', ') : 'None set';
+  // Storage
+  const used = new Blob([JSON.stringify(DB)]).size;
+  const maxStorage = 5 * 1024 * 1024; // 5MB estimate
+  const pct = Math.min(100, Math.round(used / maxStorage * 100));
+  document.getElementById('storageUsed').textContent = `${(used/1024).toFixed(0)} KB / ~5 MB (${pct}%)`;
+  document.getElementById('storageBar').style.width = pct + '%';
+  if (pct > 80) document.getElementById('storageBar').style.background = 'var(--red)';
+}
+
+function editChannels() {
+  const chs = prompt('Enter your channels (comma-separated):\nPoshmark, Depop, eBay, Mercari, Vinted', DB.settings.channels.join(', '));
+  if (chs !== null) {
+    DB.settings.channels = chs.split(',').map(s => s.trim()).filter(Boolean);
+    save();
+    renderSettings();
+  }
+}
+
+function exportCSV() {
+  const headers = ['ID','Brand','Category','Size','Condition','ConditionNotes','PriceLow','PriceMid','PriceHigh','BestChannel','Status','ListDate','SoldPrice','Notes','CreatedAt'];
+  const rows = DB.items.map(it => [
+    it.id, it.brand, it.category, it.size, it.condition, it.conditionNotes||'',
+    it.suggestedPrice?.low||0, it.suggestedPrice?.mid||0, it.suggestedPrice?.high||0,
+    it.bestChannel, it.status, it.listDate||'', it.soldPrice||'', it.notes||'', it.createdAt
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadBlob(csv, 'rack-inventory.csv', 'text/csv');
+}
+
+function exportHTML() {
+  const items = DB.items;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>RACK Catalog</title>
+  <style>body{font-family:Helvetica,Arial,sans-serif;background:#f3efe9;padding:32px;max-width:800px;margin:0 auto}
+  h1{font-size:36px;font-weight:900;margin-bottom:24px}.item{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid #ddd}
+  .item img{width:120px;height:120px;object-fit:cover;border-radius:8px}.info{flex:1}
+  .brand{font-weight:800;font-size:18px}.meta{font-size:12px;color:#666;margin:4px 0}
+  .price{font-size:22px;font-weight:900;margin-top:4px}</style></head><body>
+  <h1>RACK Catalog</h1><p style="color:#666">${items.length} items &middot; Exported ${new Date().toLocaleDateString()}</p>
+  ${items.map(it => `<div class="item">
+    ${it.photos&&it.photos[0] ? `<img src="${it.photos[0]}">` : '<div style="width:120px;height:120px;background:#ddd;border-radius:8px"></div>'}
+    <div class="info"><div class="brand">${it.brand}</div>
+    <div class="meta">${it.category} &middot; ${it.size} &middot; Grade ${it.condition} &middot; ${it.bestChannel}</div>
+    <div class="price">$${it.suggestedPrice?.mid||0} <span style="font-size:12px;color:#666">($${it.suggestedPrice?.low||0}&ndash;$${it.suggestedPrice?.high||0})</span></div>
+    ${it.conditionNotes ? `<div class="meta">${it.conditionNotes}</div>` : ''}
+    </div></div>`).join('')}
+  </body></html>`;
+  downloadBlob(html, 'rack-catalog.html', 'text/html');
+}
+
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob([content], {type: mime});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function archiveSold() {
+  const soldCount = DB.items.filter(i => i.status === 'sold').length;
+  if (!soldCount) { alert('No sold items to archive.'); return; }
+  if (!confirm(`Archive ${soldCount} sold items? Their photos will be removed to free storage.`)) return;
+  DB.items.forEach(it => {
+    if (it.status === 'sold') { it.status = 'archived'; it.photos = []; }
+  });
+  save();
+  renderInventory();
+  renderSettings();
+  alert(`${soldCount} items archived. Storage freed.`);
+}
+
+function resetAll() {
+  if (!confirm('Delete ALL data? This cannot be undone.')) return;
+  if (!confirm('Are you really sure? All items, photos, and settings will be permanently deleted.')) return;
+  localStorage.removeItem('rack_db');
+  DB = {items:[], settings:{channels:[], volume:'', onboarded:false}};
+  location.reload();
+}
+
+// ── NAVIGATION ──
+function switchTab(tab) {
+  const tabs = {scan:'screenScan', inventory:'screenInventory', earnings:'screenEarnings', settings:'screenSettings'};
+  Object.values(tabs).forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById(tabs[tab]).classList.add('active');
+  document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+  if (tab === 'inventory') renderInventory();
+  if (tab === 'earnings') renderEarnings();
+  if (tab === 'settings') renderSettings();
+}
+
+// ── ONBOARDING ──
+function obNext(step) {
+  document.querySelectorAll('.ob-step').forEach(el => el.classList.remove('active'));
+  document.getElementById('ob' + step).classList.add('active');
+
+  if (step === 2 && !document.getElementById('obChannels').innerHTML) {
+    document.getElementById('obChannels').innerHTML = CHANNELS.map(ch =>
+      `<div class="channel-check" onclick="toggleObChannel(this,'${ch}')">
+        <span class="ch-name">${ch}</span>
+        <span class="ch-box"></span>
+      </div>`
+    ).join('');
+  }
+}
+
+function toggleObChannel(el, ch) {
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    el.querySelector('.ch-box').textContent = '✓';
+  } else {
+    el.querySelector('.ch-box').textContent = '';
+  }
+}
+
+function pickVol(el) {
+  document.querySelectorAll('#obVolume .channel-check').forEach(e => {
+    e.classList.remove('selected');
+    e.querySelector('.ch-box').textContent = '';
+  });
+  el.classList.add('selected');
+  el.querySelector('.ch-box').textContent = '✓';
+  DB.settings.volume = el.dataset.vol;
+}
+
+function obFinish() {
+  // Collect channels
+  DB.settings.channels = Array.from(document.querySelectorAll('#obChannels .channel-check.selected')).map(el => el.querySelector('.ch-name').textContent);
+  DB.settings.onboarded = true;
+
+  // Seed sample inventory
+  seedSampleItems();
+  save();
+
+  document.getElementById('onboarding').style.display = 'none';
+  renderInventory();
+}
+
+function seedSampleItems() {
+  const samples = [
+    {brand:"Levi's",category:'Bottoms',size:'W32 L30',condition:'A',notes:'Original 501, selvedge intact'},
+    {brand:'Lululemon',category:'Activewear',size:'6',condition:'B',notes:'Align 25" leggings, light pilling'},
+    {brand:'Coach',category:'Bags',size:'OS',condition:'A',notes:'Willis 18 crossbody, vintage tan'},
+    {brand:'Nike',category:'Shoes',size:'M9',condition:'B',notes:'Dunk Low Panda 2022'},
+    {brand:'Patagonia',category:'Outerwear',size:'L',condition:'B',notes:'Synchilla Snap-T, vintage label'},
+    {brand:'Free People',category:'Tops',size:'S',condition:'A',notes:'Embroidered tunic, NWOT'}
+  ];
+  samples.forEach(s => {
+    const tier = getBrandTier(s.brand);
+    const price = getPrice(tier, s.category, s.condition);
+    const rec = getBestChannel(s.category, tier, s.condition);
+    DB.items.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      photos: [],
+      brand: s.brand, category: s.category, size: s.size,
+      condition: s.condition, conditionNotes: s.notes,
+      suggestedPrice: price,
+      bestChannel: rec.ch, channelReason: rec.reason,
+      status: 'new', listDate: null, soldPrice: null, notes: '',
+      createdAt: new Date(Date.now() - Math.random()*86400000*7).toISOString()
+    });
+  });
+}
+
+// ── INIT ──
+function init() {
+  load();
+
+  // Date display
+  const now = new Date();
+  document.getElementById('topbarDate').textContent = now.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+
+  // Check onboarding
+  if (!DB.settings.onboarded) {
+    document.getElementById('onboarding').style.display = 'flex';
+  } else {
+    document.getElementById('onboarding').style.display = 'none';
+  }
+
+  renderInventory();
+
+  // Storage warning
+  try {
+    const used = new Blob([JSON.stringify(DB)]).size;
+    if (used > 4 * 1024 * 1024) {
+      alert('Storage is almost full! Go to Settings to export your data and archive old items.');
+    }
+  } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
