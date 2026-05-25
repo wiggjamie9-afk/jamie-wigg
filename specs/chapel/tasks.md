@@ -36,25 +36,25 @@
   - **satisfies**: R4, R8
   - **acceptance**: admin can add a member with name + email + eligible roles; member appears in the list; adding a 31st member on the free tier shows the upgrade prompt instead of saving
 
-- [ ] **T7** — Schedule builder (create Sunday service, assign members to roles)
+- [x] **T7** — Schedule builder (create Sunday service, assign members to roles)
   - **files**: `chapel/src/pages/Schedules.tsx`, `chapel/src/components/ScheduleEditor.tsx`
   - **depends**: T3, T4, T5, T6
   - **satisfies**: R5
   - **acceptance**: admin picks a Sunday date; for each role they can select an eligible member; saving writes `services` + `assignments` rows; schedule appears in the upcoming list
 
-- [ ] **T8** — Attendance tracker (mark present/absent for a past service)
+- [x] **T8** — Attendance tracker (mark present/absent for a past service)
   - **files**: `chapel/src/pages/Attendance.tsx`
   - **depends**: T3, T4, T7
   - **satisfies**: R7
   - **acceptance**: services whose date has passed show a "Record Attendance" button; admin can tap each assigned member to toggle present/absent; state persists on refresh
 
-- [ ] **T9** — Dashboard (upcoming Sunday card + last attendance summary)
+- [x] **T9** — Dashboard (upcoming Sunday card + last attendance summary)
   - **files**: `chapel/src/pages/Dashboard.tsx`
   - **depends**: T3, T4, T7, T8
   - **satisfies**: R9
   - **acceptance**: dashboard shows the next upcoming service date and its assigned roles; shows a count of present/absent from the most recent completed service
 
-- [ ] **T10** — Email reminder Vercel cron job (Resend)
+- [x] **T10** — Email reminder Vercel cron job (Resend)
   - **files**: `chapel/api/send-reminders.ts`, `chapel/vercel.json`
   - **depends**: T2, T7
   - **satisfies**: R6, N2
@@ -66,7 +66,7 @@
   - **satisfies**: R8
   - **acceptance**: free orgs are blocked from adding a 31st member and see an upgrade CTA; Stripe Checkout session endpoint returns a valid session URL (even if Stripe is not yet live-mode); paid orgs with `stripe_subscription_status = 'active'` are allowed up to 150 members
 
-- [ ] **T12** — Vercel + Supabase env wiring + deployment
+- [x] **T12** — Vercel + Supabase env wiring + deployment
   - **files**: `chapel/.env.example`, `chapel/vercel.json`
   - **depends**: T1, T2, T10, T11
   - **satisfies**: N3

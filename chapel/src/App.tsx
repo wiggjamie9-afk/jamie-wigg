@@ -5,30 +5,9 @@ import Onboarding from './pages/Onboarding'
 import Roles from './pages/Roles'
 import Members from './pages/Members'
 import Schedules from './pages/Schedules'
+import Attendance from './pages/Attendance'
+import Dashboard from './pages/Dashboard'
 import Layout from './components/Layout'
-
-// ---------------------------------------------------------------------------
-// Placeholder page components — will be replaced by real pages in later tasks
-// ---------------------------------------------------------------------------
-
-function DashboardPage() {
-  return (
-    <div className="py-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-      <p className="mt-1 text-sm text-gray-500">Upcoming services and quick actions will appear here.</p>
-    </div>
-  )
-}
-
-
-function AttendancePage() {
-  return (
-    <div className="py-6">
-      <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-      <p className="mt-1 text-sm text-gray-500">Mark attendance for completed services here.</p>
-    </div>
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Auth guards
@@ -96,7 +75,7 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Layout>
-              <DashboardPage />
+              <Dashboard />
             </Layout>
           </RequireAuth>
         }
@@ -126,7 +105,7 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Layout>
-              <AttendancePage />
+              <Attendance />
             </Layout>
           </RequireAuth>
         }
