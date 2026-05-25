@@ -24,13 +24,13 @@
   - **satisfies**: R9
   - **acceptance**: bottom navigation bar with links to Dashboard, Members, Schedules, Attendance renders on mobile viewport; protected routes redirect unauthenticated users to Login
 
-- [ ] **T5** — Role management page (define church service roles)
+- [x] **T5** — Role management page (define church service roles)
   - **files**: `chapel/src/pages/Roles.tsx`, `chapel/src/components/RoleForm.tsx`
   - **depends**: T3, T4
   - **satisfies**: R3
   - **acceptance**: admin can add a role ("Sound Tech"), see it listed, and delete it; roles are org-scoped (not visible to other orgs)
 
-- [ ] **T6** — Member directory page (add, view, edit members + their eligible roles)
+- [x] **T6** — Member directory page (add, view, edit members + their eligible roles)
   - **files**: `chapel/src/pages/Members.tsx`, `chapel/src/components/MemberForm.tsx`
   - **depends**: T3, T4, T5
   - **satisfies**: R4, R8
@@ -60,7 +60,7 @@
   - **satisfies**: R6, N2
   - **acceptance**: hitting `POST /api/send-reminders` with the correct `CRON_SECRET` header queries services 3 days out, sends a Resend email to each assigned volunteer, and writes `reminder_sent_at`; re-running does not double-send (idempotency check on `reminder_sent_at`)
 
-- [ ] **T11** — Billing gate + upgrade prompt (Stripe scaffold, tier enforcement)
+- [x] **T11** — Billing gate + upgrade prompt (Stripe scaffold, tier enforcement)
   - **files**: `chapel/src/lib/billing.ts`, `chapel/src/components/UpgradePrompt.tsx`, `chapel/api/create-checkout.ts`
   - **depends**: T2, T3, T6
   - **satisfies**: R8

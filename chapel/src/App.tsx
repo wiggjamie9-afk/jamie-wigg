@@ -2,6 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Onboarding from './pages/Onboarding'
+import Roles from './pages/Roles'
+import Members from './pages/Members'
+import Schedules from './pages/Schedules'
 import Layout from './components/Layout'
 
 // ---------------------------------------------------------------------------
@@ -17,38 +20,12 @@ function DashboardPage() {
   )
 }
 
-function MembersPage() {
-  return (
-    <div className="py-6">
-      <h1 className="text-2xl font-bold text-gray-900">Members</h1>
-      <p className="mt-1 text-sm text-gray-500">Your church directory will appear here.</p>
-    </div>
-  )
-}
-
-function SchedulesPage() {
-  return (
-    <div className="py-6">
-      <h1 className="text-2xl font-bold text-gray-900">Schedules</h1>
-      <p className="mt-1 text-sm text-gray-500">Service schedules will appear here.</p>
-    </div>
-  )
-}
 
 function AttendancePage() {
   return (
     <div className="py-6">
       <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
       <p className="mt-1 text-sm text-gray-500">Mark attendance for completed services here.</p>
-    </div>
-  )
-}
-
-function RolesPage() {
-  return (
-    <div className="py-6">
-      <h1 className="text-2xl font-bold text-gray-900">Roles</h1>
-      <p className="mt-1 text-sm text-gray-500">Define your church's service roles here.</p>
     </div>
   )
 }
@@ -129,7 +106,7 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Layout>
-              <MembersPage />
+              <Members />
             </Layout>
           </RequireAuth>
         }
@@ -139,7 +116,7 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Layout>
-              <SchedulesPage />
+              <Schedules />
             </Layout>
           </RequireAuth>
         }
@@ -159,7 +136,7 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Layout>
-              <RolesPage />
+              <Roles />
             </Layout>
           </RequireAuth>
         }
