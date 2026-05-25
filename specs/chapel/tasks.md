@@ -1,24 +1,24 @@
 # Tasks: Chapel
 
-- [ ] **T1** — Scaffold chapel/ Vite + React + TypeScript + Tailwind app
+- [x] **T1** — Scaffold chapel/ Vite + React + TypeScript + Tailwind app
   - **files**: `chapel/`, `chapel/package.json`, `chapel/vite.config.ts`, `chapel/tsconfig.json`, `chapel/index.html`, `chapel/src/main.tsx`, `chapel/src/App.tsx`, `chapel/src/index.css`
   - **depends**: —
   - **satisfies**: R9
   - **acceptance**: `npm run dev` inside `chapel/` starts the dev server with a blank React page; Tailwind classes apply correctly
 
-- [ ] **T2** — Supabase schema migrations (all tables + RLS policies)
+- [x] **T2** — Supabase schema migrations (all tables + RLS policies)
   - **files**: `chapel/supabase/migrations/001_initial_schema.sql`
   - **depends**: —
   - **satisfies**: R2, N1
   - **acceptance**: migration applies cleanly to a fresh Supabase project; RLS policies exist on all tables; a query from a different user's session returns 0 rows
 
-- [ ] **T3** — Supabase client + auth context (magic link, session, org resolution)
+- [x] **T3** — Supabase client + auth context (magic link, session, org resolution)
   - **files**: `chapel/src/lib/supabase.ts`, `chapel/src/context/AuthContext.tsx`, `chapel/src/pages/Login.tsx`, `chapel/src/pages/Onboarding.tsx`
   - **depends**: T1, T2
   - **satisfies**: R1, R2
   - **acceptance**: clicking "Send magic link" emails the user; clicking the link in email signs them in; new users are prompted to create a church name; `org_id` is available in auth context for all subsequent pages
 
-- [ ] **T4** — React Router layout with mobile-first nav shell
+- [x] **T4** — React Router layout with mobile-first nav shell
   - **files**: `chapel/src/App.tsx`, `chapel/src/components/Layout.tsx`, `chapel/src/components/BottomNav.tsx`
   - **depends**: T1, T3
   - **satisfies**: R9
