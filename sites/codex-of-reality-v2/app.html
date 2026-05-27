@@ -1302,6 +1302,15 @@ html, body {
     <a class="gumroad-btn" href="https://YOUR_GUMROAD_URL" target="_blank" rel="noopener" id="gumroad-link">
       Buy on Gumroad ✦
     </a>
+
+    <div id="license-section" style="margin:24px 20px 0;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(244,236,214,0.4);margin-bottom:10px;">Already purchased?</div>
+      <div style="display:flex;gap:8px;">
+        <input id="license-input" placeholder="Enter your license key" style="flex:1;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:12px 14px;color:var(--parchment);font-family:'Inter',sans-serif;font-size:14px;outline:none;min-width:0;">
+        <button onclick="verifyLicense()" id="license-btn" style="height:46px;padding:0 18px;border-radius:12px;border:1px solid rgba(212,168,67,0.4);background:rgba(212,168,67,0.12);color:var(--gold);font-family:'Inter',sans-serif;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;">Unlock</button>
+      </div>
+      <div id="license-msg" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
+    </div>
     <div class="section-title">What you unlock</div>
     <div style="padding:0 20px;display:flex;flex-direction:column;gap:10px;">
       <div class="card" style="display:flex;align-items:center;gap:12px;">
@@ -2226,6 +2235,50 @@ function toggleSetting(key, btn) {
 
 function runResonanceDiscovery() {
   nav('/play/resonance-discovery');
+}
+
+async function verifyLicense() {
+  const input = document.getElementById('license-input');
+  const btn = document.getElementById('license-btn');
+  const msg = document.getElementById('license-msg');
+  const key = input.value.trim();
+  if (!key) { msg.style.color = '#ff6b6b'; msg.textContent = 'Enter your license key first.'; return; }
+
+  btn.textContent = '…';
+  btn.disabled = true;
+  msg.style.color = 'rgba(244,236,214,0.4)';
+  msg.textContent = 'Verifying…';
+
+  try {
+    const res = await fetch('/api/verify-license', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey: key }),
+    });
+    const data = await res.json();
+
+    if (data.valid) {
+      S.unlocked = true;
+      S.licenseKey = key;
+      saveState();
+      msg.style.color = '#5ce5e0';
+      msg.textContent = '✦ Unlocked! Full access granted.';
+      input.value = '';
+      btn.textContent = '✓ Done';
+      document.getElementById('access-status').textContent = 'Unlocked ✦';
+      if (S.settings.haptic) navigator.vibrate?.([50, 100, 100]);
+    } else {
+      msg.style.color = '#ff6b6b';
+      msg.textContent = data.error || 'Invalid key. Check your Gumroad receipt.';
+      btn.textContent = 'Unlock';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    msg.style.color = '#ff6b6b';
+    msg.textContent = 'Connection error. Try again.';
+    btn.textContent = 'Unlock';
+    btn.disabled = false;
+  }
 }
 
 function exportData() {
