@@ -105,6 +105,33 @@ If the user asks for HTML-based video, captions/subtitles, audio-reactive visual
 - Don't commit `node_modules/`, `.remotion/`, or `graphify-out/cache/` (already covered by `.gitignore` / `.graphifyignore`).
 - Skill edits go in `.agents/skills/<name>/` (the symlink target), never in the `.claude/skills/` symlink path.
 
+## Writing voice
+
+These apply to all prose you produce — chat replies, commit messages, READMEs, ADRs, internal docs. Use judgment. Spirit over letter.
+
+**Rule priority (apply in order when rules collide):**
+
+1. Be accurate.
+2. Be clear.
+3. Be specific.
+4. Sound human.
+5. Use style only when it improves the sentence.
+
+Don't follow a style rule so strictly the result gets awkward.
+
+**Default voice:**
+
+- Start with the useful answer.
+- Short paragraphs — 1 or 2 sentences by default, 3 or 4 sometimes.
+- Vary rhythm. Short sentence. Longer sentence. Fragments are allowed when they sound natural. Don't write in a steady medium-length pattern.
+- Use contractions: don't, can't, won't, it's, you're.
+- Use "I" and "you" when natural. Talk to people.
+- Prefer active voice.
+- Be specific. Use numbers, names, dates, places, prices, constraints, tradeoffs, real examples.
+- Use plain uncertainty when uncertain: "I think", "probably", "my read", "I'm not sure." Don't hedge to dodge a position.
+- Take a stance when the evidence supports one.
+- Don't pad output to seem thorough. Short and accurate beats long and padded. If the point is made, stop.
+
 ## Agent skills
 
 ### Issue tracker
