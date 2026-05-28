@@ -6,6 +6,11 @@
 <meta name="description" content="Photo the lump, rash, or hot-spot. AI triage in 30 seconds: watch, schedule, or go now.">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#07060e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SPOT">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
 <style>
 :root {
   --bg:        #07060e;
@@ -74,12 +79,22 @@ body::before {
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .mark-sub { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 6px; -webkit-text-fill-color: var(--muted); }
+.bar-right { display: flex; gap: 8px; align-items: center; }
 .bar-badge {
   font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
   text-transform: uppercase; color: var(--muted);
   background: var(--surface); border: 1px solid var(--border);
   padding: 4px 10px; border-radius: 100px;
 }
+.bar-install {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px;
+  text-transform: uppercase; font-weight: 700; color: #fff;
+  background: var(--grad);
+  padding: 5px 12px; border-radius: 100px;
+  box-shadow: 0 2px 12px rgba(124,58,237,.4);
+  transition: all .2s;
+}
+.bar-install:hover { opacity: .85; transform: translateY(-1px); }
 
 /* ── STEP PILL ── */
 .step-pill {
@@ -245,6 +260,11 @@ p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 10px;
   font-size: 15px; font-weight: 800; border-radius: 16px; min-height: 56px;
 }
 .btn-vet:hover { opacity: .92; box-shadow: 0 4px 32px rgba(255,64,96,.5); transform: translateY(-1px); }
+.btn-share {
+  background: var(--surface);
+  border: 1px solid rgba(124,58,237,.3); color: #a78bfa;
+}
+.btn-share:hover { background: rgba(124,58,237,.1); border-color: rgba(124,58,237,.5); color: var(--text); }
 
 /* ── SAMPLE BUTTON ── */
 .sample-btn {
@@ -296,7 +316,7 @@ p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 10px;
 .ai-ring {
   width: 72px; height: 72px; border-radius: 50%;
   border: 2px solid var(--border2);
-  border-top-color: transparent;
+  border-top-color: #7c3aed;
   animation: spin 1s linear infinite;
   position: absolute; inset: 0;
 }
@@ -452,6 +472,45 @@ p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 10px;
 .foot p { font-size: 11px; color: var(--subtle); line-height: 1.6; margin-bottom: 4px; }
 .foot strong { color: var(--muted); }
 
+/* ── HISTORY ── */
+.history-sec { padding: 8px 22px 16px; }
+.history-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.history-clear {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted);
+  padding: 6px 12px; border: 1px solid var(--border2); border-radius: 100px;
+  transition: all .2s;
+}
+.history-clear:hover { color: var(--red); border-color: rgba(255,64,96,.3); }
+.hist-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  margin-bottom: 8px; backdrop-filter: blur(8px);
+}
+.hist-item:last-child { margin-bottom: 0; }
+.hist-thumb {
+  width: 56px; height: 42px; border-radius: 8px;
+  overflow: hidden; flex-shrink: 0; background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; border: 1px solid var(--border);
+}
+.hist-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hist-info { flex: 1; min-width: 0; }
+.hist-condition {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hist-meta {
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  letter-spacing: 1px; margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hist-badge { font-size: 20px; flex-shrink: 0; line-height: 1; }
+
 /* ── VET MODAL ── */
 .vet-overlay {
   position: fixed; inset: 0; z-index: 1000;
@@ -538,7 +597,10 @@ p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 10px;
 <!-- NAV BAR -->
 <div class="bar">
   <span class="mark">SPOT<span class="mark-sub">· pet triage</span></span>
-  <span class="bar-badge">Beta · v0.4</span>
+  <div class="bar-right">
+    <button class="bar-install" id="installBtn" style="display:none" onclick="installApp()">+ Install</button>
+    <span class="bar-badge">v0.5</span>
+  </div>
 </div>
 
 <!-- STEP 1 — PET PROFILE -->
@@ -636,8 +698,18 @@ p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 10px;
     </div>
 
     <button class="btn btn-vet btn-block" onclick="openVet()" id="vetBtn">Connect to a vet now · $19</button>
-    <button class="btn btn-ghost btn-block" onclick="resetApp()" style="margin-top:10px">Start over</button>
+    <button class="btn btn-share btn-block" onclick="shareResult()" id="shareBtn" style="margin-top:10px">↗ Share result</button>
+    <button class="btn btn-ghost btn-block" onclick="resetApp()" style="margin-top:8px">← Start over</button>
   </div>
+</section>
+
+<!-- PAST SCANS -->
+<section class="history-sec" id="historySec" style="display:none">
+  <div class="history-head">
+    <div class="step-pill" style="margin-bottom:0"><span class="step-dot"></span>Past scans</div>
+    <button class="history-clear" onclick="clearHistory()">Clear all</button>
+  </div>
+  <div id="historyList"></div>
 </section>
 
 <!-- FOOTER -->
@@ -649,7 +721,6 @@ p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 10px;
 <!-- VET OVERLAY -->
 <div class="vet-overlay" id="vetOverlay">
   <div class="vet-card">
-    <!-- Queue stage -->
     <div class="vet-stage on" id="vetQueueStage">
       <div class="vet-queue">
         <div class="ring-wrap">
@@ -659,12 +730,11 @@ p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 10px;
         </div>
         <div class="vet-queue-status">Connecting to on-call vet</div>
         <div class="vet-queue-eta" id="vetEta">≈ 2 min</div>
-        <p style="margin-top:14px;font-size:13px;line-height:1.6">Triage info, your photo, and Biscuit's profile are being shared with the next available vet.</p>
+        <p id="vetQueueMsg" style="margin-top:14px;font-size:13px;line-height:1.6">Triage info, your photo, and your pet's profile are being shared with the next available vet.</p>
         <button class="btn btn-ghost" style="margin-top:20px;width:100%" onclick="closeVet()">Cancel</button>
       </div>
     </div>
 
-    <!-- Live stage -->
     <div class="vet-stage" id="vetLiveStage">
       <div class="vet-connected-label">
         <span class="vet-connected-dot"></span>Now connected
@@ -686,52 +756,207 @@ p { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 10px;
 </div>
 
 <script>
-const samples = {
-  dog: {
-    name:'Biscuit', breed:'Labrador', age:'4 yr', weight:'68 lb', avatar:'B',
-    level:'amber', dot:'🟡', levelText:'Schedule within 48 hours',
-    condition:'Possible hot spot',
-    desc:'Moist pyotraumatic dermatitis — a common surface infection that starts when licking or scratching breaks the skin barrier.',
-    confidence:73,
-    actions:[
-      'Gently clip the hair around the spot with blunt scissors — air helps it dry.',
-      'Clean once with cool saline (¼ tsp salt in a cup of warm water). Pat dry.',
-      'Stop the licking. A cone, a clean t-shirt, or a bitter spray all work tonight.'
-    ],
-    escalate:[
-      'Spot grows wider than 4 cm in 24 hours',
-      'Pus, yellow discharge, or a strong yeasty smell',
-      'Biscuit becomes lethargic, off food, or feverish to the touch',
-      'Open bleeding that doesn\'t stop in 5 minutes'
-    ]
-  },
-  cat: {
-    name:'Miso', breed:'Domestic shorthair', age:'7 yr', weight:'9 lb', avatar:'M',
-    level:'green', dot:'🟢', levelText:'Watch · re-check in 48 hours',
-    condition:'Likely benign — barber\'s itch pattern',
-    desc:'Symmetric belly hair loss in cats is most often over-grooming from stress or mild allergy, not skin disease.',
-    confidence:81,
-    actions:[
-      'Photograph the same patch tomorrow at the same time of day — compare.',
-      'Check for fleas with a fine comb at the base of the tail.',
-      'Note any new stressor: a move, a visitor, a litter change, a new food.'
-    ],
-    escalate:[
-      'Skin becomes red, scabbed, or weepy',
-      'Miso starts vomiting or stops eating',
-      'Hair loss spreads to face, ears, or paws',
-      'You see live fleas or flea dirt'
-    ]
-  }
+/* ── DATA ── */
+const pets = {
+  dog: { name:'Biscuit', breed:'Labrador', age:'4 yr', weight:'68 lb', avatar:'B' },
+  cat: { name:'Miso', breed:'Domestic shorthair', age:'7 yr', weight:'9 lb', avatar:'M' }
 };
 
-let currentSpecies = 'dog';
-let analyzing = false;
+const LEVEL_META = {
+  green: { dot:'🟢', levelText:'Watch · re-check in 48 hours' },
+  amber: { dot:'🟡', levelText:'Schedule within 48 hours' },
+  red:   { dot:'🔴', levelText:'Urgent · go to a vet today' }
+};
 
+const triagePool = {
+  dog: [
+    {
+      level:'amber',
+      condition:'Possible hot spot',
+      desc:'Moist pyotraumatic dermatitis — a common surface infection that starts when licking or scratching breaks the skin barrier.',
+      confidence:73,
+      actions:[
+        'Gently clip the hair around the spot with blunt scissors — air helps it dry.',
+        'Clean once with cool saline (¼ tsp salt in a cup of warm water). Pat dry.',
+        'Stop the licking. A cone, a clean t-shirt, or a bitter spray all work tonight.'
+      ],
+      escalate:[
+        'Spot grows wider than 4 cm in 24 hours',
+        'Pus, yellow discharge, or a strong yeasty smell',
+        'Your dog becomes lethargic, off food, or feverish to the touch',
+        'Open bleeding that doesn\'t stop in 5 minutes'
+      ]
+    },
+    {
+      level:'red',
+      condition:'Suspected bite wound',
+      desc:'A puncture or tear with reddened edges can introduce deep bacteria. Bite wounds are deceptive — small on the surface, far deeper inside.',
+      confidence:88,
+      actions:[
+        'Keep the area clean — rinse gently with saline or clean water. No hydrogen peroxide.',
+        'Do not seal or bandage it — trapping moisture delays diagnosis.',
+        'Call your vet or an emergency clinic within 2 hours to start antibiotics.'
+      ],
+      escalate:[
+        'Rapid swelling, warmth, or a foul smell within hours',
+        'Your dog is limping or refusing to bear weight',
+        'Discharge that is thick, cloudy, or yellow',
+        'Signs of shock: pale gums, rapid shallow breathing, sudden weakness'
+      ]
+    },
+    {
+      level:'green',
+      condition:'Likely benign lipoma',
+      desc:'Soft, moveable, slow-growing lumps under the skin in middle-aged dogs are almost always lipomas — benign fatty deposits that rarely cause problems.',
+      confidence:79,
+      actions:[
+        'Measure the lump width with a ruler and photograph it. Record it in your notes app.',
+        'Re-photograph monthly — you\'re watching for growth faster than ½ cm per month.',
+        'Mention it at the next routine vet visit. No rush unless it changes.'
+      ],
+      escalate:[
+        'Lump grows more than 1 cm in a single month',
+        'Lump feels hard, irregular, or fixed (doesn\'t slide under fingers)',
+        'Your dog licks or gnaws at it constantly',
+        'Skin over the lump changes colour or breaks down'
+      ]
+    },
+    {
+      level:'amber',
+      condition:'Probable ear infection',
+      desc:'Discharge, redness, or odour around the ear canal in a dog with floppy ears is a classic yeast or bacterial infection — treatable, but needs the right drops.',
+      confidence:82,
+      actions:[
+        'Do not insert anything into the canal. Wipe only the visible outer ear with a cotton ball.',
+        'Watch for head-shaking or scratching — that can burst a vessel and cause a haematoma.',
+        'Book a vet appointment within 48 hours for a swab and the correct prescription drops.'
+      ],
+      escalate:[
+        'Head tilting or loss of balance',
+        'Ear swells up like a pillow (aural haematoma)',
+        'Sudden hearing loss or obvious confusion',
+        'Blood from inside the ear canal'
+      ]
+    },
+    {
+      level:'green',
+      condition:'Mild contact rash',
+      desc:'Short-lived redness or raised welts after outdoor exposure are usually mild contact reactions to grass, mulch, or a seasonal allergen — most resolve on their own.',
+      confidence:76,
+      actions:[
+        'Rinse the affected skin with cool water to remove any surface allergen.',
+        'Apply a small amount of plain aloe vera gel if available. No fragrances or additives.',
+        'Keep your dog off grass or the suspect surface for 48 hours and monitor closely.'
+      ],
+      escalate:[
+        'Hives spread rapidly across the body within minutes',
+        'Face or muzzle begins to swell',
+        'Vomiting, collapse, or difficulty breathing — this is anaphylaxis, go now',
+        'Rash shows no improvement after 48 hours'
+      ]
+    }
+  ],
+  cat: [
+    {
+      level:'green',
+      condition:'Likely over-grooming pattern',
+      desc:'Symmetric belly hair loss in cats is most often over-grooming from stress or mild allergy — not a skin disease. Very common, very manageable.',
+      confidence:81,
+      actions:[
+        'Photograph the same patch tomorrow at the same time of day and compare.',
+        'Check for fleas with a fine comb at the base of the tail.',
+        'Note any recent stressor: a move, a new visitor, a litter change, or a food swap.'
+      ],
+      escalate:[
+        'Skin beneath becomes red, scabbed, or weepy',
+        'Your cat starts vomiting or stops eating for 24+ hours',
+        'Hair loss spreads to face, ears, or paws',
+        'You find live fleas or flea dirt in the coat'
+      ]
+    },
+    {
+      level:'amber',
+      condition:'Possible bite abscess forming',
+      desc:'A firm, warm, painful swelling — especially on the neck, limb, or rump — is the classic sign of an abscess forming after a cat-fight puncture. Needs antibiotics.',
+      confidence:85,
+      actions:[
+        'Keep your cat indoors and calm. Activity can rupture the abscess too early.',
+        'Check gently for other punctures hidden in the fur by running fingers slowly through the coat.',
+        'Vet within 24 hours. Abscesses grow rapidly and can cause a high fever.'
+      ],
+      escalate:[
+        'Swelling ruptures and drains — the wound needs thorough cleaning today',
+        'Your cat stops eating for more than 12 hours',
+        'Fever signs: hot ears, lethargy, hiding far more than usual',
+        'Abscess is near the face or eye'
+      ]
+    },
+    {
+      level:'red',
+      condition:'Open laceration — needs care today',
+      desc:'A wound with exposed tissue or active bleeding needs professional cleaning and possibly closure. Cat skin heals fast on the surface, trapping bacteria underneath.',
+      confidence:91,
+      actions:[
+        'Apply gentle pressure with a clean cloth. Do not use cotton wool — fibres stick.',
+        'Clean only with saline or clean water. No hydrogen peroxide or iodine.',
+        'Get to the vet today. Cat wounds close fast and can hide serious infection.'
+      ],
+      escalate:[
+        'Bleeding that won\'t stop after 5 minutes of firm pressure',
+        'Wound longer than 2 cm or with visibly gaping edges',
+        'Wound near the eye, mouth, or abdomen',
+        'Your cat becomes unresponsive, limp, or very cold'
+      ]
+    },
+    {
+      level:'green',
+      condition:'Healing scratch — no action needed',
+      desc:'Small dry scabs with no active redness or discharge are often the tail end of a minor scratch or a self-grooming nick. No treatment required.',
+      confidence:83,
+      actions:[
+        'Leave the scab alone. Picking it off delays healing by 2–3 days.',
+        'Check the same spot in 3–4 days — it should be smaller or gone.',
+        'If your cat keeps returning to the spot, a soft E-collar prevents re-opening.'
+      ],
+      escalate:[
+        'Scab re-opens, weeps, or grows larger',
+        'Surrounding skin becomes red or warm to the touch',
+        'New scabs appear elsewhere on the body',
+        'Your cat refuses food or appears to be in pain'
+      ]
+    },
+    {
+      level:'amber',
+      condition:'Suspected ringworm (fungal)',
+      desc:'Circular patches of hair loss with slight scaling — especially in young or recently adopted cats — are the classic pattern of ringworm, a contagious fungal infection.',
+      confidence:74,
+      actions:[
+        'Wash your hands after handling your cat or their bedding — ringworm spreads to people.',
+        'Bag and wash all bedding on a hot cycle today.',
+        'Vet within 48 hours for a Wood\'s lamp check and an antifungal prescription.'
+      ],
+      escalate:[
+        'Multiple new patches appearing within 24 hours',
+        'Any person in the household develops a circular itchy rash',
+        'Your cat is eating poorly or losing weight',
+        'Lesions spread to the face or around the eyes'
+      ]
+    }
+  ]
+};
+
+/* ── STATE ── */
+let currentSpecies = 'dog';
+let currentResult  = null;
+let pendingThumb   = null;
+let analyzing      = false;
+let deferredInstall = null;
+
+/* ── PET CONTROLS ── */
 function setSpecies(s) {
   currentSpecies = s;
   document.querySelectorAll('.species-btn').forEach(b => b.classList.toggle('on', b.dataset.species === s));
-  const p = samples[s];
+  const p = pets[s];
   document.getElementById('petName').textContent = p.name;
   document.getElementById('petDetail').textContent = `${p.breed} · ${p.age} · ${p.weight}`;
   document.getElementById('petAvatar').textContent = p.avatar;
@@ -739,6 +964,7 @@ function setSpecies(s) {
 
 function switchPet() { setSpecies(currentSpecies === 'dog' ? 'cat' : 'dog'); }
 
+/* ── UPLOAD ── */
 function onUpload(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
@@ -747,53 +973,94 @@ function onUpload(e) {
   reader.readAsDataURL(file);
 }
 
+/* ── SAMPLE ── */
 function runSample() {
+  const isDog = currentSpecies === 'dog';
+  const colors = isDog
+    ? { f1:'#d4a574', f2:'#a07242', f3:'#5a3e21', s1:'#c2410c', s2:'#a32f1d' }
+    : { f1:'#9a9ab0', f2:'#6a6a8a', f3:'#3a3a5a', s1:'#8b1c1c', s2:'#6b1010' };
+  const lines = Array.from({length:80}).map(() =>
+    `<line x1="${Math.random()*400}" y1="${Math.random()*300}" x2="${Math.random()*410}" y2="${Math.random()*310}" stroke="${colors.f3}" stroke-width="0.8"/>`
+  ).join('');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
     <defs>
       <radialGradient id="fur" cx="50%" cy="40%" r="70%">
-        <stop offset="0%" stop-color="#d4a574"/>
-        <stop offset="60%" stop-color="#a07242"/>
-        <stop offset="100%" stop-color="#5a3e21"/>
+        <stop offset="0%" stop-color="${colors.f1}"/>
+        <stop offset="60%" stop-color="${colors.f2}"/>
+        <stop offset="100%" stop-color="${colors.f3}"/>
       </radialGradient>
       <radialGradient id="hot" cx="55%" cy="55%" r="22%">
-        <stop offset="0%" stop-color="#c2410c"/>
-        <stop offset="50%" stop-color="#a32f1d" stop-opacity="0.7"/>
-        <stop offset="100%" stop-color="#5a3e21" stop-opacity="0"/>
+        <stop offset="0%" stop-color="${colors.s1}"/>
+        <stop offset="50%" stop-color="${colors.s2}" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="${colors.f3}" stop-opacity="0"/>
       </radialGradient>
     </defs>
     <rect width="400" height="300" fill="url(#fur)"/>
-    <g opacity="0.4">${Array.from({length:80}).map(()=>`<line x1="${Math.random()*400}" y1="${Math.random()*300}" x2="${Math.random()*410}" y2="${Math.random()*310}" stroke="#3d2812" stroke-width="0.8"/>`).join('')}</g>
+    <g opacity="0.4">${lines}</g>
     <ellipse cx="220" cy="165" rx="55" ry="42" fill="url(#hot)"/>
-    <ellipse cx="220" cy="165" rx="32" ry="22" fill="#8b1c0e" opacity="0.5"/>
+    <ellipse cx="220" cy="165" rx="32" ry="22" fill="${colors.s1}" opacity="0.5"/>
   </svg>`;
   startAnalysis('data:image/svg+xml;base64,' + btoa(svg));
 }
 
+/* ── THUMBNAIL ── */
+function makeThumbnail(dataUrl, cb) {
+  try {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = 80; c.height = 60;
+      const ctx = c.getContext('2d');
+      const aspect = img.width / img.height;
+      const target = 80 / 60;
+      let sx=0, sy=0, sw=img.width, sh=img.height;
+      if (aspect > target) { sw = sh * target; sx = (img.width - sw) / 2; }
+      else { sh = sw / target; sy = (img.height - sh) / 2; }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 80, 60);
+      cb(c.toDataURL('image/jpeg', 0.5));
+    };
+    img.onerror = () => cb(null);
+    img.src = dataUrl;
+  } catch(e) { cb(null); }
+}
+
+/* ── ANALYSIS ── */
 function startAnalysis(dataUrl) {
   if (analyzing) return;
   analyzing = true;
+  pendingThumb = null;
+
+  makeThumbnail(dataUrl, thumb => { pendingThumb = thumb; });
+
   document.getElementById('resultSec').style.display = 'block';
   document.getElementById('resultCard').style.display = 'none';
   document.getElementById('analyzing').style.display = 'block';
   document.getElementById('resultHeading').textContent = 'Reading the photo…';
+
   const wrap = document.getElementById('previewWrap');
   wrap.innerHTML = `<img src="${dataUrl}" alt="uploaded concern"><div class="scan-line"></div>`;
   document.getElementById('resultSec').scrollIntoView({behavior:'smooth', block:'start'});
 
+  const petName = pets[currentSpecies].name;
   const stages = [
     'Scanning · checking colour, edge, texture…',
     'Comparing 14,000 vet-labelled images…',
-    `Cross-referencing with ${samples[currentSpecies].name}'s breed + age…`,
+    `Cross-referencing with ${petName}'s breed + age…`,
     'Calculating triage severity…'
   ];
   let i = 0;
   const statusEl = document.getElementById('analyzeStatus');
+  statusEl.textContent = stages[0];
   const tick = setInterval(() => { i++; if (i < stages.length) statusEl.textContent = stages[i]; }, 750);
   setTimeout(() => { clearInterval(tick); showResult(); analyzing = false; }, 3200);
 }
 
 function showResult() {
-  const r = samples[currentSpecies];
+  const pool = triagePool[currentSpecies];
+  const r = pool[Math.floor(Math.random() * pool.length)];
+  currentResult = r;
+
+  const meta = LEVEL_META[r.level];
   document.getElementById('analyzing').style.display = 'none';
   document.getElementById('resultCard').style.display = 'block';
   document.getElementById('resultHeading').textContent = 'Here\'s what we see';
@@ -802,8 +1069,8 @@ function showResult() {
   const card = document.getElementById('triageCard');
   card.classList.remove('green','amber','red');
   card.classList.add(r.level);
-  document.getElementById('triageDot').textContent = r.dot;
-  document.getElementById('triageLevel').textContent = r.levelText;
+  document.getElementById('triageDot').textContent = meta.dot;
+  document.getElementById('triageLevel').textContent = meta.levelText;
   document.getElementById('triageCondition').textContent = r.condition;
   document.getElementById('triageDesc').textContent = r.desc;
   document.getElementById('triageConfidencePct').textContent = r.confidence + '%';
@@ -828,8 +1095,11 @@ function showResult() {
     btn.textContent = 'Ask a vet anyway · $19';
     btn.style.background = 'linear-gradient(135deg,#00b85a,#00d8ff)';
   }
+
+  saveToHistory(r, pendingThumb);
 }
 
+/* ── RESET ── */
 function resetApp() {
   document.getElementById('resultSec').style.display = 'none';
   document.getElementById('fileIn').value = '';
@@ -837,7 +1107,86 @@ function resetApp() {
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
+/* ── SHARE ── */
+function shareResult() {
+  if (!currentResult) return;
+  const r = currentResult;
+  const meta = LEVEL_META[r.level];
+  const petName = pets[currentSpecies].name;
+  const text = `SPOT · ${petName}'s health check\n${meta.levelText.toUpperCase()}: ${r.condition}\n\n${r.desc}\n\nDo these 3 things now:\n${r.actions.map((a,i)=>`${i+1}. ${a}`).join('\n')}`;
+  const btn = document.getElementById('shareBtn');
+  if (navigator.share) {
+    navigator.share({ title: `SPOT · ${petName} triage result`, text }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied to clipboard';
+      setTimeout(() => { btn.textContent = orig; }, 2500);
+    });
+  }
+}
+
+/* ── HISTORY ── */
+const HISTORY_KEY = 'spot_scan_history';
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveToHistory(r, thumb) {
+  const history = getHistory();
+  const p = pets[currentSpecies];
+  history.unshift({
+    id: Date.now(),
+    ts: new Date().toISOString(),
+    species: currentSpecies,
+    petName: p.name,
+    level: r.level,
+    condition: r.condition,
+    confidence: r.confidence,
+    thumb: thumb || null
+  });
+  if (history.length > 30) history.splice(30);
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch {}
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = getHistory();
+  const section = document.getElementById('historySec');
+  const list = document.getElementById('historyList');
+  if (history.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = history.map(item => {
+    const d = new Date(item.ts);
+    const dateStr = d.toLocaleDateString('en', {month:'short', day:'numeric'});
+    const timeStr = d.toLocaleTimeString('en', {hour:'numeric', minute:'2-digit'});
+    const dot = LEVEL_META[item.level]?.dot || '⚪';
+    const thumb = item.thumb
+      ? `<img src="${item.thumb}" alt="">`
+      : (item.species === 'cat' ? '🐈' : '🐕');
+    return `<div class="hist-item">
+      <div class="hist-thumb">${thumb}</div>
+      <div class="hist-info">
+        <div class="hist-condition">${item.condition}</div>
+        <div class="hist-meta">${item.petName} · ${dateStr} at ${timeStr}</div>
+      </div>
+      <div class="hist-badge">${dot}</div>
+    </div>`;
+  }).join('');
+}
+
+function clearHistory() {
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
+}
+
+/* ── VET MODAL ── */
 function openVet() {
+  const petName = pets[currentSpecies].name;
+  document.getElementById('vetQueueMsg').textContent =
+    `Triage info, your photo, and ${petName}'s profile are being shared with the next available vet.`;
   document.getElementById('vetOverlay').classList.add('on');
   document.getElementById('vetQueueStage').classList.add('on');
   document.getElementById('vetLiveStage').classList.remove('on');
@@ -866,6 +1215,31 @@ function closeVet() {
 document.getElementById('vetOverlay').addEventListener('click', e => {
   if (e.target.id === 'vetOverlay') closeVet();
 });
+
+/* ── PWA INSTALL ── */
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('installBtn').style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstall = null;
+  document.getElementById('installBtn').style.display = 'none';
+});
+
+function installApp() {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  deferredInstall.userChoice.then(() => { deferredInstall = null; });
+}
+
+/* ── INIT ── */
+renderHistory();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
