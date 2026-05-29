@@ -3,13 +3,12 @@ import Combine
 import Foundation
 
 /// SwiftUI-facing observable wrapper around HumSessionStore.
-@MainActor
 public final class HumSessionViewModel: ObservableObject {
     @Published public private(set) var sessions: [HumSession] = []
 
     private let store: HumSessionStore
 
-    public init(store: HumSessionStore = HumSessionStore(storageURL: HumSessionStore.defaultURL)) {
+    public init(store: HumSessionStore) {
         self.store = store
         sessions = store.sessions
     }

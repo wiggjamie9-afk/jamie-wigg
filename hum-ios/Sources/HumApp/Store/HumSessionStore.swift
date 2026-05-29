@@ -24,7 +24,10 @@ public final class HumSessionStore {
     }
 
     public func delete(at offsets: IndexSet) {
-        sessions.remove(atOffsets: offsets)
+        // Array.remove(atOffsets:) is SwiftUI-only; replicate it with Foundation.
+        for index in offsets.sorted().reversed() {
+            sessions.remove(at: index)
+        }
         persist()
     }
 
