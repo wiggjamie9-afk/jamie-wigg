@@ -1581,17 +1581,39 @@ header .nav-cta { display: none; }
     else if (!document.hidden && audioCtx && currentVibe) audioCtx.resume();
   });
 
-  // ---------- email capture (placeholder POST) ----------
+  // ---------- email capture ----------
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/REPLACE_ME'; // swap in your Formspree form ID
   const captureForm = document.getElementById('capture-form');
   const captureFb = document.getElementById('capture-feedback');
-  captureForm.addEventListener('submit', (e) => {
+  captureForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     if (!email) return;
-    captureFb.textContent = 'Sent. Check your inbox in a minute.';
-    captureFb.style.color = 'var(--green)';
-    captureForm.reset();
-    // TODO: wire to Supabase function / Mailchimp / ConvertKit / Formspree
+    const submitBtn = captureForm.querySelector('button[type="submit"],input[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+    captureFb.textContent = 'Sending…';
+    captureFb.style.color = '';
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        captureFb.textContent = 'Sent. Check your inbox in a minute.';
+        captureFb.style.color = 'var(--green)';
+        captureForm.reset();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        captureFb.textContent = (data.errors || []).map(e => e.message).join(' ') || 'Something went wrong. Please try again.';
+        captureFb.style.color = 'var(--red, #ff4444)';
+      }
+    } catch {
+      captureFb.textContent = 'Network error. Please try again.';
+      captureFb.style.color = 'var(--red, #ff4444)';
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
   });
 
   // ---------- claim CTA placeholder ----------
