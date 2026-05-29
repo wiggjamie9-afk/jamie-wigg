@@ -287,6 +287,21 @@ Site-build pipeline output (sitemap → wireframes → styleguide → HTML pages
 - **Gitignore** → `node_modules/`, `.remotion/`, `graphify-out/cache/`, `.claude-playwright/` are excluded.
 - **Content warnings** → `README.md` flags that `tiktok-reels-shorts.mp4`, `instagram-facebook.mp4`, `youtube.mp4` contain unverified metrics/testimonials. Only `teaser-coming-soon*.mp4` is safe to publish as-is.
 
+## Subagent Model Routing
+
+When spawning subagents via the `Agent` tool, default to **Haiku** for simple mechanical tasks and **Sonnet** (or omit for default) for tasks requiring judgment or creativity. This keeps parallel-task costs low.
+
+| Use Haiku (`model: "haiku"`) | Use Sonnet (default) |
+|---|---|
+| File reads, grep, directory scans | Writing code or components |
+| Sitemap / README / config edits | Spec generation and analysis |
+| Simple search queries | Video script / copy writing |
+| Dependency / lockfile checks | Design decisions |
+| Formatting, lint fixes | Debugging complex issues |
+| Uploading artifacts, git ops | Any task needing screenshots / vision |
+
+**Never** use Haiku for tasks involving images, screenshots, or UI review — it's text-only.
+
 ## Agent Skills (GitHub Issues)
 
 - **Issue tracker** → GitHub Issues on `wiggjamie9-afk/jamie-wigg`. See `docs/agents/issue-tracker.md`.
