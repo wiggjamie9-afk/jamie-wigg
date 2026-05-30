@@ -22,6 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Hugging Face skills** → `hf-cli`, `huggingface-best`, `huggingface-papers`, `huggingface-datasets` synced from `huggingface/skills`. Tracked in `skills-lock.json`.
 - **Zapier workflows skill** → `zapier-workflows` in `.claude/skills/`. Dormant until the Zapier MCP server is connected at `https://mcp.zapier.com/mcp/servers`.
 - **OpenClaw CLI skills** → installed via `bash scripts/openclaw-install.sh` on a machine with unrestricted egress (ClawHub blocked from the cloud sandbox). Queue: `ai-video-editor-motion-graphics`, `self-improving-agent`, `voice-wake-say`, `voice-ai-voices`, `azure-ai-voicelive-py`, `app-builder`, `deploy-agent`.
+- **Agent TARS / UI-TARS** → vision-language GUI agent (ByteDance). See `SETUP-AGENT-TARS.md`. Best for click-stream automation; not a fit for the LLM-driven content pipeline.
+- **Hermes Agent** → Nous Research open-source agent CLI with messaging gateways (Telegram/Discord). See `SETUP-HERMES.md`. Useful for driving renders from phone/cron; RHYTHMIX skills are not ported to it.
+- **Voicebox (local TTS)** → runs on-device Mac, clones your voice from a sample, zero API cost. See `VOICEBOX-SETUP.md`. Voice profile name: `Jamie`. Default endpoint: `http://127.0.0.1:17493`.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
 
 ## Repository Overview
@@ -33,22 +36,39 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 | Path | What it is |
 |---|---|
 | `studio/` | **STARLIGHTMIX Studio** web app — Next.js 15 static export → Cloudflare Pages. Primary software project. |
-| `rhythmix-<name>-<length>/` | HyperFrames video Promo/Cut folders (60+ folders). `rhythmix-overview-60s/` is the canonical example. |
+| `rhythmix-<name>-<length>/` | HyperFrames video Promo/Cut folders (50+ folders). `rhythmix-overview-60s/` is the canonical example. |
 | `rhythmix-teaser-60s/DESIGN.md` | Brand design system (palette, type, motion). Lock all styleguides to this. |
 | `apps/` | Small standalone HTML apps: `dreams.html`, `hum.html`, `live.html`, `resonate.html`, plus `roomtone/` (PWA) and `untapped/` (portfolio of 10 app concepts with landing pages). |
+| `livestock/` | **HerdCheck** — livestock screening PWA (lameness, mastitis, calving predictor for smallholders). Full offline PWA with service worker, `scoring.js`, `vision.js`, `i18n.js`. |
+| `recovery/` | **Reset** — recovery app prototype for team sport (iOS-style, full PWA). |
+| `recovery-ios/` | Capacitor iOS wrapper for the Reset recovery app. Used by Codemagic iOS build (`codemagic.yaml`). |
+| `capacitor/` | Capacitor iOS wrapper for STARLIGHTMIX Studio. Wraps `studio/out/` via `www/` sync. |
 | `sites/<slug>/` | Site-build pipeline output (sitemap → wireframe → styleguide → HTML pages). |
+| `infra/` | Self-hosted wiki setup: Wiki.js + Postgres + Caddy via Docker Compose (`infra/wiki/`). |
 | `specs/<slug>/` | Spec-driven feature folders (`requirements.md` + `design.md` + `tasks.md`). Current specs: `rhythmix-app/`, `roomtone/`, `codex-app/`. |
-| `launch-kit/` | Launch kit assets for `codex/`, `hum/`, `rhythmix/`, `protocols/`. |
+| `launch-kit/` | Launch kit assets for `codex/`, `hum/`, `rhythmix/`. |
 | `video/` | Dormant Remotion 4 + React 19 starter. `MyComposition` returns `null`. Not used for Promos (see ADR-0001). |
 | `text.txt`, `text 2.txt`, `text 3.txt` | Legacy RHYTHMIX landing-page HTML/CSS fragments (pre-pipeline). Reference only. |
-| `*.html` at root | Live marketing site pages served at `rhythmixapp.com.au`: `index.html`, `studio.html`, `features.html`, `rhythmix.html`, `resonance.html`, `downloads.html`, `frequency.html`, etc. |
+| `*.html` at root | Live marketing site pages served at `rhythmixapp.com.au` (see full list below). |
+| `thumbnails/` | Rendered thumbnail PNGs for the frequency/story video series. |
 | `videos/` | Rendered MP4s linked from `README.md`. |
 | `.agents/skills/` | Source-of-truth skill bundles (hand-edited / synced from upstreams). |
-| `.claude/skills/` | Mostly symlinks into `.agents/skills/` plus local-only skills (`rhythmix-author`, `rhythmix-site`, `rhythmix-spec`, `remotion`, `algorithmic-art`, `brand-guidelines`, `canvas-design`, `claude-api`, etc.). |
+| `.claude/skills/` | Mostly symlinks into `.agents/skills/` plus local-only skills. |
+| `.claude/agents/` | FleetView sub-agent definition files (one `.md` per agent type). |
 | `docs/` | ADRs (`docs/adr/`), agent docs (`docs/agents/`), security notes (`docs/security/shannon.md`), reference copy (`docs/refs/`). |
 | `scripts/` | Repo-level scripts: `openclaw-install.sh`, `render-thumbnails.mjs`, `build-announcement.mjs`, `build-manifesto.mjs`. |
 | `graphify-out/` | Generated knowledge-graph snapshot. Do not hand-edit. |
 | `content/` | Additional content assets. |
+
+**Reference docs at root:**
+- `CONTEXT.md` — domain language (Promo, Cut, Narration, Hook)
+- `CREATIVE-AI-STACK.md` — iPhone-oriented creative AI toolchain
+- `SETUP-AGENT-TARS.md` — Agent TARS / UI-TARS desktop setup
+- `SETUP-HERMES.md` — Hermes Agent CLI setup
+- `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
+- `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
+- `AWESOME-AI-HARDWARE.md` — AI hardware reference
+- `SCRIPT.md`, `VIDEOS.md` — script and video asset references
 
 ## STARLIGHTMIX Studio Web App (`studio/`)
 
@@ -101,15 +121,21 @@ Required GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`. Requir
 
 ## Marketing Site (GitHub Pages — `rhythmixapp.com.au`)
 
-The repo root IS the site. GitHub Pages serves it directly via `.github/workflows/deploy-pages.yml` (push to `main` → deploy). Key pages:
+The repo root IS the site. GitHub Pages serves it directly via `.github/workflows/deploy-pages.yml` (push to `main` → deploy). All root `.html` files are live pages:
 
 - `index.html` — main landing page
 - `studio.html` — Studio product page
 - `features.html`, `rhythmix.html` — feature/product overview
-- `resonance.html` — RESONANCE frequency healing PWA (latest addition as of May 2026)
+- `resonance.html` — RESONANCE frequency healing PWA
 - `frequency.html` — Frequency app
-- `downloads.html` — video download page (linked from `README.md`)
-- `dreams-app.html`, `hum.html`, `live-app.html`, `resonate-app.html` — individual app pages
+- `downloads.html` — video download page
+- `download.html` — single-item download page
+- `dreams-app.html`, `hum-app.html`, `hum.html`, `live-app.html`, `resonate-app.html` — individual app pages
+- `launch.html`, `launch-section.html` — launch campaign pages
+- `ltx-studio.html` — LTX Studio page
+- `members.html` — members / community page
+- `install.html` — install guide
+- `rhythmix-preview.html`, `thumbnail.html` — preview/thumbnail utilities
 - `founder.html`, `privacy.html`, `terms.html`, `refunds.html`, `thank-you.html` — supporting pages
 
 CNAME: `rhythmixapp.com.au`.
@@ -121,6 +147,32 @@ Standalone web apps (separate from the main marketing site):
 - `apps/dreams.html`, `apps/hum.html`, `apps/live.html`, `apps/resonate.html` — individual app concept pages
 - `apps/roomtone/` — Roomtone PWA (full service worker, manifest, icons)
 - `apps/untapped/` — Portfolio of 10 app concepts: TYMPAN, HERD, AXLE, DOCKET, LULL, PLUMB, RACK, SOLE, SPOT, STACK. Each has a `*.html` prototype, `*-landing.html`, and `*.md` brief.
+
+## Standalone Projects
+
+### HerdCheck (`livestock/`)
+
+Phone-camera screening app for smallholder dairy and small-ruminant farmers. Targets ~500M smallholders globally with no existing tooling. Built as an offline-first PWA.
+
+**Checks**: lameness (Sprecher 5-point locomotion scale), mastitis (Canvas image heuristics + visual signs), calving predictor (gestation day + behavioural signs).
+
+**Key files**: `index.html`, `app.js`, `app.css`, `db.js`, `i18n.js`, `scoring.js`, `vision.js`, `sw.js`, `manifest.webmanifest`.
+
+**Species supported**: cattle (283d), buffalo (310d), sheep (147d), goat (150d).
+
+### Reset — Recovery App (`recovery/`)
+
+iOS-style recovery tracking prototype for team sport. Full PWA with `index.html` and offline capability. Served at `/recovery/` from repo root.
+
+### Codex of Reality (`sites/codex-of-reality/`)
+
+Full site and PWA built via the site-build pipeline. Includes:
+- `home.html` — 9-section landing page with embedded Coherence Engine demo
+- `app.html` — full app
+- `launch/` — launch video assets and voice generation scripts
+- `sw.js`, `PRIVACY.md`, `TERMS.md`, `sitemap.md`, `styleguide.md`, `wireframes/`
+
+See `MORNING.md` for a quickstart guide to running it locally.
 
 ## HyperFrames Video Pipeline
 
@@ -137,7 +189,9 @@ rhythmix-<name>-<length>/
 ├── meta.json           # {"version":"0.4.42"}
 ├── package.json        # scripts: dev, check, render, publish
 ├── gsap.min.js         # local GSAP bundle
-└── rhythmix-<name>.mp4 # rendered output
+├── renders/            # optional: named render outputs
+├── DESIGN.md           # optional: cut-specific design notes (venue series)
+└── rhythmix-<name>.mp4 # rendered output (if present)
 ```
 
 ### HyperFrames commands (run from the Cut folder)
@@ -160,6 +214,18 @@ npx --yes hyperframes@0.4.42 publish   # push to registry
 
 `rhythmix-overview-60s/` (landscape) is the canonical reference.
 
+### Cut series conventions
+
+| Series prefix | Description |
+|---|---|
+| `rhythmix-<name>-60s` | Standard 60s landscape Promo |
+| `rhythmix-<name>-30s` | 30s landscape cut |
+| `rhythmix-<name>-f` | Suffix `-f` = portrait/vertical (TikTok/Reels) variant of a landscape cut |
+| `rhythmix-s1-` through `rhythmix-s5-` | 5-scene series (overview, money, tools, vs, pricing) — landscape |
+| `rhythmix-s1-*-f` through `rhythmix-s5-*-f` | Portrait variants of the S-series |
+| `rhythmix-v1-` through `rhythmix-v5-` | V-series (alternate cuts of same scenes) |
+| `rhythmix-venue-*` | Venue sub-brand cuts (disco, jazz, rave, rock) — each has its own `DESIGN.md` |
+
 ## Remotion Video Project (`video/`) — Dormant
 
 Remotion 4 + React 19 + Tailwind v4 starter. `MyComposition` returns `null`. Kept as an experiment. Do not add new Promos here — see ADR-0001.
@@ -169,12 +235,42 @@ Remotion 4 + React 19 + Tailwind v4 starter. `MyComposition` returns `null`. Kep
 npm i && npm run dev   # Remotion Studio preview
 ```
 
+## iOS / Capacitor
+
+Two separate Capacitor iOS wrappers exist:
+
+| Directory | Wraps | Used by |
+|---|---|---|
+| `recovery-ios/` | `recovery/` app | Codemagic iOS build (`codemagic.yaml`) |
+| `capacitor/` | `studio/out/` (STARLIGHTMIX Studio) | Manual or Appflow |
+
+**capacitor commands** (run from `capacitor/`):
+
+```bash
+pnpm build:web    # build studio → studio/out/
+pnpm sync:web     # copy studio/out/ to www/ and cap sync
+pnpm build        # both above
+pnpm open:ios     # open in Xcode
+```
+
+## Self-hosted Infrastructure (`infra/`)
+
+`infra/wiki/` — Wiki.js + Postgres behind Caddy (auto-HTTPS) via Docker Compose.
+
+```bash
+# On a VPS with Docker installed:
+cd infra/wiki
+docker compose up -d
+```
+
+Requires: VPS with public IP, domain A-record pointing at it, Caddy config in `infra/Caddyfile`.
+
 ## Skills
 
 Skills live in two shapes:
 
 - **Synced / hand-written** — source in `.agents/skills/<name>/`, symlinked into `.claude/skills/<name>`. Do not hand-edit synced skills; update upstream and re-record the hash in `skills-lock.json`.
-- **Local-only** — live directly in `.claude/skills/<name>/` with no counterpart in `.agents/skills/`. These include `rhythmix-author`, `rhythmix-site`, `rhythmix-spec`, `remotion`, `algorithmic-art`, `brand-guidelines`, `canvas-design`, `caveman`, `claude-api`, `diagnose`, `doc-coauthoring`, `docx`, `frontend-design`, `grill-me`, `grill-with-docs`, `handoff`, `improve-codebase-architecture`, `internal-comms`, `mcp-builder`, `pdf`, `pptx`, `prototype`, `skill-creator`, `slack-gif-creator`, `tdd`, `theme-factory`, `to-issues`, `to-prd`, `triage`, `web-artifacts-builder`, `webapp-testing`, `write-a-skill`, `xlsx`, `zoom-out`.
+- **Local-only** — live directly in `.claude/skills/<name>/` with no counterpart in `.agents/skills/`.
 
 ### Pipeline skills (video / creative)
 
@@ -197,10 +293,11 @@ Skills live in two shapes:
 - `/spec-quick <description>` — generate `specs/<slug>/{requirements,design,tasks}.md`.
 - `/spec-analyze <slug>` — surface ambiguities/contradictions; rewrites `requirements.md` in place.
 - `/spec-run <slug>` — execute tasks in parallel waves of isolated `Agent` calls.
+- `/spec-to-repo` — scaffold a repo from an existing spec.
 - `/rhythmix-spec <brief>` — RHYTHMIX campaign spec wrapper.
 - `/to-prd`, `/to-issues`, `/triage` — chat → PRD → GitHub issues.
 
-### Engineering skills (Matt Pocock bundle)
+### Engineering skills
 
 - `/grill-with-docs` — interview a plan; updates `CONTEXT.md` + `docs/adr/`.
 - `/diagnose` — disciplined bug/perf-regression loop.
@@ -209,6 +306,30 @@ Skills live in two shapes:
 - `/prototype`, `/grill-me`, `/handoff`, `/caveman`, `/write-a-skill` — productivity.
 - `/claude-api` — build/debug Claude API / Anthropic SDK apps with prompt caching.
 - `/frontend-design` — production-grade UI, avoids generic AI aesthetics.
+- `/apple-hig-expert` — Apple HIG guidance (iOS/macOS/visionOS, Liquid Glass aesthetics).
+- `/docker-development` — Docker-based dev workflow.
+- `/using-git-worktrees` — git worktree workflow for parallel feature branches.
+- `/finishing-a-development-branch` — pre-merge checklist: lint, tests, changelog, PR.
+- `/verification-before-completion` — verify changes actually work before reporting done.
+- `/dispatching-parallel-agents` — fan-out pattern for 2+ independent tasks.
+- `/subagent-driven-development` — orchestrate multi-agent development tasks.
+- `/executing-plans` — structured plan-then-execute workflow.
+
+### Product / SaaS skills
+
+- `/product-analytics`, `/product-discovery`, `/product-strategist` — product thinking.
+- `/saas-metrics-coach`, `/saas-scaffolder` — SaaS-specific development.
+- `/seo-audit`, `/slo-architect` — SEO and reliability engineering.
+- `/experiment-designer`, `/feature-flags-architect` — experimentation.
+- `/observability-designer`, `/runbook-generator` — ops.
+- `/landing`, `/landing-page-generator` — landing page creation.
+- `/ui-design-system` — design system authoring.
+- `/revenue-operations`, `/financial-analyst` — business analytics.
+- `/competitive-teardown`, `/customer-success-manager` — go-to-market.
+- `/env-secrets-manager` — environment and secrets management.
+- `/prompt-governance`, `/llm-cost-optimizer` — LLM operations.
+- `/dependency-auditor`, `/data-quality-auditor` — code/data hygiene.
+- `/gdpr-audit-prep` — compliance.
 
 ### Creative / launch slash commands
 
@@ -223,6 +344,10 @@ Skills live in two shapes:
 ### OpenClaw CLI skills
 
 Installed via `bash scripts/openclaw-install.sh` on a machine with unrestricted egress (ClawHub blocked from cloud sandbox). Queue: `ai-video-editor-motion-graphics`, `self-improving-agent`, `voice-wake-say`, `voice-ai-voices`, `azure-ai-voicelive-py`, `app-builder`, `deploy-agent`.
+
+## FleetView Sub-agents (`.claude/agents/`)
+
+The `.claude/agents/` directory contains sub-agent definition files for FleetView's specialized agent roster (ab-test-analyzer, code-reviewer, seo-writer, social-media, etc.). These are loaded by the Claude Code harness and appear as selectable sub-agent types when spawning `Agent` tool calls. Do not hand-edit these — they are managed by the FleetView platform. When spawning subagents, pick the type whose description matches the task.
 
 ## MCP Servers (`.mcp.json`)
 
@@ -268,21 +393,27 @@ See `specs/README.md` for lifecycle and file conventions.
 
 ## Sites (`sites/`)
 
-Site-build pipeline output (sitemap → wireframes → styleguide → HTML pages per page). Self-contained HTML files with inline styles and `--token` CSS vars. Preview with `python3 -m http.server 8000 --bind 127.0.0.1 --directory sites/<slug>`. Current sites: `rhythmix/`, `hum/`, `codex/`. See `sites/README.md`.
+Site-build pipeline output (sitemap → wireframes → styleguide → HTML pages per page). Self-contained HTML files with inline styles and `--token` CSS vars. Preview with `python3 -m http.server 8000 --bind 127.0.0.1 --directory sites/<slug>`.
+
+Current sites:
+- `sites/codex-of-reality/` — Codex of Reality PWA (home + app + launch assets). Full production site.
+- `sites/rhythmix/`, `sites/hum/`, `sites/codex/` — earlier pipeline outputs.
+
+See `sites/README.md`.
 
 ## Docs
 
 - `docs/adr/0001-hyperframes-over-remotion-for-promos.md` — ADR-0001. Read before reasoning about the video pipeline.
 - `docs/agents/domain.md`, `issue-tracker.md`, `triage-labels.md` — agent operating procedures for GitHub Issues.
 - `docs/security/shannon.md` — Shannon AI pentester (Keygraph) reference. Relevant for auditing the Studio Workers or license endpoint, **not** for static marketing pages.
-- `docs/refs/` — Reference copy and voiceover scripts: `frequency-30s-science-voiceover.md`, `frequency-30s-story-voiceover.md`, `frequency-60s-voiceover.md`, `rhythmix-frequency-brief.md`, `frequency-launch-copy.md`, `humming-research-*.md`, `instagram-prompts.md`, `claude-code-cheatsheet.md`, `free-claude-code.md`.
+- `docs/refs/` — Reference copy and voiceover scripts.
 
 ## Conventions
 
 - **New Promos** → HyperFrames folder at repo root (`rhythmix-<name>-<length>/`). Do not use Remotion.
 - **New site pages** → `sites/<slug>/` via pipeline, then promote to root `.html` files when ready for production.
-- **New app concepts** → `apps/<name>/` or `apps/<name>.html`.
-- **Skill edits** → edit in `.agents/skills/<name>/` (the symlink target), never directly in `.claude/skills/` symlinks.
+- **New app concepts** → `apps/<name>/` or `apps/<name>.html`. Standalone non-RHYTHMIX apps (livestock, recovery) go in their own root directory.
+- **Skill edits** → edit in `.agents/skills/<name>/` (the symlink target), never directly in `.claude/skills/` symlinks. Local-only skills are edited directly in `.claude/skills/<name>/`.
 - **Lockfile** → keep `video/package-lock.json` in sync with `video/package.json`. Keep root `package-lock.json` in sync too.
 - **Gitignore** → `node_modules/`, `.remotion/`, `graphify-out/cache/`, `.claude-playwright/` are excluded.
 - **Content warnings** → `README.md` flags that `tiktok-reels-shorts.mp4`, `instagram-facebook.mp4`, `youtube.mp4` contain unverified metrics/testimonials. Only `teaser-coming-soon*.mp4` is safe to publish as-is.
