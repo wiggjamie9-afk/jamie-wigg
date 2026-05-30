@@ -1,93 +1,207 @@
-# Graph Report - /home/user/jamie-wigg  (2026-04-30)
+# GRAPH_REPORT.md — RHYTHMIX Workspace Knowledge Graph
 
-## Corpus Check
-- Corpus is ~2,584 words - fits in a single context window. You may not need a graph.
+Generated: 2026-05-30  
+Corpus: 536 files · ~464K words (code: 233, documents: 303)  
+Extraction: AST (tree-sitter, 233 code files) + heuristic semantic (303 doc/config files)
 
-## Summary
-- 29 nodes · 23 edges · 5 communities detected
-- Extraction: 70% EXTRACTED · 26% INFERRED · 4% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.82)
-- Token cost: 0 input · 0 output
+---
 
-## Community Hubs (Navigation)
-- [[_COMMUNITY_RHYTHMIX Landing Pages|RHYTHMIX Landing Pages]]
-- [[_COMMUNITY_AI Music Competitors|AI Music Competitors]]
-- [[_COMMUNITY_Remotion Project Setup|Remotion Project Setup]]
-- [[_COMMUNITY_RHYTHMIX Pricing & Offers|RHYTHMIX Pricing & Offers]]
-- [[_COMMUNITY_ESLint Flat Config|ESLint Flat Config]]
+## Graph Statistics
 
-## God Nodes (most connected - your core abstractions)
-1. `RHYTHMIX Creator Testimonials` - 5 edges
-2. `RemotionRoot Component` - 4 edges
-3. `RHYTHMIX Landing Page (Hero+Stats)` - 4 edges
-4. `RHYTHMIX Product (AI Music Platform)` - 3 edges
-5. `Remotion Config` - 2 edges
-6. `Tailwind Webpack Override` - 2 edges
-7. `MyComposition Component` - 2 edges
-8. `MyComp Composition Definition` - 2 edges
-9. `RHYTHMIX Pricing Tiers` - 2 edges
-10. `RHYTHMIX Lifetime Access Deal $149` - 2 edges
+| Metric | Value |
+|---|---|
+| Total nodes | 8,711 |
+| Total edges | 14,086 |
+| Communities detected | 814 |
+| Largest connected component | 5,140 nodes |
+| Isolated nodes | 26 |
+| Graph density | 0.000371 |
 
-## Surprising Connections (you probably didn't know these)
-- `MyComposition Component` --semantically_similar_to--> `RHYTHMIX Product (AI Music Platform)`  [AMBIGUOUS] [semantically similar]
-  video/src/Composition.tsx → text.txt
-- `RHYTHMIX Landing Page (Hero+Stats)` --semantically_similar_to--> `RHYTHMIX Landing Page Duplicate`  [INFERRED] [semantically similar]
-  text.txt → text 2.txt
-- `Remotion Video README` --references--> `Remotion Config`  [INFERRED]
-  video/README.md → video/remotion.config.ts
-- `Remotion Video README` --references--> `RemotionRoot Component`  [INFERRED]
-  video/README.md → video/src/Root.tsx
-- `RHYTHMIX Landing Page (Hero+Stats)` --conceptually_related_to--> `RHYTHMIX Features/Pricing/FAQ Sections`  [INFERRED]
-  text.txt → text 3.txt
+### Edge provenance
 
-## Hyperedges (group relationships)
-- **Remotion Video Registration Flow** — index_registerroot_call, root_remotionroot, root_mycomp_composition, composition_mycomposition [EXTRACTED 0.95]
-- **RHYTHMIX Marketing Page Funnel** — text_rhythmix_brand, text3_rhythmix_14_features, text3_rhythmix_testimonials, text3_rhythmix_pricing_tiers, text3_rhythmix_lifetime_deal [INFERRED 0.90]
-- **RHYTHMIX Competitor Comparison Set** — text3_competitor_suno, text3_competitor_udio, text3_competitor_landr, text_rhythmix_brand [EXTRACTED 0.85]
+| Type | Count |
+|---|---|
+| EXTRACTED | 13,670 |
+| INFERRED | 416 |
+| AMBIGUOUS | 0 |
 
-## Communities
+---
 
-### Community 0 - "RHYTHMIX Landing Pages"
-Cohesion: 0.33
-Nodes (6): MyComposition Component, MyComp Composition Definition, RHYTHMIX Landing Page Duplicate, RHYTHMIX Features/Pricing/FAQ Sections, RHYTHMIX Product (AI Music Platform), RHYTHMIX Landing Page (Hero+Stats)
+## Top Communities
 
-### Community 1 - "AI Music Competitors"
-Cohesion: 0.33
-Nodes (6): LANDR (Competitor), Suno (Competitor), Udio (Competitor), Spotify Distribution, RHYTHMIX Creator Testimonials, Apple TV+ Sync Placement
+| # | Label | Nodes |
+|---|---|---|
+| 1 | three.min.js / ms() | 170 |
+| 2 | We / pr | 158 |
+| 3 | jn / Mn | 140 |
+| 4 | .push() / clone() | 125 |
+| 5 | toJSON() / .fromArray() | 110 |
+| 6 | copy() / ri | 102 |
+| 7 | applyMatrix4() / .fromBufferAttribute() | 95 |
+| 8 | CLAUDE / zapier-workflows | 84 |
+| 9 | .constructor() / update() | 66 |
+| 10 | qe / dn | 58 |
+| 11 | ue() / Mi | 52 |
+| 12 | history.ts / history.test.ts | 51 |
+| 13 | home / tasks | 49 |
+| 14 | me / .floor() | 48 |
+| 15 | be() / .floor() | 46 |
 
-### Community 2 - "Remotion Project Setup"
-Cohesion: 0.5
-Nodes (5): index.ts registerRoot Entrypoint, Remotion Video README, Remotion Config, Tailwind Webpack Override, RemotionRoot Component
+---
 
-### Community 3 - "RHYTHMIX Pricing & Offers"
-Cohesion: 0.5
-Nodes (4): RHYTHMIX 14 Core AI Features, RHYTHMIX Lifetime Access Deal $149, RHYTHMIX Pricing Tiers, Gumroad CTA Link
+## High-Degree Nodes (God Nodes)
 
-### Community 9 - "ESLint Flat Config"
-Cohesion: 1.0
-Nodes (1): Remotion ESLint Flat Config
+The nodes with the most connections — architectural hubs and cross-cutting concerns:
 
-## Ambiguous Edges - Review These
-- `MyComposition Component` → `RHYTHMIX Product (AI Music Platform)`  [AMBIGUOUS]
-  video/src/Composition.tsx · relation: semantically_similar_to
+| Rank | Node | Label | Degree |
+|---|---|---|---|
+| 1 | `rhythmix_soul_60s_three_min_js` | three.min.js | 364 |
+| 2 | `rhythmix_soul_60s_three_min_copy` | copy() | 189 |
+| 3 | `rhythmix_soul_60s_three_min_tl_push` | .push() | 114 |
+| 4 | `CLAUDE.md` | CLAUDE | 108 |
+| 5 | `rhythmix_venue_rock_gsap_min_js` | gsap.min.js | 107 |
+| 6 | `rhythmix_promo_gsap_min_js` | gsap.min.js | 107 |
+| 7 | `rhythmix_soul_60s_gsap_min_js` | gsap.min.js | 107 |
+| 8 | `rhythmix_getit_60s_gsap_min_js` | gsap.min.js | 107 |
+| 9 | `rhythmix_livenow_60s_gsap_min_js` | gsap.min.js | 107 |
+| 10 | `rhythmix_backstory_60s_gsap_min_js` | gsap.min.js | 107 |
+| 11 | `rhythmix_15s_gsap_min_js` | gsap.min.js | 107 |
+| 12 | `rhythmix_square_60s_gsap_min_js` | gsap.min.js | 107 |
+| 13 | `rhythmix_overview_60s_gsap_min_js` | gsap.min.js | 107 |
+| 14 | `rhythmix_launch_60s_gsap_min_js` | gsap.min.js | 107 |
+| 15 | `rhythmix_anthem_60s_gsap_min_js` | gsap.min.js | 107 |
+| 16 | `rhythmix_itslive_60s_gsap_min_js` | gsap.min.js | 107 |
+| 17 | `rhythmix_venue_rave_gsap_min_js` | gsap.min.js | 107 |
+| 18 | `rhythmix_square_gsap_min_js` | gsap.min.js | 107 |
+| 19 | `rhythmix_iphone_60s_gsap_min_js` | gsap.min.js | 107 |
+| 20 | `rhythmix_32s_gsap_min_js` | gsap.min.js | 107 |
 
-## Knowledge Gaps
-- **9 isolated node(s):** `index.ts registerRoot Entrypoint`, `RHYTHMIX Landing Page Duplicate`, `RHYTHMIX Features/Pricing/FAQ Sections`, `Suno (Competitor)`, `Udio (Competitor)` (+4 more)
-  These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `ESLint Flat Config`** (1 nodes): `Remotion ESLint Flat Config`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+---
 
-## Suggested Questions
-_Questions this graph is uniquely positioned to answer:_
+## Community Detail
 
-- **What is the exact relationship between `MyComposition Component` and `RHYTHMIX Product (AI Music Platform)`?**
-  _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
-- **Why does `RHYTHMIX Product (AI Music Platform)` connect `RHYTHMIX Landing Pages` to `RHYTHMIX Pricing & Offers`?**
-  _High betweenness centrality (0.143) - this node is a cross-community bridge._
-- **Why does `MyComp Composition Definition` connect `RHYTHMIX Landing Pages` to `Remotion Project Setup`?**
-  _High betweenness centrality (0.119) - this node is a cross-community bridge._
-- **Are the 2 inferred relationships involving `RemotionRoot Component` (e.g. with `Tailwind Webpack Override` and `Remotion Video README`) actually correct?**
-  _`RemotionRoot Component` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 2 inferred relationships involving `RHYTHMIX Landing Page (Hero+Stats)` (e.g. with `RHYTHMIX Landing Page Duplicate` and `RHYTHMIX Features/Pricing/FAQ Sections`) actually correct?**
-  _`RHYTHMIX Landing Page (Hero+Stats)` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `index.ts registerRoot Entrypoint`, `RHYTHMIX Landing Page Duplicate`, `RHYTHMIX Features/Pricing/FAQ Sections` to the rest of the system?**
-  _9 weakly-connected nodes found - possible documentation gaps or missing edges._
+### Key semantic clusters
+
+#### Community 0: three.min.js / ms() (170 nodes)
+
+- **three.min.js** (degree 364)
+- **ms()** (degree 17)
+- **fs()** (degree 17)
+- **_c()** (degree 11)
+- **lc** (degree 10)
+
+#### Community 1: We / pr (158 nodes)
+
+- **We** (degree 76)
+- **pr** (degree 75)
+- **.multiplyScalar()** (degree 38)
+- **add()** (degree 38)
+- **.normalize()** (degree 31)
+
+#### Community 2: jn / Mn (140 nodes)
+
+- **jn** (degree 47)
+- **Mn** (degree 38)
+- **updateMatrixWorld()** (degree 27)
+- **.constructor()** (degree 26)
+- **.invert()** (degree 20)
+
+#### Community 3: .push() / clone() (125 nodes)
+
+- **.push()** (degree 114)
+- **clone()** (degree 37)
+- **Ii** (degree 31)
+- **.setAttribute()** (degree 29)
+- **constructor()** (degree 26)
+
+#### Community 4: toJSON() / .fromArray() (110 nodes)
+
+- **toJSON()** (degree 34)
+- **.fromArray()** (degree 30)
+- **.toArray()** (degree 28)
+- **parse()** (degree 20)
+- **.fromJSON()** (degree 19)
+
+#### Community 5: copy() / ri (102 nodes)
+
+- **copy()** (degree 189)
+- **ri** (degree 19)
+- **dispose()** (degree 19)
+- **.setValues()** (degree 18)
+- **ka()** (degree 15)
+
+#### Community 6: applyMatrix4() / .fromBufferAttribute() (95 nodes)
+
+- **applyMatrix4()** (degree 39)
+- **.fromBufferAttribute()** (degree 30)
+- **ml** (degree 25)
+- **.distanceTo()** (degree 19)
+- **.raycast()** (degree 18)
+
+#### Community 7: CLAUDE / zapier-workflows (84 nodes)
+
+- **CLAUDE** (degree 108) — `CLAUDE.md`
+- **zapier-workflows** (degree 1) — `CLAUDE.md`
+- **voice-wake-say** (degree 1) — `CLAUDE.md`
+- **voice-ai-voices** (degree 1) — `CLAUDE.md`
+- **self-improving-agent** (degree 1) — `CLAUDE.md`
+
+#### Community 8: .constructor() / update() (66 nodes)
+
+- **.constructor()** (degree 39)
+- **update()** (degree 29)
+- **Vo** (degree 12)
+- **.addEventListener()** (degree 12)
+- **Ca()** (degree 11)
+
+#### Community 9: qe / dn (58 nodes)
+
+- **qe** (degree 33)
+- **dn** (degree 20)
+- **makeEmpty()** (degree 19)
+- **isEmpty()** (degree 15)
+- **.distanceToSquared()** (degree 14)
+
+#### Community 10: ue() / Mi (52 nodes)
+
+- **ue()** (degree 41)
+- **Mi** (degree 32)
+- **de()** (degree 26)
+- **oo** (degree 21)
+- **pl()** (degree 8)
+
+#### Community 11: history.ts / history.test.ts (51 nodes)
+
+- **history.ts** (degree 21)
+- **history.test.ts** (degree 20)
+- **library-grid.tsx** (degree 18)
+- **eviction-toast.tsx** (degree 10)
+- **library-card.tsx** (degree 9)
+
+---
+
+## Outputs
+
+| File | Description |
+|---|---|
+| `graphify-out/graph.json` | Full graph in node-link JSON (8,711 nodes, 14,086 edges) |
+| `graphify-out/graph.html` | Interactive ForceAtlas2 visualization (6.5 MB) |
+| `graphify-out/GRAPH_REPORT.md` | This report |
+
+## How to query
+
+```bash
+graphify query "How does the HyperFrames video pipeline work?"
+graphify query "What skills are available?"
+graphify query "How is the Studio deployed?"
+graphify path "rhythmix-author" "studio"
+graphify explain "coherence_engine"
+```
+
+## Audit trail
+
+- AST extraction: tree-sitter, 233 code files → 6,038 nodes, 12,578 edges
+- Semantic extraction: heuristic (headers, links, imports) on 303 doc/config files → 2,609 nodes, 2,421 edges  
+- Cache hits: 6 files from previous run
+- Merge: 8,561 unique nodes, 14,102 unique edges
+- Community detection: Leiden algorithm, 814 communities
