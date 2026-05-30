@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RHYTHMIX LIVE — beat-synced AI music video</title>
+<meta name="description" content="Made the song. Now what? Drop a track, pick engines, get beat-synced AI music video — vertical, square, landscape — in one render queue.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#08050d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RHYTHMIX LIVE">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap');
+:root {
+  --bg:#08050d; --bg-2:#0f0a1a; --bg-3:#191028;
+  --ink:#f5f0e8; --soft:#c4bfd0; --muted:#7a7388;
+  --hot:#ff1f5a; --cyan:#8af6ff; --pink-soft:#ff5e8a;
+  --display:'Space Grotesk',-apple-system,system-ui,sans-serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit;background:transparent;border:1px solid rgba(138,246,255,0.3);padding:14px 18px;width:100%;border-radius:8px;font-size:16px}
+input:focus,textarea:focus{outline:none;border-color:var(--cyan)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--hot);outline-offset:3px;border-radius:4px}
+::selection{background:var(--hot);color:var(--ink)}
+
+/* Layout: horizontal scroll-snap panels */
+.panels{display:flex;flex-direction:row;width:100vw;height:100vh;height:100dvh;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.panels::-webkit-scrollbar{display:none}
+.panel{flex:0 0 100vw;width:100vw;height:100vh;height:100dvh;overflow-y:auto;scroll-snap-align:start;display:flex;flex-direction:column;padding:6vh 7vw 12vh;position:relative}
+
+/* Dot pagination */
+.dots{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:9px;z-index:100;pointer-events:none}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.18);transition:all 0.3s}
+.dot.on{background:var(--hot);transform:scale(1.5);box-shadow:0 0 10px var(--hot)}
+
+/* Typography */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:var(--cyan);margin-bottom:18px}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(40px,9.5vw,76px);line-height:1.02;letter-spacing:-0.03em;color:var(--ink);margin-bottom:20px}
+h1 em{font-style:normal;color:var(--hot)}
+h2{font-family:var(--display);font-weight:600;font-size:clamp(28px,6.5vw,46px);line-height:1.05;letter-spacing:-0.02em;margin-bottom:14px}
+p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:520px}
+.lede{font-size:17px;color:var(--ink);margin-bottom:24px;max-width:520px}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+.stat-cyan{color:var(--cyan);font-variant-numeric:tabular-nums}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:0.6em;padding:16px 28px;border:1px solid var(--hot);color:var(--hot);font-family:var(--mono);font-size:12px;letter-spacing:0.2em;text-transform:uppercase;border-radius:50px;transition:all 0.25s;min-height:48px;font-weight:500}
+.btn:hover,.btn:active{background:var(--hot);color:var(--ink)}
+.btn-primary{background:linear-gradient(135deg,var(--hot),var(--pink-soft));color:var(--ink);border-color:transparent;box-shadow:0 0 24px rgba(255,31,90,0.35)}
+.btn-primary:hover,.btn-primary:active{background:var(--pink-soft);color:var(--ink)}
+.btn-ghost{border-color:rgba(138,246,255,0.3);color:var(--cyan)}
+.btn-ghost:hover,.btn-ghost:active{background:var(--cyan);color:var(--bg);border-color:var(--cyan)}
+
+/* Brand top bar */
+.brand{position:fixed;top:max(16px,env(safe-area-inset-top));left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 7vw;z-index:90;pointer-events:none}
+.brand .mark{font-family:var(--display);font-weight:700;font-size:14px;color:var(--ink);letter-spacing:0.04em}
+.brand .mark em{font-style:normal;color:var(--hot);font-weight:700}
+.brand .crumb{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase}
+
+/* Welcome / panel 1 */
+.welcome-hero{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;max-width:580px;margin:0 auto;width:100%}
+.glow-bg{position:absolute;top:30%;right:-25%;width:90vw;height:90vw;max-width:800px;max-height:800px;background:radial-gradient(circle,rgba(255,31,90,0.22),transparent 65%);filter:blur(70px);pointer-events:none;z-index:0}
+.glow-bg-2{position:absolute;bottom:10%;left:-20%;width:60vw;height:60vw;max-width:500px;max-height:500px;background:radial-gradient(circle,rgba(138,246,255,0.18),transparent 65%);filter:blur(70px);pointer-events:none;z-index:0}
+.welcome-hero > *{position:relative;z-index:1}
+.welcome-cta-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+
+/* Upload panel */
+.upload-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:580px;margin:0 auto;width:100%}
+.drop-zone{border:2px dashed rgba(138,246,255,0.35);border-radius:18px;padding:34px 22px;text-align:center;background:rgba(138,246,255,0.04);transition:all 0.25s;cursor:pointer;margin-bottom:22px;position:relative;overflow:hidden}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--hot);background:rgba(255,31,90,0.06);box-shadow:0 0 30px rgba(255,31,90,0.15)}
+.drop-zone.has-file{border-color:var(--cyan);border-style:solid;background:rgba(138,246,255,0.06)}
+.drop-icon{font-family:var(--display);font-size:36px;font-weight:600;color:var(--hot);margin-bottom:8px}
+.drop-title{font-family:var(--display);font-weight:500;font-size:18px;color:var(--ink);margin-bottom:4px}
+.drop-sub{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase}
+.drop-file{font-family:var(--mono);font-size:12px;color:var(--cyan);margin-top:10px;letter-spacing:0.08em;word-break:break-all}
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin:18px 0 10px}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.chip{padding:9px 15px;border:1px solid rgba(138,246,255,0.25);border-radius:50px;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--soft);cursor:pointer;transition:all 0.2s;user-select:none}
+.chip:hover{border-color:var(--cyan);color:var(--cyan)}
+.chip.on{background:var(--hot);color:var(--ink);border-color:var(--hot);box-shadow:0 0 12px rgba(255,31,90,0.4)}
+.chip.cyan.on{background:var(--cyan);color:var(--bg);border-color:var(--cyan);box-shadow:0 0 12px rgba(138,246,255,0.4)}
+
+/* Waveform / beat-sync panel */
+.wave-stage{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:620px;margin:0 auto;width:100%}
+.bpm-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+.bpm-row .stat-cyan{font-size:22px;letter-spacing:0;font-family:var(--display);font-weight:600;text-transform:none}
+.waveform{position:relative;height:160px;background:linear-gradient(180deg,rgba(255,31,90,0.04),rgba(138,246,255,0.04));border-radius:14px;padding:18px;display:flex;align-items:center;gap:3px;overflow:hidden}
+.wave-bar{flex:1;min-width:2px;background:linear-gradient(180deg,var(--hot),var(--cyan));border-radius:2px;transition:height 0.12s ease-out;opacity:0.85}
+.wave-playhead{position:absolute;top:8px;bottom:8px;width:2px;background:var(--ink);box-shadow:0 0 10px var(--ink);transition:left 0.06s linear;z-index:2;pointer-events:none}
+.beat-marker{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,31,90,0.35);z-index:1;pointer-events:none}
+.beat-marker.strong{background:var(--hot);width:2px;box-shadow:0 0 6px var(--hot)}
+.wave-meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;color:var(--muted);margin-top:10px;text-transform:uppercase}
+.wave-controls{display:flex;gap:14px;margin-top:24px;justify-content:center}
+.icon-btn{width:54px;height:54px;border-radius:50%;border:1px solid rgba(138,246,255,0.3);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:18px;background:rgba(255,255,255,0.03);transition:all 0.2s}
+.icon-btn:hover,.icon-btn:active{background:var(--hot);color:var(--ink);border-color:var(--hot)}
+.icon-btn.playing{background:var(--hot);color:var(--ink);border-color:var(--hot);box-shadow:0 0 20px rgba(255,31,90,0.5)}
+
+/* Render queue */
+.queue-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:580px;margin:0 auto;width:100%}
+.queue-list{display:flex;flex-direction:column;gap:12px;margin:18px 0 22px}
+.queue-card{background:rgba(255,255,255,0.03);border:1px solid rgba(138,246,255,0.12);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
+.queue-card.done{border-color:var(--cyan)}
+.queue-card.active{border-color:var(--hot);box-shadow:0 0 20px rgba(255,31,90,0.18)}
+.queue-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.queue-name{font-family:var(--display);font-weight:500;font-size:16px;color:var(--ink)}
+.queue-spec{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase}
+.queue-status{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);margin-bottom:8px}
+.queue-card.active .queue-status{color:var(--hot)}
+.progress-track{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--hot),var(--cyan));border-radius:3px;width:0%;transition:width 0.3s ease-out}
+
+/* History panel */
+.history-wrap{max-width:580px;margin:0 auto;width:100%}
+.history-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px;margin-top:18px}
+.stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(138,246,255,0.1);border-radius:14px;padding:18px;text-align:center}
+.stat-num{font-family:var(--display);font-size:42px;font-weight:600;color:var(--cyan);line-height:1;font-variant-numeric:tabular-nums}
+.stat-label{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.session-list{display:flex;flex-direction:column;gap:10px}
+.session-card{background:rgba(255,255,255,0.03);border-left:2px solid var(--hot);padding:14px 18px;border-radius:8px}
+.session-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;margin-bottom:6px;text-transform:uppercase}
+.session-snippet{font-family:var(--display);font-size:15px;color:var(--ink);line-height:1.4;font-weight:400}
+.session-tags{margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--cyan);letter-spacing:0.1em}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);font-style:italic;font-family:var(--display)}
+
+/* Settings panel */
+.settings-wrap{max-width:540px;margin:0 auto;width:100%}
+.tier-grid{display:flex;flex-direction:column;gap:10px;margin:14px 0 22px}
+.tier-card{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;background:rgba(255,255,255,0.03);border:1px solid rgba(138,246,255,0.12);border-radius:12px;cursor:pointer;transition:all 0.2s}
+.tier-card:hover{border-color:rgba(138,246,255,0.4)}
+.tier-card.on{border-color:var(--hot);background:rgba(255,31,90,0.06);box-shadow:0 0 18px rgba(255,31,90,0.15)}
+.tier-radio{width:18px;height:18px;border-radius:50%;border:2px solid rgba(138,246,255,0.4);flex-shrink:0;margin-right:14px;position:relative;transition:all 0.2s}
+.tier-card.on .tier-radio{border-color:var(--hot)}
+.tier-card.on .tier-radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--hot)}
+.tier-body{flex:1}
+.tier-name{font-family:var(--display);font-weight:600;font-size:15px;color:var(--ink)}
+.tier-sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;margin-top:2px;text-transform:uppercase}
+.tier-price{font-family:var(--display);font-weight:600;font-size:18px;color:var(--cyan);margin-left:10px}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.setting-row:last-of-type{border-bottom:none}
+.setting-label{color:var(--ink);font-size:15px}
+.setting-value{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:0.12em}
+.toggle{width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,0.1);position:relative;cursor:pointer;transition:background 0.3s;flex-shrink:0}
+.toggle.on{background:var(--hot)}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--ink);transition:transform 0.3s}
+.toggle.on::after{transform:translateX(20px)}
+
+/* Swipe hint */
+.swipe-hint{position:fixed;bottom:36px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:rgba(255,255,255,0.4);text-transform:uppercase;z-index:99;pointer-events:none;animation:hintFade 4s ease-in-out 1.5s forwards}
+@keyframes hintFade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
+
+@media (max-width:380px){
+  h1{font-size:38px}
+  .panel{padding:5vh 5vw 14vh}
+  .stat-num{font-size:34px}
+}
+</style>
+</head>
+<body>
+<div class="brand">
+  <span class="mark">RHYTHMIX <em>LIVE</em></span>
+  <span class="crumb">v1 · beat-synced</span>
+</div>
+
+<div class="panels" id="panels">
+
+  <!-- Panel 1: Welcome -->
+  <section class="panel" aria-label="Welcome">
+    <div class="glow-bg"></div>
+    <div class="glow-bg-2"></div>
+    <div class="welcome-hero">
+      <div class="eyebrow">RHYTHMIX LIVE · BEAT-SYNCED VIDEO</div>
+      <h1>Made the song. <em>Now what?</em></h1>
+      <p class="lede">Drop your track. Pick your engines. Get a music video cut to every beat — vertical for TikTok, square for the grid, landscape for the channel. One render. Four pipelines.</p>
+      <div class="welcome-cta-row">
+        <button class="btn btn-primary" onclick="goTo(1)">Upload a track →</button>
+        <button class="btn btn-ghost" onclick="goTo(4)">See renders</button>
+      </div>
+      <p class="mono" style="margin-top:30px;color:var(--muted)">Swipe → between screens. Or use arrow keys.</p>
+    </div>
+  </section>
+
+  <!-- Panel 2: Upload + pipeline + mood -->
+  <section class="panel" aria-label="Upload and pipeline">
+    <div class="upload-wrap">
+      <div class="eyebrow">PANEL 2 · UPLOAD &amp; PIPELINE</div>
+      <h2>Drop the track.</h2>
+      <p>WAV / MP3 / FLAC. Up to 12 minutes. Stays on this device until you render.</p>
+      <label class="drop-zone" id="dropZone" for="fileInput">
+        <div class="drop-icon">↓</div>
+        <div class="drop-title" id="dropTitle">Drop audio or tap to choose</div>
+        <div class="drop-sub" id="dropSub">we'll read the BPM &amp; key</div>
+        <div class="drop-file" id="dropFile"></div>
+        <input type="file" id="fileInput" accept="audio/*" style="display:none">
+      </label>
+
+      <div class="section-label">Pipelines — pick one or more</div>
+      <div class="chip-row" id="engineRow">
+        <span class="chip" data-engine="Kling">Kling</span>
+        <span class="chip" data-engine="Hunyuan">Hunyuan</span>
+        <span class="chip" data-engine="Luma">Luma</span>
+        <span class="chip" data-engine="MiniMax">MiniMax</span>
+      </div>
+
+      <div class="section-label">Mood</div>
+      <div class="chip-row" id="moodRow">
+        <span class="chip cyan" data-mood="cinematic">cinematic</span>
+        <span class="chip cyan" data-mood="dreamy">dreamy</span>
+        <span class="chip cyan" data-mood="hyper">hyper</span>
+        <span class="chip cyan" data-mood="soulful">soulful</span>
+        <span class="chip cyan" data-mood="abstract">abstract</span>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="goToSync()">Sync to beat →</button>
+        <button class="btn btn-ghost" onclick="goTo(2)">Skip · demo track</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 3: Beat-sync mock viewer -->
+  <section class="panel" aria-label="Beat-sync viewer">
+    <div class="wave-stage">
+      <div class="eyebrow">PANEL 3 · BEAT-SYNC</div>
+      <h2>Cut to every beat.</h2>
+      <div class="bpm-row">
+        <span><span class="stat-cyan">120</span> BPM · 4/4</span>
+        <span id="syncFileLabel">demo · loop_120.wav</span>
+      </div>
+      <div class="waveform" id="waveform">
+        <div class="wave-playhead" id="playhead" style="left:18px"></div>
+      </div>
+      <div class="wave-meta">
+        <span id="syncTime">00:00 / 00:32</span>
+        <span id="syncBeats">beat 0 · cut every 1/4</span>
+      </div>
+      <div class="wave-controls">
+        <button class="icon-btn" id="syncPlayBtn" onclick="toggleSync()" aria-label="Play / pause">▶</button>
+        <button class="icon-btn" onclick="resetSync()" aria-label="Reset">↺</button>
+        <button class="icon-btn" onclick="goTo(3)" aria-label="To render" title="To render queue">→</button>
+      </div>
+      <p style="text-align:center;margin-top:24px" class="mono">120 BPM = beat every 0.5s · shot-cut markers on each downbeat</p>
+    </div>
+  </section>
+
+  <!-- Panel 4: Render queue -->
+  <section class="panel" aria-label="Render queue">
+    <div class="queue-wrap">
+      <div class="eyebrow">PANEL 4 · RENDER QUEUE</div>
+      <h2>Three cuts. One queue.</h2>
+      <p>Same beat-grid, three aspect ratios. Render starts on tap, finishes in ~10s, saves to history.</p>
+      <div class="queue-list" id="queueList">
+        <div class="queue-card" data-idx="0">
+          <div class="queue-head"><span class="queue-name">Vertical · 60s</span><span class="queue-spec">9:16 · 1080×1920</span></div>
+          <div class="queue-status" data-status>idle · TikTok / Reels</div>
+          <div class="progress-track"><div class="progress-fill" data-fill></div></div>
+        </div>
+        <div class="queue-card" data-idx="1">
+          <div class="queue-head"><span class="queue-name">Square · 15s</span><span class="queue-spec">1:1 · 1080×1080</span></div>
+          <div class="queue-status" data-status>idle · IG grid / hook</div>
+          <div class="progress-track"><div class="progress-fill" data-fill></div></div>
+        </div>
+        <div class="queue-card" data-idx="2">
+          <div class="queue-head"><span class="queue-name">Landscape · 4 min</span><span class="queue-spec">16:9 · 1920×1080</span></div>
+          <div class="queue-status" data-status>idle · YouTube full</div>
+          <div class="progress-track"><div class="progress-fill" data-fill></div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="startRender()">Render all →</button>
+        <button class="btn btn-ghost" onclick="goTo(4)">View history</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 5: History -->
+  <section class="panel" aria-label="History">
+    <div class="history-wrap">
+      <div class="eyebrow">PANEL 5 · HISTORY</div>
+      <h2>Past renders.</h2>
+      <div class="history-stats">
+        <div class="stat-card"><div class="stat-num" id="statStreak">0</div><div class="stat-label">Day streak</div></div>
+        <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Renders</div></div>
+        <div class="stat-card"><div class="stat-num" id="statEngines">0</div><div class="stat-label">Engines used</div></div>
+      </div>
+      <div class="session-list" id="sessionList">
+        <div class="empty-state">No renders yet. Drop a track to begin.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 6: Settings -->
+  <section class="panel" aria-label="Settings">
+    <div class="settings-wrap">
+      <div class="eyebrow">PANEL 6 · SETTINGS</div>
+      <h2>Pick your tier.</h2>
+      <div class="tier-grid" id="tierGrid">
+        <div class="tier-card" data-tier="free">
+          <div class="tier-radio"></div>
+          <div class="tier-body"><div class="tier-name">Free</div><div class="tier-sub">1 render / day · watermark · 1 engine</div></div>
+          <div class="tier-price">$0</div>
+        </div>
+        <div class="tier-card" data-tier="pro">
+          <div class="tier-radio"></div>
+          <div class="tier-body"><div class="tier-name">Pro</div><div class="tier-sub">unlimited renders · all engines · no watermark</div></div>
+          <div class="tier-price">$19<span style="font-size:11px;color:var(--muted)">/mo</span></div>
+        </div>
+        <div class="tier-card" data-tier="studio">
+          <div class="tier-radio"></div>
+          <div class="tier-body"><div class="tier-name">Studio</div><div class="tier-sub">4K · priority queue · API · stems / midi export</div></div>
+          <div class="tier-price">$49<span style="font-size:11px;color:var(--muted)">/mo</span></div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Fan-out merch link</span>
+        <div class="toggle" id="setMerch" onclick="toggleMerch()"></div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Beat detection</span>
+        <span class="setting-value">on-device · librosa</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Engines available</span>
+        <span class="setting-value">Kling · Hunyuan · Luma · MiniMax</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Data</span>
+        <span class="setting-value">Local · localStorage</span>
+      </div>
+      <div style="margin-top:30px;text-align:center">
+        <button class="btn btn-ghost" onclick="resetAll()">Reset all data</button>
+      </div>
+      <p style="text-align:center;margin-top:24px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.15em">RHYTHMIX LIVE · v1 · rhythmixapp.com.au/live</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="swipe-hint" id="swipeHint">swipe → to explore</div>
+
+<script>
+// ──── State ────
+const state = {
+  fileName: '',
+  engines: [],
+  mood: '',
+  syncPlaying: false,
+  syncFrame: 0,
+  syncTimer: null,
+  waveBars: [],
+  tier: 'free',
+  merch: false,
+  rendering: false,
+  renderTimer: null
+};
+
+// ──── Panel navigation ────
+const panels = document.getElementById('panels');
+const sections = document.querySelectorAll('.panel');
+const dotsContainer = document.getElementById('dots');
+sections.forEach((s, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.onclick = () => goTo(i);
+  d.style.pointerEvents = 'auto';
+  dotsContainer.appendChild(d);
+});
+function goTo(i){
+  panels.scrollTo({left: window.innerWidth * i, behavior: 'smooth'});
+}
+panels.addEventListener('scroll', () => {
+  const i = Math.round(panels.scrollLeft / window.innerWidth);
+  document.querySelectorAll('.dot').forEach((d, idx) => d.classList.toggle('on', idx === i));
+  // Auto-pause sync if user scrolls away
+  if (i !== 2 && state.syncPlaying) toggleSync();
+}, {passive:true});
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') panels.scrollBy({left: window.innerWidth, behavior: 'smooth'});
+  if (e.key === 'ArrowLeft') panels.scrollBy({left: -window.innerWidth, behavior: 'smooth'});
+});
+
+// ──── Upload / drop zone ────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const dropTitle = document.getElementById('dropTitle');
+const dropSub = document.getElementById('dropSub');
+const dropFile = document.getElementById('dropFile');
+
+fileInput.addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if (f) acceptFile(f);
+});
+['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => {
+  e.preventDefault(); dropZone.classList.add('drag');
+}));
+['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+}));
+dropZone.addEventListener('drop', e => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) acceptFile(f);
+});
+
+function acceptFile(f){
+  state.fileName = f.name;
+  localStorage.setItem('live.file', f.name);
+  dropZone.classList.add('has-file');
+  dropTitle.textContent = 'Track loaded';
+  dropSub.textContent = 'BPM detected · ready to sync';
+  dropFile.textContent = '♪ ' + f.name + ' · ' + (f.size/1024/1024).toFixed(1) + ' MB';
+  document.getElementById('syncFileLabel').textContent = f.name;
+}
+
+// ──── Engine + mood chips ────
+document.getElementById('engineRow').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  const eng = c.dataset.engine;
+  c.classList.toggle('on');
+  if (state.engines.includes(eng)) state.engines = state.engines.filter(x => x !== eng);
+  else state.engines.push(eng);
+  localStorage.setItem('live.engines', JSON.stringify(state.engines));
+});
+document.getElementById('moodRow').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  document.querySelectorAll('#moodRow .chip').forEach(x => x.classList.remove('on'));
+  c.classList.add('on');
+  state.mood = c.dataset.mood;
+  localStorage.setItem('live.mood', state.mood);
+});
+
+function goToSync(){
+  if (!state.engines.length){
+    // Default to Kling if none picked
+    const first = document.querySelector('#engineRow .chip');
+    if (first){ first.classList.add('on'); state.engines = ['Kling']; }
+  }
+  if (!state.mood){
+    const first = document.querySelector('#moodRow .chip');
+    if (first){ first.classList.add('on'); state.mood = 'cinematic'; }
+  }
+  localStorage.setItem('live.engines', JSON.stringify(state.engines));
+  localStorage.setItem('live.mood', state.mood);
+  goTo(2);
+}
+
+// ──── Waveform / beat-sync ────
+const waveform = document.getElementById('waveform');
+const playhead = document.getElementById('playhead');
+const BAR_COUNT = 64;
+const BPM = 120;
+const BEAT_MS = 60000 / BPM; // 500ms per beat
+const TRACK_BEATS = 64;       // 32s @ 120bpm
+const TRACK_MS = TRACK_BEATS * BEAT_MS;
+
+// Build bars + beat markers
+(function buildWaveform(){
+  const seed = [];
+  // Deterministic pseudo-amplitude pattern (peaks on beats)
+  for (let i = 0; i < BAR_COUNT; i++){
+    const beatPhase = (i / BAR_COUNT) * TRACK_BEATS;
+    const onBeat = Math.abs(beatPhase - Math.round(beatPhase)) < 0.15;
+    const downbeat = Math.round(beatPhase) % 4 === 0 && onBeat;
+    const base = 30 + Math.sin(i * 0.7) * 18 + Math.cos(i * 0.31) * 14;
+    const peak = downbeat ? 50 : (onBeat ? 30 : 0);
+    seed.push(Math.max(12, Math.min(98, base + peak + (i % 5) * 3)));
+  }
+  state.waveBars = seed;
+  seed.forEach(h => {
+    const b = document.createElement('div');
+    b.className = 'wave-bar';
+    b.style.height = h + '%';
+    waveform.appendChild(b);
+  });
+  // Beat markers (every 4 beats = strong, others subtle)
+  // Markers as % of width (excluding playhead/padding)
+  for (let beat = 0; beat <= TRACK_BEATS; beat += 4){
+    const m = document.createElement('div');
+    m.className = 'beat-marker strong';
+    m.style.left = (beat / TRACK_BEATS * 100) + '%';
+    waveform.appendChild(m);
+  }
+})();
+
+const syncPlayBtn = document.getElementById('syncPlayBtn');
+const syncTime = document.getElementById('syncTime');
+const syncBeats = document.getElementById('syncBeats');
+
+function toggleSync(){
+  if (state.syncPlaying){
+    state.syncPlaying = false;
+    syncPlayBtn.textContent = '▶';
+    syncPlayBtn.classList.remove('playing');
+    clearInterval(state.syncTimer);
+  } else {
+    state.syncPlaying = true;
+    syncPlayBtn.textContent = '⏸';
+    syncPlayBtn.classList.add('playing');
+    const start = performance.now() - state.syncFrame;
+    state.syncTimer = setInterval(() => {
+      state.syncFrame = (performance.now() - start) % TRACK_MS;
+      const pct = state.syncFrame / TRACK_MS;
+      playhead.style.left = (pct * 100) + '%';
+      const totalBeats = Math.floor(state.syncFrame / BEAT_MS);
+      const sec = Math.floor(state.syncFrame / 1000);
+      const total = Math.floor(TRACK_MS / 1000);
+      syncTime.textContent = fmt(sec) + ' / ' + fmt(total);
+      syncBeats.textContent = 'beat ' + (totalBeats % TRACK_BEATS) + ' · cut every 1/4';
+      // Pulse bars near the playhead
+      const headIdx = Math.floor(pct * BAR_COUNT);
+      document.querySelectorAll('.wave-bar').forEach((b, i) => {
+        const dist = Math.abs(i - headIdx);
+        const boost = Math.max(0, 1 - dist / 4);
+        const base = state.waveBars[i];
+        b.style.height = Math.min(99, base + boost * 14) + '%';
+        b.style.opacity = (0.55 + boost * 0.45).toFixed(2);
+      });
+    }, 50);
+  }
+}
+function resetSync(){
+  if (state.syncPlaying) toggleSync();
+  state.syncFrame = 0;
+  playhead.style.left = '0%';
+  syncTime.textContent = '00:00 / 00:32';
+  syncBeats.textContent = 'beat 0 · cut every 1/4';
+  document.querySelectorAll('.wave-bar').forEach((b, i) => {
+    b.style.height = state.waveBars[i] + '%';
+    b.style.opacity = '0.85';
+  });
+}
+function fmt(s){ return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+
+// ──── Render queue ────
+function startRender(){
+  if (state.rendering) return;
+  state.rendering = true;
+  const cards = document.querySelectorAll('.queue-card');
+  cards.forEach(c => {
+    c.classList.remove('done','active');
+    c.querySelector('[data-fill]').style.width = '0%';
+    c.querySelector('[data-status]').textContent = 'queued';
+  });
+  let i = 0;
+  function renderOne(){
+    if (i >= cards.length){
+      state.rendering = false;
+      saveSession();
+      return;
+    }
+    const card = cards[i];
+    card.classList.add('active');
+    card.querySelector('[data-status]').textContent = 'rendering · ' + (state.engines.join(' + ') || 'Kling');
+    let pct = 0;
+    const dur = 10000;
+    const step = 100;
+    const t0 = performance.now();
+    state.renderTimer = setInterval(() => {
+      const elapsed = performance.now() - t0;
+      pct = Math.min(100, (elapsed / dur) * 100);
+      card.querySelector('[data-fill]').style.width = pct + '%';
+      if (pct >= 100){
+        clearInterval(state.renderTimer);
+        card.classList.remove('active');
+        card.classList.add('done');
+        card.querySelector('[data-status]').textContent = 'done · ready to download';
+        i++;
+        setTimeout(renderOne, 250);
+      }
+    }, step);
+  }
+  renderOne();
+}
+
+function saveSession(){
+  const sessions = JSON.parse(localStorage.getItem('live.sessions') || '[]');
+  sessions.unshift({
+    file: state.fileName || 'demo · loop_120.wav',
+    engines: [...state.engines.length ? state.engines : ['Kling']],
+    mood: state.mood || 'cinematic',
+    deliverables: ['60s vertical','15s square','4min landscape'],
+    date: new Date().toISOString()
+  });
+  localStorage.setItem('live.sessions', JSON.stringify(sessions.slice(0,200)));
+  refreshHistory();
+}
+
+// ──── History ────
+function refreshHistory(){
+  const sessions = JSON.parse(localStorage.getItem('live.sessions') || '[]');
+  document.getElementById('statTotal').textContent = sessions.length;
+  const engines = new Set();
+  sessions.forEach(s => (s.engines||[]).forEach(e => engines.add(e)));
+  document.getElementById('statEngines').textContent = engines.size;
+  let streak = 0;
+  const days = new Set(sessions.map(s => s.date.slice(0,10)));
+  let d = new Date();
+  while (days.has(d.toISOString().slice(0,10))){
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  document.getElementById('statStreak').textContent = streak;
+  const list = document.getElementById('sessionList');
+  if (!sessions.length){
+    list.innerHTML = '<div class="empty-state">No renders yet. Drop a track to begin.</div>';
+    return;
+  }
+  list.innerHTML = sessions.slice(0, 12).map(s => {
+    const dt = new Date(s.date);
+    const label = dt.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+    const time = dt.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+    const meta = label + ' · ' + time + ' · ' + (s.mood||'cinematic') + ' · done';
+    return '<div class="session-card"><div class="session-meta">' + escapeHtml(meta) + '</div>' +
+      '<div class="session-snippet">' + escapeHtml(s.file) + '</div>' +
+      '<div class="session-tags">' + escapeHtml((s.engines||[]).join(' · ')) + ' → ' + escapeHtml((s.deliverables||[]).join(' · ')) + '</div></div>';
+  }).join('');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+}
+
+// ──── Settings: tier + merch ────
+document.getElementById('tierGrid').addEventListener('click', e => {
+  const c = e.target.closest('.tier-card'); if (!c) return;
+  document.querySelectorAll('.tier-card').forEach(x => x.classList.remove('on'));
+  c.classList.add('on');
+  state.tier = c.dataset.tier;
+  localStorage.setItem('live.tier', state.tier);
+});
+function toggleMerch(){
+  state.merch = !state.merch;
+  document.getElementById('setMerch').classList.toggle('on', state.merch);
+  localStorage.setItem('live.merch', state.merch ? '1':'0');
+}
+
+function resetAll(){
+  if (!confirm('Reset all renders, settings, and track?')) return;
+  ['live.file','live.engines','live.mood','live.sessions','live.tier','live.merch'].forEach(k => localStorage.removeItem(k));
+  state.fileName = ''; state.engines = []; state.mood = ''; state.tier = 'free'; state.merch = false;
+  dropZone.classList.remove('has-file');
+  dropTitle.textContent = 'Drop audio or tap to choose';
+  dropSub.textContent = "we'll read the BPM & key";
+  dropFile.textContent = '';
+  document.querySelectorAll('#engineRow .chip, #moodRow .chip').forEach(c => c.classList.remove('on'));
+  document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('on'));
+  document.querySelector('.tier-card[data-tier="free"]').classList.add('on');
+  document.getElementById('setMerch').classList.remove('on');
+  refreshHistory();
+}
+
+// ──── Init ────
+(function init(){
+  const f = localStorage.getItem('live.file');
+  if (f){
+    state.fileName = f;
+    dropZone.classList.add('has-file');
+    dropTitle.textContent = 'Track loaded';
+    dropSub.textContent = 'BPM detected · ready to sync';
+    dropFile.textContent = '♪ ' + f;
+    document.getElementById('syncFileLabel').textContent = f;
+  }
+  const en = JSON.parse(localStorage.getItem('live.engines') || '[]');
+  state.engines = en;
+  en.forEach(name => {
+    const c = document.querySelector('#engineRow .chip[data-engine="' + name + '"]');
+    if (c) c.classList.add('on');
+  });
+  const m = localStorage.getItem('live.mood');
+  if (m){
+    state.mood = m;
+    const c = document.querySelector('#moodRow .chip[data-mood="' + m + '"]');
+    if (c) c.classList.add('on');
+  }
+  const t = localStorage.getItem('live.tier') || 'free';
+  state.tier = t;
+  const tc = document.querySelector('.tier-card[data-tier="' + t + '"]');
+  if (tc) tc.classList.add('on');
+  if (localStorage.getItem('live.merch') === '1'){
+    state.merch = true;
+    document.getElementById('setMerch').classList.add('on');
+  }
+  refreshHistory();
+})();
+
+// Hide swipe hint after first scroll
+let hintShown = true;
+panels.addEventListener('scroll', () => {
+  if (hintShown){
+    document.getElementById('swipeHint')?.remove();
+    hintShown = false;
+  }
+}, {passive:true, once: true});
+</script>
+<script>if("serviceWorker"in navigator){navigator.serviceWorker.register("./sw.js");}</script>
+</body>
+</html>

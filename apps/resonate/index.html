@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RESONATE — closed-loop generative music</title>
+<meta name="description" content="Music that breathes with you. A closed-loop session that adapts a generative drone to your heart and breath. Focus, Calm, Rest. On-device, AU$30 once.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0A0F1F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RESONATE">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#0A0F1F; --bg-2:#101830; --bg-3:#1a2546;
+  --ink:#EDE9DB; --soft:#c7c1ad; --muted:#8a8576;
+  --gold:#D4AF37; --gold-soft:#b8962b; --cream:#F4E4BC; --navy:#1a2546;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit;background:transparent;border:1px solid rgba(212,175,55,0.3);padding:14px 18px;width:100%;border-radius:8px;font-size:16px}
+input:focus,textarea:focus{outline:none;border-color:var(--gold)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+::selection{background:var(--gold);color:var(--bg)}
+
+/* Layout: horizontal scroll-snap panels */
+.panels{display:flex;flex-direction:row;width:100vw;height:100vh;height:100dvh;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.panels::-webkit-scrollbar{display:none}
+.panel{flex:0 0 100vw;width:100vw;height:100vh;height:100dvh;overflow-y:auto;scroll-snap-align:start;display:flex;flex-direction:column;padding:6vh 7vw 12vh;position:relative}
+
+/* Dot pagination */
+.dots{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:9px;z-index:100;pointer-events:none}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(244,228,188,0.18);transition:all 0.3s}
+.dot.on{background:var(--gold);transform:scale(1.5);box-shadow:0 0 8px var(--gold)}
+
+/* Typography */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:var(--cream);margin-bottom:18px}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(40px,9vw,72px);line-height:1.05;letter-spacing:-0.02em;color:var(--ink);margin-bottom:20px}
+h1 em{font-style:italic;color:var(--gold)}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,6vw,44px);line-height:1.1;margin-bottom:14px}
+h2 em{font-style:italic;color:var(--gold)}
+p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:520px}
+.lede{font-size:17px;color:var(--ink);margin-bottom:24px;max-width:520px}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:0.6em;padding:16px 28px;border:1px solid var(--gold);color:var(--gold);font-family:var(--mono);font-size:12px;letter-spacing:0.2em;text-transform:uppercase;border-radius:50px;transition:all 0.3s;min-height:48px}
+.btn:hover,.btn:active{background:var(--gold);color:var(--bg)}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--cream));color:var(--bg);border-color:transparent}
+.btn-primary:hover,.btn-primary:active{background:var(--cream);color:var(--bg)}
+.btn-ghost{border-color:rgba(244,228,188,0.3);color:var(--soft)}
+
+/* Brand top bar */
+.brand{position:fixed;top:max(16px,env(safe-area-inset-top));left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 7vw;z-index:90;pointer-events:none}
+.brand .mark{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--ink);letter-spacing:-0.01em}
+.brand .crumb{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase}
+
+/* Welcome / panel 1 */
+.welcome-hero{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;max-width:560px;margin:0 auto;width:100%}
+.glow-bg{position:absolute;top:50%;right:-20%;transform:translateY(-50%);width:90vw;height:90vw;max-width:800px;max-height:800px;background:radial-gradient(circle,rgba(212,175,55,0.18),transparent 65%);filter:blur(60px);pointer-events:none;z-index:0}
+.welcome-hero > *{position:relative;z-index:1}
+.welcome-cta-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+
+/* Mode select panel */
+.mode-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:600px;margin:0 auto;width:100%}
+.mode-grid{display:flex;flex-direction:column;gap:14px;margin-top:18px;margin-bottom:24px}
+.mode-card{background:rgba(244,228,188,0.04);border:1px solid rgba(212,175,55,0.2);border-radius:14px;padding:22px 24px;cursor:pointer;transition:all 0.25s;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.mode-card:hover,.mode-card.on{border-color:var(--gold);background:rgba(212,175,55,0.08)}
+.mode-card.on{box-shadow:0 0 24px rgba(212,175,55,0.15)}
+.mode-title{font-family:var(--serif);font-size:30px;line-height:1;color:var(--ink)}
+.mode-card.on .mode-title{color:var(--gold)}
+.mode-sub{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.mode-hz{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--cream);text-align:right;white-space:nowrap}
+
+/* Session player panel */
+.session-stage{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;max-width:560px;margin:0 auto;width:100%}
+.bio-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;margin-bottom:18px}
+.bio-card{background:rgba(244,228,188,0.04);border:1px solid rgba(212,175,55,0.12);border-radius:12px;padding:14px 16px;text-align:center}
+.bio-num{font-family:var(--serif);font-size:36px;font-weight:400;color:var(--gold);line-height:1;letter-spacing:-0.02em}
+.bio-unit{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+.bio-label{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--cream);text-transform:uppercase;margin-top:2px}
+.orb-wrap{position:relative;width:min(56vw,260px);height:min(56vw,260px);display:flex;align-items:center;justify-content:center;margin:6px 0}
+.orb-svg{width:100%;height:100%;overflow:visible}
+.orb-core{transition:r 0.3s ease}
+.coherence-display{text-align:center;margin-top:8px}
+.coh-num{font-family:var(--serif);font-size:54px;font-weight:400;color:var(--gold);line-height:1;letter-spacing:-0.02em}
+.coh-label{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;color:var(--cream);text-transform:uppercase;margin-top:4px}
+.mode-pill{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;color:var(--gold);text-transform:uppercase;margin-top:6px}
+.session-controls{display:flex;gap:14px;margin-top:18px;justify-content:center}
+.icon-btn{width:56px;height:56px;border-radius:50%;border:1px solid rgba(212,175,55,0.35);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:18px;background:rgba(244,228,188,0.04)}
+.icon-btn:hover,.icon-btn:active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+
+/* Chart panel */
+.chart-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:560px;margin:0 auto;width:100%}
+.spark{background:rgba(244,228,188,0.03);border:1px solid rgba(212,175,55,0.15);border-radius:14px;padding:22px;margin-top:20px;margin-bottom:20px}
+.spark svg{width:100%;height:130px;display:block}
+.coh-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:rgba(244,228,188,0.04);border:1px solid rgba(212,175,55,0.1);border-radius:14px;padding:18px;text-align:center}
+.stat-num{font-family:var(--serif);font-size:42px;font-weight:400;color:var(--gold);line-height:1}
+.stat-label{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+/* History panel */
+.history-wrap{max-width:560px;margin:0 auto;width:100%}
+.history-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px;margin-top:20px}
+.session-list{display:flex;flex-direction:column;gap:10px}
+.session-card{background:rgba(244,228,188,0.03);border-left:2px solid var(--gold);padding:14px 18px;border-radius:8px}
+.session-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;margin-bottom:6px}
+.session-snippet{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink);line-height:1.4}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);font-style:italic}
+
+/* Settings panel */
+.settings-wrap{max-width:520px;margin:0 auto;width:100%}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid rgba(244,228,188,0.06)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{color:var(--ink);font-size:15px}
+.setting-value{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:0.12em}
+.toggle{width:46px;height:26px;border-radius:13px;background:rgba(244,228,188,0.1);position:relative;cursor:pointer;transition:background 0.3s}
+.toggle.on{background:var(--gold)}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--cream);transition:transform 0.3s}
+.toggle.on::after{transform:translateX(20px);background:var(--bg)}
+
+/* Swipe hint */
+.swipe-hint{position:fixed;bottom:36px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:rgba(244,228,188,0.4);text-transform:uppercase;z-index:99;pointer-events:none;animation:hintFade 4s ease-in-out 1.5s forwards}
+@keyframes hintFade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
+
+/* Subtle pulse on the orb when active */
+@keyframes goldPulse{0%,100%{filter:drop-shadow(0 0 12px rgba(212,175,55,0.4))}50%{filter:drop-shadow(0 0 28px rgba(212,175,55,0.8))}}
+.orb-svg.active{animation:goldPulse 4s ease-in-out infinite}
+
+@media (max-width:380px){
+  h1{font-size:36px}
+  .panel{padding:5vh 5vw 14vh}
+  .bio-num{font-size:30px}
+  .coh-num{font-size:44px}
+}
+</style>
+</head>
+<body>
+<div class="brand">
+  <span class="mark">RHYTHMIX FREQUENCY <em style="color:var(--gold);font-weight:500">· RESONATE</em></span>
+  <span class="crumb">v1 · AU$30</span>
+</div>
+
+<div class="panels" id="panels">
+
+  <!-- Panel 1: Welcome -->
+  <section class="panel" aria-label="Welcome">
+    <div class="glow-bg"></div>
+    <div class="welcome-hero">
+      <div class="eyebrow">RESONATE · CLOSED-LOOP MUSIC</div>
+      <h1>Music that <em>breathes</em> with you.</h1>
+      <p class="lede">A generative drone that listens to your heart and breath, then morphs in real time to pull you toward coherence. Focus, calm, or rest — pick a state, the music meets you there.</p>
+      <div class="welcome-cta-row">
+        <button class="btn btn-primary" onclick="goTo(1)">Begin a session →</button>
+        <button class="btn btn-ghost" onclick="goTo(4)">See history</button>
+      </div>
+      <p class="mono" style="margin-top:30px;color:var(--muted)">Swipe → between screens. Or use arrow keys.</p>
+    </div>
+  </section>
+
+  <!-- Panel 2: Mode select -->
+  <section class="panel" aria-label="Mode">
+    <div class="mode-wrap">
+      <div class="eyebrow">PANEL 2 · CHOOSE A STATE</div>
+      <h2>Where are you <em>headed?</em></h2>
+      <p>Tap a state. The drone composes around that intention.</p>
+      <div class="mode-grid" id="modeGrid">
+        <div class="mode-card" data-mode="focus" onclick="setMode('focus')">
+          <div>
+            <div class="mode-title">Focus</div>
+            <div class="mode-sub">Alert · upright · making something</div>
+          </div>
+          <div class="mode-hz">432 · 528 · 648 Hz</div>
+        </div>
+        <div class="mode-card" data-mode="calm" onclick="setMode('calm')">
+          <div>
+            <div class="mode-title">Calm</div>
+            <div class="mode-sub">Settled · breathing slow · arriving</div>
+          </div>
+          <div class="mode-hz">174 · 396 · 528 Hz</div>
+        </div>
+        <div class="mode-card" data-mode="rest" onclick="setMode('rest')">
+          <div>
+            <div class="mode-title">Rest</div>
+            <div class="mode-sub">Horizontal · letting go · sleep edge</div>
+          </div>
+          <div class="mode-hz">110 · 220 · 330 Hz</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="goTo(2)">Take me to the session →</button>
+    </div>
+  </section>
+
+  <!-- Panel 3: Session player -->
+  <section class="panel" aria-label="Session">
+    <div class="session-stage">
+      <div class="eyebrow" style="align-self:flex-start">PANEL 3 · LIVE SESSION</div>
+      <div class="bio-row">
+        <div class="bio-card">
+          <div class="bio-num" id="hrNum">—</div>
+          <div class="bio-label">Heart</div>
+          <div class="bio-unit">bpm</div>
+        </div>
+        <div class="bio-card">
+          <div class="bio-num" id="brNum">—</div>
+          <div class="bio-label">Breath</div>
+          <div class="bio-unit">per min</div>
+        </div>
+      </div>
+      <div class="orb-wrap">
+        <svg class="orb-svg" id="orb" viewBox="0 0 200 200">
+          <defs>
+            <radialGradient id="og" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.9"/>
+              <stop offset="60%" stop-color="#F4E4BC" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="100" cy="100" r="80" fill="url(#og)" class="orb-core" id="orbCore"/>
+          <circle cx="100" cy="100" r="80" fill="none" stroke="#D4AF37" stroke-width="1" stroke-opacity="0.5" id="orbRing"/>
+        </svg>
+      </div>
+      <div class="coherence-display">
+        <div class="coh-num" id="cohNum">—</div>
+        <div class="coh-label">Coherence</div>
+        <div class="mode-pill" id="modePill">— mode</div>
+      </div>
+      <div class="session-controls">
+        <button class="icon-btn" id="playBtn" onclick="toggleSession()" aria-label="Play / pause">▶</button>
+        <button class="icon-btn" onclick="cycleMode()" aria-label="Next mode">⤳</button>
+        <button class="icon-btn" onclick="resetSession()" aria-label="Reset">↺</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 4: Coherence chart -->
+  <section class="panel" aria-label="Coherence">
+    <div class="chart-wrap">
+      <div class="eyebrow">PANEL 4 · LAST 30 SECONDS</div>
+      <h2>Your <em>coherence</em> curve.</h2>
+      <p>Heart and breath drifting into phase. Higher is better.</p>
+      <div class="spark">
+        <svg id="sparkSvg" viewBox="0 0 600 130" preserveAspectRatio="none">
+          <line x1="0" y1="65" x2="600" y2="65" stroke="rgba(244,228,188,0.08)" stroke-dasharray="2,4"/>
+          <polyline id="sparkLine" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points=""/>
+          <polyline id="sparkFill" fill="rgba(212,175,55,0.12)" stroke="none" points=""/>
+        </svg>
+      </div>
+      <div class="coh-stats">
+        <div class="stat-card"><div class="stat-num" id="statBest">—</div><div class="stat-label">Peak</div></div>
+        <div class="stat-card"><div class="stat-num" id="statAvg">—</div><div class="stat-label">Avg</div></div>
+        <div class="stat-card"><div class="stat-num" id="statNow">—</div><div class="stat-label">Now</div></div>
+      </div>
+      <button class="btn btn-ghost" onclick="goTo(2)">Back to the session →</button>
+    </div>
+  </section>
+
+  <!-- Panel 5: History -->
+  <section class="panel" aria-label="History">
+    <div class="history-wrap">
+      <div class="eyebrow">PANEL 5 · YOUR SESSIONS</div>
+      <h2>Where you've <em>been.</em></h2>
+      <div class="history-stats">
+        <div class="stat-card"><div class="stat-num" id="histStreak">0</div><div class="stat-label">Streak</div></div>
+        <div class="stat-card"><div class="stat-num" id="histCount">0</div><div class="stat-label">Sessions</div></div>
+        <div class="stat-card"><div class="stat-num" id="histMins">0</div><div class="stat-label">Minutes</div></div>
+      </div>
+      <div class="session-list" id="histList">
+        <div class="empty-state">No sessions yet. Run one to begin.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 6: Settings -->
+  <section class="panel" aria-label="Settings">
+    <div class="settings-wrap">
+      <div class="eyebrow">PANEL 6 · SETTINGS</div>
+      <h2>Tune the <em>loop.</em></h2>
+      <div class="setting-row">
+        <span class="setting-label">Mock biometrics</span>
+        <div class="toggle on" id="setMock" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">AirPods heart-rate (when available)</span>
+        <span class="setting-value">Not paired</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Drone volume</span>
+        <span class="setting-value">12% master</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Coherence window</span>
+        <span class="setting-value">30 s rolling</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Data</span>
+        <span class="setting-value">Kept on this device</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Lifetime price</span>
+        <span class="setting-value">AU$30 · paid</span>
+      </div>
+      <div style="margin-top:30px;text-align:center">
+        <button class="btn btn-ghost" onclick="resetAll()">Reset all data</button>
+      </div>
+      <p style="text-align:center;margin-top:24px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.15em">RHYTHMIX FREQUENCY · RESONATE v1 · rhythmixapp.com.au/resonate</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="swipe-hint" id="swipeHint">swipe → to explore</div>
+
+<script>
+// ──── State ────
+const MODES = {
+  focus: { name: 'Focus', freqs: [432, 528, 648], targetBr: 12, targetHr: 72 },
+  calm:  { name: 'Calm',  freqs: [174, 396, 528], targetBr: 9,  targetHr: 64 },
+  rest:  { name: 'Rest',  freqs: [110, 220, 330], targetBr: 6,  targetHr: 56 }
+};
+const state = {
+  mode: localStorage.getItem('resonate.mode') || 'calm',
+  active: false,
+  startedAt: null,
+  hr: 70,        // bpm
+  br: 12,        // breaths/min
+  coherence: 50,
+  cohHistory: [], // last 60 samples (~30s at 500ms)
+  peakCoh: 0,
+  audioCtx: null,
+  oscillators: [],
+  loopTimer: null,
+  orbTimer: null,
+  orbPhase: 0,
+  t: 0
+};
+
+// ──── Panel navigation ────
+const panels = document.getElementById('panels');
+const sections = document.querySelectorAll('.panel');
+const dotsContainer = document.getElementById('dots');
+sections.forEach((s, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.onclick = () => goTo(i);
+  d.style.pointerEvents = 'auto';
+  dotsContainer.appendChild(d);
+});
+function goTo(i){
+  panels.scrollTo({left: window.innerWidth * i, behavior: 'smooth'});
+}
+panels.addEventListener('scroll', () => {
+  const i = Math.round(panels.scrollLeft / window.innerWidth);
+  document.querySelectorAll('.dot').forEach((d, idx) => d.classList.toggle('on', idx === i));
+}, {passive:true});
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') panels.scrollBy({left: window.innerWidth, behavior: 'smooth'});
+  if (e.key === 'ArrowLeft') panels.scrollBy({left: -window.innerWidth, behavior: 'smooth'});
+});
+
+// ──── Mode select ────
+function setMode(m){
+  state.mode = m;
+  localStorage.setItem('resonate.mode', m);
+  refreshModeUI();
+  if (state.active){
+    // Smoothly retune the drone
+    rebuildDrone();
+  }
+}
+function refreshModeUI(){
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('on', c.dataset.mode === state.mode));
+  document.getElementById('modePill').textContent = MODES[state.mode].name + ' mode';
+}
+function cycleMode(){
+  const keys = Object.keys(MODES);
+  const next = keys[(keys.indexOf(state.mode) + 1) % keys.length];
+  setMode(next);
+}
+
+// ──── Session loop ────
+const orbCore = document.getElementById('orbCore');
+const orbSvg = document.getElementById('orb');
+const playBtn = document.getElementById('playBtn');
+
+function toggleSession(){
+  if (state.active) stopSession();
+  else startSession();
+}
+function startSession(){
+  state.active = true;
+  state.startedAt = Date.now();
+  state.cohHistory = [];
+  state.peakCoh = 0;
+  state.t = 0;
+  playBtn.textContent = '⏸';
+  orbSvg.classList.add('active');
+  startAudio();
+  // Bio simulation tick (every 500ms)
+  state.loopTimer = setInterval(tick, 500);
+  // Orb breathing animation (smoother, 60ms)
+  state.orbTimer = setInterval(animateOrb, 60);
+}
+function stopSession(){
+  if (state.active && state.startedAt){
+    saveSession();
+  }
+  state.active = false;
+  playBtn.textContent = '▶';
+  orbSvg.classList.remove('active');
+  clearInterval(state.loopTimer);
+  clearInterval(state.orbTimer);
+  stopAudio();
+  orbCore.setAttribute('r', 80);
+}
+function resetSession(){
+  stopSession();
+  state.cohHistory = [];
+  state.peakCoh = 0;
+  document.getElementById('hrNum').textContent = '—';
+  document.getElementById('brNum').textContent = '—';
+  document.getElementById('cohNum').textContent = '—';
+  renderSpark();
+}
+
+// ──── Simulated biometrics ────
+// HR sine-wave 50-90 bpm drifting toward mode target
+// BR sine-wave 8-16 bpm drifting toward mode target
+function tick(){
+  state.t += 0.5; // seconds
+  const m = MODES[state.mode];
+  // HR: target ± 8bpm sine
+  const hrTarget = m.targetHr;
+  state.hr = hrTarget + Math.sin(state.t * 0.4) * 6 + Math.sin(state.t * 1.7) * 2 + (Math.random() - 0.5) * 1.5;
+  state.hr = Math.max(50, Math.min(90, state.hr));
+  // BR: target ± 3 sine
+  const brTarget = m.targetBr;
+  state.br = brTarget + Math.sin(state.t * 0.18) * 1.8 + (Math.random() - 0.5) * 0.6;
+  state.br = Math.max(6, Math.min(18, state.br));
+  // Coherence: high when HR & BR both near target, weighted
+  const hrErr = Math.abs(state.hr - hrTarget) / 20;       // 0-1
+  const brErr = Math.abs(state.br - brTarget) / 6;        // 0-1
+  const raw = Math.max(0, 100 - (hrErr * 50 + brErr * 50));
+  // Smooth toward raw
+  state.coherence = state.coherence * 0.7 + raw * 0.3;
+  // Track peak
+  if (state.coherence > state.peakCoh) state.peakCoh = state.coherence;
+  // Push to history (keep last 60 = 30s)
+  state.cohHistory.push(state.coherence);
+  if (state.cohHistory.length > 60) state.cohHistory.shift();
+  // Update UI
+  document.getElementById('hrNum').textContent = state.hr.toFixed(0);
+  document.getElementById('brNum').textContent = state.br.toFixed(1);
+  document.getElementById('cohNum').textContent = state.coherence.toFixed(0);
+  // Tune the drone
+  tuneDrone();
+  renderSpark();
+}
+
+// ──── Orb animation (breath rate) ────
+function animateOrb(){
+  // breaths/min → period in ms
+  const periodMs = 60000 / state.br;
+  const phase = ((Date.now() % periodMs) / periodMs) * Math.PI * 2;
+  // r ranges 60..95
+  const r = 77 + Math.sin(phase) * 18;
+  orbCore.setAttribute('r', r.toFixed(1));
+}
+
+// ──── Web Audio: 3-osc drone ────
+function ensureAudio(){
+  if (state.audioCtx) return;
+  try {
+    state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e){ console.error('No Web Audio:', e); }
+}
+function startAudio(){
+  ensureAudio();
+  if (!state.audioCtx) return;
+  if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+  stopAudio();
+  const ctx = state.audioCtx;
+  const master = ctx.createGain();
+  master.gain.value = 0.0;
+  master.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 2.5);
+  master.connect(ctx.destination);
+  state.masterGain = master;
+  const freqs = MODES[state.mode].freqs;
+  freqs.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.frequency.value = freq;
+    osc.type = i === 0 ? 'sine' : (i === 1 ? 'triangle' : 'sine');
+    const g = ctx.createGain();
+    g.gain.value = i === 0 ? 0.45 : (i === 1 ? 0.28 : 0.18);
+    // slow LFO on amplitude for shimmer
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.05 + i * 0.04;
+    const lfoG = ctx.createGain();
+    lfoG.gain.value = 0.12;
+    lfo.connect(lfoG).connect(g.gain);
+    lfo.start();
+    osc.connect(g).connect(master);
+    osc.start();
+    state.oscillators.push(osc, lfo);
+  });
+}
+function rebuildDrone(){
+  if (!state.audioCtx) return;
+  stopAudio();
+  startAudio();
+}
+function tuneDrone(){
+  // Gently nudge oscillator detune based on coherence — higher coherence = tighter tuning
+  if (!state.oscillators.length || !state.audioCtx) return;
+  const detune = (100 - state.coherence) * 0.6; // cents
+  state.oscillators.forEach((o, i) => {
+    if (o.frequency){ // skip LFOs
+      const baseFreqs = MODES[state.mode].freqs;
+      const idx = Math.floor(i / 2);
+      const base = baseFreqs[idx];
+      if (base) o.frequency.setTargetAtTime(base, state.audioCtx.currentTime, 0.5);
+      if (o.detune) o.detune.setTargetAtTime(detune * (i % 2 === 0 ? 1 : -1), state.audioCtx.currentTime, 0.8);
+    }
+  });
+}
+function stopAudio(){
+  state.oscillators.forEach(o => { try { o.stop(); o.disconnect(); } catch(e){} });
+  state.oscillators = [];
+}
+
+// ──── Sparkline ────
+function renderSpark(){
+  const pts = state.cohHistory;
+  const line = document.getElementById('sparkLine');
+  const fill = document.getElementById('sparkFill');
+  if (!pts.length){
+    line.setAttribute('points', '');
+    fill.setAttribute('points', '');
+    document.getElementById('statBest').textContent = '—';
+    document.getElementById('statAvg').textContent = '—';
+    document.getElementById('statNow').textContent = '—';
+    return;
+  }
+  const W = 600, H = 130;
+  const step = W / Math.max(pts.length - 1, 1);
+  const coords = pts.map((v, i) => `${(i * step).toFixed(1)},${(H - (v / 100) * (H - 10) - 5).toFixed(1)}`);
+  line.setAttribute('points', coords.join(' '));
+  fill.setAttribute('points', `0,${H} ` + coords.join(' ') + ` ${W},${H}`);
+  const best = Math.max(...pts);
+  const avg = pts.reduce((a,b) => a + b, 0) / pts.length;
+  const now = pts[pts.length - 1];
+  document.getElementById('statBest').textContent = best.toFixed(0);
+  document.getElementById('statAvg').textContent = avg.toFixed(0);
+  document.getElementById('statNow').textContent = now.toFixed(0);
+}
+
+// ──── History / persistence ────
+function saveSession(){
+  const sessions = JSON.parse(localStorage.getItem('resonate.sessions') || '[]');
+  const durationSec = Math.round((Date.now() - state.startedAt) / 1000);
+  if (durationSec < 5) return; // ignore micro-sessions
+  sessions.unshift({
+    mode: state.mode,
+    durationSec,
+    peakCoh: Math.round(state.peakCoh),
+    avgCoh: state.cohHistory.length ? Math.round(state.cohHistory.reduce((a,b)=>a+b,0)/state.cohHistory.length) : 0,
+    date: new Date().toISOString()
+  });
+  localStorage.setItem('resonate.sessions', JSON.stringify(sessions.slice(0, 200)));
+  refreshHistory();
+}
+function refreshHistory(){
+  const sessions = JSON.parse(localStorage.getItem('resonate.sessions') || '[]');
+  document.getElementById('histCount').textContent = sessions.length;
+  const totalMin = Math.round(sessions.reduce((a,s) => a + (s.durationSec || 0), 0) / 60);
+  document.getElementById('histMins').textContent = totalMin;
+  // Streak
+  let streak = 0;
+  const days = new Set(sessions.map(s => s.date.slice(0,10)));
+  let d = new Date();
+  while (days.has(d.toISOString().slice(0,10))){
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  document.getElementById('histStreak').textContent = streak;
+  const list = document.getElementById('histList');
+  if (!sessions.length){
+    list.innerHTML = '<div class="empty-state">No sessions yet. Run one to begin.</div>';
+    return;
+  }
+  list.innerHTML = sessions.slice(0, 20).map(s => {
+    const dt = new Date(s.date);
+    const label = dt.toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'});
+    const time = dt.toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
+    const mm = Math.floor(s.durationSec / 60);
+    const ss = String(s.durationSec % 60).padStart(2,'0');
+    const meta = `${label} · ${time} · ${MODES[s.mode]?.name || s.mode} · ${mm}:${ss}`;
+    return `<div class="session-card"><div class="session-meta">${meta}</div><div class="session-snippet">Peak coherence ${s.peakCoh} · avg ${s.avgCoh}</div></div>`;
+  }).join('');
+}
+
+function resetAll(){
+  if (!confirm('Reset all sessions and mode selection?')) return;
+  localStorage.removeItem('resonate.sessions');
+  localStorage.removeItem('resonate.mode');
+  state.mode = 'calm';
+  refreshModeUI();
+  refreshHistory();
+}
+
+// ──── Init ────
+refreshModeUI();
+refreshHistory();
+renderSpark();
+
+// Hide swipe hint after first scroll
+let hintShown = true;
+panels.addEventListener('scroll', () => {
+  if (hintShown){
+    document.getElementById('swipeHint')?.remove();
+    hintShown = false;
+  }
+}, {passive:true, once: true});
+
+// Stop session if user navigates away (don't leak audio)
+window.addEventListener('beforeunload', () => { if (state.active) stopSession(); });
+</script>
+<script>if("serviceWorker"in navigator){navigator.serviceWorker.register("./sw.js");}</script>
+</body>
+</html>
