@@ -337,40 +337,28 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
         return
 
     from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
     import google.auth.transport.requests
 
     token_file = Path(__file__).parent / "token.json"
-    creds = None
+    SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
-    client_config = {
-        "installed": {
-            "client_id": YOUTUBE_CLIENT_ID,
-            "client_secret": YOUTUBE_CLIENT_SECRET,
-            "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob"],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token"
-        }
-    }
+    if not token_file.exists() or not token_file.read_text().strip():
+        print("  ✗ No token.json found.")
+        print("    Run: python kids-channel/youtube_auth.py")
+        print("    Then add the token as GitHub Secret YOUTUBE_TOKEN")
+        return
 
-    if token_file.exists():
-        creds = Credentials.from_authorized_user_file(
-            str(token_file),
-            ["https://www.googleapis.com/auth/youtube.upload"]
-        )
+    creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+    if not creds.valid:
+        if creds.expired and creds.refresh_token:
             creds.refresh(google.auth.transport.requests.Request())
+            token_file.write_text(creds.to_json())
         else:
-            flow = InstalledAppFlow.from_client_config(
-                client_config,
-                scopes=["https://www.googleapis.com/auth/youtube.upload"]
-            )
-            creds = flow.run_console()
-        token_file.write_text(creds.to_json())
+            print("  ✗ Token invalid. Re-run youtube_auth.py")
+            return
 
     youtube = build("youtube", "v3", credentials=creds)
 
