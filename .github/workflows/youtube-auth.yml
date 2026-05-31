@@ -1,0 +1,96 @@
+name: YouTube — Get Auth Token
+
+on:
+  workflow_dispatch:
+    inputs:
+      auth_code:
+        description: "Leave blank for Step 1. Paste the code from Google for Step 2."
+        required: false
+        type: string
+
+jobs:
+  youtube-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Step 1 — Get login URL and code
+        if: inputs.auth_code == ''
+        env:
+          CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+        run: |
+          python3 - <<'EOF'
+          import urllib.request, urllib.parse, json, os
+
+          client_id = os.environ["CLIENT_ID"]
+          scope = "https://www.googleapis.com/auth/youtube.upload"
+
+          data = urllib.parse.urlencode({
+              "client_id": client_id,
+              "scope": scope
+          }).encode()
+
+          req = urllib.request.Request(
+              "https://oauth2.googleapis.com/device/code",
+              data=data
+          )
+          with urllib.request.urlopen(req) as r:
+              resp = json.loads(r.read())
+
+          print("=" * 60)
+          print("OPEN THIS URL IN YOUR BROWSER:")
+          print()
+          print(resp["verification_url"])
+          print()
+          print("ENTER THIS CODE WHEN ASKED:")
+          print()
+          print(resp["user_code"])
+          print()
+          print("Then run this workflow again and paste the code above.")
+          print("device_code (save this):", resp["device_code"])
+          print("=" * 60)
+          EOF
+
+      - name: Step 2 — Exchange code for token
+        if: inputs.auth_code != ''
+        env:
+          CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          AUTH_CODE: ${{ inputs.auth_code }}
+        run: |
+          python3 - <<'EOF'
+          import urllib.request, urllib.parse, json, os
+
+          data = urllib.parse.urlencode({
+              "client_id": os.environ["CLIENT_ID"],
+              "client_secret": os.environ["CLIENT_SECRET"],
+              "device_code": os.environ["AUTH_CODE"],
+              "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
+          }).encode()
+
+          req = urllib.request.Request(
+              "https://oauth2.googleapis.com/token",
+              data=data
+          )
+          try:
+              with urllib.request.urlopen(req) as r:
+                  token = json.loads(r.read())
+          except Exception as e:
+              print("Error:", e)
+              raise
+
+          token_json = json.dumps({
+              "token": token["access_token"],
+              "refresh_token": token.get("refresh_token", ""),
+              "token_uri": "https://oauth2.googleapis.com/token",
+              "client_id": os.environ["CLIENT_ID"],
+              "client_secret": os.environ["CLIENT_SECRET"],
+              "scopes": ["https://www.googleapis.com/auth/youtube.upload"],
+              "expiry": None
+          }, indent=2)
+
+          print("=" * 60)
+          print("SUCCESS! Copy everything between the lines below")
+          print("and save it as GitHub Secret: YOUTUBE_TOKEN")
+          print("=" * 60)
+          print(token_json)
+          print("=" * 60)
+          EOF
