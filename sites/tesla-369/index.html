@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>3-6-9 Breath</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a14;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .circle-wrap {
+    position: relative;
+    width: min(70vw, 320px);
+    height: min(70vw, 320px);
+    margin-bottom: 48px;
+  }
+
+  svg.ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  circle.track {
+    fill: none;
+    stroke: rgba(255,255,255,0.06);
+    stroke-width: 3;
+  }
+
+  circle.progress {
+    fill: none;
+    stroke: #7b6fff;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.1s linear, stroke 0.4s ease;
+  }
+
+  .orb {
+    position: absolute;
+    inset: 12%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 38%, #9d8fff, #4a3db0 60%, #1a1440);
+    box-shadow: 0 0 60px rgba(123,111,255,0.4), 0 0 120px rgba(123,111,255,0.15);
+    transition: transform 0.1s linear;
+    will-change: transform;
+  }
+
+  .phase-label {
+    font-size: clamp(13px, 4vw, 16px);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 12px;
+    height: 20px;
+    transition: opacity 0.3s;
+  }
+
+  .count {
+    font-size: clamp(56px, 18vw, 88px);
+    font-weight: 100;
+    letter-spacing: -0.02em;
+    color: #fff;
+    line-height: 1;
+    height: 1.1em;
+    transition: opacity 0.2s;
+  }
+
+  .start-btn {
+    margin-top: 52px;
+    padding: 16px 48px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 100px;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.8);
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .start-btn:active { background: rgba(255,255,255,0.12); }
+  .start-btn.hidden { opacity: 0; pointer-events: none; }
+
+  .rounds {
+    position: fixed;
+    top: max(env(safe-area-inset-top), 20px);
+    right: 20px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+
+<div class="rounds" id="rounds"></div>
+
+<div class="circle-wrap">
+  <svg class="ring" viewBox="0 0 100 100">
+    <circle class="track" cx="50" cy="50" r="47"/>
+    <circle class="progress" id="ring" cx="50" cy="50" r="47"/>
+  </svg>
+  <div class="orb" id="orb"></div>
+</div>
+
+<div class="phase-label" id="phase">tap to begin</div>
+<div class="count" id="count">3</div>
+<button class="start-btn" id="btn" onclick="start()">Begin</button>
+
+<script>
+const phases = [
+  { name: 'Inhale',  secs: 3, color: '#7b6fff', scale: 1.08 },
+  { name: 'Hold',    secs: 6, color: '#b89aff', scale: 1.08 },
+  { name: 'Exhale',  secs: 9, color: '#4a8fff', scale: 0.92 },
+];
+
+const CIRCUMFERENCE = 2 * Math.PI * 47;
+
+const ring    = document.getElementById('ring');
+const orb     = document.getElementById('orb');
+const phaseEl = document.getElementById('phase');
+const countEl = document.getElementById('count');
+const btn     = document.getElementById('btn');
+const roundsEl= document.getElementById('rounds');
+
+ring.style.strokeDasharray  = CIRCUMFERENCE;
+ring.style.strokeDashoffset = CIRCUMFERENCE;
+
+let running = false;
+let roundCount = 0;
+let raf, startTime, phaseIdx = 0, phaseTick = 0;
+
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.78;
+  u.pitch = 0.82;
+  u.volume = 1;
+  const voices = speechSynthesis.getVoices();
+  const deep = voices.find(v =>
+    /daniel|liam|alex|fred|albert|arthur|thomas/i.test(v.name) && /en/i.test(v.lang)
+  ) || voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male'))
+    || voices.find(v => v.lang.startsWith('en'));
+  if (deep) u.voice = deep;
+  speechSynthesis.speak(u);
+}
+
+function start() {
+  if (running) return;
+  running = true;
+  btn.classList.add('hidden');
+  speechSynthesis.getVoices(); // warm up
+  phaseIdx = 0;
+  roundCount = 0;
+  beginPhase();
+}
+
+function beginPhase() {
+  const p = phases[phaseIdx];
+  phaseEl.textContent = p.name;
+  ring.style.stroke = p.color;
+  countEl.textContent = p.secs;
+  speak(p.name);
+  phaseTick = p.secs;
+  startTime = performance.now();
+  loop();
+}
+
+function loop() {
+  const p = phases[phaseIdx];
+  const elapsed = (performance.now() - startTime) / 1000;
+  const progress = Math.min(elapsed / p.secs, 1);
+
+  // Ring
+  ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+
+  // Orb scale
+  let scale;
+  if (phaseIdx === 0) scale = 1 + (p.scale - 1) * progress;
+  else if (phaseIdx === 1) scale = p.scale;
+  else scale = p.scale + (1 - p.scale) * progress;
+  orb.style.transform = `scale(${scale})`;
+
+  // Countdown
+  const remaining = Math.ceil(p.secs - elapsed);
+  if (remaining !== phaseTick) {
+    phaseTick = remaining;
+    countEl.textContent = Math.max(remaining, 1);
+  }
+
+  if (progress < 1) {
+    raf = requestAnimationFrame(loop);
+  } else {
+    phaseIdx++;
+    if (phaseIdx >= phases.length) {
+      phaseIdx = 0;
+      roundCount++;
+      roundsEl.textContent = roundCount > 0 ? `${roundCount} round${roundCount > 1 ? 's' : ''}` : '';
+    }
+    ring.style.strokeDashoffset = CIRCUMFERENCE;
+    setTimeout(beginPhase, 300);
+  }
+}
+
+// Pre-load voices on iOS (requires user gesture)
+document.addEventListener('touchstart', () => speechSynthesis.getVoices(), { once: true });
+</script>
+</body>
+</html>
