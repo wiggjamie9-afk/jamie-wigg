@@ -28,10 +28,10 @@ YOUTUBE_CLIENT_ID = os.getenv("YOUTUBE_CLIENT_ID")
 YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 
 # ── Show config (update once you have a character) ──────────────────────────
-SHOW_NAME = "Pip's Quiet World"
-CHARACTER_NAME = "Pip"
-CHARACTER_DESC = "a tiny hedgehog with soft brown spines and big curious eyes"
-SHOW_DESC = "Calm, gentle nature adventures for toddlers — no loud sounds, no sudden jumps."
+SHOW_NAME = "Little Sunny"
+CHARACTER_NAME = "Sunny"
+CHARACTER_DESC = "a small round fluffy quokka with a permanent gentle smile, soft golden-brown fur, big warm brown eyes, and tiny round ears"
+SHOW_DESC = "Calm, gentle Australian bush adventures with Sunny the Quokka — peaceful nature stories for toddlers at bedtime or quiet time."
 VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # ElevenLabs default calm voice; swap for custom
 CHANNEL_CATEGORY = "27"            # YouTube category: Education
 MADE_FOR_KIDS = True
