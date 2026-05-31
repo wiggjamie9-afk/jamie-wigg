@@ -42,46 +42,79 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # ── 1. Script generation ─────────────────────────────────────────────────────
 
-def generate_script(topic: str) -> dict:
-    print(f"[1/6] Generating script for: {topic}")
-    import anthropic
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
-    prompt = f"""You are writing an episode of "{SHOW_NAME}", a calm bedtime cartoon for toddlers ages 2–5.
-The main character is {CHARACTER_NAME}, {CHARACTER_DESC}.
-The show is slow-paced, gentle, and cozy — no conflict, no shouting, no sudden drama.
+SCRIPT_PROMPT_TEMPLATE = """You are writing an episode of "{show_name}", a calm bedtime cartoon for toddlers ages 2-5.
+The main character is {character_name}, {character_desc}.
+The show is slow-paced, gentle, and cozy - no conflict, no shouting, no sudden drama.
 
 Write a short episode about: {topic}
 
-Return a JSON object with exactly these fields:
+Return ONLY a valid JSON object with exactly these fields, no other text:
 {{
   "title": "episode title (max 60 chars, warm and descriptive)",
-  "description": "YouTube description (2–3 sentences, parent-friendly, include '{SHOW_NAME}')",
+  "description": "YouTube description (2-3 sentences, parent-friendly, include '{show_name}')",
   "tags": ["list", "of", "10", "youtube", "tags"],
-  "narration": "Full narration text (300–400 words). Gentle, slow pace. Written for a calm voice-over.",
+  "narration": "Full narration text (300-400 words). Gentle, slow pace. Written for a calm voice-over.",
   "scenes": [
     {{
       "id": 1,
       "duration": 8,
-      "image_prompt": "Detailed visual description for image generation. Soft watercolour style, warm palette, {CHARACTER_NAME} {CHARACTER_DESC}. Scene: ...",
+      "image_prompt": "Detailed visual description for image generation. Soft watercolour style, warm palette, {character_name} {character_desc}. Scene: ...",
       "narration_segment": "The words spoken during this scene."
     }}
   ]
 }}
 
-Create 6 scenes. Each scene is 8 seconds. Total episode ~48 seconds of video + intro/outro.
-Make the image prompts specific, beautiful, and consistent — {CHARACTER_NAME} always looks the same."""
+Create 6 scenes. Each scene is 8 seconds.
+Make the image prompts specific, beautiful, and consistent - {character_name} always looks the same."""
 
+
+def _build_prompt(topic: str) -> str:
+    return SCRIPT_PROMPT_TEMPLATE.format(
+        show_name=SHOW_NAME,
+        character_name=CHARACTER_NAME,
+        character_desc=CHARACTER_DESC,
+        topic=topic,
+    )
+
+
+def _extract_json(text: str) -> dict:
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start == -1 or end == 0:
+        raise ValueError("No JSON object found in response")
+    return json.loads(text[start:end])
+
+
+def generate_script_via_anthropic(topic: str) -> dict:
+    import anthropic
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "user", "content": _build_prompt(topic)}]
     )
+    return _extract_json(message.content[0].text)
 
-    text = message.content[0].text
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    return json.loads(text[start:end])
+
+def generate_script_via_pollinations(topic: str) -> dict:
+    """Free fallback using Pollinations text API (no key required)."""
+    print("  ↳ Using Pollinations free text API for script generation...")
+    prompt = _build_prompt(topic)
+    encoded = requests.utils.quote(prompt)
+    url = f"https://text.pollinations.ai/{encoded}?model=openai&json=true"
+    r = requests.get(url, timeout=120)
+    r.raise_for_status()
+    return _extract_json(r.text)
+
+
+def generate_script(topic: str) -> dict:
+    print(f"[1/6] Generating script for: {topic}")
+    if ANTHROPIC_API_KEY:
+        try:
+            return generate_script_via_anthropic(topic)
+        except Exception as e:
+            print(f"  ⚠ Anthropic failed ({e}) — falling back to Pollinations")
+    return generate_script_via_pollinations(topic)
 
 
 # ── 2. Narration audio ────────────────────────────────────────────────────────
@@ -375,23 +408,36 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
 
 def main():
     parser = argparse.ArgumentParser(description="Kids channel episode pipeline")
-    parser.add_argument("--topic", required=True, help="Episode topic")
+    parser.add_argument("--topic", required=False, help="Episode topic")
+    parser.add_argument("--script-file", help="Path to pre-written script.json (skips generation)")
     parser.add_argument("--dry-run", action="store_true", help="Skip upload")
     parser.add_argument("--skip-video", action="store_true",
                         help="Skip Higgsfield (use placeholder images)")
     args = parser.parse_args()
 
-    slug = args.topic[:40].lower().replace(" ", "-").replace("/", "-")
+    if not args.topic and not args.script_file:
+        parser.error("Provide --topic or --script-file")
+
+    # Derive slug from topic or script file name
+    slug_source = args.topic or Path(args.script_file).stem
+    slug = slug_source[:40].lower().replace(" ", "-").replace("/", "-")
     episode_dir = OUTPUT_DIR / slug
     episode_dir.mkdir(exist_ok=True)
 
-    print(f"\n🎬 {SHOW_NAME} — Episode: {args.topic}")
+    print(f"\n🎬 {SHOW_NAME} — Episode: {slug_source}")
     print(f"   Output: {episode_dir}\n")
 
     # 1. Script
-    script = generate_script(args.topic)
-    (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
-    print(f"  ✓ Title: {script['title']}")
+    if args.script_file:
+        print("[1/6] Loading pre-written script...")
+        script = json.loads(Path(args.script_file).read_text())
+        print(f"  ✓ Loaded: {script['title']}")
+        # Save a copy into the episode dir
+        (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
+    else:
+        script = generate_script(args.topic)
+        (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
+        print(f"  ✓ Title: {script['title']}")
 
     # 2. Narration
     narration = generate_narration(script["narration"], episode_dir)
