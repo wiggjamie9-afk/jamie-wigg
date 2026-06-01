@@ -416,7 +416,7 @@ def main():
     # 1. Script
     if args.script_file:
         print("[1/6] Loading pre-written script...")
-        script = json.loads(Path(args.script_file).read_text())
+        script = json.loads(Path(args.script_file.strip()).read_text())
         print(f"  ✓ Loaded: {script['title']}")
         # Save a copy into the episode dir
         (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
