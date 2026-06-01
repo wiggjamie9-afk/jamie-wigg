@@ -437,12 +437,16 @@ def main():
     scene_videos = []
     if not args.skip_video and HIGGSFIELD_API_KEY:
         print("[3/6] Generating scene images and animations via Higgsfield...")
-        token = get_higgsfield_token()
-        for scene in script["scenes"]:
-            img = generate_scene_image(scene["image_prompt"], scene["id"],
-                                       episode_dir, token)
-            vid = animate_scene(img, scene, episode_dir, token)
-            scene_videos.append(vid)
+        try:
+            token = get_higgsfield_token()
+            for scene in script["scenes"]:
+                img = generate_scene_image(scene["image_prompt"], scene["id"],
+                                           episode_dir, token)
+                vid = animate_scene(img, scene, episode_dir, token)
+                scene_videos.append(vid)
+        except Exception as e:
+            print(f"  ⚠ Higgsfield failed ({e}) — continuing without video")
+            print("    (Higgsfield may be temporarily down — try again later)")
     else:
         print("[3/6] Skipping Higgsfield visuals (--skip-video or no API key)")
 
