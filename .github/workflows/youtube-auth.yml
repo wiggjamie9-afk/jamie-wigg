@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       auth_code:
-        description: "Leave blank for Step 1. Paste the code from Google for Step 2."
+        description: "Leave blank for Step 1. Paste the code from the URL bar for Step 2."
         required: false
         type: string
 
@@ -12,47 +12,39 @@ jobs:
   youtube-auth:
     runs-on: ubuntu-latest
     steps:
-      - name: Step 1 — Get login URL and code
+      - name: Step 1 — Generate authorization URL
         if: inputs.auth_code == ''
         env:
           CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
         run: |
           python3 - <<'EOF'
-          import urllib.request, urllib.parse, json, os
+          import urllib.parse, os
 
           client_id = os.environ["CLIENT_ID"]
+          redirect_uri = "http://localhost"
           scope = "https://www.googleapis.com/auth/youtube.upload"
 
-          data = urllib.parse.urlencode({
+          params = {
               "client_id": client_id,
-              "scope": scope
-          }).encode()
+              "redirect_uri": redirect_uri,
+              "response_type": "code",
+              "scope": scope,
+              "access_type": "offline",
+              "prompt": "consent"
+          }
 
-          req = urllib.request.Request(
-              "https://oauth2.googleapis.com/device/code",
-              data=data
-          )
-          try:
-              with urllib.request.urlopen(req) as r:
-                  resp = json.loads(r.read())
-          except Exception as e:
-              import sys
-              body = e.read().decode() if hasattr(e, 'read') else str(e)
-              print("ERROR:", e)
-              print("Google response:", body)
-              sys.exit(1)
+          auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
 
           print("=" * 60)
-          print("OPEN THIS URL IN YOUR BROWSER:")
+          print("OPEN THIS URL IN SAFARI:")
           print()
-          print(resp["verification_url"])
+          print(auth_url)
           print()
-          print("ENTER THIS CODE WHEN ASKED:")
-          print()
-          print(resp["user_code"])
-          print()
-          print("Then run this workflow again and paste the code above.")
-          print("device_code (save this):", resp["device_code"])
+          print("Sign in and tap Allow. Safari will show an error page")
+          print("(that's normal). Tap the address bar at the top.")
+          print("The URL will look like: http://localhost/?code=XXXXX&scope=...")
+          print("Copy everything after 'code=' up to (not including) '&'")
+          print("Then run this workflow again, pasting that code as the input.")
           print("=" * 60)
           EOF
 
@@ -64,13 +56,14 @@ jobs:
           AUTH_CODE: ${{ inputs.auth_code }}
         run: |
           python3 - <<'EOF'
-          import urllib.request, urllib.parse, json, os
+          import urllib.request, urllib.parse, json, os, sys
 
           data = urllib.parse.urlencode({
               "client_id": os.environ["CLIENT_ID"],
               "client_secret": os.environ["CLIENT_SECRET"],
-              "device_code": os.environ["AUTH_CODE"],
-              "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
+              "code": os.environ["AUTH_CODE"],
+              "redirect_uri": "http://localhost",
+              "grant_type": "authorization_code"
           }).encode()
 
           req = urllib.request.Request(
@@ -81,8 +74,10 @@ jobs:
               with urllib.request.urlopen(req) as r:
                   token = json.loads(r.read())
           except Exception as e:
-              print("Error:", e)
-              raise
+              body = e.read().decode() if hasattr(e, 'read') else str(e)
+              print("ERROR:", e)
+              print("Google response:", body)
+              sys.exit(1)
 
           token_json = json.dumps({
               "token": token["access_token"],
