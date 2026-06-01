@@ -4,8 +4,64 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-episode:
-    uses: ./.github/workflows/little-sunny-episode.yml
-    with:
-      script_file: kids-channel/scripts/sunny-finds-a-glowworm-in-the-bush.json
-    secrets: inherit
+  produce-episode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system deps (ffmpeg)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python deps
+        run: |
+          pip install requests python-dotenv anthropic \
+            google-auth google-auth-oauthlib google-api-python-client \
+            elevenlabs
+
+      - name: Write .env
+        run: |
+          cat > .env <<EOF
+          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
+          HIGGSFIELD_API_KEY=${{ secrets.HIGGSFIELD_API_KEY }}
+          HIGGSFIELD_SECRET=${{ secrets.HIGGSFIELD_SECRET }}
+          YOUTUBE_CLIENT_ID=${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET=${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          EOF
+
+      - name: Write YouTube token
+        run: |
+          cat > kids-channel/token.json <<EOF
+          {
+            "access_token": "${{ secrets.YOUTUBE_ACCESS_TOKEN }}",
+            "refresh_token": "${{ secrets.YOUTUBE_REFRESH_TOKEN }}",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "client_id": "${{ secrets.YOUTUBE_CLIENT_ID }}",
+            "client_secret": "${{ secrets.YOUTUBE_CLIENT_SECRET }}",
+            "scopes": ["https://www.googleapis.com/auth/youtube.upload"],
+            "expiry": "2026-01-01T00:00:00+00:00"
+          }
+          EOF
+
+      - name: Run pipeline
+        run: |
+          python kids-channel/pipeline.py \
+            --script-file kids-channel/scripts/sunny-finds-a-glowworm-in-the-bush.json
+
+      - name: Upload episode artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode-files
+          path: kids-channel/episodes/
+          retention-days: 7
