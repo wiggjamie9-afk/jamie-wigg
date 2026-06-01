@@ -458,8 +458,24 @@ def main():
         final_video = assemble_video(scene_videos, narration, music,
                                      episode_dir, script["title"])
     else:
-        print("[5/6] No videos to assemble — skipping ffmpeg step")
+        print("[5/6] No scene videos — generating placeholder with narration audio...")
         final_video = episode_dir / "final.mp4"
+        has_narration = narration.exists() and narration.stat().st_size > 100
+        # Dark bush-green background + narration audio (or silent if no audio)
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", "color=c=0x1a3a2a:size=1920x1080:rate=24",
+        ]
+        if has_narration:
+            cmd += ["-i", str(narration), "-shortest", "-c:v", "libx264", "-c:a", "aac"]
+        else:
+            cmd += ["-t", "48", "-c:v", "libx264", "-an"]
+        cmd.append(str(final_video))
+        result = subprocess.run(cmd, capture_output=True)
+        if result.returncode == 0:
+            print(f"  ✓ Placeholder video created: {final_video}")
+        else:
+            print(f"  ⚠ ffmpeg placeholder failed: {result.stderr.decode()[:200]}")
 
     # 6. Upload
     if final_video.exists() and final_video.stat().st_size > 100:
