@@ -348,37 +348,25 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
     if not token_file.exists() or not token_file.read_text().strip():
-        print("  ✗ No token.json found.")
-        print("    Add the token as GitHub Secret YOUTUBE_TOKEN")
-        return
+        sys.exit("  ✗ No token.json found. Add the token as GitHub Secret YOUTUBE_TOKEN")
 
     # Normalize: google-auth expects 'access_token', we may have saved it as 'token'
-    try:
-        token_data = json.loads(token_file.read_text())
-        if 'token' in token_data and 'access_token' not in token_data:
-            token_data['access_token'] = token_data.pop('token')
-            token_file.write_text(json.dumps(token_data, indent=2))
-    except Exception as e:
-        print(f"  ✗ Could not read token.json: {e}")
-        return
+    token_data = json.loads(token_file.read_text())
+    print(f"  Token keys present: {list(token_data.keys())}")
+    if 'token' in token_data and 'access_token' not in token_data:
+        token_data['access_token'] = token_data.pop('token')
+        token_file.write_text(json.dumps(token_data, indent=2))
 
-    try:
-        creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
-    except Exception as e:
-        print(f"  ✗ Token file invalid: {e}")
-        return
+    creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
 
     if not creds.valid:
         if creds.expired and creds.refresh_token:
-            try:
-                creds.refresh(google.auth.transport.requests.Request())
-                token_file.write_text(creds.to_json())
-            except Exception as e:
-                print(f"  ✗ Token refresh failed: {e}")
-                return
+            print("  Token expired — refreshing...")
+            creds.refresh(google.auth.transport.requests.Request())
+            token_file.write_text(creds.to_json())
+            print("  Token refreshed OK")
         else:
-            print("  ✗ Token invalid. Re-run youtube_auth.py")
-            return
+            sys.exit("  ✗ Token invalid and cannot be refreshed. Re-run youtube_auth.py")
 
     youtube = build("youtube", "v3", credentials=creds)
 
@@ -401,18 +389,14 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     request = youtube.videos().insert(part=",".join(body.keys()), body=body,
                                       media_body=media)
 
-    try:
-        response = None
-        while response is None:
-            status, response = request.next_chunk()
-            if status:
-                print(f"  Upload {int(status.progress() * 100)}%...")
-        video_id = response["id"]
-        print(f"  ✓ Uploaded: https://youtube.com/watch?v={video_id}")
-        return video_id
-    except Exception as e:
-        print(f"  ✗ Upload failed: {e}")
-        return None
+    response = None
+    while response is None:
+        status, response = request.next_chunk()
+        if status:
+            print(f"  Upload {int(status.progress() * 100)}%...")
+    video_id = response["id"]
+    print(f"  ✓ Uploaded: https://youtube.com/watch?v={video_id}")
+    return video_id
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
