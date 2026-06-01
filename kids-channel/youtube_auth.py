@@ -73,24 +73,39 @@ def poll_for_token(device_code, interval):
             sys.exit(1)
 
 
+def write_summary(text):
+    import os
+    summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_file:
+        with open(summary_file, "a") as f:
+            f.write(text + "\n")
+
+
 def main():
     print("Getting device code from Google...")
     dc = get_device_code()
 
+    url = dc['verification_url']
+    code = dc['user_code']
+
     print()
     print("=" * 60)
     print("STEP 1 — Open this URL in Safari on your phone:")
-    print()
-    print(f"  {dc['verification_url']}")
+    print(f"  {url}")
     print()
     print("STEP 2 — Enter this code when asked:")
-    print()
-    print(f"  {dc['user_code']}")
+    print(f"  {code}")
     print()
     print("STEP 3 — Come back here after approving.")
     print("=" * 60)
     print()
     print("Waiting for you to approve...")
+
+    # Also write to GitHub Actions step summary so it's visible on the run page
+    write_summary(f"## Approve YouTube Access\n")
+    write_summary(f"**1. Open this URL on your phone:**\n\n{url}\n")
+    write_summary(f"**2. Enter this code:**\n\n```\n{code}\n```\n")
+    write_summary(f"*(Then come back and wait — the workflow will finish automatically)*\n")
 
     token = poll_for_token(dc["device_code"], dc.get("interval", 5))
 
