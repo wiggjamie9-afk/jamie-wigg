@@ -363,6 +363,9 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     if expiry_str:
         try:
             expiry_dt = _dt.fromisoformat(expiry_str.replace("Z", "+00:00"))
+            # google-auth's utcnow() is naive; strip tzinfo to match
+            if expiry_dt.tzinfo is not None:
+                expiry_dt = expiry_dt.replace(tzinfo=None)
         except ValueError:
             expiry_dt = None
 
