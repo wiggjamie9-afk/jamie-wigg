@@ -89,32 +89,30 @@ def generate_script_via_anthropic(topic: str) -> dict:
     import anthropic
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     message = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-haiku-4-5-20251001",
         max_tokens=2000,
         messages=[{"role": "user", "content": _build_prompt(topic)}]
     )
     return _extract_json(message.content[0].text)
 
 
-def generate_script_via_pollinations(topic: str) -> dict:
-    """Free fallback using Pollinations text API (no key required)."""
-    print("  ↳ Using Pollinations free text API for script generation...")
-    prompt = _build_prompt(topic)
-    encoded = requests.utils.quote(prompt)
-    url = f"https://text.pollinations.ai/{encoded}?model=openai&json=true"
-    r = requests.get(url, timeout=120)
-    r.raise_for_status()
-    return _extract_json(r.text)
-
-
 def generate_script(topic: str) -> dict:
     print(f"[1/6] Generating script for: {topic}")
-    if ANTHROPIC_API_KEY:
-        try:
-            return generate_script_via_anthropic(topic)
-        except Exception as e:
-            print(f"  ⚠ Anthropic failed ({e}) — falling back to Pollinations")
-    return generate_script_via_pollinations(topic)
+    if not ANTHROPIC_API_KEY:
+        print("  ✗ ANTHROPIC_API_KEY is not set.")
+        print("    Add it as a GitHub Secret: Settings → Secrets → ANTHROPIC_API_KEY")
+        sys.exit(1)
+    try:
+        return generate_script_via_anthropic(topic)
+    except Exception as e:
+        err = str(e)
+        if "credit balance" in err or "402" in err or "529" in err:
+            print(f"  ✗ Anthropic API — out of credits.")
+            print("    Top up at: console.anthropic.com → Settings → Billing")
+            print(f"    (Full error: {e})")
+        else:
+            print(f"  ✗ Anthropic API error: {e}")
+        sys.exit(1)
 
 
 # ── 2. Narration audio ────────────────────────────────────────────────────────
