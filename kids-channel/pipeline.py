@@ -350,14 +350,31 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     if not token_file.exists() or not token_file.read_text().strip():
         sys.exit("  ✗ No token.json found. Add the token as GitHub Secret YOUTUBE_TOKEN")
 
-    # Normalize: google-auth expects 'access_token', we may have saved it as 'token'
+    # Load credentials manually — from_authorized_user_file uses strptime("%Y-%m-%dT%H:%M:%SZ")
+    # which can't parse "+00:00" timezone offsets. fromisoformat handles both.
     token_data = json.loads(token_file.read_text())
     print(f"  Token keys present: {list(token_data.keys())}")
     if 'token' in token_data and 'access_token' not in token_data:
         token_data['access_token'] = token_data.pop('token')
-        token_file.write_text(json.dumps(token_data, indent=2))
 
-    creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
+    from datetime import datetime as _dt
+    expiry_dt = None
+    expiry_str = token_data.get("expiry", "")
+    if expiry_str:
+        try:
+            expiry_dt = _dt.fromisoformat(expiry_str.replace("Z", "+00:00"))
+        except ValueError:
+            expiry_dt = None
+
+    creds = Credentials(
+        token=token_data.get("access_token"),
+        refresh_token=token_data.get("refresh_token"),
+        token_uri=token_data.get("token_uri", "https://oauth2.googleapis.com/token"),
+        client_id=token_data.get("client_id"),
+        client_secret=token_data.get("client_secret"),
+        scopes=token_data.get("scopes") or SCOPES,
+        expiry=expiry_dt,
+    )
 
     if not creds.valid:
         if creds.expired and creds.refresh_token:
