@@ -133,10 +133,15 @@ def generate_narration(narration_text: str, episode_dir: Path) -> Path:
         "model_id": "eleven_turbo_v2",
         "voice_settings": {"stability": 0.75, "similarity_boost": 0.75, "style": 0.2}
     }
-    r = requests.post(url, headers=headers, json=payload, timeout=60)
-    r.raise_for_status()
-    audio_path.write_bytes(r.content)
-    print(f"  ✓ Narration saved: {audio_path}")
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=60)
+        r.raise_for_status()
+        audio_path.write_bytes(r.content)
+        print(f"  ✓ Narration saved: {audio_path}")
+    except Exception as e:
+        print(f"  ⚠ ElevenLabs failed ({e}) — continuing without audio")
+        print("    Check ELEVENLABS_API_KEY in GitHub Secrets")
+        audio_path.write_bytes(b"")
     return audio_path
 
 
