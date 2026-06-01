@@ -95,14 +95,17 @@ def main():
     token = poll_for_token(dc["device_code"], dc.get("interval", 5))
 
     # Build a token.json compatible with google-auth
+    from datetime import datetime, timezone, timedelta
+    expires_in = token.get("expires_in", 3600)
+    expiry = (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat()
     token_data = {
-        "token": token["access_token"],
+        "access_token": token["access_token"],
         "refresh_token": token.get("refresh_token", ""),
         "token_uri": "https://oauth2.googleapis.com/token",
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
         "scopes": [SCOPE],
-        "expiry": None,
+        "expiry": expiry,
     }
 
     TOKEN_FILE.write_text(json.dumps(token_data, indent=2))
