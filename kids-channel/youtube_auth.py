@@ -81,6 +81,27 @@ def write_summary(text):
             f.write(text + "\n")
 
 
+def create_github_issue(url, code):
+    import os
+    token = os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not token or not repo:
+        return
+    try:
+        r = requests.post(
+            f"https://api.github.com/repos/{repo}/issues",
+            headers={"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"},
+            json={
+                "title": f"ACTION NEEDED — YouTube auth code: {code}",
+                "body": f"## Approve YouTube Access\n\n**1. Open this URL:**\n\n{url}\n\n**2. Enter this code:**\n\n```\n{code}\n```\n\n*(Close this issue after approving.)*",
+            }
+        )
+        if r.status_code == 201:
+            print(f"  GitHub issue created — check your phone notifications!")
+    except Exception as e:
+        print(f"  (Could not create issue: {e})")
+
+
 def main():
     print("Getting device code from Google...")
     dc = get_device_code()
@@ -101,11 +122,18 @@ def main():
     print()
     print("Waiting for you to approve...")
 
-    # Also write to GitHub Actions step summary so it's visible on the run page
+    # Workflow annotations — appear prominently on the Actions run page
+    print(f"::notice title=YouTube Auth URL::Open: {url}")
+    print(f"::notice title=YouTube Auth Code::Enter this code: {code}")
+
+    # Step summary
     write_summary(f"## Approve YouTube Access\n")
     write_summary(f"**1. Open this URL on your phone:**\n\n{url}\n")
     write_summary(f"**2. Enter this code:**\n\n```\n{code}\n```\n")
     write_summary(f"*(Then come back and wait — the workflow will finish automatically)*\n")
+
+    # GitHub Issue — sends a push notification to your phone
+    create_github_issue(url, code)
 
     token = poll_for_token(dc["device_code"], dc.get("interval", 5))
 
