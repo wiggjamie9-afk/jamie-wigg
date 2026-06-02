@@ -30,14 +30,14 @@ YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 # ── Show config (update once you have a character) ──────────────────────────
 SHOW_NAME = "Sunny's Little Bedtime Stories"
 CHARACTER_NAME = "Sunny"
-CHARACTER_DESC = "a cute 3D rendered quokka character, Pixar style, smooth glossy honey-golden-brown fur, big round shiny eyes with light reflections, rosy cheeks, huge warm smile, chubby friendly body — always cheerful and gentle"
+CHARACTER_DESC = "a sweet 3-year-old quokka, 3D Pixar style, smooth glossy honey-golden-brown fur, big round shiny eyes with light reflections, rosy chubby cheeks, huge warm smile, small round ears, chubby toddler-sized body — always cheerful, gentle and curious"
 VISUAL_STYLE = (
     "Photorealistic 3D cartoon animation quality, like Koala Moon or Pixar. "
     "Deep navy blue magical Australian bush night scene. Glowing golden fireflies and stars. "
     "Soft warm golden rim lighting on the character. Rich saturated colours. "
     "Professional kids YouTube channel quality. No text. Safe for toddlers."
 )
-SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sunny the Quokka — cozy 3D cartoon stories for toddlers at bedtime or quiet time."
+SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sunny the 3-year-old Quokka — cozy 3D cartoon stories for toddlers at bedtime or quiet time."
 
 # Per-scene colour palettes for the animated gradient fallback.
 # Each tuple: (top_r, top_g, top_b, bot_r, bot_g, bot_b, shimmer_r, shimmer_g, shimmer_b)
@@ -316,6 +316,117 @@ def generate_music(duration_secs: int, episode_dir: Path) -> Path:
     return music_path
 
 
+# ── 5b. Thumbnail generation ─────────────────────────────────────────────────
+
+def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
+    """Create a 1280×720 YouTube thumbnail: navy night sky + golden title + show name."""
+    from PIL import Image, ImageDraw, ImageFont
+    import random, textwrap
+
+    W, H = 1280, 720
+    img = Image.new("RGB", (W, H))
+    draw = ImageDraw.Draw(img)
+
+    # Gradient background — deep navy top to midnight purple-navy bottom
+    for y in range(H):
+        ratio = y / H
+        r = int(6  + (15 - 6)  * ratio)
+        g = int(12 + (8  - 12) * ratio)
+        b = int(55 + (35 - 55) * ratio)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Stars
+    rng = random.Random(42)
+    for _ in range(120):
+        x = rng.randint(0, W)
+        y = rng.randint(0, int(H * 0.7))
+        size = rng.choice([1, 1, 1, 2, 2, 3])
+        brightness = rng.randint(160, 255)
+        draw.ellipse([x - size, y - size, x + size, y + size],
+                     fill=(brightness, brightness, int(brightness * 0.85)))
+
+    # Crescent moon — top right
+    moon_x, moon_y = 1050, 60
+    moon_r = 90
+    draw.ellipse([moon_x - moon_r, moon_y, moon_x + moon_r, moon_y + 2 * moon_r],
+                 fill=(255, 245, 190))
+    draw.ellipse([moon_x - moon_r + 30, moon_y - 10,
+                  moon_x + moon_r + 30, moon_y + 2 * moon_r - 10],
+                 fill=(r, g, b))  # cut out to form crescent using bg colour
+
+    # Load fonts (DejaVu ships on Ubuntu)
+    font_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]
+    font_big = font_small = None
+    for fp in font_paths:
+        if Path(fp).exists():
+            try:
+                font_big   = ImageFont.truetype(fp, 88)
+                font_small = ImageFont.truetype(fp.replace("-Bold", "").replace("Bold", ""), 38)
+                if not Path(font_small.path).exists():
+                    font_small = ImageFont.truetype(fp, 38)
+                break
+            except Exception:
+                continue
+    if font_big is None:
+        font_big = font_small = ImageFont.load_default()
+
+    # Episode title — strip the " | Bedtime Story" suffix if present
+    title = script.get("title", "Sunny's Bedtime Story")
+    for suffix in [" | Bedtime Story", " | Bedtime", "| Bedtime Story"]:
+        title = title.replace(suffix, "")
+    title = title.strip()
+
+    lines = textwrap.wrap(title, width=18)
+    total_h = len(lines) * 100
+    y_cur = (H - total_h) // 2 - 20
+    for line in lines:
+        bbox = draw.textbbox((0, 0), line, font=font_big)
+        lw = bbox[2] - bbox[0]
+        x = (W - lw) // 2
+        # Shadow
+        draw.text((x + 4, y_cur + 4), line, font=font_big, fill=(0, 0, 20))
+        # Golden text
+        draw.text((x, y_cur), line, font=font_big, fill=(255, 215, 80))
+        y_cur += 100
+
+    # Show name at bottom centre
+    show = "Sunny's Little Bedtime Stories 🌙"
+    bbox = draw.textbbox((0, 0), show, font=font_small)
+    sw = bbox[2] - bbox[0]
+    draw.text(((W - sw) // 2, H - 60), show, font=font_small, fill=(180, 160, 255))
+
+    thumb_path = episode_dir / "thumbnail.jpg"
+    img.save(str(thumb_path), "JPEG", quality=95)
+    print(f"  ✓ Thumbnail saved: {thumb_path}")
+    return thumb_path
+
+
+# ── 5c. SEO description builder ───────────────────────────────────────────────
+
+def build_seo_description(script: dict) -> str:
+    """Return a YouTube-optimised description with keywords, channel footer and hashtags."""
+    base = script.get("description", "").strip()
+    footer = (
+        "\n\n─────────────────────────\n"
+        "🌙 Sunny's Little Bedtime Stories\n"
+        "New episodes 3× every day — calm, gentle 2-minute stories for little ones.\n"
+        "Perfect for ages 1–5. Great for bedtime routines, quiet time and naptime.\n"
+        "Hit Subscribe so you never miss a new adventure with Sunny! 🐾\n"
+        "─────────────────────────"
+    )
+    hashtags = (
+        "\n\n#BedtimeStories #ToddlerBedtime #SunnysLittleBedtimeStories "
+        "#KidsCartoon #QuokkaBedtime #AustralianAnimals #GentleStoriesForKids "
+        "#CalmCartoon #ToddlerCartoon #BedtimeRoutine #KidsYouTube #SleepStories "
+        "#BedtimeStoriesForKids #ToddlerSleep #NightTimeRoutine"
+    )
+    return base + footer + hashtags
+
+
 # ── 6. Video assembly via ffmpeg ──────────────────────────────────────────────
 
 def assemble_video(scene_videos: list, narration: Path, music: Path,
@@ -383,7 +494,7 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     print("[6/6] Uploading to YouTube...")
     if dry_run:
         print("  [DRY RUN] Would upload:", script["title"])
-        return
+        return None
 
     from google.oauth2.credentials import Credentials
     from googleapiclient.discovery import build
@@ -436,15 +547,17 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
 
     youtube = build("youtube", "v3", credentials=creds)
 
+    seo_desc = build_seo_description(script)
+
     body = {
         "snippet": {
             "title": script["title"],
-            "description": script["description"],
+            "description": seo_desc,
             "tags": script.get("tags", []),
             "categoryId": CHANNEL_CATEGORY,
         },
         "status": {
-            "privacyStatus": "private",  # start private; review before publishing
+            "privacyStatus": "private",  # pipeline uploads private; promote manually or auto-publish
             "madeForKids": MADE_FOR_KIDS,
             "selfDeclaredMadeForKids": MADE_FOR_KIDS,
         }
@@ -462,7 +575,18 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
             print(f"  Upload {int(status.progress() * 100)}%...")
     video_id = response["id"]
     print(f"  ✓ Uploaded: https://youtube.com/watch?v={video_id}")
-    return video_id
+    return video_id, youtube
+
+
+def upload_thumbnail_to_youtube(youtube, video_id: str, thumb_path: Path):
+    """Set the custom thumbnail on an already-uploaded video."""
+    from googleapiclient.http import MediaFileUpload
+    try:
+        media = MediaFileUpload(str(thumb_path), mimetype="image/jpeg")
+        youtube.thumbnails().set(videoId=video_id, media_body=media).execute()
+        print(f"  ✓ Thumbnail set on video {video_id}")
+    except Exception as e:
+        print(f"  ⚠ Thumbnail upload failed: {e}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -568,9 +692,20 @@ def main():
         else:
             print(f"  ⚠ ffmpeg fallback failed: {result.stderr.decode()[:200]}")
 
+    # 5d. Thumbnail
+    print("[5d] Generating thumbnail...")
+    try:
+        thumb_path = generate_thumbnail(script, episode_dir)
+    except Exception as e:
+        print(f"  ⚠ Thumbnail generation failed: {e}")
+        thumb_path = None
+
     # 6. Upload
     if final_video.exists() and final_video.stat().st_size > 100:
-        upload_to_youtube(final_video, script, dry_run=args.dry_run)
+        result = upload_to_youtube(final_video, script, dry_run=args.dry_run)
+        if result and not args.dry_run and thumb_path and thumb_path.exists():
+            video_id, yt_client = result
+            upload_thumbnail_to_youtube(yt_client, video_id, thumb_path)
     else:
         print("[6/6] No final video to upload")
 
