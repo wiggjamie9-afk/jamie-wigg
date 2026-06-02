@@ -341,41 +341,51 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
 # ── 5. Background music ───────────────────────────────────────────────────────
 
 def generate_music(duration_secs: int, episode_dir: Path) -> Path:
+    """Generate gentle lullaby music using ffmpeg sine tones — no API needed."""
     music_path = episode_dir / "music.mp3"
-    print("[4/6] Generating background music via ElevenLabs...")
+    print("[4/6] Generating background music via ffmpeg...")
 
-    if not ELEVENLABS_API_KEY:
-        print("  ⚠ No ELEVENLABS_API_KEY — skipping music")
-        music_path.write_bytes(b"")
-        return music_path
+    # Pentatonic lullaby: C4 E4 G4 A4 C5, each note 2s, fading in/out gently
+    # Layered with soft low-pass filtered pink noise for warmth
+    total = int(duration_secs) + 5
+    notes = [261.63, 329.63, 392.00, 440.00, 523.25]  # C E G A C
+    note_dur = 2.0
+    # Build an aevalsrc expression that cycles through the pentatonic scale
+    cycle = len(notes)
+    expr_parts = []
+    for i, freq in enumerate(notes):
+        start = i * note_dur
+        end = start + note_dur
+        expr_parts.append(
+            f"if(between(mod(t,{cycle * note_dur}),{start},{end}),"
+            f"0.12*sin(2*PI*{freq}*t)*exp(-2*mod(t,{note_dur})),0)"
+        )
+    expr = "+".join(expr_parts)
 
-    prompt = "soft ambient lullaby, gentle nature sounds, calm piano, soothing bedtime music, no vocals"
-    url = "https://api.elevenlabs.io/v1/sound-generation"
-    headers = {"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"}
-    payload = {"text": prompt, "duration_seconds": 22, "prompt_influence": 0.3}
-    try:
-        r = requests.post(url, headers=headers, json=payload, timeout=120)
-        r.raise_for_status()
-        chunk_path = episode_dir / "music_chunk.mp3"
-        chunk_path.write_bytes(r.content)
-        # Loop the 22s chunk to fill the full episode duration
-        result = subprocess.run([
-            "ffmpeg", "-y", "-stream_loop", "-1",
-            "-i", str(chunk_path),
-            "-t", str(int(duration_secs) + 5),
-            "-c:a", "libmp3lame", "-q:a", "4",
-            str(music_path)
-        ], capture_output=True)
-        if result.returncode == 0:
-            print(f"  ✓ Music generated and looped to {duration_secs}s")
-        else:
-            chunk_path.rename(music_path)
-            print(f"  ✓ Music generated (22s chunk)")
-        return music_path
-    except Exception as e:
-        print(f"  ⚠ Music generation failed: {e}")
+    # Also add a very soft sub-bass drone (C2 = 65.41 Hz) for warmth
+    drone = "0.05*sin(2*PI*65.41*t)"
+    full_expr = f"({expr})+{drone}"
+
+    result = subprocess.run([
+        "ffmpeg", "-y",
+        "-f", "lavfi",
+        "-i", f"aevalsrc='{full_expr}':s=44100:c=stereo",
+        "-af", (
+            "lowpass=f=3000,"          # soft high-frequency rolloff
+            "aecho=0.6:0.5:60:0.3,"   # gentle reverb / echo
+            f"afade=t=in:st=0:d=2,afade=t=out:st={total-3}:d=3"
+        ),
+        "-t", str(total),
+        "-c:a", "libmp3lame", "-q:a", "4",
+        str(music_path)
+    ], capture_output=True)
+
+    if result.returncode == 0 and music_path.stat().st_size > 1000:
+        print(f"  ✓ Lullaby music generated ({total}s)")
+    else:
+        print(f"  ⚠ Music generation failed — continuing without music")
         music_path.write_bytes(b"")
-        return music_path
+    return music_path
 
 
 # ── 5b. Thumbnail generation ─────────────────────────────────────────────────
