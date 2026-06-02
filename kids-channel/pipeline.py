@@ -30,12 +30,11 @@ YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 # ── Show config (update once you have a character) ──────────────────────────
 SHOW_NAME = "Sunny's Little Bedtime Stories"
 CHARACTER_NAME = "Sunny"
-CHARACTER_DESC = "a sweet 3-year-old quokka, 3D Pixar style, smooth glossy honey-golden-brown fur, big round shiny eyes with light reflections, rosy chubby cheeks, huge warm smile, small round ears, chubby toddler-sized body — always cheerful, gentle and curious"
+CHARACTER_DESC = "a sweet small quokka with golden-brown fur, big warm brown eyes, tiny round ears, gentle curious expression"
 VISUAL_STYLE = (
-    "Photorealistic 3D cartoon animation quality, like Koala Moon or Pixar. "
-    "Deep navy blue magical Australian bush night scene. Glowing golden fireflies and stars. "
-    "Soft warm golden rim lighting on the character. Rich saturated colours. "
-    "Professional kids YouTube channel quality. No text. Safe for toddlers."
+    "Soft watercolour illustration, warm gentle palette, Australian bush at night. "
+    "Deep navy sky, soft moonlight, glowing fireflies. "
+    "Professional children's book art quality. No text. Safe for toddlers."
 )
 SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sunny the 3-year-old Quokka — cozy 3D cartoon stories for toddlers at bedtime or quiet time."
 
@@ -294,26 +293,89 @@ def poll_higgsfield_job(job_id: str, token: str, max_wait: int = 300) -> str:
     return ""
 
 
+# ── 4b. Pollinations FLUX image fallback ─────────────────────────────────────
+
+def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
+    """Generate a scene image via Pollinations FLUX when Higgsfield is unavailable."""
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    full_prompt = (
+        f"Soft watercolour illustration, warm gentle palette, Australian bush at night, "
+        f"deep navy sky, soft moonlight. Character: Sunny, {CHARACTER_DESC}. "
+        f"Scene: {prompt[:350]}"
+    )
+    encoded = requests.utils.quote(full_prompt)
+    url = (
+        f"https://image.pollinations.ai/prompt/{encoded}"
+        f"?width=1920&height=1080&model=flux&nologo=true&seed={scene_id * 7}"
+    )
+    try:
+        r = requests.get(url, timeout=90)
+        if r.status_code == 200 and len(r.content) > 5000:
+            img_path.write_bytes(r.content)
+            print(f"  ✓ Scene {scene_id} image (Pollinations FLUX)")
+            return img_path
+        else:
+            print(f"  ⚠ Scene {scene_id} Pollinations returned {r.status_code} / {len(r.content)} bytes")
+    except Exception as e:
+        print(f"  ⚠ Scene {scene_id} Pollinations failed: {e}")
+    return None
+
+
+def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id: int) -> Path:
+    """Convert a static image to a video clip (simple hold, no motion)."""
+    vid_path = episode_dir / f"scene_{scene_id:02d}.mp4"
+    result = subprocess.run([
+        "ffmpeg", "-y", "-loop", "1", "-i", str(img_path),
+        "-t", str(duration),
+        "-vf", "scale=1920x1080:force_original_aspect_ratio=increase,crop=1920:1080,format=yuv420p",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "28",
+        str(vid_path)
+    ], capture_output=True)
+    if result.returncode == 0:
+        print(f"  ✓ Scene {scene_id} video ({duration:.1f}s)")
+    else:
+        print(f"  ⚠ image_to_video failed scene {scene_id}: {result.stderr.decode()[:120]}")
+    return vid_path
+
+
 # ── 5. Background music ───────────────────────────────────────────────────────
 
 def generate_music(duration_secs: int, episode_dir: Path) -> Path:
     music_path = episode_dir / "music.mp3"
-    print("[4/6] Generating background music...")
+    print("[4/6] Generating background music via ElevenLabs...")
 
-    # Pollinations free audio endpoint
-    prompt = "soft ambient lullaby, gentle nature sounds, calm piano, children's bedtime music, no vocals"
-    url = f"https://audio.pollinations.ai/{requests.utils.quote(prompt)}"
+    if not ELEVENLABS_API_KEY:
+        print("  ⚠ No ELEVENLABS_API_KEY — skipping music")
+        music_path.write_bytes(b"")
+        return music_path
+
+    prompt = "soft ambient lullaby, gentle nature sounds, calm piano, soothing bedtime music, no vocals"
+    url = "https://api.elevenlabs.io/v1/sound-generation"
+    headers = {"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"}
+    payload = {"text": prompt, "duration_seconds": 22, "prompt_influence": 0.3}
     try:
-        r = requests.get(url, timeout=120)
-        if r.status_code == 200:
-            music_path.write_bytes(r.content)
-            print(f"  ✓ Music saved: {music_path}")
-            return music_path
+        r = requests.post(url, headers=headers, json=payload, timeout=120)
+        r.raise_for_status()
+        chunk_path = episode_dir / "music_chunk.mp3"
+        chunk_path.write_bytes(r.content)
+        # Loop the 22s chunk to fill the full episode duration
+        result = subprocess.run([
+            "ffmpeg", "-y", "-stream_loop", "-1",
+            "-i", str(chunk_path),
+            "-t", str(int(duration_secs) + 5),
+            "-c:a", "libmp3lame", "-q:a", "4",
+            str(music_path)
+        ], capture_output=True)
+        if result.returncode == 0:
+            print(f"  ✓ Music generated and looped to {duration_secs}s")
+        else:
+            chunk_path.rename(music_path)
+            print(f"  ✓ Music generated (22s chunk)")
+        return music_path
     except Exception as e:
         print(f"  ⚠ Music generation failed: {e}")
-
-    music_path.write_bytes(b"")
-    return music_path
+        music_path.write_bytes(b"")
+        return music_path
 
 
 # ── 5b. Thumbnail generation ─────────────────────────────────────────────────
@@ -639,57 +701,42 @@ def main():
                 vid = animate_scene(img, scene, episode_dir, token)
                 scene_videos.append(vid)
         except Exception as e:
-            print(f"  ⚠ Higgsfield failed ({e}) — continuing without video")
-            print("    (Higgsfield may be temporarily down — try again later)")
-    else:
-        print("[3/6] Skipping Higgsfield visuals (--skip-video or no API key)")
+            print(f"  ⚠ Higgsfield failed ({e}) — trying Pollinations FLUX fallback...")
+
+    # Pollinations FLUX fallback (when Higgsfield is unavailable)
+    if not scene_videos:
+        print("[3/6] Generating scene images via Pollinations FLUX...")
+        for scene in script["scenes"]:
+            img_path = generate_scene_image_pollinations(
+                scene["image_prompt"], scene["id"], episode_dir
+            )
+            if img_path and img_path.exists() and img_path.stat().st_size > 5000:
+                vid = image_to_video(img_path, scene.get("duration", 8), episode_dir, scene["id"])
+            else:
+                print(f"  ↩ Scene {scene['id']} falling back to gradient")
+                vid = generate_scene_bg(scene, episode_dir)
+            scene_videos.append(vid)
 
     # 4. Music
     music = generate_music(60, episode_dir)
 
     # 5. Assemble
-    if not scene_videos and "scenes" in script:
-        print("[5/6] Higgsfield unavailable — rendering animated gradient scenes...")
-        # Probe actual narration length so scene clips fill the full audio runtime
-        narr_duration = 0.0
-        if narration.exists() and narration.stat().st_size > 100:
-            probe = subprocess.run(
-                ["ffprobe", "-v", "quiet", "-print_format", "json",
-                 "-show_format", str(narration)],
-                capture_output=True, text=True,
-            )
-            if probe.returncode == 0:
-                try:
-                    narr_duration = float(json.loads(probe.stdout)["format"]["duration"])
-                except Exception:
-                    pass
-        scenes = script["scenes"]
-        per_scene = (narr_duration / len(scenes)) if narr_duration > 0 else None
-        for scene in scenes:
-            sc = dict(scene)
-            if per_scene:
-                sc["duration"] = per_scene
-            scene_videos.append(generate_scene_bg(sc, episode_dir))
-
     if scene_videos:
         final_video = assemble_video(scene_videos, narration, music,
                                      episode_dir, script["title"])
     else:
         # Ultimate fallback: single-colour slate with narration
-        print("[5/6] No scenes available — creating single-colour fallback...")
+        print("[5/6] No scenes — creating colour slate fallback...")
         final_video = episode_dir / "final.mp4"
         has_narration = narration.exists() and narration.stat().st_size > 100
-        cmd = ["ffmpeg", "-y", "-f", "lavfi",
-               "-i", "color=c=0x1a3a2a:size=1920x1080:rate=24"]
+        cmd = ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=0x0a1a2a:size=1920x1080:rate=24"]
         if has_narration:
             cmd += ["-i", str(narration), "-shortest", "-c:v", "libx264", "-c:a", "aac"]
         else:
-            cmd += ["-t", "48", "-c:v", "libx264", "-an"]
+            cmd += ["-t", "55", "-c:v", "libx264", "-an"]
         cmd.append(str(final_video))
         result = subprocess.run(cmd, capture_output=True)
-        if result.returncode == 0:
-            print(f"  ✓ Fallback video created: {final_video}")
-        else:
+        if result.returncode != 0:
             print(f"  ⚠ ffmpeg fallback failed: {result.stderr.decode()[:200]}")
 
     # 5d. Thumbnail
