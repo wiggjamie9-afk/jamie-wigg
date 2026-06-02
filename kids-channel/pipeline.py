@@ -532,7 +532,7 @@ def assemble_video(scene_videos: list, narration: Path, music: Path,
     has_music = music.exists() and music.stat().st_size > 100
 
     if has_narration and has_music:
-        inputs += ["-i", str(narration), "-i", str(music)]
+        inputs = ["-stream_loop", "-1", "-i", str(raw_video), "-i", str(narration), "-i", str(music)]
         # narration at full volume, music at 20%
         audio_filter = "[1:a]volume=1.0[narr];[2:a]volume=0.20[mus];[narr][mus]amix=inputs=2:duration=first[aout]"
         subprocess.run([
@@ -543,7 +543,7 @@ def assemble_video(scene_videos: list, narration: Path, music: Path,
             str(output_path)
         ], check=True, capture_output=True)
     elif has_narration:
-        inputs += ["-i", str(narration)]
+        inputs = ["-stream_loop", "-1", "-i", str(raw_video), "-i", str(narration)]
         subprocess.run([
             "ffmpeg", "-y", *inputs,
             "-map", "0:v", "-map", "1:a",
@@ -732,7 +732,7 @@ def main():
             scene_videos.append(vid)
 
     # 4. Music
-    music = generate_music(60, episode_dir)
+    music = generate_music(210, episode_dir)
 
     # 5. Assemble
     if scene_videos:
