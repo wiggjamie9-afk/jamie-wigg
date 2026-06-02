@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#05050f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="SCAN — Photo it. Track it. Claim it. Receipt tracker for freelancers and sole traders.">
+  <title>SCAN — Receipt Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #05050f;
+      --bg2:           #0a0a1e;
+      --bg3:           #0f0f2a;
+      --glass:         rgba(255,255,255,0.04);
+      --glass-b:       rgba(255,255,255,0.07);
+      --glass-hover:   rgba(255,255,255,0.07);
+      --primary:       #2563eb;
+      --primary-light: #60a5fa;
+      --primary-glow:  rgba(37,99,235,0.35);
+      --primary-dim:   rgba(37,99,235,0.15);
+      --accent:        #eff6ff;
+      --text:          #f0f4ff;
+      --muted:         #475569;
+      --muted2:        #8b9cc8;
+      --danger:        #ef4444;
+      --danger-glow:   rgba(239,68,68,0.2);
+      --green:         #10b981;
+      --green-glow:    rgba(16,185,129,0.25);
+      --amber:         #f59e0b;
+      --radius:        18px;
+      --tab-h:         68px;
+      --safe-b:        env(safe-area-inset-bottom, 16px);
+      --safe-t:        env(safe-area-inset-top, 0px);
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── AMBIENT GLOW BACKGROUND ── */
+    .ambient {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .ambient-orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); opacity: 0.18;
+    }
+    .orb1 {
+      width: 360px; height: 360px;
+      background: var(--primary);
+      top: -120px; left: -80px;
+    }
+    .orb2 {
+      width: 280px; height: 280px;
+      background: #7c3aed;
+      bottom: 60px; right: -60px;
+      opacity: 0.12;
+    }
+    .orb3 {
+      width: 200px; height: 200px;
+      background: var(--primary-light);
+      top: 40%; left: 40%;
+      opacity: 0.06;
+    }
+
+    /* ── APP SHELL ── */
+    #app {
+      position: relative; z-index: 1;
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px 10px;
+      padding-top: calc(12px + var(--safe-t));
+      border-bottom: 1px solid var(--glass-b);
+      background: rgba(5,5,15,0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      flex-shrink: 0;
+    }
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 21px; font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--primary-light), #93c5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .logo span {
+      background: linear-gradient(135deg, #fff, var(--primary-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 300; font-size: 13px; letter-spacing: 2px;
+      margin-left: 6px; vertical-align: middle;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .free-badge {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+      padding: 4px 10px; border-radius: 20px;
+      background: var(--primary-dim);
+      border: 1px solid rgba(96,165,250,0.25);
+      color: var(--primary-light);
+    }
+    .free-badge.pro {
+      background: linear-gradient(135deg, rgba(37,99,235,0.3), rgba(124,58,237,0.3));
+      border-color: rgba(96,165,250,0.4);
+      color: #a5b4fc;
+    }
+
+    /* ── VIEWS ── */
+    .view {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 0 0 calc(var(--tab-h) + var(--safe-b) + 8px);
+      display: none; flex-direction: column;
+    }
+    .view.active { display: flex; }
+    /* scrollbar */
+    .view::-webkit-scrollbar { width: 3px; }
+    .view::-webkit-scrollbar-track { background: transparent; }
+    .view::-webkit-scrollbar-thumb { background: var(--glass-b); border-radius: 2px; }
+
+    /* ── SECTION HEADING ── */
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 20px 10px;
+    }
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted2);
+    }
+    .section-action {
+      font-size: 13px; font-weight: 600; color: var(--primary-light);
+      background: none; border: none; cursor: pointer; padding: 4px 8px;
+      border-radius: 8px; font-family: inherit;
+      transition: background 0.2s;
+    }
+    .section-action:active { background: var(--primary-dim); }
+
+    /* ══════════════════════════════════════
+       SCAN TAB
+    ══════════════════════════════════════ */
+    #view-scan {
+      align-items: center;
+      padding-left: 20px; padding-right: 20px;
+    }
+
+    .scan-hero {
+      width: 100%; margin-top: 24px; margin-bottom: 28px;
+      text-align: center;
+    }
+    .scan-hero h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(26px, 8vw, 34px); font-weight: 800;
+      letter-spacing: -0.5px; line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .scan-hero h2 span {
+      background: linear-gradient(135deg, var(--primary-light), #93c5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .scan-hero p { font-size: 14px; color: var(--muted2); line-height: 1.5; }
+
+    /* Camera button */
+    .scan-btn-wrap { width: 100%; margin-bottom: 28px; position: relative; }
+    #camera-input { display: none; }
+    .btn-scan {
+      width: 100%; padding: 22px 24px;
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      border: none; border-radius: 22px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      box-shadow: 0 12px 40px var(--primary-glow), 0 0 0 1px rgba(96,165,250,0.15);
+      transition: all 0.22s ease;
+      position: relative; overflow: hidden;
+    }
+    .btn-scan::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+      pointer-events: none;
+    }
+    .btn-scan:active { transform: scale(0.97); box-shadow: 0 6px 20px var(--primary-glow); }
+    .scan-icon { font-size: 28px; }
+    .btn-scan-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px;
+    }
+    .btn-scan-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+    /* Quick stats strip */
+    .quick-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; width: 100%; margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 16px; padding: 14px 16px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    }
+    .stat-label { font-size: 11px; color: var(--muted2); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.5px;
+    }
+    .stat-value.green { color: var(--green); }
+    .stat-sub { font-size: 11px; color: var(--muted2); margin-top: 2px; }
+
+    /* Receipt preview after photo */
+    .receipt-preview-card {
+      width: 100%; background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 20px; padding: 16px; margin-bottom: 20px;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+    .receipt-preview-card.show { display: block; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .preview-img-wrap {
+      width: 100%; height: 140px; border-radius: 12px; overflow: hidden;
+      background: var(--bg2); margin-bottom: 14px; position: relative;
+    }
+    .preview-img-wrap img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .preview-img-placeholder {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 40px; background: var(--bg2);
+    }
+    .form-grid { display: flex; flex-direction: column; gap: 10px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 11px; font-weight: 600; color: var(--muted2); letter-spacing: 0.5px; text-transform: uppercase; }
+    .form-input {
+      background: var(--bg2); border: 1px solid var(--glass-b);
+      border-radius: 10px; padding: 10px 12px;
+      color: var(--text); font-family: inherit; font-size: 14px;
+      outline: none; -webkit-appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input::placeholder { color: var(--muted); }
+    .form-input:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px var(--primary-dim);
+    }
+    select.form-input { cursor: pointer; }
+    .preview-actions { display: flex; gap: 10px; margin-top: 14px; }
+    .btn-save-receipt {
+      flex: 1; padding: 13px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 6px 24px var(--primary-glow);
+      transition: all 0.2s;
+    }
+    .btn-save-receipt:active { transform: scale(0.97); }
+    .btn-discard {
+      width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--glass-b);
+      background: var(--glass); color: var(--muted2); font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-discard:active { background: var(--danger-glow); border-color: var(--danger); color: var(--danger); }
+
+    /* ══════════════════════════════════════
+       EXPENSES TAB
+    ══════════════════════════════════════ */
+    #view-expenses { padding-left: 0; padding-right: 0; }
+
+    .month-group { margin-bottom: 4px; }
+    .month-label {
+      padding: 16px 20px 8px;
+      font-size: 12px; font-weight: 700; color: var(--muted2);
+      letter-spacing: 1px; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .month-total {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; font-weight: 700; color: var(--primary-light);
+    }
+
+    .expense-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      position: relative; overflow: hidden;
+      transition: background 0.2s;
+    }
+    .expense-row:active { background: var(--glass); }
+    .expense-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .expense-info { flex: 1; min-width: 0; }
+    .expense-merchant {
+      font-size: 14px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .expense-meta {
+      display: flex; align-items: center; gap: 6px; margin-top: 2px;
+    }
+    .expense-cat {
+      font-size: 11px; font-weight: 600; padding: 2px 7px;
+      border-radius: 6px; white-space: nowrap;
+    }
+    .expense-date { font-size: 11px; color: var(--muted); }
+    .expense-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .expense-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; font-weight: 700; color: var(--text);
+    }
+    .btn-delete {
+      width: 28px; height: 28px; border-radius: 8px; border: none;
+      background: rgba(239,68,68,0.12); color: #ef4444;
+      font-size: 13px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-delete:active { background: rgba(239,68,68,0.25); transform: scale(0.9); }
+
+    .empty-state {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 40px 20px; text-align: center;
+    }
+    .empty-icon { font-size: 48px; opacity: 0.4; }
+    .empty-title { font-size: 18px; font-weight: 600; color: var(--muted2); }
+    .empty-sub { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+    /* ══════════════════════════════════════
+       REPORTS TAB
+    ══════════════════════════════════════ */
+    #view-reports { padding-left: 20px; padding-right: 20px; }
+
+    /* Hero total */
+    .report-hero {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 22px; padding: 24px 20px;
+      margin-top: 16px; margin-bottom: 16px;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .report-hero::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light), #818cf8);
+    }
+    .report-hero-label {
+      font-size: 12px; font-weight: 600; color: var(--muted2);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .report-hero-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(38px, 12vw, 52px); font-weight: 800;
+      letter-spacing: -2px; color: var(--text); line-height: 1;
+    }
+    .report-hero-amount span { font-size: 0.5em; color: var(--muted2); vertical-align: top; margin-top: 10px; display: inline-block; }
+    .report-vs {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin-top: 10px; font-size: 13px; color: var(--muted2);
+    }
+    .report-vs .arrow { font-size: 16px; }
+    .report-vs .arrow.up { color: var(--danger); }
+    .report-vs .arrow.down { color: var(--green); }
+    .report-vs .arrow.flat { color: var(--muted2); }
+    .report-vs strong { color: var(--text); }
+
+    /* Deductible banner */
+    .deductible-banner {
+      background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.06));
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 16px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .deductible-icon { font-size: 24px; }
+    .deductible-text { flex: 1; }
+    .deductible-label { font-size: 11px; color: rgba(16,185,129,0.8); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+    .deductible-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 800; color: var(--green); letter-spacing: -0.5px;
+      margin-top: 2px;
+    }
+    .deductible-sub { font-size: 11px; color: var(--muted2); margin-top: 1px; }
+
+    /* Category bars */
+    .cats-card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 18px; padding: 16px; margin-bottom: 16px;
+    }
+    .cats-card-title {
+      font-size: 12px; font-weight: 700; color: var(--muted2);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .cat-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .cat-bar-row:last-child { margin-bottom: 0; }
+    .cat-bar-emoji { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
+    .cat-bar-info { flex: 1; min-width: 0; }
+    .cat-bar-top { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .cat-bar-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .cat-bar-amt {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 700; color: var(--primary-light);
+    }
+    .cat-bar-track {
+      height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;
+    }
+    .cat-bar-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Export section */
+    .export-card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 18px; padding: 16px; margin-bottom: 16px;
+    }
+    .export-card-title {
+      font-size: 12px; font-weight: 700; color: var(--muted2);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .tax-year-toggle {
+      display: flex; gap: 4px;
+      background: var(--bg2); border-radius: 10px; padding: 3px;
+      margin-bottom: 14px;
+    }
+    .ty-btn {
+      flex: 1; padding: 8px 4px; border: none; background: transparent;
+      color: var(--muted2); font-family: inherit; font-size: 12px; font-weight: 600;
+      border-radius: 7px; cursor: pointer; transition: all 0.2s;
+    }
+    .ty-btn.active { background: var(--primary-dim); color: var(--primary-light); }
+    .btn-export {
+      width: 100%; padding: 13px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 6px 24px var(--primary-glow);
+      transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-export:active { transform: scale(0.97); }
+    .btn-export span { font-size: 18px; }
+
+    /* ══════════════════════════════════════
+       SETTINGS TAB
+    ══════════════════════════════════════ */
+    #view-settings { padding-left: 20px; padding-right: 20px; }
+
+    .settings-section { margin-bottom: 24px; }
+    .settings-group {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 16px; overflow: hidden;
+    }
+    .settings-row {
+      display: flex; align-items: center; padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      gap: 12px;
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-icon { font-size: 18px; width: 28px; text-align: center; }
+    .settings-row-info { flex: 1; }
+    .settings-row-label { font-size: 14px; font-weight: 500; color: var(--text); }
+    .settings-row-sub { font-size: 12px; color: var(--muted2); margin-top: 1px; }
+    .settings-row-right { color: var(--muted2); font-size: 13px; }
+    .settings-row-action {
+      background: none; border: none; color: var(--primary-light);
+      font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;
+      padding: 6px 12px; border-radius: 8px; transition: background 0.2s;
+    }
+    .settings-row-action:active { background: var(--primary-dim); }
+    .settings-row-action.danger { color: var(--danger); }
+    .settings-row-action.danger:active { background: var(--danger-glow); }
+
+    /* Paywall overlay */
+    .paywall-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(5,5,15,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      display: none; align-items: flex-end; padding: 20px;
+      padding-bottom: calc(20px + var(--safe-b));
+      animation: fadeIn 0.3s ease;
+    }
+    .paywall-overlay.show { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .paywall-card {
+      width: 100%; background: var(--bg2);
+      border: 1px solid var(--glass-b); border-radius: 28px;
+      padding: 28px 24px;
+      animation: slideUp 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+    .paywall-emoji { font-size: 44px; margin-bottom: 12px; display: block; text-align: center; }
+    .paywall-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px; font-weight: 800; text-align: center;
+      margin-bottom: 6px; letter-spacing: -0.5px;
+    }
+    .paywall-sub { font-size: 14px; color: var(--muted2); text-align: center; line-height: 1.5; margin-bottom: 24px; }
+    .paywall-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .paywall-feat {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; color: var(--muted2);
+    }
+    .paywall-feat .check { color: var(--green); font-size: 16px; }
+    .btn-pay {
+      width: 100%; padding: 16px; border-radius: 16px; border: none;
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 10px 40px var(--primary-glow);
+      transition: all 0.2s; margin-bottom: 12px;
+      letter-spacing: -0.3px;
+    }
+    .btn-pay:active { transform: scale(0.97); }
+    .paywall-dismiss {
+      width: 100%; background: none; border: none; color: var(--muted2);
+      font-size: 13px; cursor: pointer; font-family: inherit;
+      padding: 8px; text-align: center;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: calc(var(--tab-h) + var(--safe-b) + 16px);
+      left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--bg3); border: 1px solid var(--glass-b);
+      color: var(--text); font-size: 13px; font-weight: 500;
+      padding: 10px 18px; border-radius: 40px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      opacity: 0; transition: all 0.3s ease; z-index: 150;
+      white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── BOTTOM TAB BAR ── */
+    .tab-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      height: calc(var(--tab-h) + var(--safe-b));
+      padding-bottom: var(--safe-b);
+      background: rgba(5,5,15,0.85);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--glass-b);
+      display: flex; align-items: stretch;
+    }
+    .tab {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); transition: color 0.2s;
+      position: relative; padding: 0 4px 2px;
+    }
+    .tab.active { color: var(--primary-light); }
+    .tab-icon { font-size: 20px; line-height: 1; }
+    .tab-label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; }
+    .tab-pip {
+      position: absolute; top: 10px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--primary-light);
+      opacity: 0; transition: opacity 0.2s;
+      box-shadow: 0 0 8px var(--primary-light);
+    }
+    .tab.active .tab-pip { opacity: 1; }
+
+    /* ── CATEGORY COLORS ── */
+    /* Food */        .cat-food   { background: rgba(251,146,60,0.15); color: #fb923c; }
+    /* Transport */   .cat-transport { background: rgba(52,211,153,0.15); color: #34d399; }
+    /* Equipment */   .cat-equipment { background: rgba(96,165,250,0.15); color: #60a5fa; }
+    /* Software */    .cat-software { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    /* Marketing */   .cat-marketing { background: rgba(251,113,133,0.15); color: #fb7185; }
+    /* Office */      .cat-office  { background: rgba(250,204,21,0.15); color: #facc15; }
+    /* Other */       .cat-other   { background: rgba(148,163,184,0.15); color: #94a3b8; }
+
+    /* icon bg matching category */
+    .icon-food      { background: rgba(251,146,60,0.15); }
+    .icon-transport { background: rgba(52,211,153,0.15); }
+    .icon-equipment { background: rgba(96,165,250,0.15); }
+    .icon-software  { background: rgba(167,139,250,0.15); }
+    .icon-marketing { background: rgba(251,113,133,0.15); }
+    .icon-office    { background: rgba(250,204,21,0.15); }
+    .icon-other     { background: rgba(148,163,184,0.15); }
+  </style>
+</head>
+<body>
+
+<!-- ambient glow -->
+<div class="ambient">
+  <div class="ambient-orb orb1"></div>
+  <div class="ambient-orb orb2"></div>
+  <div class="ambient-orb orb3"></div>
+</div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">SCAN<span>RECEIPT</span></div>
+    <div class="header-right">
+      <div class="free-badge" id="tier-badge">10 free</div>
+    </div>
+  </header>
+
+  <!-- ══ SCAN VIEW ══ -->
+  <div class="view active" id="view-scan">
+
+    <div class="scan-hero">
+      <h2>Photo it.<br><span>Track it. Claim it.</span></h2>
+      <p>Snap receipts, track expenses,<br>export for tax time.</p>
+    </div>
+
+    <!-- Camera CTA -->
+    <div class="scan-btn-wrap">
+      <input type="file" id="camera-input" accept="image/*" capture="environment">
+      <button class="btn-scan" id="scan-btn">
+        <span class="scan-icon">📷</span>
+        <div>
+          <div class="btn-scan-text">Scan Receipt</div>
+          <div class="btn-scan-sub">Opens camera or photo library</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="quick-stats">
+      <div class="stat-card">
+        <div class="stat-label">This Month</div>
+        <div class="stat-value" id="qs-month">$0</div>
+        <div class="stat-sub" id="qs-month-count">0 receipts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tax Year Total</div>
+        <div class="stat-value green" id="qs-year">$0</div>
+        <div class="stat-sub" id="qs-year-sub">Jul–Jun</div>
+      </div>
+    </div>
+
+    <!-- Receipt form (shown after photo) -->
+    <div class="receipt-preview-card" id="receipt-preview">
+      <div class="preview-img-wrap">
+        <img id="preview-img" src="" alt="Receipt preview" style="display:none">
+        <div class="preview-img-placeholder" id="preview-placeholder">🧾</div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="f-merchant">Merchant</label>
+          <input class="form-input" id="f-merchant" type="text" placeholder="e.g. Bunnings">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="f-amount">Amount ($)</label>
+            <input class="form-input" id="f-amount" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-date">Date</label>
+            <input class="form-input" id="f-date" type="date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-category">Category</label>
+          <select class="form-input" id="f-category">
+            <option value="Food">🍔 Food &amp; Meals</option>
+            <option value="Transport">🚗 Transport</option>
+            <option value="Equipment">🔧 Equipment</option>
+            <option value="Software">💻 Software</option>
+            <option value="Marketing">📣 Marketing</option>
+            <option value="Office">🖊️ Office</option>
+            <option value="Other">📦 Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-notes">Notes (optional)</label>
+          <input class="form-input" id="f-notes" type="text" placeholder="Client name, project, etc.">
+        </div>
+      </div>
+      <div class="preview-actions">
+        <button class="btn-save-receipt" id="save-btn">Save Expense ✓</button>
+        <button class="btn-discard" id="discard-btn" title="Discard">✕</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ EXPENSES VIEW ══ -->
+  <div class="view" id="view-expenses">
+    <div class="section-head">
+      <span class="section-title">All Expenses</span>
+      <button class="section-action" id="filter-btn">Filter</button>
+    </div>
+    <div id="expenses-list">
+      <div class="empty-state">
+        <div class="empty-icon">🧾</div>
+        <div class="empty-title">No expenses yet</div>
+        <div class="empty-sub">Tap Scan to add your<br>first receipt</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REPORTS VIEW ══ -->
+  <div class="view" id="view-reports">
+
+    <!-- Hero -->
+    <div class="report-hero">
+      <div class="report-hero-label">This Month</div>
+      <div class="report-hero-amount" id="rpt-month-total">
+        <span>$</span><span id="rpt-month-num">0</span>
+      </div>
+      <div class="report-vs" id="rpt-vs">
+        <span class="arrow flat" id="rpt-vs-arrow">→</span>
+        <span id="rpt-vs-text">No previous data</span>
+      </div>
+    </div>
+
+    <!-- Tax deductible running total -->
+    <div class="deductible-banner">
+      <div class="deductible-icon">🇦🇺</div>
+      <div class="deductible-text">
+        <div class="deductible-label">Tax Deductible This Year</div>
+        <div class="deductible-value" id="deductible-val">$0.00</div>
+        <div class="deductible-sub" id="deductible-sub">ATO financial year Jul–Jun</div>
+      </div>
+    </div>
+
+    <!-- Top categories -->
+    <div class="cats-card">
+      <div class="cats-card-title">Top Spending Categories</div>
+      <div id="cats-bars">
+        <div class="empty-state" style="padding:16px 0;margin:0">
+          <div class="empty-icon" style="font-size:28px">📊</div>
+          <div class="empty-sub" style="font-size:12px">Add expenses to see categories</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="export-card">
+      <div class="export-card-title">Export Data</div>
+      <div class="tax-year-toggle">
+        <button class="ty-btn active" data-range="calendar">Calendar Year</button>
+        <button class="ty-btn" data-range="au-tax">AU Tax Year (Jul–Jun)</button>
+        <button class="ty-btn" data-range="all">All Time</button>
+      </div>
+      <button class="btn-export" id="export-btn">
+        <span>📥</span> Export CSV
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ══ SETTINGS VIEW ══ -->
+  <div class="view" id="view-settings">
+
+    <div class="section-head">
+      <span class="section-title">Settings</span>
+    </div>
+
+    <div class="settings-section">
+      <div class="section-title" style="padding: 0 0 10px; font-size:11px">Account</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-icon">⭐</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label" id="plan-label">Free Plan</div>
+            <div class="settings-row-sub" id="plan-sub">10 expenses included</div>
+          </div>
+          <button class="settings-row-action" id="upgrade-btn">Upgrade $4.99</button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-icon">📊</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label" id="expense-count-label">0 expenses saved</div>
+            <div class="settings-row-sub" id="expense-count-sub">Across all time</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="section-title" style="padding: 0 0 10px; font-size:11px">Preferences</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-icon">🗓️</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Tax Year</div>
+            <div class="settings-row-sub">Australian financial year (Jul–Jun)</div>
+          </div>
+          <div class="settings-row-right">🇦🇺</div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-icon">💱</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Currency</div>
+            <div class="settings-row-sub">Australian Dollar</div>
+          </div>
+          <div class="settings-row-right">AUD</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="section-title" style="padding: 0 0 10px; font-size:11px">Data</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-icon">📥</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Export All Data</div>
+            <div class="settings-row-sub">Download as CSV</div>
+          </div>
+          <button class="settings-row-action" id="settings-export-btn">Export</button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-icon">🗑️</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Clear All Data</div>
+            <div class="settings-row-sub">Permanently delete all expenses</div>
+          </div>
+          <button class="settings-row-action danger" id="clear-btn">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row-icon">ℹ️</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">SCAN v1.0</div>
+            <div class="settings-row-sub">Photo it. Track it. Claim it.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── BOTTOM TAB BAR ── -->
+  <nav class="tab-bar">
+    <button class="tab active" data-view="scan">
+      <div class="tab-pip"></div>
+      <div class="tab-icon">📷</div>
+      <div class="tab-label">Scan</div>
+    </button>
+    <button class="tab" data-view="expenses">
+      <div class="tab-pip"></div>
+      <div class="tab-icon">🧾</div>
+      <div class="tab-label">Expenses</div>
+    </button>
+    <button class="tab" data-view="reports">
+      <div class="tab-pip"></div>
+      <div class="tab-icon">📊</div>
+      <div class="tab-label">Reports</div>
+    </button>
+    <button class="tab" data-view="settings">
+      <div class="tab-pip"></div>
+      <div class="tab-icon">⚙️</div>
+      <div class="tab-label">Settings</div>
+    </button>
+  </nav>
+
+</div><!-- #app -->
+
+<!-- PAYWALL OVERLAY -->
+<div class="paywall-overlay" id="paywall">
+  <div class="paywall-card">
+    <span class="paywall-emoji">📸</span>
+    <div class="paywall-title">Unlock Unlimited<br>Expenses</div>
+    <div class="paywall-sub">You've used your 10 free receipts.<br>Upgrade once — yours forever.</div>
+    <div class="paywall-features">
+      <div class="paywall-feat"><span class="check">✓</span> Unlimited receipt storage</div>
+      <div class="paywall-feat"><span class="check">✓</span> CSV export for tax time</div>
+      <div class="paywall-feat"><span class="check">✓</span> All category analytics</div>
+      <div class="paywall-feat"><span class="check">✓</span> AU tax year grouping</div>
+      <div class="paywall-feat"><span class="check">✓</span> Works 100% offline</div>
+    </div>
+    <button class="btn-pay" id="pay-btn">Pay Once — $4.99 AUD</button>
+    <button class="paywall-dismiss" id="paywall-dismiss">Maybe later</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  CONSTANTS & HELPERS
+// ══════════════════════════════════════════════════
+const FREE_LIMIT = 10;
+
+const CATEGORIES = {
+  Food:      { emoji: '🍔', cls: 'food',      label: 'Food & Meals' },
+  Transport: { emoji: '🚗', cls: 'transport', label: 'Transport' },
+  Equipment: { emoji: '🔧', cls: 'equipment', label: 'Equipment' },
+  Software:  { emoji: '💻', cls: 'software',  label: 'Software' },
+  Marketing: { emoji: '📣', cls: 'marketing', label: 'Marketing' },
+  Office:    { emoji: '🖊️', cls: 'office',    label: 'Office' },
+  Other:     { emoji: '📦', cls: 'other',     label: 'Other' },
+};
+
+function fmt(n) {
+  return '$' + Number(n).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtShort(n) {
+  if (n >= 1000) return '$' + (n/1000).toFixed(1) + 'k';
+  return '$' + Math.round(n);
+}
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+function monthKey(dateStr) {
+  // returns "YYYY-MM"
+  return dateStr.slice(0, 7);
+}
+function monthLabel(key) {
+  const [y, m] = key.split('-');
+  return new Date(+y, +m-1, 1).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+}
+function currentMonthKey() {
+  return today().slice(0, 7);
+}
+function lastMonthKey() {
+  const d = new Date();
+  d.setDate(1); d.setMonth(d.getMonth() - 1);
+  return d.toISOString().slice(0, 7);
+}
+// AU financial year: July 1 – June 30
+function isAUTaxYear(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const cutoffYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  const start = new Date(cutoffYear, 6, 1); // Jul 1
+  const end   = new Date(cutoffYear + 1, 5, 30); // Jun 30
+  return d >= start && d <= end;
+}
+function isCalendarYear(dateStr) {
+  return dateStr.startsWith(new Date().getFullYear().toString());
+}
+
+// ── STORAGE ──
+function load() {
+  try { return JSON.parse(localStorage.getItem('scan_expenses') || '[]'); } catch { return []; }
+}
+function save(data) {
+  localStorage.setItem('scan_expenses', JSON.stringify(data));
+}
+function isPro() {
+  return localStorage.getItem('scan_pro') === '1';
+}
+function setPro() {
+  localStorage.setItem('scan_pro', '1');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg, duration = 2400) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ══════════════════════════════════════════════════
+//  TAB NAVIGATION
+// ══════════════════════════════════════════════════
+const tabs    = document.querySelectorAll('.tab');
+const views   = document.querySelectorAll('.view');
+
+function switchTab(name) {
+  tabs.forEach(t  => t.classList.toggle('active', t.dataset.view === name));
+  views.forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  if (name === 'expenses') renderExpenses();
+  if (name === 'reports')  renderReports();
+  if (name === 'settings') renderSettings();
+}
+
+tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.view)));
+
+// ══════════════════════════════════════════════════
+//  CAMERA / PHOTO INPUT
+// ══════════════════════════════════════════════════
+const scanBtn     = document.getElementById('scan-btn');
+const cameraInput = document.getElementById('camera-input');
+const previewCard = document.getElementById('receipt-preview');
+const previewImg  = document.getElementById('preview-img');
+const previewPh   = document.getElementById('preview-placeholder');
+
+scanBtn.addEventListener('click', () => {
+  // Paywall check
+  const expenses = load();
+  if (!isPro() && expenses.length >= FREE_LIMIT) {
+    showPaywall();
+    return;
+  }
+  cameraInput.click();
+});
+
+cameraInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Show image preview
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const src = ev.target.result;
+    previewImg.src = src;
+    previewImg.style.display = 'block';
+    previewPh.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+
+  // Reset form
+  document.getElementById('f-merchant').value = '';
+  document.getElementById('f-amount').value = '';
+  document.getElementById('f-date').value = today();
+  document.getElementById('f-category').value = 'Food';
+  document.getElementById('f-notes').value = '';
+
+  // Show form
+  previewCard.classList.add('show');
+  previewCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Reset input so same file can retrigger
+  cameraInput.value = '';
+});
+
+// Discard
+document.getElementById('discard-btn').addEventListener('click', () => {
+  previewCard.classList.remove('show');
+  previewImg.src = '';
+  previewImg.style.display = 'none';
+  previewPh.style.display = 'flex';
+});
+
+// Save expense
+document.getElementById('save-btn').addEventListener('click', () => {
+  const merchant = document.getElementById('f-merchant').value.trim();
+  const amount   = parseFloat(document.getElementById('f-amount').value);
+  const date     = document.getElementById('f-date').value;
+  const category = document.getElementById('f-category').value;
+  const notes    = document.getElementById('f-notes').value.trim();
+
+  if (!merchant) { showToast('Please enter a merchant name'); document.getElementById('f-merchant').focus(); return; }
+  if (!amount || isNaN(amount) || amount <= 0) { showToast('Please enter a valid amount'); document.getElementById('f-amount').focus(); return; }
+  if (!date) { showToast('Please select a date'); return; }
+
+  // Save image thumbnail (downsample to save space)
+  let thumb = null;
+  if (previewImg.src && previewImg.src.startsWith('data:')) {
+    const canvas = document.createElement('canvas');
+    const maxDim = 300;
+    const img = new Image();
+    img.src = previewImg.src;
+    const scale = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight, 1);
+    canvas.width  = Math.round(img.naturalWidth  * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    try { thumb = canvas.toDataURL('image/jpeg', 0.6); } catch { thumb = null; }
+  }
+
+  const expense = {
+    id:       Date.now().toString(),
+    merchant, amount, date, category, notes,
+    thumb,
+    createdAt: new Date().toISOString(),
+  };
+
+  const expenses = load();
+  expenses.unshift(expense);
+  save(expenses);
+
+  // Hide form
+  previewCard.classList.remove('show');
+  previewImg.src = ''; previewImg.style.display = 'none';
+  previewPh.style.display = 'flex';
+
+  showToast('✓ Expense saved');
+  updateHeader();
+  renderQuickStats();
+});
+
+// ══════════════════════════════════════════════════
+//  RENDER EXPENSES LIST
+// ══════════════════════════════════════════════════
+function renderExpenses() {
+  const expenses = load();
+  const list = document.getElementById('expenses-list');
+
+  if (!expenses.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🧾</div>
+        <div class="empty-title">No expenses yet</div>
+        <div class="empty-sub">Tap Scan to add your<br>first receipt</div>
+      </div>`;
+    return;
+  }
+
+  // Group by month
+  const groups = {};
+  expenses.forEach(e => {
+    const k = monthKey(e.date);
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(e);
+  });
+
+  // Sort months descending
+  const sortedKeys = Object.keys(groups).sort((a,b) => b.localeCompare(a));
+
+  let html = '';
+  sortedKeys.forEach(key => {
+    const items = groups[key];
+    const total = items.reduce((s, e) => s + Number(e.amount), 0);
+    html += `<div class="month-group">
+      <div class="month-label">
+        <span>${monthLabel(key)}</span>
+        <span class="month-total">${fmt(total)}</span>
+      </div>`;
+    items.forEach(e => {
+      const cat = CATEGORIES[e.category] || CATEGORIES.Other;
+      const dateDisp = new Date(e.date + 'T00:00:00').toLocaleDateString('en-AU', { day:'numeric', month:'short' });
+      html += `
+      <div class="expense-row" data-id="${e.id}">
+        <div class="expense-icon icon-${cat.cls}">${cat.emoji}</div>
+        <div class="expense-info">
+          <div class="expense-merchant">${esc(e.merchant)}</div>
+          <div class="expense-meta">
+            <span class="expense-cat cat-${cat.cls}">${cat.label}</span>
+            <span class="expense-date">${dateDisp}</span>
+          </div>
+        </div>
+        <div class="expense-right">
+          <div class="expense-amount">${fmt(e.amount)}</div>
+          <button class="btn-delete" data-id="${e.id}" title="Delete" aria-label="Delete expense">✕</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  list.innerHTML = html;
+
+  // Bind delete buttons
+  list.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (confirm('Delete this expense?')) {
+        const expenses = load().filter(x => x.id !== id);
+        save(expenses);
+        renderExpenses();
+        updateHeader();
+        renderQuickStats();
+        showToast('Expense deleted');
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER REPORTS
+// ══════════════════════════════════════════════════
+function renderReports() {
+  const expenses = load();
+
+  // This month
+  const thisMK  = currentMonthKey();
+  const lastMK  = lastMonthKey();
+  const thisM   = expenses.filter(e => monthKey(e.date) === thisMK);
+  const lastM   = expenses.filter(e => monthKey(e.date) === lastMK);
+  const thisTotal = thisM.reduce((s, e) => s + Number(e.amount), 0);
+  const lastTotal = lastM.reduce((s, e) => s + Number(e.amount), 0);
+
+  document.getElementById('rpt-month-num').textContent =
+    thisTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // vs last month
+  const vsEl    = document.getElementById('rpt-vs-arrow');
+  const vsText  = document.getElementById('rpt-vs-text');
+  if (lastTotal === 0) {
+    vsEl.textContent = '→'; vsEl.className = 'arrow flat';
+    vsText.textContent = 'No previous month data';
+  } else {
+    const diff = thisTotal - lastTotal;
+    const pct  = Math.abs(Math.round((diff / lastTotal) * 100));
+    if (diff > 0) {
+      vsEl.textContent = '↑'; vsEl.className = 'arrow up';
+      vsText.innerHTML = `<strong>${pct}% more</strong> than last month (${fmt(lastTotal)})`;
+    } else if (diff < 0) {
+      vsEl.textContent = '↓'; vsEl.className = 'arrow down';
+      vsText.innerHTML = `<strong>${pct}% less</strong> than last month (${fmt(lastTotal)})`;
+    } else {
+      vsEl.textContent = '→'; vsEl.className = 'arrow flat';
+      vsText.textContent = 'Same as last month';
+    }
+  }
+
+  // Tax deductible (AU year)
+  const taxExpenses = expenses.filter(e => isAUTaxYear(e.date));
+  const taxTotal    = taxExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  document.getElementById('deductible-val').textContent = fmt(taxTotal);
+  const now = new Date();
+  const fyStart = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  document.getElementById('deductible-sub').textContent =
+    `FY${String(fyStart).slice(-2)}/${String(fyStart+1).slice(-2)} · ${taxExpenses.length} receipts`;
+
+  // Category bars (top 3 this month, or all time if no this-month)
+  const pool = thisM.length > 0 ? thisM : expenses;
+  const catTotals = {};
+  pool.forEach(e => {
+    catTotals[e.category] = (catTotals[e.category] || 0) + Number(e.amount);
+  });
+  const sorted = Object.entries(catTotals).sort((a,b) => b[1]-a[1]);
+  const top = sorted.slice(0, 3);
+  const maxAmt = top[0]?.[1] || 1;
+
+  const barsEl = document.getElementById('cats-bars');
+  if (!top.length) {
+    barsEl.innerHTML = `<div class="empty-state" style="padding:16px 0;margin:0">
+      <div class="empty-icon" style="font-size:28px">📊</div>
+      <div class="empty-sub" style="font-size:12px">Add expenses to see categories</div>
+    </div>`;
+  } else {
+    barsEl.innerHTML = top.map(([cat, amt]) => {
+      const info = CATEGORIES[cat] || CATEGORIES.Other;
+      const pct  = Math.round((amt / maxAmt) * 100);
+      return `<div class="cat-bar-row">
+        <div class="cat-bar-emoji">${info.emoji}</div>
+        <div class="cat-bar-info">
+          <div class="cat-bar-top">
+            <span class="cat-bar-name">${info.label}</span>
+            <span class="cat-bar-amt">${fmt(amt)}</span>
+          </div>
+          <div class="cat-bar-track">
+            <div class="cat-bar-fill" style="width:${pct}%"></div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER SETTINGS
+// ══════════════════════════════════════════════════
+function renderSettings() {
+  const expenses = load();
+  const pro = isPro();
+
+  document.getElementById('plan-label').textContent = pro ? 'Pro — Unlimited' : 'Free Plan';
+  document.getElementById('plan-sub').textContent   = pro ? 'All features unlocked' : `${Math.max(0, FREE_LIMIT - expenses.length)} receipts remaining`;
+  document.getElementById('upgrade-btn').style.display = pro ? 'none' : '';
+  document.getElementById('expense-count-label').textContent = `${expenses.length} expense${expenses.length === 1 ? '' : 's'} saved`;
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER QUICK STATS (scan view)
+// ══════════════════════════════════════════════════
+function renderQuickStats() {
+  const expenses = load();
+  const thisMK  = currentMonthKey();
+  const thisM   = expenses.filter(e => monthKey(e.date) === thisMK);
+  const thisTotal = thisM.reduce((s, e) => s + Number(e.amount), 0);
+
+  const taxTotal = expenses.filter(e => isAUTaxYear(e.date))
+                           .reduce((s, e) => s + Number(e.amount), 0);
+
+  document.getElementById('qs-month').textContent = fmtShort(thisTotal);
+  document.getElementById('qs-month-count').textContent = `${thisM.length} receipt${thisM.length === 1 ? '' : 's'}`;
+  document.getElementById('qs-year').textContent = fmtShort(taxTotal);
+}
+
+// ══════════════════════════════════════════════════
+//  HEADER BADGE
+// ══════════════════════════════════════════════════
+function updateHeader() {
+  const badge = document.getElementById('tier-badge');
+  if (isPro()) {
+    badge.textContent = 'PRO ∞';
+    badge.className = 'free-badge pro';
+  } else {
+    const remaining = Math.max(0, FREE_LIMIT - load().length);
+    badge.textContent = remaining + ' free';
+    badge.className = 'free-badge';
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  EXPORT CSV
+// ══════════════════════════════════════════════════
+let activeRange = 'calendar';
+document.querySelectorAll('.ty-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ty-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeRange = btn.dataset.range;
+  });
+});
+
+function exportCSV(range) {
+  let expenses = load();
+  if (!expenses.length) { showToast('No expenses to export'); return; }
+
+  if (range === 'calendar') {
+    expenses = expenses.filter(e => isCalendarYear(e.date));
+  } else if (range === 'au-tax') {
+    expenses = expenses.filter(e => isAUTaxYear(e.date));
+  }
+  // 'all' = no filter
+
+  if (!expenses.length) { showToast('No expenses in selected range'); return; }
+
+  const header = ['Date', 'Merchant', 'Amount (AUD)', 'Category', 'Notes'];
+  const rows   = expenses.map(e => [
+    e.date,
+    csvEsc(e.merchant),
+    Number(e.amount).toFixed(2),
+    csvEsc(e.category),
+    csvEsc(e.notes || ''),
+  ]);
+
+  const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const now  = new Date();
+  const fname = `SCAN_expenses_${now.toISOString().slice(0,10)}.csv`;
+  a.href = url; a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`✓ Exported ${expenses.length} expenses`);
+}
+
+function csvEsc(str) {
+  const s = String(str || '');
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+document.getElementById('export-btn').addEventListener('click', () => exportCSV(activeRange));
+document.getElementById('settings-export-btn').addEventListener('click', () => exportCSV('all'));
+
+// ══════════════════════════════════════════════════
+//  PAYWALL
+// ══════════════════════════════════════════════════
+function showPaywall() {
+  document.getElementById('paywall').classList.add('show');
+}
+function hidePaywall() {
+  document.getElementById('paywall').classList.remove('show');
+}
+
+document.getElementById('paywall-dismiss').addEventListener('click', hidePaywall);
+document.getElementById('paywall').addEventListener('click', e => {
+  if (e.target === document.getElementById('paywall')) hidePaywall();
+});
+
+document.getElementById('pay-btn').addEventListener('click', () => {
+  // Simulate payment success (in production: wire up Stripe/Lemon Squeezy)
+  setPro();
+  hidePaywall();
+  updateHeader();
+  renderSettings();
+  showToast('🎉 SCAN Pro unlocked! Thank you ❤️');
+});
+
+document.getElementById('upgrade-btn').addEventListener('click', showPaywall);
+
+// ══════════════════════════════════════════════════
+//  CLEAR DATA
+// ══════════════════════════════════════════════════
+document.getElementById('clear-btn').addEventListener('click', () => {
+  if (confirm('Delete ALL expenses permanently? This cannot be undone.')) {
+    localStorage.removeItem('scan_expenses');
+    updateHeader();
+    renderQuickStats();
+    renderSettings();
+    showToast('All expenses cleared');
+  }
+});
+
+// ══════════════════════════════════════════════════
+//  ESCAPE HTML
+// ══════════════════════════════════════════════════
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════
+//  FILTER BUTTON (placeholder with toast)
+// ══════════════════════════════════════════════════
+document.getElementById('filter-btn').addEventListener('click', () => {
+  showToast('Filter by category — coming soon');
+});
+
+// ══════════════════════════════════════════════════
+//  SERVICE WORKER
+// ══════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+updateHeader();
+renderQuickStats();
+
+// Animate orbs subtly
+(function animateOrbs() {
+  const orbs = document.querySelectorAll('.ambient-orb');
+  let t = 0;
+  function tick() {
+    t += 0.003;
+    orbs[0].style.transform = `translate(${Math.sin(t)*18}px, ${Math.cos(t*0.7)*14}px)`;
+    orbs[1].style.transform = `translate(${Math.cos(t*0.9)*14}px, ${Math.sin(t*1.1)*10}px)`;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

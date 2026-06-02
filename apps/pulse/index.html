@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0608">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="PULSE — Daily habit tracker with AI nudges. Small actions. Big life.">
+  <title>PULSE — Small actions. Big life.</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #0a0608;
+      --bg2:           #140a0e;
+      --bg3:           #1c0d12;
+      --glass:         rgba(255,255,255,0.04);
+      --glass2:        rgba(255,255,255,0.07);
+      --glass-border:  rgba(255,255,255,0.08);
+      --glass-border2: rgba(255,255,255,0.14);
+      --primary:       #e11d48;
+      --primary-light: #fb7185;
+      --primary-glow:  rgba(225,29,72,0.30);
+      --primary-glow2: rgba(225,29,72,0.15);
+      --accent:        #fff1f2;
+      --gold:          #f59e0b;
+      --gold-glow:     rgba(245,158,11,0.30);
+      --green:         #10b981;
+      --green-glow:    rgba(16,185,129,0.25);
+      --text:          #fff1f2;
+      --muted:         #6b5258;
+      --muted2:        #9d7a83;
+      --radius:        20px;
+      --tab-h:         72px;
+      --safe-bottom:   env(safe-area-inset-bottom, 16px);
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── ANIMATED BACKGROUND ── */
+    #bg-orb {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 20%, rgba(225,29,72,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 50% at 80% 80%, rgba(225,29,72,0.05) 0%, transparent 70%);
+    }
+
+    /* ── APP SHELL ── */
+    #app {
+      position: relative; z-index: 1;
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 8px;
+      padding-top: calc(16px + env(safe-area-inset-top, 0px));
+      flex-shrink: 0;
+    }
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .pro-badge {
+      background: linear-gradient(135deg, var(--primary), #be123c);
+      color: #fff; font-size: 10px; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px;
+      letter-spacing: 0.5px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pro-badge:active { transform: scale(0.94); }
+    .pro-badge.is-pro {
+      background: linear-gradient(135deg, var(--gold), #d97706);
+    }
+
+    /* ── VIEWS ── */
+    .view {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 0 16px;
+      padding-bottom: calc(var(--tab-h) + var(--safe-bottom) + 8px);
+      display: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .view.active { display: block; }
+
+    /* ── TAB BAR ── */
+    .tab-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(var(--tab-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: rgba(10,6,8,0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--glass-border);
+      display: flex; align-items: center;
+      z-index: 100;
+    }
+    .tab-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px; padding: 8px 4px;
+      cursor: pointer; border: none; background: none;
+      color: var(--muted2); font-family: inherit;
+      transition: all 0.25s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-item .tab-icon { font-size: 22px; line-height: 1; transition: transform 0.25s ease; }
+    .tab-item .tab-label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
+    .tab-item.active { color: var(--primary-light); }
+    .tab-item.active .tab-icon { transform: scale(1.1); }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-size: 12px; font-weight: 600; color: var(--muted2);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin: 20px 0 10px;
+    }
+
+    /* ══════════════════════════════════════
+       TODAY VIEW
+    ══════════════════════════════════════ */
+
+    /* ── PROGRESS RING ── */
+    .progress-ring-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 12px;
+      padding: 24px 0 8px;
+    }
+    .ring-container {
+      position: relative; display: flex;
+      align-items: center; justify-content: center;
+      width: 160px; height: 160px;
+    }
+    .ring-svg { transform: rotate(-90deg); }
+    .ring-track {
+      fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 10;
+    }
+    .ring-progress {
+      fill: none;
+      stroke: url(#ring-grad);
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .ring-center {
+      position: absolute; text-align: center; pointer-events: none;
+    }
+    .ring-fraction {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 38px; font-weight: 700;
+      line-height: 1; letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--accent), var(--primary-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ring-sub { font-size: 11px; color: var(--muted2); margin-top: 4px; }
+
+    /* ── SMART NUDGE ── */
+    .nudge-card {
+      margin: 0 0 8px;
+      background: linear-gradient(135deg, rgba(225,29,72,0.12), rgba(225,29,72,0.04));
+      border: 1px solid rgba(225,29,72,0.2);
+      border-radius: 16px; padding: 14px 16px;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .nudge-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .nudge-text { font-size: 14px; line-height: 1.5; color: var(--text); }
+    .nudge-sub  { font-size: 12px; color: var(--primary-light); margin-top: 3px; font-weight: 500; }
+
+    /* ── HABIT CARDS ── */
+    .habit-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+    .habit-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px;
+      transition: all 0.2s ease;
+      cursor: pointer; position: relative; overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .habit-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--primary-glow2); opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .habit-card.done {
+      border-color: rgba(225,29,72,0.25);
+      background: rgba(225,29,72,0.06);
+    }
+    .habit-card.done::before { opacity: 1; }
+
+    .habit-emoji { font-size: 28px; flex-shrink: 0; line-height: 1; }
+
+    .habit-info { flex: 1; min-width: 0; }
+    .habit-name {
+      font-size: 15px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .habit-meta { font-size: 12px; color: var(--muted2); margin-top: 2px; }
+    .habit-done-text {
+      font-size: 12px; color: var(--primary-light);
+      margin-top: 2px; font-weight: 500;
+    }
+
+    .habit-streak {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px; flex-shrink: 0;
+    }
+    .streak-flame {
+      font-size: 18px; line-height: 1;
+      transition: transform 0.3s ease;
+    }
+    .habit-card.done .streak-flame { transform: scale(1.15); }
+    .streak-num {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 700; line-height: 1;
+    }
+    .streak-num.best { color: var(--gold); }
+
+    /* check circle */
+    .habit-check {
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 50%;
+      border: 2px solid var(--glass-border2);
+      background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+      position: relative; overflow: hidden;
+    }
+    .habit-card.done .habit-check {
+      background: linear-gradient(135deg, var(--primary), #be123c);
+      border-color: var(--primary);
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+    .check-icon {
+      font-size: 18px; opacity: 0;
+      transform: scale(0) rotate(-20deg);
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      line-height: 1;
+    }
+    .habit-card.done .check-icon {
+      opacity: 1; transform: scale(1) rotate(0deg);
+    }
+
+    /* burst particles */
+    .burst {
+      position: absolute; top: 50%; left: 50%;
+      pointer-events: none; z-index: 10;
+    }
+    .burst-particle {
+      position: absolute;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--primary-light);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-today {
+      text-align: center; padding: 40px 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .empty-today .empty-icon { font-size: 48px; }
+    .empty-today p { color: var(--muted2); font-size: 14px; line-height: 1.5; }
+
+    /* ══════════════════════════════════════
+       HABITS VIEW (manage)
+    ══════════════════════════════════════ */
+    .habits-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0 12px;
+    }
+    .habits-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+    }
+    .btn-add-habit {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #be123c);
+      border: none; color: #fff; font-size: 22px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px var(--primary-glow);
+      transition: all 0.2s;
+    }
+    .btn-add-habit:active { transform: scale(0.9); }
+
+    .habit-manage-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 10px;
+    }
+    .habit-manage-card .habit-emoji { font-size: 26px; }
+    .habit-manage-info { flex: 1; min-width: 0; }
+    .habit-manage-name {
+      font-size: 15px; font-weight: 600;
+    }
+    .habit-manage-meta { font-size: 12px; color: var(--muted2); margin-top: 3px; }
+    .habit-manage-actions { display: flex; gap: 8px; }
+    .btn-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      color: var(--muted2); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-icon:active { transform: scale(0.88); }
+    .btn-icon.danger:active { color: var(--primary-light); border-color: var(--primary); }
+
+    .free-limit-banner {
+      background: linear-gradient(135deg, rgba(225,29,72,0.12), rgba(225,29,72,0.05));
+      border: 1px solid rgba(225,29,72,0.2);
+      border-radius: 16px; padding: 14px 16px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .free-limit-banner .banner-icon { font-size: 20px; }
+    .free-limit-banner .banner-text { flex: 1; font-size: 13px; line-height: 1.4; }
+    .free-limit-banner .banner-cta {
+      font-size: 12px; font-weight: 700; color: var(--primary-light);
+      white-space: nowrap; cursor: pointer;
+    }
+
+    /* ══════════════════════════════════════
+       ADD / EDIT HABIT FORM (sheet)
+    ══════════════════════════════════════ */
+    .sheet-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+    .sheet {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+      background: var(--bg2);
+      border-top: 1px solid var(--glass-border);
+      border-radius: 28px 28px 0 0;
+      padding: 0 20px;
+      padding-bottom: calc(32px + var(--safe-bottom));
+      max-height: 92dvh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.34,1.25,0.64,1);
+    }
+    .sheet.open { transform: translateY(0); }
+    .sheet-handle {
+      width: 40px; height: 4px; border-radius: 4px;
+      background: var(--glass-border2);
+      margin: 12px auto 20px;
+    }
+    .sheet-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    /* form fields */
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      font-size: 12px; font-weight: 600; color: var(--muted2);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      display: block; margin-bottom: 8px;
+    }
+    .form-input {
+      width: 100%; padding: 13px 16px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 14px; color: var(--text);
+      font-family: inherit; font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .form-input::placeholder { color: var(--muted); }
+    .form-input:focus {
+      border-color: rgba(225,29,72,0.5);
+      box-shadow: 0 0 0 3px var(--primary-glow2);
+    }
+    select.form-input {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239d7a83' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+
+    /* emoji row */
+    .emoji-grid {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .emoji-btn {
+      width: 44px; height: 44px; border-radius: 12px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      font-size: 22px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .emoji-btn.selected {
+      border-color: var(--primary);
+      background: rgba(225,29,72,0.15);
+      box-shadow: 0 0 12px var(--primary-glow2);
+    }
+    .emoji-btn:active { transform: scale(0.88); }
+
+    /* freq chips */
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 8px 14px; border-radius: 20px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; color: var(--muted2);
+    }
+    .chip.selected {
+      background: rgba(225,29,72,0.15);
+      border-color: rgba(225,29,72,0.4);
+      color: var(--primary-light);
+    }
+    .chip:active { transform: scale(0.93); }
+
+    /* day picker */
+    .day-picker {
+      display: flex; gap: 6px;
+      margin-top: 10px; display: none;
+    }
+    .day-picker.show { display: flex; }
+    .day-btn {
+      flex: 1; padding: 10px 4px;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      border-radius: 10px; font-size: 11px; font-weight: 600;
+      cursor: pointer; color: var(--muted2); transition: all 0.2s;
+    }
+    .day-btn.on {
+      background: rgba(225,29,72,0.15);
+      border-color: rgba(225,29,72,0.4);
+      color: var(--primary-light);
+    }
+
+    .btn-save {
+      width: 100%; height: 56px; border-radius: 18px; border: none;
+      background: linear-gradient(135deg, var(--primary), #be123c);
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 28px var(--primary-glow);
+      transition: all 0.2s; margin-top: 8px;
+    }
+    .btn-save:active { transform: scale(0.97); box-shadow: 0 4px 14px var(--primary-glow); }
+
+    /* ══════════════════════════════════════
+       STATS VIEW
+    ══════════════════════════════════════ */
+    .stats-top {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 10px;
+      padding-top: 20px;
+    }
+    .stat-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 16px;
+    }
+    .stat-card.full { grid-column: 1 / -1; }
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 30px; font-weight: 700; line-height: 1;
+    }
+    .stat-value.gold { color: var(--gold); }
+    .stat-label { font-size: 12px; color: var(--muted2); margin-top: 5px; }
+
+    /* heatmap */
+    .heatmap-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+    }
+    .heatmap-title {
+      font-size: 13px; font-weight: 600; color: var(--muted2);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    #heatmap-canvas { display: block; width: 100%; }
+
+    /* per-habit stats */
+    .habit-stat-row {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+    }
+    .habit-stat-emoji { font-size: 24px; flex-shrink: 0; }
+    .habit-stat-info { flex: 1; min-width: 0; }
+    .habit-stat-name { font-size: 14px; font-weight: 600; }
+    .habit-stat-bar-wrap {
+      height: 4px; background: rgba(255,255,255,0.06);
+      border-radius: 4px; margin-top: 6px; overflow: hidden;
+    }
+    .habit-stat-bar {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .habit-stat-right { text-align: right; flex-shrink: 0; }
+    .habit-stat-pct {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 700;
+    }
+    .habit-stat-streak { font-size: 11px; color: var(--muted2); }
+
+    /* ══════════════════════════════════════
+       SETTINGS VIEW
+    ══════════════════════════════════════ */
+    .settings-section {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); overflow: hidden; margin-bottom: 12px;
+    }
+    .settings-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px; border-bottom: 1px solid var(--glass-border);
+      cursor: pointer; transition: background 0.2s;
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row:active { background: var(--glass2); }
+    .settings-icon { font-size: 20px; width: 32px; text-align: center; }
+    .settings-text { flex: 1; }
+    .settings-label { font-size: 15px; font-weight: 500; }
+    .settings-sub { font-size: 12px; color: var(--muted2); margin-top: 2px; }
+    .settings-arrow { color: var(--muted); font-size: 16px; }
+
+    /* toggle */
+    .toggle {
+      width: 44px; height: 26px; border-radius: 13px;
+      background: var(--glass-border2); position: relative;
+      cursor: pointer; transition: background 0.25s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--primary); }
+    .toggle::after {
+      content: ''; position: absolute;
+      top: 3px; left: 3px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #fff; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .toggle.on::after { transform: translateX(18px); }
+
+    .settings-page-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700;
+      padding: 20px 0 16px;
+    }
+
+    /* ══════════════════════════════════════
+       PAYWALL MODAL
+    ══════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      width: 100%; background: var(--bg2);
+      border-top: 1px solid var(--glass-border);
+      border-radius: 28px 28px 0 0;
+      padding: 8px 24px calc(32px + var(--safe-bottom));
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.34,1.25,0.64,1);
+    }
+    .modal-overlay.open .modal-box { transform: translateY(0); }
+    .modal-handle {
+      width: 40px; height: 4px; border-radius: 4px;
+      background: var(--glass-border2); margin: 12px auto 24px;
+    }
+    .modal-flame { font-size: 56px; text-align: center; margin-bottom: 12px; }
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px; font-weight: 700;
+      text-align: center; margin-bottom: 8px;
+    }
+    .modal-sub {
+      font-size: 14px; color: var(--muted2);
+      text-align: center; line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .modal-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .modal-feature {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px;
+    }
+    .modal-feature-icon { font-size: 20px; width: 32px; text-align: center; }
+    .btn-upgrade {
+      width: 100%; height: 58px; border-radius: 20px; border: none;
+      background: linear-gradient(135deg, var(--primary), #be123c);
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 32px var(--primary-glow);
+      transition: all 0.2s;
+    }
+    .btn-upgrade:active { transform: scale(0.97); }
+    .modal-dismiss {
+      text-align: center; margin-top: 14px;
+      font-size: 13px; color: var(--muted2);
+      cursor: pointer;
+    }
+    .modal-price {
+      text-align: center; font-size: 12px; color: var(--muted2); margin-top: 10px;
+    }
+
+    /* ── UTILITY ── */
+    .mt8 { margin-top: 8px; }
+    .text-center { text-align: center; }
+
+    /* ── PARTICLE CANVAS (completion burst) ── */
+    #burst-canvas {
+      position: fixed; inset: 0; pointer-events: none; z-index: 50;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    #burst-canvas.active { opacity: 1; }
+
+    /* ── SCROLL HELPERS ── */
+    .view::-webkit-scrollbar { display: none; }
+    .view { scrollbar-width: none; }
+    .sheet::-webkit-scrollbar { display: none; }
+    .sheet { scrollbar-width: none; }
+  </style>
+</head>
+
+<body>
+<div id="bg-orb"></div>
+<canvas id="burst-canvas"></canvas>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">PULSE</div>
+    <div class="pro-badge" id="pro-badge" onclick="openPaywall()">GO PRO</div>
+  </header>
+
+  <!-- ══ TODAY VIEW ══ -->
+  <div class="view active" id="view-today">
+    <!-- Progress ring -->
+    <div class="progress-ring-wrap">
+      <div class="ring-container">
+        <svg class="ring-svg" width="160" height="160" viewBox="0 0 160 160">
+          <defs>
+            <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#fb7185"/>
+              <stop offset="100%" stop-color="#e11d48"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="80" cy="80" r="68"/>
+          <circle class="ring-progress" id="ring-progress" cx="80" cy="80" r="68"
+            stroke-dasharray="427.26" stroke-dashoffset="427.26"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-fraction" id="ring-fraction">0<span style="font-size:22px;opacity:0.5">/0</span></div>
+          <div class="ring-sub">today</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart nudge -->
+    <div class="nudge-card" id="nudge-card">
+      <div class="nudge-icon" id="nudge-icon">🌅</div>
+      <div>
+        <div class="nudge-text" id="nudge-text">Add your first habit to get started.</div>
+        <div class="nudge-sub" id="nudge-sub">Small actions. Big life.</div>
+      </div>
+    </div>
+
+    <!-- Habit list -->
+    <div class="section-title">Today's Habits</div>
+    <div class="habit-list" id="today-habit-list">
+      <div class="empty-today">
+        <div class="empty-icon">🔥</div>
+        <p>No habits due today.<br>Head to Habits to add some.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HABITS VIEW ══ -->
+  <div class="view" id="view-habits">
+    <div class="habits-header">
+      <div class="habits-title">My Habits</div>
+      <button class="btn-add-habit" onclick="openAddHabit()" aria-label="Add habit">＋</button>
+    </div>
+    <div id="free-limit-banner" style="display:none">
+      <div class="free-limit-banner">
+        <div class="banner-icon">🔒</div>
+        <div class="banner-text">Free plan: 3 habits max. Unlock unlimited with Pro.</div>
+        <div class="banner-cta" onclick="openPaywall()">Upgrade →</div>
+      </div>
+    </div>
+    <div id="habit-manage-list"></div>
+  </div>
+
+  <!-- ══ STATS VIEW ══ -->
+  <div class="view" id="view-stats">
+    <div class="stats-top">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-best-streak">0🔥</div>
+        <div class="stat-label">Best streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total-done">0</div>
+        <div class="stat-label">Total completions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-week-pct">0%</div>
+        <div class="stat-label">This week score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value gold" id="stat-perfect-days">0</div>
+        <div class="stat-label">Perfect days</div>
+      </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="heatmap-card">
+      <div class="heatmap-title">📅 12-week calendar</div>
+      <canvas id="heatmap-canvas" height="88"></canvas>
+    </div>
+
+    <!-- Per-habit -->
+    <div class="section-title">Habit scores</div>
+    <div id="habit-stat-list"></div>
+  </div>
+
+  <!-- ══ SETTINGS VIEW ══ -->
+  <div class="view" id="view-settings">
+    <div class="settings-page-title">Settings</div>
+
+    <div class="settings-section">
+      <div class="settings-row" onclick="openPaywall()">
+        <div class="settings-icon">⚡</div>
+        <div class="settings-text">
+          <div class="settings-label">PULSE Pro</div>
+          <div class="settings-sub" id="settings-pro-sub">Free plan — upgrade for unlimited habits</div>
+        </div>
+        <div class="settings-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-row" onclick="toggleNotifications()">
+        <div class="settings-icon">🔔</div>
+        <div class="settings-text">
+          <div class="settings-label">Daily reminders</div>
+          <div class="settings-sub">Nudges at your habit times</div>
+        </div>
+        <div class="toggle" id="notif-toggle"></div>
+      </div>
+      <div class="settings-row" onclick="toggleHaptics()">
+        <div class="settings-icon">📳</div>
+        <div class="settings-text">
+          <div class="settings-label">Haptic feedback</div>
+          <div class="settings-sub">Vibrate on completion</div>
+        </div>
+        <div class="toggle" id="haptic-toggle"></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-row" onclick="resetData()">
+        <div class="settings-icon">🗑️</div>
+        <div class="settings-text">
+          <div class="settings-label">Reset all data</div>
+          <div class="settings-sub">Wipe habits and history</div>
+        </div>
+        <div class="settings-arrow">›</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:24px 0;color:var(--muted);font-size:12px;">
+      PULSE v1.0 · Small actions. Big life.
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab-item active" data-tab="today" onclick="switchTab('today')">
+      <div class="tab-icon">🏠</div>
+      <div class="tab-label">Today</div>
+    </button>
+    <button class="tab-item" data-tab="habits" onclick="switchTab('habits')">
+      <div class="tab-icon">✅</div>
+      <div class="tab-label">Habits</div>
+    </button>
+    <button class="tab-item" data-tab="stats" onclick="switchTab('stats')">
+      <div class="tab-icon">📊</div>
+      <div class="tab-label">Stats</div>
+    </button>
+    <button class="tab-item" data-tab="settings" onclick="switchTab('settings')">
+      <div class="tab-icon">⚙️</div>
+      <div class="tab-label">Settings</div>
+    </button>
+  </nav>
+</div>
+
+<!-- ══ ADD/EDIT SHEET ══ -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="habit-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheet-title">New Habit</div>
+
+  <div class="form-group">
+    <label class="form-label">Habit name</label>
+    <input class="form-input" id="f-name" type="text" placeholder="e.g. Morning run" maxlength="40">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Emoji</label>
+    <div class="emoji-grid" id="emoji-grid"></div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Category</label>
+    <select class="form-input" id="f-category">
+      <option value="health">🏃 Health</option>
+      <option value="mind">🧠 Mind</option>
+      <option value="social">💬 Social</option>
+      <option value="work">💼 Work</option>
+      <option value="custom">✨ Custom</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Frequency</label>
+    <div class="chip-row" id="freq-chips">
+      <div class="chip selected" data-freq="daily" onclick="selectFreq('daily')">Daily</div>
+      <div class="chip" data-freq="weekdays" onclick="selectFreq('weekdays')">Weekdays</div>
+      <div class="chip" data-freq="weekends" onclick="selectFreq('weekends')">Weekends</div>
+      <div class="chip" data-freq="custom" onclick="selectFreq('custom')">Custom</div>
+    </div>
+    <div class="day-picker" id="day-picker">
+      <button class="day-btn" data-d="0" onclick="toggleDay(0)">Su</button>
+      <button class="day-btn" data-d="1" onclick="toggleDay(1)">Mo</button>
+      <button class="day-btn" data-d="2" onclick="toggleDay(2)">Tu</button>
+      <button class="day-btn" data-d="3" onclick="toggleDay(3)">We</button>
+      <button class="day-btn" data-d="4" onclick="toggleDay(4)">Th</button>
+      <button class="day-btn" data-d="5" onclick="toggleDay(5)">Fr</button>
+      <button class="day-btn" data-d="6" onclick="toggleDay(6)">Sa</button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Reminder time (optional)</label>
+    <input class="form-input" id="f-reminder" type="time">
+  </div>
+
+  <button class="btn-save" id="btn-save-habit" onclick="saveHabit()">Save Habit</button>
+</div>
+
+<!-- ══ PAYWALL MODAL ══ -->
+<div class="modal-overlay" id="paywall-modal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-flame">🔥</div>
+    <div class="modal-title">Unlock PULSE Pro</div>
+    <div class="modal-sub">You've hit the 3-habit free limit.<br>Go Pro for unlimited habits + features.</div>
+    <div class="modal-features">
+      <div class="modal-feature"><div class="modal-feature-icon">♾️</div>Unlimited habits</div>
+      <div class="modal-feature"><div class="modal-feature-icon">🔔</div>Smart habit reminders</div>
+      <div class="modal-feature"><div class="modal-feature-icon">📊</div>Full stats + trends</div>
+      <div class="modal-feature"><div class="modal-feature-icon">🏆</div>Streak shields (miss 1 day, keep streak)</div>
+      <div class="modal-feature"><div class="modal-feature-icon">🤖</div>AI weekly coaching report</div>
+    </div>
+    <button class="btn-upgrade" onclick="simulatePurchase()">Start Pro — $3.99/mo</button>
+    <div class="modal-price">7-day free trial · Cancel anytime</div>
+    <div class="modal-dismiss" onclick="closePaywall()">Maybe later</div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   DATA MODEL
+══════════════════════════════════════════════════════════ */
+const EMOJIS = ['🏃','💪','🧘','🥗','💧','📚','✍️','🎯','😴','🧠','💻','🎨','🎸','🌿','❤️','🌞','🚴','🏊','🧹','💬'];
+const FREE_LIMIT = 3;
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem('pulse_v1') || 'null') || defaultState(); }
+  catch(e) { return defaultState(); }
+}
+function saveState() { localStorage.setItem('pulse_v1', JSON.stringify(S)); }
+function defaultState() {
+  return {
+    habits: [],
+    logs: {},        // { "YYYY-MM-DD": { [habitId]: true } }
+    settings: { notifications: false, haptics: true },
+    pro: false,
+    nextId: 1
+  };
+}
+
+let S = loadState();
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function dayOfWeek(dateStr) {
+  // 0=Sun,1=Mon,...,6=Sat
+  const [y,m,d] = dateStr.split('-').map(Number);
+  return new Date(y, m-1, d).getDay();
+}
+
+// Is habit due on a given dateStr?
+function isDue(habit, dateStr) {
+  const dow = dayOfWeek(dateStr);
+  if (habit.freq === 'daily') return true;
+  if (habit.freq === 'weekdays') return dow >= 1 && dow <= 5;
+  if (habit.freq === 'weekends') return dow === 0 || dow === 6;
+  if (habit.freq === 'custom') return habit.days.includes(dow);
+  return true;
+}
+
+function isCompleted(habitId, dateStr) {
+  return !!(S.logs[dateStr] && S.logs[dateStr][habitId]);
+}
+
+function markComplete(habitId, dateStr) {
+  if (!S.logs[dateStr]) S.logs[dateStr] = {};
+  S.logs[dateStr][habitId] = true;
+  saveState();
+}
+
+function markIncomplete(habitId, dateStr) {
+  if (S.logs[dateStr]) {
+    delete S.logs[dateStr][habitId];
+    if (!Object.keys(S.logs[dateStr]).length) delete S.logs[dateStr];
+  }
+  saveState();
+}
+
+// Streak: consecutive due days completed up to today
+function calcStreak(habit) {
+  let streak = 0;
+  const today = new Date();
+  let d = new Date(today);
+  // Walk backward
+  for (let i = 0; i < 365; i++) {
+    const key = dateKey(d);
+    if (!isDue(habit, key)) {
+      d.setDate(d.getDate() - 1);
+      continue;
+    }
+    if (isCompleted(habit.id, key)) {
+      streak++;
+    } else {
+      // if it's today and not yet done, don't break streak yet
+      if (i === 0) {
+        // today, not done — streak still valid from yesterday
+      } else {
+        break;
+      }
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+// Total completions
+function totalCompletions(habit) {
+  let n = 0;
+  for (const day of Object.values(S.logs)) {
+    if (day[habit.id]) n++;
+  }
+  return n;
+}
+
+// Week score: completed/due this week (Mon–Sun)
+function weekScore(habit) {
+  const today = new Date();
+  const dow = today.getDay(); // 0=sun
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((dow + 6) % 7));
+  let due = 0, done = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    if (d > today) break;
+    const key = dateKey(d);
+    if (isDue(habit, key)) {
+      due++;
+      if (isCompleted(habit.id, key)) done++;
+    }
+  }
+  return due > 0 ? Math.round((done / due) * 100) : 0;
+}
+
+// Today's due habits
+function todayHabits() {
+  const key = todayKey();
+  return S.habits.filter(h => isDue(h, key));
+}
+
+// Total completions for today
+function todayStats() {
+  const due = todayHabits();
+  const key = todayKey();
+  const done = due.filter(h => isCompleted(h.id, key)).length;
+  return { due: due.length, done };
+}
+
+// Perfect days (all habits done) in last 84 days
+function perfectDays() {
+  let count = 0;
+  const today = new Date();
+  for (let i = 0; i < 84; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = dateKey(d);
+    const due = S.habits.filter(h => isDue(h, key));
+    if (!due.length) continue;
+    const allDone = due.every(h => isCompleted(h.id, key));
+    if (allDone) count++;
+  }
+  return count;
+}
+
+// Best streak across all habits
+function bestStreakAll() {
+  if (!S.habits.length) return 0;
+  return Math.max(...S.habits.map(h => calcStreak(h)));
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDERING
+══════════════════════════════════════════════════════════ */
+
+/* ── TODAY ── */
+function renderToday() {
+  const { due, done } = todayStats();
+  const circumference = 427.26; // 2π×68
+  const pct = due > 0 ? done / due : 0;
+  const offset = circumference * (1 - pct);
+
+  document.getElementById('ring-progress').style.strokeDashoffset = offset;
+
+  const frac = document.getElementById('ring-fraction');
+  frac.innerHTML = `${done}<span style="font-size:20px;opacity:0.45">/${due}</span>`;
+
+  // nudge
+  updateNudge(done, due);
+
+  // habit list
+  const list = document.getElementById('today-habit-list');
+  const key = todayKey();
+  const habits = todayHabits();
+
+  if (!habits.length) {
+    list.innerHTML = `<div class="empty-today">
+      <div class="empty-icon">🔥</div>
+      <p>No habits due today.<br>Head to Habits to add some.</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = habits.map(h => {
+    const done = isCompleted(h.id, key);
+    const streak = calcStreak(h);
+    const isBest = streak === bestStreakAll() && streak > 0;
+    return `<div class="habit-card ${done ? 'done' : ''}" id="hcard-${h.id}" onclick="toggleHabit(${h.id})">
+      <div class="habit-emoji">${h.emoji}</div>
+      <div class="habit-info">
+        <div class="habit-name">${h.name}</div>
+        ${done
+          ? `<div class="habit-done-text">✓ Completed today</div>`
+          : `<div class="habit-meta">${freqLabel(h)}</div>`}
+      </div>
+      <div class="habit-streak">
+        <div class="streak-flame">🔥</div>
+        <div class="streak-num ${isBest ? 'best' : ''}">${streak}</div>
+      </div>
+      <div class="habit-check">
+        <span class="check-icon">✓</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function freqLabel(h) {
+  if (h.freq === 'daily') return 'Every day';
+  if (h.freq === 'weekdays') return 'Mon–Fri';
+  if (h.freq === 'weekends') return 'Sat–Sun';
+  if (h.freq === 'custom') {
+    const names = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    return (h.days || []).map(d => names[d]).join(', ');
+  }
+  return '';
+}
+
+function updateNudge(done, due) {
+  const hour = new Date().getHours();
+  let icon, text, sub;
+
+  if (due === 0) {
+    icon = '💤'; text = 'No habits due yet.'; sub = 'Head to Habits to add some.';
+  } else if (done === due) {
+    icon = '🏆'; text = `All done! Perfect day — ${done}/${due} habits complete.`; sub = 'You\'re on fire. Keep the streak alive!';
+  } else if (hour < 10) {
+    icon = '🌅'; text = `Start strong — ${done}/${due} done so far.`; sub = 'Morning is the best time to build habits.';
+  } else if (hour < 14) {
+    icon = '⚡'; text = `Keep going — ${done}/${due} done.`; sub = `${due - done} habit${due - done !== 1 ? 's' : ''} left to crush today.`;
+  } else if (hour < 18) {
+    icon = '🌤️'; text = `Afternoon push — ${done}/${due} done.`; sub = `Don't let the day slip by.`;
+  } else if (hour < 21) {
+    icon = '🌙'; text = `Evening check-in — ${done}/${due} done.`; sub = `${due - done > 0 ? `You've got time — ${due-done} left.` : 'Looking great today!'}`;
+  } else {
+    icon = '⭐'; text = `Wind down — ${done}/${due} done.`; sub = done === due ? 'Incredible day!' : `${due - done} remaining — you can still do it.`;
+  }
+
+  document.getElementById('nudge-icon').textContent = icon;
+  document.getElementById('nudge-text').textContent = text;
+  document.getElementById('nudge-sub').textContent = sub;
+}
+
+/* ── HABITS MANAGE ── */
+function renderHabits() {
+  const banner = document.getElementById('free-limit-banner');
+  banner.style.display = (!S.pro && S.habits.length >= FREE_LIMIT) ? 'block' : 'none';
+
+  const el = document.getElementById('habit-manage-list');
+  if (!S.habits.length) {
+    el.innerHTML = `<div class="empty-today" style="padding:40px 0">
+      <div class="empty-icon">✅</div>
+      <p>No habits yet.<br>Tap + to add your first one.</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = S.habits.map(h => {
+    const streak = calcStreak(h);
+    return `<div class="habit-manage-card">
+      <div class="habit-emoji">${h.emoji}</div>
+      <div class="habit-manage-info">
+        <div class="habit-manage-name">${h.name}</div>
+        <div class="habit-manage-meta">${freqLabel(h)} · ${catLabel(h.category)} · ${streak}🔥 streak</div>
+      </div>
+      <div class="habit-manage-actions">
+        <button class="btn-icon" onclick="editHabit(${h.id})">✏️</button>
+        <button class="btn-icon danger" onclick="deleteHabit(${h.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function catLabel(c) {
+  return { health:'Health', mind:'Mind', social:'Social', work:'Work', custom:'Custom' }[c] || c;
+}
+
+/* ── STATS ── */
+function renderStats() {
+  const best = bestStreakAll();
+  document.getElementById('stat-best-streak').textContent = best + '🔥';
+  const total = S.habits.reduce((s, h) => s + totalCompletions(h), 0);
+  document.getElementById('stat-total-done').textContent = total;
+
+  // week score across all habits
+  const scores = S.habits.map(h => weekScore(h));
+  const avg = scores.length ? Math.round(scores.reduce((a,b) => a+b, 0) / scores.length) : 0;
+  document.getElementById('stat-week-pct').textContent = avg + '%';
+  document.getElementById('stat-perfect-days').textContent = perfectDays();
+
+  drawHeatmap();
+  renderHabitStats();
+}
+
+function renderHabitStats() {
+  const el = document.getElementById('habit-stat-list');
+  if (!S.habits.length) {
+    el.innerHTML = `<div style="color:var(--muted2);font-size:14px;padding:20px 0;text-align:center">No habits yet.</div>`;
+    return;
+  }
+  el.innerHTML = S.habits.map(h => {
+    const pct = weekScore(h);
+    const streak = calcStreak(h);
+    return `<div class="habit-stat-row">
+      <div class="habit-stat-emoji">${h.emoji}</div>
+      <div class="habit-stat-info">
+        <div class="habit-stat-name">${h.name}</div>
+        <div class="habit-stat-bar-wrap">
+          <div class="habit-stat-bar" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="habit-stat-right">
+        <div class="habit-stat-pct">${pct}%</div>
+        <div class="habit-stat-streak">${streak}🔥</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── HEATMAP ── */
+function drawHeatmap() {
+  const canvas = document.getElementById('heatmap-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 32;
+  canvas.width = W * dpr;
+  canvas.height = 88 * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = '88px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const WEEKS = 12;
+  const DAYS = 7;
+  const cellSize = Math.floor((W - 6 * WEEKS) / WEEKS);
+  const gap = 4;
+
+  const today = new Date();
+  // Start from 12 weeks ago Monday
+  const startDate = new Date(today);
+  const startDow = (startDate.getDay() + 6) % 7; // 0=Mon
+  startDate.setDate(startDate.getDate() - startDow - (WEEKS - 1) * 7);
+
+  for (let w = 0; w < WEEKS; w++) {
+    for (let d = 0; d < DAYS; d++) {
+      const cellDate = new Date(startDate);
+      cellDate.setDate(startDate.getDate() + w * 7 + d);
+      if (cellDate > today) continue;
+
+      const key = dateKey(cellDate);
+      const due = S.habits.filter(h => isDue(h, key));
+      let opacity = 0.04;
+
+      if (due.length > 0) {
+        const done = due.filter(h => isCompleted(h.id, key)).length;
+        const pct = done / due.length;
+        if (pct === 0)   opacity = 0.06;
+        else if (pct < 0.5) opacity = 0.3;
+        else if (pct < 1)   opacity = 0.6;
+        else                opacity = 1.0;
+      }
+
+      const x = w * (cellSize + gap);
+      const y = d * (cellSize + gap) + 8;
+
+      ctx.fillStyle = `rgba(225,29,72,${opacity})`;
+      ctx.beginPath();
+      ctx.roundRect(x, y, cellSize, cellSize, 3);
+      ctx.fill();
+
+      // Gold border for perfect days
+      if (due.length > 0 && due.every(h => isCompleted(h.id, key))) {
+        ctx.strokeStyle = `rgba(245,158,11,0.7)`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(x, y, cellSize, cellSize, 3);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Day labels on left
+  ctx.fillStyle = 'rgba(157,122,131,0.8)';
+  ctx.font = `${Math.min(9, cellSize - 2)}px Inter, sans-serif`;
+  ctx.textAlign = 'right';
+  const dayNames = ['M','T','W','T','F','S','S'];
+  // No room for labels in compact layout — skip
+}
+
+/* ── SETTINGS ── */
+function renderSettings() {
+  const nt = document.getElementById('notif-toggle');
+  const ht = document.getElementById('haptic-toggle');
+  nt.classList.toggle('on', !!S.settings.notifications);
+  ht.classList.toggle('on', !!S.settings.haptics);
+
+  const sub = document.getElementById('settings-pro-sub');
+  const badge = document.getElementById('pro-badge');
+  if (S.pro) {
+    sub.textContent = 'Pro active — unlimited habits ✓';
+    badge.textContent = 'PRO ✓';
+    badge.classList.add('is-pro');
+  } else {
+    sub.textContent = 'Free plan — upgrade for unlimited habits';
+    badge.textContent = 'GO PRO';
+    badge.classList.remove('is-pro');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   INTERACTIONS
+══════════════════════════════════════════════════════════ */
+
+/* ── TOGGLE HABIT ── */
+function toggleHabit(id) {
+  const key = todayKey();
+  const card = document.getElementById(`hcard-${id}`);
+  if (!card) return;
+
+  const wasDone = isCompleted(id, key);
+
+  if (wasDone) {
+    markIncomplete(id, key);
+    card.classList.remove('done');
+  } else {
+    markComplete(id, key);
+    card.classList.add('done');
+    triggerBurst(card);
+    if (S.settings.haptics && navigator.vibrate) navigator.vibrate([10, 20, 30]);
+  }
+  renderToday();
+}
+
+/* ── BURST ANIMATION ── */
+const burstCanvas = document.getElementById('burst-canvas');
+const burstCtx = burstCanvas.getContext('2d');
+let burstAnim = null;
+let particles = [];
+
+function triggerBurst(card) {
+  const rect = card.getBoundingClientRect();
+  const cx = rect.left + rect.width * 0.85;
+  const cy = rect.top + rect.height / 2;
+
+  burstCanvas.width = window.innerWidth;
+  burstCanvas.height = window.innerHeight;
+  burstCanvas.classList.add('active');
+
+  particles = [];
+  const colors = ['#fb7185', '#e11d48', '#fda4af', '#fff1f2', '#f59e0b'];
+  for (let i = 0; i < 18; i++) {
+    const angle = (i / 18) * Math.PI * 2;
+    const speed = 3 + Math.random() * 4;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      r: 3 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      life: 1, decay: 0.025 + Math.random() * 0.02
+    });
+  }
+
+  if (burstAnim) cancelAnimationFrame(burstAnim);
+  animateBurst();
+}
+
+function animateBurst() {
+  burstCtx.clearRect(0, 0, burstCanvas.width, burstCanvas.height);
+  let alive = false;
+
+  particles.forEach(p => {
+    if (p.life <= 0) return;
+    alive = true;
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.15;
+    p.life -= p.decay;
+
+    burstCtx.globalAlpha = Math.max(0, p.life);
+    burstCtx.fillStyle = p.color;
+    burstCtx.beginPath();
+    burstCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    burstCtx.fill();
+  });
+
+  burstCtx.globalAlpha = 1;
+
+  if (alive) {
+    burstAnim = requestAnimationFrame(animateBurst);
+  } else {
+    burstCanvas.classList.remove('active');
+  }
+}
+
+/* ── SWITCH TAB ── */
+function switchTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+
+  document.getElementById(`view-${name}`).classList.add('active');
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+
+  if (name === 'today') renderToday();
+  if (name === 'habits') renderHabits();
+  if (name === 'stats') renderStats();
+  if (name === 'settings') renderSettings();
+}
+
+/* ── ADD/EDIT HABIT ── */
+let editingId = null;
+let formFreq = 'daily';
+let formDays = [];
+let formEmoji = '🏃';
+
+function buildEmojiGrid() {
+  const grid = document.getElementById('emoji-grid');
+  grid.innerHTML = EMOJIS.map(e =>
+    `<button class="emoji-btn ${e === formEmoji ? 'selected' : ''}" onclick="selectEmoji('${e}')">${e}</button>`
+  ).join('');
+}
+
+function selectEmoji(e) {
+  formEmoji = e;
+  document.querySelectorAll('.emoji-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent === e);
+  });
+}
+
+function selectFreq(f) {
+  formFreq = f;
+  document.querySelectorAll('.chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.freq === f);
+  });
+  const picker = document.getElementById('day-picker');
+  picker.classList.toggle('show', f === 'custom');
+}
+
+function toggleDay(d) {
+  const idx = formDays.indexOf(d);
+  if (idx >= 0) formDays.splice(idx, 1);
+  else formDays.push(d);
+  document.querySelectorAll('.day-btn').forEach(b => {
+    b.classList.toggle('on', formDays.includes(Number(b.dataset.d)));
+  });
+}
+
+function openAddHabit() {
+  if (!S.pro && S.habits.length >= FREE_LIMIT) {
+    openPaywall();
+    return;
+  }
+  editingId = null;
+  formFreq = 'daily'; formDays = []; formEmoji = '🏃';
+  document.getElementById('sheet-title').textContent = 'New Habit';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-category').value = 'health';
+  document.getElementById('f-reminder').value = '';
+  selectFreq('daily');
+  buildEmojiGrid();
+  openSheet();
+}
+
+function editHabit(id) {
+  const h = S.habits.find(x => x.id === id);
+  if (!h) return;
+  editingId = id;
+  formFreq = h.freq; formDays = [...(h.days || [])]; formEmoji = h.emoji;
+  document.getElementById('sheet-title').textContent = 'Edit Habit';
+  document.getElementById('f-name').value = h.name;
+  document.getElementById('f-category').value = h.category;
+  document.getElementById('f-reminder').value = h.reminder || '';
+  selectFreq(h.freq);
+  buildEmojiGrid();
+  // apply day selection
+  document.querySelectorAll('.day-btn').forEach(b => {
+    b.classList.toggle('on', formDays.includes(Number(b.dataset.d)));
+  });
+  openSheet();
+}
+
+function deleteHabit(id) {
+  if (!confirm('Delete this habit? Your streak data will be lost.')) return;
+  S.habits = S.habits.filter(h => h.id !== id);
+  saveState();
+  renderHabits();
+  renderToday();
+}
+
+function saveHabit() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { document.getElementById('f-name').focus(); return; }
+
+  const habit = {
+    id: editingId || S.nextId++,
+    name,
+    emoji: formEmoji,
+    category: document.getElementById('f-category').value,
+    freq: formFreq,
+    days: formFreq === 'custom' ? [...formDays] : [],
+    reminder: document.getElementById('f-reminder').value || null,
+    createdAt: editingId
+      ? (S.habits.find(h => h.id === editingId) || {}).createdAt || Date.now()
+      : Date.now()
+  };
+
+  if (editingId) {
+    const idx = S.habits.findIndex(h => h.id === editingId);
+    if (idx >= 0) S.habits[idx] = habit;
+  } else {
+    S.habits.push(habit);
+  }
+  saveState();
+  closeSheet();
+  renderHabits();
+  renderToday();
+}
+
+function openSheet() {
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.getElementById('habit-sheet').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 400);
+}
+
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('open');
+  document.getElementById('habit-sheet').classList.remove('open');
+}
+
+/* ── PAYWALL ── */
+function openPaywall() {
+  document.getElementById('paywall-modal').classList.add('open');
+}
+
+function closePaywall() {
+  document.getElementById('paywall-modal').classList.remove('open');
+}
+
+function simulatePurchase() {
+  S.pro = true;
+  saveState();
+  closePaywall();
+  renderSettings();
+  renderHabits();
+  renderToday();
+  alert('🎉 Welcome to PULSE Pro! Unlimited habits unlocked.');
+}
+
+/* ── SETTINGS TOGGLES ── */
+function toggleNotifications() {
+  S.settings.notifications = !S.settings.notifications;
+  saveState();
+  renderSettings();
+  if (S.settings.notifications && 'Notification' in window) {
+    Notification.requestPermission();
+  }
+}
+
+function toggleHaptics() {
+  S.settings.haptics = !S.settings.haptics;
+  saveState();
+  renderSettings();
+  if (S.settings.haptics && navigator.vibrate) navigator.vibrate(20);
+}
+
+function resetData() {
+  if (!confirm('This will delete ALL your habits and history. Are you sure?')) return;
+  localStorage.removeItem('pulse_v1');
+  S = defaultState();
+  renderToday();
+  renderHabits();
+  renderSettings();
+}
+
+/* ══════════════════════════════════════════════════════════
+   NUDGE INTERVAL — refresh every minute
+══════════════════════════════════════════════════════════ */
+setInterval(() => {
+  const { done, due } = todayStats();
+  updateNudge(done, due);
+}, 60000);
+
+/* ══════════════════════════════════════════════════════════
+   SERVICE WORKER
+══════════════════════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+/* ══════════════════════════════════════════════════════════
+   SEED DEMO DATA (first launch)
+══════════════════════════════════════════════════════════ */
+function seedDemo() {
+  if (S.habits.length > 0) return;
+
+  const demos = [
+    { name: 'Morning walk', emoji: '🏃', category: 'health', freq: 'daily' },
+    { name: 'Read 10 pages', emoji: '📚', category: 'mind', freq: 'daily' },
+    { name: 'Drink 2L water', emoji: '💧', category: 'health', freq: 'daily' },
+  ];
+
+  demos.forEach(d => {
+    S.habits.push({ id: S.nextId++, ...d, days: [], reminder: null, createdAt: Date.now() });
+  });
+
+  // Seed some historical logs for demo
+  const today = new Date();
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = dateKey(d);
+    S.logs[key] = {};
+    S.habits.forEach((h, idx) => {
+      // Vary completion: first 2 habits mostly done, 3rd less
+      const prob = idx < 2 ? 0.85 : 0.6;
+      if (Math.random() < prob) S.logs[key][h.id] = true;
+    });
+  }
+  saveState();
+}
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════ */
+seedDemo();
+renderToday();
+renderSettings();
+
+// Handle resize for heatmap
+window.addEventListener('resize', () => {
+  if (document.getElementById('view-stats').classList.contains('active')) drawHeatmap();
+});
+</script>
+</body>
+</html>
