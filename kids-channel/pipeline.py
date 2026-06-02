@@ -30,7 +30,13 @@ YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 # ── Show config (update once you have a character) ──────────────────────────
 SHOW_NAME = "Little Sunny"
 CHARACTER_NAME = "Sunny"
-CHARACTER_DESC = "a small round fluffy quokka with a permanent gentle smile, soft golden-brown fur, big warm brown eyes, and tiny round ears"
+CHARACTER_DESC = "a small round fluffy quokka with rosy cheeks, a big happy open smile, soft honey-golden-brown fur, large shiny warm brown eyes, tiny round ears, and a chubby friendly body — always cheerful and gentle"
+VISUAL_STYLE = (
+    "Soft watercolour children's book illustration. Warm moonlit Australian bush setting. "
+    "Gentle pastel palette of honey-gold, sage green, dusty blue, and cream. "
+    "Loose painterly brushwork, soft glowing light. Style: Studio Ghibli meets Beatrix Potter. "
+    "Cozy bedtime atmosphere. No text. Safe for toddlers."
+)
 SHOW_DESC = "Calm, gentle Australian bush adventures with Sunny the Quokka — peaceful nature stories for toddlers at bedtime or quiet time."
 VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # ElevenLabs default calm voice; swap for custom
 CHANNEL_CATEGORY = "27"            # YouTube category: Education
@@ -162,9 +168,9 @@ def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: s
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
     full_prompt = (
-        f"Soft watercolour children's book illustration. Calm, warm, cozy. "
-        f"Gentle pastel palette. {prompt} "
-        f"Style: Studio Ghibli meets Beatrix Potter. No text. Safe for kids."
+        f"{VISUAL_STYLE} "
+        f"Character: Sunny, {CHARACTER_DESC}. "
+        f"Scene: {prompt}"
     )
 
     r = requests.post(
