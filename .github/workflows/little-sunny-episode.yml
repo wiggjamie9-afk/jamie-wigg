@@ -3,20 +3,19 @@ name: Little Sunny — New Episode
 on:
   workflow_dispatch:
     inputs:
-      topic:
-        description: "Episode topic (e.g. Sunny finds a baby frog) — leave blank if using script_file"
-        required: false
-        type: string
       script_file:
-        description: "Path to pre-written script JSON"
+        description: "Override script path (leave blank to use queue)"
         required: false
         type: string
-        default: "kids-channel/scripts/sunny-finds-a-glowworm-in-the-bush.json"
       dry_run:
         description: "Dry run (skip YouTube upload)"
         required: false
         type: boolean
         default: false
+  schedule:
+    - cron: "0 21 * * *"   # 7 AM AEST every day
+    - cron: "0 3 * * *"    # 1 PM AEST every day
+    - cron: "0 9 * * *"    # 7 PM AEST every day
 
 jobs:
   produce-episode:
@@ -28,6 +27,26 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine script from queue
+        id: pick-script
+        run: |
+          OVERRIDE="${{ github.event.inputs.script_file }}"
+          if [ -n "$OVERRIDE" ]; then
+            echo "script=$OVERRIDE" >> $GITHUB_OUTPUT
+            echo "from_queue=false" >> $GITHUB_OUTPUT
+            echo "Using override: $OVERRIDE"
+          else
+            NEXT=$(head -1 kids-channel/queue.txt 2>/dev/null | tr -d '[:space:]')
+            if [ -z "$NEXT" ]; then
+              echo "::error::Episode queue is empty — add more scripts to kids-channel/queue.txt"
+              exit 1
+            fi
+            echo "script=$NEXT" >> $GITHUB_OUTPUT
+            echo "from_queue=true" >> $GITHUB_OUTPUT
+            echo "Using queue: $NEXT"
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,7 +60,7 @@ jobs:
         run: |
           pip install requests python-dotenv anthropic \
             google-auth google-auth-oauthlib google-api-python-client \
-            elevenlabs
+            elevenlabs Pillow
 
       - name: Write .env
         run: |
@@ -70,15 +89,24 @@ jobs:
 
       - name: Run pipeline
         run: |
-          if [ -n "${{ inputs.script_file }}" ]; then
-            ARGS="--script-file \"${{ inputs.script_file }}\""
-          else
-            ARGS="--topic \"${{ inputs.topic }}\""
-          fi
+          DRY_RUN_FLAG=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
+            DRY_RUN_FLAG="--dry-run"
           fi
-          eval python kids-channel/pipeline.py $ARGS
+          python kids-channel/pipeline.py \
+            --script-file "${{ steps.pick-script.outputs.script }}" \
+            $DRY_RUN_FLAG
+
+      - name: Advance queue
+        if: success() && steps.pick-script.outputs.from_queue == 'true'
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          tail -n +2 kids-channel/queue.txt > kids-channel/queue_tmp.txt
+          mv kids-channel/queue_tmp.txt kids-channel/queue.txt
+          git add kids-channel/queue.txt
+          git commit -m "queue: processed ${{ steps.pick-script.outputs.script }}"
+          git push origin main
 
       - name: Upload episode artifacts
         uses: actions/upload-artifact@v4
