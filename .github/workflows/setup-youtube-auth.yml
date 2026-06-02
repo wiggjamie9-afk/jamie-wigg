@@ -1,0 +1,107 @@
+name: YouTube OAuth Setup (one-time)
+
+on:
+  workflow_dispatch:
+    inputs:
+      auth_code:
+        description: "Step 2 only: paste the code from the redirect URL (leave blank to generate auth URL)"
+        required: false
+        type: string
+
+jobs:
+  oauth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Generate auth URL or exchange code
+        run: |
+          python3 -c "
+          import os, json, sys
+          from urllib.parse import urlencode
+
+          client_id     = os.environ['YT_CLIENT_ID']
+          client_secret = os.environ['YT_CLIENT_SECRET']
+          auth_code     = os.environ.get('AUTH_CODE', '').strip()
+          redirect_uri  = 'http://localhost'
+          scope         = 'https://www.googleapis.com/auth/youtube.upload'
+
+          if not auth_code:
+              params = {
+                  'client_id':     client_id,
+                  'redirect_uri':  redirect_uri,
+                  'scope':         scope,
+                  'response_type': 'code',
+                  'access_type':   'offline',
+                  'prompt':        'consent',
+              }
+              url = 'https://accounts.google.com/o/oauth2/auth?' + urlencode(params)
+              print()
+              print('======================================================')
+              print('STEP 1 — Visit this URL in your browser on your phone:')
+              print('======================================================')
+              print()
+              print(url)
+              print()
+              print('After tapping Allow, your browser will try to open')
+              print('http://localhost/?code=4/XXXX...  (it will fail to load)')
+              print()
+              print('That is OK — copy the full URL from the address bar.')
+              print('The part after code= and before & is your auth code.')
+              print()
+              print('Then run this workflow again and paste the code in')
+              print('the auth_code input field.')
+              print('======================================================')
+          else:
+              import urllib.request, urllib.parse
+              data = urllib.parse.urlencode({
+                  'code':          auth_code,
+                  'client_id':     client_id,
+                  'client_secret': client_secret,
+                  'redirect_uri':  redirect_uri,
+                  'grant_type':    'authorization_code',
+              }).encode()
+              req = urllib.request.Request(
+                  'https://oauth2.googleapis.com/token',
+                  data=data,
+                  method='POST'
+              )
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      result = json.loads(resp.read())
+              except Exception as e:
+                  import traceback
+                  traceback.print_exc()
+                  sys.exit(1)
+
+              if 'refresh_token' not in result:
+                  print('ERROR — no refresh_token in response:')
+                  print(json.dumps(result, indent=2))
+                  sys.exit(1)
+
+              print()
+              print('======================================================')
+              print('SUCCESS — save these two values as GitHub Secrets:')
+              print('======================================================')
+              print()
+              print('YOUTUBE_ACCESS_TOKEN  =', result['access_token'])
+              print()
+              print('YOUTUBE_REFRESH_TOKEN =', result['refresh_token'])
+              print()
+              print('Go to: repo Settings → Secrets and variables → Actions')
+              print('Update (or create) both secrets above, then re-run the')
+              print('Little Sunny — New Episode workflow.')
+              print('======================================================')
+          "
+        env:
+          YT_CLIENT_ID:     ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          AUTH_CODE:        ${{ inputs.auth_code }}
