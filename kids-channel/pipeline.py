@@ -38,12 +38,52 @@ VISUAL_STYLE = (
     "Cozy bedtime atmosphere. No text. Safe for toddlers."
 )
 SHOW_DESC = "Calm, gentle Australian bush adventures with Sunny the Quokka — peaceful nature stories for toddlers at bedtime or quiet time."
+
+# Per-scene colour palettes for the animated gradient fallback.
+# Each tuple: (top_r, top_g, top_b, bot_r, bot_g, bot_b, shimmer_r, shimmer_g, shimmer_b)
+SCENE_PALETTES = [
+    (255, 160,  80,  140, 100, 170, 20, 10,  5),   # 1: sunset apricot → lavender
+    ( 80, 110, 150,   30,  45,  75,  5,  8, 15),   # 2: twilight blue-grey
+    (  5,  25,  12,   15,  70,  30, 10, 30, 10),   # 3: dark green glow
+    (  8,  45,  45,   20,  80,  55, 10, 25, 15),   # 4: deep teal
+    (  5,  10,  45,   12,  20,  65,  5,  5, 20),   # 5: night sky
+    (  5,  18,  16,   12,  42,  30,  5, 20, 12),   # 6: moonlit dark
+]
 VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # ElevenLabs default calm voice; swap for custom
 CHANNEL_CATEGORY = "27"            # YouTube category: Education
 MADE_FOR_KIDS = True
 
 OUTPUT_DIR = Path(__file__).parent / "episodes"
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+
+def generate_scene_bg(scene: dict, episode_dir: Path) -> Path:
+    """Render an animated gradient background for one scene using ffmpeg geq."""
+    scene_id = scene["id"]
+    duration = scene.get("duration", 8)
+    vid_path = episode_dir / f"scene_{scene_id:02d}.mp4"
+    idx = min(scene_id - 1, len(SCENE_PALETTES) - 1)
+    tr, tg, tb, br, bg_val, bb, sr, sg, sb = SCENE_PALETTES[idx]
+    period = 3.0
+    geq = (
+        f"r='clip({tr}*(1-Y/H)+{br}*(Y/H)+{sr}*sin(2*PI*T/{period}),0,255)':"
+        f"g='clip({tg}*(1-Y/H)+{bg_val}*(Y/H)+{sg}*sin(2*PI*T/{period}),0,255)':"
+        f"b='clip({tb}*(1-Y/H)+{bb}*(Y/H)+{sb}*sin(2*PI*T/{period}),0,255)'"
+    )
+    cmd = [
+        "ffmpeg", "-y",
+        "-f", "lavfi", "-i", f"nullsrc=size=1920x1080:rate=24",
+        "-vf", f"geq={geq},format=yuv420p",
+        "-t", str(duration),
+        "-c:v", "libx264", "-preset", "fast", "-crf", "28",
+        str(vid_path),
+    ]
+    result = subprocess.run(cmd, capture_output=True)
+    if result.returncode == 0:
+        print(f"  ✓ Scene {scene_id} background ({duration}s)")
+    else:
+        print(f"  ⚠ Scene {scene_id} ffmpeg error: {result.stderr.decode()[:150]}")
+    return vid_path
 
 
 # ── 1. Script generation ─────────────────────────────────────────────────────
@@ -484,18 +524,21 @@ def main():
     music = generate_music(60, episode_dir)
 
     # 5. Assemble
+    if not scene_videos and "scenes" in script:
+        print("[5/6] Higgsfield unavailable — rendering animated gradient scenes...")
+        for scene in script["scenes"]:
+            scene_videos.append(generate_scene_bg(scene, episode_dir))
+
     if scene_videos:
         final_video = assemble_video(scene_videos, narration, music,
                                      episode_dir, script["title"])
     else:
-        print("[5/6] No scene videos — generating placeholder with narration audio...")
+        # Ultimate fallback: single-colour slate with narration
+        print("[5/6] No scenes available — creating single-colour fallback...")
         final_video = episode_dir / "final.mp4"
         has_narration = narration.exists() and narration.stat().st_size > 100
-        # Dark bush-green background + narration audio (or silent if no audio)
-        cmd = [
-            "ffmpeg", "-y",
-            "-f", "lavfi", "-i", "color=c=0x1a3a2a:size=1920x1080:rate=24",
-        ]
+        cmd = ["ffmpeg", "-y", "-f", "lavfi",
+               "-i", "color=c=0x1a3a2a:size=1920x1080:rate=24"]
         if has_narration:
             cmd += ["-i", str(narration), "-shortest", "-c:v", "libx264", "-c:a", "aac"]
         else:
@@ -503,9 +546,9 @@ def main():
         cmd.append(str(final_video))
         result = subprocess.run(cmd, capture_output=True)
         if result.returncode == 0:
-            print(f"  ✓ Placeholder video created: {final_video}")
+            print(f"  ✓ Fallback video created: {final_video}")
         else:
-            print(f"  ⚠ ffmpeg placeholder failed: {result.stderr.decode()[:200]}")
+            print(f"  ⚠ ffmpeg fallback failed: {result.stderr.decode()[:200]}")
 
     # 6. Upload
     if final_video.exists() and final_video.stat().st_size > 100:
