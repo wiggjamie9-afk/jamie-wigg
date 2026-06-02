@@ -526,8 +526,26 @@ def main():
     # 5. Assemble
     if not scene_videos and "scenes" in script:
         print("[5/6] Higgsfield unavailable — rendering animated gradient scenes...")
-        for scene in script["scenes"]:
-            scene_videos.append(generate_scene_bg(scene, episode_dir))
+        # Probe actual narration length so scene clips fill the full audio runtime
+        narr_duration = 0.0
+        if narration.exists() and narration.stat().st_size > 100:
+            probe = subprocess.run(
+                ["ffprobe", "-v", "quiet", "-print_format", "json",
+                 "-show_format", str(narration)],
+                capture_output=True, text=True,
+            )
+            if probe.returncode == 0:
+                try:
+                    narr_duration = float(json.loads(probe.stdout)["format"]["duration"])
+                except Exception:
+                    pass
+        scenes = script["scenes"]
+        per_scene = (narr_duration / len(scenes)) if narr_duration > 0 else None
+        for scene in scenes:
+            sc = dict(scene)
+            if per_scene:
+                sc["duration"] = per_scene
+            scene_videos.append(generate_scene_bg(sc, episode_dir))
 
     if scene_videos:
         final_video = assemble_video(scene_videos, narration, music,
