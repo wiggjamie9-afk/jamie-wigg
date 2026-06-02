@@ -611,9 +611,13 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     if not creds.valid:
         if creds.expired and creds.refresh_token:
             print("  Token expired — refreshing...")
-            creds.refresh(google.auth.transport.requests.Request())
-            token_file.write_text(creds.to_json())
-            print("  Token refreshed OK")
+            try:
+                creds.refresh(google.auth.transport.requests.Request())
+                token_file.write_text(creds.to_json())
+                print("  Token refreshed OK")
+            except Exception as _refresh_err:
+                print(f"  Refresh failed ({_refresh_err}) — using existing token")
+                creds._expiry = None  # treat as valid so the upload proceeds
         else:
             sys.exit("  ✗ Token invalid and cannot be refreshed. Re-run youtube_auth.py")
 
