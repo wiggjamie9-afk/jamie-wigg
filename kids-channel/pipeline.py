@@ -28,16 +28,16 @@ YOUTUBE_CLIENT_ID = os.getenv("YOUTUBE_CLIENT_ID")
 YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 
 # ── Show config (update once you have a character) ──────────────────────────
-SHOW_NAME = "Little Sunny"
+SHOW_NAME = "Sunny's Little Bedtime Stories"
 CHARACTER_NAME = "Sunny"
-CHARACTER_DESC = "a small round fluffy quokka with rosy cheeks, a big happy open smile, soft honey-golden-brown fur, large shiny warm brown eyes, tiny round ears, and a chubby friendly body — always cheerful and gentle"
+CHARACTER_DESC = "a cute 3D rendered quokka character, Pixar style, smooth glossy honey-golden-brown fur, big round shiny eyes with light reflections, rosy cheeks, huge warm smile, chubby friendly body — always cheerful and gentle"
 VISUAL_STYLE = (
-    "Soft watercolour children's book illustration. Warm moonlit Australian bush setting. "
-    "Gentle pastel palette of honey-gold, sage green, dusty blue, and cream. "
-    "Loose painterly brushwork, soft glowing light. Style: Studio Ghibli meets Beatrix Potter. "
-    "Cozy bedtime atmosphere. No text. Safe for toddlers."
+    "Photorealistic 3D cartoon animation quality, like Koala Moon or Pixar. "
+    "Deep navy blue magical Australian bush night scene. Glowing golden fireflies and stars. "
+    "Soft warm golden rim lighting on the character. Rich saturated colours. "
+    "Professional kids YouTube channel quality. No text. Safe for toddlers."
 )
-SHOW_DESC = "Calm, gentle Australian bush adventures with Sunny the Quokka — peaceful nature stories for toddlers at bedtime or quiet time."
+SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sunny the Quokka — cozy 3D cartoon stories for toddlers at bedtime or quiet time."
 
 # Per-scene colour palettes for the animated gradient fallback.
 # Each tuple: (top_r, top_g, top_b, bot_r, bot_g, bot_b, shimmer_r, shimmer_g, shimmer_b)
