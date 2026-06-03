@@ -745,42 +745,45 @@ def assemble_video(scene_videos: list, narration: Path, music: Path,
 
     # Concat scenes → temp video
     raw_video = episode_dir / "raw.mp4"
-    subprocess.run([
+    r = subprocess.run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0",
         "-i", str(concat_file), "-c", "copy", str(raw_video)
-    ], check=True, capture_output=True)
+    ], capture_output=True)
+    if r.returncode != 0:
+        print(f"  ✗ ffmpeg concat failed:\n{r.stderr.decode()[-800:]}")
+        raise RuntimeError("ffmpeg concat failed")
 
     # Mix narration + music + video
-    inputs = ["-i", str(raw_video)]
-    audio_filters = []
-
     has_narration = narration.exists() and narration.stat().st_size > 100
     has_music = music.exists() and music.stat().st_size > 100
 
     if has_narration and has_music:
         inputs = ["-stream_loop", "-1", "-i", str(raw_video), "-i", str(narration), "-i", str(music)]
-        # narration at full volume, music at 20%
         audio_filter = "[1:a]volume=1.0[narr];[2:a]volume=0.20[mus];[narr][mus]amix=inputs=2:duration=first[aout]"
-        subprocess.run([
+        r = subprocess.run([
             "ffmpeg", "-y", *inputs,
             "-filter_complex", audio_filter,
             "-map", "0:v", "-map", "[aout]",
             "-c:v", "libx264", "-c:a", "aac", "-shortest",
             str(output_path)
-        ], check=True, capture_output=True)
+        ], capture_output=True)
     elif has_narration:
         inputs = ["-stream_loop", "-1", "-i", str(raw_video), "-i", str(narration)]
-        subprocess.run([
+        r = subprocess.run([
             "ffmpeg", "-y", *inputs,
             "-map", "0:v", "-map", "1:a",
             "-c:v", "libx264", "-c:a", "aac", "-shortest",
             str(output_path)
-        ], check=True, capture_output=True)
+        ], capture_output=True)
     else:
-        subprocess.run([
+        r = subprocess.run([
             "ffmpeg", "-y", "-i", str(raw_video),
             "-c:v", "libx264", "-an", str(output_path)
-        ], check=True, capture_output=True)
+        ], capture_output=True)
+
+    if r.returncode != 0:
+        print(f"  ✗ ffmpeg mix failed:\n{r.stderr.decode()[-800:]}")
+        raise RuntimeError("ffmpeg mix failed")
 
     print(f"  ✓ Final video: {output_path}")
     return output_path
@@ -996,10 +999,16 @@ def main():
 
     # 6. Upload
     if final_video.exists() and final_video.stat().st_size > 100:
-        result = upload_to_youtube(final_video, script, dry_run=args.dry_run)
-        if result and not args.dry_run and thumb_path and thumb_path.exists():
-            video_id, yt_client = result
-            upload_thumbnail_to_youtube(yt_client, video_id, thumb_path)
+        try:
+            result = upload_to_youtube(final_video, script, dry_run=args.dry_run)
+            if result and not args.dry_run and thumb_path and thumb_path.exists():
+                video_id, yt_client = result
+                upload_thumbnail_to_youtube(yt_client, video_id, thumb_path)
+        except Exception as e:
+            import traceback
+            print(f"  ✗ Upload failed — full error below:")
+            traceback.print_exc()
+            sys.exit(1)
     else:
         print("[6/6] No final video to upload")
 
