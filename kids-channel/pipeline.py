@@ -477,6 +477,232 @@ def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
     return thumb_path
 
 
+# ── 5e. Ebook (PDF picture book) generator ────────────────────────────────────
+
+def generate_ebook(script: dict, episode_dir: Path) -> Path:
+    """Generate a PDF picture book for the episode.
+
+    Layout (portrait 800×1120):
+      • Title page — navy/stars, golden title, show name
+      • One page per scene — top: scene illustration, bottom: narration text
+      • Closing page — 'Sweet dreams!' sign-off
+    """
+    from PIL import Image, ImageDraw, ImageFont
+    import textwrap, random
+
+    PW, PH = 800, 1120  # portrait page size
+
+    # ── Font loading ──────────────────────────────────────────────────────────
+    font_paths_bold = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]
+    font_paths_reg = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    ]
+
+    def load_font(paths, size):
+        for fp in paths:
+            if Path(fp).exists():
+                try:
+                    return ImageFont.truetype(fp, size)
+                except Exception:
+                    continue
+        return ImageFont.load_default()
+
+    font_title  = load_font(font_paths_bold, 58)
+    font_show   = load_font(font_paths_bold, 28)
+    font_body   = load_font(font_paths_reg, 26)
+    font_close  = load_font(font_paths_bold, 70)
+    font_page   = load_font(font_paths_bold, 22)
+
+    NAVY_TOP    = (6,  12, 55)
+    NAVY_BOT    = (15,  8, 35)
+    GOLD        = (255, 215, 80)
+    WHITE       = (255, 255, 255)
+    LAVENDER    = (180, 160, 255)
+    SOFT_GOLD   = (255, 230, 140)
+    TEXT_BG     = (10, 14, 50)  # slightly lighter navy for text area
+
+    def navy_page(draw, w=PW, h=PH):
+        for y in range(h):
+            r = int(NAVY_TOP[0] + (NAVY_BOT[0] - NAVY_TOP[0]) * y / h)
+            g = int(NAVY_TOP[1] + (NAVY_BOT[1] - NAVY_TOP[1]) * y / h)
+            b = int(NAVY_TOP[2] + (NAVY_BOT[2] - NAVY_TOP[2]) * y / h)
+            draw.line([(0, y), (w, y)], fill=(r, g, b))
+
+    def add_stars(draw, w=PW, h=PH, count=80, seed=42):
+        rng = random.Random(seed)
+        for _ in range(count):
+            x = rng.randint(0, w)
+            y = rng.randint(0, int(h * 0.75))
+            size = rng.choice([1, 1, 1, 2])
+            br = rng.randint(150, 240)
+            draw.ellipse([x - size, y - size, x + size, y + size],
+                         fill=(br, br, int(br * 0.9)))
+
+    def wrap_text_centered(draw, text, font, colour, x_center, y_start, max_w, line_h):
+        """Draw word-wrapped text centred at x_center, returns y after last line."""
+        words = text.split()
+        lines, current = [], []
+        for word in words:
+            test = " ".join(current + [word])
+            bbox = draw.textbbox((0, 0), test, font=font)
+            if bbox[2] - bbox[0] > max_w and current:
+                lines.append(" ".join(current))
+                current = [word]
+            else:
+                current.append(word)
+        if current:
+            lines.append(" ".join(current))
+        y = y_start
+        for line in lines:
+            bbox = draw.textbbox((0, 0), line, font=font)
+            lw = bbox[2] - bbox[0]
+            draw.text((x_center - lw // 2, y), line, font=font, fill=colour)
+            y += line_h
+        return y
+
+    pages = []
+
+    # ── Title page ────────────────────────────────────────────────────────────
+    img = Image.new("RGB", (PW, PH))
+    draw = ImageDraw.Draw(img)
+    navy_page(draw)
+    add_stars(draw, seed=0)
+
+    # Crescent moon — top right
+    mx, my, mr = 650, 40, 70
+    draw.ellipse([mx - mr, my, mx + mr, my + 2 * mr], fill=(255, 245, 190))
+    draw.ellipse([mx - mr + 24, my - 8, mx + mr + 24, my + 2 * mr - 8],
+                 fill=NAVY_TOP)
+
+    # Show name at top
+    show_text = "Sunny's Little Bedtime Stories"
+    bbox = draw.textbbox((0, 0), show_text, font=font_show)
+    draw.text(((PW - (bbox[2] - bbox[0])) // 2, 60), show_text,
+              font=font_show, fill=LAVENDER)
+
+    # Episode title — golden, centred, word-wrapped
+    raw_title = script.get("title", "Sunny's Bedtime Story")
+    for suffix in [" | Bedtime Story", " | Bedtime", "| Bedtime Story"]:
+        raw_title = raw_title.replace(suffix, "").strip()
+    wrap_text_centered(draw, raw_title, font_title, GOLD, PW // 2,
+                       PH // 2 - 80, PW - 80, 70)
+
+    # Firefly dots — decorative
+    rng2 = random.Random(7)
+    for _ in range(12):
+        fx = rng2.randint(30, PW - 30)
+        fy = rng2.randint(int(PH * 0.6), PH - 80)
+        draw.ellipse([fx - 3, fy - 3, fx + 3, fy + 3],
+                     fill=(200, 255, 150))
+
+    # Show name footer
+    footer = "A picture book for little dreamers 🌙"
+    bbox = draw.textbbox((0, 0), footer, font=font_page)
+    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 70), footer,
+              font=font_page, fill=LAVENDER)
+
+    pages.append(img)
+
+    # ── Scene pages ───────────────────────────────────────────────────────────
+    img_area_h = int(PH * 0.55)
+    text_area_y = img_area_h
+    text_area_h = PH - img_area_h
+
+    for i, scene in enumerate(script.get("scenes", [])):
+        sid = scene.get("id", i + 1)
+        narr = scene.get("narration_segment", "")
+
+        # Try both .jpg and .png for scene illustration
+        scene_img_path = None
+        for ext in ("jpg", "png"):
+            candidate = episode_dir / f"scene_{sid:02d}.{ext}"
+            if candidate.exists() and candidate.stat().st_size > 1000:
+                scene_img_path = candidate
+                break
+
+        page = Image.new("RGB", (PW, PH))
+        draw = ImageDraw.Draw(page)
+
+        # Top: scene illustration (or navy fallback)
+        if scene_img_path:
+            try:
+                scene_img = Image.open(scene_img_path).convert("RGB")
+                scene_img = scene_img.resize((PW, img_area_h), Image.LANCZOS)
+                page.paste(scene_img, (0, 0))
+            except Exception:
+                draw.rectangle([0, 0, PW, img_area_h], fill=(10, 20, 60))
+        else:
+            # Gradient fallback using scene palettes
+            pal = SCENE_PALETTES[i % len(SCENE_PALETTES)]
+            for y in range(img_area_h):
+                ratio = y / img_area_h
+                r = int(pal[0] + (pal[3] - pal[0]) * ratio)
+                g = int(pal[1] + (pal[4] - pal[1]) * ratio)
+                b = int(pal[2] + (pal[5] - pal[2]) * ratio)
+                draw.line([(0, y), (PW, y)], fill=(r, g, b))
+
+        # Thin gold divider
+        draw.line([(0, img_area_h), (PW, img_area_h)], fill=GOLD, width=3)
+
+        # Bottom: navy text area
+        draw.rectangle([0, text_area_y, PW, PH], fill=TEXT_BG)
+
+        # Narration text
+        padding = 28
+        wrap_text_centered(draw, narr, font_body, WHITE,
+                           PW // 2, text_area_y + padding,
+                           PW - padding * 2, 36)
+
+        # Page number — bottom right
+        page_num = f"{i + 1}"
+        bbox = draw.textbbox((0, 0), page_num, font=font_page)
+        draw.text((PW - (bbox[2] - bbox[0]) - 20, PH - 36),
+                  page_num, font=font_page, fill=LAVENDER)
+
+        pages.append(page)
+
+    # ── Closing page ─────────────────────────────────────────────────────────
+    closing = Image.new("RGB", (PW, PH))
+    draw = ImageDraw.Draw(closing)
+    navy_page(draw)
+    add_stars(draw, seed=99)
+
+    close_text = "Sweet dreams!"
+    bbox = draw.textbbox((0, 0), close_text, font=font_close)
+    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 - 80),
+              close_text, font=font_close, fill=SOFT_GOLD)
+
+    sub_text = "See you next time, little one 🌙"
+    bbox = draw.textbbox((0, 0), sub_text, font=font_show)
+    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 + 20),
+              sub_text, font=font_show, fill=WHITE)
+
+    show_footer = "Sunny's Little Bedtime Stories"
+    bbox = draw.textbbox((0, 0), show_footer, font=font_page)
+    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 70),
+              show_footer, font=font_page, fill=LAVENDER)
+
+    pages.append(closing)
+
+    # ── Save as multi-page PDF ────────────────────────────────────────────────
+    ebook_path = episode_dir / "ebook.pdf"
+    pages[0].save(
+        str(ebook_path),
+        format="PDF",
+        save_all=True,
+        append_images=pages[1:],
+        resolution=96,
+    )
+    print(f"  ✓ Ebook saved: {ebook_path} ({len(pages)} pages)")
+    return ebook_path
+
+
 # ── 5c. SEO description builder ───────────────────────────────────────────────
 
 def build_seo_description(script: dict) -> str:
@@ -760,6 +986,13 @@ def main():
     except Exception as e:
         print(f"  ⚠ Thumbnail generation failed: {e}")
         thumb_path = None
+
+    # 5e. Ebook (PDF picture book)
+    print("[5e] Generating ebook (PDF picture book)...")
+    try:
+        generate_ebook(script, episode_dir)
+    except Exception as e:
+        print(f"  ⚠ Ebook generation failed: {e}")
 
     # 6. Upload
     if final_video.exists() and final_video.stat().st_size > 100:
