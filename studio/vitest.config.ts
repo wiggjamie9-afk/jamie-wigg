@@ -3,7 +3,7 @@
  *
  * - `jsdom` environment so window/localStorage/etc. are present by default.
  * - `globals: true` so tests can use `describe/it/expect/vi` without
- *   importing them — both styles work; existing files under
+ *   importing them - both styles work; existing files under
  *   components/fallback-screens/__tests__/ import them explicitly.
  * - `include` picks up any `*.test.ts` anywhere in the project so the
  *   existing T15 tests under components/fallback-screens/__tests__/ stay
@@ -19,7 +19,7 @@
  *
  * Coverage:
  * - Provider: v8 (already a devDependency via @vitest/coverage-v8).
- * - Tracked files: lib/** and workers/**/src/** — the pure-TS logic layers.
+ * - Tracked files: lib/ and workers/[name]/src/ - the pure-TS logic layers.
  *   React components and Next.js pages are excluded until a rendering
  *   framework (Testing Library) is added.
  * - Thresholds: 80% lines, 75% branches. Branch threshold is intentionally
