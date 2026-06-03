@@ -859,7 +859,7 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
             "categoryId": CHANNEL_CATEGORY,
         },
         "status": {
-            "privacyStatus": "private",  # pipeline uploads private; promote manually or auto-publish
+            "privacyStatus": "public",
             "madeForKids": MADE_FOR_KIDS,
             "selfDeclaredMadeForKids": MADE_FOR_KIDS,
         }
