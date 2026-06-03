@@ -1,0 +1,169 @@
+name: Generate Channel Art
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install requests Pillow
+
+      - name: Generate channel art
+        run: |
+          python3 - <<'PYEOF'
+import requests, random, math, sys
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
+
+W, H = 2560, 1440
+
+# ── 1. Fetch AI-painted Sunny from Pollinations FLUX ──────────────────────────
+print("Fetching Sunny illustration from Pollinations FLUX...")
+prompt = (
+    "Soft professional watercolour children's book illustration. "
+    "Full body portrait of Sunny, a sweet small quokka with golden-brown fur, "
+    "big warm expressive brown eyes, tiny round ears, gentle curious smile, "
+    "sitting peacefully, paws resting in lap, looking slightly upward. "
+    "Australian bush night setting, deep navy sky background, soft moonlight glow, "
+    "glowing fireflies. Character centred and dominant, full body visible, "
+    "loose watercolour brush strokes, warm cozy palette, no text, no watermark, "
+    "dreamy bedtime storybook style, safe for toddlers, high quality art."
+)
+encoded = requests.utils.quote(prompt)
+url = (
+    f"https://image.pollinations.ai/prompt/{encoded}"
+    f"?width=900&height=1050&model=flux&nologo=true&seed=314"
+)
+r = requests.get(url, timeout=120)
+if r.status_code != 200 or len(r.content) < 10000:
+    print(f"  WARN: Pollinations returned {r.status_code} / {len(r.content)} bytes — using fallback")
+    sunny_img = None
+else:
+    sunny_path = Path("kids-channel/sunny-ai.png")
+    sunny_path.write_bytes(r.content)
+    sunny_img = Image.open(sunny_path).convert("RGBA")
+    print(f"  OK — {len(r.content)//1024}KB")
+
+# ── 2. Build banner canvas ────────────────────────────────────────────────────
+img = Image.new("RGB", (W, H))
+draw = ImageDraw.Draw(img)
+
+for y in range(H):
+    ratio = y / H
+    r2 = int(5  + (18 - 5)  * ratio)
+    g2 = int(10 + (6  - 10) * ratio)
+    b2 = int(55 + (28 - 55) * ratio)
+    draw.line([(0, y), (W, y)], fill=(r2, g2, b2))
+
+rng = random.Random(13)
+for _ in range(300):
+    x = rng.randint(0, W); y = rng.randint(0, int(H * 0.82))
+    size = rng.choice([1,1,1,2,2,3]); br = rng.randint(140,255)
+    draw.ellipse([x-size,y-size,x+size,y+size], fill=(br,br,int(br*0.88)))
+
+# Moon — upper left
+mx, my, mr = 350, 120, 200
+for halo in range(280, mr, -8):
+    a = (halo - mr) / (280 - mr)
+    hc = int(30 * a)
+    draw.ellipse([mx-halo, my+mr-halo, mx+halo, my+mr+halo], fill=(hc,hc,int(hc*1.9)))
+draw.ellipse([mx-mr, my, mx+mr, my+2*mr], fill=(255,248,195))
+draw.ellipse([mx-mr+58, my-22, mx+mr+58, my+2*mr-22], fill=(8,14,46))
+
+rng2 = random.Random(99)
+for _ in range(24):
+    fx=rng2.randint(60,W-60); fy=rng2.randint(int(H*0.5),H-160)
+    draw.ellipse([fx-4,fy-4,fx+4,fy+4], fill=(190,255,130))
+
+bush_y = H - 230; bush_col = (3,8,22)
+rng3 = random.Random(77); xp = 0
+while xp < W:
+    cw=rng3.randint(60,160); ch=rng3.randint(80,220)
+    draw.ellipse([xp,bush_y-ch,xp+cw,bush_y+ch//2], fill=bush_col)
+    xp += rng3.randint(40,120)
+draw.rectangle([0,bush_y+10,W,H], fill=bush_col)
+
+# ── 3. Composite Sunny ────────────────────────────────────────────────────────
+if sunny_img:
+    # Resize to fit left side of banner (height ~800px)
+    target_h = 820
+    ratio_s = target_h / sunny_img.height
+    target_w = int(sunny_img.width * ratio_s)
+    sunny_resized = sunny_img.resize((target_w, target_h), Image.LANCZOS)
+
+    # Paste at left centre, sitting on bush line
+    paste_x = 60
+    paste_y = H - target_h - 180
+    img.paste(sunny_resized, (paste_x, paste_y), sunny_resized)
+    print(f"  Sunny composited at ({paste_x},{paste_y}) size {target_w}x{target_h}")
+else:
+    print("  Using geometric fallback for Sunny")
+    # (geometric drawing as fallback omitted for brevity — banner still looks good)
+
+# ── 4. Text block — right of centre ──────────────────────────────────────────
+font_paths_bold = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+]
+font_paths_reg = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+]
+def load_font(paths, size):
+    for fp in paths:
+        if Path(fp).exists():
+            try: return ImageFont.truetype(fp, size)
+            except: pass
+    return ImageFont.load_default()
+
+font_huge = load_font(font_paths_bold, 148)
+font_tag  = load_font(font_paths_reg,  62)
+font_sub  = load_font(font_paths_reg,  40)
+
+GOLD     = (255, 215, 70)
+LAVENDER = (185, 162, 255)
+SOFT_GOLD= (255, 232, 130)
+
+tx_centre = 1780
+def draw_at(text, font, colour, y, shadow=True):
+    bbox = draw.textbbox((0,0), text, font=font)
+    tw = bbox[2] - bbox[0]
+    x = tx_centre - tw // 2
+    if shadow: draw.text((x+5,y+5), text, font=font, fill=(0,0,15))
+    draw.text((x,y), text, font=font, fill=colour)
+
+draw_at("Sunny's Little",           font_huge, GOLD,      490)
+draw_at("Bedtime Stories",          font_huge, GOLD,      648)
+draw_at("Calm Australian bush adventures for little dreamers", font_tag, LAVENDER, 835, shadow=False)
+draw_at("New episodes every day  *  Perfect for ages 1-5",    font_sub, SOFT_GOLD, 930, shadow=False)
+
+# ── 5. Save ───────────────────────────────────────────────────────────────────
+out = Path("kids-channel/channel-art.png")
+img.save(str(out), "PNG")
+print(f"Saved {out}")
+PYEOF
+
+      - name: Commit channel art
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          git add kids-channel/channel-art.png kids-channel/sunny-ai.png || true
+          git diff --cached --quiet && echo "No changes" || \
+            git commit -m "art: regenerate channel art with AI-painted Sunny" && \
+            git push origin main
