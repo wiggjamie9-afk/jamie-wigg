@@ -28,15 +28,15 @@ YOUTUBE_CLIENT_ID = os.getenv("YOUTUBE_CLIENT_ID")
 YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 
 # ── Show config (update once you have a character) ──────────────────────────
-SHOW_NAME = "Sunny's Little Bedtime Stories"
-CHARACTER_NAME = "Sunny"
+SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
+CHARACTER_NAME = "Sonny"
 CHARACTER_DESC = "a sweet small quokka with golden-brown fur, big warm brown eyes, tiny round ears, gentle curious expression"
 VISUAL_STYLE = (
     "Soft watercolour illustration, warm gentle palette, Australian bush at night. "
     "Deep navy sky, soft moonlight, glowing fireflies. "
     "Professional children's book art quality. No text. Safe for toddlers."
 )
-SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sunny the 3-year-old Quokka — cozy 3D cartoon stories for toddlers at bedtime or quiet time."
+SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sonny the little Quokka — cozy bedtime stories for toddlers at bedtime or quiet time."
 
 # Per-scene colour palettes for the animated gradient fallback.
 # Each tuple: (top_r, top_g, top_b, bot_r, bot_g, bot_b, shimmer_r, shimmer_g, shimmer_b)
@@ -203,104 +203,114 @@ def get_higgsfield_token() -> str:
 
 
 def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: str) -> Path:
+    """Generate a scene image via Higgsfield Soul (text-to-image)."""
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
     full_prompt = (
         f"{VISUAL_STYLE} "
-        f"Character: Sunny, {CHARACTER_DESC}. "
-        f"Scene: {prompt}"
+        f"Character: {CHARACTER_NAME}, {CHARACTER_DESC}. "
+        f"Scene: {prompt[:350]}"
     )
-
     r = requests.post(
         "https://api.higgsfield.ai/v1/soul/generate",
-        headers=headers,
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         json={"prompt": full_prompt, "width": 1920, "height": 1080, "num_images": 1},
-        timeout=120
+        timeout=120,
     )
     r.raise_for_status()
     data = r.json()
-
-    img_url = data.get("images", [{}])[0].get("url", "")
-    if img_url:
-        img_data = requests.get(img_url, timeout=30).content
-        img_path.write_bytes(img_data)
-        print(f"  ✓ Scene {scene_id} image saved")
+    job_id = data.get("job_id") or data.get("id")
+    if job_id:
+        print(f"  ⏳ Scene {scene_id} — waiting for Higgsfield job {job_id}...")
+        img_url = poll_higgsfield_job(job_id, token)
     else:
-        print(f"  ⚠ Scene {scene_id} image URL missing in response: {data}")
-
+        img_url = data.get("images", [{}])[0].get("url", "")
+    if not img_url:
+        raise ValueError(f"No image URL in Higgsfield response: {data}")
+    img_data = requests.get(img_url, timeout=60).content
+    img_path.write_bytes(img_data)
+    print(f"  ✓ Scene {scene_id} image (Higgsfield Soul, {len(img_data)//1024}KB)")
     return img_path
 
 
-# ── 4. Scene videos via Higgsfield DOP ───────────────────────────────────────
-
 def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) -> Path:
-    vid_path = episode_dir / f"scene_{scene['id']:02d}.mp4"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-    motion_prompt = f"Slow gentle camera drift. Soft breeze in leaves. Calm nature. {scene['image_prompt'][:200]}"
+    """Animate a scene image via Higgsfield DOP (image-to-video)."""
+    scene_id = scene["id"]
+    duration = scene.get("duration", 8)
+    vid_path = episode_dir / f"scene_{scene_id:02d}.mp4"
 
     with open(img_path, "rb") as f:
-        img_b64 = __import__("base64").b64encode(f.read()).decode()
+        upload_r = requests.post(
+            "https://api.higgsfield.ai/v1/upload",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"file": (img_path.name, f, "image/jpeg")},
+            timeout=60,
+        )
+    if upload_r.status_code != 200:
+        print(f"  ⚠ Upload failed for scene {scene_id}: {upload_r.text[:100]} — using image_to_video fallback")
+        return image_to_video(img_path, duration, episode_dir, scene_id)
 
-    r = requests.post(
+    image_id = upload_r.json().get("id") or upload_r.json().get("asset_id")
+    motion_prompt = f"Slow gentle camera drift, soft ambient motion. {scene.get('image_prompt', '')[:150]}"
+
+    anim_r = requests.post(
         "https://api.higgsfield.ai/v1/dop/generate",
-        headers=headers,
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         json={
-            "image": img_b64,
+            "image_id": image_id,
             "prompt": motion_prompt,
-            "duration": scene.get("duration", 8),
-            "fps": 24
+            "duration": min(duration, 8),
+            "motion_strength": 0.3,
         },
-        timeout=300
+        timeout=120,
     )
-    r.raise_for_status()
-    data = r.json()
+    if anim_r.status_code != 200:
+        print(f"  ⚠ DOP failed for scene {scene_id}: {anim_r.text[:100]} — using image_to_video fallback")
+        return image_to_video(img_path, duration, episode_dir, scene_id)
 
-    job_id = data.get("job_id") or data.get("id")
-    if job_id:
-        vid_url = poll_higgsfield_job(job_id, token)
-        if vid_url:
-            vid_data = requests.get(vid_url, timeout=60).content
-            vid_path.write_bytes(vid_data)
-            print(f"  ✓ Scene {scene['id']} video saved")
-    else:
-        vid_url = data.get("video_url", "")
-        if vid_url:
-            vid_data = requests.get(vid_url, timeout=60).content
-            vid_path.write_bytes(vid_data)
+    anim_data = anim_r.json()
+    job_id = anim_data.get("job_id") or anim_data.get("id")
+    if not job_id:
+        print(f"  ⚠ No job_id in DOP response — using image_to_video fallback")
+        return image_to_video(img_path, duration, episode_dir, scene_id)
 
-    return vid_path
+    print(f"  ⏳ Scene {scene_id} — waiting for DOP animation {job_id}...")
+    try:
+        vid_url = poll_higgsfield_job(job_id, token, max_wait=300)
+        vid_data = requests.get(vid_url, timeout=120).content
+        vid_path.write_bytes(vid_data)
+        print(f"  ✓ Scene {scene_id} animated ({len(vid_data)//1024}KB)")
+        return vid_path
+    except Exception as e:
+        print(f"  ⚠ DOP animation failed: {e} — using image_to_video fallback")
+        return image_to_video(img_path, duration, episode_dir, scene_id)
 
 
 def poll_higgsfield_job(job_id: str, token: str, max_wait: int = 300) -> str:
-    headers = {"Authorization": f"Bearer {token}"}
-    start = time.time()
-    while time.time() - start < max_wait:
+    """Poll a Higgsfield job until complete. Returns the output URL."""
+    deadline = time.time() + max_wait
+    while time.time() < deadline:
         r = requests.get(
             f"https://api.higgsfield.ai/v1/jobs/{job_id}",
-            headers=headers, timeout=30
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
         )
+        r.raise_for_status()
         data = r.json()
         status = data.get("status", "")
         if status == "completed":
-            return data.get("output_url") or data.get("video_url", "")
+            return data.get("output_url") or data.get("url") or data["outputs"][0]["url"]
         if status in ("failed", "error"):
-            print(f"  ⚠ Job {job_id} failed: {data}")
-            return ""
-        print(f"  … job {job_id} status: {status} — waiting 10s")
-        time.sleep(10)
-    return ""
+            raise RuntimeError(f"Higgsfield job {job_id} failed: {data}")
+        time.sleep(8)
+    raise TimeoutError(f"Higgsfield job {job_id} timed out after {max_wait}s")
 
-
-# ── 4b. Pollinations FLUX image fallback ─────────────────────────────────────
 
 def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
     """Generate a scene image via Pollinations FLUX when Higgsfield is unavailable."""
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     full_prompt = (
         f"Soft watercolour illustration, warm gentle palette, Australian bush at night, "
-        f"deep navy sky, soft moonlight. Character: Sunny, {CHARACTER_DESC}. "
+        f"deep navy sky, soft moonlight. Character: Sonny, {CHARACTER_DESC}. "
         f"Scene: {prompt[:350]}"
     )
     encoded = requests.utils.quote(full_prompt)
@@ -393,91 +403,102 @@ def generate_music(duration_secs: int, episode_dir: Path) -> Path:
 def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
     """Create a 1280×720 YouTube thumbnail: navy night sky + golden title + show name."""
     from PIL import Image, ImageDraw, ImageFont
-    import random, textwrap
 
     W, H = 1280, 720
     img = Image.new("RGB", (W, H))
     draw = ImageDraw.Draw(img)
 
-    # Gradient background — deep navy top to midnight purple-navy bottom
+    # Navy gradient background
     for y in range(H):
         ratio = y / H
-        r = int(6  + (15 - 6)  * ratio)
-        g = int(12 + (8  - 12) * ratio)
-        b = int(55 + (35 - 55) * ratio)
+        r = int(5 + (15 - 5) * ratio)
+        g = int(10 + (20 - 10) * ratio)
+        b = int(50 + (30 - 50) * ratio)
         draw.line([(0, y), (W, y)], fill=(r, g, b))
 
     # Stars
+    import random
     rng = random.Random(42)
-    for _ in range(120):
+    for _ in range(200):
         x = rng.randint(0, W)
-        y = rng.randint(0, int(H * 0.7))
-        size = rng.choice([1, 1, 1, 2, 2, 3])
-        brightness = rng.randint(160, 255)
+        y = rng.randint(0, int(H * 0.75))
+        size = rng.choice([1, 1, 1, 2])
+        brightness = rng.randint(150, 255)
         draw.ellipse([x - size, y - size, x + size, y + size],
-                     fill=(brightness, brightness, int(brightness * 0.85)))
+                     fill=(brightness, brightness, int(brightness * 0.9)))
 
-    # Crescent moon — top right
-    moon_x, moon_y = 1050, 60
-    moon_r = 90
-    draw.ellipse([moon_x - moon_r, moon_y, moon_x + moon_r, moon_y + 2 * moon_r],
-                 fill=(255, 245, 190))
-    draw.ellipse([moon_x - moon_r + 30, moon_y - 10,
-                  moon_x + moon_r + 30, moon_y + 2 * moon_r - 10],
-                 fill=(r, g, b))  # cut out to form crescent using bg colour
-
-    # Load fonts (DejaVu ships on Ubuntu)
-    font_paths = [
+    # Font loading
+    font_paths_bold = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
     ]
-    font_big = font_small = None
-    for fp in font_paths:
-        if Path(fp).exists():
-            try:
-                font_big   = ImageFont.truetype(fp, 88)
-                font_small = ImageFont.truetype(fp.replace("-Bold", "").replace("Bold", ""), 38)
-                if not Path(font_small.path).exists():
-                    font_small = ImageFont.truetype(fp, 38)
-                break
-            except Exception:
-                continue
-    if font_big is None:
-        font_big = font_small = ImageFont.load_default()
+    font_paths_reg = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ]
 
-    # Episode title — strip the " | Bedtime Story" suffix if present
-    title = script.get("title", "Sunny's Bedtime Story")
-    for suffix in [" | Bedtime Story", " | Bedtime", "| Bedtime Story"]:
-        title = title.replace(suffix, "")
-    title = title.strip()
+    def load_font(paths, size):
+        for fp in paths:
+            if Path(fp).exists():
+                try:
+                    return ImageFont.truetype(fp, size)
+                except Exception:
+                    continue
+        return ImageFont.load_default()
 
-    lines = textwrap.wrap(title, width=18)
-    total_h = len(lines) * 100
-    y_cur = (H - total_h) // 2 - 20
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font_big)
-        lw = bbox[2] - bbox[0]
-        x = (W - lw) // 2
-        # Shadow
-        draw.text((x + 4, y_cur + 4), line, font=font_big, fill=(0, 0, 20))
-        # Golden text
-        draw.text((x, y_cur), line, font=font_big, fill=(255, 215, 80))
-        y_cur += 100
+    font_title = load_font(font_paths_bold, 72)
+    font_show  = load_font(font_paths_reg, 36)
 
-    # Show name at bottom centre
-    show = "Sunny's Little Bedtime Stories"
-    bbox = draw.textbbox((0, 0), show, font=font_small)
-    sw = bbox[2] - bbox[0]
-    draw.text(((W - sw) // 2, H - 60), show, font=font_small, fill=(180, 160, 255))
+    title = script.get("title", SHOW_NAME)
+    if len(title) > 40:
+        # Split into two lines
+        words = title.split()
+        mid = len(words) // 2
+        line1 = " ".join(words[:mid])
+        line2 = " ".join(words[mid:])
+    else:
+        line1, line2 = title, ""
+
+    GOLD = (255, 215, 70)
+    WHITE = (240, 240, 255)
+
+    def centred(text, font, colour, y):
+        bbox = draw.textbbox((0, 0), text, font=font)
+        x = (W - (bbox[2] - bbox[0])) // 2
+        draw.text((x + 3, y + 3), text, font=font, fill=(0, 0, 15))
+        draw.text((x, y), text, font=font, fill=colour)
+
+    if line2:
+        centred(line1, font_title, GOLD, 200)
+        centred(line2, font_title, GOLD, 290)
+    else:
+        centred(line1, font_title, GOLD, 240)
+
+    centred(SHOW_NAME, font_show, WHITE, 440)
 
     thumb_path = episode_dir / "thumbnail.jpg"
-    img.save(str(thumb_path), "JPEG", quality=95)
-    print(f"  ✓ Thumbnail saved: {thumb_path}")
+    img.save(str(thumb_path), "JPEG", quality=90)
+    print(f"  ✓ Thumbnail: {thumb_path}")
     return thumb_path
 
 
-# ── 5e. Ebook (PDF picture book) generator ────────────────────────────────────
+# ── 5c. SEO description builder ───────────────────────────────────────────────
+
+def build_seo_description(script: dict) -> str:
+    """Return a YouTube-optimised description with keywords, channel footer and hashtags."""
+    base = script.get("description", "").strip()
+    footer = (
+        "\n\n🌿 Sonny's Cozy Quokka Bedtime Tales — calm Australian bush adventures for toddlers.\n"
+        "New episodes every day. Perfect for ages 1-5 at bedtime or quiet time.\n\n"
+        "Subscribe so you never miss a story! 🌙✨\n\n"
+        "#BedtimeStories #ToddlerCartoon #KidsYouTube #CalmCartoon #SonnyTheQuokka "
+        "#BedtimeRoutine #AustralianAnimals #SleepStories #SonnyQuokka #QuokkaCartoon\n\n"
+        "👶 Made for kids | 🇦🇺 Australian characters | 😴 Perfect for bedtime"
+    )
+    return base + footer
+
+
+# ── 5d. Ebook (PDF picture book) ──────────────────────────────────────────────
 
 def generate_ebook(script: dict, episode_dir: Path) -> Path:
     """Generate a PDF picture book for the episode.
@@ -519,35 +540,35 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     font_close  = load_font(font_paths_bold, 70)
     font_page   = load_font(font_paths_bold, 22)
 
-    NAVY_TOP    = (6,  12, 55)
-    NAVY_BOT    = (15,  8, 35)
-    GOLD        = (255, 215, 80)
-    WHITE       = (255, 255, 255)
-    LAVENDER    = (180, 160, 255)
-    SOFT_GOLD   = (255, 230, 140)
-    TEXT_BG     = (10, 14, 50)  # slightly lighter navy for text area
+    NAVY    = (8, 14, 46)
+    GOLD    = (255, 215, 70)
+    SOFT_GOLD = (240, 195, 80)
+    WHITE   = (240, 240, 255)
+    LAVENDER = (180, 160, 240)
+    TEXT_BG = (12, 18, 55)
 
     def navy_page(draw, w=PW, h=PH):
         for y in range(h):
-            r = int(NAVY_TOP[0] + (NAVY_BOT[0] - NAVY_TOP[0]) * y / h)
-            g = int(NAVY_TOP[1] + (NAVY_BOT[1] - NAVY_TOP[1]) * y / h)
-            b = int(NAVY_TOP[2] + (NAVY_BOT[2] - NAVY_TOP[2]) * y / h)
+            ratio = y / h
+            r = int(NAVY[0] + (15 - NAVY[0]) * ratio)
+            g = int(NAVY[1] + (25 - NAVY[1]) * ratio)
+            b = int(NAVY[2] + (38 - NAVY[2]) * ratio)
             draw.line([(0, y), (w, y)], fill=(r, g, b))
 
     def add_stars(draw, w=PW, h=PH, count=80, seed=42):
         rng = random.Random(seed)
         for _ in range(count):
             x = rng.randint(0, w)
-            y = rng.randint(0, int(h * 0.75))
-            size = rng.choice([1, 1, 1, 2])
-            br = rng.randint(150, 240)
-            draw.ellipse([x - size, y - size, x + size, y + size],
+            y = rng.randint(0, int(h * 0.85))
+            sz = rng.choice([1, 1, 2])
+            br = rng.randint(130, 255)
+            draw.ellipse([x - sz, y - sz, x + sz, y + sz],
                          fill=(br, br, int(br * 0.9)))
 
     def wrap_text_centered(draw, text, font, colour, x_center, y_start, max_w, line_h):
-        """Draw word-wrapped text centred at x_center, returns y after last line."""
         words = text.split()
-        lines, current = [], []
+        lines = []
+        current = []
         for word in words:
             test = " ".join(current + [word])
             bbox = draw.textbbox((0, 0), test, font=font)
@@ -561,70 +582,39 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
         y = y_start
         for line in lines:
             bbox = draw.textbbox((0, 0), line, font=font)
-            lw = bbox[2] - bbox[0]
-            draw.text((x_center - lw // 2, y), line, font=font, fill=colour)
+            x = x_center - (bbox[2] - bbox[0]) // 2
+            draw.text((x, y), line, font=font, fill=colour)
             y += line_h
         return y
 
     pages = []
 
     # ── Title page ────────────────────────────────────────────────────────────
-    img = Image.new("RGB", (PW, PH))
-    draw = ImageDraw.Draw(img)
+    title_page = Image.new("RGB", (PW, PH))
+    draw = ImageDraw.Draw(title_page)
     navy_page(draw)
-    add_stars(draw, seed=0)
+    add_stars(draw)
 
-    # Crescent moon — top right
-    mx, my, mr = 650, 40, 70
-    draw.ellipse([mx - mr, my, mx + mr, my + 2 * mr], fill=(255, 245, 190))
-    draw.ellipse([mx - mr + 24, my - 8, mx + mr + 24, my + 2 * mr - 8],
-                 fill=NAVY_TOP)
+    title_text = script.get("title", SHOW_NAME)
+    wrap_text_centered(draw, title_text, font_title, GOLD, PW // 2, 220, PW - 80, 70)
 
-    # Show name at top — shifted below the moon (moon bottom = my + 2*mr = 40 + 140 = 180)
-    show_text = "Sunny's Little Bedtime Stories"
-    bbox = draw.textbbox((0, 0), show_text, font=font_show)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, 195), show_text,
-              font=font_show, fill=LAVENDER)
+    show_bbox = draw.textbbox((0, 0), SHOW_NAME, font=font_show)
+    draw.text(((PW - (show_bbox[2] - show_bbox[0])) // 2, PH - 160),
+              SHOW_NAME, font=font_show, fill=WHITE)
 
-    # Episode title — golden, centred, word-wrapped
-    raw_title = script.get("title", "Sunny's Bedtime Story")
-    for suffix in [" | Bedtime Story", " | Bedtime", "| Bedtime Story"]:
-        raw_title = raw_title.replace(suffix, "").strip()
-    wrap_text_centered(draw, raw_title, font_title, GOLD, PW // 2,
-                       PH // 2 - 60, PW - 80, 70)
-
-    # Firefly dots — decorative
-    rng2 = random.Random(7)
-    for _ in range(12):
-        fx = rng2.randint(30, PW - 30)
-        fy = rng2.randint(int(PH * 0.65), PH - 80)
-        draw.ellipse([fx - 3, fy - 3, fx + 3, fy + 3],
-                     fill=(200, 255, 150))
-
-    # Show name footer (no emoji — DejaVu doesn't render them)
-    footer = "A picture book for little dreamers"
-    bbox = draw.textbbox((0, 0), footer, font=font_page)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 70), footer,
-              font=font_page, fill=LAVENDER)
-
-    pages.append(img)
+    pages.append(title_page)
 
     # ── Scene pages ───────────────────────────────────────────────────────────
-    img_area_h = int(PH * 0.55)
-    text_area_y = img_area_h
-    text_area_h = PH - img_area_h
+    img_area_h  = int(PH * 0.55)
+    text_area_y = img_area_h + 6
 
     for i, scene in enumerate(script.get("scenes", [])):
-        sid = scene.get("id", i + 1)
         narr = scene.get("narration_segment", "")
-
-        # Try both .jpg and .png for scene illustration
-        scene_img_path = None
-        for ext in ("jpg", "png"):
-            candidate = episode_dir / f"scene_{sid:02d}.{ext}"
-            if candidate.exists() and candidate.stat().st_size > 1000:
-                scene_img_path = candidate
-                break
+        scene_img_path_candidates = [
+            episode_dir / f"scene_{scene['id']:02d}.jpg",
+            episode_dir / f"scene_{scene['id']:02d}.png",
+        ]
+        scene_img_path = next((p for p in scene_img_path_candidates if p.exists()), None)
 
         page = Image.new("RGB", (PW, PH))
         draw = ImageDraw.Draw(page)
@@ -683,7 +673,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 + 20),
               sub_text, font=font_show, fill=WHITE)
 
-    show_footer = "Sunny's Little Bedtime Stories"
+    show_footer = "Sonny's Cozy Quokka Bedtime Tales"
     bbox = draw.textbbox((0, 0), show_footer, font=font_page)
     draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 70),
               show_footer, font=font_page, fill=LAVENDER)
@@ -703,29 +693,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     return ebook_path
 
 
-# ── 5c. SEO description builder ───────────────────────────────────────────────
-
-def build_seo_description(script: dict) -> str:
-    """Return a YouTube-optimised description with keywords, channel footer and hashtags."""
-    base = script.get("description", "").strip()
-    footer = (
-        "\n\n─────────────────────────\n"
-        "🌙 Sunny's Little Bedtime Stories\n"
-        "New episodes 3× every day — calm, gentle 2-minute stories for little ones.\n"
-        "Perfect for ages 1–5. Great for bedtime routines, quiet time and naptime.\n"
-        "Hit Subscribe so you never miss a new adventure with Sunny! 🐾\n"
-        "─────────────────────────"
-    )
-    hashtags = (
-        "\n\n#BedtimeStories #ToddlerBedtime #SunnysLittleBedtimeStories "
-        "#KidsCartoon #QuokkaBedtime #AustralianAnimals #GentleStoriesForKids "
-        "#CalmCartoon #ToddlerCartoon #BedtimeRoutine #KidsYouTube #SleepStories "
-        "#BedtimeStoriesForKids #ToddlerSleep #NightTimeRoutine"
-    )
-    return base + footer + hashtags
-
-
-# ── 6. Video assembly via ffmpeg ──────────────────────────────────────────────
+# ── 6. Assemble video ─────────────────────────────────────────────────────────
 
 def assemble_video(scene_videos: list, narration: Path, music: Path,
                    episode_dir: Path, title: str) -> Path:

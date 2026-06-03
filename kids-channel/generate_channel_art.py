@@ -14,7 +14,7 @@ W, H = 2560, 1440
 
 PROMPT = (
     "Soft professional watercolour children's book illustration. "
-    "Full body portrait of Sunny, a sweet small quokka with golden-brown fur, "
+    "Full body portrait of Sonny, a sweet small quokka with golden-brown fur, "
     "big warm expressive brown eyes, tiny round ears, gentle curious smile, "
     "sitting peacefully, paws resting in lap, looking slightly upward. "
     "Australian bush night setting, deep navy sky background, soft moonlight glow, "
@@ -183,8 +183,8 @@ def draw_at(text, font, colour, y, cx=1780, shadow=True):
     if shadow: draw.text((x+5,y+5), text, font=font, fill=(0,0,15))
     draw.text((x,y), text, font=font, fill=colour)
 
-draw_at("Sunny's Little",          font_huge, (255,215,70),   490)
-draw_at("Bedtime Stories",         font_huge, (255,215,70),   648)
+draw_at("Sonny's Cozy",            font_huge, (255,215,70),   490)
+draw_at("Quokka Bedtime Tales",    font_huge, (255,215,70),   648)
 draw_at("Calm Australian bush adventures for little dreamers", font_tag, (185,162,255), 835, shadow=False)
 draw_at("New episodes every day  *  Perfect for ages 1-5",    font_sub, (255,232,130), 930, shadow=False)
 
