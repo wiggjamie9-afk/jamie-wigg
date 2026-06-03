@@ -16,6 +16,17 @@
  * that needs it (secrets.test.ts) keeps the dependency obvious; tests
  * that don't need it (capability-detect, tab-coordinator) stay free of
  * runtime side effects.
+ *
+ * Coverage:
+ * - Provider: v8 (already a devDependency via @vitest/coverage-v8).
+ * - Tracked files: lib/** and workers/**/src/** — the pure-TS logic layers.
+ *   React components and Next.js pages are excluded until a rendering
+ *   framework (Testing Library) is added.
+ * - Thresholds: 80% lines, 75% branches. Branch threshold is intentionally
+ *   looser because several browser-guard branches (SSR `typeof window`
+ *   checks) are structurally unreachable in jsdom and would require a
+ *   separate Node environment to exercise.
+ * - Run with: pnpm test:coverage
  */
 import { defineConfig } from "vitest/config";
 
@@ -25,5 +36,14 @@ export default defineConfig({
     globals: true,
     include: ["**/*.test.ts"],
     exclude: ["**/node_modules/**", "**/.next/**", "**/out/**"],
+    coverage: {
+      provider: "v8",
+      include: ["lib/**", "workers/**/src/**"],
+      exclude: ["**/*.test.ts"],
+      thresholds: {
+        lines: 80,
+        branches: 75,
+      },
+    },
   },
 });
