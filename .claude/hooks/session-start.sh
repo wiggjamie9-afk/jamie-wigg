@@ -20,6 +20,7 @@ printf "\n%sRHYTHMIX session check%s\n" "$GREEN" "$RESET" >&2
 need_node=false
 need_ffmpeg=false
 need_kokoro=false
+need_higgsfield=false
 
 command -v node     >/dev/null 2>&1 && ok "node $(node --version)"             || { fail "node missing";   need_node=true; }
 command -v npm      >/dev/null 2>&1 && ok "npm  $(npm --version)"              || { fail "npm missing";    need_node=true; }
@@ -49,6 +50,31 @@ if $need_kokoro && command -v pip3 >/dev/null 2>&1; then
   pip3 install --quiet kokoro-onnx soundfile 2>/dev/null \
     && ok "kokoro-onnx installed" \
     || warn "kokoro auto-install failed; run: pip3 install kokoro-onnx soundfile"
+fi
+
+# Higgsfield AI MCP server
+command -v higgsfield-mcp >/dev/null 2>&1 \
+  && ok "higgsfield-mcp $(higgsfield-mcp --version 2>/dev/null || echo 'present')" \
+  || { warn "higgsfield-mcp missing — needed for Soul/DOP image+video generation"; need_higgsfield=true; }
+
+if $need_higgsfield && command -v pip3 >/dev/null 2>&1; then
+  note "installing higgsfield-mcp from GitHub..."
+  pip3 install --quiet --ignore-installed pyjwt \
+    git+https://github.com/geopopos/geo_higgsfield_ai_mcp 2>/dev/null \
+    && ok "higgsfield-mcp installed" \
+    || warn "higgsfield-mcp auto-install failed; run: pip install git+https://github.com/geopopos/geo_higgsfield_ai_mcp"
+fi
+
+# Check Higgsfield credentials in .env
+if [ -f .env ] && grep -q "HIGGSFIELD_API_KEY=" .env 2>/dev/null; then
+  api_val=$(grep "^HIGGSFIELD_API_KEY=" .env | cut -d= -f2-)
+  if [ -n "$api_val" ] && [ "$api_val" != "your-api-key-here" ]; then
+    ok "HIGGSFIELD_API_KEY set"
+  else
+    warn "HIGGSFIELD_API_KEY not set in .env — Higgsfield MCP tools won't auth (get key at https://platform.higgsfield.ai)"
+  fi
+else
+  warn ".env missing or has no HIGGSFIELD_API_KEY — copy .env.example → .env and add your key"
 fi
 
 # --- Repo health ---
