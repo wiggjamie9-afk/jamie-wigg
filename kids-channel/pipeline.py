@@ -27,16 +27,16 @@ HIGGSFIELD_SECRET = os.getenv("HIGGSFIELD_SECRET")
 YOUTUBE_CLIENT_ID = os.getenv("YOUTUBE_CLIENT_ID")
 YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 
-# ── Show config (update once you have a character) ──────────────────────────
-SHOW_NAME = "Sunny's Little Bedtime Stories"
-CHARACTER_NAME = "Sunny"
+# ── Show config (update once you have a character) ──────────────────────────────
+SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
+CHARACTER_NAME = "Sonny"
 CHARACTER_DESC = "a sweet small quokka with golden-brown fur, big warm brown eyes, tiny round ears, gentle curious expression"
 VISUAL_STYLE = (
     "Soft watercolour illustration, warm gentle palette, Australian bush at night. "
     "Deep navy sky, soft moonlight, glowing fireflies. "
     "Professional children's book art quality. No text. Safe for toddlers."
 )
-SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sunny the 3-year-old Quokka — cozy 3D cartoon stories for toddlers at bedtime or quiet time."
+SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sonny the little Quokka — cozy bedtime stories for toddlers at bedtime or quiet time."
 
 # Per-scene colour palettes for the animated gradient fallback.
 # Each tuple: (top_r, top_g, top_b, bot_r, bot_g, bot_b, shimmer_r, shimmer_g, shimmer_b)
@@ -85,7 +85,7 @@ def generate_scene_bg(scene: dict, episode_dir: Path) -> Path:
     return vid_path
 
 
-# ── 1. Script generation ─────────────────────────────────────────────────────
+# ── 1. Script generation ────────────────────────────────────────────────────────────────
 
 SCRIPT_PROMPT_TEMPLATE = """You are writing an episode of "{show_name}", a calm bedtime cartoon for toddlers ages 2-5.
 The main character is {character_name}, {character_desc}.
@@ -160,7 +160,7 @@ def generate_script(topic: str) -> dict:
         sys.exit(1)
 
 
-# ── 2. Narration audio ────────────────────────────────────────────────────────
+# ── 2. Narration audio ─────────────────────────────────────────────────────────────
 
 def generate_narration(narration_text: str, episode_dir: Path) -> Path:
     print("[2/6] Generating narration audio via ElevenLabs...")
@@ -190,7 +190,7 @@ def generate_narration(narration_text: str, episode_dir: Path) -> Path:
     return audio_path
 
 
-# ── 3. Scene images via Higgsfield Soul ──────────────────────────────────────
+# ── 3. Scene images via Higgsfield Soul ───────────────────────────────────────────────
 
 def get_higgsfield_token() -> str:
     r = requests.post(
@@ -310,7 +310,7 @@ def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: P
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     full_prompt = (
         f"Soft watercolour illustration, warm gentle palette, Australian bush at night, "
-        f"deep navy sky, soft moonlight. Character: Sunny, {CHARACTER_DESC}. "
+        f"deep navy sky, soft moonlight. Character: Sonny, {CHARACTER_DESC}. "
         f"Scene: {prompt[:350]}"
     )
     encoded = requests.utils.quote(full_prompt)
@@ -348,7 +348,7 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
     return vid_path
 
 
-# ── 5. Background music ───────────────────────────────────────────────────────
+# ── 5. Background music ────────────────────────────────────────────────────────────────
 
 def generate_music(duration_secs: int, episode_dir: Path) -> Path:
     """Generate gentle lullaby music using ffmpeg sine tones — no API needed."""
@@ -398,7 +398,7 @@ def generate_music(duration_secs: int, episode_dir: Path) -> Path:
     return music_path
 
 
-# ── 5b. Thumbnail generation ─────────────────────────────────────────────────
+# ── 5b. Thumbnail generation ───────────────────────────────────────────────────────────
 
 def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
     """Create a 1280×720 YouTube thumbnail: navy night sky + golden title + show name."""
@@ -482,23 +482,23 @@ def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
     return thumb_path
 
 
-# ── 5c. SEO description builder ───────────────────────────────────────────────
+# ── 5c. SEO description builder ─────────────────────────────────────────────────────────────
 
 def build_seo_description(script: dict) -> str:
     """Return a YouTube-optimised description with keywords, channel footer and hashtags."""
     base = script.get("description", "").strip()
     footer = (
-        "\n\n🌿 Sunny's Little Bedtime Stories — calm Australian bush adventures for toddlers.\n"
+        "\n\n🌿 Sonny's Cozy Quokka Bedtime Tales — calm Australian bush adventures for toddlers.\n"
         "New episodes every day. Perfect for ages 1-5 at bedtime or quiet time.\n\n"
         "Subscribe so you never miss a story! 🌙✨\n\n"
-        "#BedtimeStories #ToddlerCartoon #KidsYouTube #CalmCartoon #SunnyTheQuokka "
-        "#BedtimeRoutine #AustralianAnimals #SleepStories #LittleSunny #QuokkaCartoon\n\n"
+        "#BedtimeStories #ToddlerCartoon #KidsYouTube #CalmCartoon #SonnyTheQuokka "
+        "#BedtimeRoutine #AustralianAnimals #SleepStories #SonnyQuokka #QuokkaCartoon\n\n"
         "👶 Made for kids | 🇦🇺 Australian characters | 😴 Perfect for bedtime"
     )
     return base + footer
 
 
-# ── 5d. Ebook (PDF picture book) ──────────────────────────────────────────────
+# ── 5d. Ebook (PDF picture book) ───────────────────────────────────────────────────────────
 
 def generate_ebook(script: dict, episode_dir: Path) -> Path:
     """Generate a PDF picture book for the episode.
@@ -513,7 +513,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
 
     PW, PH = 800, 1120  # portrait page size
 
-    # ── Font loading ──────────────────────────────────────────────────────────
+    # ── Font loading ──────────────────────────────────────────────────────────────
     font_paths_bold = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
@@ -589,7 +589,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
 
     pages = []
 
-    # ── Title page ────────────────────────────────────────────────────────────
+    # ── Title page ───────────────────────────────────────────────────────────────
     title_page = Image.new("RGB", (PW, PH))
     draw = ImageDraw.Draw(title_page)
     navy_page(draw)
@@ -604,7 +604,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
 
     pages.append(title_page)
 
-    # ── Scene pages ───────────────────────────────────────────────────────────
+    # ── Scene pages ───────────────────────────────────────────────────────────────
     img_area_h  = int(PH * 0.55)
     text_area_y = img_area_h + 6
 
@@ -657,7 +657,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
 
         pages.append(page)
 
-    # ── Closing page ─────────────────────────────────────────────────────────
+    # ── Closing page ───────────────────────────────────────────────────────────────
     closing = Image.new("RGB", (PW, PH))
     draw = ImageDraw.Draw(closing)
     navy_page(draw)
@@ -673,14 +673,14 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 + 20),
               sub_text, font=font_show, fill=WHITE)
 
-    show_footer = "Sunny's Little Bedtime Stories"
+    show_footer = "Sonny's Cozy Quokka Bedtime Tales"
     bbox = draw.textbbox((0, 0), show_footer, font=font_page)
     draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 70),
               show_footer, font=font_page, fill=LAVENDER)
 
     pages.append(closing)
 
-    # ── Save as multi-page PDF ────────────────────────────────────────────────
+    # ── Save as multi-page PDF ───────────────────────────────────────────────────────────
     ebook_path = episode_dir / "ebook.pdf"
     pages[0].save(
         str(ebook_path),
@@ -693,7 +693,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     return ebook_path
 
 
-# ── 6. Assemble video ─────────────────────────────────────────────────────────
+# ── 6. Assemble video ────────────────────────────────────────────────────────────────
 
 def assemble_video(scene_videos: list, narration: Path, music: Path,
                    episode_dir: Path, title: str) -> Path:
@@ -757,7 +757,7 @@ def assemble_video(scene_videos: list, narration: Path, music: Path,
     return output_path
 
 
-# ── 7. YouTube upload ─────────────────────────────────────────────────────────
+# ── 7. YouTube upload ────────────────────────────────────────────────────────────────
 
 def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     print("[6/6] Uploading to YouTube...")
@@ -862,7 +862,7 @@ def upload_thumbnail_to_youtube(youtube, video_id: str, thumb_path: Path):
         print(f"  ⚠ Thumbnail upload failed: {e}")
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Main ─────────────────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(description="Kids channel episode pipeline")

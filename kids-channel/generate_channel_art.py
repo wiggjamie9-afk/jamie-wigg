@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate channel-art.png — Higgsfield Soul paints Sunny, composited onto banner."""
+"""Generate channel-art.png — Higgsfield Soul paints Sonny, composited onto banner."""
 import requests, random, sys, time, os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -14,7 +14,7 @@ W, H = 2560, 1440
 
 PROMPT = (
     "Soft professional watercolour children's book illustration. "
-    "Full body portrait of Sunny, a sweet small quokka with golden-brown fur, "
+    "Full body portrait of Sonny, a sweet small quokka with golden-brown fur, "
     "big warm expressive brown eyes, tiny round ears, gentle curious smile, "
     "sitting peacefully, paws resting in lap, looking slightly upward. "
     "Australian bush night setting, deep navy sky background, soft moonlight glow, "
@@ -25,7 +25,7 @@ PROMPT = (
 
 
 def fetch_sunny_higgsfield() -> bytes | None:
-    """Generate Sunny via Higgsfield Soul (text-to-image)."""
+    """Generate Sonny via Higgsfield Soul (text-to-image)."""
     if not HIGGSFIELD_API_KEY or not HIGGSFIELD_SECRET:
         print("  No Higgsfield credentials — skipping")
         return None
@@ -60,7 +60,7 @@ def fetch_sunny_higgsfield() -> bytes | None:
 
 
 def fetch_sunny_pollinations() -> bytes | None:
-    """Fallback: generate Sunny via Pollinations FLUX (free)."""
+    """Fallback: generate Sonny via Pollinations FLUX (free)."""
     print("  Trying Pollinations FLUX fallback...")
     encoded = requests.utils.quote(PROMPT)
     url = (
@@ -78,8 +78,8 @@ def fetch_sunny_pollinations() -> bytes | None:
     return None
 
 
-# ── Fetch Sunny ───────────────────────────────────────────────────────────────
-print("Generating Sunny illustration...")
+# ── Fetch Sonny ──────────────────────────────────────────────────────────────────────────────
+print("Generating Sonny illustration...")
 img_bytes = fetch_sunny_higgsfield() or fetch_sunny_pollinations()
 
 sunny_img = None
@@ -90,7 +90,7 @@ if img_bytes:
 else:
     print("  All image sources failed — using geometric fallback")
 
-# ── Banner canvas ─────────────────────────────────────────────────────────────
+# ── Banner canvas ─────────────────────────────────────────────────────────────────────
 img = Image.new("RGB", (W, H))
 draw = ImageDraw.Draw(img)
 
@@ -129,7 +129,7 @@ while xp < W:
     xp += rng3.randint(40, 120)
 draw.rectangle([0, bush_y+10, W, H], fill=(3,8,22))
 
-# ── Composite Sunny ───────────────────────────────────────────────────────────
+# ── Composite Sonny ─────────────────────────────────────────────────────────────────────────
 if sunny_img:
     target_h = 820
     target_w = int(sunny_img.width * (target_h / sunny_img.height))
@@ -137,7 +137,7 @@ if sunny_img:
     paste_x = 60
     paste_y = H - target_h - 180
     img.paste(sunny_resized, (paste_x, paste_y), sunny_resized)
-    print(f"  Composited Sunny at ({paste_x},{paste_y}) {target_w}x{target_h}")
+    print(f"  Composited Sonny at ({paste_x},{paste_y}) {target_w}x{target_h}")
 else:
     # Geometric fallback
     cx, cy = 680, 820
@@ -160,7 +160,7 @@ else:
     ell(cx-20,cy-168,cx+20,cy-148,(55,28,10))
     draw.arc([cx-45,cy-155,cx+45,cy-115],20,160,fill=(55,28,10),width=6)
 
-# ── Text ──────────────────────────────────────────────────────────────────────
+# ── Text ──────────────────────────────────────────────────────────────────────────────────
 font_paths_bold = ["/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
                    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"]
 font_paths_reg  = ["/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -183,12 +183,12 @@ def draw_at(text, font, colour, y, cx=1780, shadow=True):
     if shadow: draw.text((x+5,y+5), text, font=font, fill=(0,0,15))
     draw.text((x,y), text, font=font, fill=colour)
 
-draw_at("Sunny's Little",          font_huge, (255,215,70),   490)
-draw_at("Bedtime Stories",         font_huge, (255,215,70),   648)
+draw_at("Sonny's Cozy",            font_huge, (255,215,70),   490)
+draw_at("Quokka Bedtime Tales",    font_huge, (255,215,70),   648)
 draw_at("Calm Australian bush adventures for little dreamers", font_tag, (185,162,255), 835, shadow=False)
 draw_at("New episodes every day  *  Perfect for ages 1-5",    font_sub, (255,232,130), 930, shadow=False)
 
-# ── Save ──────────────────────────────────────────────────────────────────────
+# ── Save ───────────────────────────────────────────────────────────────────────────────────
 out = Path(__file__).parent / "channel-art.png"
 img.save(str(out), "PNG")
 print(f"Saved: {out}")
