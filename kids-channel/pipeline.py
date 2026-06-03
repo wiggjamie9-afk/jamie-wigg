@@ -175,8 +175,8 @@ def generate_narration(narration_text: str, episode_dir: Path) -> Path:
     headers = {"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"}
     payload = {
         "text": narration_text,
-        "model_id": "eleven_turbo_v2",
-        "voice_settings": {"stability": 0.75, "similarity_boost": 0.75, "style": 0.2}
+        "model_id": "eleven_turbo_v2_5",
+        "voice_settings": {"stability": 0.72, "similarity_boost": 0.80, "style": 0.25, "use_speaker_boost": True}
     }
     try:
         r = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -466,7 +466,7 @@ def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
         y_cur += 100
 
     # Show name at bottom centre
-    show = "Sunny's Little Bedtime Stories 🌙"
+    show = "Sunny's Little Bedtime Stories"
     bbox = draw.textbbox((0, 0), show, font=font_small)
     sw = bbox[2] - bbox[0]
     draw.text(((W - sw) // 2, H - 60), show, font=font_small, fill=(180, 160, 255))
@@ -580,10 +580,10 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     draw.ellipse([mx - mr + 24, my - 8, mx + mr + 24, my + 2 * mr - 8],
                  fill=NAVY_TOP)
 
-    # Show name at top
+    # Show name at top — shifted below the moon (moon bottom = my + 2*mr = 40 + 140 = 180)
     show_text = "Sunny's Little Bedtime Stories"
     bbox = draw.textbbox((0, 0), show_text, font=font_show)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, 60), show_text,
+    draw.text(((PW - (bbox[2] - bbox[0])) // 2, 195), show_text,
               font=font_show, fill=LAVENDER)
 
     # Episode title — golden, centred, word-wrapped
@@ -591,18 +591,18 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     for suffix in [" | Bedtime Story", " | Bedtime", "| Bedtime Story"]:
         raw_title = raw_title.replace(suffix, "").strip()
     wrap_text_centered(draw, raw_title, font_title, GOLD, PW // 2,
-                       PH // 2 - 80, PW - 80, 70)
+                       PH // 2 - 60, PW - 80, 70)
 
     # Firefly dots — decorative
     rng2 = random.Random(7)
     for _ in range(12):
         fx = rng2.randint(30, PW - 30)
-        fy = rng2.randint(int(PH * 0.6), PH - 80)
+        fy = rng2.randint(int(PH * 0.65), PH - 80)
         draw.ellipse([fx - 3, fy - 3, fx + 3, fy + 3],
                      fill=(200, 255, 150))
 
-    # Show name footer
-    footer = "A picture book for little dreamers 🌙"
+    # Show name footer (no emoji — DejaVu doesn't render them)
+    footer = "A picture book for little dreamers"
     bbox = draw.textbbox((0, 0), footer, font=font_page)
     draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 70), footer,
               font=font_page, fill=LAVENDER)
@@ -678,7 +678,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 - 80),
               close_text, font=font_close, fill=SOFT_GOLD)
 
-    sub_text = "See you next time, little one 🌙"
+    sub_text = "See you next time, little one"
     bbox = draw.textbbox((0, 0), sub_text, font=font_show)
     draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 + 20),
               sub_text, font=font_show, fill=WHITE)
