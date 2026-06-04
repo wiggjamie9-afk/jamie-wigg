@@ -1079,6 +1079,25 @@ def main():
         print("  ↩ ElevenLabs unavailable — trying Piper TTS (free offline)...")
         narration = generate_narration_piper(script["narration"], episode_dir)
 
+    # Auto-generate scenes if the script doesn't have them (older format scripts)
+    if not script.get("scenes"):
+        print("  ℹ Script has no scenes key — auto-generating 6 scenes from narration...")
+        narration_text = script.get("narration", "")
+        title_lower = script.get("title", "a peaceful bedtime story").lower()
+        sentences = [s.strip() for s in narration_text.replace("...", ".").split(".") if s.strip()]
+        if not sentences:
+            sentences = [narration_text]
+        chunk_size = max(1, len(sentences) // 6)
+        chunks = [". ".join(sentences[i:i+chunk_size]) for i in range(0, len(sentences), chunk_size)][:6]
+        while len(chunks) < 6:
+            chunks.append(chunks[-1] if chunks else title_lower)
+        script["scenes"] = [
+            {"id": f"scene{i+1:02d}", "duration": 8,
+             "image_prompt": f"Watercolour illustration of Sonny the quokka in Australian bush, {title_lower}, soft warm bedtime colours, gentle peaceful night scene",
+             "narration": chunk}
+            for i, chunk in enumerate(chunks)
+        ]
+
     # 3. Scene images + videos
     # Priority: Higgsfield → FLUX (OpenMontage) → Stock photos → Pollinations → gradient
     scene_videos = []
