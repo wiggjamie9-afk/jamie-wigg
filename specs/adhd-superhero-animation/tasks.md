@@ -34,11 +34,12 @@
   - **satisfies**: R1, R6
   - **acceptance**: screenplay format (INT/EXT, action, dialogue, timing); Act 1 (classroom 0–3 min), Act 2 (shame/overwhelm 3–8 min), Act 3 (transformation + first act 8–12 min); dialogue matches character voices; authentic classroom details from T2
 
-- [ ] **T6** — Develop flat 2D animation style guide
+- [x] **T6** — Develop flat 2D animation style guide
   - **files**: `specs/adhd-superhero-animation/style-guide.md`, `specs/adhd-superhero-animation/color-palette.md`, `specs/adhd-superhero-animation/type-system.md`
   - **depends**: T3
   - **satisfies**: R5, N4
   - **acceptance**: color palette (≥6 hex codes); font pairings (Google Fonts or licensed); character model sheets (front/side/3/4 view, 3 expressions per char); motion archetypes (easing curves, timing for jitter/focus/float states)
+  - ✓ Delivered: 8-color palette (Electric Blue + Warm Orange core), 3 font pairings + Caveat for interior monologue, 4 motion archetypes (jittery/hyperfocus/floaty/sharp), outsourcing framework
 
 - [ ] **T7** — Create character design + expression sheets
   - **files**: `specs/adhd-superhero-animation/designs/` (PNG/SVG line art)
