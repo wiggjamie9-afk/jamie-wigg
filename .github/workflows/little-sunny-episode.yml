@@ -30,6 +30,7 @@ jobs:
         with:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: recursive
 
       - name: Determine script from queue
         id: pick-script
@@ -62,7 +63,36 @@ jobs:
         run: |
           pip install requests python-dotenv anthropic \
             google-auth google-auth-oauthlib google-api-python-client \
-            elevenlabs Pillow
+            elevenlabs Pillow fal-client
+
+      - name: Install OpenMontage deps
+        run: |
+          if [ -f OpenMontage/requirements.txt ]; then
+            pip install -r OpenMontage/requirements.txt || true
+          fi
+
+      - name: Download Piper TTS voice model
+        run: |
+          mkdir -p /tmp/piper-voices
+          MODEL="en_US-lessac-medium"
+          ONNX="/tmp/piper-voices/${MODEL}.onnx"
+          JSON="/tmp/piper-voices/${MODEL}.onnx.json"
+          BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium"
+          if [ ! -f "$ONNX" ]; then
+            curl -fsSL "${BASE}/${MODEL}.onnx" -o "$ONNX" || echo "Piper model download failed (non-fatal)"
+          fi
+          if [ ! -f "$JSON" ]; then
+            curl -fsSL "${BASE}/${MODEL}.onnx.json" -o "$JSON" || echo "Piper config download failed (non-fatal)"
+          fi
+
+      - name: Install Piper TTS binary
+        run: |
+          PIPER_VER="2023.11.14-2"
+          PIPER_URL="https://github.com/rhasspy/piper/releases/download/${PIPER_VER}/piper_linux_x86_64.tar.gz"
+          if ! command -v piper >/dev/null 2>&1; then
+            curl -fsSL "$PIPER_URL" | tar -xz -C /tmp/
+            sudo mv /tmp/piper/piper /usr/local/bin/piper || echo "Piper install failed (non-fatal)"
+          fi
 
       - name: Write .env
         run: |
@@ -71,8 +101,12 @@ jobs:
           ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
           HIGGSFIELD_API_KEY=${{ secrets.HIGGSFIELD_API_KEY }}
           HIGGSFIELD_SECRET=${{ secrets.HIGGSFIELD_SECRET }}
+          FAL_KEY=${{ secrets.FAL_KEY }}
+          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY=${{ secrets.PIXABAY_API_KEY }}
           YOUTUBE_CLIENT_ID=${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET=${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          PIPER_VOICE_DIR=/tmp/piper-voices
           EOF
 
       - name: Write YouTube token

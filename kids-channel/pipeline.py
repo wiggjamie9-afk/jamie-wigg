@@ -20,12 +20,23 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-HIGGSFIELD_API_KEY = os.getenv("HIGGSFIELD_API_KEY")
-HIGGSFIELD_SECRET = os.getenv("HIGGSFIELD_SECRET")
-YOUTUBE_CLIENT_ID = os.getenv("YOUTUBE_CLIENT_ID")
+# Make OpenMontage tools importable (submodule lives at repo root)
+_OM_PATH = Path(__file__).parent.parent / "OpenMontage"
+if _OM_PATH.exists() and str(_OM_PATH) not in sys.path:
+    sys.path.insert(0, str(_OM_PATH))
+
+ANTHROPIC_API_KEY    = os.getenv("ANTHROPIC_API_KEY")
+ELEVENLABS_API_KEY   = os.getenv("ELEVENLABS_API_KEY")
+HIGGSFIELD_API_KEY   = os.getenv("HIGGSFIELD_API_KEY")
+HIGGSFIELD_SECRET    = os.getenv("HIGGSFIELD_SECRET")
+FAL_KEY              = os.getenv("FAL_KEY")
+PEXELS_API_KEY       = os.getenv("PEXELS_API_KEY")
+PIXABAY_API_KEY      = os.getenv("PIXABAY_API_KEY")
+YOUTUBE_CLIENT_ID    = os.getenv("YOUTUBE_CLIENT_ID")
 YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
+
+PIPER_VOICE_DIR = Path(os.getenv("PIPER_VOICE_DIR", "/tmp/piper-voices"))
+PIPER_VOICE     = "en_US-lessac-medium"
 
 # ── Show config (update once you have a character) ──────────────────────────────
 SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
@@ -190,6 +201,45 @@ def generate_narration(narration_text: str, episode_dir: Path) -> Path:
     return audio_path
 
 
+# ── 2b. Narration via Piper TTS (free offline fallback) ───────────────────────────────
+
+def generate_narration_piper(narration_text: str, episode_dir: Path) -> Path:
+    """Generate narration using local Piper TTS — no API key required."""
+    audio_path = episode_dir / "narration.mp3"
+    wav_path   = episode_dir / "narration.wav"
+
+    model_file = PIPER_VOICE_DIR / f"{PIPER_VOICE}.onnx"
+    if not model_file.exists():
+        print(f"  ⚠ Piper model not found at {model_file} — skipping Piper TTS")
+        audio_path.write_bytes(b"")
+        return audio_path
+
+    wav_result = subprocess.run(
+        ["piper", "--model", str(model_file),
+         "--length-scale", "1.15",        # slightly slower = calmer bedtime pace
+         "--sentence-silence", "0.4",
+         "--output_file", str(wav_path)],
+        input=narration_text, capture_output=True, text=True, timeout=120,
+    )
+    if wav_result.returncode != 0 or not wav_path.exists():
+        print(f"  ⚠ Piper TTS failed: {wav_result.stderr[:120]}")
+        audio_path.write_bytes(b"")
+        return audio_path
+
+    # Convert WAV → MP3 so it matches ElevenLabs output format
+    mp3_result = subprocess.run(
+        ["ffmpeg", "-y", "-i", str(wav_path), "-q:a", "4", str(audio_path)],
+        capture_output=True,
+    )
+    wav_path.unlink(missing_ok=True)
+    if mp3_result.returncode == 0 and audio_path.stat().st_size > 1000:
+        print(f"  ✓ Narration via Piper TTS ({audio_path.stat().st_size // 1024}KB)")
+    else:
+        audio_path.write_bytes(b"")
+        print("  ⚠ Piper WAV→MP3 conversion failed")
+    return audio_path
+
+
 # ── 3. Scene images via Higgsfield Soul ───────────────────────────────────────────────
 
 def get_higgsfield_token() -> str:
@@ -335,6 +385,107 @@ def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: P
         except Exception as e:
             print(f"  ⚠ Scene {scene_id} Pollinations/{model} failed: {e}")
     return None
+
+
+def generate_scene_image_flux(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
+    """Generate a scene image via FLUX (OpenMontage tool) — needs FAL_KEY."""
+    if not FAL_KEY:
+        return None
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    full_prompt = (
+        f"Soft watercolour children's book illustration, warm gentle palette, "
+        f"Australian bush at dusk or night. Deep navy sky, soft moonlight, "
+        f"glowing fireflies. Character: {CHARACTER_NAME}, {CHARACTER_DESC}. "
+        f"Scene: {prompt[:350]}. No text. Safe for toddlers."
+    )
+    try:
+        from tools.graphics.flux_image import FluxImage
+        tool = FluxImage()
+        result = tool.execute({
+            "prompt": full_prompt,
+            "width": 1920, "height": 1080,
+            "num_inference_steps": 28,
+            "output_path": str(img_path),
+        })
+        if result.success and img_path.exists() and img_path.stat().st_size > 5000:
+            print(f"  ✓ Scene {scene_id} image (FLUX, {img_path.stat().st_size // 1024}KB)")
+            return img_path
+        else:
+            print(f"  ⚠ Scene {scene_id} FLUX failed: {result.error}")
+    except Exception as e:
+        print(f"  ⚠ Scene {scene_id} FLUX error: {e}")
+    return None
+
+
+def generate_scene_image_stock(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
+    """Search Pexels/Pixabay for a matching stock photo — needs free API key."""
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+
+    # Build a simple nature search query from the scene prompt
+    keywords = "australian bush night moonlight nature calm"
+    headers_pexels = {"Authorization": PEXELS_API_KEY} if PEXELS_API_KEY else {}
+    if PEXELS_API_KEY:
+        try:
+            r = requests.get(
+                "https://api.pexels.com/v1/search",
+                params={"query": keywords, "per_page": 10, "page": scene_id % 5 + 1,
+                        "orientation": "landscape"},
+                headers=headers_pexels, timeout=20,
+            )
+            photos = r.json().get("photos", [])
+            if photos:
+                url = photos[0]["src"]["landscape"]
+                data = requests.get(url, timeout=30).content
+                img_path.write_bytes(data)
+                print(f"  ✓ Scene {scene_id} image (Pexels stock)")
+                return img_path
+        except Exception as e:
+            print(f"  ⚠ Pexels scene {scene_id} failed: {e}")
+
+    if PIXABAY_API_KEY:
+        try:
+            r = requests.get(
+                "https://pixabay.com/api/",
+                params={"key": PIXABAY_API_KEY, "q": keywords,
+                        "image_type": "photo", "orientation": "horizontal",
+                        "per_page": 10, "page": scene_id % 5 + 1},
+                timeout=20,
+            )
+            hits = r.json().get("hits", [])
+            if hits:
+                url = hits[0]["largeImageURL"]
+                data = requests.get(url, timeout=30).content
+                img_path.write_bytes(data)
+                print(f"  ✓ Scene {scene_id} image (Pixabay stock)")
+                return img_path
+        except Exception as e:
+            print(f"  ⚠ Pixabay scene {scene_id} failed: {e}")
+
+    return None
+
+
+def generate_music_pixabay(duration_secs: int, episode_dir: Path) -> Path:
+    """Download a real royalty-free lullaby track via OpenMontage's Pixabay Music tool."""
+    music_path = episode_dir / "music.mp3"
+    print("[4/6] Searching Pixabay for lullaby music...")
+    try:
+        from tools.audio.pixabay_music import PixabayMusic
+        tool = PixabayMusic()
+        result = tool.execute({
+            "query": "lullaby calm ambient sleep gentle",
+            "min_duration": max(60, duration_secs - 30),
+            "max_duration": duration_secs + 120,
+            "output_path": str(music_path),
+        })
+        if result.success and music_path.exists() and music_path.stat().st_size > 10000:
+            track = result.data.get("title", "unknown")
+            print(f"  ✓ Music: '{track}' from Pixabay ({music_path.stat().st_size // 1024}KB)")
+            return music_path
+        else:
+            print(f"  ⚠ Pixabay Music failed: {result.error} — falling back to generated music")
+    except Exception as e:
+        print(f"  ⚠ Pixabay Music error: {e} — falling back to generated music")
+    return Path("")   # signals caller to use ffmpeg fallback
 
 
 def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id: int) -> Path:
@@ -903,10 +1054,14 @@ def main():
         (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
         print(f"  ✓ Title: {script['title']}")
 
-    # 2. Narration
+    # 2. Narration — ElevenLabs first, Piper TTS free fallback
     narration = generate_narration(script["narration"], episode_dir)
+    if not narration.exists() or narration.stat().st_size < 100:
+        print("  ↩ ElevenLabs unavailable — trying Piper TTS (free offline)...")
+        narration = generate_narration_piper(script["narration"], episode_dir)
 
     # 3. Scene images + videos
+    # Priority: Higgsfield → FLUX (OpenMontage) → Stock photos → Pollinations → gradient
     scene_videos = []
     if not args.skip_video and HIGGSFIELD_API_KEY:
         print("[3/6] Generating scene images and animations via Higgsfield...")
@@ -918,15 +1073,39 @@ def main():
                 vid = animate_scene(img, scene, episode_dir, token)
                 scene_videos.append(vid)
         except Exception as e:
-            print(f"  ⚠ Higgsfield failed ({e}) — trying Pollinations FLUX fallback...")
+            print(f"  ⚠ Higgsfield failed ({e}) — falling through to next image source...")
 
-    # Pollinations FLUX fallback (when Higgsfield is unavailable)
     if not scene_videos:
-        print("[3/6] Generating scene images via Pollinations FLUX...")
+        # Try FLUX (OpenMontage/fal.ai) → stock photos (Pexels/Pixabay) → Pollinations → gradient
+        if FAL_KEY:
+            print("[3/6] Generating scene images via FLUX (OpenMontage)...")
+        elif PEXELS_API_KEY or PIXABAY_API_KEY:
+            print("[3/6] Generating scene images from stock photos (Pexels/Pixabay)...")
+        else:
+            print("[3/6] Generating scene images via Pollinations FLUX...")
+
         for scene in script["scenes"]:
-            img_path = generate_scene_image_pollinations(
-                scene["image_prompt"], scene["id"], episode_dir
-            )
+            img_path = None
+
+            # 1st choice: FLUX via OpenMontage (needs FAL_KEY, ~$0.05/image)
+            if FAL_KEY:
+                img_path = generate_scene_image_flux(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
+
+            # 2nd choice: stock photos (Pexels/Pixabay — free API keys)
+            if not img_path:
+                img_path = generate_scene_image_stock(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
+
+            # 3rd choice: Pollinations FLUX (free, may be rate-limited in CI)
+            if not img_path:
+                img_path = generate_scene_image_pollinations(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
+
+            # Last resort: animated gradient (always works, no external calls)
             if img_path and img_path.exists() and img_path.stat().st_size > 5000:
                 vid = image_to_video(img_path, scene.get("duration", 8), episode_dir, scene["id"])
             else:
@@ -934,8 +1113,11 @@ def main():
                 vid = generate_scene_bg(scene, episode_dir)
             scene_videos.append(vid)
 
-    # 4. Music
-    music = generate_music(210, episode_dir)
+    # 4. Music — Pixabay royalty-free (OpenMontage) first, ffmpeg tones fallback
+    total_secs = sum(s.get("duration", 8) for s in script.get("scenes", [])) + 15
+    music = generate_music_pixabay(total_secs, episode_dir)
+    if not music.exists() or music.stat().st_size < 100:
+        music = generate_music(total_secs, episode_dir)
 
     # 5. Assemble
     if scene_videos:
