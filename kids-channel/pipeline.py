@@ -980,6 +980,19 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     try:
         with _urllib_req.urlopen(_req, timeout=30) as _resp:
             _resp_json = json.loads(_resp.read())
+    except _urllib_req.HTTPError as _http_err:
+        try:
+            _err_body = json.loads(_http_err.read())
+        except Exception:
+            _err_body = {}
+        _err_code = _err_body.get("error", "unknown")
+        _err_desc = _err_body.get("error_description", str(_http_err))
+        raise RuntimeError(
+            f"YouTube token refresh failed — OAuth tokens are invalid.\n"
+            f"  Google says: {_err_code}: {_err_desc}\n"
+            f"  Redo OAuth Playground at rhythmixapp.com.au/kids-channel/token-fix.html\n"
+            f"  then update all 4 YOUTUBE_* secrets in GitHub."
+        )
     except Exception as _http_err:
         raise RuntimeError(f"HTTP error contacting token endpoint: {_http_err}")
 
