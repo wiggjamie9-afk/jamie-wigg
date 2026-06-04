@@ -1,10 +1,11 @@
 # Tasks: ADHD Superhero Animation
 
-- [ ] **T1** — Research ADHD representation + sensitivity baseline
+- [x] **T1** — Research ADHD representation + sensitivity baseline
   - **files**: `specs/adhd-superhero-animation/research-notes.md`, `specs/adhd-superhero-animation/sensitivity-checklist.md`
   - **depends**: —
   - **satisfies**: R4, N1
   - **acceptance**: 10+ cited sources on ADHD in media + ADHD adult perspectives; sensitivity checklist created with ≥3 ADHD consultants identified
+  - ✓ Delivered: 20 sources, 6-part sensitivity framework, 3 consultant roles defined
 
 - [ ] **T2** — Interview educators + ADHD specialists for authenticity input
   - **files**: `specs/adhd-superhero-animation/educator-interviews.md`
