@@ -1092,7 +1092,7 @@ def main():
         while len(chunks) < 6:
             chunks.append(chunks[-1] if chunks else title_lower)
         script["scenes"] = [
-            {"id": f"scene{i+1:02d}", "duration": 8,
+            {"id": i + 1, "duration": 8,
              "image_prompt": f"Watercolour illustration of Sonny the quokka in Australian bush, {title_lower}, soft warm bedtime colours, gentle peaceful night scene",
              "narration": chunk}
             for i, chunk in enumerate(chunks)
