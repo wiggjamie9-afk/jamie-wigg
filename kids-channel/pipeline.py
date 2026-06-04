@@ -1257,6 +1257,7 @@ def main():
         print(f"\n✅ Done! Episode files in: {episode_dir}")
     else:
         print(f"\n⚠️  Episode produced but not uploaded. Fix OAuth then re-trigger workflow.")
+        sys.exit(1)  # non-zero so the workflow's Advance queue step is skipped
 
 
 if __name__ == "__main__":

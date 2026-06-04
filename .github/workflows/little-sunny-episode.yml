@@ -132,6 +132,51 @@ jobs:
           YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
 
+      - name: Validate YouTube token (pre-flight)
+        env:
+          YT_REFRESH: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+        run: |
+          python3 - <<'EOF'
+          import urllib.request as r, urllib.parse as p, json, os, sys
+
+          rt  = os.environ['YT_REFRESH']
+          cid = os.environ['YT_CLIENT_ID']
+          cs  = os.environ['YT_CLIENT_SECRET']
+
+          print(f"refresh_token  : len={len(rt)}, first8={rt[:8]!r}, last4={rt[-4:]!r}")
+          print(f"client_id      : len={len(cid)}, first12={cid[:12]!r}")
+          print(f"client_secret  : len={len(cs)}, last4={cs[-4:]!r}")
+
+          body = p.urlencode({
+              'client_id': cid,
+              'client_secret': cs,
+              'refresh_token': rt,
+              'grant_type': 'refresh_token',
+          }).encode()
+          req = r.Request(
+              'https://oauth2.googleapis.com/token',
+              data=body,
+              headers={'Content-Type': 'application/x-www-form-urlencoded'},
+          )
+          try:
+              with r.urlopen(req, timeout=30) as resp:
+                  data = json.loads(resp.read())
+              print(f"✓ Token refresh OK — access_token len={len(data.get('access_token',''))}")
+          except r.HTTPError as e:
+              try:
+                  err = json.loads(e.read())
+              except Exception:
+                  err = {}
+              print(f"✗ Token refresh FAILED: {err.get('error')}: {err.get('error_description')}")
+              print()
+              print("Fix: go to rhythmixapp.com.au/kids-channel/token-fix.html")
+              print("     re-do OAuth Playground with 'Use your own OAuth credentials' ticked,")
+              print("     enter Web Client 1 ID + Secret, then update all 4 YOUTUBE_* secrets.")
+              sys.exit(1)
+          EOF
+
       - name: Run pipeline
         id: run-pipeline
         run: |
@@ -144,7 +189,7 @@ jobs:
             $DRY_RUN_FLAG
 
       - name: Advance queue
-        if: steps.pick-script.outputs.from_queue == 'true' && steps.run-pipeline.conclusion != 'cancelled'
+        if: steps.pick-script.outputs.from_queue == 'true' && steps.run-pipeline.conclusion == 'success'
         run: |
           git config user.email "sunny-bot@rhythmixapp.com.au"
           git config user.name "Sunny Bot"
