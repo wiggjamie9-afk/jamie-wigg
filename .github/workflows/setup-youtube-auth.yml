@@ -3,6 +3,10 @@ name: YouTube OAuth Setup (one-time)
 on:
   workflow_dispatch:
     inputs:
+      client_id_override:
+        description: "Your Client ID from Google Cloud Console (Web Client 1) — paste here to see full auth URL"
+        required: false
+        type: string
       auth_code:
         description: "Step 2 only: paste the code from the redirect URL (leave blank to generate auth URL)"
         required: false
@@ -28,7 +32,9 @@ jobs:
           import os, json, sys
           from urllib.parse import urlencode
 
-          client_id     = os.environ['YT_CLIENT_ID']
+          # Use the explicit override input (visible in logs) if provided,
+          # otherwise fall back to the secret (will be masked in logs)
+          client_id     = os.environ.get('CLIENT_ID_OVERRIDE', '').strip() or os.environ['YT_CLIENT_ID']
           client_secret = os.environ['YT_CLIENT_SECRET']
           auth_code     = os.environ.get('AUTH_CODE', '').strip()
           redirect_uri  = 'http://localhost'
@@ -96,12 +102,13 @@ jobs:
               print()
               print('YOUTUBE_REFRESH_TOKEN =', result['refresh_token'])
               print()
-              print('Go to: repo Settings → Secrets and variables → Actions')
+              print('Go to: repo Settings -> Secrets and variables -> Actions')
               print('Update (or create) both secrets above, then re-run the')
               print('Little Sunny — New Episode workflow.')
               print('======================================================')
           "
         env:
-          YT_CLIENT_ID:     ${{ secrets.YOUTUBE_CLIENT_ID }}
-          YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          AUTH_CODE:        ${{ inputs.auth_code }}
+          YT_CLIENT_ID:       ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YT_CLIENT_SECRET:   ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          AUTH_CODE:          ${{ inputs.auth_code }}
+          CLIENT_ID_OVERRIDE: ${{ inputs.client_id_override }}
