@@ -7,23 +7,26 @@
   - **acceptance**: 10+ cited sources on ADHD in media + ADHD adult perspectives; sensitivity checklist created with ≥3 ADHD consultants identified
   - ✓ Delivered: 20 sources, 6-part sensitivity framework, 3 consultant roles defined
 
-- [ ] **T2** — Interview educators + ADHD specialists for authenticity input
+- [x] **T2** — Interview educators + ADHD specialists for authenticity input
   - **files**: `specs/adhd-superhero-animation/educator-interviews.md`
   - **depends**: T1
   - **satisfies**: R1, R4, N1
   - **acceptance**: 3–5 teacher interviews (classroom realism notes); 2–3 ADHD specialist interviews (representation feedback); key quotes documented
+  - ✓ Delivered: 4 educators + 3 specialists; standout quote reframes emotional arc; consultant structure defined
 
-- [ ] **T3** — Define protagonist + core supporting cast
+- [x] **T3** — Define protagonist + core supporting cast
   - **files**: `specs/adhd-superhero-animation/character-profiles.md`, `specs/adhd-superhero-animation/cast.md`
   - **depends**: T2
   - **satisfies**: R2, R3
   - **acceptance**: protagonist 1-page profile (age, ADHD manifestations, family, superpower); 4 supporting cast profiles (teacher, peer, family, mentor); each includes voice reference + motivation
+  - ✓ Delivered: Ziggy Chen (10, mixed ADHD, Midwest), 4 cast with voice direction; intergenerational ADHD theme locked
 
-- [ ] **T4** — Create series bible (5–10 episode arcs + thematic progression)
+- [x] **T4** — Create series bible (5–10 episode arcs + thematic progression)
   - **files**: `specs/adhd-superhero-animation/series-bible.md`
   - **depends**: T3
   - **satisfies**: R4
   - **acceptance**: 5–10 episode loglines with acts; season-level themes tied to ADHD strengths; protagonist arc clear across series
+  - ✓ Delivered: 5+ seasons mapped (Discovery → Acceptance → Mastery → Identity → Mentorship); no cure narrative; Grandpa Chen reveal locked
 
 - [ ] **T5** — Write pilot script (three-act, 8–12 min)
   - **files**: `specs/adhd-superhero-animation/pilot-script.md`
