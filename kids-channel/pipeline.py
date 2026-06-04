@@ -511,46 +511,32 @@ def generate_music(duration_secs: int, episode_dir: Path) -> Path:
     """Generate gentle lullaby music using ffmpeg sine tones — no API needed."""
     music_path = episode_dir / "music.mp3"
     print("[4/6] Generating background music via ffmpeg...")
-
-    # Pentatonic lullaby: C4 E4 G4 A4 C5, each note 2s, fading in/out gently
-    # Layered with soft low-pass filtered pink noise for warmth
     total = int(duration_secs) + 5
-    notes = [261.63, 329.63, 392.00, 440.00, 523.25]  # C E G A C
-    note_dur = 2.0
-    # Build an aevalsrc expression that cycles through the pentatonic scale
-    cycle = len(notes)
-    expr_parts = []
-    for i, freq in enumerate(notes):
-        start = i * note_dur
-        end = start + note_dur
-        expr_parts.append(
-            f"if(between(mod(t,{cycle * note_dur}),{start},{end}),"
-            f"0.12*sin(2*PI*{freq}*t)*exp(-2*mod(t,{note_dur})),0)"
-        )
-    expr = "+".join(expr_parts)
 
-    # Also add a very soft sub-bass drone (C2 = 65.41 Hz) for warmth
-    drone = "0.05*sin(2*PI*65.41*t)"
-    full_expr = f"({expr})+{drone}"
-
+    # Simple approach: layer 3 quiet sine tones (C4, G4, C5) for a calm hum
     result = subprocess.run([
         "ffmpeg", "-y",
         "-f", "lavfi",
-        "-i", f"aevalsrc='{full_expr}':s=44100:c=stereo",
-        "-af", (
-            "lowpass=f=3000,"          # soft high-frequency rolloff
-            "aecho=0.6:0.5:60:0.3,"   # gentle reverb / echo
-            f"afade=t=in:st=0:d=2,afade=t=out:st={total-3}:d=3"
-        ),
-        "-t", str(total),
+        "-i", f"sine=frequency=261.63:duration={total}",
+        "-f", "lavfi",
+        "-i", f"sine=frequency=392.00:duration={total}",
+        "-f", "lavfi",
+        "-i", f"sine=frequency=523.25:duration={total}",
+        "-filter_complex",
+        "[0:a]volume=0.10[a0];"
+        "[1:a]volume=0.07[a1];"
+        "[2:a]volume=0.05[a2];"
+        "[a0][a1][a2]amix=inputs=3:duration=longest[aout];"
+        f"[aout]lowpass=f=2000,afade=t=in:st=0:d=3,afade=t=out:st={total-4}:d=4[final]",
+        "-map", "[final]",
         "-c:a", "libmp3lame", "-q:a", "4",
         str(music_path)
     ], capture_output=True)
 
-    if result.returncode == 0 and music_path.stat().st_size > 1000:
+    if result.returncode == 0 and music_path.exists() and music_path.stat().st_size > 1000:
         print(f"  ✓ Lullaby music generated ({total}s)")
     else:
-        print(f"  ⚠ Music generation failed — continuing without music")
+        print(f"  ⚠ Music generation failed: {result.stderr.decode()[-200:]} — continuing without music")
         music_path.write_bytes(b"")
     return music_path
 
@@ -878,37 +864,70 @@ def assemble_video(scene_videos: list, narration: Path, music: Path,
         print(f"  ✗ ffmpeg concat failed:\n{r.stderr.decode()[-800:]}")
         raise RuntimeError("ffmpeg concat failed")
 
-    # Mix narration + music + video
+    # Mix narration + music + video — try increasingly simple approaches
     has_narration = narration.exists() and narration.stat().st_size > 100
     has_music = music.exists() and music.stat().st_size > 100
 
+    def _try(cmd):
+        return subprocess.run(cmd, capture_output=True)
+
+    r = None
     if has_narration and has_music:
-        inputs = ["-stream_loop", "-1", "-i", str(raw_video), "-i", str(narration), "-i", str(music)]
-        audio_filter = "[1:a]volume=1.0[narr];[2:a]volume=0.20[mus];[narr][mus]amix=inputs=2:duration=first[aout]"
-        r = subprocess.run([
-            "ffmpeg", "-y", *inputs,
-            "-filter_complex", audio_filter,
+        r = _try([
+            "ffmpeg", "-y",
+            "-i", str(raw_video),
+            "-i", str(narration),
+            "-i", str(music),
+            "-filter_complex",
+            "[1:a]volume=1.0[narr];[2:a]volume=0.20[mus];[narr][mus]amix=inputs=2:duration=first[aout]",
             "-map", "0:v", "-map", "[aout]",
             "-c:v", "libx264", "-c:a", "aac", "-shortest",
             str(output_path)
-        ], capture_output=True)
-    elif has_narration:
-        inputs = ["-stream_loop", "-1", "-i", str(raw_video), "-i", str(narration)]
-        r = subprocess.run([
-            "ffmpeg", "-y", *inputs,
+        ])
+        if r.returncode != 0:
+            print(f"  ⚠ Full mix failed ({r.stderr.decode()[-200:]}) — trying narration only...")
+            r = None
+
+    if r is None and has_narration:
+        r = _try([
+            "ffmpeg", "-y",
+            "-i", str(raw_video),
+            "-i", str(narration),
             "-map", "0:v", "-map", "1:a",
             "-c:v", "libx264", "-c:a", "aac", "-shortest",
             str(output_path)
-        ], capture_output=True)
-    else:
-        r = subprocess.run([
-            "ffmpeg", "-y", "-i", str(raw_video),
-            "-c:v", "libx264", "-an", str(output_path)
-        ], capture_output=True)
+        ])
+        if r.returncode != 0:
+            print(f"  ⚠ Narration-only mix failed — trying music only...")
+            r = None
+
+    if r is None and has_music:
+        r = _try([
+            "ffmpeg", "-y",
+            "-i", str(raw_video),
+            "-i", str(music),
+            "-map", "0:v", "-map", "1:a",
+            "-c:v", "libx264", "-c:a", "aac", "-shortest",
+            str(output_path)
+        ])
+        if r.returncode != 0:
+            print(f"  ⚠ Music-only mix failed — falling back to silent video...")
+            r = None
+
+    if r is None:
+        r = _try([
+            "ffmpeg", "-y",
+            "-i", str(raw_video),
+            "-c:v", "libx264", "-an",
+            str(output_path)
+        ])
 
     if r.returncode != 0:
-        print(f"  ✗ ffmpeg mix failed:\n{r.stderr.decode()[-800:]}")
-        raise RuntimeError("ffmpeg mix failed")
+        print(f"  ✗ All ffmpeg attempts failed:\n{r.stderr.decode()[-400:]}")
+        # Last resort: just copy raw video as final
+        import shutil
+        shutil.copy2(str(raw_video), str(output_path))
+        print("  ↩ Copied raw video as final (no audio)")
 
     print(f"  ✓ Final video: {output_path}")
     return output_path
