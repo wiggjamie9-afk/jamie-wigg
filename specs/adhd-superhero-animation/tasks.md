@@ -63,11 +63,12 @@
   - **acceptance**: target age range justified; YouTube monetization strategy (sponsorship, Patreon, educator licensing options); representation notes; sensitivity sign-off checklist
   - ✓ Delivered: positioning.md (4 main sections: audience, monetization 6-pillar model, representation framework, community safeguards); educator licensing as defensible revenue moat ($50K Year 1); monthly Patreon community calls for co-creation
 
-- [ ] **T10** — Compile visual pitch deck (key frames + mood boards)
+- [x] **T10** — Compile visual pitch deck (key frames + mood boards)
   - **files**: `specs/adhd-superhero-animation/pitch-deck/` (Figma or PDF)
   - **depends**: T7, T8, T9
   - **satisfies**: R5, R6, R7
   - **acceptance**: 5–10 hero frames from storyboards; mood board (color, type, reference films); series arc visual summary; ready for investor/studio pitch
+  - ✓ Delivered: pitch-deck/ folder with README.md (deck overview + series hook), hero-frames.md (8 key frames from opening + transformation sequences with timecodes + visual descriptions), mood-board.md (color palette, typography, reference aesthetics, series arc by season)
 
 - [ ] **T11** — Sensitivity review + iterate script
   - **files**: `specs/adhd-superhero-animation/pilot-script.md` (updated), `specs/adhd-superhero-animation/sensitivity-feedback.md`
