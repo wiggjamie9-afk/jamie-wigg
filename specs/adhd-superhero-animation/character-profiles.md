@@ -31,7 +31,7 @@ Ziggy wants to belong—to feel at home in his own body, accepted at school (esp
 
 **Age dynamic:** Fully 10-year-old intelligence and vocabulary—not younger, not affected—but hyperaware of being different from peers; mature in some ways (emotionally intuitive, quick-thinking), immature in others (needs physical play, impulsive, struggles with delayed gratification).
 
-**Energy:** High, restless, kinetic. Speech is fast and overlapping; Ziggy jumps between ideas mid-sentence. When nervous or shame-spiraling, he becomes quieter, more monotone (the energy drains). In Surge form, his voice is confident, quick, almost musical.
+**Energy:** High, restless, kinetic—but NOT constant chaos. Speech is fast when interested/anxious; slower and focused during hyperfocus or when genuinely listening. Ziggy jumps between ideas mid-sentence when his brain is moving fast, but he can also sustain focus on things he cares about. Avoid playing him as a hyperactivity caricature; instead, play him as an intelligent kid whose energy responds to interest and nervous system state. When nervous or shame-spiraling, he becomes quieter, more monotone (the energy drains). In Surge form, his voice is confident, quick, almost musical.
 
 **Humor:** Self-deprecating (jokes about losing things, "my brain is weird"), sarcastic when nervous (using humor to deflect shame), genuine belly-laugh joy when happy or playing with Jake. Not cynical—just using humor to manage dysregulation.
 
@@ -41,7 +41,9 @@ Ziggy wants to belong—to feel at home in his own body, accepted at school (esp
 
 **Accent/dialect:** Midwestern American English, subtle Des Moines accent (slight "oh" sound in words like "go" → "gah"; "about" → "aboot" very faintly). No caricature—just grounding. Vocabulary is contemporary (2024+) with natural kid phrases ("that's so mid," "lowkey," mixed with older expressions his mom uses).
 
-**Voice actor reference:** Seeking 9–11 year old with athletic, energetic presence; natural delivery (not overly theatrical); can shift from rapid-fire energy to vulnerable quiet; slight Midwestern inflection; able to sustain interior monologue without sounding narrated.
+**Voice actor direction (Sensitivity Review note):** You are a smart, capable 10-year-old with a brain that works fast. You're not "silly" or "manic"; you're present and responsive. Your speed comes from genuine thinking, not randomness. When anxious, you talk faster and trail off. When engaged, you're clear and purposeful. When hyperfocused (soccer, interest), your voice gets almost musical—organized, precise, confident. Avoid defaulting to a stereotyped "ADHD kid voice"; instead, play Ziggy as an intelligent, capable person whose energy reflects his genuine internal state and level of engagement.
+
+**Voice actor reference:** Seeking 9–11 year old with athletic, energetic presence; natural delivery (not overly theatrical); can shift from rapid-fire energy to vulnerable quiet; slight Midwestern inflection; able to sustain interior monologue without sounding narrated; must avoid caricature and play intelligence/capability as the baseline.
 
 ---
 
