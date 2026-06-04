@@ -49,11 +49,12 @@
   - **acceptance**: protagonist + 3 key supporting chars modeled with ≥3 expressions each; diverse representation visible (race, body type, gender presentation); superhero forms sketched for protagonist
   - ✓ Delivered: Ziggy (base + SURGE form) + Mrs. Henderson + Jake + Sarah Chen; 3 expressions per char; asymmetry design notes; outsourcing construction guide
 
-- [ ] **T8** — Storyboard pilot opening (classroom → transformation)
+- [x] **T8** — Storyboard pilot opening (classroom → transformation)
   - **files**: `specs/adhd-superhero-animation/storyboards/opening-sequence.md`, `specs/adhd-superhero-animation/storyboards/transformation-sequence.md`
   - **depends**: T5, T7
   - **satisfies**: R6
   - **acceptance**: shot-by-shot breakdown (≥15 key frames for opening, ≥20 for transformation); timing marked; camera language noted (close-up, wide, split-screen); dialogue sync points clear
+  - ✓ Delivered: opening-sequence.md (15 shots, 525 lines, classroom sensory overload scene); transformation-sequence.md (16 shots, 333 lines, fantasy daydream + Surge reveal); all shots include timecode, motion archetypes, sound design, animation notes; dialogue sync and camera language locked
 
 - [x] **T9** — Build series positioning + monetization doc
   - **files**: `specs/adhd-superhero-animation/positioning.md`
