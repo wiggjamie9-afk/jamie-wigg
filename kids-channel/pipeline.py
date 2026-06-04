@@ -314,20 +314,26 @@ def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: P
         f"Scene: {prompt[:350]}"
     )
     encoded = requests.utils.quote(full_prompt)
-    url = (
-        f"https://image.pollinations.ai/prompt/{encoded}"
-        f"?width=1920&height=1080&model=flux&nologo=true&seed={scene_id * 7}"
-    )
-    try:
-        r = requests.get(url, timeout=90)
-        if r.status_code == 200 and len(r.content) > 5000:
-            img_path.write_bytes(r.content)
-            print(f"  ✓ Scene {scene_id} image (Pollinations FLUX)")
-            return img_path
-        else:
-            print(f"  ⚠ Scene {scene_id} Pollinations returned {r.status_code} / {len(r.content)} bytes")
-    except Exception as e:
-        print(f"  ⚠ Scene {scene_id} Pollinations failed: {e}")
+    # Pollinations free tier requires a Referer header; try two models for resilience
+    headers = {
+        "Referer": "https://rhythmixapp.com.au",
+        "User-Agent": "SonnyBot/1.0",
+    }
+    for model in ("flux", "flux-realism"):
+        url = (
+            f"https://image.pollinations.ai/prompt/{encoded}"
+            f"?width=1920&height=1080&model={model}&nologo=true&seed={scene_id * 7}"
+        )
+        try:
+            r = requests.get(url, timeout=90, headers=headers)
+            if r.status_code == 200 and len(r.content) > 5000:
+                img_path.write_bytes(r.content)
+                print(f"  ✓ Scene {scene_id} image (Pollinations {model})")
+                return img_path
+            else:
+                print(f"  ⚠ Scene {scene_id} Pollinations/{model} returned {r.status_code} / {len(r.content)} bytes")
+        except Exception as e:
+            print(f"  ⚠ Scene {scene_id} Pollinations/{model} failed: {e}")
     return None
 
 
@@ -774,7 +780,7 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
     SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
     if not token_file.exists() or not token_file.read_text().strip():
-        sys.exit("  ✗ No token.json found. Add the token as GitHub Secret YOUTUBE_TOKEN")
+        raise RuntimeError("No token.json — add YOUTUBE_ACCESS_TOKEN + YOUTUBE_REFRESH_TOKEN to GitHub Secrets and re-run youtube_auth.py")
 
     # Load credentials manually — from_authorized_user_file uses strptime("%Y-%m-%dT%H:%M:%SZ")
     # which can't parse "+00:00" timezone offsets. fromisoformat handles both.
@@ -816,7 +822,7 @@ def upload_to_youtube(video_path: Path, script: dict, dry_run: bool = False):
                 print(f"  Refresh failed ({_refresh_err}) — using existing token")
                 creds._expiry = None  # treat as valid so the upload proceeds
         else:
-            sys.exit("  ✗ Token invalid and cannot be refreshed. Re-run youtube_auth.py")
+            raise RuntimeError("Token invalid and cannot be refreshed — re-run youtube_auth.py")
 
     youtube = build("youtube", "v3", credentials=creds)
 
@@ -966,21 +972,46 @@ def main():
         print(f"  ⚠ Ebook generation failed: {e}")
 
     # 6. Upload
+    upload_ok = False
     if final_video.exists() and final_video.stat().st_size > 100:
         try:
             result = upload_to_youtube(final_video, script, dry_run=args.dry_run)
             if result and not args.dry_run and thumb_path and thumb_path.exists():
                 video_id, yt_client = result
                 upload_thumbnail_to_youtube(yt_client, video_id, thumb_path)
+            upload_ok = True
         except Exception as e:
             import traceback
-            print(f"  ✗ Upload failed — full error below:")
-            traceback.print_exc()
-            sys.exit(1)
+            print(f"\n⚠️  YouTube upload failed — episode was produced but NOT uploaded.")
+            print(f"   Error: {e}")
+            if "invalid_client" in str(e):
+                print(
+                    "\n   ── FIX: OAuth client not found ──────────────────────────────────\n"
+                    "   Your YOUTUBE_CLIENT_ID / YOUTUBE_CLIENT_SECRET secrets don't match\n"
+                    "   the OAuth app that created the refresh token.  Steps to fix:\n"
+                    "   1. Google Cloud Console → APIs & Services → Credentials\n"
+                    "      Confirm the OAuth 2.0 client still exists; note its Client ID\n"
+                    "      and Client Secret.\n"
+                    "   2. Update GitHub Secrets YOUTUBE_CLIENT_ID + YOUTUBE_CLIENT_SECRET\n"
+                    "      to match.\n"
+                    "   3. Run  python kids-channel/youtube_auth.py  locally to get fresh\n"
+                    "      access + refresh tokens.\n"
+                    "   4. Paste the new tokens into GitHub Secrets:\n"
+                    "        YOUTUBE_ACCESS_TOKEN   (access_token field)\n"
+                    "        YOUTUBE_REFRESH_TOKEN  (refresh_token field)\n"
+                    "   ─────────────────────────────────────────────────────────────────"
+                )
+            else:
+                traceback.print_exc()
+            print(f"\n   Episode files saved to: {episode_dir}")
+            print(f"   Re-upload manually once OAuth is fixed.")
     else:
         print("[6/6] No final video to upload")
 
-    print(f"\n✅ Done! Episode files in: {episode_dir}")
+    if upload_ok or args.dry_run:
+        print(f"\n✅ Done! Episode files in: {episode_dir}")
+    else:
+        print(f"\n⚠️  Episode produced but not uploaded. Fix OAuth then re-trigger workflow.")
 
 
 if __name__ == "__main__":
