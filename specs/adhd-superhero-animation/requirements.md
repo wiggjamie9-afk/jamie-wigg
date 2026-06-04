@@ -1,4 +1,6 @@
-# Requirements: ADHD Superhero Animation
+# Requirements: SURGE — ADHD Superhero Animation
+
+**Series Title:** SURGE
 
 ## Problem
 
