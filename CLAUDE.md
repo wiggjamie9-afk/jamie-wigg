@@ -24,6 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **OpenClaw CLI skills** → installed via `bash scripts/openclaw-install.sh` on a machine with unrestricted egress (ClawHub blocked from the cloud sandbox). Queue: `ai-video-editor-motion-graphics`, `self-improving-agent`, `voice-wake-say`, `voice-ai-voices`, `azure-ai-voicelive-py`, `app-builder`, `deploy-agent`.
 - **Agent TARS / UI-TARS** → vision-language GUI agent (ByteDance). See `SETUP-AGENT-TARS.md`. Best for click-stream automation; not a fit for the LLM-driven content pipeline.
 - **Hermes Agent** → Nous Research open-source agent CLI with messaging gateways (Telegram/Discord). See `SETUP-HERMES.md`. Useful for driving renders from phone/cron; RHYTHMIX skills are not ported to it.
+- **Free Claude Code proxy** → local proxy that re-routes Claude Code's LLM calls to 17 free/cheap providers (NVIDIA NIM, OpenRouter, Gemini, DeepSeek, Mistral, Cerebras, Groq, Ollama, and more). See `SETUP-FREE-CLAUDE-CODE.md`. Best for cost reduction on long `/spec-run` parallel-agent waves and iPhone-driven sessions via its built-in Telegram bot.
 - **Voicebox (local TTS)** → runs on-device Mac, clones your voice from a sample, zero API cost. See `VOICEBOX-SETUP.md`. Voice profile name: `Jamie`. Default endpoint: `http://127.0.0.1:17493`.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
 
@@ -65,6 +66,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `CREATIVE-AI-STACK.md` — iPhone-oriented creative AI toolchain
 - `SETUP-AGENT-TARS.md` — Agent TARS / UI-TARS desktop setup
 - `SETUP-HERMES.md` — Hermes Agent CLI setup
+- `SETUP-FREE-CLAUDE-CODE.md` — Free Claude Code proxy (route Claude Code to free providers)
 - `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
 - `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
