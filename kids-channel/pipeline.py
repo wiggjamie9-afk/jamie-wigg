@@ -26,14 +26,15 @@ _OM_PATH = Path(__file__).parent.parent / "OpenMontage"
 if _OM_PATH.exists() and str(_OM_PATH) not in sys.path:
     sys.path.insert(0, str(_OM_PATH))
 
-ANTHROPIC_API_KEY    = os.getenv("ANTHROPIC_API_KEY")
-ELEVENLABS_API_KEY   = os.getenv("ELEVENLABS_API_KEY")
-HIGGSFIELD_API_KEY   = os.getenv("HIGGSFIELD_API_KEY")
-HIGGSFIELD_SECRET    = os.getenv("HIGGSFIELD_SECRET")
-FAL_KEY              = os.getenv("FAL_KEY")
-PEXELS_API_KEY       = os.getenv("PEXELS_API_KEY")
-PIXABAY_API_KEY      = os.getenv("PIXABAY_API_KEY")
-YOUTUBE_CLIENT_ID    = os.getenv("YOUTUBE_CLIENT_ID")
+ANTHROPIC_API_KEY     = os.getenv("ANTHROPIC_API_KEY")
+ELEVENLABS_API_KEY    = os.getenv("ELEVENLABS_API_KEY")
+HIGGSFIELD_API_KEY    = os.getenv("HIGGSFIELD_API_KEY")
+HIGGSFIELD_SECRET     = os.getenv("HIGGSFIELD_SECRET")
+REPLICATE_API_TOKEN   = os.getenv("REPLICATE_API_TOKEN")
+FAL_KEY               = os.getenv("FAL_KEY")
+PEXELS_API_KEY        = os.getenv("PEXELS_API_KEY")
+PIXABAY_API_KEY       = os.getenv("PIXABAY_API_KEY")
+YOUTUBE_CLIENT_ID     = os.getenv("YOUTUBE_CLIENT_ID")
 YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 
 PIPER_VOICE_DIR = Path(os.getenv("PIPER_VOICE_DIR", "/tmp/piper-voices"))
@@ -574,6 +575,77 @@ def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Pat
         print(f"  ⚠ Scene {scene_id} FAL.ai returned only {len(img_data)} bytes")
     except Exception as e:
         print(f"  ⚠ Scene {scene_id} FAL.ai direct failed: {e}")
+    return None
+
+
+def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
+    """Generate a scene image via Replicate FLUX Schnell — uses your existing Replicate account.
+    Add REPLICATE_API_TOKEN to GitHub Secrets (same token as the creative-stack MCP server)."""
+    if not REPLICATE_API_TOKEN:
+        return None
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    full_prompt = (
+        f"Soft watercolour children's book illustration, warm gentle palette, "
+        f"Australian bush at night, deep navy sky, soft moonlight, glowing fireflies. "
+        f"Sonny the quokka with golden-brown fur, big warm brown eyes, gentle smile. "
+        f"Scene: {prompt[:300]}. No text. Safe for children."
+    )
+    headers = {
+        "Authorization": f"Token {REPLICATE_API_TOKEN}",
+        "Content-Type": "application/json",
+        "Prefer": "wait=60",
+    }
+    payload = {
+        "input": {
+            "prompt": full_prompt,
+            "aspect_ratio": "16:9",
+            "output_format": "jpg",
+            "output_quality": 90,
+            "go_fast": True,
+            "num_outputs": 1,
+            "seed": scene_id * 17,
+        }
+    }
+    try:
+        print(f"  ⏳ Scene {scene_id} Replicate FLUX Schnell...")
+        r = requests.post(
+            "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+            headers=headers, json=payload, timeout=120,
+        )
+        if r.status_code not in (200, 201):
+            print(f"  ⚠ Replicate start failed: {r.status_code} {r.text[:200]}")
+            return None
+        prediction = r.json()
+        if prediction.get("status") == "succeeded":
+            img_url = prediction["output"]
+        else:
+            poll_url = prediction["urls"]["get"]
+            poll_headers = {"Authorization": f"Token {REPLICATE_API_TOKEN}"}
+            deadline = time.time() + 300
+            img_url = None
+            while time.time() < deadline:
+                time.sleep(3)
+                pr = requests.get(poll_url, headers=poll_headers, timeout=30)
+                pred = pr.json()
+                if pred.get("status") == "succeeded":
+                    img_url = pred["output"]
+                    break
+                if pred.get("status") in ("failed", "canceled"):
+                    print(f"  ⚠ Replicate prediction {pred.get('status')}: {pred.get('error')}")
+                    return None
+            if not img_url:
+                print(f"  ⚠ Replicate timed out")
+                return None
+        if isinstance(img_url, list):
+            img_url = img_url[0]
+        img_data = requests.get(img_url, timeout=60).content
+        if len(img_data) > 5000:
+            img_path.write_bytes(img_data)
+            print(f"  ✓ Scene {scene_id} image (Replicate FLUX Schnell, {len(img_data)//1024}KB)")
+            return img_path
+        print(f"  ⚠ Replicate image too small ({len(img_data)} bytes)")
+    except Exception as e:
+        print(f"  ⚠ Scene {scene_id} Replicate failed: {e}")
     return None
 
 
@@ -1299,28 +1371,36 @@ def main():
             print(f"  ⚠ Higgsfield failed ({e}) — falling through to next image source...")
 
     if not scene_videos:
-        if FAL_KEY:
-            print("[3/6] Generating scene images via FAL.ai FLUX (AI quality)...")
+        if REPLICATE_API_TOKEN:
+            print("[3/6] Generating scene images via Replicate FLUX Schnell...")
+        elif FAL_KEY:
+            print("[3/6] Generating scene images via FAL.ai FLUX...")
         else:
             print("[3/6] Generating scene images via Pollinations FLUX (free)...")
-            print("  ℹ  For guaranteed AI-quality art: add FAL_KEY to GitHub Secrets (fal.ai, free signup, ~$0.003/image)")
+            print("  ℹ  For AI-quality art: add REPLICATE_API_TOKEN to GitHub Secrets (same token as your creative-stack MCP server)")
 
         for scene in script["scenes"]:
             img_path = None
 
-            # 1st choice: FAL.ai FLUX Schnell — reliable AI art, needs FAL_KEY (~$0.003/image)
-            if FAL_KEY:
+            # 1st choice: Replicate FLUX Schnell — your existing Replicate account
+            if REPLICATE_API_TOKEN:
+                img_path = generate_scene_image_replicate(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
+
+            # 2nd choice: FAL.ai FLUX Schnell (needs FAL_KEY)
+            if not img_path and FAL_KEY:
                 img_path = generate_scene_image_fal_direct(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # 2nd choice: Pollinations FLUX — free, no key, may timeout on shared runners
+            # 3rd choice: Pollinations FLUX — free, no key, may timeout on shared runners
             if not img_path:
                 img_path = generate_scene_image_pollinations(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # 3rd choice: stock photos (Pexels/Pixabay — free API keys)
+            # 4th choice: stock photos (Pexels/Pixabay — free API keys)
             if not img_path:
                 img_path = generate_scene_image_stock(
                     scene["image_prompt"], scene["id"], episode_dir
@@ -1328,7 +1408,7 @@ def main():
 
             # Last resort: PIL illustration (always works, no external calls)
             if not (img_path and img_path.exists() and img_path.stat().st_size > 5000):
-                print(f"  ↩ Scene {scene['id']} — PIL fallback (add FAL_KEY secret for AI art)")
+                print(f"  ↩ Scene {scene['id']} — PIL fallback (add REPLICATE_API_TOKEN secret for AI art)")
                 img_path = generate_scene_image_pil(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
