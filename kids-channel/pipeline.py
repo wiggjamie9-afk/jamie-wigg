@@ -297,9 +297,11 @@ def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) ->
             files={"file": (img_path.name, f, "image/jpeg")},
             timeout=60,
         )
+    _scene_text = scene.get("narration", "")
     if upload_r.status_code != 200:
         print(f"  ⚠ Upload failed for scene {scene_id}: {upload_r.text[:100]} — using image_to_video fallback")
-        return image_to_video(img_path, duration, episode_dir, scene_id)
+        return image_to_video(img_path, duration, episode_dir, scene_id,
+                              scene_text=_scene_text, page_num=scene_id)
 
     image_id = upload_r.json().get("id") or upload_r.json().get("asset_id")
     motion_prompt = f"Slow gentle camera drift, soft ambient motion. {scene.get('image_prompt', '')[:150]}"
@@ -317,13 +319,15 @@ def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) ->
     )
     if anim_r.status_code != 200:
         print(f"  ⚠ DOP failed for scene {scene_id}: {anim_r.text[:100]} — using image_to_video fallback")
-        return image_to_video(img_path, duration, episode_dir, scene_id)
+        return image_to_video(img_path, duration, episode_dir, scene_id,
+                              scene_text=_scene_text, page_num=scene_id)
 
     anim_data = anim_r.json()
     job_id = anim_data.get("job_id") or anim_data.get("id")
     if not job_id:
         print(f"  ⚠ No job_id in DOP response — using image_to_video fallback")
-        return image_to_video(img_path, duration, episode_dir, scene_id)
+        return image_to_video(img_path, duration, episode_dir, scene_id,
+                              scene_text=_scene_text, page_num=scene_id)
 
     print(f"  ⏳ Scene {scene_id} — waiting for DOP animation {job_id}...")
     try:
@@ -334,7 +338,8 @@ def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) ->
         return vid_path
     except Exception as e:
         print(f"  ⚠ DOP animation failed: {e} — using image_to_video fallback")
-        return image_to_video(img_path, duration, episode_dir, scene_id)
+        return image_to_video(img_path, duration, episode_dir, scene_id,
+                              scene_text=_scene_text, page_num=scene_id)
 
 
 def poll_higgsfield_job(job_id: str, token: str, max_wait: int = 300) -> str:
@@ -362,8 +367,9 @@ def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: P
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     # Short prompt: URL-length safe, faster to process
     short_prompt = (
-        f"cute quokka golden fur big warm eyes, {prompt[:100]}, "
-        f"soft watercolour children's book illustration, Australian bush moonlit night, cozy"
+        f"Sonny the quokka golden-brown fur big warm brown eyes gentle smile, {prompt[:100]}, "
+        f"beautiful watercolour children's book illustration, Australian bush moonlit starry night, "
+        f"rich detailed painterly, no text"
     )
     encoded = requests.utils.quote(short_prompt)
     headers = {"User-Agent": "SonnyBot/1.0", "Accept": "image/*"}
@@ -585,10 +591,14 @@ def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path
         return None
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     full_prompt = (
-        f"Soft watercolour children's book illustration, warm gentle palette, "
-        f"Australian bush at night, deep navy sky, soft moonlight, glowing fireflies. "
-        f"Sonny the quokka with golden-brown fur, big warm brown eyes, gentle smile. "
-        f"Scene: {prompt[:300]}. No text. Safe for children."
+        f"Beautiful soft watercolour children's book illustration. "
+        f"Rich warm palette, Australian bush at night, deep navy blue starry sky, "
+        f"soft glowing moonlight, tiny fireflies, lush green ferns and gum trees. "
+        f"Sonny the quokka — small golden-brown fluffy marsupial, big warm brown eyes, "
+        f"gentle curious smile, round ears, short front paws — prominently in foreground. "
+        f"Scene: {prompt[:280]}. "
+        f"Professional picture-book quality, painterly brushwork, no text, no words, "
+        f"safe for toddlers, by Jamie Wigg."
     )
     headers = {
         "Authorization": f"Token {REPLICATE_API_TOKEN}",
@@ -600,7 +610,7 @@ def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path
             "prompt": full_prompt,
             "aspect_ratio": "16:9",
             "output_format": "jpg",
-            "output_quality": 90,
+            "output_quality": 92,
             "go_fast": True,
             "num_outputs": 1,
             "seed": scene_id * 17,
@@ -720,20 +730,166 @@ def generate_music_pixabay(duration_secs: int, episode_dir: Path) -> Path:
     return Path("")   # signals caller to use ffmpeg fallback
 
 
-def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id: int) -> Path:
-    """Convert a static image to a video clip (simple hold, no motion)."""
+def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id: int,
+                   scene_text: str = "", page_num: int = 0) -> Path:
+    """Create a children's picture-book frame and convert to video.
+
+    Layout (1920x1080):
+      • Top 65% (700px) — AI-generated watercolour illustration
+      • Gold divider line (4px)
+      • Bottom 35% (376px) — warm cream/parchment band with story text + page number
+    """
+    from PIL import Image, ImageDraw, ImageFont
+    import textwrap as tw
+
     vid_path = episode_dir / f"scene_{scene_id:02d}.mp4"
+    frame_path = episode_dir / f"scene_{scene_id:02d}_frame.jpg"
+
+    W, H = 1920, 1080
+    ILLUS_H = 700          # illustration area height
+    DIVIDER_Y = ILLUS_H
+    TEXT_Y = ILLUS_H + 6   # text band starts just below divider
+
+    # Warm parchment palette (children's book cream)
+    PARCHMENT   = (250, 245, 232)
+    DARK_BROWN  = (58, 34, 12)
+    GOLD_LINE   = (195, 158, 72)
+    PAGE_COLOUR = (160, 125, 75)
+
+    canvas = Image.new("RGB", (W, H), PARCHMENT)
+    draw = ImageDraw.Draw(canvas)
+
+    # ── Illustration (top area) ───────────────────────────────────────────────
+    try:
+        illus = Image.open(img_path).convert("RGB")
+        iw, ih = illus.size
+        # Scale to fill full width, then center-crop height to ILLUS_H
+        scale = W / iw
+        new_h = int(ih * scale)
+        illus = illus.resize((W, new_h), Image.LANCZOS)
+        if new_h >= ILLUS_H:
+            # Crop — bias slightly toward top so subject stays in frame
+            top_offset = min((new_h - ILLUS_H) // 3, 60)
+            illus = illus.crop((0, top_offset, W, top_offset + ILLUS_H))
+        else:
+            # Image shorter than area — paste centred vertically, leave parchment above/below
+            paste_y = (ILLUS_H - new_h) // 2
+            canvas.paste(illus, (0, paste_y))
+            illus = None
+        if illus is not None:
+            canvas.paste(illus, (0, 0))
+    except Exception as e:
+        # Illustration failed — paint a soft navy gradient as fallback
+        for y in range(ILLUS_H):
+            ratio = y / ILLUS_H
+            r = int(8  + 18  * ratio)
+            g = int(14 + 24  * ratio)
+            b = int(46 + 40  * ratio)
+            draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # ── Gold divider ──────────────────────────────────────────────────────────
+    draw.rectangle([(0, DIVIDER_Y), (W, DIVIDER_Y + 5)], fill=GOLD_LINE)
+
+    # ── Story text band ───────────────────────────────────────────────────────
+    # Fonts — prefer DejaVu Serif (readable, warm, book-like)
+    serif_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ]
+    sans_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ]
+
+    def _font(paths, size):
+        for fp in paths:
+            if Path(fp).exists():
+                try:
+                    return ImageFont.truetype(fp, size)
+                except Exception:
+                    continue
+        return ImageFont.load_default()
+
+    font_body = _font(serif_paths, 46)
+    font_page = _font(sans_paths,  30)
+
+    TEXT_AREA_H = H - TEXT_Y        # ≈ 374px
+    PAD_X       = 120
+    MAX_W       = W - PAD_X * 2     # 1680px
+
+    if scene_text:
+        # Measure char width at this font size to choose wrap width
+        test_bbox  = draw.textbbox((0, 0), "W" * 40, font=font_body)
+        char_w     = (test_bbox[2] - test_bbox[0]) / 40
+        wrap_chars = max(30, int(MAX_W / char_w))
+
+        lines = []
+        for para in scene_text.replace("\n\n", "\n").split("\n"):
+            para = para.strip()
+            if not para:
+                continue
+            lines.extend(tw.wrap(para, width=wrap_chars))
+            if len(lines) >= 5:
+                break
+        lines = lines[:5]
+
+        LINE_H = 58
+        block_h = len(lines) * LINE_H
+        # Centre the text block vertically in the text band (leave room for page num)
+        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2 - 18
+        y = max(TEXT_Y + 18, y)
+
+        for line in lines:
+            bbox = draw.textbbox((0, 0), line, font=font_body)
+            x = (W - (bbox[2] - bbox[0])) // 2
+            draw.text((x, y), line, font=font_body, fill=DARK_BROWN)
+            y += LINE_H
+
+    # Page number — centered at very bottom of parchment band
+    if page_num > 0:
+        pg = str(page_num)
+        bbox = draw.textbbox((0, 0), pg, font=font_page)
+        pg_x = (W - (bbox[2] - bbox[0])) // 2
+        draw.text((pg_x, H - 44), pg, font=font_page, fill=PAGE_COLOUR)
+
+    canvas.save(frame_path, "JPEG", quality=95)
+
+    # ── Convert composited frame to video (subtle slow zoom brings it to life) ─
+    fps = 25
+    total_frames = int(duration * fps)
+    zoom_filter = (
+        f"zoompan=z='min(zoom+0.0003,1.03)'"
+        f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+        f":d={total_frames}:fps={fps}:s={W}x{H},"
+        "format=yuv420p"
+    )
     result = subprocess.run([
-        "ffmpeg", "-y", "-loop", "1", "-i", str(img_path),
+        "ffmpeg", "-y", "-loop", "1", "-i", str(frame_path),
         "-t", str(duration),
-        "-vf", "scale=1920x1080:force_original_aspect_ratio=increase,crop=1920:1080,format=yuv420p",
-        "-c:v", "libx264", "-preset", "fast", "-crf", "28",
+        "-vf", zoom_filter,
+        "-c:v", "libx264", "-preset", "fast", "-crf", "24",
         str(vid_path)
     ], capture_output=True)
+
+    if result.returncode != 0:
+        # zoompan can be slow on some machines — fall back to plain hold
+        result = subprocess.run([
+            "ffmpeg", "-y", "-loop", "1", "-i", str(frame_path),
+            "-t", str(duration),
+            "-vf", f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
+                   f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=#FAF5E8,"
+                   "format=yuv420p",
+            "-c:v", "libx264", "-preset", "fast", "-crf", "26",
+            str(vid_path)
+        ], capture_output=True)
+
     if result.returncode == 0:
-        print(f"  ✓ Scene {scene_id} video ({duration:.1f}s)")
+        print(f"  ✓ Scene {scene_id} — picture-book frame ({duration:.1f}s)")
     else:
-        print(f"  ⚠ image_to_video failed scene {scene_id}: {result.stderr.decode()[:120]}")
+        print(f"  ⚠ image_to_video failed scene {scene_id}: {result.stderr.decode()[:200]}")
     return vid_path
 
 
@@ -1412,7 +1568,11 @@ def main():
                 img_path = generate_scene_image_pil(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
-            vid = image_to_video(img_path, scene.get("duration", 8), episode_dir, scene["id"])
+            vid = image_to_video(
+                img_path, scene.get("duration", 8), episode_dir, scene["id"],
+                scene_text=scene.get("narration", ""),
+                page_num=scene["id"],
+            )
             scene_videos.append(vid)
 
     # 4. Music — Pixabay royalty-free (OpenMontage) first, ffmpeg tones fallback
