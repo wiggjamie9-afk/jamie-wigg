@@ -13,6 +13,7 @@ import sys
 import json
 import time
 import argparse
+import math
 import requests
 import subprocess
 from pathlib import Path
@@ -384,6 +385,126 @@ def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: P
         except Exception as e:
             print(f"  ⚠ Scene {scene_id} Pollinations/{model} failed: {e}")
     return None
+
+
+def generate_scene_image_pil(prompt: str, scene_id: int, episode_dir: Path) -> Path:
+    """
+    Generate a charming children's book illustration using PIL only — no API needed.
+    Creates a warm nighttime Australian bush scene with Sonny the quokka.
+    """
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont
+    import random
+
+    rng = random.Random(scene_id * 42)
+    W, H = 1280, 720
+    img = Image.new("RGB", (W, H))
+    draw = ImageDraw.Draw(img)
+
+    # Sky palettes per scene — warm, child-friendly colours
+    palettes = [
+        ((255, 180, 80),  (180, 100, 160)),   # 1 sunset apricot → dusty purple
+        ((100, 120, 180), (30,  40,  80)),     # 2 twilight blue
+        ((140, 90,  170), (40,  20,  70)),     # 3 deep violet
+        ((80,  110, 160), (20,  30,  70)),     # 4 midnight blue
+        ((60,  80,  140), (15,  20,  55)),     # 5 deep night
+        ((40,  60,  120), (10,  10,  40)),     # 6 velvet night
+    ]
+    top_col, bot_col = palettes[min(scene_id - 1, len(palettes) - 1)]
+
+    # Gradient sky
+    for y in range(H):
+        t = y / H
+        r = int(top_col[0] + (bot_col[0] - top_col[0]) * t)
+        g = int(top_col[1] + (bot_col[1] - top_col[1]) * t)
+        b = int(top_col[2] + (bot_col[2] - top_col[2]) * t)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Stars (more for later scenes)
+    n_stars = scene_id * 12
+    for _ in range(n_stars):
+        sx = rng.randint(0, W)
+        sy = rng.randint(0, H // 2)
+        sr = rng.choice([1, 1, 1, 2])
+        brightness = rng.randint(180, 255)
+        draw.ellipse([sx - sr, sy - sr, sx + sr, sy + sr],
+                     fill=(brightness, brightness, brightness - 20))
+
+    # Moon — soft warm circle
+    moon_x, moon_y = int(W * 0.78), int(H * 0.18)
+    for glow_r in range(60, 0, -1):
+        alpha = int(15 * (1 - glow_r / 60))
+        draw.ellipse([moon_x - glow_r, moon_y - glow_r,
+                      moon_x + glow_r, moon_y + glow_r],
+                     fill=(255, 240, 180))
+    draw.ellipse([moon_x - 38, moon_y - 38, moon_x + 38, moon_y + 38],
+                 fill=(255, 248, 210))
+
+    # Ground — warm dark earth
+    ground_y = int(H * 0.72)
+    for y in range(ground_y, H):
+        t = (y - ground_y) / (H - ground_y)
+        r = int(30 + 20 * t)
+        g = int(25 + 15 * t)
+        b = int(15 + 10 * t)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Gum trees silhouettes
+    def draw_tree(cx, base_y, trunk_h, spread):
+        # Trunk
+        draw.rectangle([cx - 5, base_y - trunk_h, cx + 5, base_y],
+                        fill=(25, 18, 10))
+        # Canopy blobs
+        for _ in range(5):
+            bx = cx + rng.randint(-spread, spread)
+            by = base_y - trunk_h + rng.randint(-20, 20)
+            br = rng.randint(30, 60)
+            draw.ellipse([bx - br, by - br, bx + br, by + br],
+                          fill=(20 + rng.randint(0, 15),
+                                35 + rng.randint(0, 20),
+                                15 + rng.randint(0, 10)))
+
+    tree_positions = [(80, ground_y + 10, 220, 55),
+                      (200, ground_y + 5,  260, 65),
+                      (W - 90,  ground_y + 10, 230, 50),
+                      (W - 210, ground_y + 5,  250, 60),
+                      (W // 2 - 180, ground_y, 200, 45),
+                      (W // 2 + 160, ground_y, 210, 50)]
+    for tx, ty, th, ts in tree_positions:
+        draw_tree(tx, ty, th, ts)
+
+    # Warm path / clearing glow
+    for gw in range(120, 0, -2):
+        alpha = max(0, 40 - int(40 * (1 - gw / 120)))
+        draw.ellipse([W // 2 - gw, ground_y - 30 - gw // 4,
+                      W // 2 + gw, ground_y + gw // 4],
+                     fill=(120 + alpha, 80 + alpha // 2, 30))
+
+    # Simple quokka silhouette in the clearing
+    qx, qy = W // 2, ground_y - 10
+    # Body
+    draw.ellipse([qx - 28, qy - 35, qx + 28, qy + 5], fill=(60, 42, 22))
+    # Head
+    draw.ellipse([qx - 18, qy - 60, qx + 18, qy - 28], fill=(70, 50, 25))
+    # Ears
+    draw.ellipse([qx - 22, qy - 78, qx - 8, qy - 55], fill=(60, 42, 22))
+    draw.ellipse([qx + 8,  qy - 78, qx + 22, qy - 55], fill=(60, 42, 22))
+    # Warm eye glow
+    draw.ellipse([qx - 7, qy - 52, qx - 2, qy - 47], fill=(255, 200, 100))
+    draw.ellipse([qx + 2, qy - 52, qx + 7,  qy - 47], fill=(255, 200, 100))
+
+    # Soft vignette
+    vig = Image.new("RGB", (W, H), (0, 0, 0))
+    vdraw = ImageDraw.Draw(vig)
+    for v in range(200, 0, -2):
+        t = 1 - v / 200
+        a = int(80 * t * t)
+        vdraw.rectangle([v, v, W - v, H - v], outline=(0, 0, 0))
+    img = Image.blend(img, vig, alpha=0.25)
+
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    img.save(img_path, "JPEG", quality=88)
+    print(f"  ✓ Scene {scene_id} image (PIL illustration, always works)")
+    return img_path
 
 
 def generate_scene_image_flux(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
@@ -1166,12 +1287,13 @@ def main():
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # Last resort: animated gradient (always works, no external calls)
-            if img_path and img_path.exists() and img_path.stat().st_size > 5000:
-                vid = image_to_video(img_path, scene.get("duration", 8), episode_dir, scene["id"])
-            else:
-                print(f"  ↩ Scene {scene['id']} falling back to gradient")
-                vid = generate_scene_bg(scene, episode_dir)
+            # Last resort: PIL illustration (always works, no external calls, looks good)
+            if not (img_path and img_path.exists() and img_path.stat().st_size > 5000):
+                print(f"  ↩ Scene {scene['id']} — generating PIL illustration")
+                img_path = generate_scene_image_pil(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
+            vid = image_to_video(img_path, scene.get("duration", 8), episode_dir, scene["id"])
             scene_videos.append(vid)
 
     # 4. Music — Pixabay royalty-free (OpenMontage) first, ffmpeg tones fallback
