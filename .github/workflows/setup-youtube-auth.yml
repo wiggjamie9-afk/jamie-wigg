@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       client_id_override:
-        description: "Your Client ID from Google Cloud Console (Web Client 1) — paste here to see full auth URL"
+        description: "Your Client ID — paste here to see it in the URL (not masked)"
         required: false
         type: string
       auth_code:
@@ -23,22 +23,20 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install deps
-        run: pip install requests
-
       - name: Generate auth URL or exchange code
         run: |
           python3 -c "
           import os, json, sys
           from urllib.parse import urlencode
 
-          # Use the explicit override input (visible in logs) if provided,
-          # otherwise fall back to the secret (will be masked in logs)
+          # Use override input (visible in logs) if provided, else fall back to secret
           client_id     = os.environ.get('CLIENT_ID_OVERRIDE', '').strip() or os.environ['YT_CLIENT_ID']
           client_secret = os.environ['YT_CLIENT_SECRET']
           auth_code     = os.environ.get('AUTH_CODE', '').strip()
           redirect_uri  = 'http://localhost'
           scope         = 'https://www.googleapis.com/auth/youtube.upload'
+
+          print(f'client_id used: len={len(client_id)}, first16={client_id[:16]!r}')
 
           if not auth_code:
               params = {
@@ -48,23 +46,22 @@ jobs:
                   'response_type': 'code',
                   'access_type':   'offline',
                   'prompt':        'consent',
+                  'login_hint':    'wiggjamie9@gmail.com',
               }
               url = 'https://accounts.google.com/o/oauth2/auth?' + urlencode(params)
               print()
               print('======================================================')
-              print('STEP 1 — Visit this URL in your browser on your phone:')
+              print('STEP 1 — Open this URL in your browser (Private window):')
               print('======================================================')
               print()
               print(url)
               print()
-              print('After tapping Allow, your browser will try to open')
-              print('http://localhost/?code=4/XXXX...  (it will fail to load)')
+              print('It will pre-select wiggjamie9@gmail.com automatically.')
+              print('Tap Allow. Browser tries to open http://localhost — fails.')
+              print('Copy the full URL from the address bar.')
+              print('The code is the part after code= and before &')
               print()
-              print('That is OK — copy the full URL from the address bar.')
-              print('The part after code= and before & is your auth code.')
-              print()
-              print('Then run this workflow again and paste the code in')
-              print('the auth_code input field.')
+              print('Run this workflow again, paste the code in auth_code.')
               print('======================================================')
           else:
               import urllib.request, urllib.parse
@@ -83,9 +80,10 @@ jobs:
               try:
                   with urllib.request.urlopen(req) as resp:
                       result = json.loads(resp.read())
-              except Exception as e:
-                  import traceback
-                  traceback.print_exc()
+              except urllib.request.HTTPError as e:
+                  try: err = json.loads(e.read())
+                  except: err = {}
+                  print(f'Token exchange FAILED: {err}')
                   sys.exit(1)
 
               if 'refresh_token' not in result:
@@ -95,16 +93,15 @@ jobs:
 
               print()
               print('======================================================')
-              print('SUCCESS — save these two values as GitHub Secrets:')
+              print('SUCCESS — save these as GitHub Secrets:')
               print('======================================================')
-              print()
-              print('YOUTUBE_ACCESS_TOKEN  =', result['access_token'])
               print()
               print('YOUTUBE_REFRESH_TOKEN =', result['refresh_token'])
               print()
+              print('(Also update YOUTUBE_ACCESS_TOKEN if needed)')
+              print('YOUTUBE_ACCESS_TOKEN  =', result['access_token'])
+              print()
               print('Go to: repo Settings -> Secrets and variables -> Actions')
-              print('Update (or create) both secrets above, then re-run the')
-              print('Little Sunny — New Episode workflow.')
               print('======================================================')
           "
         env:
