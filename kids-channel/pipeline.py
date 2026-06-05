@@ -358,30 +358,29 @@ def poll_higgsfield_job(job_id: str, token: str, max_wait: int = 300) -> str:
 def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
     """Generate a scene image via Pollinations FLUX when Higgsfield is unavailable."""
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
-    full_prompt = (
-        f"Soft watercolour illustration, warm gentle palette, Australian bush at night, "
-        f"deep navy sky, soft moonlight. Character: Sonny, {CHARACTER_DESC}. "
-        f"Scene: {prompt[:350]}"
+    # Keep prompt short to avoid URL length limits (~500 chars encoded is safe)
+    short_prompt = (
+        f"Children's watercolour illustration, soft warm colours, Australian bush, "
+        f"cute quokka character with golden fur and big brown eyes. {prompt[:200]}"
     )
-    encoded = requests.utils.quote(full_prompt)
-    # Pollinations free tier requires a Referer header; try two models for resilience
+    encoded = requests.utils.quote(short_prompt)
     headers = {
         "Referer": "https://rhythmixapp.com.au",
         "User-Agent": "SonnyBot/1.0",
     }
-    for model in ("flux", "flux-realism"):
+    for model in ("flux", "turbo"):
         url = (
             f"https://image.pollinations.ai/prompt/{encoded}"
-            f"?width=1920&height=1080&model={model}&nologo=true&seed={scene_id * 7}"
+            f"?width=1280&height=720&model={model}&nologo=true&seed={scene_id * 7}"
         )
         try:
-            r = requests.get(url, timeout=90, headers=headers)
+            r = requests.get(url, timeout=60, headers=headers)
             if r.status_code == 200 and len(r.content) > 5000:
                 img_path.write_bytes(r.content)
-                print(f"  ✓ Scene {scene_id} image (Pollinations {model})")
+                print(f"  ✓ Scene {scene_id} image (Pollinations {model}, {len(r.content)//1024}KB)")
                 return img_path
             else:
-                print(f"  ⚠ Scene {scene_id} Pollinations/{model} returned {r.status_code} / {len(r.content)} bytes")
+                print(f"  ⚠ Scene {scene_id} Pollinations/{model}: {r.status_code} / {len(r.content)} bytes")
         except Exception as e:
             print(f"  ⚠ Scene {scene_id} Pollinations/{model} failed: {e}")
     return None
@@ -1150,21 +1149,20 @@ def main():
         for scene in script["scenes"]:
             img_path = None
 
-            # 1st choice: FLUX via OpenMontage (needs FAL_KEY, ~$0.05/image)
-            if FAL_KEY:
+            # 1st choice: Pollinations FLUX (free, no key needed)
+            img_path = generate_scene_image_pollinations(
+                scene["image_prompt"], scene["id"], episode_dir
+            )
+
+            # 2nd choice: FLUX via OpenMontage (needs FAL_KEY, ~$0.05/image)
+            if not img_path and FAL_KEY:
                 img_path = generate_scene_image_flux(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # 2nd choice: stock photos (Pexels/Pixabay — free API keys)
+            # 3rd choice: stock photos (Pexels/Pixabay — free API keys)
             if not img_path:
                 img_path = generate_scene_image_stock(
-                    scene["image_prompt"], scene["id"], episode_dir
-                )
-
-            # 3rd choice: Pollinations FLUX (free, may be rate-limited in CI)
-            if not img_path:
-                img_path = generate_scene_image_pollinations(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
