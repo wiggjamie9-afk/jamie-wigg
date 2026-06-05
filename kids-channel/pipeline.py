@@ -357,33 +357,34 @@ def poll_higgsfield_job(job_id: str, token: str, max_wait: int = 300) -> str:
 
 
 def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
-    """Generate a scene image via Pollinations FLUX when Higgsfield is unavailable."""
+    """Generate a scene image via Pollinations FLUX — free, no API key needed."""
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
-    # Keep prompt short to avoid URL length limits (~500 chars encoded is safe)
+    # Short prompt: URL-length safe, faster to process
     short_prompt = (
-        f"Children's watercolour illustration, soft warm colours, Australian bush, "
-        f"cute quokka character with golden fur and big brown eyes. {prompt[:200]}"
+        f"cute quokka golden fur big warm eyes, {prompt[:100]}, "
+        f"soft watercolour children's book illustration, Australian bush moonlit night, cozy"
     )
     encoded = requests.utils.quote(short_prompt)
-    headers = {
-        "Referer": "https://rhythmixapp.com.au",
-        "User-Agent": "SonnyBot/1.0",
-    }
-    for model in ("flux", "turbo"):
+    headers = {"User-Agent": "SonnyBot/1.0", "Accept": "image/*"}
+
+    for model, timeout in (("flux", 90), ("turbo", 45)):
+        seed = scene_id * 7
         url = (
             f"https://image.pollinations.ai/prompt/{encoded}"
-            f"?width=1280&height=720&model={model}&nologo=true&seed={scene_id * 7}"
+            f"?width=1280&height=720&model={model}&nologo=true&seed={seed}"
         )
         try:
-            r = requests.get(url, timeout=60, headers=headers)
-            if r.status_code == 200 and len(r.content) > 5000:
+            print(f"  ⏳ Scene {scene_id} Pollinations/{model} (timeout={timeout}s)...")
+            r = requests.get(url, timeout=timeout, headers=headers)
+            if r.status_code == 200 and len(r.content) > 10000:
                 img_path.write_bytes(r.content)
                 print(f"  ✓ Scene {scene_id} image (Pollinations {model}, {len(r.content)//1024}KB)")
                 return img_path
-            else:
-                print(f"  ⚠ Scene {scene_id} Pollinations/{model}: {r.status_code} / {len(r.content)} bytes")
+            print(f"  ⚠ Pollinations/{model}: status={r.status_code} bytes={len(r.content)}")
+        except requests.exceptions.Timeout:
+            print(f"  ⚠ Pollinations/{model}: timed out after {timeout}s")
         except Exception as e:
-            print(f"  ⚠ Scene {scene_id} Pollinations/{model} failed: {e}")
+            print(f"  ⚠ Pollinations/{model}: {type(e).__name__}: {e}")
     return None
 
 
@@ -534,6 +535,45 @@ def generate_scene_image_flux(prompt: str, scene_id: int, episode_dir: Path) -> 
             print(f"  ⚠ Scene {scene_id} FLUX failed: {result.error}")
     except Exception as e:
         print(f"  ⚠ Scene {scene_id} FLUX error: {e}")
+    return None
+
+
+def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
+    """Generate a scene image via FAL.ai FLUX Schnell — needs FAL_KEY (~$0.003/image).
+    Sign up free at fal.ai, then add FAL_KEY to GitHub Secrets for AI-quality art."""
+    if not FAL_KEY:
+        return None
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    os.environ.setdefault("FAL_KEY", FAL_KEY)
+    full_prompt = (
+        f"Soft watercolour children's book illustration, warm gentle palette, "
+        f"Australian bush at night, deep navy sky, soft moonlight, glowing fireflies. "
+        f"Sonny the quokka with golden-brown fur and big warm brown eyes. "
+        f"Scene: {prompt[:300]}. No text. Safe for toddlers."
+    )
+    try:
+        import fal_client
+        print(f"  ⏳ Scene {scene_id} FAL.ai FLUX Schnell...")
+        result = fal_client.run(
+            "fal-ai/flux/schnell",
+            arguments={
+                "prompt": full_prompt,
+                "image_size": {"width": 1280, "height": 720},
+                "num_inference_steps": 8,
+                "num_images": 1,
+                "enable_safety_checker": True,
+                "seed": scene_id * 13,
+            },
+        )
+        img_url = result["images"][0]["url"]
+        img_data = requests.get(img_url, timeout=60).content
+        if len(img_data) > 5000:
+            img_path.write_bytes(img_data)
+            print(f"  ✓ Scene {scene_id} image (FAL.ai FLUX Schnell, {len(img_data)//1024}KB)")
+            return img_path
+        print(f"  ⚠ Scene {scene_id} FAL.ai returned only {len(img_data)} bytes")
+    except Exception as e:
+        print(f"  ⚠ Scene {scene_id} FAL.ai direct failed: {e}")
     return None
 
 
@@ -1259,25 +1299,24 @@ def main():
             print(f"  ⚠ Higgsfield failed ({e}) — falling through to next image source...")
 
     if not scene_videos:
-        # Try FLUX (OpenMontage/fal.ai) → stock photos (Pexels/Pixabay) → Pollinations → gradient
         if FAL_KEY:
-            print("[3/6] Generating scene images via FLUX (OpenMontage)...")
-        elif PEXELS_API_KEY or PIXABAY_API_KEY:
-            print("[3/6] Generating scene images from stock photos (Pexels/Pixabay)...")
+            print("[3/6] Generating scene images via FAL.ai FLUX (AI quality)...")
         else:
-            print("[3/6] Generating scene images via Pollinations FLUX...")
+            print("[3/6] Generating scene images via Pollinations FLUX (free)...")
+            print("  ℹ  For guaranteed AI-quality art: add FAL_KEY to GitHub Secrets (fal.ai, free signup, ~$0.003/image)")
 
         for scene in script["scenes"]:
             img_path = None
 
-            # 1st choice: Pollinations FLUX (free, no key needed)
-            img_path = generate_scene_image_pollinations(
-                scene["image_prompt"], scene["id"], episode_dir
-            )
+            # 1st choice: FAL.ai FLUX Schnell — reliable AI art, needs FAL_KEY (~$0.003/image)
+            if FAL_KEY:
+                img_path = generate_scene_image_fal_direct(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
 
-            # 2nd choice: FLUX via OpenMontage (needs FAL_KEY, ~$0.05/image)
-            if not img_path and FAL_KEY:
-                img_path = generate_scene_image_flux(
+            # 2nd choice: Pollinations FLUX — free, no key, may timeout on shared runners
+            if not img_path:
+                img_path = generate_scene_image_pollinations(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
@@ -1287,9 +1326,9 @@ def main():
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # Last resort: PIL illustration (always works, no external calls, looks good)
+            # Last resort: PIL illustration (always works, no external calls)
             if not (img_path and img_path.exists() and img_path.stat().st_size > 5000):
-                print(f"  ↩ Scene {scene['id']} — generating PIL illustration")
+                print(f"  ↩ Scene {scene['id']} — PIL fallback (add FAL_KEY secret for AI art)")
                 img_path = generate_scene_image_pil(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
