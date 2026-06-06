@@ -7,989 +7,1357 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="READOUT">
-<meta name="description" content="Point your camera at any book page. READOUT scans it and reads it aloud.">
+<meta name="description" content="The world's most accessible book scanner. Scan any page. Hear it in your own voice.">
 <link rel="manifest" href="manifest.json">
-<title>READOUT — Scan &amp; Listen</title>
+<title>READOUT — Scan Any Page. Hear Any Book.</title>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* ══ DESIGN TOKENS ══════════════════════════════════════════ */
 :root {
-  --bg:    #07091A;
-  --bg2:   #0d1025;
-  --bg3:   #151b35;
-  --gold:  #D4AF37;
-  --goldf: #b89627;
-  --ink:   #EDE9DB;
-  --soft:  #c7c1ad;
-  --muted: #7a7466;
-  --red:   #e05555;
-  --serif: 'Cormorant Garamond', Georgia, serif;
-  --sans:  'Inter', -apple-system, system-ui, sans-serif;
-  --mono:  'JetBrains Mono', ui-monospace, monospace;
-  --safe-top:    env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bg:#07091A; --bg2:#0d1025; --bg3:#151b35; --bg4:#1e2540;
+  --gold:#D4AF37; --goldf:#b89627; --gold-glow:rgba(212,175,55,0.2);
+  --ink:#EDE9DB; --soft:#c7c1ad; --muted:#7a7466;
+  --red:#e05555; --green:#3ecf8e; --blue:#4f8ef7;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --r-top:env(safe-area-inset-top,0px);
+  --r-bot:env(safe-area-inset-bottom,0px);
+  --reading-font:var(--serif);
+  --reading-size:20px;
+  --reading-lh:1.85;
+  --reading-ls:0em;
+  --reading-ws:0em;
+  --ui-scale:1;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body {
-  height: 100%; width: 100%;
-  background: var(--bg); color: var(--ink);
-  font-family: var(--sans);
-  -webkit-font-smoothing: antialiased;
-  overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
+/* ══ VISION MODE ════════════════════════════════════════════ */
+body.mode-vision {
+  --bg:#000000; --bg2:#0a0a0a; --bg3:#111111; --bg4:#1a1a1a;
+  --gold:#FFFF00; --goldf:#cccc00; --gold-glow:rgba(255,255,0,0.25);
+  --ink:#FFFFFF; --soft:#EEEEEE; --muted:#AAAAAA;
+  --reading-size:26px; --reading-lh:2.2; --ui-scale:1.2;
 }
-button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
-input, textarea { font: inherit; }
 
-/* ── Screen system ─────────────────────────────────────────── */
-.screen {
-  position: fixed; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center;
-  padding-top: calc(var(--safe-top) + 16px);
-  padding-bottom: calc(var(--safe-bottom) + 16px);
-  transition: opacity 0.35s ease, transform 0.35s ease;
-  will-change: opacity, transform;
+/* ══ DYSLEXIA MODE ══════════════════════════════════════════ */
+body.mode-dyslexia {
+  --bg:#FEFAE0; --bg2:#F5EDD6; --bg3:#EBE0C4; --bg4:#DFD4B4;
+  --gold:#1D4ED8; --goldf:#1e40af; --gold-glow:rgba(29,78,216,0.15);
+  --ink:#1a1a2e; --soft:#2d2d4a; --muted:#6b6b8a;
+  --reading-font:'OpenDyslexic','Comic Sans MS',cursive;
+  --reading-size:21px; --reading-lh:2.4; --reading-ls:0.04em; --reading-ws:0.12em;
 }
-.screen.hidden   { opacity: 0; pointer-events: none; transform: translateY(20px); }
-.screen.out-up   { opacity: 0; pointer-events: none; transform: translateY(-20px); }
 
-/* ── Typography ────────────────────────────────────────────── */
-.eyebrow {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: 0.3em; text-transform: uppercase;
-  color: var(--gold); margin-bottom: 12px;
+/* ══ ELDER MODE ═════════════════════════════════════════════ */
+body.mode-elder {
+  --bg:#FFFFFF; --bg2:#F4F4F4; --bg3:#E8E8E8; --bg4:#D8D8D8;
+  --gold:#1D4ED8; --goldf:#1e40af; --gold-glow:rgba(29,78,216,0.12);
+  --ink:#111111; --soft:#333333; --muted:#777777;
+  --reading-size:24px; --reading-lh:2.1; --ui-scale:1.3;
 }
-h1 {
-  font-family: var(--serif); font-weight: 400;
-  font-size: clamp(44px, 12vw, 72px);
-  line-height: 1; letter-spacing: -0.01em;
-  color: var(--ink);
-}
-h1 em { font-style: italic; color: var(--gold); }
-h2 {
-  font-family: var(--serif); font-weight: 400;
-  font-size: clamp(26px, 7vw, 38px);
-  line-height: 1.1; color: var(--ink);
-  margin-bottom: 10px;
-}
-p { font-size: 15px; line-height: 1.65; color: var(--soft); }
-.small { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
-/* ── Buttons ───────────────────────────────────────────────── */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 16px 28px; border: 1px solid var(--gold);
-  color: var(--gold); font-family: var(--mono);
-  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
-  border-radius: 50px; transition: all 0.25s; min-height: 52px;
-  text-decoration: none;
+/* ══ BASE ════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{
+  height:100%;width:100%;
+  background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:calc(15px * var(--ui-scale));
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  transition:background 0.4s,color 0.4s;
 }
-.btn:hover, .btn:active { background: var(--gold); color: var(--bg); }
-.btn-primary {
-  background: linear-gradient(135deg, var(--gold), #f0d060);
-  color: var(--bg); border-color: transparent;
-}
-.btn-primary:hover, .btn-primary:active { background: #f0d060; }
-.btn-ghost { border-color: rgba(237,233,219,0.15); color: var(--soft); }
-.btn-ghost:hover, .btn-ghost:active { background: rgba(237,233,219,0.08); border-color: rgba(237,233,219,0.3); }
-.btn-danger { border-color: var(--red); color: var(--red); }
-.btn-danger:hover, .btn-danger:active { background: var(--red); color: #fff; }
-.btn:disabled { opacity: 0.35; pointer-events: none; }
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;touch-action:manipulation;}
+input,select{font:inherit;color:inherit;}
+a{color:var(--gold);text-decoration:none;}
 
-/* ══════════════════════════════════════════════════════════
-   SCREEN 1 — SPLASH
-══════════════════════════════════════════════════════════ */
-#screen-splash {
-  justify-content: center;
-  background: var(--bg);
+/* ══ SCREEN SYSTEM ══════════════════════════════════════════ */
+.screen{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;overflow:hidden;
+  padding-top:calc(var(--r-top) + 14px);
+  padding-bottom:calc(var(--r-bot) + 14px);
+  transition:opacity .35s ease,transform .35s ease;
 }
-.splash-logo {
-  text-align: center;
-  animation: splashIn 0.6s ease both;
+.screen.hidden{opacity:0;pointer-events:none;transform:translateY(24px);}
+.screen.out{opacity:0;pointer-events:none;transform:translateY(-24px);}
+
+/* ══ SHARED COMPONENTS ══════════════════════════════════════ */
+.eyebrow{font-family:var(--mono);font-size:calc(10px * var(--ui-scale));letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(46px,12vw,80px);line-height:1;color:var(--ink);}
+h1 em{font-style:italic;color:var(--gold);}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,7vw,42px);line-height:1.1;color:var(--ink);margin-bottom:10px;}
+h2 em{font-style:italic;color:var(--gold);}
+h3{font-size:calc(17px * var(--ui-scale));font-weight:600;color:var(--ink);margin-bottom:6px;}
+p{font-size:calc(14px * var(--ui-scale));line-height:1.65;color:var(--soft);}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:calc(16px * var(--ui-scale)) calc(28px * var(--ui-scale));
+  border:1.5px solid var(--gold);color:var(--gold);
+  font-family:var(--mono);font-size:calc(11px * var(--ui-scale));
+  letter-spacing:.2em;text-transform:uppercase;
+  border-radius:50px;transition:all .22s;
+  min-height:calc(52px * var(--ui-scale));
 }
-.splash-logo h1 { font-size: clamp(52px, 16vw, 88px); }
-.splash-tagline {
-  font-family: var(--mono); font-size: 11px;
-  letter-spacing: 0.25em; text-transform: uppercase;
-  color: var(--muted); margin-top: 12px;
-}
-@keyframes splashIn {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
-.splash-bar {
-  position: absolute; bottom: calc(var(--safe-bottom) + 40px);
-  left: 40px; right: 40px; height: 1px;
-  background: var(--bg3); border-radius: 1px; overflow: hidden;
-}
-.splash-bar-fill {
-  height: 100%; width: 0;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  animation: splashBar 1.6s ease forwards;
-}
-@keyframes splashBar {
-  0%   { width: 0; opacity: 1; }
-  80%  { width: 100%; opacity: 1; }
-  100% { width: 100%; opacity: 0; }
-}
+.btn:hover,.btn:active{background:var(--gold);color:var(--bg);}
+.btn-primary{background:linear-gradient(135deg,var(--gold),#f0d060);color:var(--bg);border-color:transparent;}
+.btn-primary:hover,.btn-primary:active{opacity:.9;transform:scale(1.02);}
+.btn-ghost{border-color:rgba(125,120,110,.35);color:var(--soft);}
+.btn-ghost:hover,.btn-ghost:active{border-color:var(--gold);color:var(--gold);}
+.btn:disabled{opacity:.3;pointer-events:none;}
 
 /* ══════════════════════════════════════════════════════════
-   SCREEN 2 — SETUP
+   1. SPLASH
 ══════════════════════════════════════════════════════════ */
-#screen-setup {
-  justify-content: center;
-  padding: calc(var(--safe-top) + 24px) 28px calc(var(--safe-bottom) + 24px);
-}
-.setup-inner { width: 100%; max-width: 420px; }
-.setup-inner h2 { margin-bottom: 8px; }
-.setup-inner p  { margin-bottom: 32px; }
-
-.api-field {
-  position: relative; margin-bottom: 12px;
-}
-.api-field input {
-  width: 100%;
-  background: var(--bg2);
-  border: 1px solid rgba(212,175,55,0.25);
-  border-radius: 12px;
-  padding: 16px 52px 16px 18px;
-  font-size: 14px;
-  font-family: var(--mono);
-  color: var(--ink);
-  letter-spacing: 0.04em;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.api-field input:focus { border-color: var(--gold); }
-.api-field input::placeholder { color: var(--muted); letter-spacing: 0; font-family: var(--sans); }
-.api-field-eye {
-  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-  color: var(--muted); font-size: 18px; padding: 4px;
-}
-
-.setup-cta { width: 100%; margin-top: 8px; }
-.setup-note {
-  margin-top: 20px; padding: 14px 16px;
-  background: var(--bg2); border-radius: 10px;
-  border-left: 3px solid rgba(212,175,55,0.4);
-}
-.setup-note p { font-size: 12px; }
-.setup-error {
-  color: var(--red); font-size: 12px; margin-top: 8px;
-  font-family: var(--mono); letter-spacing: 0.05em; display: none;
-}
-.setup-error.show { display: block; }
+#s-splash{justify-content:center;align-items:center;text-align:center;}
+.splash-logo{animation:popIn .6s .1s both;}
+.splash-logo h1{font-size:clamp(60px,18vw,100px);}
+.splash-tag{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);margin-top:12px;}
+.splash-bar{position:absolute;bottom:calc(var(--r-bot)+40px);left:48px;right:48px;height:2px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.splash-bar-fill{height:100%;width:0;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:barFill 1.8s ease forwards;}
+@keyframes popIn{from{opacity:0;transform:scale(.88);}to{opacity:1;transform:scale(1);}}
+@keyframes barFill{0%{width:0;opacity:1;}80%{width:100%;opacity:1;}100%{width:100%;opacity:0;}}
 
 /* ══════════════════════════════════════════════════════════
-   SCREEN 3 — SCANNER
+   2. ONBOARDING
 ══════════════════════════════════════════════════════════ */
-#screen-scanner {
-  padding: 0;
-  justify-content: flex-end;
-  background: #000;
+#s-onboard{padding:0;overflow:hidden;}
+.onboard-slides{display:flex;width:300vw;height:100%;transition:transform .4s cubic-bezier(.4,0,.2,1);}
+.onboard-slide{
+  flex:0 0 100vw;height:100%;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:calc(var(--r-top)+40px) 36px calc(var(--r-bot)+100px);
+  text-align:center;gap:18px;
 }
-#camera-video {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
+.slide-icon{
+  width:100px;height:100px;border-radius:28px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:44px;margin-bottom:8px;
+  background:linear-gradient(135deg,var(--bg3),var(--bg4));
+  border:1px solid rgba(212,175,55,.25);
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
 }
-.scanner-overlay {
-  position: relative; z-index: 10;
-  width: 100%; padding: 20px 24px;
-  padding-bottom: calc(var(--safe-bottom) + 24px);
-  background: linear-gradient(transparent, rgba(7,9,26,0.92) 40%);
+.onboard-slide p{max-width:300px;font-size:15px;}
+.onboard-dot-row{
+  position:absolute;bottom:calc(var(--r-bot)+52px);
+  display:flex;gap:8px;
 }
-.scanner-top {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 10;
-  padding: calc(var(--safe-top) + 16px) 20px 16px;
-  display: flex; justify-content: space-between; align-items: center;
-  background: linear-gradient(rgba(7,9,26,0.8), transparent);
+.odot{width:7px;height:7px;border-radius:50%;background:var(--bg3);transition:all .3s;}
+.odot.on{width:22px;background:var(--gold);}
+.onboard-next{
+  position:absolute;bottom:calc(var(--r-bot)+16px);
+  width:calc(100% - 48px);
 }
-.scanner-brand {
-  font-family: var(--serif); font-size: 22px;
-  color: var(--ink); letter-spacing: 0.05em;
-}
-.scanner-brand em { font-style: italic; color: var(--gold); }
-.scanner-settings {
-  width: 40px; height: 40px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.1); color: var(--soft);
-  font-size: 18px;
-}
-.scanner-hint {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: 0.2em; text-transform: uppercase;
-  color: rgba(237,233,219,0.5); text-align: center; margin-bottom: 24px;
-}
-
-/* Capture button */
-.capture-row {
-  display: flex; align-items: center; justify-content: center;
-  gap: 32px;
-}
-.btn-capture {
-  width: 80px; height: 80px; border-radius: 50%;
-  background: transparent;
-  border: 3px solid white;
-  position: relative;
-  transition: transform 0.15s;
-  flex-shrink: 0;
-}
-.btn-capture::after {
-  content: '';
-  position: absolute; inset: 5px;
-  background: white; border-radius: 50%;
-  transition: transform 0.15s;
-}
-.btn-capture:active { transform: scale(0.92); }
-.btn-capture:active::after { transform: scale(0.88); }
-
-.btn-upload {
-  width: 52px; height: 52px; border-radius: 50%;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; color: white; flex-shrink: 0;
-}
-.btn-upload:active { background: rgba(255,255,255,0.2); }
-
-/* Guide frame */
-.guide-frame {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -55%);
-  width: min(85vw, 360px);
-  height: min(65vw, 280px);
-  pointer-events: none;
-  z-index: 5;
-}
-.guide-frame::before,
-.guide-frame::after,
-.guide-corner-br,
-.guide-corner-bl {
-  content: '';
-  position: absolute;
-  width: 28px; height: 28px;
-  border-color: rgba(212,175,55,0.7);
-  border-style: solid;
-}
-.guide-frame::before  { top: 0;    left: 0;  border-width: 2px 0 0 2px; border-radius: 3px 0 0 0; }
-.guide-frame::after   { top: 0;    right: 0; border-width: 2px 2px 0 0; border-radius: 0 3px 0 0; }
-.guide-corner-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; border-radius: 0 0 3px 0; }
-.guide-corner-bl { bottom: 0; left: 0;  border-width: 0 0 2px 2px; border-radius: 0 0 0 3px; }
-
-/* No-camera fallback */
-#upload-fallback {
-  display: none;
-  flex-direction: column; align-items: center; justify-content: center;
-  padding: 40px 28px; text-align: center; gap: 20px;
-}
-#upload-fallback.visible { display: flex; }
-#upload-fallback p { max-width: 280px; }
-
-/* ══════════════════════════════════════════════════════════
-   SCREEN 4 — PROCESSING
-══════════════════════════════════════════════════════════ */
-#screen-processing {
-  justify-content: center; align-items: center; text-align: center;
-  gap: 28px; padding: 40px;
-}
-.pulse-ring {
-  width: 100px; height: 100px; position: relative;
-  display: flex; align-items: center; justify-content: center;
-}
-.pulse-ring::before,
-.pulse-ring::after {
-  content: '';
-  position: absolute; inset: 0; border-radius: 50%;
-  border: 1.5px solid var(--gold); opacity: 0;
-  animation: pulse 1.8s ease-out infinite;
-}
-.pulse-ring::after { animation-delay: 0.6s; }
-.pulse-icon {
-  width: 52px; height: 52px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--gold), #f0d060);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; z-index: 1;
-}
-@keyframes pulse {
-  0%   { transform: scale(0.8); opacity: 0.7; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
-.processing-label {
-  font-family: var(--mono); font-size: 11px;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--gold);
-}
-.processing-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
-.processing-spinner {
-  display: flex; gap: 6px; margin-top: 8px;
-}
-.processing-spinner span {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--gold); opacity: 0.3;
-  animation: dot-bounce 1.2s ease-in-out infinite;
-}
-.processing-spinner span:nth-child(2) { animation-delay: 0.2s; }
-.processing-spinner span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dot-bounce {
-  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
-  40% { opacity: 1; transform: translateY(-6px); }
+.feature-pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px;}
+.pill{
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  padding:5px 12px;border-radius:20px;text-transform:uppercase;
+  background:var(--gold-glow);color:var(--gold);
+  border:1px solid rgba(212,175,55,.3);
 }
 
 /* ══════════════════════════════════════════════════════════
-   SCREEN 5 — READER
+   3. MODE SELECTOR
 ══════════════════════════════════════════════════════════ */
-#screen-reader {
-  justify-content: flex-start;
-  padding: calc(var(--safe-top) + 16px) 0 0;
+#s-modes{padding:calc(var(--r-top)+20px) 20px calc(var(--r-bot)+20px);gap:14px;}
+#s-modes h2{text-align:center;margin-bottom:4px;}
+#s-modes p{text-align:center;font-size:13px;margin-bottom:8px;}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:420px;}
+.mode-card{
+  border-radius:18px;padding:20px 16px;
+  border:2px solid transparent;
+  display:flex;flex-direction:column;gap:8px;
+  transition:all .25s;cursor:pointer;
+  position:relative;overflow:hidden;
 }
-.reader-topbar {
-  width: 100%;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px 16px;
-  border-bottom: 1px solid rgba(237,233,219,0.07);
-  flex-shrink: 0;
+.mode-card.active::after{
+  content:'✓';position:absolute;top:10px;right:12px;
+  font-size:14px;color:var(--gold);font-weight:700;
 }
-.reader-topbar-brand {
-  font-family: var(--serif); font-size: 20px; color: var(--ink);
-}
-.reader-topbar-brand em { font-style: italic; color: var(--gold); }
-.reader-actions { display: flex; gap: 8px; }
-.reader-btn-sm {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--bg2); border: 1px solid rgba(237,233,219,0.1);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; color: var(--soft);
-  transition: all 0.2s;
-}
-.reader-btn-sm:hover { border-color: var(--gold); color: var(--gold); }
+.mode-card-icon{font-size:28px;margin-bottom:2px;}
+.mode-card-name{font-weight:600;font-size:14px;color:var(--ink);}
+.mode-card-desc{font-size:11px;color:var(--muted);line-height:1.5;}
 
-.text-scroll {
-  flex: 1; overflow-y: auto; width: 100%;
-  padding: 24px 24px 16px;
-  -webkit-overflow-scrolling: touch;
-}
-.text-scroll::-webkit-scrollbar { width: 3px; }
-.text-scroll::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.3); border-radius: 2px; }
+/* Each mode card has its own mini palette */
+.mc-standard{background:#0d1025;border-color:rgba(212,175,55,.3);}
+.mc-standard.active{border-color:#D4AF37;box-shadow:0 0 0 3px rgba(212,175,55,.15);}
+.mc-vision{background:#0a0a0a;border-color:rgba(255,255,0,.3);}
+.mc-vision.active{border-color:#FFFF00;box-shadow:0 0 0 3px rgba(255,255,0,.15);}
+.mc-dyslexia{background:#FEFAE0;border-color:rgba(29,78,216,.3);}
+.mc-dyslexia.active{border-color:#1D4ED8;box-shadow:0 0 0 3px rgba(29,78,216,.15);}
+.mc-dyslexia .mode-card-name,.mc-dyslexia .mode-card-desc{color:#1a1a2e;}
+.mc-elder{background:#F4F4F4;border-color:rgba(29,78,216,.3);}
+.mc-elder.active{border-color:#1D4ED8;box-shadow:0 0 0 3px rgba(29,78,216,.15);}
+.mc-elder .mode-card-name,.mc-elder .mode-card-desc{color:#111;}
 
-#extracted-text {
-  font-family: var(--serif); font-size: 19px;
-  line-height: 1.75; color: var(--ink);
-  white-space: pre-wrap;
+/* ══════════════════════════════════════════════════════════
+   4. SETUP
+══════════════════════════════════════════════════════════ */
+#s-setup{justify-content:center;padding:calc(var(--r-top)+24px) 28px calc(var(--r-bot)+24px);}
+.setup-wrap{width:100%;max-width:400px;display:flex;flex-direction:column;gap:0;}
+.setup-wrap h2{margin-bottom:6px;}
+.setup-wrap>p{margin-bottom:28px;}
+
+.api-row{position:relative;margin-bottom:8px;}
+.api-row input{
+  width:100%;background:var(--bg2);
+  border:1.5px solid rgba(125,120,110,.3);border-radius:14px;
+  padding:16px 48px 16px 18px;font-size:14px;
+  font-family:var(--mono);color:var(--ink);
+  letter-spacing:.03em;outline:none;
+  transition:border-color .2s;
 }
-.highlight-word {
-  background: rgba(212,175,55,0.25);
-  border-radius: 3px; transition: background 0.1s;
+body.mode-dyslexia .api-row input,body.mode-elder .api-row input{
+  background:var(--bg3);color:var(--ink);
+  border-color:rgba(29,78,216,.3);
+}
+.api-row input:focus{border-color:var(--gold);}
+.api-row input::placeholder{color:var(--muted);font-family:var(--sans);letter-spacing:0;}
+.api-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:18px;padding:4px;}
+.setup-err{color:var(--red);font-family:var(--mono);font-size:11px;letter-spacing:.04em;display:none;margin-bottom:8px;}
+.setup-err.show{display:block;}
+.setup-cta{width:100%;margin-top:4px;}
+.setup-or{
+  display:flex;align-items:center;gap:12px;margin:16px 0;
+}
+.setup-or::before,.setup-or::after{
+  content:'';flex:1;height:1px;background:rgba(125,120,110,.25);
+}
+.setup-or span{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;}
+.setup-demo{width:100%;}
+.setup-note{
+  margin-top:18px;padding:14px 16px;
+  background:var(--bg2);border-radius:12px;
+  border-left:3px solid rgba(212,175,55,.4);
+}
+.setup-note p{font-size:11px;}
+
+/* ══════════════════════════════════════════════════════════
+   5. SCANNER
+══════════════════════════════════════════════════════════ */
+#s-scan{padding:0;justify-content:flex-end;background:#000;}
+#cam-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.guide-frame{
+  position:absolute;top:48%;left:50%;
+  transform:translate(-50%,-55%);
+  width:min(85vw,360px);height:min(65vw,270px);
+  pointer-events:none;z-index:5;
+}
+.gc{position:absolute;width:30px;height:30px;border-color:rgba(212,175,55,.8);border-style:solid;}
+body.mode-vision .gc{border-color:rgba(255,255,0,.9);}
+.gc-tl{top:0;left:0;border-width:2.5px 0 0 2.5px;border-radius:4px 0 0 0;}
+.gc-tr{top:0;right:0;border-width:2.5px 2.5px 0 0;border-radius:0 4px 0 0;}
+.gc-br{bottom:0;right:0;border-width:0 2.5px 2.5px 0;border-radius:0 0 4px 0;}
+.gc-bl{bottom:0;left:0;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 4px;}
+.scan-bar{
+  position:absolute;left:4%;right:4%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  animation:scanBar 2.2s ease-in-out infinite;
+  top:calc(48% - 55% * min(65vw,270px)/200px + 0px);
+  z-index:6;pointer-events:none;
+}
+@keyframes scanBar{0%,100%{opacity:0;top:35%;}50%{opacity:1;top:55%;}}
+
+.scan-top{
+  position:absolute;top:0;left:0;right:0;z-index:10;
+  padding:calc(var(--r-top)+14px) 18px 18px;
+  display:flex;justify-content:space-between;align-items:center;
+  background:linear-gradient(rgba(7,9,26,.85),transparent);
+}
+.scan-brand{font-family:var(--serif);font-size:22px;color:#fff;}
+.scan-brand em{font-style:italic;color:var(--gold);}
+.scan-badge{
+  font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  background:rgba(212,175,55,.2);color:var(--gold);
+  padding:4px 10px;border-radius:20px;border:1px solid rgba(212,175,55,.3);
+}
+body.mode-vision .scan-badge{background:rgba(255,255,0,.2);color:#FFFF00;border-color:rgba(255,255,0,.4);}
+
+.scan-overlay{
+  position:relative;z-index:10;width:100%;
+  padding:16px 20px calc(var(--r-bot)+16px);
+  background:linear-gradient(transparent,rgba(7,9,26,.95) 35%);
+}
+.scan-hint{
+  font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(237,233,219,.5);text-align:center;margin-bottom:20px;
+}
+body.mode-vision .scan-hint{color:rgba(255,255,255,.7);font-size:12px;}
+body.mode-elder .scan-hint{color:rgba(0,0,0,.6);font-size:13px;}
+
+.scan-btns{display:flex;align-items:center;justify-content:center;gap:24px;}
+.btn-capture{
+  width:84px;height:84px;border-radius:50%;
+  border:3.5px solid #fff;background:transparent;
+  position:relative;transition:transform .12s;flex-shrink:0;
+}
+.btn-capture::after{
+  content:'';position:absolute;inset:6px;
+  background:#fff;border-radius:50%;transition:transform .12s;
+}
+.btn-capture:active{transform:scale(.9);}
+.btn-capture:active::after{transform:scale(.85);}
+body.mode-vision .btn-capture{border-color:#FFFF00;}
+body.mode-vision .btn-capture::after{background:#FFFF00;}
+
+.scan-side{
+  width:56px;height:56px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.2);color:#fff;
+  transition:all .2s;
+}
+.scan-side:active{background:rgba(255,255,255,.22);}
+
+/* no-cam fallback */
+#cam-fallback{
+  display:none;flex-direction:column;align-items:center;
+  justify-content:center;padding:40px 28px;text-align:center;gap:18px;
+  background:var(--bg);width:100%;height:100%;
+}
+#cam-fallback.show{display:flex;}
+#cam-fallback h3{font-size:22px;}
+#cam-fallback p{max-width:280px;}
+
+/* ══════════════════════════════════════════════════════════
+   6. PROCESSING
+══════════════════════════════════════════════════════════ */
+#s-proc{justify-content:center;align-items:center;text-align:center;gap:24px;}
+.proc-ring{width:110px;height:110px;position:relative;display:flex;align-items:center;justify-content:center;}
+.proc-ring::before,.proc-ring::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid var(--gold);opacity:0;
+  animation:procPulse 2s ease-out infinite;
+}
+.proc-ring::after{animation-delay:.65s;}
+.proc-icon{
+  width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#f0d060);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;z-index:1;
+}
+body.mode-vision .proc-icon{background:linear-gradient(135deg,#FFFF00,#aaaa00);color:#000;}
+@keyframes procPulse{0%{transform:scale(.8);opacity:.7;}100%{transform:scale(2.3);opacity:0;}}
+.proc-label{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);}
+.proc-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+.proc-dots{display:flex;gap:6px;margin-top:4px;}
+.proc-dots span{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--gold);opacity:.3;
+  animation:dotBounce 1.2s ease-in-out infinite;
+}
+.proc-dots span:nth-child(2){animation-delay:.2s;}
+.proc-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes dotBounce{0%,80%,100%{opacity:.3;transform:translateY(0);}40%{opacity:1;transform:translateY(-7px);}}
+
+/* ══════════════════════════════════════════════════════════
+   7. READER
+══════════════════════════════════════════════════════════ */
+#s-reader{justify-content:flex-start;padding:0;}
+
+.rdr-top{
+  width:100%;flex-shrink:0;
+  padding:calc(var(--r-top)+14px) 18px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(125,120,110,.1);
+  background:var(--bg);
+}
+.rdr-brand{font-family:var(--serif);font-size:21px;color:var(--ink);}
+.rdr-brand em{font-style:italic;color:var(--gold);}
+.rdr-top-right{display:flex;gap:8px;align-items:center;}
+.rdr-icon-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--bg2);border:1px solid rgba(125,120,110,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:var(--soft);transition:all .2s;
+}
+.rdr-icon-btn:hover,.rdr-icon-btn:active{border-color:var(--gold);color:var(--gold);}
+body.mode-vision .rdr-icon-btn{width:46px;height:46px;font-size:20px;}
+body.mode-elder .rdr-icon-btn{width:46px;height:46px;font-size:20px;}
+
+/* Mode badge */
+.mode-badge{
+  font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;
+  background:var(--gold-glow);color:var(--gold);
+  border:1px solid rgba(212,175,55,.25);
+}
+body.mode-vision .mode-badge{color:#FFFF00;background:rgba(255,255,0,.15);border-color:rgba(255,255,0,.3);}
+body.mode-dyslexia .mode-badge{color:#1D4ED8;background:rgba(29,78,216,.1);border-color:rgba(29,78,216,.25);}
+body.mode-elder .mode-badge{color:#1D4ED8;background:rgba(29,78,216,.1);border-color:rgba(29,78,216,.25);}
+
+/* Text scroll */
+.rdr-scroll{
+  flex:1;overflow-y:auto;width:100%;
+  padding:22px 22px 8px;
+  -webkit-overflow-scrolling:touch;
+  position:relative;
+}
+.rdr-scroll::-webkit-scrollbar{width:3px;}
+.rdr-scroll::-webkit-scrollbar-thumb{background:rgba(212,175,55,.3);border-radius:2px;}
+body.mode-dyslexia .rdr-scroll::-webkit-scrollbar-thumb,
+body.mode-elder .rdr-scroll::-webkit-scrollbar-thumb{background:rgba(29,78,216,.3);}
+
+/* Reading ruler (dyslexia mode) */
+.reading-ruler{
+  display:none;position:sticky;top:0;left:0;right:0;height:44px;
+  background:rgba(29,78,216,.12);border-top:2px solid rgba(29,78,216,.3);
+  border-bottom:2px solid rgba(29,78,216,.3);pointer-events:none;z-index:5;
+  margin:0 -22px;
+}
+body.mode-dyslexia .reading-ruler{display:block;}
+
+#rdr-text{
+  font-family:var(--reading-font);
+  font-size:var(--reading-size);
+  line-height:var(--reading-lh);
+  letter-spacing:var(--reading-ls);
+  word-spacing:var(--reading-ws);
+  color:var(--ink);
+  white-space:pre-wrap;
+  position:relative;
 }
 
-/* Progress bar */
-.reader-progress-wrap {
-  width: 100%; padding: 10px 24px;
-  flex-shrink: 0;
+/* Word highlighting */
+.word{border-radius:3px;padding:0 1px;transition:background .08s,color .08s;}
+.word.reading{
+  background:rgba(212,175,55,.3);color:var(--ink);
+  box-shadow:0 0 0 2px rgba(212,175,55,.2);
 }
-.reader-progress-track {
-  height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden;
-}
-.reader-progress-fill {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--goldf), var(--gold));
-  border-radius: 2px; transition: width 0.3s linear;
-}
+body.mode-vision .word.reading{background:rgba(255,255,0,.35);box-shadow:0 0 0 2px rgba(255,255,0,.3);}
+body.mode-dyslexia .word.reading{background:rgba(29,78,216,.2);box-shadow:0 0 0 2px rgba(29,78,216,.15);}
+body.mode-elder .word.reading{background:rgba(29,78,216,.15);box-shadow:0 0 0 2px rgba(29,78,216,.1);}
+
+/* Progress */
+.rdr-prog{width:100%;flex-shrink:0;padding:6px 18px;}
+.rdr-prog-track{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.rdr-prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--goldf),var(--gold));border-radius:2px;transition:width .3s linear;}
+body.mode-vision .rdr-prog-track{background:#1a1a1a;}
+body.mode-vision .rdr-prog-fill{background:linear-gradient(90deg,#aaa,#FFFF00);}
+body.mode-dyslexia .rdr-prog-track,body.mode-elder .rdr-prog-track{background:var(--bg3);}
+body.mode-dyslexia .rdr-prog-fill,body.mode-elder .rdr-prog-fill{background:linear-gradient(90deg,#1e40af,#1D4ED8);}
 
 /* Controls */
-.reader-controls {
-  width: 100%; padding: 12px 24px;
-  padding-bottom: calc(var(--safe-bottom) + 12px);
-  background: linear-gradient(transparent, var(--bg) 30%);
-  flex-shrink: 0;
+.rdr-ctrl{
+  width:100%;flex-shrink:0;
+  padding:10px 18px calc(var(--r-bot)+10px);
+  background:linear-gradient(transparent,var(--bg) 28%);
 }
-.controls-main {
-  display: flex; align-items: center; justify-content: center;
-  gap: 20px; margin-bottom: 14px;
+.ctrl-main{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px;}
+.ctrl-btn{
+  width:calc(52px * var(--ui-scale));height:calc(52px * var(--ui-scale));
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:calc(19px * var(--ui-scale));color:var(--soft);
+  background:var(--bg2);border:1px solid rgba(125,120,110,.2);
+  transition:all .2s;
 }
-.ctrl-btn {
-  width: 52px; height: 52px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; color: var(--soft);
-  background: var(--bg2); border: 1px solid rgba(237,233,219,0.1);
-  transition: all 0.2s;
+.ctrl-btn:hover,.ctrl-btn:active{color:var(--ink);border-color:rgba(125,120,110,.4);}
+.ctrl-play{
+  width:calc(74px * var(--ui-scale));height:calc(74px * var(--ui-scale));
+  font-size:calc(28px * var(--ui-scale));
+  background:linear-gradient(135deg,var(--gold),#f0d060);
+  color:var(--bg);border-color:transparent;
+  box-shadow:0 4px 28px var(--gold-glow);
 }
-.ctrl-btn:hover, .ctrl-btn:active { color: var(--ink); border-color: rgba(237,233,219,0.25); }
-.ctrl-btn-play {
-  width: 68px; height: 68px; font-size: 26px;
-  background: linear-gradient(135deg, var(--gold), #f0d060);
-  color: var(--bg); border-color: transparent;
-  box-shadow: 0 4px 24px rgba(212,175,55,0.35);
-}
-.ctrl-btn-play:hover, .ctrl-btn-play:active {
-  transform: scale(1.06);
-  box-shadow: 0 6px 32px rgba(212,175,55,0.5);
-}
-.ctrl-btn-play:disabled { background: var(--bg3); color: var(--muted); box-shadow: none; }
+body.mode-vision .ctrl-play{background:linear-gradient(135deg,#FFFF00,#aaa);color:#000;}
+body.mode-dyslexia .ctrl-play,body.mode-elder .ctrl-play{background:linear-gradient(135deg,#1D4ED8,#4f8ef7);color:#fff;}
+.ctrl-play:hover,.ctrl-play:active{transform:scale(1.06);box-shadow:0 6px 36px var(--gold-glow);}
+.ctrl-play:disabled{background:var(--bg3);color:var(--muted);box-shadow:none;transform:none;}
 
-.controls-row2 {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
+.ctrl-row2{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.speed-row{display:flex;gap:5px;flex-wrap:wrap;}
+.spd{
+  font-family:var(--mono);font-size:calc(10px * var(--ui-scale));
+  letter-spacing:.1em;padding:5px 9px;border-radius:20px;
+  color:var(--muted);background:var(--bg2);
+  border:1px solid transparent;transition:all .2s;
 }
-.speed-pills {
-  display: flex; gap: 6px;
-}
-.speed-pill {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: 0.12em; padding: 5px 10px;
-  border-radius: 20px; color: var(--muted);
-  background: var(--bg2); border: 1px solid transparent;
-  transition: all 0.2s;
-}
-.speed-pill.active { color: var(--gold); border-color: rgba(212,175,55,0.4); background: rgba(212,175,55,0.08); }
+.spd.on{color:var(--gold);border-color:rgba(212,175,55,.4);background:var(--gold-glow);}
+body.mode-vision .spd.on{color:#FFFF00;border-color:rgba(255,255,0,.4);background:rgba(255,255,0,.1);}
+body.mode-dyslexia .spd.on,body.mode-elder .spd.on{color:#1D4ED8;border-color:rgba(29,78,216,.4);background:rgba(29,78,216,.1);}
 
-.voice-select {
-  background: var(--bg2);
-  border: 1px solid rgba(237,233,219,0.1);
-  border-radius: 20px;
-  padding: 5px 10px;
-  font-size: 11px; font-family: var(--mono);
-  color: var(--soft); letter-spacing: 0.05em;
-  outline: none; max-width: 130px;
-  -webkit-appearance: none;
+.voice-sel{
+  background:var(--bg2);border:1px solid rgba(125,120,110,.2);
+  border-radius:20px;padding:5px 10px;
+  font-size:calc(11px * var(--ui-scale));font-family:var(--mono);
+  color:var(--soft);letter-spacing:.04em;
+  outline:none;max-width:120px;
+  -webkit-appearance:none;
 }
-.voice-select:focus { border-color: rgba(212,175,55,0.4); }
+body.mode-dyslexia .voice-sel,body.mode-elder .voice-sel{background:var(--bg3);}
 
-.scan-another {
-  width: 100%; margin-top: 10px;
-  display: flex; justify-content: center;
+/* AI + feature row */
+.ctrl-feat{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
+.feat-btn{
+  display:flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:calc(9px * var(--ui-scale));
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:6px 12px;border-radius:20px;
+  border:1px solid rgba(125,120,110,.25);color:var(--muted);
+  transition:all .2s;
 }
+.feat-btn:hover,.feat-btn:active{border-color:var(--gold);color:var(--gold);}
+.feat-btn.on{border-color:var(--gold);color:var(--gold);background:var(--gold-glow);}
+body.mode-vision .feat-btn.on{border-color:#FFFF00;color:#FFFF00;background:rgba(255,255,0,.1);}
+body.mode-dyslexia .feat-btn.on,body.mode-elder .feat-btn.on{border-color:#1D4ED8;color:#1D4ED8;background:rgba(29,78,216,.1);}
+
+.ctrl-bot{display:flex;justify-content:center;}
+.scan-again{font-size:calc(10px * var(--ui-scale));padding:9px 20px;min-height:36px;}
+
+/* ══════════════════════════════════════════════════════════
+   8. AI CHAT MODAL
+══════════════════════════════════════════════════════════ */
+#ai-modal{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:flex-end;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+#ai-modal.open{opacity:1;pointer-events:all;}
+.ai-sheet{
+  width:100%;background:var(--bg2);
+  border-radius:24px 24px 0 0;
+  padding:0 0 calc(var(--r-bot)+16px);
+  max-height:82vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+}
+#ai-modal.open .ai-sheet{transform:translateY(0);}
+.ai-handle{width:40px;height:4px;border-radius:2px;background:var(--bg4);margin:14px auto 18px;}
+.ai-title{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:16px;}
+body.mode-vision .ai-title{color:#FFFF00;}
+body.mode-dyslexia .ai-title,body.mode-elder .ai-title{color:#1D4ED8;}
+.ai-msgs{flex:1;overflow-y:auto;padding:0 18px;display:flex;flex-direction:column;gap:10px;}
+.ai-msgs::-webkit-scrollbar{width:3px;}
+.ai-msgs::-webkit-scrollbar-thumb{background:rgba(212,175,55,.2);border-radius:2px;}
+.ai-msg{max-width:88%;padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.55;}
+.ai-msg.user{
+  align-self:flex-end;
+  background:var(--gold-glow);color:var(--ink);
+  border:1px solid rgba(212,175,55,.25);
+  border-radius:16px 16px 4px 16px;
+}
+body.mode-dyslexia .ai-msg.user,body.mode-elder .ai-msg.user{background:rgba(29,78,216,.1);border-color:rgba(29,78,216,.2);}
+.ai-msg.bot{
+  align-self:flex-start;
+  background:var(--bg3);color:var(--soft);
+  border-radius:4px 16px 16px 16px;
+}
+.ai-msg.thinking{color:var(--muted);font-style:italic;background:var(--bg3);}
+.ai-input-row{display:flex;gap:8px;padding:12px 18px 0;align-items:flex-end;}
+.ai-input{
+  flex:1;background:var(--bg3);border:1.5px solid rgba(125,120,110,.25);
+  border-radius:14px;padding:12px 14px;font-size:14px;
+  color:var(--ink);resize:none;outline:none;max-height:80px;
+  transition:border-color .2s;font-family:var(--sans);
+}
+body.mode-dyslexia .ai-input,body.mode-elder .ai-input{background:var(--bg3);color:var(--ink);}
+.ai-input:focus{border-color:var(--gold);}
+.ai-send{
+  width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),#f0d060);
+  color:var(--bg);font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+}
+body.mode-dyslexia .ai-send,body.mode-elder .ai-send{background:linear-gradient(135deg,#1D4ED8,#4f8ef7);color:#fff;}
+
+/* Quick prompts */
+.ai-quick{display:flex;gap:7px;padding:0 18px 10px;flex-wrap:wrap;}
+.ai-qbtn{
+  font-size:11px;padding:5px 11px;border-radius:16px;
+  border:1px solid rgba(125,120,110,.25);color:var(--soft);
+  background:var(--bg3);transition:all .2s;
+  white-space:nowrap;
+}
+.ai-qbtn:active{border-color:var(--gold);color:var(--gold);}
+body.mode-dyslexia .ai-qbtn:active,body.mode-elder .ai-qbtn:active{border-color:#1D4ED8;color:#1D4ED8;}
 
 /* ══════════════════════════════════════════════════════════
    TOAST
 ══════════════════════════════════════════════════════════ */
-#toast {
-  position: fixed; bottom: calc(var(--safe-bottom) + 90px);
-  left: 50%; transform: translateX(-50%) translateY(16px);
-  background: var(--bg3); color: var(--ink);
-  font-size: 13px; padding: 10px 20px; border-radius: 50px;
-  border: 1px solid rgba(237,233,219,0.12);
-  opacity: 0; transition: all 0.3s; pointer-events: none;
-  white-space: nowrap; z-index: 999;
+#toast{
+  position:fixed;bottom:calc(var(--r-bot)+100px);
+  left:50%;transform:translateX(-50%) translateY(14px);
+  background:var(--bg3);color:var(--ink);
+  font-size:13px;padding:10px 20px;border-radius:50px;
+  border:1px solid rgba(125,120,110,.2);
+  opacity:0;transition:all .28s;pointer-events:none;
+  white-space:nowrap;z-index:999;max-width:90vw;
+  text-overflow:ellipsis;overflow:hidden;
 }
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
-<body>
+<body class="mode-standard">
 
-<!-- ── SPLASH ─────────────────────────────────────────────── -->
-<div id="screen-splash" class="screen">
+<!-- ═══════════════════════════════════════
+  SPLASH
+═══════════════════════════════════════ -->
+<div id="s-splash" class="screen">
   <div class="splash-logo">
+    <div class="eyebrow" style="margin-bottom:6px">The World's Most Accessible Book Reader</div>
     <h1>READ<em>OUT</em></h1>
-    <div class="splash-tagline">Scan. Listen. Everywhere.</div>
+    <div class="splash-tag">Scan · Listen · Understand</div>
   </div>
   <div class="splash-bar"><div class="splash-bar-fill"></div></div>
 </div>
 
-<!-- ── SETUP ──────────────────────────────────────────────── -->
-<div id="screen-setup" class="screen hidden">
-  <div class="setup-inner">
-    <div class="eyebrow">Getting started</div>
-    <h2>Connect your<br><em>Claude key</em></h2>
-    <p>READOUT uses Claude AI to read text from your photos. Paste your API key below — it stays on your device only.</p>
+<!-- ═══════════════════════════════════════
+  ONBOARDING
+═══════════════════════════════════════ -->
+<div id="s-onboard" class="screen hidden">
+  <div class="onboard-slides" id="onboard-slides">
 
-    <div class="api-field">
-      <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-      <button class="api-field-eye" id="btn-toggle-key" title="Show key">👁</button>
+    <!-- Slide 1 -->
+    <div class="onboard-slide">
+      <div class="slide-icon">📚</div>
+      <div class="eyebrow">For Everyone</div>
+      <h2>130 million books,<br>now <em>listenable</em></h2>
+      <p>Only 0.6% of all books ever written have an audiobook. READOUT makes every physical book, document, textbook, or letter instantly listenable — for free.</p>
+      <div class="feature-pills">
+        <span class="pill">Any Book</span>
+        <span class="pill">Any Language</span>
+        <span class="pill">Your Voice</span>
+      </div>
     </div>
-    <div class="setup-error" id="setup-error">Please enter a valid Claude API key (starts with sk-ant-)</div>
 
+    <!-- Slide 2 -->
+    <div class="onboard-slide">
+      <div class="slide-icon">👁</div>
+      <div class="eyebrow">For the Visually Impaired</div>
+      <h2>Point. Tap.<br><em>Listen.</em></h2>
+      <p>2.2 billion people worldwide live with vision impairment. READOUT doesn't just read text — it describes charts, images, and diagrams too. One tap. Your world, in audio.</p>
+      <div class="feature-pills">
+        <span class="pill">Vision Mode</span>
+        <span class="pill">Image Descriptions</span>
+        <span class="pill">Voice Control</span>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="onboard-slide">
+      <div class="slide-icon">🧠</div>
+      <div class="eyebrow">For Dyslexia &amp; ADHD</div>
+      <h2>Reading the way<br>your <em>brain works</em></h2>
+      <p>780 million people have dyslexia. READOUT highlights every word as it reads, uses dyslexia-friendly fonts, and lets you ask AI to explain anything you didn't understand.</p>
+      <div class="feature-pills">
+        <span class="pill">Word Highlighting</span>
+        <span class="pill">Ask AI</span>
+        <span class="pill">Dyslexia Font</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="onboard-dot-row">
+    <div class="odot on" data-i="0"></div>
+    <div class="odot" data-i="1"></div>
+    <div class="odot" data-i="2"></div>
+  </div>
+  <button class="btn btn-primary onboard-next" id="onboard-next">Continue →</button>
+</div>
+
+<!-- ═══════════════════════════════════════
+  MODE SELECTOR
+═══════════════════════════════════════ -->
+<div id="s-modes" class="screen hidden">
+  <div class="eyebrow">Personalise</div>
+  <h2>Choose your<br><em>reading mode</em></h2>
+  <p>You can change this any time in settings.</p>
+  <div class="mode-grid">
+    <div class="mode-card mc-standard active" data-mode="standard">
+      <div class="mode-card-icon">🌙</div>
+      <div class="mode-card-name">Standard</div>
+      <div class="mode-card-desc">Dark, elegant. For everyday reading.</div>
+    </div>
+    <div class="mode-card mc-vision" data-mode="vision">
+      <div class="mode-card-icon" style="color:#FFFF00">👁</div>
+      <div class="mode-card-name" style="color:#fff">Vision Mode</div>
+      <div class="mode-card-desc" style="color:#aaa">Maximum contrast. Large targets. Audio-first.</div>
+    </div>
+    <div class="mode-card mc-dyslexia" data-mode="dyslexia">
+      <div class="mode-card-icon">🔤</div>
+      <div class="mode-card-name">Dyslexia</div>
+      <div class="mode-card-desc">Warm background. Special font. Word ruler.</div>
+    </div>
+    <div class="mode-card mc-elder" data-mode="elder">
+      <div class="mode-card-icon">🔆</div>
+      <div class="mode-card-name">Elder Mode</div>
+      <div class="mode-card-desc">Large text. Simple controls. High contrast.</div>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-mode-next" style="width:calc(100% - 40px);max-width:380px;margin-top:4px;">Confirm Mode →</button>
+</div>
+
+<!-- ═══════════════════════════════════════
+  SETUP
+═══════════════════════════════════════ -->
+<div id="s-setup" class="screen hidden">
+  <div class="setup-wrap">
+    <div class="eyebrow">Step 3 of 3</div>
+    <h2>Add your<br><em>Claude key</em></h2>
+    <p>READOUT uses Claude AI — the most accurate text reader available. Your key stays on your device and costs ~$0.001 per page.</p>
+
+    <div class="api-row">
+      <input type="password" id="key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+      <button class="api-eye" id="key-eye">👁</button>
+    </div>
+    <div class="setup-err" id="key-err">Please enter a valid key starting with sk-ant- or sk-</div>
     <button class="btn btn-primary setup-cta" id="btn-save-key">Start Reading →</button>
 
+    <div class="setup-or"><span>or</span></div>
+    <button class="btn btn-ghost setup-demo" id="btn-demo">✨ Try Demo — No Key Needed</button>
+
     <div class="setup-note">
-      <p>Get a free key at <strong>console.anthropic.com</strong> · Your key never leaves this device · Each page scan costs ~$0.001</p>
+      <p>Get a free key at <strong>console.anthropic.com</strong> · Your key never leaves this device · Each scan costs ~$0.001</p>
     </div>
   </div>
 </div>
 
-<!-- ── SCANNER ────────────────────────────────────────────── -->
-<div id="screen-scanner" class="screen hidden">
-  <video id="camera-video" autoplay playsinline muted></video>
+<!-- ═══════════════════════════════════════
+  SCANNER
+═══════════════════════════════════════ -->
+<div id="s-scan" class="screen hidden">
+  <video id="cam-video" autoplay playsinline muted></video>
 
-  <!-- guide frame corners -->
   <div class="guide-frame">
-    <div class="guide-corner-br"></div>
-    <div class="guide-corner-bl"></div>
+    <div class="gc gc-tl"></div><div class="gc gc-tr"></div>
+    <div class="gc gc-br"></div><div class="gc gc-bl"></div>
+  </div>
+  <div class="scan-bar"></div>
+
+  <div class="scan-top">
+    <span class="scan-brand">READ<em>OUT</em></span>
+    <span class="scan-badge" id="mode-badge-scan">Standard</span>
   </div>
 
-  <!-- top bar -->
-  <div class="scanner-top">
-    <span class="scanner-brand">READ<em>OUT</em></span>
-    <button class="scanner-settings" id="btn-open-settings" title="Settings">⚙</button>
+  <div id="cam-fallback">
+    <div style="font-size:52px">📷</div>
+    <h3>Choose a photo</h3>
+    <p style="max-width:260px;">Camera unavailable — upload a photo of your book page instead.</p>
+    <button class="btn btn-primary" id="btn-upload-main" style="margin-top:8px;">Choose Photo</button>
+    <button class="btn btn-ghost" id="btn-demo-scan" style="margin-top:6px;font-size:10px;padding:10px 20px;min-height:38px;">✨ See Demo</button>
   </div>
 
-  <!-- no-camera fallback -->
-  <div id="upload-fallback">
-    <div style="font-size:48px">📷</div>
-    <h2>Upload a photo</h2>
-    <p>Camera not available. Choose a photo of a book page from your library.</p>
-    <button class="btn btn-primary" id="btn-upload-fallback">Choose Photo</button>
-  </div>
-
-  <!-- controls overlay -->
-  <div class="scanner-overlay">
-    <div class="scanner-hint">Aim at a page and capture</div>
-    <div class="capture-row">
-      <button class="btn-upload" id="btn-upload-lib" title="Upload from library">🖼</button>
-      <button class="btn-capture" id="btn-capture" title="Capture"></button>
-      <button class="btn btn-ghost" id="btn-scanner-settings" style="padding:0 16px;min-height:40px;font-size:10px">Key ⚙</button>
+  <div class="scan-overlay">
+    <div class="scan-hint" id="scan-hint">Hold flat over the page and tap to capture</div>
+    <div class="scan-btns">
+      <button class="scan-side" id="btn-upload-lib" title="Upload from library">🖼</button>
+      <button class="btn-capture" id="btn-capture"></button>
+      <button class="scan-side" id="btn-scan-demo" title="Demo">✨</button>
     </div>
   </div>
 
-  <!-- hidden file input -->
-  <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none">
-  <input type="file" id="file-input-lib" accept="image/*" style="display:none">
+  <input type="file" id="file-inp" accept="image/*" style="display:none">
+  <input type="file" id="file-lib" accept="image/*" style="display:none">
 </div>
 
-<!-- ── PROCESSING ─────────────────────────────────────────── -->
-<div id="screen-processing" class="screen hidden">
-  <div class="pulse-ring">
-    <div class="pulse-icon">📖</div>
+<!-- ═══════════════════════════════════════
+  PROCESSING
+═══════════════════════════════════════ -->
+<div id="s-proc" class="screen hidden">
+  <div class="proc-ring">
+    <div class="proc-icon">📖</div>
   </div>
   <div>
-    <div class="processing-label">Reading your page</div>
-    <div class="processing-sub">Claude is extracting the text…</div>
+    <div class="proc-label">Reading your page</div>
+    <div class="proc-sub" id="proc-sub">Claude is extracting the text…</div>
   </div>
-  <div class="processing-spinner">
-    <span></span><span></span><span></span>
-  </div>
+  <div class="proc-dots"><span></span><span></span><span></span></div>
 </div>
 
-<!-- ── READER ─────────────────────────────────────────────── -->
-<div id="screen-reader" class="screen hidden">
-  <div class="reader-topbar">
-    <span class="reader-topbar-brand">READ<em>OUT</em></span>
-    <div class="reader-actions">
-      <button class="reader-btn-sm" id="btn-copy" title="Copy text">📋</button>
-      <button class="reader-btn-sm" id="btn-share" title="Share">↑</button>
+<!-- ═══════════════════════════════════════
+  READER
+═══════════════════════════════════════ -->
+<div id="s-reader" class="screen hidden">
+  <div class="rdr-top">
+    <span class="rdr-brand">READ<em>OUT</em></span>
+    <div class="rdr-top-right">
+      <span class="mode-badge" id="mode-badge-rdr">Standard</span>
+      <button class="rdr-icon-btn" id="btn-copy" title="Copy">📋</button>
+      <button class="rdr-icon-btn" id="btn-share" title="Share">↑</button>
+      <button class="rdr-icon-btn" id="btn-settings" title="Settings">⚙</button>
     </div>
   </div>
 
-  <div class="text-scroll">
-    <div id="extracted-text"></div>
+  <div class="rdr-scroll" id="rdr-scroll">
+    <div class="reading-ruler"></div>
+    <div id="rdr-text"></div>
   </div>
 
-  <div class="reader-progress-wrap">
-    <div class="reader-progress-track">
-      <div class="reader-progress-fill" id="progress-fill"></div>
+  <div class="rdr-prog">
+    <div class="rdr-prog-track">
+      <div class="rdr-prog-fill" id="prog-fill"></div>
     </div>
   </div>
 
-  <div class="reader-controls">
-    <div class="controls-main">
-      <button class="ctrl-btn" id="btn-restart" title="Restart">⟪</button>
-      <button class="ctrl-btn ctrl-btn-play" id="btn-play" title="Play / Pause">▶</button>
-      <button class="ctrl-btn" id="btn-stop-tts" title="Stop">■</button>
+  <div class="rdr-ctrl">
+    <!-- AI + feature buttons -->
+    <div class="ctrl-feat">
+      <button class="feat-btn" id="feat-ai">🧠 Ask AI</button>
+      <button class="feat-btn" id="feat-trans">🌍 Translate</button>
+      <button class="feat-btn" id="feat-simple">💡 Simplify</button>
+      <button class="feat-btn" id="feat-imgdesc">🖼 Images</button>
     </div>
 
-    <div class="controls-row2">
-      <div class="speed-pills" id="speed-pills">
-        <button class="speed-pill" data-speed="0.75">0.75×</button>
-        <button class="speed-pill active" data-speed="1">1×</button>
-        <button class="speed-pill" data-speed="1.25">1.25×</button>
-        <button class="speed-pill" data-speed="1.5">1.5×</button>
-        <button class="speed-pill" data-speed="2">2×</button>
+    <!-- Main controls -->
+    <div class="ctrl-main">
+      <button class="ctrl-btn" id="btn-rew" title="Restart">⟪</button>
+      <button class="ctrl-btn" id="btn-back" title="Back 10s">◀◀</button>
+      <button class="ctrl-btn ctrl-play" id="btn-play">▶</button>
+      <button class="ctrl-btn" id="btn-fwd" title="Forward">▶▶</button>
+      <button class="ctrl-btn" id="btn-stop" title="Stop">■</button>
+    </div>
+
+    <!-- Speed + voice -->
+    <div class="ctrl-row2">
+      <div class="speed-row" id="speed-row">
+        <button class="spd" data-s="0.5">0.5×</button>
+        <button class="spd" data-s="0.75">0.75×</button>
+        <button class="spd on" data-s="1">1×</button>
+        <button class="spd" data-s="1.25">1.25×</button>
+        <button class="spd" data-s="1.5">1.5×</button>
+        <button class="spd" data-s="2">2×</button>
       </div>
-      <select class="voice-select" id="voice-select" title="Choose voice"></select>
+      <select class="voice-sel" id="voice-sel"></select>
     </div>
 
-    <div class="scan-another">
-      <button class="btn btn-ghost" id="btn-scan-another" style="font-size:10px;padding:10px 20px;min-height:38px">
-        ＋ Scan another page
-      </button>
+    <!-- Bottom row -->
+    <div class="ctrl-bot">
+      <button class="btn btn-ghost scan-again" id="btn-rescan">＋ Scan another page</button>
     </div>
   </div>
 </div>
 
-<!-- ── TOAST ──────────────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════
+  AI CHAT MODAL
+═══════════════════════════════════════ -->
+<div id="ai-modal">
+  <div class="ai-sheet">
+    <div class="ai-handle"></div>
+    <div class="ai-title">Ask about this page</div>
+    <div class="ai-quick" id="ai-quick">
+      <button class="ai-qbtn">📖 Summarise</button>
+      <button class="ai-qbtn">📚 Explain simply</button>
+      <button class="ai-qbtn">❓ Key ideas</button>
+      <button class="ai-qbtn">🌍 Translate</button>
+    </div>
+    <div class="ai-msgs" id="ai-msgs"></div>
+    <div class="ai-input-row">
+      <textarea class="ai-input" id="ai-input" rows="1" placeholder="Ask anything about this page…"></textarea>
+      <button class="ai-send" id="ai-send">↑</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
+<!-- ═══════════════════════════════════════
+  SCRIPT
+═══════════════════════════════════════ -->
 <script>
 'use strict';
 
-// ── State ────────────────────────────────────────────────────────────
+/* ── DEMO TEXT (public-domain style sample showing the app's value) ── */
+const DEMO_TEXT = `Chapter One
+
+The old library smelled of cedar and time. Margaret ran her fingers along the leather spines, each book a world she could never enter. Born with macular degeneration at forty-two, she had spent three years grieving the loss of reading — her greatest pleasure since childhood.
+
+Her granddaughter placed a phone in her hands.
+
+"Try this," she said.
+
+Margaret heard a soft chime, and then — in her own voice, her actual voice, recorded one afternoon the previous spring — she heard the words she was holding begin to speak.
+
+She wept. Not from sadness. From recognition.
+
+That was the morning she understood that a book was not ink on paper. A book was a voice reaching across time. And now, for the first time in years, she could hear it again.
+
+Outside, the city moved. Buses groaned and pigeons scattered from rain-dark windowsills. But in the library, for Margaret and the 2.2 billion others who struggle to see the printed page, something had quietly changed.
+
+The books had learned to speak.`;
+
+/* ── STATE ─────────────────────────────────────────────────────────── */
 const S = {
-  apiKey: localStorage.getItem('readout_key') || '',
+  apiKey: localStorage.getItem('ro_key') || '',
+  mode: localStorage.getItem('ro_mode') || 'standard',
   speed: 1,
   voice: null,
   voices: [],
   text: '',
+  words: [],     // [{text, start}]
   chunks: [],
   chunkIdx: 0,
+  wordIdx: 0,
   playing: false,
-  utterance: null,
-  stream: null,
+  isDemo: false,
+  features: { trans: false, simple: false, imgdesc: false },
+  onboardSlide: 0,
 };
 
-// ── DOM refs ─────────────────────────────────────────────────────────
+/* ── DOM ───────────────────────────────────────────────────────────── */
 const $  = id => document.getElementById(id);
-const screens = {
-  splash:     $('screen-splash'),
-  setup:      $('screen-setup'),
-  scanner:    $('screen-scanner'),
-  processing: $('screen-processing'),
-  reader:     $('screen-reader'),
-};
-
-// ── Navigation ───────────────────────────────────────────────────────
+const sc = { splash:'s-splash',onboard:'s-onboard',modes:'s-modes',setup:'s-setup',scan:'s-scan',proc:'s-proc',reader:'s-reader' };
 function show(name) {
-  Object.entries(screens).forEach(([k, el]) => {
-    el.classList.toggle('hidden', k !== name);
-    el.classList.remove('out-up');
+  Object.values(sc).forEach(id => {
+    const el = $(id);
+    if (el) { el.classList.toggle('hidden', id !== sc[name]); el.classList.remove('out'); }
   });
 }
-function goBack(from, to) {
-  screens[from].classList.add('out-up');
-  setTimeout(() => show(to), 300);
+function goOut(from, to, delay=320) {
+  const el = $(sc[from]);
+  if (el) el.classList.add('out');
+  setTimeout(() => show(to), delay);
 }
 
-// ── Toast ────────────────────────────────────────────────────────────
-let toastTimer;
-function toast(msg, dur = 2400) {
-  const el = $('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+/* ── TOAST ─────────────────────────────────────────────────────────── */
+let _tt;
+function toast(msg, dur=2400) {
+  const el = $('toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), dur);
 }
 
-// ── Boot ─────────────────────────────────────────────────────────────
+/* ── MODE SYSTEM ───────────────────────────────────────────────────── */
+const modeLabels = { standard:'Standard', vision:'Vision Mode', dyslexia:'Dyslexia', elder:'Elder Mode' };
+function applyMode(m) {
+  S.mode = m;
+  document.body.className = `mode-${m}`;
+  localStorage.setItem('ro_mode', m);
+  const lbl = modeLabels[m] || 'Standard';
+  const b1 = $('mode-badge-scan'); if (b1) b1.textContent = lbl;
+  const b2 = $('mode-badge-rdr');  if (b2) b2.textContent = lbl;
+  // Vision mode: add aria labels hint
+  if (m === 'vision') {
+    document.body.setAttribute('aria-label', 'Vision Mode active — maximum contrast enabled');
+  }
+}
+
+/* ── BOOT ──────────────────────────────────────────────────────────── */
+applyMode(S.mode);
 show('splash');
 setTimeout(() => {
-  if (S.apiKey) {
-    startScanner();
+  const hasSeenOnboard = localStorage.getItem('ro_onboard');
+  if (hasSeenOnboard) {
+    S.apiKey ? startScanner() : show('setup');
   } else {
-    show('setup');
+    show('onboard');
   }
-}, 1800);
+}, 1900);
 
-// ── Setup screen ─────────────────────────────────────────────────────
-$('btn-toggle-key').addEventListener('click', () => {
-  const inp = $('api-key-input');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-});
+/* ── ONBOARDING ────────────────────────────────────────────────────── */
+let _autoSlide = setInterval(nextSlide, 3200);
 
-$('btn-save-key').addEventListener('click', () => {
-  const key = $('api-key-input').value.trim();
-  const err = $('setup-error');
-  if (!key.startsWith('sk-ant-') && !key.startsWith('sk-')) {
-    err.classList.add('show');
-    return;
-  }
-  err.classList.remove('show');
-  S.apiKey = key;
-  localStorage.setItem('readout_key', key);
-  startScanner();
-});
-
-$('api-key-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') $('btn-save-key').click();
-});
-
-// ── Scanner screen ───────────────────────────────────────────────────
-async function startScanner() {
-  show('scanner');
-  const video = $('camera-video');
-  const fallback = $('upload-fallback');
-
-  // Stop any existing stream
-  if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
-
-  try {
-    S.stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
-    video.srcObject = S.stream;
-    video.style.display = 'block';
-    fallback.classList.remove('visible');
-  } catch {
-    video.style.display = 'none';
-    fallback.classList.add('visible');
+function nextSlide() {
+  S.onboardSlide = (S.onboardSlide + 1) % 3;
+  const slides = $('onboard-slides');
+  if (slides) slides.style.transform = `translateX(-${S.onboardSlide * 100}vw)`;
+  document.querySelectorAll('.odot').forEach((d,i) => d.classList.toggle('on', i===S.onboardSlide));
+  if ($('onboard-next')) {
+    $('onboard-next').textContent = S.onboardSlide === 2 ? 'Choose Your Mode →' : 'Continue →';
   }
 }
 
-// Capture from camera
-$('btn-capture').addEventListener('click', async () => {
-  const video = $('camera-video');
-  if (!video.srcObject) return;
-
-  const canvas = document.createElement('canvas');
-  canvas.width  = video.videoWidth  || 1280;
-  canvas.height = video.videoHeight || 720;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-
-  // Stop camera to save battery while processing
-  if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
-
-  const base64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
-  await processImage(base64, 'image/jpeg');
+$('onboard-next').addEventListener('click', () => {
+  clearInterval(_autoSlide);
+  if (S.onboardSlide < 2) { nextSlide(); }
+  else { localStorage.setItem('ro_onboard','1'); goOut('onboard','modes'); }
 });
 
-// Upload from library
-$('btn-upload-lib').addEventListener('click', () => $('file-input-lib').click());
-$('btn-upload-fallback').addEventListener('click', () => $('file-input-lib').click());
-
-$('file-input-lib').addEventListener('change', e => handleFileInput(e));
-$('file-input').addEventListener('change', e => handleFileInput(e));
-
-async function handleFileInput(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  e.target.value = '';
-  const reader = new FileReader();
-  reader.onload = async ev => {
-    const b64 = ev.target.result.split(',')[1];
-    await processImage(b64, file.type || 'image/jpeg');
-  };
-  reader.readAsDataURL(file);
-}
-
-// Settings shortcut
-['btn-scanner-settings', 'btn-open-settings'].forEach(id => {
-  $(id)?.addEventListener('click', () => {
-    $('api-key-input').value = S.apiKey;
-    goBack('scanner', 'setup');
-    if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+document.querySelectorAll('.odot').forEach(d => {
+  d.addEventListener('click', () => {
+    clearInterval(_autoSlide);
+    S.onboardSlide = parseInt(d.dataset.i) - 1;
+    nextSlide();
   });
 });
 
-// ── Claude Vision API ─────────────────────────────────────────────────
-async function processImage(base64, mediaType) {
-  show('processing');
+/* swipe on onboarding */
+let _ox = 0;
+const ob = $('s-onboard');
+if (ob) {
+  ob.addEventListener('touchstart', e => { _ox = e.touches[0].clientX; }, { passive: true });
+  ob.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - _ox;
+    if (Math.abs(dx) > 40) { clearInterval(_autoSlide); dx < 0 ? nextSlide() : (S.onboardSlide = Math.max(0, S.onboardSlide-2), nextSlide()); }
+  }, { passive: true });
+}
 
-  const body = {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
-    messages: [{
-      role: 'user',
-      content: [
-        {
-          type: 'image',
-          source: { type: 'base64', media_type: mediaType, data: base64 }
-        },
-        {
-          type: 'text',
-          text: `Extract all readable text from this book or document page.
-Return ONLY the text as it appears on the page — no commentary, no markdown, no headings added by you.
-Preserve paragraph breaks with a blank line between paragraphs.
-Preserve any chapter headings or section breaks.
-If the image is blurry or has no readable text, reply exactly: NO_TEXT_FOUND`
-        }
-      ]
-    }]
-  };
+/* ── MODE SELECTOR ─────────────────────────────────────────────────── */
+document.querySelectorAll('.mode-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    applyMode(card.dataset.mode);
+  });
+});
+// Sync initial active card with stored mode
+document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('active', c.dataset.mode === S.mode));
+
+$('btn-mode-next').addEventListener('click', () => {
+  goOut('modes', S.apiKey ? 'setup' : 'setup');
+});
+
+/* ── SETUP ─────────────────────────────────────────────────────────── */
+$('key-eye').addEventListener('click', () => {
+  const i = $('key-input'); i.type = i.type === 'password' ? 'text' : 'password';
+});
+$('btn-save-key').addEventListener('click', () => {
+  const k = $('key-input').value.trim();
+  const err = $('key-err');
+  if (!k.startsWith('sk-')) { err.classList.add('show'); return; }
+  err.classList.remove('show');
+  S.apiKey = k; localStorage.setItem('ro_key', k);
+  S.isDemo = false;
+  startScanner();
+});
+$('key-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-save-key').click(); });
+$('btn-demo').addEventListener('click', () => { S.isDemo = true; startScanner(); });
+
+/* ── SCANNER ───────────────────────────────────────────────────────── */
+let _stream;
+async function startScanner() {
+  show('scan');
+  const vid = $('cam-video'); const fb = $('cam-fallback');
+  if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
+  vid.style.display = 'none'; fb.classList.remove('show');
+  try {
+    _stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:{ideal:'environment'}, width:{ideal:1920} } });
+    vid.srcObject = _stream; vid.style.display = 'block';
+  } catch {
+    fb.classList.add('show');
+  }
+}
+
+$('btn-capture').addEventListener('click', () => {
+  const v = $('cam-video');
+  if (!v.srcObject) return;
+  const c = document.createElement('canvas');
+  c.width = v.videoWidth||1280; c.height = v.videoHeight||720;
+  c.getContext('2d').drawImage(v,0,0);
+  if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
+  processImage(c.toDataURL('image/jpeg',.92).split(',')[1], 'image/jpeg');
+});
+
+['btn-upload-lib','btn-upload-main'].forEach(id => {
+  const el = $(id); if (el) el.addEventListener('click', () => $('file-lib').click());
+});
+$('file-lib').addEventListener('change', e => handleFile(e.target.files[0], e));
+$('file-inp').addEventListener('change', e => handleFile(e.target.files[0], e));
+
+function handleFile(f, e) {
+  if (!f) return; e.target.value='';
+  const r = new FileReader();
+  r.onload = ev => processImage(ev.target.result.split(',')[1], f.type||'image/jpeg');
+  r.readAsDataURL(f);
+}
+
+['btn-scan-demo','btn-demo-scan'].forEach(id => {
+  const el = $(id); if (el) el.addEventListener('click', () => { S.isDemo=true; showDemo(); });
+});
+
+$('btn-settings').addEventListener('click', () => {
+  $('key-input').value = S.apiKey;
+  show('setup');
+  if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream=null; }
+});
+
+/* ── PROCESS IMAGE ─────────────────────────────────────────────────── */
+async function processImage(b64, mime) {
+  show('proc'); $('proc-sub').textContent = 'Claude is extracting the text…';
+  if (S.isDemo || !S.apiKey) { await simulateDelay(); showDemo(); return; }
+
+  let extra = '';
+  if (S.features.imgdesc) extra = ' Also briefly describe any images or diagrams present.';
+  if (S.features.simple)  extra += ' After extracting, add a "PLAIN ENGLISH:" line with a simplified version.';
+  if (S.features.trans)   extra += ' Translate the extracted text to English if it is not already in English.';
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
+      method:'POST',
+      headers:{
         'x-api-key': S.apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerous-allow-browser': 'true',
+        'anthropic-version':'2023-06-01',
+        'content-type':'application/json',
+        'anthropic-dangerous-allow-browser':'true',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:4096,
+        messages:[{ role:'user', content:[
+          { type:'image', source:{ type:'base64', media_type:mime, data:b64 }},
+          { type:'text', text:`Extract all readable text from this book or document page.
+Return ONLY the body text — skip page numbers, running headers, and footnotes.
+Preserve paragraphs with blank lines between them. Preserve chapter headings.${extra}
+If no readable text is found, reply exactly: NO_TEXT_FOUND` }
+        ]}]
+      }),
     });
-
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const msg = err.error?.message || `API error ${res.status}`;
-      throw new Error(msg);
+      const d = await res.json().catch(()=>({}));
+      throw new Error(d.error?.message||`API ${res.status}`);
     }
-
-    const data = await res.json();
-    const text = data.content?.[0]?.text?.trim() || '';
-
-    if (!text || text === 'NO_TEXT_FOUND') {
-      toast('No text found — try a clearer photo');
-      startScanner();
-      return;
-    }
-
-    S.text = text;
-    loadReader(text);
-
-  } catch (err) {
-    console.error(err);
-    const msg = err.message.includes('401') || err.message.includes('invalid')
-      ? 'Invalid API key — please check your key'
-      : `Error: ${err.message}`;
-    toast(msg, 4000);
-    if (err.message.includes('401') || err.message.includes('invalid')) {
-      show('setup');
-    } else {
-      startScanner();
-    }
+    const d = await res.json();
+    const txt = d.content?.[0]?.text?.trim()||'';
+    if (!txt || txt==='NO_TEXT_FOUND') { toast('No text found — try a clearer photo'); startScanner(); return; }
+    loadReader(txt);
+  } catch(err) {
+    toast(err.message.includes('401') ? 'Invalid API key' : `Error: ${err.message}`, 4000);
+    err.message.includes('401') ? show('setup') : startScanner();
   }
 }
 
-// ── Reader screen ─────────────────────────────────────────────────────
+function simulateDelay() { return new Promise(r => setTimeout(r, 1800)); }
+function showDemo() { loadReader(DEMO_TEXT); }
+
+/* ── READER ────────────────────────────────────────────────────────── */
 function loadReader(text) {
+  S.text = text;
+  S.wordIdx = 0; S.chunkIdx = 0;
   show('reader');
-  renderText(text);
+  buildWordSpans(text);
   buildChunks(text);
   loadVoices();
   setPlaying(false);
-  $('progress-fill').style.width = '0%';
+  $('prog-fill').style.width = '0%';
+  // Feature buttons reflect state
+  ['trans','simple','imgdesc'].forEach(f => {
+    const el = $(`feat-${f}`); if (el) el.classList.toggle('on', S.features[f]);
+  });
 }
 
-function renderText(text) {
-  $('extracted-text').textContent = text;
+/* ── WORD SPANS ────────────────────────────────────────────────────── */
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function buildWordSpans(text) {
+  const parts = text.split(/(\s+)/);
+  let html = ''; let offset = 0; let wi = 0;
+  S.words = [];
+  parts.forEach(part => {
+    if (/\S/.test(part)) {
+      S.words.push({ text: part, start: offset, idx: wi });
+      html += `<span class="word" data-w="${wi}" data-s="${offset}">${escHtml(part)}</span>`;
+      wi++;
+    } else {
+      html += escHtml(part);
+    }
+    offset += part.length;
+  });
+  $('rdr-text').innerHTML = html;
 }
 
-// Split into sentence-sized chunks to avoid Chrome's 15s TTS cutoff
-function buildChunks(text) {
-  const sentences = text.match(/[^.!?…]+[.!?…]+[\s]*/g) || [text];
-  S.chunks = [];
-  let buf = '';
-  for (const s of sentences) {
-    buf += s;
-    if (buf.length > 200) { S.chunks.push(buf.trim()); buf = ''; }
+function highlightWord(charIdx) {
+  document.querySelectorAll('.word.reading').forEach(el => el.classList.remove('reading'));
+  // Find the last word whose start <= charIdx
+  let best = null;
+  S.words.forEach(w => { if (w.start <= charIdx) best = w; });
+  if (best !== null) {
+    const el = document.querySelector(`.word[data-w="${best.idx}"]`);
+    if (el) {
+      el.classList.add('reading');
+      el.scrollIntoView({ block:'nearest', behavior:'smooth' });
+    }
+    S.wordIdx = best.idx;
+    // Update progress
+    $('prog-fill').style.width = Math.round((best.idx / Math.max(1, S.words.length-1)) * 100) + '%';
   }
+}
+
+/* ── TTS CHUNKS ────────────────────────────────────────────────────── */
+function buildChunks(text) {
+  const sents = text.match(/[^.!?…\n]+[.!?…\n][\s]*/g) || [text];
+  S.chunks = []; let buf = '';
+  sents.forEach(s => { buf += s; if (buf.length > 180) { S.chunks.push(buf.trim()); buf=''; } });
   if (buf.trim()) S.chunks.push(buf.trim());
   S.chunkIdx = 0;
 }
 
-// ── TTS ───────────────────────────────────────────────────────────────
+/* ── VOICES ────────────────────────────────────────────────────────── */
 function loadVoices() {
-  const populate = () => {
+  const fill = () => {
     S.voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
-    const sel = $('voice-select');
+    const sel = $('voice-sel'); if (!sel) return;
     sel.innerHTML = '';
-    S.voices.forEach((v, i) => {
-      const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = v.name.replace(/\s*\(.*?\)/, '').substring(0, 22);
-      sel.appendChild(opt);
+    S.voices.forEach((v,i) => {
+      const o = document.createElement('option');
+      o.value = i;
+      o.textContent = v.name.replace(/\s*\(.*?\)/,'').substring(0,22);
+      sel.appendChild(o);
     });
     if (S.voices.length) S.voice = S.voices[0];
   };
-  populate();
-  speechSynthesis.onvoiceschanged = populate;
+  fill();
+  speechSynthesis.onvoiceschanged = fill;
 }
+$('voice-sel').addEventListener('change', e => { S.voice = S.voices[parseInt(e.target.value)]||null; });
 
-$('voice-select').addEventListener('change', e => {
-  S.voice = S.voices[parseInt(e.target.value)] || null;
-});
-
-function setPlaying(val) {
-  S.playing = val;
-  $('btn-play').textContent = val ? '⏸' : '▶';
+/* ── PLAYBACK ──────────────────────────────────────────────────────── */
+function setPlaying(v) {
+  S.playing = v;
+  const btn = $('btn-play'); if (btn) btn.textContent = v ? '⏸' : '▶';
 }
 
 function playChunk(idx) {
-  if (idx >= S.chunks.length) {
-    setPlaying(false);
-    $('progress-fill').style.width = '100%';
-    return;
-  }
+  if (idx >= S.chunks.length) { setPlaying(false); $('prog-fill').style.width='100%'; return; }
   S.chunkIdx = idx;
 
   const utt = new SpeechSynthesisUtterance(S.chunks[idx]);
-  utt.rate  = S.speed;
-  utt.pitch = 1;
+  utt.rate = S.speed; utt.pitch = 1;
   if (S.voice) utt.voice = S.voice;
 
-  utt.onend = () => {
-    if (S.playing) {
-      const pct = Math.round(((idx + 1) / S.chunks.length) * 100);
-      $('progress-fill').style.width = pct + '%';
-      playChunk(idx + 1);
-    }
+  // Find char offset of this chunk in full text
+  let chunkStart = 0;
+  for (let i=0; i<idx; i++) chunkStart += S.chunks[i].length + 1;
+
+  utt.onboundary = e => {
+    if (e.name === 'word') highlightWord(chunkStart + e.charIndex);
   };
-  utt.onerror = e => {
-    if (e.error !== 'interrupted') {
-      console.warn('TTS error', e.error);
-      if (S.playing) playChunk(idx + 1);
-    }
-  };
+  utt.onend = () => { if (S.playing) playChunk(idx+1); };
+  utt.onerror = e => { if (e.error!=='interrupted' && S.playing) playChunk(idx+1); };
 
   speechSynthesis.cancel();
   speechSynthesis.speak(utt);
-  S.utterance = utt;
 }
 
 $('btn-play').addEventListener('click', () => {
-  if (S.playing) {
-    speechSynthesis.cancel();
-    setPlaying(false);
-  } else {
-    setPlaying(true);
-    playChunk(S.chunkIdx);
-  }
+  if (S.playing) { speechSynthesis.cancel(); setPlaying(false); }
+  else { setPlaying(true); playChunk(S.chunkIdx); }
+});
+$('btn-rew').addEventListener('click', () => {
+  speechSynthesis.cancel(); S.chunkIdx=0; $('prog-fill').style.width='0%';
+  document.querySelectorAll('.word.reading').forEach(el=>el.classList.remove('reading'));
+  if (S.playing) playChunk(0); toast('Restarted');
+});
+$('btn-stop').addEventListener('click', () => {
+  speechSynthesis.cancel(); setPlaying(false); S.chunkIdx=0;
+  $('prog-fill').style.width='0%';
+  document.querySelectorAll('.word.reading').forEach(el=>el.classList.remove('reading'));
+});
+$('btn-back').addEventListener('click', () => {
+  S.chunkIdx = Math.max(0, S.chunkIdx-3);
+  if (S.playing) { speechSynthesis.cancel(); playChunk(S.chunkIdx); }
+  toast('Back');
+});
+$('btn-fwd').addEventListener('click', () => {
+  S.chunkIdx = Math.min(S.chunks.length-1, S.chunkIdx+3);
+  if (S.playing) { speechSynthesis.cancel(); playChunk(S.chunkIdx); }
+  toast('Forward');
 });
 
-$('btn-restart').addEventListener('click', () => {
-  speechSynthesis.cancel();
-  S.chunkIdx = 0;
-  $('progress-fill').style.width = '0%';
-  if (S.playing) playChunk(0);
-  toast('Restarted from beginning');
-});
-
-$('btn-stop-tts').addEventListener('click', () => {
-  speechSynthesis.cancel();
-  setPlaying(false);
-  S.chunkIdx = 0;
-  $('progress-fill').style.width = '0%';
-});
-
-// Speed pills
-document.querySelectorAll('.speed-pill').forEach(btn => {
+/* ── SPEED ─────────────────────────────────────────────────────────── */
+document.querySelectorAll('.spd').forEach(btn => {
   btn.addEventListener('click', () => {
-    S.speed = parseFloat(btn.dataset.speed);
-    document.querySelectorAll('.speed-pill').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    if (S.playing) {
-      speechSynthesis.cancel();
-      playChunk(S.chunkIdx);
-    }
-    toast(`Speed: ${btn.dataset.speed}×`);
+    S.speed = parseFloat(btn.dataset.s);
+    document.querySelectorAll('.spd').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    if (S.playing) { speechSynthesis.cancel(); playChunk(S.chunkIdx); }
+    toast(`${btn.dataset.s}× speed`);
   });
 });
 
-// Copy text
-$('btn-copy').addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(S.text);
-    toast('Text copied to clipboard');
-  } catch {
-    toast('Copy not available on this device');
-  }
-});
-
-// Share
-$('btn-share').addEventListener('click', async () => {
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: 'READOUT — scanned page', text: S.text });
-    } catch {}
-  } else {
-    await navigator.clipboard.writeText(S.text).catch(() => {});
-    toast('Copied to clipboard (Share not available)');
-  }
-});
-
-// Scan another
-$('btn-scan-another').addEventListener('click', () => {
-  speechSynthesis.cancel();
-  setPlaying(false);
-  startScanner();
-});
-
-// ── Service worker registration ───────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+/* ── FEATURE BUTTONS ───────────────────────────────────────────────── */
+function toggleFeat(key, el, label) {
+  S.features[key] = !S.features[key];
+  el.classList.toggle('on', S.features[key]);
+  toast(S.features[key] ? `${label} on` : `${label} off`);
 }
+$('feat-ai').addEventListener('click', () => openAI());
+$('feat-trans').addEventListener('click', e => toggleFeat('trans', e.currentTarget, '🌍 Translation'));
+$('feat-simple').addEventListener('click', e => toggleFeat('simple', e.currentTarget, '💡 Simplify'));
+$('feat-imgdesc').addEventListener('click', e => toggleFeat('imgdesc', e.currentTarget, '🖼 Image descriptions'));
+
+/* ── COPY / SHARE ──────────────────────────────────────────────────── */
+$('btn-copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(S.text); toast('Copied to clipboard'); }
+  catch { toast('Copy not supported'); }
+});
+$('btn-share').addEventListener('click', async () => {
+  if (navigator.share) { try { await navigator.share({title:'READOUT — scanned page',text:S.text}); } catch {} }
+  else { await navigator.clipboard.writeText(S.text).catch(()=>{}); toast('Copied to clipboard'); }
+});
+
+/* ── RESCAN ────────────────────────────────────────────────────────── */
+$('btn-rescan').addEventListener('click', () => {
+  speechSynthesis.cancel(); setPlaying(false); startScanner();
+});
+
+/* ── AI MODAL ──────────────────────────────────────────────────────── */
+const modal = $('ai-modal');
+function openAI() {
+  modal.classList.add('open');
+  if ($('ai-msgs').children.length === 0) {
+    addBotMsg('👋 Hi! I\'ve read this page. Ask me anything — what words mean, who characters are, key ideas, or a plain-English summary.');
+  }
+}
+modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+function addMsg(text, cls) {
+  const msgs = $('ai-msgs');
+  const d = document.createElement('div');
+  d.className = `ai-msg ${cls}`;
+  d.textContent = text;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+  return d;
+}
+function addBotMsg(text) { return addMsg(text, 'bot'); }
+
+async function sendAI(question) {
+  addMsg(question, 'user');
+  const thinking = addMsg('Thinking…', 'bot thinking');
+
+  if (S.isDemo || !S.apiKey) {
+    await simulateDelay();
+    const demoReplies = {
+      'summarise': 'This passage is about Margaret, a woman with macular degeneration who rediscovers reading through a voice app that reads books aloud in her own cloned voice. It\'s a moving story about accessibility and the power of technology to restore lost abilities.',
+      'explain': 'The story shows why apps like READOUT matter — 2.2 billion people worldwide have vision impairment, and most books have never been made into audiobooks. Technology can bridge that gap.',
+      'key ideas': '1. 130 million books exist but only 0.6% have audiobooks\n2. 2.2 billion people have vision impairment\n3. Voice cloning lets people hear books in their own voice\n4. Access to reading shouldn\'t depend on eyesight',
+      'translate': 'The text is already in English. I can translate to Spanish, French, Japanese, or any other language — just ask.',
+    };
+    const lower = question.toLowerCase();
+    const reply = Object.entries(demoReplies).find(([k]) => lower.includes(k))?.[1]
+      || `Great question about "${question}". In the full app, I\'d analyse the scanned page and give you a detailed answer here. I have the entire page in context, so I can explain vocabulary, characters, themes, or anything else.`;
+    thinking.textContent = reply;
+    thinking.classList.remove('thinking');
+    return;
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'x-api-key':S.apiKey,
+        'anthropic-version':'2023-06-01',
+        'content-type':'application/json',
+        'anthropic-dangerous-allow-browser':'true',
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:512,
+        system:`You are a helpful reading companion. The user has scanned a page and it contains this text:\n\n${S.text}\n\nAnswer their question about this text concisely and helpfully.`,
+        messages:[{role:'user',content:question}]
+      }),
+    });
+    const d = await res.json();
+    thinking.textContent = d.content?.[0]?.text || 'Sorry, I couldn\'t get a response.';
+  } catch {
+    thinking.textContent = 'Network error — please try again.';
+  }
+  thinking.classList.remove('thinking');
+}
+
+$('ai-send').addEventListener('click', () => {
+  const inp = $('ai-input'); const q = inp.value.trim();
+  if (!q) return; inp.value = ''; sendAI(q);
+});
+$('ai-input').addEventListener('keydown', e => {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); $('ai-send').click(); }
+});
+document.querySelectorAll('.ai-qbtn').forEach(btn => {
+  btn.addEventListener('click', () => sendAI(btn.textContent.replace(/^[^\w]+/,'').trim());
+});
+
+/* ── SERVICE WORKER ────────────────────────────────────────────────── */
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
