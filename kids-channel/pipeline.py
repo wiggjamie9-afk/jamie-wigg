@@ -1032,31 +1032,48 @@ def build_seo_description(script: dict) -> str:
 # ── 5d. Ebook (PDF picture book) ───────────────────────────────────────────────────────────
 
 def generate_ebook(script: dict, episode_dir: Path) -> Path:
-    """Generate a PDF picture book for the episode.
+    """Generate a PDF picture book matching the video booklet style.
 
-    Layout (portrait 800×1120):
-      • Title page — navy/stars, golden title, show name
-      • One page per scene — top: scene illustration, bottom: narration text
-      • Closing page — 'Sweet dreams!' sign-off
+    Layout (portrait 800×1120 — standard children's book page):
+      • Cover page  — first scene illustration + title + 'By Jamie Wigg'
+      • Scene pages — illustration top 60% / gold divider / cream text band bottom 40%
+      • Closing page — cream, 'Sweet dreams!' in warm gold, show name
     """
     from PIL import Image, ImageDraw, ImageFont
-    import textwrap, random
+    import textwrap as tw
 
-    PW, PH = 800, 1120  # portrait page size
+    PW, PH = 800, 1120
+    ILLUS_H   = int(PH * 0.60)     # 672px — illustration area
+    DIVIDER_Y = ILLUS_H
+    TEXT_Y    = ILLUS_H + 5
 
-    # ── Font loading ──────────────────────────────────────────────────────────────
-    font_paths_bold = [
+    # ── Palette (matches video booklet exactly) ───────────────────────────────
+    PARCHMENT  = (250, 245, 232)
+    DARK_BROWN = (58,  34,  12)
+    GOLD_LINE  = (195, 158, 72)
+    GOLD_TEXT  = (180, 138, 40)
+    PAGE_COL   = (160, 125, 75)
+    MID_BROWN  = (110,  72,  28)
+
+    # ── Fonts ─────────────────────────────────────────────────────────────────
+    serif_bold = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
     ]
-    font_paths_reg = [
+    serif_reg = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    sans_reg = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ]
 
-    def load_font(paths, size):
+    def _font(paths, size):
         for fp in paths:
             if Path(fp).exists():
                 try:
@@ -1065,162 +1082,181 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
                     continue
         return ImageFont.load_default()
 
-    font_title  = load_font(font_paths_bold, 58)
-    font_show   = load_font(font_paths_bold, 28)
-    font_body   = load_font(font_paths_reg, 26)
-    font_close  = load_font(font_paths_bold, 70)
-    font_page   = load_font(font_paths_bold, 22)
+    font_title = _font(serif_bold, 52)
+    font_by    = _font(serif_reg,  26)
+    font_body  = _font(serif_reg,  24)
+    font_close = _font(serif_bold, 64)
+    font_page  = _font(sans_reg,   20)
 
-    NAVY    = (8, 14, 46)
-    GOLD    = (255, 215, 70)
-    SOFT_GOLD = (240, 195, 80)
-    WHITE   = (240, 240, 255)
-    LAVENDER = (180, 160, 240)
-    TEXT_BG = (12, 18, 55)
+    # ── Helpers ───────────────────────────────────────────────────────────────
+    def parchment_page():
+        img = Image.new("RGB", (PW, PH), PARCHMENT)
+        return img, ImageDraw.Draw(img)
 
-    def navy_page(draw, w=PW, h=PH):
-        for y in range(h):
-            ratio = y / h
-            r = int(NAVY[0] + (15 - NAVY[0]) * ratio)
-            g = int(NAVY[1] + (25 - NAVY[1]) * ratio)
-            b = int(NAVY[2] + (38 - NAVY[2]) * ratio)
-            draw.line([(0, y), (w, y)], fill=(r, g, b))
+    def paste_illustration(page, img_path, area_h):
+        """Paste scene image into top area, scaled to fill width."""
+        try:
+            src = Image.open(img_path).convert("RGB")
+            iw, ih = src.size
+            scale = PW / iw
+            new_h = int(ih * scale)
+            src = src.resize((PW, new_h), Image.LANCZOS)
+            if new_h >= area_h:
+                offset = min((new_h - area_h) // 3, 30)
+                src = src.crop((0, offset, PW, offset + area_h))
+            page.paste(src, (0, 0))
+        except Exception:
+            d = ImageDraw.Draw(page)
+            for y in range(area_h):
+                ratio = y / area_h
+                r = int(8 + 20 * ratio); g = int(14 + 28 * ratio); b = int(46 + 35 * ratio)
+                d.line([(0, y), (PW, y)], fill=(r, g, b))
 
-    def add_stars(draw, w=PW, h=PH, count=80, seed=42):
-        rng = random.Random(seed)
-        for _ in range(count):
-            x = rng.randint(0, w)
-            y = rng.randint(0, int(h * 0.85))
-            sz = rng.choice([1, 1, 2])
-            br = rng.randint(130, 255)
-            draw.ellipse([x - sz, y - sz, x + sz, y + sz],
-                         fill=(br, br, int(br * 0.9)))
+    def draw_gold_divider(draw):
+        draw.rectangle([(0, DIVIDER_Y), (PW, DIVIDER_Y + 4)], fill=GOLD_LINE)
 
-    def wrap_text_centered(draw, text, font, colour, x_center, y_start, max_w, line_h):
-        words = text.split()
+    def draw_text_band(draw, text, page_num=0):
+        """Centre-aligned story text + page number in parchment band."""
+        PAD = 40
+        MAX_W = PW - PAD * 2
+        test_bbox = draw.textbbox((0, 0), "W" * 30, font=font_body)
+        char_w = (test_bbox[2] - test_bbox[0]) / 30
+        wrap_chars = max(20, int(MAX_W / char_w))
+
         lines = []
-        current = []
-        for word in words:
-            test = " ".join(current + [word])
-            bbox = draw.textbbox((0, 0), test, font=font)
-            if bbox[2] - bbox[0] > max_w and current:
-                lines.append(" ".join(current))
-                current = [word]
-            else:
-                current.append(word)
-        if current:
-            lines.append(" ".join(current))
-        y = y_start
+        for para in text.replace("\n\n", "\n").split("\n"):
+            para = para.strip()
+            if para:
+                lines.extend(tw.wrap(para, width=wrap_chars))
+            if len(lines) >= 6:
+                break
+        lines = lines[:6]
+
+        LINE_H = 36
+        TEXT_AREA_H = PH - TEXT_Y
+        block_h = len(lines) * LINE_H
+        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2 - 14
+        y = max(TEXT_Y + 16, y)
+
         for line in lines:
-            bbox = draw.textbbox((0, 0), line, font=font)
-            x = x_center - (bbox[2] - bbox[0]) // 2
-            draw.text((x, y), line, font=font, fill=colour)
-            y += line_h
-        return y
+            bbox = draw.textbbox((0, 0), line, font=font_body)
+            x = (PW - (bbox[2] - bbox[0])) // 2
+            draw.text((x, y), line, font=font_body, fill=DARK_BROWN)
+            y += LINE_H
+
+        if page_num > 0:
+            pg = str(page_num)
+            bbox = draw.textbbox((0, 0), pg, font=font_page)
+            draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 36),
+                      pg, font=font_page, fill=PAGE_COL)
+
+    def centred_text(draw, text, font, colour, y):
+        bbox = draw.textbbox((0, 0), text, font=font)
+        draw.text(((PW - (bbox[2] - bbox[0])) // 2, y), text, font=font, fill=colour)
 
     pages = []
 
-    # ── Title page ───────────────────────────────────────────────────────────────
-    title_page = Image.new("RGB", (PW, PH))
-    draw = ImageDraw.Draw(title_page)
-    navy_page(draw)
-    add_stars(draw)
+    # ── Cover page ────────────────────────────────────────────────────────────
+    cover, draw = parchment_page()
+    # Try to use first scene image as cover illustration (top half)
+    cover_illus_h = int(PH * 0.58)
+    cover_candidates = [
+        episode_dir / "scene_01.jpg",
+        episode_dir / "scene_01.png",
+        episode_dir / "thumbnail.jpg",
+    ]
+    cover_img = next((p for p in cover_candidates if p.exists()), None)
+    if cover_img:
+        paste_illustration(cover, cover_img, cover_illus_h)
+    else:
+        # Navy starry gradient when no image yet
+        for y in range(cover_illus_h):
+            ratio = y / cover_illus_h
+            r = int(8 + 20 * ratio); g = int(14 + 28 * ratio); b = int(46 + 35 * ratio)
+            draw.line([(0, y), (PW, y)], fill=(r, g, b))
 
+    # Gold rule below illustration
+    draw.rectangle([(0, cover_illus_h), (PW, cover_illus_h + 4)], fill=GOLD_LINE)
+
+    # Title block on parchment
     title_text = script.get("title", SHOW_NAME)
-    wrap_text_centered(draw, title_text, font_title, GOLD, PW // 2, 220, PW - 80, 70)
+    title_y = cover_illus_h + 30
+    # Wrap title
+    test_bbox = draw.textbbox((0, 0), "W" * 18, font=font_title)
+    char_w = (test_bbox[2] - test_bbox[0]) / 18
+    title_lines = tw.wrap(title_text, width=max(10, int((PW - 80) / char_w)))[:3]
+    for tl in title_lines:
+        centred_text(draw, tl, font_title, DARK_BROWN, title_y)
+        bbox = draw.textbbox((0, 0), tl, font=font_title)
+        title_y += (bbox[3] - bbox[1]) + 8
 
-    show_bbox = draw.textbbox((0, 0), SHOW_NAME, font=font_show)
-    draw.text(((PW - (show_bbox[2] - show_bbox[0])) // 2, PH - 160),
-              SHOW_NAME, font=font_show, fill=WHITE)
+    # Gold decorative rule
+    rule_y = title_y + 14
+    draw.rectangle([(PW//4, rule_y), (3*PW//4, rule_y + 2)], fill=GOLD_LINE)
 
-    pages.append(title_page)
+    # Show name + author
+    centred_text(draw, SHOW_NAME, font_by, MID_BROWN, rule_y + 18)
+    centred_text(draw, "By Jamie Wigg", font_by, GOLD_TEXT, rule_y + 52)
 
-    # ── Scene pages ───────────────────────────────────────────────────────────────
-    img_area_h  = int(PH * 0.55)
-    text_area_y = img_area_h + 6
+    pages.append(cover)
 
+    # ── Scene pages ───────────────────────────────────────────────────────────
     for i, scene in enumerate(script.get("scenes", [])):
-        narr = scene.get("narration_segment", "")
-        scene_img_path_candidates = [
+        narr = scene.get("narration", scene.get("narration_segment", ""))
+        candidates = [
             episode_dir / f"scene_{scene['id']:02d}.jpg",
             episode_dir / f"scene_{scene['id']:02d}.png",
         ]
-        scene_img_path = next((p for p in scene_img_path_candidates if p.exists()), None)
+        img_path = next((p for p in candidates if p.exists()), None)
 
-        page = Image.new("RGB", (PW, PH))
-        draw = ImageDraw.Draw(page)
-
-        # Top: scene illustration (or navy fallback)
-        if scene_img_path:
-            try:
-                scene_img = Image.open(scene_img_path).convert("RGB")
-                scene_img = scene_img.resize((PW, img_area_h), Image.LANCZOS)
-                page.paste(scene_img, (0, 0))
-            except Exception:
-                draw.rectangle([0, 0, PW, img_area_h], fill=(10, 20, 60))
+        page, draw = parchment_page()
+        if img_path:
+            paste_illustration(page, img_path, ILLUS_H)
         else:
-            # Gradient fallback using scene palettes
-            pal = SCENE_PALETTES[i % len(SCENE_PALETTES)]
-            for y in range(img_area_h):
-                ratio = y / img_area_h
-                r = int(pal[0] + (pal[3] - pal[0]) * ratio)
-                g = int(pal[1] + (pal[4] - pal[1]) * ratio)
-                b = int(pal[2] + (pal[5] - pal[2]) * ratio)
+            for y in range(ILLUS_H):
+                ratio = y / ILLUS_H
+                r = int(8 + 20 * ratio); g = int(14 + 28 * ratio); b = int(46 + 35 * ratio)
                 draw.line([(0, y), (PW, y)], fill=(r, g, b))
 
-        # Thin gold divider
-        draw.line([(0, img_area_h), (PW, img_area_h)], fill=GOLD, width=3)
-
-        # Bottom: navy text area
-        draw.rectangle([0, text_area_y, PW, PH], fill=TEXT_BG)
-
-        # Narration text
-        padding = 28
-        wrap_text_centered(draw, narr, font_body, WHITE,
-                           PW // 2, text_area_y + padding,
-                           PW - padding * 2, 36)
-
-        # Page number — bottom right
-        page_num = f"{i + 1}"
-        bbox = draw.textbbox((0, 0), page_num, font=font_page)
-        draw.text((PW - (bbox[2] - bbox[0]) - 20, PH - 36),
-                  page_num, font=font_page, fill=LAVENDER)
-
+        draw_gold_divider(draw)
+        draw_text_band(draw, narr, page_num=i + 1)
         pages.append(page)
 
-    # ── Closing page ───────────────────────────────────────────────────────────────
-    closing = Image.new("RGB", (PW, PH))
-    draw = ImageDraw.Draw(closing)
-    navy_page(draw)
-    add_stars(draw, seed=99)
+    # ── Closing page ──────────────────────────────────────────────────────────
+    closing, draw = parchment_page()
 
-    close_text = "Sweet dreams!"
-    bbox = draw.textbbox((0, 0), close_text, font=font_close)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 - 80),
-              close_text, font=font_close, fill=SOFT_GOLD)
+    # Soft gold decorative circle
+    cx, cy = PW // 2, int(PH * 0.35)
+    for radius in [130, 110, 90]:
+        brightness = 255 - (130 - radius)
+        draw.ellipse([cx-radius, cy-radius, cx+radius, cy+radius],
+                     fill=(brightness, int(brightness*0.88), int(brightness*0.55)))
 
-    sub_text = "See you next time, little one"
-    bbox = draw.textbbox((0, 0), sub_text, font=font_show)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 + 20),
-              sub_text, font=font_show, fill=WHITE)
+    # Moon crescent suggestion
+    draw.ellipse([cx-60, cy-60, cx+60, cy+60], fill=(255, 245, 190))
 
-    show_footer = "Sonny's Cozy Quokka Bedtime Tales"
-    bbox = draw.textbbox((0, 0), show_footer, font=font_page)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 70),
-              show_footer, font=font_page, fill=LAVENDER)
+    centred_text(draw, "Sweet dreams!", font_close, DARK_BROWN, int(PH * 0.52))
+    centred_text(draw, "See you next time, little one ✨", font_by, MID_BROWN, int(PH * 0.64))
 
+    # Gold rule
+    rule_y2 = int(PH * 0.70)
+    draw.rectangle([(PW//4, rule_y2), (3*PW//4, rule_y2 + 2)], fill=GOLD_LINE)
+
+    centred_text(draw, SHOW_NAME, font_by, MID_BROWN, rule_y2 + 18)
+    centred_text(draw, "By Jamie Wigg", font_page, GOLD_TEXT, rule_y2 + 52)
     pages.append(closing)
 
-    # ── Save as multi-page PDF ───────────────────────────────────────────────────────────
-    ebook_path = episode_dir / "ebook.pdf"
+    # ── Save PDF ──────────────────────────────────────────────────────────────
+    safe_title = script.get("title", "Episode").replace("/", "-").replace(":", "-")[:60].strip()
+    ebook_path = episode_dir / f"Sunny the Quokka — {safe_title}.pdf"
     pages[0].save(
         str(ebook_path),
         format="PDF",
         save_all=True,
         append_images=pages[1:],
-        resolution=96,
+        resolution=150,
     )
-    print(f"  ✓ Ebook saved: {ebook_path} ({len(pages)} pages)")
+    print(f"  ✓ Ebook saved: {ebook_path} ({len(pages)} pages, cream parchment style)")
     return ebook_path
 
 
