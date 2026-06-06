@@ -16,9 +16,12 @@ import argparse
 import requests
 import subprocess
 from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent.parent / ".env")
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.parent / ".env")
+except ImportError:
+    pass  # dotenv optional
 
 # Make OpenMontage tools importable (submodule lives at repo root)
 _OM_PATH = Path(__file__).parent.parent / "OpenMontage"
@@ -1067,15 +1070,31 @@ def upload_thumbnail_to_youtube(youtube, video_id: str, thumb_path: Path):
 
 def main():
     parser = argparse.ArgumentParser(description="Kids channel episode pipeline")
-    parser.add_argument("--topic", required=False, help="Episode topic")
+    parser.add_argument("--topic", required=False, help="Episode topic (for Sonny's Quokka)")
+    parser.add_argument("--series", required=False, help="Series name: SURGE or sonny")
+    parser.add_argument("--episode", type=int, required=False, help="Episode number (for SURGE series)")
     parser.add_argument("--script-file", help="Path to pre-written script.json (skips generation)")
     parser.add_argument("--dry-run", action="store_true", help="Skip upload")
     parser.add_argument("--skip-video", action="store_true",
                         help="Skip Higgsfield (use placeholder images)")
     args = parser.parse_args()
 
+    # SURGE series support
+    if args.series and args.series.upper() == "SURGE":
+        if not args.episode:
+            parser.error("--series SURGE requires --episode (1-10)")
+        from SURGE_EPISODE_TEMPLATE import SurgeEpisodeRenderer
+        renderer = SurgeEpisodeRenderer(
+            episode_number=args.episode,
+            dry_run=args.dry_run,
+            skip_video=args.skip_video,
+            script_file=Path(args.script_file) if args.script_file else None,
+        )
+        renderer.render()
+        return
+
     if not args.topic and not args.script_file:
-        parser.error("Provide --topic or --script-file")
+        parser.error("Provide --topic or --script-file (or --series SURGE --episode N)")
 
     # Derive slug from topic or script file name
     slug_source = args.topic or Path(args.script_file).stem
