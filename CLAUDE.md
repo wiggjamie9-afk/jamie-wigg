@@ -25,6 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Agent TARS / UI-TARS** → vision-language GUI agent (ByteDance). See `SETUP-AGENT-TARS.md`. Best for click-stream automation; not a fit for the LLM-driven content pipeline.
 - **Hermes Agent** → Nous Research open-source agent CLI with messaging gateways (Telegram/Discord). See `SETUP-HERMES.md`. Useful for driving renders from phone/cron; RHYTHMIX skills are not ported to it.
 - **Voicebox (local TTS)** → runs on-device Mac, clones your voice from a sample, zero API cost. See `VOICEBOX-SETUP.md`. Voice profile name: `Jamie`. Default endpoint: `http://127.0.0.1:17493`.
+- **Kokoro TTS (HyperFrames narration)** → lightweight, fast, multi-language text-to-speech. Generates `.wav` narration for RHYTHMIX promos. 30+ voices (English, French, Italian, Japanese, Chinese); voice blending supported. See `KOKORO-SETUP.md`. Install: `uv tool install kokoro-tts` or `pip install kokoro-tts`. Used by: `npx --yes hyperframes@0.4.42 tts`.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
 
 ## Repository Overview
@@ -63,6 +64,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 **Reference docs at root:**
 - `CONTEXT.md` — domain language (Promo, Cut, Narration, Hook)
 - `CREATIVE-AI-STACK.md` — iPhone-oriented creative AI toolchain
+- `KOKORO-SETUP.md` — Kokoro TTS installation & usage for HyperFrames narration
 - `SETUP-AGENT-TARS.md` — Agent TARS / UI-TARS desktop setup
 - `SETUP-HERMES.md` — Hermes Agent CLI setup
 - `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
