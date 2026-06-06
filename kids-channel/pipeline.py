@@ -591,14 +591,16 @@ def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path
         return None
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     full_prompt = (
-        f"Beautiful soft watercolour children's book illustration. "
-        f"Rich warm palette, Australian bush at night, deep navy blue starry sky, "
-        f"soft glowing moonlight, tiny fireflies, lush green ferns and gum trees. "
-        f"Sonny the quokka — small golden-brown fluffy marsupial, big warm brown eyes, "
-        f"gentle curious smile, round ears, short front paws — prominently in foreground. "
+        f"Traditional children's picture book watercolour illustration. "
+        f"Painterly loose brushwork, visible paper texture and soft paint bleeds. "
+        f"Deep indigo-navy Australian night sky scattered with tiny stars, "
+        f"large soft full moon casting warm golden light. "
+        f"Gum trees and eucalyptus leaves framing the scene. "
+        f"Sonny the quokka — small golden-brown marsupial with soft detailed fur, "
+        f"large warm brown eyes, gentle curious expression — as the main character. "
         f"Scene: {prompt[:280]}. "
-        f"Professional picture-book quality, painterly brushwork, no text, no words, "
-        f"safe for toddlers, by Jamie Wigg."
+        f"Rich warm earthy palette, professional illustrator quality, "
+        f"no text, no words, no captions, safe for children."
     )
     headers = {
         "Authorization": f"Token {REPLICATE_API_TOKEN}",
@@ -752,7 +754,7 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
     frame_path = episode_dir / f"scene_{scene_id:02d}_frame.jpg"
 
     W, H = 1920, 1080
-    ILLUS_H = 700          # illustration area height
+    ILLUS_H = 820          # illustration area height — 76%, picture-book style
     DIVIDER_Y = ILLUS_H
     TEXT_Y = ILLUS_H + 6   # text band starts just below divider
 
@@ -838,9 +840,9 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
             if not para:
                 continue
             lines.extend(tw.wrap(para, width=wrap_chars))
-            if len(lines) >= 5:
+            if len(lines) >= 4:
                 break
-        lines = lines[:5]
+        lines = lines[:4]
 
         LINE_H = 58
         block_h = len(lines) * LINE_H
@@ -1049,7 +1051,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     import textwrap as tw
 
     PW, PH = 800, 1120
-    ILLUS_H   = int(PH * 0.60)     # 672px — illustration area
+    ILLUS_H   = int(PH * 0.80)     # 896px — illustration fills 80% (picture-book style)
     DIVIDER_Y = ILLUS_H
     TEXT_Y    = ILLUS_H + 5
 
@@ -1090,7 +1092,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
 
     font_title = _font(serif_bold, 52)
     font_by    = _font(serif_reg,  26)
-    font_body  = _font(serif_reg,  24)
+    font_body  = _font(serif_reg,  28)
     font_close = _font(serif_bold, 64)
     font_page  = _font(sans_reg,   20)
 
@@ -1123,26 +1125,26 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
 
     def draw_text_band(draw, text, page_num=0):
         """Centre-aligned story text + page number in parchment band."""
-        PAD = 40
+        PAD = 48
         MAX_W = PW - PAD * 2
         test_bbox = draw.textbbox((0, 0), "W" * 30, font=font_body)
         char_w = (test_bbox[2] - test_bbox[0]) / 30
-        wrap_chars = max(20, int(MAX_W / char_w))
+        wrap_chars = max(16, int(MAX_W / char_w))
 
         lines = []
         for para in text.replace("\n\n", "\n").split("\n"):
             para = para.strip()
             if para:
                 lines.extend(tw.wrap(para, width=wrap_chars))
-            if len(lines) >= 6:
+            if len(lines) >= 4:
                 break
-        lines = lines[:6]
+        lines = lines[:4]
 
-        LINE_H = 36
+        LINE_H = 44
         TEXT_AREA_H = PH - TEXT_Y
         block_h = len(lines) * LINE_H
-        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2 - 14
-        y = max(TEXT_Y + 16, y)
+        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2 - 10
+        y = max(TEXT_Y + 12, y)
 
         for line in lines:
             bbox = draw.textbbox((0, 0), line, font=font_body)
