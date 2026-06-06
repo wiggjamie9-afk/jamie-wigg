@@ -616,46 +616,52 @@ def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path
             "seed": scene_id * 17,
         }
     }
-    try:
-        print(f"  ⏳ Scene {scene_id} Replicate FLUX Schnell...")
-        r = requests.post(
-            "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
-            headers=headers, json=payload, timeout=120,
-        )
-        if r.status_code not in (200, 201):
-            print(f"  ⚠ Replicate start failed: {r.status_code} {r.text[:200]}")
-            return None
-        prediction = r.json()
-        if prediction.get("status") == "succeeded":
-            img_url = prediction["output"]
-        else:
-            poll_url = prediction["urls"]["get"]
-            poll_headers = {"Authorization": f"Token {REPLICATE_API_TOKEN}"}
-            deadline = time.time() + 300
-            img_url = None
-            while time.time() < deadline:
-                time.sleep(3)
-                pr = requests.get(poll_url, headers=poll_headers, timeout=30)
-                pred = pr.json()
-                if pred.get("status") == "succeeded":
-                    img_url = pred["output"]
-                    break
-                if pred.get("status") in ("failed", "canceled"):
-                    print(f"  ⚠ Replicate prediction {pred.get('status')}: {pred.get('error')}")
-                    return None
-            if not img_url:
-                print(f"  ⚠ Replicate timed out")
+    for attempt in range(5):
+        try:
+            print(f"  ⏳ Scene {scene_id} Replicate FLUX Schnell{' (retry)' if attempt else ''}...")
+            r = requests.post(
+                "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+                headers=headers, json=payload, timeout=120,
+            )
+            if r.status_code == 429:
+                wait = 15 * (attempt + 1)
+                print(f"  ⏳ Scene {scene_id} rate-limited (429), waiting {wait}s before retry {attempt+1}/4...")
+                time.sleep(wait)
+                continue
+            if r.status_code not in (200, 201):
+                print(f"  ⚠ Replicate start failed: {r.status_code} {r.text[:200]}")
                 return None
-        if isinstance(img_url, list):
-            img_url = img_url[0]
-        img_data = requests.get(img_url, timeout=60).content
-        if len(img_data) > 5000:
-            img_path.write_bytes(img_data)
-            print(f"  ✓ Scene {scene_id} image (Replicate FLUX Schnell, {len(img_data)//1024}KB)")
-            return img_path
-        print(f"  ⚠ Replicate image too small ({len(img_data)} bytes)")
-    except Exception as e:
-        print(f"  ⚠ Scene {scene_id} Replicate failed: {e}")
+            prediction = r.json()
+            if prediction.get("status") == "succeeded":
+                img_url = prediction["output"]
+            else:
+                poll_url = prediction["urls"]["get"]
+                poll_headers = {"Authorization": f"Token {REPLICATE_API_TOKEN}"}
+                deadline = time.time() + 300
+                img_url = None
+                while time.time() < deadline:
+                    time.sleep(3)
+                    pr = requests.get(poll_url, headers=poll_headers, timeout=30)
+                    pred = pr.json()
+                    if pred.get("status") == "succeeded":
+                        img_url = pred["output"]
+                        break
+                    if pred.get("status") in ("failed", "canceled"):
+                        print(f"  ⚠ Replicate prediction {pred.get('status')}: {pred.get('error')}")
+                        return None
+                if not img_url:
+                    print(f"  ⚠ Replicate timed out")
+                    return None
+            if isinstance(img_url, list):
+                img_url = img_url[0]
+            img_data = requests.get(img_url, timeout=60).content
+            if len(img_data) > 5000:
+                img_path.write_bytes(img_data)
+                print(f"  ✓ Scene {scene_id} image (Replicate FLUX Schnell, {len(img_data)//1024}KB)")
+                return img_path
+            print(f"  ⚠ Replicate image too small ({len(img_data)} bytes)")
+        except Exception as e:
+            print(f"  ⚠ Scene {scene_id} Replicate failed: {e}")
     return None
 
 
