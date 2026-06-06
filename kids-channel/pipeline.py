@@ -1247,8 +1247,9 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     pages.append(closing)
 
     # ── Save PDF ──────────────────────────────────────────────────────────────
-    safe_title = script.get("title", "Episode").replace("/", "-").replace(":", "-")[:60].strip()
-    ebook_path = episode_dir / f"Sunny the Quokka — {safe_title}.pdf"
+    _raw = script.get("title", "Episode").split("|")[0]  # drop " | Bedtime Story" suffix
+    safe_title = _raw.replace("/", "-").replace(":", "-").replace("\\", "-").strip()[:60]
+    ebook_path = episode_dir / f"Sunny the Quokka - {safe_title}.pdf"
     pages[0].save(
         str(ebook_path),
         format="PDF",
