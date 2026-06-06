@@ -1564,13 +1564,16 @@ def main():
             print(f"  ⚠ Higgsfield failed ({e}) — falling through to next image source...")
 
     if not scene_videos:
+        # Diagnostic — always print token status so we can see it in the logs
+        _tok_len = len(REPLICATE_API_TOKEN) if REPLICATE_API_TOKEN else 0
+        print(f"  🔑 REPLICATE_API_TOKEN: {'set (' + str(_tok_len) + ' chars)' if _tok_len else 'NOT SET — will use fallback'}")
         if REPLICATE_API_TOKEN:
             print("[3/6] Generating scene images via Replicate FLUX Schnell...")
         elif FAL_KEY:
             print("[3/6] Generating scene images via FAL.ai FLUX...")
         else:
             print("[3/6] Generating scene images via Pollinations FLUX (free)...")
-            print("  ℹ  For AI-quality art: add REPLICATE_API_TOKEN to GitHub Secrets (same token as your creative-stack MCP server)")
+            print("  ℹ  For AI-quality art: add REPLICATE_API_TOKEN to GitHub Secrets")
 
         for scene in script["scenes"]:
             img_path = None
