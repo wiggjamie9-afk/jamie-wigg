@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SURGE Character Generation - ZIGGY
-# Professional 2D Cartoon Illustration using FLUX 1.1 Pro
+# Professional 2D Cartoon Illustration using FLUX Pro
 
 if [ -z "$REPLICATE_API_TOKEN" ]; then
   echo "Error: REPLICATE_API_TOKEN not set"
@@ -18,7 +18,7 @@ curl -X POST https://api.replicate.com/v1/predictions \
   -H "Content-Type: application/json" \
   -d @- <<EOF > /tmp/ziggy-response.json
 {
-  "version": "black-forest-labs/flux-1.1-pro",
+  "version": "black-forest-labs/flux-pro",
   "input": {
     "prompt": "$PROMPT",
     "aspect_ratio": "16:9",
