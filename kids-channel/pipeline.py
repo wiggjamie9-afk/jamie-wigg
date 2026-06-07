@@ -13,6 +13,7 @@ import sys
 import json
 import time
 import argparse
+import math
 import requests
 import subprocess
 from pathlib import Path
@@ -25,14 +26,15 @@ _OM_PATH = Path(__file__).parent.parent / "OpenMontage"
 if _OM_PATH.exists() and str(_OM_PATH) not in sys.path:
     sys.path.insert(0, str(_OM_PATH))
 
-ANTHROPIC_API_KEY    = os.getenv("ANTHROPIC_API_KEY")
-ELEVENLABS_API_KEY   = os.getenv("ELEVENLABS_API_KEY")
-HIGGSFIELD_API_KEY   = os.getenv("HIGGSFIELD_API_KEY")
-HIGGSFIELD_SECRET    = os.getenv("HIGGSFIELD_SECRET")
-FAL_KEY              = os.getenv("FAL_KEY")
-PEXELS_API_KEY       = os.getenv("PEXELS_API_KEY")
-PIXABAY_API_KEY      = os.getenv("PIXABAY_API_KEY")
-YOUTUBE_CLIENT_ID    = os.getenv("YOUTUBE_CLIENT_ID")
+ANTHROPIC_API_KEY     = os.getenv("ANTHROPIC_API_KEY")
+ELEVENLABS_API_KEY    = os.getenv("ELEVENLABS_API_KEY")
+HIGGSFIELD_API_KEY    = os.getenv("HIGGSFIELD_API_KEY")
+HIGGSFIELD_SECRET     = os.getenv("HIGGSFIELD_SECRET")
+REPLICATE_API_TOKEN   = os.getenv("REPLICATE_API_TOKEN")
+FAL_KEY               = os.getenv("FAL_KEY")
+PEXELS_API_KEY        = os.getenv("PEXELS_API_KEY")
+PIXABAY_API_KEY       = os.getenv("PIXABAY_API_KEY")
+YOUTUBE_CLIENT_ID     = os.getenv("YOUTUBE_CLIENT_ID")
 YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 
 PIPER_VOICE_DIR = Path(os.getenv("PIPER_VOICE_DIR", "/tmp/piper-voices"))
@@ -43,9 +45,15 @@ SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
 CHARACTER_NAME = "Sonny"
 CHARACTER_DESC = "a sweet small quokka with golden-brown fur, big warm brown eyes, tiny round ears, gentle curious expression"
 VISUAL_STYLE = (
-    "Soft watercolour illustration, warm gentle palette, Australian bush at night. "
-    "Deep navy sky, soft moonlight, glowing fireflies. "
-    "Professional children's book art quality. No text. Safe for toddlers."
+    "Professional watercolour children's picture book illustration (like Beatrix Potter, Jill Barklem, Alison Friend style). "
+    "Hand-painted watercolour on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle washes. "
+    "Warm earthy palette: ochres, burnt siennas, soft greens, deep blues. "
+    "Australian bush at night with soft moonlight. Deep indigo-navy sky scattered with hand-dotted stars. "
+    "Gum trees framing scene with loose sketchy linework. Glowing fireflies with warm golden highlights. "
+    "Sonny the quokka as main character - always consistent appearance: small marsupial, soft golden-brown fur detail, "
+    "large warm brown eyes, gentle curious expression, tiny round ears, cosy and safe feeling. "
+    "Avoid: flat digital art, sharp clean lines, smooth gradients, glossy 3D render, airbrushed, photorealistic, "
+    "plastic look, bright neon colours. No text or captions. Safe for toddlers ages 1-5."
 )
 SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sonny the little Quokka — cozy bedtime stories for toddlers at bedtime or quiet time."
 
@@ -102,26 +110,44 @@ SCRIPT_PROMPT_TEMPLATE = """You are writing an episode of "{show_name}", a calm 
 The main character is {character_name}, {character_desc}.
 The show is slow-paced, gentle, and cozy - no conflict, no shouting, no sudden drama.
 
-Write a short episode about: {topic}
+VISUAL STYLE FOR ALL SCENES:
+Professional watercolour children's picture book illustration (Beatrix Potter / Jill Barklem style). Hand-painted on textured
+cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes. Warm earthy palette (ochres, siennas,
+soft greens, deep blues). Australian bush at night with soft moonlight, indigo-navy starry sky, gum trees with sketchy linework,
+glowing fireflies. Sonny the quokka: small marsupial, soft golden-brown fur detail, large warm brown eyes, gentle expression,
+tiny round ears - always exactly the same appearance in every scene. Safe and cosy.
+
+CHARACTER CONSISTENCY RULE: {character_name} must have identical appearance in every scene image — same fur colour, same eye size
+and colour, same ear shape, same body proportions. Reference the first scene image throughout.
+
+Write a complete episode about: {topic}
 
 Return ONLY a valid JSON object with exactly these fields, no other text:
 {{
   "title": "episode title (max 60 chars, warm and descriptive)",
   "description": "YouTube description (2-3 sentences, parent-friendly, include '{show_name}')",
   "tags": ["list", "of", "10", "youtube", "tags"],
-  "narration": "Full narration text (300-400 words). Gentle, slow pace. Written for a calm voice-over.",
+  "narration": "Full narration text (800-1000 words). Gentle, slow pace. Written for a calm voice-over. Tell a COMPLETE story with introduction, development, climax, and satisfying resolution.",
   "scenes": [
     {{
       "id": 1,
-      "duration": 8,
-      "image_prompt": "Detailed visual description for image generation. Soft watercolour style, warm palette, {character_name} {character_desc}. Scene: ...",
+      "duration": 10,
+      "image_prompt": "Professional watercolour illustration. {character_name} — small quokka with golden-brown fur, big warm brown eyes, gentle expression, tiny ears — as main subject. Setting: [specific scene]. Soft brushstrokes, visible paper texture, pigment bleeds, warm palette, Australian bush night, indigo sky with stars, glowing fireflies. Safe and cosy. No text.",
       "narration_segment": "The words spoken during this scene."
     }}
   ]
 }}
 
-Create 6 scenes. Each scene is 8 seconds.
-Make the image prompts specific, beautiful, and consistent - {character_name} always looks the same."""
+Create 12 scenes. Each scene is 10 seconds (120 seconds total).
+
+IMAGE PROMPT RULES:
+1. Start EVERY image prompt with professional watercolour style descriptor
+2. Always describe {character_name}'s appearance: same fur colour, eyes, ears, size — reference consistency with earlier scenes
+3. Include specific Australian bush location details: gum trees, native plants, moonlight effect
+4. Add artistic technique details: brushstrokes, paper texture, pigment technique for authenticity
+5. Avoid: digital, vector, CGI, glossy, photorealistic, airbrushed, bright neon
+
+IMPORTANT: Tell a COMPLETE story with clear beginning, middle, and end. Include proper story resolution and calm, cozy conclusion."""
 
 
 def _build_prompt(topic: str) -> str:
@@ -253,12 +279,13 @@ def get_higgsfield_token() -> str:
 
 
 def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: str) -> Path:
-    """Generate a scene image via Higgsfield Soul (text-to-image)."""
+    """Generate a scene image via Higgsfield Soul (text-to-image) — professional watercolour style."""
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    # Combine full visual style + character description + scene details for consistent professional art
     full_prompt = (
-        f"{VISUAL_STYLE} "
-        f"Character: {CHARACTER_NAME}, {CHARACTER_DESC}. "
-        f"Scene: {prompt[:350]}"
+        f"{VISUAL_STYLE}\n"
+        f"Main character: {CHARACTER_NAME}, {CHARACTER_DESC}.\n"
+        f"Scene: {prompt[:400]}"
     )
     r = requests.post(
         "https://api.higgsfield.ai/v1/soul/generate",
@@ -270,7 +297,7 @@ def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: s
     data = r.json()
     job_id = data.get("job_id") or data.get("id")
     if job_id:
-        print(f"  ⏳ Scene {scene_id} — waiting for Higgsfield job {job_id}...")
+        print(f"  ⏳ Scene {scene_id} — Higgsfield Soul (professional watercolour) {job_id}...")
         img_url = poll_higgsfield_job(job_id, token)
     else:
         img_url = data.get("images", [{}])[0].get("url", "")
@@ -278,7 +305,7 @@ def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: s
         raise ValueError(f"No image URL in Higgsfield response: {data}")
     img_data = requests.get(img_url, timeout=60).content
     img_path.write_bytes(img_data)
-    print(f"  ✓ Scene {scene_id} image (Higgsfield Soul, {len(img_data)//1024}KB)")
+    print(f"  ✓ Scene {scene_id} (Higgsfield Soul — professional watercolour, {len(img_data)//1024}KB)")
     return img_path
 
 
@@ -295,9 +322,11 @@ def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) ->
             files={"file": (img_path.name, f, "image/jpeg")},
             timeout=60,
         )
+    _scene_text = scene.get("narration", "")
     if upload_r.status_code != 200:
         print(f"  ⚠ Upload failed for scene {scene_id}: {upload_r.text[:100]} — using image_to_video fallback")
-        return image_to_video(img_path, duration, episode_dir, scene_id)
+        return image_to_video(img_path, duration, episode_dir, scene_id,
+                              scene_text=_scene_text, page_num=scene_id)
 
     image_id = upload_r.json().get("id") or upload_r.json().get("asset_id")
     motion_prompt = f"Slow gentle camera drift, soft ambient motion. {scene.get('image_prompt', '')[:150]}"
@@ -315,13 +344,15 @@ def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) ->
     )
     if anim_r.status_code != 200:
         print(f"  ⚠ DOP failed for scene {scene_id}: {anim_r.text[:100]} — using image_to_video fallback")
-        return image_to_video(img_path, duration, episode_dir, scene_id)
+        return image_to_video(img_path, duration, episode_dir, scene_id,
+                              scene_text=_scene_text, page_num=scene_id)
 
     anim_data = anim_r.json()
     job_id = anim_data.get("job_id") or anim_data.get("id")
     if not job_id:
         print(f"  ⚠ No job_id in DOP response — using image_to_video fallback")
-        return image_to_video(img_path, duration, episode_dir, scene_id)
+        return image_to_video(img_path, duration, episode_dir, scene_id,
+                              scene_text=_scene_text, page_num=scene_id)
 
     print(f"  ⏳ Scene {scene_id} — waiting for DOP animation {job_id}...")
     try:
@@ -332,7 +363,8 @@ def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) ->
         return vid_path
     except Exception as e:
         print(f"  ⚠ DOP animation failed: {e} — using image_to_video fallback")
-        return image_to_video(img_path, duration, episode_dir, scene_id)
+        return image_to_video(img_path, duration, episode_dir, scene_id,
+                              scene_text=_scene_text, page_num=scene_id)
 
 
 def poll_higgsfield_job(job_id: str, token: str, max_wait: int = 300) -> str:
@@ -356,34 +388,158 @@ def poll_higgsfield_job(job_id: str, token: str, max_wait: int = 300) -> str:
 
 
 def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
-    """Generate a scene image via Pollinations FLUX when Higgsfield is unavailable."""
+    """Generate a scene image via Pollinations FLUX — free, no API key needed.
+    Generates professional watercolour children's book style."""
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
-    # Keep prompt short to avoid URL length limits (~500 chars encoded is safe)
+    # Short prompt: URL-length safe, faster to process, professional watercolor focus
     short_prompt = (
-        f"Children's watercolour illustration, soft warm colours, Australian bush, "
-        f"cute quokka character with golden fur and big brown eyes. {prompt[:200]}"
+        f"Professional watercolour children's book illustration, Beatrix Potter style. "
+        f"Sonny the quokka — golden-brown fur, big warm brown eyes, gentle expression. "
+        f"{prompt[:150]}. Australian bush, moonlit, starry night, gum trees, fireflies, "
+        f"brushstrokes, textured paper, warm palette, no text, safe for children"
     )
     encoded = requests.utils.quote(short_prompt)
-    headers = {
-        "Referer": "https://rhythmixapp.com.au",
-        "User-Agent": "SonnyBot/1.0",
-    }
-    for model in ("flux", "turbo"):
+    headers = {"User-Agent": "SonnyBot/1.0", "Accept": "image/*"}
+
+    for model, timeout in (("flux", 90), ("turbo", 45)):
+        seed = scene_id * 7
         url = (
             f"https://image.pollinations.ai/prompt/{encoded}"
-            f"?width=1280&height=720&model={model}&nologo=true&seed={scene_id * 7}"
+            f"?width=1280&height=720&model={model}&nologo=true&seed={seed}"
         )
         try:
-            r = requests.get(url, timeout=60, headers=headers)
-            if r.status_code == 200 and len(r.content) > 5000:
+            print(f"  ⏳ Scene {scene_id} Pollinations/{model} (timeout={timeout}s)...")
+            r = requests.get(url, timeout=timeout, headers=headers)
+            if r.status_code == 200 and len(r.content) > 10000:
                 img_path.write_bytes(r.content)
                 print(f"  ✓ Scene {scene_id} image (Pollinations {model}, {len(r.content)//1024}KB)")
                 return img_path
-            else:
-                print(f"  ⚠ Scene {scene_id} Pollinations/{model}: {r.status_code} / {len(r.content)} bytes")
+            print(f"  ⚠ Pollinations/{model}: status={r.status_code} bytes={len(r.content)}")
+        except requests.exceptions.Timeout:
+            print(f"  ⚠ Pollinations/{model}: timed out after {timeout}s")
         except Exception as e:
-            print(f"  ⚠ Scene {scene_id} Pollinations/{model} failed: {e}")
+            print(f"  ⚠ Pollinations/{model}: {type(e).__name__}: {e}")
     return None
+
+
+def generate_scene_image_pil(prompt: str, scene_id: int, episode_dir: Path) -> Path:
+    """
+    Generate a charming children's book illustration using PIL only — no API needed.
+    Creates a warm nighttime Australian bush scene with Sonny the quokka.
+    """
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont
+    import random
+
+    rng = random.Random(scene_id * 42)
+    W, H = 1280, 720
+    img = Image.new("RGB", (W, H))
+    draw = ImageDraw.Draw(img)
+
+    # Sky palettes per scene — warm, child-friendly colours
+    palettes = [
+        ((255, 180, 80),  (180, 100, 160)),   # 1 sunset apricot → dusty purple
+        ((100, 120, 180), (30,  40,  80)),     # 2 twilight blue
+        ((140, 90,  170), (40,  20,  70)),     # 3 deep violet
+        ((80,  110, 160), (20,  30,  70)),     # 4 midnight blue
+        ((60,  80,  140), (15,  20,  55)),     # 5 deep night
+        ((40,  60,  120), (10,  10,  40)),     # 6 velvet night
+    ]
+    top_col, bot_col = palettes[min(scene_id - 1, len(palettes) - 1)]
+
+    # Gradient sky
+    for y in range(H):
+        t = y / H
+        r = int(top_col[0] + (bot_col[0] - top_col[0]) * t)
+        g = int(top_col[1] + (bot_col[1] - top_col[1]) * t)
+        b = int(top_col[2] + (bot_col[2] - top_col[2]) * t)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Stars (more for later scenes)
+    n_stars = scene_id * 12
+    for _ in range(n_stars):
+        sx = rng.randint(0, W)
+        sy = rng.randint(0, H // 2)
+        sr = rng.choice([1, 1, 1, 2])
+        brightness = rng.randint(180, 255)
+        draw.ellipse([sx - sr, sy - sr, sx + sr, sy + sr],
+                     fill=(brightness, brightness, brightness - 20))
+
+    # Moon — soft warm circle
+    moon_x, moon_y = int(W * 0.78), int(H * 0.18)
+    for glow_r in range(60, 0, -1):
+        alpha = int(15 * (1 - glow_r / 60))
+        draw.ellipse([moon_x - glow_r, moon_y - glow_r,
+                      moon_x + glow_r, moon_y + glow_r],
+                     fill=(255, 240, 180))
+    draw.ellipse([moon_x - 38, moon_y - 38, moon_x + 38, moon_y + 38],
+                 fill=(255, 248, 210))
+
+    # Ground — warm dark earth
+    ground_y = int(H * 0.72)
+    for y in range(ground_y, H):
+        t = (y - ground_y) / (H - ground_y)
+        r = int(30 + 20 * t)
+        g = int(25 + 15 * t)
+        b = int(15 + 10 * t)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Gum trees silhouettes
+    def draw_tree(cx, base_y, trunk_h, spread):
+        # Trunk
+        draw.rectangle([cx - 5, base_y - trunk_h, cx + 5, base_y],
+                        fill=(25, 18, 10))
+        # Canopy blobs
+        for _ in range(5):
+            bx = cx + rng.randint(-spread, spread)
+            by = base_y - trunk_h + rng.randint(-20, 20)
+            br = rng.randint(30, 60)
+            draw.ellipse([bx - br, by - br, bx + br, by + br],
+                          fill=(20 + rng.randint(0, 15),
+                                35 + rng.randint(0, 20),
+                                15 + rng.randint(0, 10)))
+
+    tree_positions = [(80, ground_y + 10, 220, 55),
+                      (200, ground_y + 5,  260, 65),
+                      (W - 90,  ground_y + 10, 230, 50),
+                      (W - 210, ground_y + 5,  250, 60),
+                      (W // 2 - 180, ground_y, 200, 45),
+                      (W // 2 + 160, ground_y, 210, 50)]
+    for tx, ty, th, ts in tree_positions:
+        draw_tree(tx, ty, th, ts)
+
+    # Warm path / clearing glow
+    for gw in range(120, 0, -2):
+        alpha = max(0, 40 - int(40 * (1 - gw / 120)))
+        draw.ellipse([W // 2 - gw, ground_y - 30 - gw // 4,
+                      W // 2 + gw, ground_y + gw // 4],
+                     fill=(120 + alpha, 80 + alpha // 2, 30))
+
+    # Simple quokka silhouette in the clearing
+    qx, qy = W // 2, ground_y - 10
+    # Body
+    draw.ellipse([qx - 28, qy - 35, qx + 28, qy + 5], fill=(60, 42, 22))
+    # Head
+    draw.ellipse([qx - 18, qy - 60, qx + 18, qy - 28], fill=(70, 50, 25))
+    # Ears
+    draw.ellipse([qx - 22, qy - 78, qx - 8, qy - 55], fill=(60, 42, 22))
+    draw.ellipse([qx + 8,  qy - 78, qx + 22, qy - 55], fill=(60, 42, 22))
+    # Warm eye glow
+    draw.ellipse([qx - 7, qy - 52, qx - 2, qy - 47], fill=(255, 200, 100))
+    draw.ellipse([qx + 2, qy - 52, qx + 7,  qy - 47], fill=(255, 200, 100))
+
+    # Soft vignette
+    vig = Image.new("RGB", (W, H), (0, 0, 0))
+    vdraw = ImageDraw.Draw(vig)
+    for v in range(200, 0, -2):
+        t = 1 - v / 200
+        a = int(80 * t * t)
+        vdraw.rectangle([v, v, W - v, H - v], outline=(0, 0, 0))
+    img = Image.blend(img, vig, alpha=0.25)
+
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    img.save(img_path, "JPEG", quality=88)
+    print(f"  ✓ Scene {scene_id} image (PIL illustration, always works)")
+    return img_path
 
 
 def generate_scene_image_flux(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
@@ -413,6 +569,132 @@ def generate_scene_image_flux(prompt: str, scene_id: int, episode_dir: Path) -> 
             print(f"  ⚠ Scene {scene_id} FLUX failed: {result.error}")
     except Exception as e:
         print(f"  ⚠ Scene {scene_id} FLUX error: {e}")
+    return None
+
+
+def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
+    """Generate a scene image via FAL.ai FLUX Schnell — needs FAL_KEY (~$0.003/image).
+    Sign up free at fal.ai, then add FAL_KEY to GitHub Secrets for AI-quality art.
+    Generates professional watercolour children's book illustrations."""
+    if not FAL_KEY:
+        return None
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    os.environ.setdefault("FAL_KEY", FAL_KEY)
+    full_prompt = (
+        f"Professional watercolour children's picture book illustration, Beatrix Potter style. "
+        f"Hand-painted on textured cold-press paper, visible brushstrokes, soft pigment bleeds. "
+        f"Sonny the quokka with golden-brown fur and big warm brown eyes as main character. "
+        f"Australian bush at night, deep navy indigo sky with stars, soft moonlight, glowing fireflies, gum trees. "
+        f"Warm earthy palette. Scene: {prompt[:280]}. No text. Safe for toddlers."
+    )
+    try:
+        import fal_client
+        print(f"  ⏳ Scene {scene_id} FAL.ai FLUX Schnell...")
+        result = fal_client.run(
+            "fal-ai/flux/schnell",
+            arguments={
+                "prompt": full_prompt,
+                "image_size": {"width": 1280, "height": 720},
+                "num_inference_steps": 8,
+                "num_images": 1,
+                "enable_safety_checker": True,
+                "seed": scene_id * 13,
+            },
+        )
+        img_url = result["images"][0]["url"]
+        img_data = requests.get(img_url, timeout=60).content
+        if len(img_data) > 5000:
+            img_path.write_bytes(img_data)
+            print(f"  ✓ Scene {scene_id} image (FAL.ai FLUX Schnell, {len(img_data)//1024}KB)")
+            return img_path
+        print(f"  ⚠ Scene {scene_id} FAL.ai returned only {len(img_data)} bytes")
+    except Exception as e:
+        print(f"  ⚠ Scene {scene_id} FAL.ai direct failed: {e}")
+    return None
+
+
+def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
+    """Generate a scene image via Replicate FLUX Dev — uses your existing Replicate account.
+    Add REPLICATE_API_TOKEN to GitHub Secrets (same token as the creative-stack MCP server).
+    Generates professional watercolour children's book illustrations."""
+    if not REPLICATE_API_TOKEN:
+        return None
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    full_prompt = (
+        f"Professional watercolour children's picture book illustration, Beatrix Potter and Jill Barklem style. "
+        f"Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes. "
+        f"Loose painterly technique, imperfect handmade edges, warm earthy palette (ochres, burnt siennas, soft greens, deep blues). "
+        f"Deep indigo-navy Australian night sky scattered with tiny hand-dotted stars and gentle moonlight. "
+        f"Gum trees framing scene with loose, sketchy linework. Glowing fireflies with warm golden highlights. "
+        f"Sonny the quokka as main character — small golden-brown marsupial with soft detailed fur, "
+        f"large warm brown eyes, gentle curious expression, tiny round ears. Consistent appearance. "
+        f"Scene: {prompt[:300]}. "
+        f"Textured paper grain visible throughout, soft hand-painted edges, warm cosy feeling, safe for children. "
+        f"Avoid: flat vector art, digital lines, smooth gradients, 3D render, airbrushed, photorealistic, sharp crisp edges."
+    )
+    headers = {
+        "Authorization": f"Token {REPLICATE_API_TOKEN}",
+        "Content-Type": "application/json",
+        "Prefer": "wait=60",
+    }
+    payload = {
+        "input": {
+            "prompt": full_prompt,
+            "aspect_ratio": "16:9",
+            "output_format": "jpg",
+            "output_quality": 92,
+            "num_inference_steps": 28,
+            "guidance": 3.5,
+            "num_outputs": 1,
+            "seed": scene_id * 17,
+        }
+    }
+    for attempt in range(5):
+        try:
+            print(f"  ⏳ Scene {scene_id} Replicate FLUX Dev{' (retry)' if attempt else ''}...")
+            r = requests.post(
+                "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions",
+                headers=headers, json=payload, timeout=180,
+            )
+            if r.status_code == 429:
+                wait = 15 * (attempt + 1)
+                print(f"  ⏳ Scene {scene_id} rate-limited (429), waiting {wait}s before retry {attempt+1}/4...")
+                time.sleep(wait)
+                continue
+            if r.status_code not in (200, 201):
+                print(f"  ⚠ Replicate start failed: {r.status_code} {r.text[:200]}")
+                return None
+            prediction = r.json()
+            if prediction.get("status") == "succeeded":
+                img_url = prediction["output"]
+            else:
+                poll_url = prediction["urls"]["get"]
+                poll_headers = {"Authorization": f"Token {REPLICATE_API_TOKEN}"}
+                deadline = time.time() + 300
+                img_url = None
+                while time.time() < deadline:
+                    time.sleep(3)
+                    pr = requests.get(poll_url, headers=poll_headers, timeout=30)
+                    pred = pr.json()
+                    if pred.get("status") == "succeeded":
+                        img_url = pred["output"]
+                        break
+                    if pred.get("status") in ("failed", "canceled"):
+                        print(f"  ⚠ Replicate prediction {pred.get('status')}: {pred.get('error')}")
+                        return None
+                if not img_url:
+                    print(f"  ⚠ Replicate timed out")
+                    return None
+            if isinstance(img_url, list):
+                img_url = img_url[0]
+            img_data = requests.get(img_url, timeout=60).content
+            if len(img_data) > 5000:
+                img_path.write_bytes(img_data)
+                print(f"  ✓ Scene {scene_id} image (Replicate FLUX Dev, {len(img_data)//1024}KB)")
+                return img_path
+            print(f"  ⚠ Replicate image too small ({len(img_data)} bytes)")
+        except Exception as e:
+            print(f"  ⚠ Scene {scene_id} Replicate failed: {e}")
     return None
 
 
@@ -487,20 +769,167 @@ def generate_music_pixabay(duration_secs: int, episode_dir: Path) -> Path:
     return Path("")   # signals caller to use ffmpeg fallback
 
 
-def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id: int) -> Path:
-    """Convert a static image to a video clip (simple hold, no motion)."""
+def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id: int,
+                   scene_text: str = "", page_num: int = 0) -> Path:
+    """Create a children's picture-book frame and convert to video.
+
+    Layout (1920x1080):
+      • Top 65% (700px) — AI-generated watercolour illustration
+      • Gold divider line (4px)
+      • Bottom 35% (376px) — warm cream/parchment band with story text + page number
+    """
+    from PIL import Image, ImageDraw, ImageFont
+    import textwrap as tw
+
     vid_path = episode_dir / f"scene_{scene_id:02d}.mp4"
+    frame_path = episode_dir / f"scene_{scene_id:02d}_frame.jpg"
+
+    W, H = 1920, 1080
+    ILLUS_H = 820          # illustration area height — 76%, picture-book style
+    DIVIDER_Y = ILLUS_H
+    TEXT_Y = ILLUS_H + 6   # text band starts just below divider
+
+    # Warm parchment palette (children's book cream)
+    PARCHMENT   = (250, 245, 232)
+    DARK_BROWN  = (58, 34, 12)
+    GOLD_LINE   = (195, 158, 72)
+    PAGE_COLOUR = (160, 125, 75)
+
+    canvas = Image.new("RGB", (W, H), PARCHMENT)
+    draw = ImageDraw.Draw(canvas)
+
+    # ── Illustration (top area) ───────────────────────────────────────────────
+    try:
+        illus = Image.open(img_path).convert("RGB")
+        iw, ih = illus.size
+        # Scale to fill full width, then center-crop height to ILLUS_H
+        scale = W / iw
+        new_h = int(ih * scale)
+        illus = illus.resize((W, new_h), Image.LANCZOS)
+        if new_h >= ILLUS_H:
+            # Crop — bias slightly toward top so subject stays in frame
+            top_offset = min((new_h - ILLUS_H) // 3, 60)
+            illus = illus.crop((0, top_offset, W, top_offset + ILLUS_H))
+        else:
+            # Image shorter than area — paste centred vertically, leave parchment above/below
+            paste_y = (ILLUS_H - new_h) // 2
+            canvas.paste(illus, (0, paste_y))
+            illus = None
+        if illus is not None:
+            canvas.paste(illus, (0, 0))
+    except Exception as e:
+        # Illustration failed — paint a soft navy gradient as fallback
+        for y in range(ILLUS_H):
+            ratio = y / ILLUS_H
+            r = int(8  + 18  * ratio)
+            g = int(14 + 24  * ratio)
+            b = int(46 + 40  * ratio)
+            draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # ── Gold divider ──────────────────────────────────────────────────────────
+    draw.rectangle([(0, DIVIDER_Y), (W, DIVIDER_Y + 5)], fill=GOLD_LINE)
+
+    # ── Story text band ───────────────────────────────────────────────────────
+    # Fonts — prefer Quicksand (soft rounded children's-book sans, downloaded in CI)
+    _FONT_DIR = os.environ.get("KIDS_FONT_DIR", "/tmp/fonts")
+    rounded_paths = [
+        f"{_FONT_DIR}/Quicksand-Medium.ttf",
+        f"{_FONT_DIR}/Quicksand-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ]
+    sans_paths = [
+        f"{_FONT_DIR}/Quicksand-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ]
+
+    def _font(paths, size):
+        for fp in paths:
+            if Path(fp).exists():
+                try:
+                    return ImageFont.truetype(fp, size)
+                except Exception:
+                    continue
+        return ImageFont.load_default()
+
+    font_body = _font(rounded_paths, 44)
+    font_page = _font(sans_paths,  30)
+
+    TEXT_AREA_H = H - TEXT_Y        # ≈ 374px
+    PAD_X       = 120
+    MAX_W       = W - PAD_X * 2     # 1680px
+
+    if scene_text:
+        # Measure char width at this font size to choose wrap width
+        test_bbox  = draw.textbbox((0, 0), "W" * 40, font=font_body)
+        char_w     = (test_bbox[2] - test_bbox[0]) / 40
+        wrap_chars = max(30, int(MAX_W / char_w))
+
+        lines = []
+        for para in scene_text.replace("\n\n", "\n").split("\n"):
+            para = para.strip()
+            if not para:
+                continue
+            lines.extend(tw.wrap(para, width=wrap_chars))
+            if len(lines) >= 4:
+                break
+        lines = lines[:4]
+
+        LINE_H = 58
+        block_h = len(lines) * LINE_H
+        # Centre the text block vertically in the text band (leave room for page num)
+        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2 - 18
+        y = max(TEXT_Y + 18, y)
+
+        for line in lines:
+            bbox = draw.textbbox((0, 0), line, font=font_body)
+            x = (W - (bbox[2] - bbox[0])) // 2
+            draw.text((x, y), line, font=font_body, fill=DARK_BROWN)
+            y += LINE_H
+
+    # Page number — centered at very bottom of parchment band
+    if page_num > 0:
+        pg = str(page_num)
+        bbox = draw.textbbox((0, 0), pg, font=font_page)
+        pg_x = (W - (bbox[2] - bbox[0])) // 2
+        draw.text((pg_x, H - 44), pg, font=font_page, fill=PAGE_COLOUR)
+
+    canvas.save(frame_path, "JPEG", quality=95)
+
+    # ── Convert composited frame to video (subtle slow zoom brings it to life) ─
+    fps = 25
+    total_frames = int(duration * fps)
+    zoom_filter = (
+        f"zoompan=z='min(zoom+0.0003,1.03)'"
+        f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+        f":d={total_frames}:fps={fps}:s={W}x{H},"
+        "format=yuv420p"
+    )
     result = subprocess.run([
-        "ffmpeg", "-y", "-loop", "1", "-i", str(img_path),
+        "ffmpeg", "-y", "-loop", "1", "-i", str(frame_path),
         "-t", str(duration),
-        "-vf", "scale=1920x1080:force_original_aspect_ratio=increase,crop=1920:1080,format=yuv420p",
-        "-c:v", "libx264", "-preset", "fast", "-crf", "28",
+        "-vf", zoom_filter,
+        "-c:v", "libx264", "-preset", "fast", "-crf", "24",
         str(vid_path)
     ], capture_output=True)
+
+    if result.returncode != 0:
+        # zoompan can be slow on some machines — fall back to plain hold
+        result = subprocess.run([
+            "ffmpeg", "-y", "-loop", "1", "-i", str(frame_path),
+            "-t", str(duration),
+            "-vf", f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
+                   f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=#FAF5E8,"
+                   "format=yuv420p",
+            "-c:v", "libx264", "-preset", "fast", "-crf", "26",
+            str(vid_path)
+        ], capture_output=True)
+
     if result.returncode == 0:
-        print(f"  ✓ Scene {scene_id} video ({duration:.1f}s)")
+        print(f"  ✓ Scene {scene_id} — picture-book frame ({duration:.1f}s)")
     else:
-        print(f"  ⚠ image_to_video failed scene {scene_id}: {result.stderr.decode()[:120]}")
+        print(f"  ⚠ image_to_video failed scene {scene_id}: {result.stderr.decode()[:200]}")
     return vid_path
 
 
@@ -643,31 +1072,50 @@ def build_seo_description(script: dict) -> str:
 # ── 5d. Ebook (PDF picture book) ───────────────────────────────────────────────────────────
 
 def generate_ebook(script: dict, episode_dir: Path) -> Path:
-    """Generate a PDF picture book for the episode.
+    """Generate a PDF picture book matching the video booklet style.
 
-    Layout (portrait 800×1120):
-      • Title page — navy/stars, golden title, show name
-      • One page per scene — top: scene illustration, bottom: narration text
-      • Closing page — 'Sweet dreams!' sign-off
+    Layout (portrait 800×1120 — standard children's book page):
+      • Cover page  — first scene illustration + title + 'By Jamie Wigg'
+      • Scene pages — illustration top 60% / gold divider / cream text band bottom 40%
+      • Closing page — cream, 'Sweet dreams!' in warm gold, show name
     """
     from PIL import Image, ImageDraw, ImageFont
-    import textwrap, random
+    import textwrap as tw
 
-    PW, PH = 800, 1120  # portrait page size
+    PW, PH = 800, 1120
+    ILLUS_H   = int(PH * 0.80)     # 896px — illustration fills 80% (picture-book style)
+    DIVIDER_Y = ILLUS_H
+    TEXT_Y    = ILLUS_H + 5
 
-    # ── Font loading ──────────────────────────────────────────────────────────────
-    font_paths_bold = [
+    # ── Palette (matches video booklet exactly) ───────────────────────────────
+    PARCHMENT  = (250, 245, 232)
+    DARK_BROWN = (58,  34,  12)
+    GOLD_LINE  = (195, 158, 72)
+    GOLD_TEXT  = (180, 138, 40)
+    PAGE_COL   = (160, 125, 75)
+    MID_BROWN  = (110,  72,  28)
+
+    # ── Fonts ─────────────────────────────────────────────────────────────────
+    _FONT_DIR = os.environ.get("KIDS_FONT_DIR", "/tmp/fonts")
+    serif_bold = [
+        f"{_FONT_DIR}/Quicksand-Bold.ttf",
+        f"{_FONT_DIR}/Quicksand-Medium.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
     ]
-    font_paths_reg = [
+    serif_reg = [
+        f"{_FONT_DIR}/Quicksand-Medium.ttf",
+        f"{_FONT_DIR}/Quicksand-Regular.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    ]
+    sans_reg = [
+        f"{_FONT_DIR}/Quicksand-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     ]
 
-    def load_font(paths, size):
+    def _font(paths, size):
         for fp in paths:
             if Path(fp).exists():
                 try:
@@ -676,162 +1124,182 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
                     continue
         return ImageFont.load_default()
 
-    font_title  = load_font(font_paths_bold, 58)
-    font_show   = load_font(font_paths_bold, 28)
-    font_body   = load_font(font_paths_reg, 26)
-    font_close  = load_font(font_paths_bold, 70)
-    font_page   = load_font(font_paths_bold, 22)
+    font_title = _font(serif_bold, 52)
+    font_by    = _font(serif_reg,  26)
+    font_body  = _font(serif_reg,  28)
+    font_close = _font(serif_bold, 64)
+    font_page  = _font(sans_reg,   20)
 
-    NAVY    = (8, 14, 46)
-    GOLD    = (255, 215, 70)
-    SOFT_GOLD = (240, 195, 80)
-    WHITE   = (240, 240, 255)
-    LAVENDER = (180, 160, 240)
-    TEXT_BG = (12, 18, 55)
+    # ── Helpers ───────────────────────────────────────────────────────────────
+    def parchment_page():
+        img = Image.new("RGB", (PW, PH), PARCHMENT)
+        return img, ImageDraw.Draw(img)
 
-    def navy_page(draw, w=PW, h=PH):
-        for y in range(h):
-            ratio = y / h
-            r = int(NAVY[0] + (15 - NAVY[0]) * ratio)
-            g = int(NAVY[1] + (25 - NAVY[1]) * ratio)
-            b = int(NAVY[2] + (38 - NAVY[2]) * ratio)
-            draw.line([(0, y), (w, y)], fill=(r, g, b))
+    def paste_illustration(page, img_path, area_h):
+        """Paste scene image into top area, scaled to fill width."""
+        try:
+            src = Image.open(img_path).convert("RGB")
+            iw, ih = src.size
+            scale = PW / iw
+            new_h = int(ih * scale)
+            src = src.resize((PW, new_h), Image.LANCZOS)
+            if new_h >= area_h:
+                offset = min((new_h - area_h) // 3, 30)
+                src = src.crop((0, offset, PW, offset + area_h))
+            page.paste(src, (0, 0))
+        except Exception:
+            d = ImageDraw.Draw(page)
+            for y in range(area_h):
+                ratio = y / area_h
+                r = int(8 + 20 * ratio); g = int(14 + 28 * ratio); b = int(46 + 35 * ratio)
+                d.line([(0, y), (PW, y)], fill=(r, g, b))
 
-    def add_stars(draw, w=PW, h=PH, count=80, seed=42):
-        rng = random.Random(seed)
-        for _ in range(count):
-            x = rng.randint(0, w)
-            y = rng.randint(0, int(h * 0.85))
-            sz = rng.choice([1, 1, 2])
-            br = rng.randint(130, 255)
-            draw.ellipse([x - sz, y - sz, x + sz, y + sz],
-                         fill=(br, br, int(br * 0.9)))
+    def draw_gold_divider(draw):
+        draw.rectangle([(0, DIVIDER_Y), (PW, DIVIDER_Y + 4)], fill=GOLD_LINE)
 
-    def wrap_text_centered(draw, text, font, colour, x_center, y_start, max_w, line_h):
-        words = text.split()
+    def draw_text_band(draw, text, page_num=0):
+        """Centre-aligned story text + page number in parchment band."""
+        PAD = 48
+        MAX_W = PW - PAD * 2
+        test_bbox = draw.textbbox((0, 0), "W" * 30, font=font_body)
+        char_w = (test_bbox[2] - test_bbox[0]) / 30
+        wrap_chars = max(16, int(MAX_W / char_w))
+
         lines = []
-        current = []
-        for word in words:
-            test = " ".join(current + [word])
-            bbox = draw.textbbox((0, 0), test, font=font)
-            if bbox[2] - bbox[0] > max_w and current:
-                lines.append(" ".join(current))
-                current = [word]
-            else:
-                current.append(word)
-        if current:
-            lines.append(" ".join(current))
-        y = y_start
+        for para in text.replace("\n\n", "\n").split("\n"):
+            para = para.strip()
+            if para:
+                lines.extend(tw.wrap(para, width=wrap_chars))
+            if len(lines) >= 4:
+                break
+        lines = lines[:4]
+
+        LINE_H = 44
+        TEXT_AREA_H = PH - TEXT_Y
+        block_h = len(lines) * LINE_H
+        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2 - 10
+        y = max(TEXT_Y + 12, y)
+
         for line in lines:
-            bbox = draw.textbbox((0, 0), line, font=font)
-            x = x_center - (bbox[2] - bbox[0]) // 2
-            draw.text((x, y), line, font=font, fill=colour)
-            y += line_h
-        return y
+            bbox = draw.textbbox((0, 0), line, font=font_body)
+            x = (PW - (bbox[2] - bbox[0])) // 2
+            draw.text((x, y), line, font=font_body, fill=DARK_BROWN)
+            y += LINE_H
+
+        if page_num > 0:
+            pg = str(page_num)
+            bbox = draw.textbbox((0, 0), pg, font=font_page)
+            draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 36),
+                      pg, font=font_page, fill=PAGE_COL)
+
+    def centred_text(draw, text, font, colour, y):
+        bbox = draw.textbbox((0, 0), text, font=font)
+        draw.text(((PW - (bbox[2] - bbox[0])) // 2, y), text, font=font, fill=colour)
 
     pages = []
 
-    # ── Title page ───────────────────────────────────────────────────────────────
-    title_page = Image.new("RGB", (PW, PH))
-    draw = ImageDraw.Draw(title_page)
-    navy_page(draw)
-    add_stars(draw)
+    # ── Cover page ────────────────────────────────────────────────────────────
+    cover, draw = parchment_page()
+    # Try to use first scene image as cover illustration (top half)
+    cover_illus_h = int(PH * 0.58)
+    cover_candidates = [
+        episode_dir / "scene_01.jpg",
+        episode_dir / "scene_01.png",
+        episode_dir / "thumbnail.jpg",
+    ]
+    cover_img = next((p for p in cover_candidates if p.exists()), None)
+    if cover_img:
+        paste_illustration(cover, cover_img, cover_illus_h)
+    else:
+        # Navy starry gradient when no image yet
+        for y in range(cover_illus_h):
+            ratio = y / cover_illus_h
+            r = int(8 + 20 * ratio); g = int(14 + 28 * ratio); b = int(46 + 35 * ratio)
+            draw.line([(0, y), (PW, y)], fill=(r, g, b))
 
+    # Gold rule below illustration
+    draw.rectangle([(0, cover_illus_h), (PW, cover_illus_h + 4)], fill=GOLD_LINE)
+
+    # Title block on parchment
     title_text = script.get("title", SHOW_NAME)
-    wrap_text_centered(draw, title_text, font_title, GOLD, PW // 2, 220, PW - 80, 70)
+    title_y = cover_illus_h + 30
+    # Wrap title
+    test_bbox = draw.textbbox((0, 0), "W" * 18, font=font_title)
+    char_w = (test_bbox[2] - test_bbox[0]) / 18
+    title_lines = tw.wrap(title_text, width=max(10, int((PW - 80) / char_w)))[:3]
+    for tl in title_lines:
+        centred_text(draw, tl, font_title, DARK_BROWN, title_y)
+        bbox = draw.textbbox((0, 0), tl, font=font_title)
+        title_y += (bbox[3] - bbox[1]) + 8
 
-    show_bbox = draw.textbbox((0, 0), SHOW_NAME, font=font_show)
-    draw.text(((PW - (show_bbox[2] - show_bbox[0])) // 2, PH - 160),
-              SHOW_NAME, font=font_show, fill=WHITE)
+    # Gold decorative rule
+    rule_y = title_y + 14
+    draw.rectangle([(PW//4, rule_y), (3*PW//4, rule_y + 2)], fill=GOLD_LINE)
 
-    pages.append(title_page)
+    # Show name + author
+    centred_text(draw, SHOW_NAME, font_by, MID_BROWN, rule_y + 18)
+    centred_text(draw, "By Jamie Wigg", font_by, GOLD_TEXT, rule_y + 52)
 
-    # ── Scene pages ───────────────────────────────────────────────────────────────
-    img_area_h  = int(PH * 0.55)
-    text_area_y = img_area_h + 6
+    pages.append(cover)
 
+    # ── Scene pages ───────────────────────────────────────────────────────────
     for i, scene in enumerate(script.get("scenes", [])):
-        narr = scene.get("narration_segment", "")
-        scene_img_path_candidates = [
+        narr = scene.get("narration", scene.get("narration_segment", ""))
+        candidates = [
             episode_dir / f"scene_{scene['id']:02d}.jpg",
             episode_dir / f"scene_{scene['id']:02d}.png",
         ]
-        scene_img_path = next((p for p in scene_img_path_candidates if p.exists()), None)
+        img_path = next((p for p in candidates if p.exists()), None)
 
-        page = Image.new("RGB", (PW, PH))
-        draw = ImageDraw.Draw(page)
-
-        # Top: scene illustration (or navy fallback)
-        if scene_img_path:
-            try:
-                scene_img = Image.open(scene_img_path).convert("RGB")
-                scene_img = scene_img.resize((PW, img_area_h), Image.LANCZOS)
-                page.paste(scene_img, (0, 0))
-            except Exception:
-                draw.rectangle([0, 0, PW, img_area_h], fill=(10, 20, 60))
+        page, draw = parchment_page()
+        if img_path:
+            paste_illustration(page, img_path, ILLUS_H)
         else:
-            # Gradient fallback using scene palettes
-            pal = SCENE_PALETTES[i % len(SCENE_PALETTES)]
-            for y in range(img_area_h):
-                ratio = y / img_area_h
-                r = int(pal[0] + (pal[3] - pal[0]) * ratio)
-                g = int(pal[1] + (pal[4] - pal[1]) * ratio)
-                b = int(pal[2] + (pal[5] - pal[2]) * ratio)
+            for y in range(ILLUS_H):
+                ratio = y / ILLUS_H
+                r = int(8 + 20 * ratio); g = int(14 + 28 * ratio); b = int(46 + 35 * ratio)
                 draw.line([(0, y), (PW, y)], fill=(r, g, b))
 
-        # Thin gold divider
-        draw.line([(0, img_area_h), (PW, img_area_h)], fill=GOLD, width=3)
-
-        # Bottom: navy text area
-        draw.rectangle([0, text_area_y, PW, PH], fill=TEXT_BG)
-
-        # Narration text
-        padding = 28
-        wrap_text_centered(draw, narr, font_body, WHITE,
-                           PW // 2, text_area_y + padding,
-                           PW - padding * 2, 36)
-
-        # Page number — bottom right
-        page_num = f"{i + 1}"
-        bbox = draw.textbbox((0, 0), page_num, font=font_page)
-        draw.text((PW - (bbox[2] - bbox[0]) - 20, PH - 36),
-                  page_num, font=font_page, fill=LAVENDER)
-
+        draw_gold_divider(draw)
+        draw_text_band(draw, narr, page_num=i + 1)
         pages.append(page)
 
-    # ── Closing page ───────────────────────────────────────────────────────────────
-    closing = Image.new("RGB", (PW, PH))
-    draw = ImageDraw.Draw(closing)
-    navy_page(draw)
-    add_stars(draw, seed=99)
+    # ── Closing page ──────────────────────────────────────────────────────────
+    closing, draw = parchment_page()
 
-    close_text = "Sweet dreams!"
-    bbox = draw.textbbox((0, 0), close_text, font=font_close)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 - 80),
-              close_text, font=font_close, fill=SOFT_GOLD)
+    # Soft gold decorative circle
+    cx, cy = PW // 2, int(PH * 0.35)
+    for radius in [130, 110, 90]:
+        brightness = 255 - (130 - radius)
+        draw.ellipse([cx-radius, cy-radius, cx+radius, cy+radius],
+                     fill=(brightness, int(brightness*0.88), int(brightness*0.55)))
 
-    sub_text = "See you next time, little one"
-    bbox = draw.textbbox((0, 0), sub_text, font=font_show)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH // 2 + 20),
-              sub_text, font=font_show, fill=WHITE)
+    # Moon crescent suggestion
+    draw.ellipse([cx-60, cy-60, cx+60, cy+60], fill=(255, 245, 190))
 
-    show_footer = "Sonny's Cozy Quokka Bedtime Tales"
-    bbox = draw.textbbox((0, 0), show_footer, font=font_page)
-    draw.text(((PW - (bbox[2] - bbox[0])) // 2, PH - 70),
-              show_footer, font=font_page, fill=LAVENDER)
+    centred_text(draw, "Sweet dreams!", font_close, DARK_BROWN, int(PH * 0.52))
+    centred_text(draw, "See you next time, little one ✨", font_by, MID_BROWN, int(PH * 0.64))
 
+    # Gold rule
+    rule_y2 = int(PH * 0.70)
+    draw.rectangle([(PW//4, rule_y2), (3*PW//4, rule_y2 + 2)], fill=GOLD_LINE)
+
+    centred_text(draw, SHOW_NAME, font_by, MID_BROWN, rule_y2 + 18)
+    centred_text(draw, "By Jamie Wigg", font_page, GOLD_TEXT, rule_y2 + 52)
     pages.append(closing)
 
-    # ── Save as multi-page PDF ───────────────────────────────────────────────────────────
-    ebook_path = episode_dir / "ebook.pdf"
+    # ── Save PDF ──────────────────────────────────────────────────────────────
+    _raw = script.get("title", "Episode").split("|")[0]  # drop " | Bedtime Story" suffix
+    safe_title = _raw.replace("/", "-").replace(":", "-").replace("\\", "-").strip()[:60]
+    ebook_path = episode_dir / f"Sunny the Quokka - {safe_title}.pdf"
     pages[0].save(
         str(ebook_path),
         format="PDF",
         save_all=True,
         append_images=pages[1:],
-        resolution=96,
+        resolution=150,
     )
-    print(f"  ✓ Ebook saved: {ebook_path} ({len(pages)} pages)")
+    print(f"  ✓ Ebook saved: {ebook_path} ({len(pages)} pages, cream parchment style)")
     return ebook_path
 
 
@@ -1103,6 +1571,22 @@ def main():
         print("  ↩ ElevenLabs unavailable — trying Piper TTS (free offline)...")
         narration = generate_narration_piper(script["narration"], episode_dir)
 
+    # Probe actual narration length so scene durations can be matched to it —
+    # otherwise the assembled video gets truncated mid-sentence by `-shortest`
+    # whenever the fixed per-scene durations (default 8s) sum to less than
+    # the real narration audio (which varies with word count and TTS pace).
+    narration_secs = 0.0
+    if narration.exists() and narration.stat().st_size > 100:
+        try:
+            pr = subprocess.run([
+                "ffprobe", "-v", "error", "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1", str(narration)
+            ], capture_output=True, text=True, timeout=30)
+            narration_secs = float(pr.stdout.strip())
+            print(f"  ℹ Narration length: {narration_secs:.1f}s")
+        except Exception:
+            pass
+
     # Auto-generate scenes if the script doesn't have them (older format scripts)
     if not script.get("scenes"):
         print("  ℹ Script has no scenes key — auto-generating 6 scenes from narration...")
@@ -1122,6 +1606,20 @@ def main():
             for i, chunk in enumerate(chunks)
         ]
 
+    # Rescale scene durations so the concatenated scene videos cover the full
+    # narration — keeps each scene's relative weight, just stretches/shrinks
+    # to fit the real audio length (plus a small tail so the last word lands
+    # before the cut).
+    if narration_secs > 1 and script.get("scenes"):
+        scene_total = sum(s.get("duration", 8) for s in script["scenes"])
+        target = narration_secs + 2
+        if scene_total > 0 and abs(target / scene_total - 1.0) > 0.08:
+            scale = target / scene_total
+            for s in script["scenes"]:
+                s["duration"] = round(max(3.0, s.get("duration", 8) * scale), 1)
+            new_total = sum(s["duration"] for s in script["scenes"])
+            print(f"  ℹ Rescaled scene durations {scene_total}s → {new_total:.1f}s to match narration")
+
     # 3. Scene images + videos
     # Priority: Higgsfield → FLUX (OpenMontage) → Stock photos → Pollinations → gradient
     scene_videos = []
@@ -1138,40 +1636,55 @@ def main():
             print(f"  ⚠ Higgsfield failed ({e}) — falling through to next image source...")
 
     if not scene_videos:
-        # Try FLUX (OpenMontage/fal.ai) → stock photos (Pexels/Pixabay) → Pollinations → gradient
-        if FAL_KEY:
-            print("[3/6] Generating scene images via FLUX (OpenMontage)...")
-        elif PEXELS_API_KEY or PIXABAY_API_KEY:
-            print("[3/6] Generating scene images from stock photos (Pexels/Pixabay)...")
+        # Diagnostic — always print token status so we can see it in the logs
+        _tok_len = len(REPLICATE_API_TOKEN) if REPLICATE_API_TOKEN else 0
+        print(f"  🔑 REPLICATE_API_TOKEN: {'set (' + str(_tok_len) + ' chars)' if _tok_len else 'NOT SET — will use fallback'}")
+        if REPLICATE_API_TOKEN:
+            print("[3/6] Generating scene images via Replicate FLUX Schnell...")
+        elif FAL_KEY:
+            print("[3/6] Generating scene images via FAL.ai FLUX...")
         else:
-            print("[3/6] Generating scene images via Pollinations FLUX...")
+            print("[3/6] Generating scene images via Pollinations FLUX (free)...")
+            print("  ℹ  For AI-quality art: add REPLICATE_API_TOKEN to GitHub Secrets")
 
         for scene in script["scenes"]:
             img_path = None
 
-            # 1st choice: Pollinations FLUX (free, no key needed)
-            img_path = generate_scene_image_pollinations(
-                scene["image_prompt"], scene["id"], episode_dir
-            )
-
-            # 2nd choice: FLUX via OpenMontage (needs FAL_KEY, ~$0.05/image)
-            if not img_path and FAL_KEY:
-                img_path = generate_scene_image_flux(
+            # 1st choice: Replicate FLUX Schnell — your existing Replicate account
+            if REPLICATE_API_TOKEN:
+                img_path = generate_scene_image_replicate(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # 3rd choice: stock photos (Pexels/Pixabay — free API keys)
+            # 2nd choice: FAL.ai FLUX Schnell (needs FAL_KEY)
+            if not img_path and FAL_KEY:
+                img_path = generate_scene_image_fal_direct(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
+
+            # 3rd choice: Pollinations FLUX — free, no key, may timeout on shared runners
+            if not img_path:
+                img_path = generate_scene_image_pollinations(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
+
+            # 4th choice: stock photos (Pexels/Pixabay — free API keys)
             if not img_path:
                 img_path = generate_scene_image_stock(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # Last resort: animated gradient (always works, no external calls)
-            if img_path and img_path.exists() and img_path.stat().st_size > 5000:
-                vid = image_to_video(img_path, scene.get("duration", 8), episode_dir, scene["id"])
-            else:
-                print(f"  ↩ Scene {scene['id']} falling back to gradient")
-                vid = generate_scene_bg(scene, episode_dir)
+            # Last resort: PIL illustration (always works, no external calls)
+            if not (img_path and img_path.exists() and img_path.stat().st_size > 5000):
+                print(f"  ↩ Scene {scene['id']} — PIL fallback (add REPLICATE_API_TOKEN secret for AI art)")
+                img_path = generate_scene_image_pil(
+                    scene["image_prompt"], scene["id"], episode_dir
+                )
+            vid = image_to_video(
+                img_path, scene.get("duration", 8), episode_dir, scene["id"],
+                scene_text=scene.get("narration", ""),
+                page_num=scene["id"],
+            )
             scene_videos.append(vid)
 
     # 4. Music — Pixabay royalty-free (OpenMontage) first, ffmpeg tones fallback

@@ -1093,8 +1093,19 @@ async function startScanner(){
   if(_stream){_stream.getTracks().forEach(t=>t.stop());_stream=null;}
   vid.style.display='none';fb.classList.remove('show');
   try{
-    _stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}}});
+    _stream=await navigator.mediaDevices.getUserMedia({video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:2560},height:{ideal:1440},
+      advanced:[{focusMode:'continuous'}]
+    }});
     vid.srcObject=_stream;vid.style.display='block';
+    const track=_stream.getVideoTracks()[0];
+    if(track?.getCapabilities){
+      const caps=track.getCapabilities();
+      if(caps.focusMode?.includes('continuous')){
+        try{await track.applyConstraints({advanced:[{focusMode:'continuous'}]});}catch{}
+      }
+    }
   }catch{fb.classList.add('show');}
 }
 $('btn-capture').addEventListener('click',()=>{
@@ -1102,7 +1113,7 @@ $('btn-capture').addEventListener('click',()=>{
   const c=document.createElement('canvas');c.width=v.videoWidth||1280;c.height=v.videoHeight||720;
   c.getContext('2d').drawImage(v,0,0);
   if(_stream){_stream.getTracks().forEach(t=>t.stop());_stream=null;}
-  processImage(c.toDataURL('image/jpeg',.92).split(',')[1],'image/jpeg');
+  processImage(c.toDataURL('image/jpeg',.97).split(',')[1],'image/jpeg');
 });
 ['btn-upload-lib','btn-upload-main'].forEach(id=>{const e=$(id);if(e)e.addEventListener('click',()=>$('file-lib').click());});
 $('file-lib').addEventListener('change',e=>handleFile(e.target.files[0],e));
@@ -1129,7 +1140,7 @@ async function processImage(b64,mime){
       headers:{'x-api-key':S.apiKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-allow-browser':'true'},
       body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:4096,messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:mime,data:b64}},
-        {type:'text',text:`Extract all text from this book or document page. Return ONLY the body text — skip page numbers, headers, and footnotes. Preserve paragraph breaks.${extra}\nIf no text found, reply exactly: NO_TEXT_FOUND`}
+        {type:'text',text:`Transcribe this photographed page exactly as printed — word for word, letter for letter. Do not summarise, paraphrase, correct, or modernise spelling. Read every line carefully, including small print, italics, and text near the edges or in shadow. Return ONLY the body text — skip page numbers, running headers, and footnotes. Preserve paragraph breaks and keep hyphenated line-end words joined correctly.${extra}\nIf the page is blank, blurry, or has no readable text, reply exactly: NO_TEXT_FOUND`}
       ]}]}),
     });
     if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error?.message||`API ${res.status}`);}
@@ -1201,12 +1212,26 @@ function buildChunks(text){
 }
 
 /* ── VOICES ── */
+/* Rank voices so natural-sounding ones (iOS "Enhanced"/"Premium" Siri & Samantha,
+   Chrome/Android "Google" neural voices) are preferred over compact robotic defaults. */
+function voiceQualityScore(v){
+  const n=v.name.toLowerCase();
+  let s=0;
+  if(/enhanced|premium|neural|natural|wavenet/.test(n))s+=100;
+  if(/siri|samantha|ava|nicky|allison|zoe|aria|jenny/.test(n))s+=40;
+  if(/google/.test(n))s+=30;
+  if(v.localService)s+=10;
+  if(/compact|^microsoft (david|zira|mark)|robot/.test(n))s-=50;
+  return s;
+}
 function loadVoices(){
   const fill=()=>{
-    S.voices=speechSynthesis.getVoices().filter(v=>v.lang.startsWith('en'));
+    S.voices=speechSynthesis.getVoices()
+      .filter(v=>v.lang.startsWith('en'))
+      .sort((a,b)=>voiceQualityScore(b)-voiceQualityScore(a));
     const sel=$('voice-sel');if(!sel)return;sel.innerHTML='';
     S.voices.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=v.name.replace(/\s*\(.*?\)/,'').substring(0,20);sel.appendChild(o);});
-    if(S.voices.length)S.voice=S.voices[0];
+    if(S.voices.length&&!S.voice){S.voice=S.voices[0];sel.value=0;}
   };
   fill();speechSynthesis.onvoiceschanged=fill;
 }
