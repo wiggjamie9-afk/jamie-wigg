@@ -85,6 +85,24 @@ jobs:
             curl -fsSL "${BASE}/${MODEL}.onnx.json" -o "$JSON" || echo "Piper config download failed (non-fatal)"
           fi
 
+      - name: Download Quicksand fonts
+        run: |
+          mkdir -p /tmp/fonts
+          # Google Fonts only ships Quicksand as a variable font; fetch static
+          # TTF instances via the legacy-browser CSS endpoint (old Firefox UA
+          # gets .ttf src URLs instead of .woff/.woff2).
+          UA="Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.5) Gecko/2008120122 Firefox/3.0.5"
+          CSS=$(curl -fsSL -H "User-Agent: $UA" "https://fonts.googleapis.com/css?family=Quicksand:400,500,700" || true)
+          for SPEC in "400:Regular" "500:Medium" "700:Bold"; do
+            WEIGHT="${SPEC%%:*}"
+            NAME="${SPEC##*:}"
+            F="/tmp/fonts/Quicksand-${NAME}.ttf"
+            URL=$(printf '%s' "$CSS" | grep -A2 "font-weight: ${WEIGHT};" | grep -o 'url([^)]*)' | head -1 | sed 's/url(//;s/)//')
+            if [ -n "$URL" ] && [ ! -f "$F" ]; then
+              curl -fsSL "$URL" -o "$F" || echo "Quicksand ${NAME} download failed (non-fatal)"
+            fi
+          done
+
       - name: Install Piper TTS binary
         run: |
           PIPER_VER="2023.11.14-2"

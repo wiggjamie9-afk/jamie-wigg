@@ -799,15 +799,16 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
     draw.rectangle([(0, DIVIDER_Y), (W, DIVIDER_Y + 5)], fill=GOLD_LINE)
 
     # ── Story text band ───────────────────────────────────────────────────────
-    # Fonts — prefer DejaVu Serif (readable, warm, book-like)
-    serif_paths = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
+    # Fonts — prefer Quicksand (soft rounded children's-book sans, downloaded in CI)
+    _FONT_DIR = os.environ.get("KIDS_FONT_DIR", "/tmp/fonts")
+    rounded_paths = [
+        f"{_FONT_DIR}/Quicksand-Medium.ttf",
+        f"{_FONT_DIR}/Quicksand-Regular.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     ]
     sans_paths = [
+        f"{_FONT_DIR}/Quicksand-Regular.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     ]
@@ -821,7 +822,7 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
                     continue
         return ImageFont.load_default()
 
-    font_body = _font(serif_paths, 46)
+    font_body = _font(rounded_paths, 44)
     font_page = _font(sans_paths,  30)
 
     TEXT_AREA_H = H - TEXT_Y        # ≈ 374px
@@ -1064,19 +1065,21 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     MID_BROWN  = (110,  72,  28)
 
     # ── Fonts ─────────────────────────────────────────────────────────────────
+    _FONT_DIR = os.environ.get("KIDS_FONT_DIR", "/tmp/fonts")
     serif_bold = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf",
+        f"{_FONT_DIR}/Quicksand-Bold.ttf",
+        f"{_FONT_DIR}/Quicksand-Medium.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
     ]
     serif_reg = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
+        f"{_FONT_DIR}/Quicksand-Medium.ttf",
+        f"{_FONT_DIR}/Quicksand-Regular.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     ]
     sans_reg = [
+        f"{_FONT_DIR}/Quicksand-Regular.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     ]
