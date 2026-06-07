@@ -1547,6 +1547,22 @@ def main():
         print("  ↩ ElevenLabs unavailable — trying Piper TTS (free offline)...")
         narration = generate_narration_piper(script["narration"], episode_dir)
 
+    # Probe actual narration length so scene durations can be matched to it —
+    # otherwise the assembled video gets truncated mid-sentence by `-shortest`
+    # whenever the fixed per-scene durations (default 8s) sum to less than
+    # the real narration audio (which varies with word count and TTS pace).
+    narration_secs = 0.0
+    if narration.exists() and narration.stat().st_size > 100:
+        try:
+            pr = subprocess.run([
+                "ffprobe", "-v", "error", "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1", str(narration)
+            ], capture_output=True, text=True, timeout=30)
+            narration_secs = float(pr.stdout.strip())
+            print(f"  ℹ Narration length: {narration_secs:.1f}s")
+        except Exception:
+            pass
+
     # Auto-generate scenes if the script doesn't have them (older format scripts)
     if not script.get("scenes"):
         print("  ℹ Script has no scenes key — auto-generating 6 scenes from narration...")
@@ -1565,6 +1581,20 @@ def main():
              "narration": chunk}
             for i, chunk in enumerate(chunks)
         ]
+
+    # Rescale scene durations so the concatenated scene videos cover the full
+    # narration — keeps each scene's relative weight, just stretches/shrinks
+    # to fit the real audio length (plus a small tail so the last word lands
+    # before the cut).
+    if narration_secs > 1 and script.get("scenes"):
+        scene_total = sum(s.get("duration", 8) for s in script["scenes"])
+        target = narration_secs + 2
+        if scene_total > 0 and abs(target / scene_total - 1.0) > 0.08:
+            scale = target / scene_total
+            for s in script["scenes"]:
+                s["duration"] = round(max(3.0, s.get("duration", 8) * scale), 1)
+            new_total = sum(s["duration"] for s in script["scenes"])
+            print(f"  ℹ Rescaled scene durations {scene_total}s → {new_total:.1f}s to match narration")
 
     # 3. Scene images + videos
     # Priority: Higgsfield → FLUX (OpenMontage) → Stock photos → Pollinations → gradient
