@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SURGE - Episode 1: Discover</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        canvas {
+            display: block;
+            background: #fff;
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        #timeline-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #fff;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 10;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF8C00, #00D8FF);
+            width: 0%;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div id="info">
+        <div>SURGE - Episode 1: "Discover"</div>
+        <div style="font-size: 12px; color: #aaa; margin-top: 5px;">13-minute animated pilot</div>
+    </div>
+
+    <div id="timeline-info">
+        <div>Timeline: <span id="current-time">0:00</span> / 13:00</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas to 1920x1080 (16:9)
+        canvas.width = 1920;
+        canvas.height = 1080;
+
+        // Animation timeline (13 minutes = 780 seconds)
+        const TOTAL_DURATION = 13 * 60; // 780 seconds
+        let currentTime = 0;
+        let isPlaying = true;
+
+        // Character objects with animation states
+        const characters = {
+            ziggy: {
+                x: 960,
+                y: 540,
+                scale: 1,
+                emotion: 'neutral',
+                alpha: 1,
+                energy: 0
+            },
+            mira: {
+                x: 700,
+                y: 540,
+                scale: 0.9,
+                emotion: 'calm',
+                alpha: 0,
+                energy: 0
+            },
+            echo: {
+                x: 1200,
+                y: 400,
+                scale: 1,
+                emotion: 'chaotic',
+                alpha: 0,
+                energy: 0
+            },
+            mschen: {
+                x: 500,
+                y: 300,
+                scale: 1,
+                emotion: 'wise',
+                alpha: 0,
+                energy: 0
+            }
+        };
+
+        // Scene definitions with timings
+        const scenes = [
+            // ACT 1: THE WORLD OF ZIGGY (0-180 seconds)
+            {
+                name: "Morning in Chaos",
+                startTime: 0,
+                endTime: 45,
+                backgroundColor: '#FFE5CC',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'energetic', x: 960, y: 600, scale: 1.1 }
+                }
+            },
+            {
+                name: "Walking to School",
+                startTime: 45,
+                endTime: 105,
+                backgroundColor: '#E8F4F8',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'happy', x: 800, y: 700, scale: 0.9 },
+                    mira: { alpha: 1, emotion: 'calm', x: 1100, y: 700, scale: 0.9 }
+                }
+            },
+            {
+                name: "Entering School",
+                startTime: 105,
+                endTime: 150,
+                backgroundColor: '#D0D0D0',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'confused', x: 960, y: 540, scale: 1 },
+                    mira: { alpha: 1, emotion: 'concerned', x: 700, y: 540, scale: 0.9 }
+                }
+            },
+            // ACT 2: FIRST ENCOUNTER (180-360 seconds)
+            {
+                name: "The Cafeteria",
+                startTime: 150,
+                endTime: 240,
+                backgroundColor: '#FFF8DC',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'shocked', x: 960, y: 600, scale: 1 },
+                    mira: { alpha: 1, emotion: 'worried', x: 700, y: 600, scale: 0.9 },
+                    echo: { alpha: 0.5, emotion: 'chaotic', x: 1200, y: 400, scale: 1.2 }
+                }
+            },
+            {
+                name: "After School - Office",
+                startTime: 240,
+                endTime: 285,
+                backgroundColor: '#E8F5E9',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'listening', x: 900, y: 600, scale: 1 },
+                    mschen: { alpha: 1, emotion: 'wise', x: 1050, y: 550, scale: 0.95 }
+                }
+            },
+            {
+                name: "The Realization",
+                startTime: 285,
+                endTime: 330,
+                backgroundColor: '#F3E5F5',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'determined', x: 960, y: 540, scale: 1 },
+                    echo: { alpha: 0.3, emotion: 'weakened', x: 1100, y: 450, scale: 0.8 }
+                }
+            },
+            // ACT 3: ACCEPTANCE & POWER (360-480 seconds)
+            {
+                name: "The Awakening",
+                startTime: 330,
+                endTime: 405,
+                backgroundColor: '#FFF8DC',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'powerful', x: 960, y: 400, scale: 1.2, energy: 1 },
+                    mira: { alpha: 1, emotion: 'supportive', x: 700, y: 500, scale: 0.9 },
+                    mschen: { alpha: 1, emotion: 'proud', x: 1150, y: 500, scale: 0.9 }
+                }
+            },
+            {
+                name: "First Test",
+                startTime: 405,
+                endTime: 450,
+                backgroundColor: '#E0F2F1',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'heroic', x: 960, y: 540, scale: 1.15, energy: 0.8 }
+                }
+            },
+            {
+                name: "Cliffhanger",
+                startTime: 450,
+                endTime: 495,
+                backgroundColor: '#1a1a2e',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'determined', x: 960, y: 540, scale: 1 },
+                    echo: { alpha: 1, emotion: 'threatening', x: 960, y: 300, scale: 1.5, energy: 1 }
+                }
+            },
+            {
+                name: "Epilogue",
+                startTime: 495,
+                endTime: 780,
+                backgroundColor: '#FFF4E6',
+                characters: {
+                    ziggy: { alpha: 1, emotion: 'confident', x: 800, y: 600, scale: 0.95 },
+                    mira: { alpha: 1, emotion: 'calm', x: 1100, y: 600, scale: 0.95 }
+                }
+            }
+        ];
+
+        // Audio element (will be populated when voice files are ready)
+        const audio = new Audio();
+        audio.id = 'episode-audio';
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isPlaying) {
+                currentTime += 1/60; // ~16.67ms per frame
+                if (currentTime >= TOTAL_DURATION) {
+                    isPlaying = false;
+                    currentTime = TOTAL_DURATION;
+                }
+            }
+
+            // Clear canvas
+            const currentScene = getCurrentScene(currentTime);
+            ctx.fillStyle = currentScene.backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background elements
+            drawBackground(currentTime, currentScene);
+
+            // Draw and animate characters
+            for (const [charName, charData] of Object.entries(characters)) {
+                if (currentScene.characters && currentScene.characters[charName]) {
+                    const targetState = currentScene.characters[charName];
+                    // Smooth interpolation
+                    charData.alpha = lerp(charData.alpha, targetState.alpha, 0.1);
+                    charData.emotion = targetState.emotion;
+                    charData.energy = targetState.energy;
+                    charData.x = lerp(charData.x, targetState.x, 0.08);
+                    charData.y = lerp(charData.y, targetState.y, 0.08);
+                    charData.scale = lerp(charData.scale, targetState.scale, 0.08);
+                }
+            }
+
+            // Draw characters
+            drawCharacter(ctx, characters.ziggy, 'Ziggy');
+            if (characters.mira.alpha > 0.1) drawCharacter(ctx, characters.mira, 'Mira');
+            if (characters.echo.alpha > 0.1) drawCharacter(ctx, characters.echo, 'Echo');
+            if (characters.mschen.alpha > 0.1) drawCharacter(ctx, characters.mschen, 'Ms. Chen');
+
+            // Draw scene text
+            drawSceneText(ctx, currentScene, currentTime);
+
+            // Update UI
+            updateUI(currentTime);
+        }
+
+        function getCurrentScene(time) {
+            for (const scene of scenes) {
+                if (time >= scene.startTime && time < scene.endTime) {
+                    return scene;
+                }
+            }
+            return scenes[scenes.length - 1];
+        }
+
+        function drawBackground(time, scene) {
+            // Animated background elements based on scene
+            const sceneProgress = (time - scene.startTime) / (scene.endTime - scene.startTime);
+
+            // Add subtle animated elements
+            if (scene.name.includes("School")) {
+                // School hallway effects
+                ctx.fillStyle = 'rgba(0,0,0,0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height * 0.1);
+            }
+
+            if (scene.name.includes("Cafeteria")) {
+                // Distortion effect for chaos
+                if (characters.echo.alpha > 0.3) {
+                    ctx.fillStyle = `rgba(255, 31, 90, ${characters.echo.energy * 0.1})`;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            if (scene.name.includes("Rooftop") || scene.name.includes("Awakening")) {
+                // Energy glow
+                const gradient = ctx.createRadialGradient(960, 540, 100, 960, 540, 600);
+                gradient.addColorStop(0, `rgba(255, 140, 0, ${characters.ziggy.energy * 0.1})`);
+                gradient.addColorStop(1, 'rgba(255, 140, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function drawCharacter(ctx, charData, name) {
+            if (charData.alpha < 0.05) return;
+
+            ctx.save();
+            ctx.globalAlpha = charData.alpha;
+            ctx.translate(charData.x, charData.y);
+            ctx.scale(charData.scale, charData.scale);
+
+            // Placeholder character illustration (will be replaced with actual character designs)
+            const colors = {
+                'Ziggy': '#FF8C00',
+                'Mira': '#A8B89A',
+                'Echo': '#1a1a2e',
+                'Ms. Chen': '#1B5E5E'
+            };
+
+            const color = colors[name] || '#333';
+
+            // Draw character circle (placeholder for full character design)
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, 0, 40, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw emotion indicator
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(charData.emotion.substring(0, 4), 0, 5);
+
+            // Energy aura
+            if (charData.energy > 0) {
+                ctx.strokeStyle = `rgba(255, 140, 0, ${charData.energy * 0.5})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, 50 + charData.energy * 10, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawSceneText(ctx, scene, time) {
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(scene.name, 50, 100);
+        }
+
+        function updateUI(time) {
+            const minutes = Math.floor(time / 60);
+            const seconds = Math.floor(time % 60);
+            document.getElementById('current-time').textContent =
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            const progress = (time / TOTAL_DURATION) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                isPlaying = !isPlaying;
+                e.preventDefault();
+            }
+        });
+
+        // Start animation
+        animate();
+
+        // Log ready state
+        console.log('SURGE Episode 1 Composition Ready');
+        console.log('Total Duration: 13 minutes (780 seconds)');
+        console.log('Press SPACE to play/pause');
+        console.log('Awaiting audio file: episode-audio.mp3');
+    </script>
+</body>
+</html>
