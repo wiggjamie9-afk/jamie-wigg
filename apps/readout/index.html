@@ -793,6 +793,7 @@ body.mode-dyslexia .ai-send,body.mode-elder .ai-send{background:linear-gradient(
   <div class="rdr-ctrl">
     <div class="ctrl-feat">
       <button class="feat-btn" id="feat-ai">🧠 Ask AI</button>
+      <button class="feat-btn" id="feat-buddy" title="Your reading buddy explains this part in simple words">🧸 Explain this</button>
       <button class="feat-btn" id="feat-trans">🌍 Translate</button>
       <button class="feat-btn" id="feat-simple">💡 Simplify</button>
       <button class="feat-btn" id="feat-imgdesc">🖼 Images</button>
@@ -1368,6 +1369,37 @@ $('feat-imgdesc').addEventListener('click',e=>toggleFeat('imgdesc',e.currentTarg
 $('btn-copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(S.text);toast('📋 Copied to clipboard');}catch{toast('Copy not supported');}});
 $('btn-rescan').addEventListener('click',()=>{speechSynthesis.cancel();setPlaying(false);startScanner();});
 $('btn-lib-btn').addEventListener('click',()=>{speechSynthesis.cancel();setPlaying(false);showLibrary();});
+
+/* ── BUDDY: EXPLAIN THIS ── */
+let _buddySpeaking=false;
+function buddyExplain(){
+  if(_buddySpeaking)return;
+  if(!S.chunks.length){toast('Nothing to explain yet — scan a page first');return;}
+  const wasPlaying=S.playing;
+  speechSynthesis.cancel();setPlaying(false);
+  const passage=S.chunks[S.chunkIdx]||S.text.slice(0,400);
+  _buddySpeaking=true;
+  toast('🧸 Let me explain that…',2000);
+  const speakReply=text=>{
+    const utt=new SpeechSynthesisUtterance(text);
+    utt.rate=Math.min(S.speed,1);utt.pitch=1.05;if(S.voice)utt.voice=S.voice;
+    utt.onend=utt.onerror=()=>{
+      _buddySpeaking=false;
+      if(wasPlaying){setPlaying(true);playChunk(S.chunkIdx);}
+      else toast('🧸 All clear? Tap ▶ to keep reading');
+    };
+    speechSynthesis.speak(utt);
+  };
+  if(S.isDemo||!S.apiKey){
+    setTimeout(()=>speakReply(`Here's the simple version: ${passage.split(/[.!?]/)[0].trim()} — that's basically what it means. Add your Claude key and I'll explain the real page for you in plain words.`),900);
+    return;
+  }
+  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':S.apiKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,system:'You are a warm, patient reading buddy sitting beside someone while they read aloud. They just heard the passage below and want it explained in the simplest everyday words — like a friend chatting, not a lecture. Keep it to 2-4 short sentences, gently define any tricky words in plain terms, and skip preamble like "this passage means".',messages:[{role:'user',content:`Explain this in simple words:\n\n${passage}`}]})})
+    .then(r=>r.json())
+    .then(d=>speakReply(d.content?.[0]?.text||'Hmm, that one stumped me — let\'s keep going.'))
+    .catch(()=>speakReply('Sorry, I couldn\'t reach the explainer just now — let\'s keep going.'));
+}
+$('feat-buddy').addEventListener('click',buddyExplain);
 
 /* ── AI MODAL ── */
 const aiModal=$('ai-modal');
