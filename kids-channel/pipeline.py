@@ -585,22 +585,28 @@ def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Pat
 
 
 def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
-    """Generate a scene image via Replicate FLUX Schnell — uses your existing Replicate account.
+    """Generate a scene image via Replicate FLUX Dev — uses your existing Replicate account.
     Add REPLICATE_API_TOKEN to GitHub Secrets (same token as the creative-stack MCP server)."""
     if not REPLICATE_API_TOKEN:
         return None
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     full_prompt = (
-        f"Traditional children's picture book watercolour illustration. "
-        f"Painterly loose brushwork, visible paper texture and soft paint bleeds. "
-        f"Deep indigo-navy Australian night sky scattered with tiny stars, "
-        f"large soft full moon casting warm golden light. "
-        f"Gum trees and eucalyptus leaves framing the scene. "
+        f"Traditional gouache and watercolour children's picture book illustration, "
+        f"hand-painted on textured cold-press paper. "
+        f"Loose, imperfect painterly brushstrokes, visible canvas grain, "
+        f"soft pigment bleeds and bloom at the edges of shapes, "
+        f"uneven hand-applied colour washes — NOT smooth, NOT vector, NOT digital art. "
+        f"Deep indigo-navy Australian night sky scattered with tiny hand-dotted stars, "
+        f"large soft full moon casting warm golden light with a gentle painted glow. "
+        f"Gum trees and eucalyptus leaves framing the scene with loose, sketchy linework. "
         f"Sonny the quokka — small golden-brown marsupial with soft detailed fur, "
         f"large warm brown eyes, gentle curious expression — as the main character. "
         f"Scene: {prompt[:280]}. "
-        f"Rich warm earthy palette, professional illustrator quality, "
-        f"no text, no words, no captions, safe for children."
+        f"Rich warm earthy palette, storybook illustration like Beatrix Potter or "
+        f"Jill Barklem, textured paper grain throughout, soft hand-painted edges, "
+        f"no text, no words, no captions, safe for children. "
+        f"Avoid: flat vector art, clean digital lines, smooth gradients, glossy 3D render, "
+        f"airbrushed, photographic, sharp crisp edges, plastic look."
     )
     headers = {
         "Authorization": f"Token {REPLICATE_API_TOKEN}",
@@ -613,17 +619,18 @@ def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path
             "aspect_ratio": "16:9",
             "output_format": "jpg",
             "output_quality": 92,
-            "go_fast": True,
+            "num_inference_steps": 28,
+            "guidance": 3.5,
             "num_outputs": 1,
             "seed": scene_id * 17,
         }
     }
     for attempt in range(5):
         try:
-            print(f"  ⏳ Scene {scene_id} Replicate FLUX Schnell{' (retry)' if attempt else ''}...")
+            print(f"  ⏳ Scene {scene_id} Replicate FLUX Dev{' (retry)' if attempt else ''}...")
             r = requests.post(
-                "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
-                headers=headers, json=payload, timeout=120,
+                "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions",
+                headers=headers, json=payload, timeout=180,
             )
             if r.status_code == 429:
                 wait = 15 * (attempt + 1)
@@ -659,7 +666,7 @@ def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path
             img_data = requests.get(img_url, timeout=60).content
             if len(img_data) > 5000:
                 img_path.write_bytes(img_data)
-                print(f"  ✓ Scene {scene_id} image (Replicate FLUX Schnell, {len(img_data)//1024}KB)")
+                print(f"  ✓ Scene {scene_id} image (Replicate FLUX Dev, {len(img_data)//1024}KB)")
                 return img_path
             print(f"  ⚠ Replicate image too small ({len(img_data)} bytes)")
         except Exception as e:
