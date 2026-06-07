@@ -58,11 +58,24 @@ After each successful episode, the top entry is removed and the queue advances a
 
 ## Image generation (priority order)
 
-1. **Higgsfield Soul** — AI watercolour illustrations (needs `HIGGSFIELD_API_KEY`)
-2. **FLUX via fal.ai** — high-quality AI images via OpenMontage (~$0.05/image, needs `FAL_KEY`)
-3. **Pexels / Pixabay stock** — royalty-free nature photos (needs free API keys)
-4. **Pollinations FLUX** — free AI images (may be rate-limited in CI)
-5. **Animated gradient** — always works, no external calls
+All images now generate in **professional watercolour children's book style** (Beatrix Potter / Jill Barklem aesthetic):
+
+1. **Higgsfield Soul** — AI watercolour illustrations with professional art direction (needs `HIGGSFIELD_API_KEY`)
+2. **Replicate FLUX Dev** — Professional watercolour-style FLUX Dev (needs `REPLICATE_API_TOKEN`)
+3. **FAL.ai FLUX Schnell** — Professional watercolour via FLUX Schnell (~$0.003/image, needs `FAL_KEY`)
+4. **Pollinations FLUX** — Free professional watercolour AI images (may be rate-limited in CI)
+5. **Pexels / Pixabay stock** — Royalty-free nature photos (needs free API keys)
+6. **PIL illustration** — Fallback procedural art (always works, no external calls)
+
+**Character consistency:** Sonny the quokka has an identical appearance across all 12 scenes — same golden-brown fur colour, same eye size and warmth, same expression, same ear shape. All prompts emphasize this consistency.
+
+**Professional watercolour attributes:**
+- Hand-painted texture with visible brushstrokes
+- Soft pigment bleeds and gentle colour washes
+- Textured cold-press paper appearance
+- Warm earthy palette (ochres, burnt siennas, soft greens, deep blues)
+- Loose, sketchy linework for gum trees
+- No digital/vector artefacts, no glossy 3D, no sharp crisp edges
 
 ---
 

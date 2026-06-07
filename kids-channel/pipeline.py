@@ -45,9 +45,15 @@ SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
 CHARACTER_NAME = "Sonny"
 CHARACTER_DESC = "a sweet small quokka with golden-brown fur, big warm brown eyes, tiny round ears, gentle curious expression"
 VISUAL_STYLE = (
-    "Soft watercolour illustration, warm gentle palette, Australian bush at night. "
-    "Deep navy sky, soft moonlight, glowing fireflies. "
-    "Professional children's book art quality. No text. Safe for toddlers."
+    "Professional watercolour children's picture book illustration (like Beatrix Potter, Jill Barklem, Alison Friend style). "
+    "Hand-painted watercolour on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle washes. "
+    "Warm earthy palette: ochres, burnt siennas, soft greens, deep blues. "
+    "Australian bush at night with soft moonlight. Deep indigo-navy sky scattered with hand-dotted stars. "
+    "Gum trees framing scene with loose sketchy linework. Glowing fireflies with warm golden highlights. "
+    "Sonny the quokka as main character - always consistent appearance: small marsupial, soft golden-brown fur detail, "
+    "large warm brown eyes, gentle curious expression, tiny round ears, cosy and safe feeling. "
+    "Avoid: flat digital art, sharp clean lines, smooth gradients, glossy 3D render, airbrushed, photorealistic, "
+    "plastic look, bright neon colours. No text or captions. Safe for toddlers ages 1-5."
 )
 SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sonny the little Quokka — cozy bedtime stories for toddlers at bedtime or quiet time."
 
@@ -104,6 +110,16 @@ SCRIPT_PROMPT_TEMPLATE = """You are writing an episode of "{show_name}", a calm 
 The main character is {character_name}, {character_desc}.
 The show is slow-paced, gentle, and cozy - no conflict, no shouting, no sudden drama.
 
+VISUAL STYLE FOR ALL SCENES:
+Professional watercolour children's picture book illustration (Beatrix Potter / Jill Barklem style). Hand-painted on textured
+cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes. Warm earthy palette (ochres, siennas,
+soft greens, deep blues). Australian bush at night with soft moonlight, indigo-navy starry sky, gum trees with sketchy linework,
+glowing fireflies. Sonny the quokka: small marsupial, soft golden-brown fur detail, large warm brown eyes, gentle expression,
+tiny round ears - always exactly the same appearance in every scene. Safe and cosy.
+
+CHARACTER CONSISTENCY RULE: {character_name} must have identical appearance in every scene image — same fur colour, same eye size
+and colour, same ear shape, same body proportions. Reference the first scene image throughout.
+
 Write a complete episode about: {topic}
 
 Return ONLY a valid JSON object with exactly these fields, no other text:
@@ -116,14 +132,21 @@ Return ONLY a valid JSON object with exactly these fields, no other text:
     {{
       "id": 1,
       "duration": 10,
-      "image_prompt": "Detailed visual description for image generation. Soft watercolour style, warm palette, {character_name} {character_desc}. Scene: ...",
+      "image_prompt": "Professional watercolour illustration. {character_name} — small quokka with golden-brown fur, big warm brown eyes, gentle expression, tiny ears — as main subject. Setting: [specific scene]. Soft brushstrokes, visible paper texture, pigment bleeds, warm palette, Australian bush night, indigo sky with stars, glowing fireflies. Safe and cosy. No text.",
       "narration_segment": "The words spoken during this scene."
     }}
   ]
 }}
 
 Create 12 scenes. Each scene is 10 seconds (120 seconds total).
-Make the image prompts specific, beautiful, and consistent - {character_name} always looks the same.
+
+IMAGE PROMPT RULES:
+1. Start EVERY image prompt with professional watercolour style descriptor
+2. Always describe {character_name}'s appearance: same fur colour, eyes, ears, size — reference consistency with earlier scenes
+3. Include specific Australian bush location details: gum trees, native plants, moonlight effect
+4. Add artistic technique details: brushstrokes, paper texture, pigment technique for authenticity
+5. Avoid: digital, vector, CGI, glossy, photorealistic, airbrushed, bright neon
+
 IMPORTANT: Tell a COMPLETE story with clear beginning, middle, and end. Include proper story resolution and calm, cozy conclusion."""
 
 
@@ -256,12 +279,13 @@ def get_higgsfield_token() -> str:
 
 
 def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: str) -> Path:
-    """Generate a scene image via Higgsfield Soul (text-to-image)."""
+    """Generate a scene image via Higgsfield Soul (text-to-image) — professional watercolour style."""
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    # Combine full visual style + character description + scene details for consistent professional art
     full_prompt = (
-        f"{VISUAL_STYLE} "
-        f"Character: {CHARACTER_NAME}, {CHARACTER_DESC}. "
-        f"Scene: {prompt[:350]}"
+        f"{VISUAL_STYLE}\n"
+        f"Main character: {CHARACTER_NAME}, {CHARACTER_DESC}.\n"
+        f"Scene: {prompt[:400]}"
     )
     r = requests.post(
         "https://api.higgsfield.ai/v1/soul/generate",
@@ -273,7 +297,7 @@ def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: s
     data = r.json()
     job_id = data.get("job_id") or data.get("id")
     if job_id:
-        print(f"  ⏳ Scene {scene_id} — waiting for Higgsfield job {job_id}...")
+        print(f"  ⏳ Scene {scene_id} — Higgsfield Soul (professional watercolour) {job_id}...")
         img_url = poll_higgsfield_job(job_id, token)
     else:
         img_url = data.get("images", [{}])[0].get("url", "")
@@ -281,7 +305,7 @@ def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: s
         raise ValueError(f"No image URL in Higgsfield response: {data}")
     img_data = requests.get(img_url, timeout=60).content
     img_path.write_bytes(img_data)
-    print(f"  ✓ Scene {scene_id} image (Higgsfield Soul, {len(img_data)//1024}KB)")
+    print(f"  ✓ Scene {scene_id} (Higgsfield Soul — professional watercolour, {len(img_data)//1024}KB)")
     return img_path
 
 
@@ -364,13 +388,15 @@ def poll_higgsfield_job(job_id: str, token: str, max_wait: int = 300) -> str:
 
 
 def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
-    """Generate a scene image via Pollinations FLUX — free, no API key needed."""
+    """Generate a scene image via Pollinations FLUX — free, no API key needed.
+    Generates professional watercolour children's book style."""
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
-    # Short prompt: URL-length safe, faster to process
+    # Short prompt: URL-length safe, faster to process, professional watercolor focus
     short_prompt = (
-        f"Sonny the quokka golden-brown fur big warm brown eyes gentle smile, {prompt[:100]}, "
-        f"beautiful watercolour children's book illustration, Australian bush moonlit starry night, "
-        f"rich detailed painterly, no text"
+        f"Professional watercolour children's book illustration, Beatrix Potter style. "
+        f"Sonny the quokka — golden-brown fur, big warm brown eyes, gentle expression. "
+        f"{prompt[:150]}. Australian bush, moonlit, starry night, gum trees, fireflies, "
+        f"brushstrokes, textured paper, warm palette, no text, safe for children"
     )
     encoded = requests.utils.quote(short_prompt)
     headers = {"User-Agent": "SonnyBot/1.0", "Accept": "image/*"}
@@ -548,16 +574,18 @@ def generate_scene_image_flux(prompt: str, scene_id: int, episode_dir: Path) -> 
 
 def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
     """Generate a scene image via FAL.ai FLUX Schnell — needs FAL_KEY (~$0.003/image).
-    Sign up free at fal.ai, then add FAL_KEY to GitHub Secrets for AI-quality art."""
+    Sign up free at fal.ai, then add FAL_KEY to GitHub Secrets for AI-quality art.
+    Generates professional watercolour children's book illustrations."""
     if not FAL_KEY:
         return None
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     os.environ.setdefault("FAL_KEY", FAL_KEY)
     full_prompt = (
-        f"Soft watercolour children's book illustration, warm gentle palette, "
-        f"Australian bush at night, deep navy sky, soft moonlight, glowing fireflies. "
-        f"Sonny the quokka with golden-brown fur and big warm brown eyes. "
-        f"Scene: {prompt[:300]}. No text. Safe for toddlers."
+        f"Professional watercolour children's picture book illustration, Beatrix Potter style. "
+        f"Hand-painted on textured cold-press paper, visible brushstrokes, soft pigment bleeds. "
+        f"Sonny the quokka with golden-brown fur and big warm brown eyes as main character. "
+        f"Australian bush at night, deep navy indigo sky with stars, soft moonlight, glowing fireflies, gum trees. "
+        f"Warm earthy palette. Scene: {prompt[:280]}. No text. Safe for toddlers."
     )
     try:
         import fal_client
@@ -587,27 +615,22 @@ def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Pat
 
 def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
     """Generate a scene image via Replicate FLUX Dev — uses your existing Replicate account.
-    Add REPLICATE_API_TOKEN to GitHub Secrets (same token as the creative-stack MCP server)."""
+    Add REPLICATE_API_TOKEN to GitHub Secrets (same token as the creative-stack MCP server).
+    Generates professional watercolour children's book illustrations."""
     if not REPLICATE_API_TOKEN:
         return None
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     full_prompt = (
-        f"Traditional gouache and watercolour children's picture book illustration, "
-        f"hand-painted on textured cold-press paper. "
-        f"Loose, imperfect painterly brushstrokes, visible canvas grain, "
-        f"soft pigment bleeds and bloom at the edges of shapes, "
-        f"uneven hand-applied colour washes — NOT smooth, NOT vector, NOT digital art. "
-        f"Deep indigo-navy Australian night sky scattered with tiny hand-dotted stars, "
-        f"large soft full moon casting warm golden light with a gentle painted glow. "
-        f"Gum trees and eucalyptus leaves framing the scene with loose, sketchy linework. "
-        f"Sonny the quokka — small golden-brown marsupial with soft detailed fur, "
-        f"large warm brown eyes, gentle curious expression — as the main character. "
-        f"Scene: {prompt[:280]}. "
-        f"Rich warm earthy palette, storybook illustration like Beatrix Potter or "
-        f"Jill Barklem, textured paper grain throughout, soft hand-painted edges, "
-        f"no text, no words, no captions, safe for children. "
-        f"Avoid: flat vector art, clean digital lines, smooth gradients, glossy 3D render, "
-        f"airbrushed, photographic, sharp crisp edges, plastic look."
+        f"Professional watercolour children's picture book illustration, Beatrix Potter and Jill Barklem style. "
+        f"Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes. "
+        f"Loose painterly technique, imperfect handmade edges, warm earthy palette (ochres, burnt siennas, soft greens, deep blues). "
+        f"Deep indigo-navy Australian night sky scattered with tiny hand-dotted stars and gentle moonlight. "
+        f"Gum trees framing scene with loose, sketchy linework. Glowing fireflies with warm golden highlights. "
+        f"Sonny the quokka as main character — small golden-brown marsupial with soft detailed fur, "
+        f"large warm brown eyes, gentle curious expression, tiny round ears. Consistent appearance. "
+        f"Scene: {prompt[:300]}. "
+        f"Textured paper grain visible throughout, soft hand-painted edges, warm cosy feeling, safe for children. "
+        f"Avoid: flat vector art, digital lines, smooth gradients, 3D render, airbrushed, photorealistic, sharp crisp edges."
     )
     headers = {
         "Authorization": f"Token {REPLICATE_API_TOKEN}",
