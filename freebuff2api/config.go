@@ -11,10 +11,20 @@ type Config struct {
 	ListenAddr       string        `json:"LISTEN_ADDR"`
 	UpstreamBaseURL  string        `json:"UPSTREAM_BASE_URL"`
 	AuthTokens       []string      `json:"AUTH_TOKENS"`
-	RotationInterval time.Duration `json:"ROTATION_INTERVAL"`
-	RequestTimeout   time.Duration `json:"REQUEST_TIMEOUT"`
+	RotationInterval time.Duration `json:"-"`
+	RequestTimeout   time.Duration `json:"-"`
 	APIKeys          []string      `json:"API_KEYS"`
 	HTTPProxy        string        `json:"HTTP_PROXY"`
+}
+
+type configJSON struct {
+	ListenAddr       string   `json:"LISTEN_ADDR"`
+	UpstreamBaseURL  string   `json:"UPSTREAM_BASE_URL"`
+	AuthTokens       []string `json:"AUTH_TOKENS"`
+	RotationInterval string   `json:"ROTATION_INTERVAL"`
+	RequestTimeout   string   `json:"REQUEST_TIMEOUT"`
+	APIKeys          []string `json:"API_KEYS"`
+	HTTPProxy        string   `json:"HTTP_PROXY"`
 }
 
 func LoadConfig(filePath string) (*Config, error) {
@@ -27,8 +37,26 @@ func LoadConfig(filePath string) (*Config, error) {
 
 	// Try to load from JSON file
 	if data, err := os.ReadFile(filePath); err == nil {
-		if err := json.Unmarshal(data, cfg); err != nil {
+		var cfgJSON configJSON
+		if err := json.Unmarshal(data, &cfgJSON); err != nil {
 			return nil, err
+		}
+
+		cfg.ListenAddr = cfgJSON.ListenAddr
+		cfg.UpstreamBaseURL = cfgJSON.UpstreamBaseURL
+		cfg.AuthTokens = cfgJSON.AuthTokens
+		cfg.APIKeys = cfgJSON.APIKeys
+		cfg.HTTPProxy = cfgJSON.HTTPProxy
+
+		if cfgJSON.RotationInterval != "" {
+			if d, err := time.ParseDuration(cfgJSON.RotationInterval); err == nil {
+				cfg.RotationInterval = d
+			}
+		}
+		if cfgJSON.RequestTimeout != "" {
+			if d, err := time.ParseDuration(cfgJSON.RequestTimeout); err == nil {
+				cfg.RequestTimeout = d
+			}
 		}
 	}
 
