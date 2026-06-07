@@ -104,26 +104,27 @@ SCRIPT_PROMPT_TEMPLATE = """You are writing an episode of "{show_name}", a calm 
 The main character is {character_name}, {character_desc}.
 The show is slow-paced, gentle, and cozy - no conflict, no shouting, no sudden drama.
 
-Write a short episode about: {topic}
+Write a complete episode about: {topic}
 
 Return ONLY a valid JSON object with exactly these fields, no other text:
 {{
   "title": "episode title (max 60 chars, warm and descriptive)",
   "description": "YouTube description (2-3 sentences, parent-friendly, include '{show_name}')",
   "tags": ["list", "of", "10", "youtube", "tags"],
-  "narration": "Full narration text (300-400 words). Gentle, slow pace. Written for a calm voice-over.",
+  "narration": "Full narration text (800-1000 words). Gentle, slow pace. Written for a calm voice-over. Tell a COMPLETE story with introduction, development, climax, and satisfying resolution.",
   "scenes": [
     {{
       "id": 1,
-      "duration": 8,
+      "duration": 10,
       "image_prompt": "Detailed visual description for image generation. Soft watercolour style, warm palette, {character_name} {character_desc}. Scene: ...",
       "narration_segment": "The words spoken during this scene."
     }}
   ]
 }}
 
-Create 6 scenes. Each scene is 8 seconds.
-Make the image prompts specific, beautiful, and consistent - {character_name} always looks the same."""
+Create 12 scenes. Each scene is 10 seconds (120 seconds total).
+Make the image prompts specific, beautiful, and consistent - {character_name} always looks the same.
+IMPORTANT: Tell a COMPLETE story with clear beginning, middle, and end. Include proper story resolution and calm, cozy conclusion."""
 
 
 def _build_prompt(topic: str) -> str:
