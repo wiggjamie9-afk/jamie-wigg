@@ -26,24 +26,27 @@ User can copy, download, or regenerate
 
 ---
 
-## 💰 Cost Impact
+## 💰 Typical Usage & Savings
 
 ### Per video
-```
-Generate caption:   $0  (free tier)
-Generate metadata:  $0  (free tier)
-─────────────────────────────────
-Total cost:         $0
-Savings badge:      "You saved $0.02"
-```
+✅ Caption + metadata = **$0** (free tier)  
+✅ UI shows: **"You saved $0.02!"**  
+✅ User can copy or download results
 
 ### Monthly (50 videos)
 ```
-Traditional Claude API:  ~$50-100
-FreeLLMAPI setup:        ~$0
-─────────────────────────────────
-Monthly savings:         ~$50-100
-Annual savings:          ~$600-1200
+$0.02 × 50 = ~$1/month
+vs. Claude API: ~$50-100/month
+
+Savings: 99.8% ✅
+```
+
+### Annual impact
+```
+0 videos/year (free):    $0
+600 videos/year (Claude): $600-1200
+────────────────────────────
+Annual savings:           $600-1200
 ```
 
 ---

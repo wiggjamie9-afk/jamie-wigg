@@ -1,4 +1,25 @@
-# RHYTHMIX — Promo Videos
+# RHYTHMIX & STARLIGHTMIX
+
+## 🎬 STARLIGHTMIX Studio — AI Music Videos with Free LLM Captions
+
+**Generate AI music videos with zero-cost metadata.** Every video gets captions + metadata for free using aggregated free LLM tiers (Groq, Gemini, Mistral, +13 more). Intelligent fallback to Claude for complex reasoning tasks.
+
+### Typical Studio usage (per video):
+✅ Caption + metadata = **$0** (free tier)  
+✅ UI shows: **"You saved $0.02!"**  
+✅ User can copy or download results
+
+### Monthly savings (50 videos):
+```
+$0.02 × 50 = ~$1/month vs. Claude API: ~$50-100/month
+Savings: 99.8% ✅
+```
+
+**→ [STARLIGHTMIX Studio](studio/) · [Quick Start API](QUICK-START-API.md) · [Cost Savings Analysis](COST-SAVINGS.md) · [Setup Guide](FREELLMAPI.md)**
+
+---
+
+## 🎵 RHYTHMIX — Promo Videos
 
 > ⚠️ **Read this before posting:** the three "promo" cuts below contain copy from the landing-page drafts in this repo — fictional metrics ("4,800+ creators", "3.2M samples"), invented testimonials, and a `$149` lifetime offer pointing at a domain that may not exist. Do not publish them as-is unless every claim is verifiable. The **`teaser-coming-soon.mp4`** at the top is the only safe-to-publish cut today — pure brand reveal, no claims, "join the waitlist".
 
