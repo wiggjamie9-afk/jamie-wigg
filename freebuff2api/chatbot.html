@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freebuff2API Chatbot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 24px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      display: flex;
+      gap: 12px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message-content {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .message.user .message-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.assistant .message-content {
+      background: #f0f0f0;
+      color: #333;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.error .message-content {
+      background: #fee;
+      color: #c33;
+      border-left: 3px solid #c33;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #667eea;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% {
+        opacity: 0.5;
+        transform: translateY(0);
+      }
+      30% {
+        opacity: 1;
+        transform: translateY(-10px);
+      }
+    }
+
+    .footer {
+      border-top: 1px solid #e0e0e0;
+      padding: 16px;
+      background: white;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    #message {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      max-height: 100px;
+    }
+
+    #message:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
+      height: fit-content;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #999;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .status.error {
+      color: #c33;
+    }
+
+    .status.success {
+      color: #3c3;
+    }
+
+    .messages::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .messages::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+
+    .messages::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        height: 100vh;
+        border-radius: 0;
+      }
+
+      .message-content {
+        max-width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI Assistant</h1>
+      <p>Powered by Freebuff2API</p>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="footer">
+      <form id="chat">
+        <div class="input-group">
+          <textarea
+            id="message"
+            placeholder="Ask me anything..."
+            rows="1"
+          ></textarea>
+          <button type="submit" id="send-btn">Send</button>
+        </div>
+        <div class="status" id="status"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const FREEBUFF_API = 'http://localhost:8080/v1/chat/completions';
+    const messagesDiv = document.getElementById('messages');
+    const form = document.getElementById('chat');
+    const messageInput = document.getElementById('message');
+    const sendBtn = document.getElementById('send-btn');
+    const statusDiv = document.getElementById('status');
+
+    let isLoading = false;
+
+    // Auto-resize textarea
+    messageInput.addEventListener('input', () => {
+      messageInput.style.height = 'auto';
+      messageInput.style.height = Math.min(messageInput.scrollHeight, 100) + 'px';
+    });
+
+    // Handle form submission
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+
+      const userMessage = messageInput.value.trim();
+      if (!userMessage || isLoading) return;
+
+      // Clear input and reset height
+      messageInput.value = '';
+      messageInput.style.height = 'auto';
+
+      // Disable send button
+      isLoading = true;
+      sendBtn.disabled = true;
+      statusDiv.textContent = '';
+
+      // Add user message to chat
+      addMessage(userMessage, 'user');
+
+      try {
+        // Show typing indicator
+        const typingId = showTypingIndicator();
+
+        // Make API call
+        const response = await fetch(FREEBUFF_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [{ role: 'user', content: userMessage }],
+            temperature: 0.7,
+            max_tokens: 1000,
+          }),
+        });
+
+        // Remove typing indicator
+        removeTypingIndicator(typingId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error?.message ||
+              `API Error: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+
+        // Extract and display assistant response
+        const assistantMessage =
+          data.choices?.[0]?.message?.content ||
+          'No response received';
+
+        addMessage(assistantMessage, 'assistant');
+        updateStatus('Connected ✓', 'success');
+      } catch (error) {
+        console.error('Error:', error);
+
+        let errorMessage = error.message;
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage =
+            'Cannot connect to API. Make sure the server is running at http://localhost:8080';
+        }
+
+        addMessage(
+          `Error: ${errorMessage}`,
+          'error'
+        );
+        updateStatus(`Error: ${errorMessage}`, 'error');
+      } finally {
+        isLoading = false;
+        sendBtn.disabled = false;
+        messageInput.focus();
+      }
+    };
+
+    function addMessage(content, role) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      contentDiv.textContent = content;
+
+      messageDiv.appendChild(contentDiv);
+      messagesDiv.appendChild(messageDiv);
+
+      // Auto-scroll to bottom
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+      const id = Date.now();
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message assistant';
+      messageDiv.id = `typing-${id}`;
+
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'typing-indicator';
+
+      for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'typing-dot';
+        typingDiv.appendChild(dot);
+      }
+
+      messageDiv.appendChild(typingDiv);
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+      return id;
+    }
+
+    function removeTypingIndicator(id) {
+      const element = document.getElementById(`typing-${id}`);
+      if (element) element.remove();
+    }
+
+    function updateStatus(message, type = '') {
+      statusDiv.textContent = message;
+      statusDiv.className = 'status ' + type;
+    }
+
+    // Focus input on load
+    messageInput.focus();
+  </script>
+</body>
+</html>
