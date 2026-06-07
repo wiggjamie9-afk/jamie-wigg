@@ -52,6 +52,7 @@ import type { RenderEvent } from "../../lib/render-events";
 import { ReplicateUnreachable } from "../fallback-screens/replicate-unreachable";
 import { ScenesTable, type SceneRowState } from "./scenes-table";
 import { ComposeBar } from "./compose-bar";
+import { VideoExporter } from "../video-exporter/video-exporter";
 
 // ---------- Local types ----------
 
@@ -625,6 +626,21 @@ export function RenderProgress({ planId }: { planId: string }) {
           rows={rows}
           onRerun={rerunHandler}
         />
+
+        {/* LLM-powered metadata generation (only show when render is done) */}
+        {phase.kind === "done" && planRef.current && (
+          <div className="mt-8 p-6 bg-starlightmix-bg-secondary border border-starlightmix-border rounded-lg">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-starlightmix-text mb-2">
+                📝 Auto-generate Captions & Metadata
+              </h2>
+              <p className="text-sm text-starlightmix-text-muted">
+                Free LLM tier saves you ~$0.02 per video
+              </p>
+            </div>
+            <VideoExporter plan={planRef.current} result={phase.result} />
+          </div>
+        )}
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-starlightmix-border-strong bg-[color:var(--color-rhythmix-bg)]/95 px-4 py-3 backdrop-blur sm:px-6">
