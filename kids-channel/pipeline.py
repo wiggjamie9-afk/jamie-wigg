@@ -1383,38 +1383,32 @@ def upload_ebook_to_gumroad(ebook_path: Path, script: dict) -> bool:
 
 
 def generate_cover_image(script: dict, episode_num: int, episode_dir: Path) -> Path:
-    """Generate a professional book cover image for the episode.
+    """Use the exact professional cover templates provided by user.
 
-    Style: Illustrated children's book cover with detailed character
-    Layout: Sunny holding a book + magical night setting + golden text
-    Uses: Opening slide + ebook cover + YouTube thumbnail
+    Uses one of two professionally designed covers alternating for variety.
+    No generation - just copy the exact template images.
     """
+    from shutil import copyfile
+
     cover_path = episode_dir / "cover.jpg"
-    title = script.get("title", "Bedtime Story")
 
-    # Build the cover prompt matching the reference illustration style
-    cover_prompt = (
-        f"Professional illustrated children's book cover. "
-        f"CHARACTER: Sunny the quokka - MUST BE REALISTIC AND DETAILED - golden-brown fluffy quokka "
-        f"with large warm brown eyes (kind, gentle expression), round face, small ears with pink inner, "
-        f"sitting upright HOLDING AN OPEN STORYBOOK in paws. The book has magical starry pages glowing. "
-        f"COMPOSITION: Sunny centered-left to center, prominently featured and large. "
-        f"BACKGROUND: Magical nighttime Australian bush scene - cobalt/navy blue starry sky, "
-        f"full glowing cream moon, golden stars scattered, warm glowing lanterns (yellow-orange glow), "
-        f"flowering bushes with colorful blossoms (pink, purple, orange flowers), "
-        f"soft golden warm lighting creating magical atmosphere, possibly landscape vista in distance. "
-        f"TEXT LAYOUT: "
-        f"'Sonny's Cozy Quokka' in LARGE GOLDEN YELLOW text with drop shadow (top-center area). "
-        f"'Bedtime Tales' in WHITE or LIGHT BLUE text below (also large). "
-        f"Small text: 'Snuggle in • Listen • Dream Big' in white (if space). "
-        f"ILLUSTRATION STYLE: Hyper-realistic detailed digital illustration, professional children's book art, "
-        f"warm cozy palette (golds, blues, warm browns), soft lighting, magical atmosphere, "
-        f"similar to premium children's book covers, NOT cartoon, NOT 3D rendered, hand-painted illustration style. "
-        f"QUALITY: Premium professional illustration, meticulous detail, museum-quality. "
-        f"SAFE: Age-appropriate for toddlers (1-5 years), no scary elements, all gentle and magical. "
-        f"Seed: {episode_num * 42} (consistency marker)."
-    )
+    # Use the exact two cover templates provided by user
+    # Alternate between them for visual variety
+    template_num = (episode_num % 2) + 1  # Alternates 1, 2, 1, 2, ...
+    template_path = Path(__file__).parent.parent / f"cover_template_{template_num}.png"
 
+    try:
+        if template_path.exists():
+            # Copy exact template image
+            copyfile(template_path, cover_path)
+            print(f"  ✓ Cover: Using template {template_num} (exact professional design)")
+            return cover_path
+        else:
+            print(f"  ⚠ Template not found: {template_path}")
+    except Exception as e:
+        print(f"  ⚠ Cover copy failed: {e}")
+
+    # Fallback if templates not available - create minimal cover
     try:
         # Try Replicate FLUX first (best quality)
         if REPLICATE_API_TOKEN:
