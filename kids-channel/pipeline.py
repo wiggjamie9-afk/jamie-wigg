@@ -138,7 +138,7 @@ Return ONLY a valid JSON object with exactly these fields, no other text:
   ]
 }}
 
-Create exactly 10 scenes. Each scene is 10 seconds (100 seconds total).
+Create 12-14 scenes. Each scene is 10 seconds (120-140 seconds total).
 
 IMAGE PROMPT RULES:
 1. Start EVERY image prompt with professional watercolour style descriptor
@@ -861,10 +861,10 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
     MAX_W       = W - PAD_X * 2     # 1680px
 
     if scene_text:
-        # Measure char width at this font size to choose wrap width
-        test_bbox  = draw.textbbox((0, 0), "W" * 40, font=font_body)
-        char_w     = (test_bbox[2] - test_bbox[0]) / 40
-        wrap_chars = max(30, int(MAX_W / char_w))
+        # Better text layout: fewer lines, more spacing
+        test_bbox  = draw.textbbox((0, 0), "W" * 35, font=font_body)
+        char_w     = (test_bbox[2] - test_bbox[0]) / 35
+        wrap_chars = max(25, int(MAX_W / char_w))  # narrower for better readability
 
         lines = []
         for para in scene_text.replace("\n\n", "\n").split("\n"):
@@ -872,15 +872,15 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
             if not para:
                 continue
             lines.extend(tw.wrap(para, width=wrap_chars))
-            if len(lines) >= 4:
+            if len(lines) >= 3:  # max 3 lines for clean appearance
                 break
-        lines = lines[:4]
+        lines = lines[:3]
 
-        LINE_H = 58
+        LINE_H = 70  # increased spacing between lines
         block_h = len(lines) * LINE_H
-        # Centre the text block vertically in the text band (leave room for page num)
-        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2 - 18
-        y = max(TEXT_Y + 18, y)
+        # Centre the text block vertically with more breathing room
+        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2
+        y = max(TEXT_Y + 25, y)
 
         for line in lines:
             bbox = draw.textbbox((0, 0), line, font=font_body)
@@ -1330,24 +1330,24 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
         """Centre-aligned story text + page number in parchment band."""
         PAD = 48
         MAX_W = PW - PAD * 2
-        test_bbox = draw.textbbox((0, 0), "W" * 30, font=font_body)
-        char_w = (test_bbox[2] - test_bbox[0]) / 30
-        wrap_chars = max(16, int(MAX_W / char_w))
+        test_bbox = draw.textbbox((0, 0), "W" * 25, font=font_body)
+        char_w = (test_bbox[2] - test_bbox[0]) / 25
+        wrap_chars = max(14, int(MAX_W / char_w))
 
         lines = []
         for para in text.replace("\n\n", "\n").split("\n"):
             para = para.strip()
             if para:
                 lines.extend(tw.wrap(para, width=wrap_chars))
-            if len(lines) >= 4:
+            if len(lines) >= 3:  # max 3 lines for cleaner look
                 break
-        lines = lines[:4]
+        lines = lines[:3]
 
-        LINE_H = 44
+        LINE_H = 52  # better spacing
         TEXT_AREA_H = PH - TEXT_Y
         block_h = len(lines) * LINE_H
-        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2 - 10
-        y = max(TEXT_Y + 12, y)
+        y = TEXT_Y + (TEXT_AREA_H - block_h) // 2
+        y = max(TEXT_Y + 18, y)
 
         for line in lines:
             bbox = draw.textbbox((0, 0), line, font=font_body)
