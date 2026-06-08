@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Voice Notes: Record thoughts on the go">
+    <meta name="theme-color" content="#3B82F6">
+    <title>Voice Notes – Capture ideas instantly</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --secondary: #8B5CF6;
+            --accent: #10B981;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: system-ui, sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+
+        .recorder-section {
+            padding: 24px 16px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 2px solid var(--primary);
+            text-align: center;
+        }
+
+        .record-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            background: transparent;
+            color: var(--primary);
+            font-size: 32px;
+            cursor: pointer;
+            margin: 16px auto;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .record-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .record-btn.recording {
+            background: #EF4444;
+            border-color: #EF4444;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            margin: 12px 0;
+        }
+
+        .recorder-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        button {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .notes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .note-item {
+            padding: 12px;
+            background: var(--bg-light);
+            border-left: 4px solid var(--secondary);
+            border-radius: 4px;
+        }
+
+        .note-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .note-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .audio-player {
+            width: 100%;
+            height: 30px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .controls-row button {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .delete-btn {
+            background: #EF4444;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: var(--text-secondary);
+        }
+
+        .stats {
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Voice Notes</h1>
+        </div>
+
+        <div class="recorder-section">
+            <div class="recorder-label">Record a voice note</div>
+            <div class="timer-display" id="timerDisplay">00:00</div>
+            <button class="record-btn" id="recordBtn" onclick="toggleRecording()">🎙️</button>
+            <div class="recorder-label" id="recordStatus">Ready to record</div>
+        </div>
+
+        <div class="stats" id="statsDisplay">0 voice notes</div>
+
+        <div id="notesList" class="notes-list"></div>
+        <div id="emptyState" class="empty-state">
+            <p>No voice notes yet. Start recording! 🎵</p>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let recordingChunks = [];
+        let recordingTime = 0;
+        let recordingInterval = null;
+        let isRecording = false;
+
+        const appState = {
+            notes: JSON.parse(localStorage.getItem('voiceNotes')) || [],
+
+            save() {
+                localStorage.setItem('voiceNotes', JSON.stringify(this.notes));
+            }
+        };
+
+        async function initRecorder() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    recordingChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(recordingChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    saveNote(audioUrl);
+                    recordingChunks = [];
+                };
+            } catch (err) {
+                showToast('Microphone access denied', 'error');
+            }
+        }
+
+        function toggleRecording() {
+            if (!mediaRecorder) {
+                initRecorder();
+                return;
+            }
+
+            if (!isRecording) {
+                mediaRecorder.start();
+                isRecording = true;
+                recordingTime = 0;
+                document.getElementById('recordBtn').classList.add('recording');
+                document.getElementById('recordStatus').textContent = 'Recording...';
+
+                recordingInterval = setInterval(() => {
+                    recordingTime++;
+                    const mins = Math.floor(recordingTime / 60);
+                    const secs = recordingTime % 60;
+                    document.getElementById('timerDisplay').textContent =
+                        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                }, 1000);
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                clearInterval(recordingInterval);
+                document.getElementById('recordBtn').classList.remove('recording');
+                document.getElementById('recordStatus').textContent = 'Processing...';
+            }
+        }
+
+        function saveNote(audioUrl) {
+            const note = {
+                id: Date.now(),
+                audioUrl: audioUrl,
+                date: new Date().toLocaleString(),
+                duration: recordingTime
+            };
+
+            appState.notes.unshift(note);
+            appState.save();
+
+            document.getElementById('timerDisplay').textContent = '00:00';
+            document.getElementById('recordStatus').textContent = 'Ready to record';
+            showToast('Voice note saved! 🎉', 'success');
+            render();
+        }
+
+        function deleteNote(id) {
+            appState.notes = appState.notes.filter(n => n.id !== id);
+            appState.save();
+            showToast('Voice note deleted', 'info');
+            render();
+        }
+
+        function downloadNote(id) {
+            const note = appState.notes.find(n => n.id === id);
+            if (note) {
+                const a = document.createElement('a');
+                a.href = note.audioUrl;
+                a.download = `voice-note-${note.id}.webm`;
+                a.click();
+                showToast('Downloaded!', 'success');
+            }
+        }
+
+        function render() {
+            const list = document.getElementById('notesList');
+            const empty = document.getElementById('emptyState');
+            const stats = document.getElementById('statsDisplay');
+
+            stats.textContent = `${appState.notes.length} voice note${appState.notes.length !== 1 ? 's' : ''}`;
+
+            if (appState.notes.length === 0) {
+                list.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            list.style.display = 'flex';
+            empty.style.display = 'none';
+            list.innerHTML = appState.notes.map(note => {
+                const mins = Math.floor(note.duration / 60);
+                const secs = note.duration % 60;
+                const durationStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+                return `
+                    <div class="note-item">
+                        <div class="note-date">${note.date} • ${durationStr}</div>
+                        <audio class="audio-player" controls>
+                            <source src="${note.audioUrl}" type="audio/webm">
+                        </audio>
+                        <div class="controls-row">
+                            <button onclick="downloadNote(${note.id})">Download</button>
+                            <button class="delete-btn" onclick="deleteNote(${note.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 12px 20px;
+                background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#6366F1'};
+                color: white;
+                border-radius: 6px;
+                font-size: 14px;
+                z-index: 1000;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        render();
+    </script>
+</body>
+</html>

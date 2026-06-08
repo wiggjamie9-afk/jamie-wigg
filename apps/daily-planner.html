@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Daily Planner: Plan your day, one hour at a time">
+    <meta name="theme-color" content="#10B981">
+    <title>Daily Planner – Organize your day</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --primary: #10B981;
+            --secondary: #3B82F6;
+            --accent: #F59E0B;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: system-ui, sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .date-display { font-size: 14px; color: var(--text-secondary); }
+
+        .planner-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 2px solid var(--primary);
+        }
+
+        input, select {
+            padding: 10px;
+            background: #0F172A;
+            color: var(--text-primary);
+            border: 1px solid var(--secondary);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: system-ui, sans-serif;
+        }
+
+        input::placeholder { color: var(--text-secondary); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+
+        button {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .schedule-item {
+            padding: 12px;
+            background: var(--bg-light);
+            border-left: 4px solid var(--secondary);
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .schedule-time {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 13px;
+            min-width: 50px;
+        }
+
+        .schedule-task {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .schedule-category {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .delete-btn {
+            padding: 6px 10px;
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover { opacity: 0.9; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: var(--text-secondary);
+        }
+
+        .stats {
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Daily Planner</h1>
+            <div class="date-display" id="dateDisplay"></div>
+        </div>
+
+        <div class="planner-form">
+            <input type="time" id="planTime">
+            <input type="text" id="planTask" placeholder="What do you need to do?">
+            <select id="planCategory">
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="Health">Health</option>
+                <option value="Study">Study</option>
+                <option value="Other">Other</option>
+            </select>
+            <button onclick="addSchedule()">Add to Schedule</button>
+        </div>
+
+        <div class="stats" id="statsDisplay">0 tasks scheduled</div>
+
+        <div id="scheduleList" class="schedule-list"></div>
+        <div id="emptyState" class="empty-state">
+            <p>No tasks scheduled yet. Plan your day! 🎯</p>
+        </div>
+    </div>
+
+    <script>
+        const appState = {
+            schedule: JSON.parse(localStorage.getItem('schedule')) || [],
+
+            save() {
+                localStorage.setItem('schedule', JSON.stringify(this.schedule));
+            }
+        };
+
+        function addSchedule() {
+            const time = document.getElementById('planTime').value;
+            const task = document.getElementById('planTask').value.trim();
+            const category = document.getElementById('planCategory').value;
+
+            if (!time || !task) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            const schedule = {
+                id: Date.now(),
+                time: time,
+                task: task,
+                category: category
+            };
+
+            appState.schedule.push(schedule);
+            appState.schedule.sort((a, b) => a.time.localeCompare(b.time));
+            appState.save();
+
+            document.getElementById('planTime').value = '';
+            document.getElementById('planTask').value = '';
+
+            showToast('Task scheduled! ✓', 'success');
+            render();
+        }
+
+        function deleteSchedule(id) {
+            appState.schedule = appState.schedule.filter(s => s.id !== id);
+            appState.save();
+            showToast('Task removed', 'info');
+            render();
+        }
+
+        function updateDate() {
+            const today = new Date();
+            document.getElementById('dateDisplay').textContent = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+
+        function render() {
+            const list = document.getElementById('scheduleList');
+            const empty = document.getElementById('emptyState');
+            const stats = document.getElementById('statsDisplay');
+
+            stats.textContent = `${appState.schedule.length} task${appState.schedule.length !== 1 ? 's' : ''} scheduled`;
+
+            if (appState.schedule.length === 0) {
+                list.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            list.style.display = 'flex';
+            empty.style.display = 'none';
+            list.innerHTML = appState.schedule.map(item => `
+                <div class="schedule-item">
+                    <div>
+                        <div class="schedule-time">${item.time}</div>
+                        <div class="schedule-category">${item.category}</div>
+                    </div>
+                    <div class="schedule-task">${item.task}</div>
+                    <button class="delete-btn" onclick="deleteSchedule(${item.id})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 12px 20px;
+                background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#6366F1'};
+                color: white;
+                border-radius: 6px;
+                font-size: 14px;
+                z-index: 1000;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        updateDate();
+        render();
+    </script>
+</body>
+</html>

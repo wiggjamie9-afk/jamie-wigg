@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Budget Tracker: Control your spending">
+    <meta name="theme-color" content="#F59E0B">
+    <title>Budget Tracker – Save smarter</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --primary: #F59E0B;
+            --secondary: #6366F1;
+            --accent: #10B981;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: system-ui, sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+
+        .budget-summary {
+            padding: 16px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 2px solid var(--primary);
+            text-align: center;
+        }
+
+        .budget-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .budget-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .budget-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 2px solid var(--secondary);
+        }
+
+        input, select {
+            padding: 10px;
+            background: #0F172A;
+            color: var(--text-primary);
+            border: 1px solid var(--secondary);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: system-ui, sans-serif;
+        }
+
+        input::placeholder { color: var(--text-secondary); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+
+        button {
+            padding: 12px 20px;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .categories-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .category-card {
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: 6px;
+            border-left: 3px solid var(--secondary);
+            text-align: center;
+        }
+
+        .category-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .category-amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .expenses-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .expense-item {
+            padding: 12px;
+            background: var(--bg-light);
+            border-left: 4px solid var(--secondary);
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .expense-info {
+            flex: 1;
+        }
+
+        .expense-category {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .expense-amount {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .delete-btn {
+            padding: 6px 10px;
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover { opacity: 0.9; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Budget Tracker</h1>
+        </div>
+
+        <div class="budget-summary">
+            <div class="budget-value" id="totalSpent">$0</div>
+            <div class="budget-label">Total Spent This Month</div>
+        </div>
+
+        <div class="budget-form">
+            <input type="number" id="expenseAmount" placeholder="Amount ($)" step="0.01">
+            <select id="expenseCategory">
+                <option value="Food">Food & Dining</option>
+                <option value="Transport">Transport</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Health">Health</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Other">Other</option>
+            </select>
+            <button onclick="addExpense()">Add Expense</button>
+        </div>
+
+        <div id="categoriesGrid" class="categories-list"></div>
+        <div id="expensesList" class="expenses-list"></div>
+        <div id="emptyState" class="empty-state">
+            <p>No expenses yet. Start tracking! 📊</p>
+        </div>
+    </div>
+
+    <script>
+        const appState = {
+            expenses: JSON.parse(localStorage.getItem('budgetExpenses')) || [],
+
+            save() {
+                localStorage.setItem('budgetExpenses', JSON.stringify(this.expenses));
+            }
+        };
+
+        function addExpense() {
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const category = document.getElementById('expenseCategory').value;
+
+            if (!amount || amount <= 0) {
+                showToast('Enter a valid amount', 'error');
+                return;
+            }
+
+            const expense = {
+                id: Date.now(),
+                amount: amount,
+                category: category,
+                date: new Date().toLocaleDateString()
+            };
+
+            appState.expenses.push(expense);
+            appState.save();
+
+            document.getElementById('expenseAmount').value = '';
+            showToast('Expense added!', 'success');
+            render();
+        }
+
+        function deleteExpense(id) {
+            appState.expenses = appState.expenses.filter(e => e.id !== id);
+            appState.save();
+            showToast('Expense deleted', 'info');
+            render();
+        }
+
+        function getCategoryTotals() {
+            const totals = {};
+            appState.expenses.forEach(e => {
+                totals[e.category] = (totals[e.category] || 0) + e.amount;
+            });
+            return totals;
+        }
+
+        function getTotalSpent() {
+            return appState.expenses.reduce((sum, e) => sum + e.amount, 0);
+        }
+
+        function render() {
+            const total = document.getElementById('totalSpent');
+            const list = document.getElementById('expensesList');
+            const empty = document.getElementById('emptyState');
+            const categoriesGrid = document.getElementById('categoriesGrid');
+
+            const totalSpent = getTotalSpent();
+            total.textContent = `$${totalSpent.toFixed(2)}`;
+
+            const categoryTotals = getCategoryTotals();
+            categoriesGrid.innerHTML = Object.entries(categoryTotals).map(([cat, amount]) => `
+                <div class="category-card">
+                    <div class="category-name">${cat}</div>
+                    <div class="category-amount">$${amount.toFixed(2)}</div>
+                </div>
+            `).join('');
+
+            if (appState.expenses.length === 0) {
+                list.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            list.style.display = 'flex';
+            empty.style.display = 'none';
+            list.innerHTML = appState.expenses.sort((a, b) => new Date(b.date) - new Date(a.date)).map(expense => `
+                <div class="expense-item">
+                    <div class="expense-info">
+                        <div class="expense-category">${expense.category}</div>
+                        <div class="expense-amount">$${expense.amount.toFixed(2)} • ${expense.date}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteExpense(${expense.id})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 12px 20px;
+                background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#6366F1'};
+                color: white;
+                border-radius: 6px;
+                font-size: 14px;
+                z-index: 1000;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        render();
+    </script>
+</body>
+</html>

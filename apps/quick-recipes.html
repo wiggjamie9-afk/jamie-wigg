@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Quick Recipes: Cook delicious meals in minutes">
+    <meta name="theme-color" content="#EC4899">
+    <title>Quick Recipes – Cook smart</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --primary: #EC4899;
+            --secondary: #06B6D4;
+            --accent: #10B981;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: system-ui, sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+
+        .search-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-light);
+            color: var(--text-primary);
+            border: 2px solid var(--secondary);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input[type="text"]::placeholder { color: var(--text-secondary); }
+        input[type="text"]:focus { outline: none; border-color: var(--primary); }
+
+        button {
+            padding: 10px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .recipes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .recipe-card {
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: 6px;
+            border-left: 4px solid var(--secondary);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .recipe-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .recipe-emoji {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+
+        .recipe-title {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .recipe-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .recipe-detail {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .recipe-detail.active {
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .detail-content {
+            background: var(--bg-dark);
+            border-radius: 12px 12px 0 0;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .detail-emoji {
+            font-size: 32px;
+        }
+
+        .detail-title {
+            font-size: 18px;
+            font-weight: bold;
+            flex: 1;
+            margin-left: 12px;
+        }
+
+        .close-btn {
+            padding: 6px 12px;
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .detail-section {
+            margin-bottom: 16px;
+        }
+
+        .detail-section h3 {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .ingredient-item, .step-item {
+            font-size: 13px;
+            margin-bottom: 6px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍳 Quick Recipes</h1>
+        </div>
+
+        <div class="search-form">
+            <input type="text" id="searchInput" placeholder="Search recipes...">
+            <button onclick="filterRecipes()">Search</button>
+        </div>
+
+        <div id="recipesGrid" class="recipes-grid"></div>
+        <div id="emptyState" class="empty-state">
+            <p>No recipes found. Try a different search! 🔍</p>
+        </div>
+    </div>
+
+    <div id="recipeDetail" class="recipe-detail">
+        <div class="detail-content">
+            <div class="detail-header">
+                <div>
+                    <div class="detail-emoji" id="detailEmoji"></div>
+                </div>
+                <div class="detail-title" id="detailTitle"></div>
+                <button class="close-btn" onclick="closeDetail()">Close</button>
+            </div>
+
+            <div class="detail-section">
+                <h3>Time</h3>
+                <div class="ingredient-item" id="detailTime"></div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Ingredients</h3>
+                <div id="detailIngredients"></div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Instructions</h3>
+                <div id="detailInstructions"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const recipes = [
+            {
+                id: 1,
+                title: "Pasta Aglio e Olio",
+                emoji: "🍝",
+                time: "15 mins",
+                ingredients: ["Spaghetti 400g", "Garlic 4 cloves", "Olive oil 100ml", "Red chili 1", "Parsley fresh"],
+                instructions: ["Boil pasta in salted water", "Slice garlic thinly", "Heat oil, add garlic and chili", "Add cooked pasta to oil", "Toss and serve with parsley"]
+            },
+            {
+                id: 2,
+                title: "Egg Fried Rice",
+                emoji: "🍚",
+                time: "10 mins",
+                ingredients: ["Cooked rice 3 cups", "Eggs 2", "Soy sauce 2 tbsp", "Green peas 1 cup", "Green onions 2"],
+                instructions: ["Heat oil in wok", "Scramble eggs and set aside", "Fry rice with soy sauce", "Add peas and eggs", "Top with green onions"]
+            },
+            {
+                id: 3,
+                title: "Greek Salad",
+                emoji: "🥗",
+                time: "5 mins",
+                ingredients: ["Tomatoes 3", "Cucumber 1", "Red onion 1/2", "Olives 100g", "Feta cheese 150g", "Olive oil"],
+                instructions: ["Chop tomatoes and cucumber", "Slice red onion thinly", "Combine in bowl", "Add olives and feta", "Drizzle with olive oil and serve"]
+            },
+            {
+                id: 4,
+                title: "Avocado Toast",
+                emoji: "🥑",
+                time: "5 mins",
+                ingredients: ["Bread slices 2", "Avocado 1", "Lemon 1/2", "Salt & pepper", "Red chili flakes"],
+                instructions: ["Toast bread until golden", "Mash avocado with lemon juice", "Spread on toast", "Season with salt and pepper", "Top with chili flakes"]
+            },
+            {
+                id: 5,
+                title: "Tomato Soup",
+                emoji: "🍲",
+                time: "20 mins",
+                ingredients: ["Tomatoes 1kg", "Onion 1", "Garlic 3 cloves", "Cream 100ml", "Vegetable broth"],
+                instructions: ["Sauté onion and garlic", "Add chopped tomatoes", "Pour in broth and simmer 15 mins", "Blend until smooth", "Add cream and season"]
+            },
+            {
+                id: 6,
+                title: "Chicken Stir Fry",
+                emoji: "🍗",
+                time: "15 mins",
+                ingredients: ["Chicken breast 500g", "Mixed vegetables 300g", "Soy sauce 3 tbsp", "Garlic 3 cloves", "Ginger 1 tbsp"],
+                instructions: ["Cut chicken into cubes", "Heat oil in wok over high heat", "Fry chicken until cooked", "Add vegetables and sauce", "Toss for 3-4 mins and serve"]
+            },
+            {
+                id: 7,
+                title: "Smoothie Bowl",
+                emoji: "🍓",
+                time: "5 mins",
+                ingredients: ["Banana 1", "Berries 200g", "Yogurt 200ml", "Granola 50g", "Honey drizzle"],
+                instructions: ["Blend banana and berries with yogurt", "Pour into bowl", "Top with granola", "Drizzle with honey", "Serve immediately"]
+            },
+            {
+                id: 8,
+                title: "Quesadilla",
+                emoji: "🌮",
+                time: "10 mins",
+                ingredients: ["Tortillas 2", "Cheese 100g", "Chicken 150g", "Bell pepper 1", "Onion 1/2"],
+                instructions: ["Sauté peppers and onions", "Add chicken and cook", "Place filling on tortilla", "Top with cheese and another tortilla", "Pan fry until golden"]
+            }
+        ];
+
+        function filterRecipes() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = recipes.filter(r =>
+                r.title.toLowerCase().includes(searchTerm) ||
+                r.ingredients.some(ing => ing.toLowerCase().includes(searchTerm))
+            );
+            renderRecipes(filtered);
+        }
+
+        function renderRecipes(recipeList = recipes) {
+            const grid = document.getElementById('recipesGrid');
+            const empty = document.getElementById('emptyState');
+
+            if (recipeList.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            empty.style.display = 'none';
+            grid.innerHTML = recipeList.map(recipe => `
+                <div class="recipe-card" onclick="showDetail(${recipe.id})">
+                    <div class="recipe-emoji">${recipe.emoji}</div>
+                    <div class="recipe-title">${recipe.title}</div>
+                    <div class="recipe-time">⏱️ ${recipe.time}</div>
+                </div>
+            `).join('');
+        }
+
+        function showDetail(id) {
+            const recipe = recipes.find(r => r.id === id);
+            if (!recipe) return;
+
+            document.getElementById('detailEmoji').textContent = recipe.emoji;
+            document.getElementById('detailTitle').textContent = recipe.title;
+            document.getElementById('detailTime').textContent = recipe.time;
+            document.getElementById('detailIngredients').innerHTML = recipe.ingredients
+                .map(ing => `<div class="ingredient-item">✓ ${ing}</div>`)
+                .join('');
+            document.getElementById('detailInstructions').innerHTML = recipe.instructions
+                .map((step, idx) => `<div class="step-item">${idx + 1}. ${step}</div>`)
+                .join('');
+
+            document.getElementById('recipeDetail').classList.add('active');
+        }
+
+        function closeDetail() {
+            document.getElementById('recipeDetail').classList.remove('active');
+        }
+
+        renderRecipes();
+    </script>
+</body>
+</html>

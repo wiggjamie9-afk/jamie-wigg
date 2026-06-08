@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Workout Timer: Track your fitness sessions">
+    <meta name="theme-color" content="#10B981">
+    <title>Workout Timer – Get fit</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --primary: #10B981;
+            --secondary: #F59E0B;
+            --accent: #3B82F6;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: system-ui, sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+
+        .timer-display {
+            text-align: center;
+            padding: 32px 16px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 3px solid var(--primary);
+        }
+
+        .time-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 8px;
+        }
+
+        .time-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .setup-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 2px solid var(--secondary);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            background: #0F172A;
+            color: var(--text-primary);
+            border: 1px solid var(--secondary);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: system-ui, sans-serif;
+        }
+
+        input::placeholder { color: var(--text-secondary); }
+        input:focus { outline: none; border-color: var(--primary); }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+        button:active { opacity: 0.8; }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .controls button {
+            flex: 1;
+        }
+
+        .pause-btn {
+            background: var(--secondary);
+        }
+
+        .reset-btn {
+            background: #EF4444;
+        }
+
+        .workouts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .workout-item {
+            padding: 12px;
+            background: var(--bg-light);
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+        }
+
+        .workout-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .workout-time {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .delete-btn {
+            padding: 6px 12px;
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .delete-btn:hover { opacity: 0.9; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: var(--text-secondary);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💪 Workout Timer</h1>
+        </div>
+
+        <div class="timer-display">
+            <div class="time-value" id="timerDisplay">00:00</div>
+            <div class="time-label" id="currentWorkout">Ready to workout?</div>
+        </div>
+
+        <div class="setup-form">
+            <input type="text" id="workoutName" placeholder="Workout name (e.g., Running)">
+            <div class="form-row">
+                <input type="number" id="minutes" placeholder="Minutes" min="0" max="99" value="30">
+                <input type="number" id="seconds" placeholder="Seconds" min="0" max="59" value="0">
+            </div>
+            <div class="btn-group">
+                <button onclick="startTimer()">Start</button>
+                <button class="pause-btn" id="pauseBtn" onclick="pauseTimer()" style="display: none;">Pause</button>
+                <button class="reset-btn" onclick="resetTimer()">Reset</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="totalWorkouts">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="totalMinutes">0</div>
+                <div class="stat-label">Minutes</div>
+            </div>
+        </div>
+
+        <div id="workoutsList" class="workouts-list"></div>
+        <div id="emptyState" class="empty-state">
+            <p>No completed workouts yet. Start working out! 🏃</p>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let isRunning = false;
+
+        const appState = {
+            workouts: JSON.parse(localStorage.getItem('workouts')) || [],
+
+            save() {
+                localStorage.setItem('workouts', JSON.stringify(this.workouts));
+            }
+        };
+
+        function startTimer() {
+            const minutes = parseInt(document.getElementById('minutes').value) || 0;
+            const seconds = parseInt(document.getElementById('seconds').value) || 0;
+            const name = document.getElementById('workoutName').value.trim() || 'Workout';
+
+            if (minutes === 0 && seconds === 0) {
+                showToast('Set a valid time', 'error');
+                return;
+            }
+
+            if (!isRunning) {
+                timeRemaining = minutes * 60 + seconds;
+                isRunning = true;
+                document.getElementById('pauseBtn').style.display = 'flex';
+                document.getElementById('currentWorkout').textContent = name;
+
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateDisplay();
+
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        isRunning = false;
+                        completeWorkout(name);
+                    }
+                }, 1000);
+            }
+        }
+
+        function pauseTimer() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                document.getElementById('pauseBtn').textContent = 'Resume';
+            } else {
+                isRunning = true;
+                document.getElementById('pauseBtn').textContent = 'Pause';
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateDisplay();
+
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        isRunning = false;
+                        completeWorkout(document.getElementById('currentWorkout').textContent);
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            timeRemaining = 0;
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('pauseBtn').textContent = 'Pause';
+            document.getElementById('currentWorkout').textContent = 'Ready to workout?';
+            updateDisplay();
+            showToast('Timer reset', 'info');
+        }
+
+        function updateDisplay() {
+            const mins = Math.floor(timeRemaining / 60);
+            const secs = timeRemaining % 60;
+            document.getElementById('timerDisplay').textContent =
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function completeWorkout(name) {
+            const minutes = parseInt(document.getElementById('minutes').value) || 0;
+
+            const workout = {
+                id: Date.now(),
+                name: name,
+                minutes: minutes,
+                date: new Date().toLocaleDateString()
+            };
+
+            appState.workouts.unshift(workout);
+            appState.save();
+
+            resetTimer();
+            showToast('Workout completed! 🎉', 'success');
+            render();
+        }
+
+        function deleteWorkout(id) {
+            appState.workouts = appState.workouts.filter(w => w.id !== id);
+            appState.save();
+            showToast('Workout removed', 'info');
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('workoutsList');
+            const empty = document.getElementById('emptyState');
+            const totalCount = document.getElementById('totalWorkouts');
+            const totalMins = document.getElementById('totalMinutes');
+
+            const totalMinutes = appState.workouts.reduce((sum, w) => sum + w.minutes, 0);
+
+            totalCount.textContent = appState.workouts.length;
+            totalMins.textContent = totalMinutes;
+
+            if (appState.workouts.length === 0) {
+                list.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            list.style.display = 'flex';
+            empty.style.display = 'none';
+            list.innerHTML = appState.workouts.map(workout => `
+                <div class="workout-item">
+                    <div class="workout-title">${workout.name}</div>
+                    <div class="workout-time">${workout.minutes} min • ${workout.date}</div>
+                    <button class="delete-btn" onclick="deleteWorkout(${workout.id})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 12px 20px;
+                background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#6366F1'};
+                color: white;
+                border-radius: 6px;
+                font-size: 14px;
+                z-index: 1000;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        updateDisplay();
+        render();
+    </script>
+</body>
+</html>
