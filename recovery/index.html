@@ -442,10 +442,55 @@
     margin-top: 22px; padding: 12px; border-radius: 12px;
     background: var(--surface-2); color: var(--text-3); font-size: 11px; line-height: 1.5;
   }
+
+  /* Offline banner */
+  .offline-banner {
+    position: fixed; top: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto;
+    background: var(--fatigue); color: #000; padding: 8px 16px; font-size: 12px;
+    font-weight: 600; text-align: center; display: none; z-index: 150;
+    border-radius: 0 0 10px 10px;
+  }
+  .offline-banner.show { display: block; }
+
+  /* Form error states */
+  .input-error { border-color: var(--fatigue) !important; }
+  .error-text { font-size: 12px; color: var(--fatigue); margin-top: 4px; display: none; }
+  .error-text.show { display: block; }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn.loading { opacity: 0.7; pointer-events: none; }
+  .btn.loading::before { content: ''; display: inline-block; width: 14px; height: 14px; margin-right: 6px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+
+  /* Modal dialog accessibility */
+  .sheet[role="dialog"] { position: relative; }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
+<script src="/universal-mvp-enhancements.js"></script>
 </head>
 <body>
+
+<!-- Offline banner -->
+<div class="offline-banner" id="offlineBanner">
+  <span>No internet connection — changes saved locally</span>
+</div>
+
+<!-- Confirmation modal -->
+<div class="sheet-bg" id="confirmModal">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" onclick="event.stopPropagation()">
+    <h2 id="confirmTitle" style="margin-top: 0;">Confirm action</h2>
+    <p id="confirmText" style="color: var(--text-2); margin: 12px 0 20px;">Are you sure?</p>
+    <div class="btn-row">
+      <button class="btn outline" onclick="closeConfirm()">Cancel</button>
+      <button class="btn primary" id="confirmBtn" onclick="executeConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
 
 <!-- Onboarding (first-launch only) -->
 <div class="onb" id="onb">
@@ -499,12 +544,14 @@
     <p>Dose math needs your weight. Sex changes our iron and energy advice. Both stay on your phone.</p>
     <div class="grid2" style="margin-bottom: 18px">
       <div>
-        <label>Weight (kg)</label>
-        <input type="number" id="onbWeight" value="72" min="30" max="200" />
+        <label for="onbWeight">Weight (kg)</label>
+        <input type="number" id="onbWeight" value="72" min="30" max="200" aria-label="Weight in kilograms" />
+        <span class="error-text" id="weightError">Weight must be between 30 and 200 kg</span>
       </div>
       <div>
-        <label>Age</label>
-        <input type="number" id="onbAge" value="24" min="13" max="80" />
+        <label for="onbAge">Age</label>
+        <input type="number" id="onbAge" value="24" min="13" max="80" aria-label="Age in years" />
+        <span class="error-text" id="ageError">Age must be between 13 and 80</span>
       </div>
     </div>
     <label>Sex</label>
@@ -909,7 +956,7 @@
         <div class="date">On-device · private</div>
         <h1>Coach</h1>
       </div>
-      <button class="icon-btn" onclick="clearChat()" aria-label="New conversation">
+      <button class="icon-btn" onclick="confirmAction('clearChat', 'Start a new conversation?', 'Clear')" aria-label="New conversation">
         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
       </button>
     </div>
@@ -976,39 +1023,39 @@
 
 <!-- ============ Sheets ============ -->
 <div class="sheet-bg" id="sheet-checkin" onclick="closeSheetIf(event,'checkin')">
-  <div class="sheet" onclick="event.stopPropagation()">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="checkinTitle" onclick="event.stopPropagation()">
     <div class="grip"></div>
-    <h2>Morning check-in</h2>
+    <h2 id="checkinTitle">Morning check-in</h2>
     <p class="sub">30 seconds. Subjective inputs are the single best predictor of next-day performance — better than HRV alone (McLean et al. 2010).</p>
 
     <div class="slider-row">
-      <div class="lbl"><span>Muscle soreness</span><span class="v" id="vSore">3</span></div>
-      <input type="range" min="1" max="10" value="3" id="sliderSore" oninput="document.getElementById('vSore').textContent=this.value" />
+      <div class="lbl"><span id="soreLbl">Muscle soreness</span><span class="v" id="vSore" aria-live="polite">3</span></div>
+      <input type="range" min="1" max="10" value="3" id="sliderSore" aria-label="Muscle soreness scale from 1 to 10" aria-valuemin="1" aria-valuemax="10" aria-valuenow="3" aria-valuetext="3 out of 10" oninput="updateSliderAria('sliderSore', 'vSore', this.max); document.getElementById('vSore').textContent=this.value" />
       <div class="scale"><span>None</span><span>Severe</span></div>
     </div>
     <div class="slider-row">
-      <div class="lbl"><span>Sleep quality</span><span class="v" id="vSleep">3</span></div>
-      <input type="range" min="1" max="5" value="3" id="sliderSleep" oninput="document.getElementById('vSleep').textContent=this.value" />
+      <div class="lbl"><span>Sleep quality</span><span class="v" id="vSleep" aria-live="polite">3</span></div>
+      <input type="range" min="1" max="5" value="3" id="sliderSleep" aria-label="Sleep quality scale from 1 to 5" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3" aria-valuetext="3 out of 5" oninput="updateSliderAria('sliderSleep', 'vSleep', this.max); document.getElementById('vSleep').textContent=this.value" />
       <div class="scale"><span>Poor</span><span>Great</span></div>
     </div>
     <div class="slider-row">
-      <div class="lbl"><span>Energy</span><span class="v" id="vEn">3</span></div>
-      <input type="range" min="1" max="5" value="3" id="sliderEn" oninput="document.getElementById('vEn').textContent=this.value" />
+      <div class="lbl"><span>Energy</span><span class="v" id="vEn" aria-live="polite">3</span></div>
+      <input type="range" min="1" max="5" value="3" id="sliderEn" aria-label="Energy level scale from 1 to 5" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3" aria-valuetext="3 out of 5" oninput="updateSliderAria('sliderEn', 'vEn', this.max); document.getElementById('vEn').textContent=this.value" />
       <div class="scale"><span>Drained</span><span>Buzzing</span></div>
     </div>
     <div class="slider-row">
-      <div class="lbl"><span>Mood</span><span class="v" id="vMood">3</span></div>
-      <input type="range" min="1" max="5" value="3" id="sliderMood" oninput="document.getElementById('vMood').textContent=this.value" />
+      <div class="lbl"><span>Mood</span><span class="v" id="vMood" aria-live="polite">3</span></div>
+      <input type="range" min="1" max="5" value="3" id="sliderMood" aria-label="Mood scale from 1 to 5" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3" aria-valuetext="3 out of 5" oninput="updateSliderAria('sliderMood', 'vMood', this.max); document.getElementById('vMood').textContent=this.value" />
       <div class="scale"><span>Flat</span><span>Bright</span></div>
     </div>
     <div class="slider-row">
-      <div class="lbl"><span>Motivation to train</span><span class="v" id="vMot">3</span></div>
-      <input type="range" min="1" max="5" value="3" id="sliderMot" oninput="document.getElementById('vMot').textContent=this.value" />
+      <div class="lbl"><span>Motivation to train</span><span class="v" id="vMot" aria-live="polite">3</span></div>
+      <input type="range" min="1" max="5" value="3" id="sliderMot" aria-label="Motivation to train scale from 1 to 5" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3" aria-valuetext="3 out of 5" oninput="updateSliderAria('sliderMot', 'vMot', this.max); document.getElementById('vMot').textContent=this.value" />
       <div class="scale"><span>None</span><span>Hungry</span></div>
     </div>
 
     <div style="margin-top: 18px;">
-      <button class="btn" onclick="submitCheckin()">Submit check-in</button>
+      <button class="btn" id="checkinSubmitBtn" onclick="submitCheckin()">Submit check-in</button>
     </div>
   </div>
 </div>
@@ -1028,49 +1075,50 @@
 </div>
 
 <div class="sheet-bg" id="sheet-logQuick" onclick="closeSheetIf(event,'logQuick')">
-  <div class="sheet" onclick="event.stopPropagation()">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="logTitle" onclick="event.stopPropagation()">
     <div class="grip"></div>
-    <h2>Log session</h2>
+    <h2 id="logTitle">Log session</h2>
     <p class="sub">In the live app we'll auto-detect workouts from your Watch. You confirm the RPE and any context tags.</p>
 
-    <label style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin-bottom: 6px;">Type</label>
-    <div class="choice-row">
-      <button class="choice active">⚽ Match</button>
-      <button class="choice">⚽ Training</button>
-      <button class="choice">🏋️ Strength</button>
-      <button class="choice">🏃 Run</button>
-      <button class="choice">🚴 Cycle</button>
-      <button class="choice">🧘 Recovery</button>
+    <label for="logType" style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin-bottom: 6px;">Type</label>
+    <div class="choice-row" id="logTypeRow">
+      <button class="choice active" data-type="match" aria-label="Match type">⚽ Match</button>
+      <button class="choice" data-type="training" aria-label="Training type">⚽ Training</button>
+      <button class="choice" data-type="strength" aria-label="Strength type">🏋️ Strength</button>
+      <button class="choice" data-type="run" aria-label="Run type">🏃 Run</button>
+      <button class="choice" data-type="cycle" aria-label="Cycle type">🚴 Cycle</button>
+      <button class="choice" data-type="recovery" aria-label="Recovery type">🧘 Recovery</button>
     </div>
 
-    <label style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin: 14px 0 6px;">Duration (min)</label>
-    <input type="number" value="90" style="width: 100%; padding: 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; outline: none; font-size: 16px;" />
+    <label for="logDuration" style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin: 14px 0 6px;">Duration (min)</label>
+    <input type="number" id="logDuration" value="90" min="1" max="600" aria-label="Duration in minutes" style="width: 100%; padding: 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; outline: none; font-size: 16px;" />
+    <span class="error-text" id="durationError">Duration must be between 1 and 600 minutes</span>
 
     <label style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin: 14px 0 6px;">RPE (1–10)</label>
     <div class="slider-row">
-      <div class="lbl"><span>How hard?</span><span class="v" id="vRpe">8</span></div>
-      <input type="range" min="1" max="10" value="8" id="sliderRpe" oninput="document.getElementById('vRpe').textContent=this.value" />
+      <div class="lbl"><span>How hard?</span><span class="v" id="vRpe" aria-live="polite">8</span></div>
+      <input type="range" min="1" max="10" value="8" id="sliderRpe" aria-label="Rate of perceived exertion scale from 1 to 10" aria-valuemin="1" aria-valuemax="10" aria-valuenow="8" aria-valuetext="8 out of 10" oninput="updateSliderAria('sliderRpe', 'vRpe', this.max); document.getElementById('vRpe').textContent=this.value" />
       <div class="scale"><span>Walk</span><span>Max</span></div>
     </div>
 
     <label style="font-size: 13px; color: var(--text-3); font-weight: 500; display:block; margin: 14px 0 6px;">Tags</label>
-    <div class="choice-row">
-      <button class="choice active">High eccentric</button>
-      <button class="choice active">Sprint-heavy</button>
-      <button class="choice">Hot conditions</button>
-      <button class="choice">Travel day</button>
+    <div class="choice-row" id="logTagsRow">
+      <button class="choice active" aria-label="High eccentric tag">High eccentric</button>
+      <button class="choice active" aria-label="Sprint-heavy tag">Sprint-heavy</button>
+      <button class="choice" aria-label="Hot conditions tag">Hot conditions</button>
+      <button class="choice" aria-label="Travel day tag">Travel day</button>
     </div>
 
     <div style="margin-top: 20px;">
-      <button class="btn" onclick="submitLog()">Save session</button>
+      <button class="btn" id="logSubmitBtn" onclick="submitLog()">Save session</button>
     </div>
   </div>
 </div>
 
 <div class="sheet-bg" id="sheet-settings" onclick="closeSheetIf(event,'settings')">
-  <div class="sheet" onclick="event.stopPropagation()">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" onclick="event.stopPropagation()">
     <div class="grip"></div>
-    <h2>Settings</h2>
+    <h2 id="settingsTitle">Settings</h2>
     <p class="sub">Preview build.</p>
 
     <div class="card">
@@ -1091,13 +1139,66 @@
     </div>
 
     <button class="btn outline" onclick="showCoverPreview(); closeSheet('settings');" style="margin-top: 14px;">Preview cover screen</button>
-    <button class="btn outline" onclick="resetApp()" style="margin-top: 10px;">Restart onboarding</button>
+    <button class="btn outline" onclick="confirmAction('resetApp', 'This will clear all your data and restart onboarding.', 'Restart')" style="margin-top: 10px;">Restart onboarding</button>
   </div>
 </div>
 
 <div class="toast" id="toast">Saved</div>
 
 <script>
+  // ------- Offline detection -------
+  function updateOnlineStatus() {
+    const banner = document.getElementById('offlineBanner');
+    if (!navigator.onLine) {
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
+
+  // ------- Slider accessibility -------
+  function updateSliderAria(sliderId, displayId, max) {
+    const slider = document.getElementById(sliderId);
+    const val = slider.value;
+    slider.setAttribute('aria-valuenow', val);
+    slider.setAttribute('aria-valuetext', val + ' out of ' + max);
+  }
+
+  // ------- Confirmation modal -------
+  let pendingAction = null;
+  let pendingActionArgs = null;
+  function confirmAction(action, message, confirmText) {
+    pendingAction = action;
+    const modal = document.getElementById('confirmModal');
+    document.getElementById('confirmText').textContent = message;
+    document.getElementById('confirmBtn').textContent = confirmText;
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('confirmBtn').focus();
+  }
+  function closeConfirm() {
+    pendingAction = null;
+    document.getElementById('confirmModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function executeConfirm() {
+    if (pendingAction === 'resetApp') {
+      resetApp();
+    } else if (pendingAction === 'clearChat') {
+      clearChat();
+    }
+    closeConfirm();
+  }
+  // Escape key to close modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('confirmModal').classList.contains('open')) {
+      closeConfirm();
+    }
+  });
+
   // ------- Tab nav -------
   function switchTab(name) {
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.dataset.screen === name));
@@ -1107,8 +1208,14 @@
 
   // ------- Sheets -------
   function openSheet(name) {
-    document.getElementById('sheet-' + name).classList.add('open');
+    const sheet = document.getElementById('sheet-' + name);
+    sheet.classList.add('open');
     document.body.style.overflow = 'hidden';
+    // Focus first focusable element
+    setTimeout(() => {
+      const focusable = sheet.querySelector('input, button, [tabindex]');
+      if (focusable) focusable.focus();
+    }, 100);
   }
   function closeSheet(name) {
     document.getElementById('sheet-' + name).classList.remove('open');
@@ -1117,6 +1224,16 @@
   function closeSheetIf(e, name) {
     if (e.target === e.currentTarget) closeSheet(name);
   }
+  // Escape key to close sheets
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      ['checkin', 'jump', 'logQuick', 'settings'].forEach(name => {
+        if (document.getElementById('sheet-' + name).classList.contains('open')) {
+          closeSheet(name);
+        }
+      });
+    }
+  });
 
   // ------- Onboarding -------
   const onb = document.getElementById('onb');
@@ -1126,16 +1243,56 @@
     onb.classList.toggle('cover-active', onbStep === 0);
   }
   function onbNext() {
-    // In preview mode, "Get started" just closes the preview
-    if (coverPreview) { closeCoverPreview(); return; }
-    onbStep++;
-    document.querySelectorAll('.onb .step').forEach(s => s.classList.toggle('active', +s.dataset.step === onbStep));
-    document.querySelectorAll('#onbDots span').forEach((d, i) => d.classList.toggle('active', i === onbStep));
-    applyCoverFlag();
+    try {
+      // In preview mode, "Get started" just closes the preview
+      if (coverPreview) { closeCoverPreview(); return; }
+
+      // Validate onboarding step 2 (weight and age)
+      if (onbStep === 1) {
+        const weight = +document.getElementById('onbWeight').value;
+        const age = +document.getElementById('onbAge').value;
+        let valid = true;
+
+        if (!weight || weight < 30 || weight > 200) {
+          document.getElementById('onbWeight').classList.add('input-error');
+          document.getElementById('weightError').classList.add('show');
+          valid = false;
+        } else {
+          document.getElementById('onbWeight').classList.remove('input-error');
+          document.getElementById('weightError').classList.remove('show');
+        }
+
+        if (!age || age < 13 || age > 80) {
+          document.getElementById('onbAge').classList.add('input-error');
+          document.getElementById('ageError').classList.add('show');
+          valid = false;
+        } else {
+          document.getElementById('onbAge').classList.remove('input-error');
+          document.getElementById('ageError').classList.remove('show');
+        }
+
+        if (!valid) {
+          showToast('Please correct the form errors');
+          return;
+        }
+      }
+
+      onbStep++;
+      document.querySelectorAll('.onb .step').forEach(s => s.classList.toggle('active', +s.dataset.step === onbStep));
+      document.querySelectorAll('#onbDots span').forEach((d, i) => d.classList.toggle('active', i === onbStep));
+      applyCoverFlag();
+    } catch (e) {
+      showToast('Error: ' + e.message);
+    }
   }
   function finishOnb() {
-    localStorage.setItem('reset.onboarded', '1');
-    onb.classList.remove('open');
+    try {
+      localStorage.setItem('reset.onboarded', '1');
+      onb.classList.remove('open');
+      showToast('✓ Onboarding complete');
+    } catch (e) {
+      showToast('Error completing onboarding: ' + e.message);
+    }
   }
   function showCoverPreview() {
     coverPreview = true;
@@ -1265,144 +1422,232 @@
 
   // ------- Recovery: share + Coach: new conversation -------
   async function sharePlan() {
-    const text = "My recovery plan for today (via Reset): rehydrate 600ml + electrolytes, 30g protein + 70g carbs breakfast, tart cherry juice, omega-3, casein before bed, sleep extension to 9:30pm.";
-    if (navigator.share) {
-      try { await navigator.share({ title: "Today's recovery plan", text }); return; } catch (_) {}
+    try {
+      const text = "My recovery plan for today (via Reset): rehydrate 600ml + electrolytes, 30g protein + 70g carbs breakfast, tart cherry juice, omega-3, casein before bed, sleep extension to 9:30pm.";
+      if (navigator.share) {
+        try { await navigator.share({ title: "Today's recovery plan", text }); return; } catch (_) {}
+      }
+      if (navigator.clipboard) {
+        try { await navigator.clipboard.writeText(text); showToast('✓ Plan copied to clipboard'); return; } catch (_) {}
+      }
+      showToast('Sharing not available on this browser');
+    } catch (e) {
+      showToast('Error sharing plan: ' + e.message);
     }
-    if (navigator.clipboard) {
-      try { await navigator.clipboard.writeText(text); showToast('Plan copied to clipboard'); return; } catch (_) {}
-    }
-    showToast('Sharing not available on this browser');
   }
   function clearChat() {
-    const chat = document.getElementById('chatBox');
-    chat.innerHTML = `
-      <div class="msg coach">
-        <div class="meta">Coach · now</div>
-        Fresh thread. What do you want to talk about — today's plan, a symptom, or something tactical for the next match?
-      </div>
-    `;
-    // restore the quick replies in case they were all consumed
-    const qr = document.querySelector('.quick-replies');
-    qr.innerHTML = `
-      <button onclick="quickReply(this)">What about training tomorrow?</button>
-      <button onclick="quickReply(this)">Should I get a CGM?</button>
-      <button onclick="quickReply(this)">Iron supplement?</button>
-      <button onclick="quickReply(this)">Ice bath tonight?</button>
-    `;
-    showToast('New conversation');
+    try {
+      const chat = document.getElementById('chatBox');
+      chat.innerHTML = `
+        <div class="msg coach">
+          <div class="meta">Coach · now</div>
+          Fresh thread. What do you want to talk about — today's plan, a symptom, or something tactical for the next match?
+        </div>
+      `;
+      // restore the quick replies in case they were all consumed
+      const qr = document.querySelector('.quick-replies');
+      qr.innerHTML = `
+        <button onclick="quickReply(this)">What about training tomorrow?</button>
+        <button onclick="quickReply(this)">Should I get a CGM?</button>
+        <button onclick="quickReply(this)">Iron supplement?</button>
+        <button onclick="quickReply(this)">Ice bath tonight?</button>
+      `;
+      showToast('✓ Conversation cleared');
+    } catch (e) {
+      showToast('Error clearing chat: ' + e.message);
+    }
   }
 
   // ------- Check-in -------
   function submitCheckin() {
-    const sore = +document.getElementById('sliderSore').value;
-    const sleep = +document.getElementById('sliderSleep').value;
-    const en = +document.getElementById('sliderEn').value;
-    const mood = +document.getElementById('sliderMood').value;
-    const mot = +document.getElementById('sliderMot').value;
+    try {
+      const sore = +document.getElementById('sliderSore').value;
+      const sleep = +document.getElementById('sliderSleep').value;
+      const en = +document.getElementById('sliderEn').value;
+      const mood = +document.getElementById('sliderMood').value;
+      const mot = +document.getElementById('sliderMot').value;
 
-    // Crude composite: lower soreness, higher sleep/energy/mood/motivation = better
-    const subj = ((10 - sore) * 2 + sleep * 4 + en * 4 + mood * 2 + mot * 4) / 16; // ~ out of 10
-    document.getElementById('subjStatus').textContent = `Done · ${subj.toFixed(1)}/10 — soreness ${sore}/10`;
+      // Validation
+      if (!sore || !sleep || !en || !mood || !mot) {
+        showToast('Please complete all fields');
+        return;
+      }
 
-    // Update overall readiness slightly based on subjective
-    const base = 64;
-    const delta = Math.round((subj - 5) * 2);
-    const newScore = Math.max(35, Math.min(95, base + delta));
-    document.getElementById('scoreNum').textContent = newScore;
-    document.getElementById('ringFg').setAttribute('stroke-dashoffset', String(389.56 - (389.56 * newScore / 100)));
+      // Disable button and show loading state
+      const btn = document.getElementById('checkinSubmitBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
 
-    const ring = document.getElementById('ringFg');
-    const label = document.getElementById('scoreLabel');
-    if (newScore >= 75) {
-      ring.setAttribute('stroke', 'var(--ready)');
-      label.textContent = 'Ready'; label.className = 'label ready';
-    } else if (newScore >= 55) {
-      ring.setAttribute('stroke', 'var(--warn)');
-      label.textContent = 'Compromised'; label.className = 'label';
-    } else {
-      ring.setAttribute('stroke', 'var(--fatigue)');
-      label.textContent = 'High fatigue'; label.className = 'label fatigue';
+      // Simulate async operation
+      setTimeout(() => {
+        try {
+          // Crude composite: lower soreness, higher sleep/energy/mood/motivation = better
+          const subj = ((10 - sore) * 2 + sleep * 4 + en * 4 + mood * 2 + mot * 4) / 16; // ~ out of 10
+          document.getElementById('subjStatus').textContent = `Done · ${subj.toFixed(1)}/10 — soreness ${sore}/10`;
+
+          // Update overall readiness slightly based on subjective
+          const base = 64;
+          const delta = Math.round((subj - 5) * 2);
+          const newScore = Math.max(35, Math.min(95, base + delta));
+          document.getElementById('scoreNum').textContent = newScore;
+          document.getElementById('ringFg').setAttribute('stroke-dashoffset', String(389.56 - (389.56 * newScore / 100)));
+
+          const ring = document.getElementById('ringFg');
+          const label = document.getElementById('scoreLabel');
+          if (newScore >= 75) {
+            ring.setAttribute('stroke', 'var(--ready)');
+            label.textContent = 'Ready'; label.className = 'label ready';
+          } else if (newScore >= 55) {
+            ring.setAttribute('stroke', 'var(--warn)');
+            label.textContent = 'Compromised'; label.className = 'label';
+          } else {
+            ring.setAttribute('stroke', 'var(--fatigue)');
+            label.textContent = 'High fatigue'; label.className = 'label fatigue';
+          }
+
+          closeSheet('checkin');
+          showToast('✓ Check-in saved');
+          btn.classList.remove('loading');
+          btn.disabled = false;
+        } catch (e) {
+          showToast('Error saving check-in: ' + e.message);
+          btn.classList.remove('loading');
+          btn.disabled = false;
+        }
+      }, 500);
+    } catch (e) {
+      showToast('Error: ' + e.message);
     }
-
-    closeSheet('checkin');
-    showToast('Check-in saved · readiness updated');
   }
 
   function submitLog() {
-    closeSheet('logQuick');
-    showToast('Session logged');
+    try {
+      const duration = +document.getElementById('logDuration').value;
+      const durationError = document.getElementById('durationError');
+      let isValid = true;
+
+      if (!duration || duration < 1 || duration > 600) {
+        document.getElementById('logDuration').classList.add('input-error');
+        durationError.classList.add('show');
+        isValid = false;
+      } else {
+        document.getElementById('logDuration').classList.remove('input-error');
+        durationError.classList.remove('show');
+      }
+
+      if (!isValid) {
+        showToast('Please correct the form errors');
+        return;
+      }
+
+      // Disable button and show loading state
+      const btn = document.getElementById('logSubmitBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      // Simulate async operation
+      setTimeout(() => {
+        try {
+          closeSheet('logQuick');
+          showToast('✓ Session logged');
+          btn.classList.remove('loading');
+          btn.disabled = false;
+        } catch (e) {
+          showToast('Error logging session: ' + e.message);
+          btn.classList.remove('loading');
+          btn.disabled = false;
+        }
+      }, 500);
+    } catch (e) {
+      showToast('Error: ' + e.message);
+    }
   }
 
   function showToast(text) {
     const t = document.getElementById('toast');
     t.textContent = text;
     t.classList.add('show');
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
     setTimeout(() => t.classList.remove('show'), 1800);
   }
 
   // ------- Jump test -------
   function runJump() {
-    const stage = document.getElementById('jumpStage');
-    stage.innerHTML = '<div class="countdown" id="cd">3</div><div class="hint">Get ready. Three max-effort jumps.</div>';
-    let n = 3;
-    const tick = setInterval(() => {
-      n--;
-      const cd = document.getElementById('cd');
-      if (n > 0) { cd.textContent = n; }
-      else if (n === 0) { cd.textContent = 'JUMP'; cd.style.color = 'var(--ready)'; }
-      else {
-        clearInterval(tick);
-        const height = (38 + Math.random() * 4).toFixed(1);
-        const baseline = 42.6;
-        const delta = ((height - baseline) / baseline * 100).toFixed(1);
-        stage.innerHTML = `
-          <div class="result">${height}<small> cm</small></div>
-          <div class="hint" style="margin: 14px 0;">vs your 28-day baseline of <strong>${baseline} cm</strong></div>
-          <div class="label" style="display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--fatigue-bg); color: var(--fatigue); font-weight: 600;">${delta}% — neuromuscular fatigue</div>
-          <div class="hint" style="margin-top: 22px; text-align: left; line-height: 1.55;">Jump height is the field-validated proxy for CNS readiness in team sports (Claudino et al. 2017 meta-analysis). A drop of &gt;5% from baseline is the conventional threshold for "modify the session".</div>
-          <button class="btn" style="margin-top: 18px;" onclick="closeSheet('jump')">Done</button>
-        `;
-      }
-    }, 900);
+    try {
+      const stage = document.getElementById('jumpStage');
+      stage.innerHTML = '<div class="countdown" id="cd" role="status" aria-live="assertive">3</div><div class="hint">Get ready. Three max-effort jumps.</div>';
+      let n = 3;
+      const tick = setInterval(() => {
+        n--;
+        const cd = document.getElementById('cd');
+        if (n > 0) { cd.textContent = n; }
+        else if (n === 0) { cd.textContent = 'JUMP'; cd.style.color = 'var(--ready)'; }
+        else {
+          clearInterval(tick);
+          const height = (38 + Math.random() * 4).toFixed(1);
+          const baseline = 42.6;
+          const delta = ((height - baseline) / baseline * 100).toFixed(1);
+          stage.innerHTML = `
+            <div class="result">${height}<small> cm</small></div>
+            <div class="hint" style="margin: 14px 0;">vs your 28-day baseline of <strong>${baseline} cm</strong></div>
+            <div class="label" style="display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--fatigue-bg); color: var(--fatigue); font-weight: 600;">${delta}% — neuromuscular fatigue</div>
+            <div class="hint" style="margin-top: 22px; text-align: left; line-height: 1.55;">Jump height is the field-validated proxy for CNS readiness in team sports (Claudino et al. 2017 meta-analysis). A drop of &gt;5% from baseline is the conventional threshold for "modify the session".</div>
+            <button class="btn" style="margin-top: 18px;" onclick="closeSheet('jump')">Done</button>
+          `;
+          showToast('✓ Jump test recorded');
+        }
+      }, 900);
+    } catch (e) {
+      showToast('Error running jump test: ' + e.message);
+    }
   }
 
   // ------- Coach quick replies -------
   function quickReply(btn) {
-    const text = btn.textContent;
-    const chat = document.getElementById('chatBox');
-    const u = document.createElement('div');
-    u.className = 'msg user'; u.textContent = text;
-    chat.appendChild(u);
+    try {
+      const text = btn.textContent;
+      const chat = document.getElementById('chatBox');
+      const u = document.createElement('div');
+      u.className = 'msg user'; u.textContent = text;
+      chat.appendChild(u);
 
-    let resp = '';
-    if (/tomorrow/i.test(text)) {
-      resp = 'Easy. Aim for an active-recovery session — pool, easy spin, or light technical work. Keep it under RPE 5. The data from your last 12 weeks shows that hard sessions on match-day +1 push your full recovery from day 3 to day 5. You can train tomorrow (day 2), but save peak intensity for Tuesday.';
-    } else if (/CGM/i.test(text)) {
-      resp = 'Maybe — depends on your goals. Dexcom Stelo is the OTC option (~$50/14-day sensor) and writes glucose straight to HealthKit. The real win for you would be seeing how last night\'s pasta refeed actually played out, and whether your sleep glucose is stable. Useful for 2-4 weeks of N-of-1 learning. Not a daily-tracking necessity for life.';
-    } else if (/iron/i.test(text)) {
-      resp = 'Don\'t supplement blind. Iron overload has real risks. Get a ferritin + transferrin saturation panel — if ferritin &lt;30 ng/mL or you\'re symptomatic (fatigue, low HRV trend, plateauing endurance), then yes. Test first.';
-    } else if (/ice/i.test(text)) {
-      resp = 'Skip it. Your next match is &gt;72h away, so today an ice bath would blunt the training adaptation from this week\'s lifting. Reserve cold-water immersion for tournament back-to-backs (next session within 24h) where the acute relief outweighs the chronic cost.';
-    } else {
-      resp = 'I\'d need a bit more context for that one. Try asking me about your training plan, supplements, or any specific symptom you\'re noticing.';
+      let resp = '';
+      if (/tomorrow/i.test(text)) {
+        resp = 'Easy. Aim for an active-recovery session — pool, easy spin, or light technical work. Keep it under RPE 5. The data from your last 12 weeks shows that hard sessions on match-day +1 push your full recovery from day 3 to day 5. You can train tomorrow (day 2), but save peak intensity for Tuesday.';
+      } else if (/CGM/i.test(text)) {
+        resp = 'Maybe — depends on your goals. Dexcom Stelo is the OTC option (~$50/14-day sensor) and writes glucose straight to HealthKit. The real win for you would be seeing how last night\'s pasta refeed actually played out, and whether your sleep glucose is stable. Useful for 2-4 weeks of N-of-1 learning. Not a daily-tracking necessity for life.';
+      } else if (/iron/i.test(text)) {
+        resp = 'Don\'t supplement blind. Iron overload has real risks. Get a ferritin + transferrin saturation panel — if ferritin &lt;30 ng/mL or you\'re symptomatic (fatigue, low HRV trend, plateauing endurance), then yes. Test first.';
+      } else if (/ice/i.test(text)) {
+        resp = 'Skip it. Your next match is &gt;72h away, so today an ice bath would blunt the training adaptation from this week\'s lifting. Reserve cold-water immersion for tournament back-to-backs (next session within 24h) where the acute relief outweighs the chronic cost.';
+      } else {
+        resp = 'I\'d need a bit more context for that one. Try asking me about your training plan, supplements, or any specific symptom you\'re noticing.';
+      }
+
+      setTimeout(() => {
+        const c = document.createElement('div');
+        c.className = 'msg coach';
+        c.innerHTML = `<div class="meta">Coach</div>${resp}`;
+        chat.appendChild(c);
+        window.scrollTo(0, document.body.scrollHeight);
+      }, 350);
+
+      btn.remove();
+    } catch (e) {
+      showToast('Error sending message: ' + e.message);
     }
-
-    setTimeout(() => {
-      const c = document.createElement('div');
-      c.className = 'msg coach';
-      c.innerHTML = `<div class="meta">Coach</div>${resp}`;
-      chat.appendChild(c);
-      window.scrollTo(0, document.body.scrollHeight);
-    }, 350);
-
-    btn.remove();
   }
 
   // ------- Reset -------
   function resetApp() {
-    localStorage.clear();
-    location.reload();
+    try {
+      localStorage.clear();
+      showToast('✓ App reset');
+      setTimeout(() => location.reload(), 800);
+    } catch (e) {
+      showToast('Error resetting app: ' + e.message);
+    }
   }
 
   // ------- Date stamp -------
