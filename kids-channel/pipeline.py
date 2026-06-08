@@ -1611,6 +1611,58 @@ def upload_coloring_book_to_kdp(coloring_path: Path, script: dict, episode_num: 
     return True
 
 
+def upload_phonics_book_to_gumroad(phonics_path: Path, letter: str) -> bool:
+    """Upload phonics book to Gumroad."""
+    gumroad_api_key = os.getenv("GUMROAD_API_KEY")
+    if not gumroad_api_key:
+        print("  ℹ GUMROAD_API_KEY not set — skipping Gumroad phonics upload")
+        return False
+
+    print(f"[5m] Uploading phonics book (Letter {letter}) to Gumroad...")
+
+    description = (
+        f"Sunny's Phonics - Letter {letter}\n\n"
+        f"Learn to read with Sunny the Quokka!\n\n"
+        f"📖 Inside this educational book:\n"
+        f"• Letter {letter} sound introduction\n"
+        f"• 5 words starting with {letter}\n"
+        f"• Writing practice pages\n"
+        f"• Simple sentence with Sunny\n"
+        f"• Perfect for early readers (Ages 4-7)\n\n"
+        f"Printable PDF - Use in classrooms or at home!"
+    )
+
+    try:
+        with open(phonics_path, "rb") as f:
+            files = {"file": f}
+            data = {
+                "title": f"Sunny's Phonics - Letter {letter}",
+                "description": description,
+                "price": "3.99",
+                "currency": "usd",
+            }
+            headers = {"Authorization": f"Bearer {gumroad_api_key}"}
+
+            r = requests.post(
+                "https://api.gumroad.com/v2/products",
+                headers=headers,
+                data=data,
+                files=files,
+                timeout=120,
+            )
+
+        if r.status_code in (200, 201):
+            print(f"  ✓ Phonics book (Letter {letter}) uploaded to Gumroad")
+            return True
+        else:
+            print(f"  ⚠ Gumroad phonics upload failed: {r.status_code}")
+            return False
+
+    except Exception as e:
+        print(f"  ⚠ Gumroad phonics upload error: {e}")
+        return False
+
+
 def upload_ebook_to_kdp(ebook_path: Path, script: dict, episode_num: int) -> bool:
     """Queue ebook for KDP upload via automated uploader."""
     kdp_email = os.getenv("AMAZON_KDP_EMAIL")
