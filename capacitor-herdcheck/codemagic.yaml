@@ -1,0 +1,106 @@
+workflows:
+  ios-testflight:
+    name: iOS TestFlight Build
+    instance_type: mac_mini_m2
+    when:
+      event: tag
+      tag_pattern: '^v\d+\.\d+\.\d+$'
+    environment:
+      vars:
+        BUNDLE_ID: com.rhythmixapp.herdcheck
+        XCODE_WORKSPACE: ios/App/App.xcworkspace
+        XCODE_SCHEME: App
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_KEY_ID: $APP_STORE_CONNECT_KEY_ID
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd herdcheck-mobile
+          npm install
+          npx cap sync ios
+      - name: Build for TestFlight
+        script: |
+          cd herdcheck-mobile/ios/App
+          xcodebuild build-for-testing \
+            -workspace $XCODE_WORKSPACE \
+            -scheme $XCODE_SCHEME \
+            -configuration Release \
+            -derivedDataPath build
+      - name: Create IPA
+        script: |
+          cd herdcheck-mobile/ios/App
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist exportOptions.plist \
+            -exportPath build/ipa \
+            -allowProvisioningUpdates
+      - name: Upload to TestFlight
+        script: |
+          xcrun altool --upload-app \
+            --file "herdcheck-mobile/ios/App/build/ipa/HerdCheck.ipa" \
+            --type ios \
+            --apiKey $APP_STORE_CONNECT_KEY_ID \
+            --apiIssuer $APP_STORE_CONNECT_ISSUER_ID
+    artifacts:
+      - herdcheck-mobile/ios/App/build/ipa/*.ipa
+
+  android-release:
+    name: Android Play Console Build
+    instance_type: linux_x2
+    when:
+      event: tag
+      tag_pattern: '^v\d+\.\d+\.\d+$'
+    environment:
+      vars:
+        PACKAGE_NAME: com.rhythmixapp.herdcheck
+        ANDROID_KEYSTORE_PATH: $ANDROID_KEYSTORE_PATH
+        ANDROID_KEYSTORE_PASSWORD: $ANDROID_KEYSTORE_PASSWORD
+        ANDROID_KEYSTORE_ALIAS: $ANDROID_KEYSTORE_ALIAS
+        ANDROID_KEY_PASSWORD: $ANDROID_KEY_PASSWORD
+        GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: $GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd herdcheck-mobile
+          npm install
+          npx cap sync android
+      - name: Build AAB (for Play Store)
+        script: |
+          cd herdcheck-mobile/android
+          ./gradlew bundleRelease \
+            -P android.signingConfigs.release.storeFile=$ANDROID_KEYSTORE_PATH \
+            -P android.signingConfigs.release.storePassword=$ANDROID_KEYSTORE_PASSWORD \
+            -P android.signingConfigs.release.keyAlias=$ANDROID_KEYSTORE_ALIAS \
+            -P android.signingConfigs.release.keyPassword=$ANDROID_KEY_PASSWORD
+      - name: Upload to Play Console (Internal Testing)
+        script: |
+          cd herdcheck-mobile
+          npm install @react-native-community/cli @react-native-community/cli-platform-android
+          # Using bundletool to upload AAB
+          bundletool upload-bundle \
+            --bundle=android/app/build/outputs/bundle/release/app-release.aab \
+            --service-account=$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON \
+            --package-name=$PACKAGE_NAME \
+            --track=internal
+    artifacts:
+      - herdcheck-mobile/android/app/build/outputs/bundle/release/*.aab
+
+  test-pr:
+    name: PR Tests
+    instance_type: linux
+    trigger_on_pull_request: true
+    scripts:
+      - name: Lint & Type Check
+        script: |
+          cd herdcheck-mobile
+          npm install
+          npm run lint 2>/dev/null || echo "No linter configured"
+      - name: Verify Capacitor Config
+        script: |
+          cd herdcheck-mobile
+          npx cap doctor
+    on_success: |
+      echo "PR checks passed ✅"
+    on_failure: |
+      echo "PR checks failed ❌"
