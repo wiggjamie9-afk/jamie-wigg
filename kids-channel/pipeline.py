@@ -45,15 +45,22 @@ SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
 CHARACTER_NAME = "Sonny"
 CHARACTER_DESC = "a sweet small quokka with golden-brown fur, big warm brown eyes, tiny round ears, gentle curious expression"
 VISUAL_STYLE = (
-    "Professional watercolour children's picture book illustration (like Beatrix Potter, Jill Barklem, Alison Friend style). "
-    "Hand-painted watercolour on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle washes. "
-    "Warm earthy palette: ochres, burnt siennas, soft greens, deep blues. "
-    "Australian bush at night with soft moonlight. Deep indigo-navy sky scattered with hand-dotted stars. "
-    "Gum trees framing scene with loose sketchy linework. Glowing fireflies with warm golden highlights. "
-    "Sonny the quokka as main character - always consistent appearance: small marsupial, soft golden-brown fur detail, "
-    "large warm brown eyes, gentle curious expression, tiny round ears, cosy and safe feeling. "
-    "Avoid: flat digital art, sharp clean lines, smooth gradients, glossy 3D render, airbrushed, photorealistic, "
-    "plastic look, bright neon colours. No text or captions. Safe for toddlers ages 1-5."
+    "STRICT STYLE CONSISTENCY — every episode must match this reference exactly:\n"
+    "Professional watercolour children's picture book illustration (Beatrix Potter / Jill Barklem style).\n"
+    "Hand-painted watercolour on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle washes.\n"
+    "Warm earthy palette: ochres, burnt siennas, soft greens, deep blues.\n"
+    "Australian bush at night with soft moonlight. Deep indigo-navy starry sky with hand-dotted stars.\n"
+    "Gum trees with loose, sketchy linework. Glowing moon (warm cream/yellow tone).\n"
+    "Sonny the quokka — IDENTICAL appearance in EVERY scene:\n"
+    "  • Small golden-brown fur (exact shade: warm tan)\n"
+    "  • Large warm brown eyes (gentle, curious expression — NEVER angry or scared)\n"
+    "  • Tiny round ears (soft, not pointed)\n"
+    "  • Soft body proportions (cuddly, safe, cosy)\n"
+    "  • Always sitting or resting position (bedtime appropriate)\n"
+    "Lighting: Soft warm glow from moon. No harsh shadows. Gentle ambient light.\n"
+    "Avoid: flat digital, sharp lines, smooth gradients, 3D render, airbrushed, photorealistic, plastic look, bright neons.\n"
+    "Safety: No scary animals, dark creatures, or unsettling imagery. ONLY cosy, gentle, sleepy vibes.\n"
+    "NO TEXT ON ILLUSTRATION — text goes in cream parchment band below (handled by layout, not image)."
 )
 SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sonny the little Quokka — cozy bedtime stories for toddlers at bedtime or quiet time."
 
@@ -140,12 +147,19 @@ Return ONLY a valid JSON object with exactly these fields, no other text:
 
 Create 12-14 scenes. Each scene is 10 seconds (120-140 seconds total).
 
-IMAGE PROMPT RULES:
-1. Start EVERY image prompt with professional watercolour style descriptor
-2. Always describe {character_name}'s appearance: same fur colour, eyes, ears, size — reference consistency with earlier scenes
-3. Include specific Australian bush location details: gum trees, native plants, moonlight effect
-4. Add artistic technique details: brushstrokes, paper texture, pigment technique for authenticity
-5. Avoid: digital, vector, CGI, glossy, photorealistic, airbrushed, bright neon
+IMAGE PROMPT RULES (STRICT — CONSISTENCY IS CRITICAL):
+1. Start EVERY image prompt with exact watercolour style: "Professional watercolour Beatrix Potter style"
+2. {character_name} appearance — IDENTICAL in EVERY episode:
+   ✓ Golden-brown fur (warm tan tone, NOT orange, NOT grey)
+   ✓ Large warm brown eyes (gentle, sleepy, curious — NEVER angry/scared)
+   ✓ Tiny round ears (soft, not pointy or large)
+   ✓ Sitting/resting position (cosy, not jumping/running)
+   ✓ Same body size and proportions across all episodes
+3. Location: Australian bush at night, soft moonlight, indigo sky, stars, gum trees
+4. Technique: Visible brushstrokes, soft pigment bleeds, textured cold-press paper grain, warm palette
+5. AVOID STRICTLY: digital art, vector, CGI, 3D, glossy, photorealistic, airbrushed, plastic, bright neons, scary imagery
+6. Lighting: Soft warm glow only — no harsh shadows or dark scary areas
+7. Companion animals (if any): gentle, sleepy, cosy — never aggressive or frightening
 
 IMPORTANT: Tell a COMPLETE story with clear beginning, middle, and end. Include proper story resolution and calm, cozy conclusion."""
 
@@ -310,7 +324,14 @@ def generate_scene_image(prompt: str, scene_id: int, episode_dir: Path, token: s
 
 
 def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) -> Path:
-    """Animate a scene image via Higgsfield DOP (image-to-video)."""
+    """Animate a scene image via Higgsfield DOP (image-to-video).
+
+    CRITICAL: Animation must be IDENTICAL and consistent across all episodes:
+    - Slow gentle camera drift only (no zoom, no pan jumps)
+    - Subtle ambient motion (fireflies, leaves, soft shimmer)
+    - Motion strength: 0.3 (very subtle — bedtime appropriate)
+    - No jarring movements or quick cuts
+    """
     scene_id = scene["id"]
     duration = scene.get("duration", 8)
     vid_path = episode_dir / f"scene_{scene_id:02d}.mp4"
@@ -329,7 +350,8 @@ def animate_scene(img_path: Path, scene: dict, episode_dir: Path, token: str) ->
                               scene_text=_scene_text, page_num=scene_id)
 
     image_id = upload_r.json().get("id") or upload_r.json().get("asset_id")
-    motion_prompt = f"Slow gentle camera drift, soft ambient motion. {scene.get('image_prompt', '')[:150]}"
+    # STRICT: Consistent motion across all episodes
+    motion_prompt = f"Slow gentle camera drift, very subtle ambient motion. Soft firefly glow, gentle leaf shimmer. Bedtime appropriate — no jarring movement."
 
     anim_r = requests.post(
         "https://api.higgsfield.ai/v1/dop/generate",
