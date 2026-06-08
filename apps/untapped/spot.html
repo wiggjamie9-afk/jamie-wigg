@@ -163,6 +163,7 @@ p{font-size:14.5px;line-height:1.55;color:var(--soft);margin-bottom:10px}
   .upload-zone{padding:24px 16px}
 }
 </style>
+<script src="/universal-mvp-enhancements.js"></script>
 </head>
 <body>
 
@@ -209,8 +210,8 @@ p{font-size:14.5px;line-height:1.55;color:var(--soft);margin-bottom:10px}
     <div class="upload-actions">
       <input type="file" id="fileIn" class="hide" accept="image/*" onchange="onUpload(event)">
       <input type="file" id="cameraIn" class="hide" accept="image/*" capture="environment" onchange="onUpload(event)">
-      <button class="btn btn-primary btn-block" onclick="document.getElementById('cameraIn').click()">Take photo</button>
-      <button class="btn btn-ghost btn-block" onclick="document.getElementById('fileIn').click()">Upload</button>
+      <button class="btn btn-primary btn-block" onclick="document.getElementById('cameraIn').click()" aria-label="Take a photo of the concern">Take photo</button>
+      <button class="btn btn-ghost btn-block" onclick="document.getElementById('fileIn').click()" aria-label="Upload a photo from your device">Upload</button>
     </div>
   </div>
 
@@ -252,8 +253,8 @@ p{font-size:14.5px;line-height:1.55;color:var(--soft);margin-bottom:10px}
       <ul class="escalate-list" id="escalateList"></ul>
     </div>
 
-    <button class="btn btn-terra btn-block" onclick="openVet()" id="vetBtn">Connect to a vet now · $19</button>
-    <button class="btn btn-ghost btn-block" onclick="resetApp()" style="margin-top:10px">Start over</button>
+    <button class="btn btn-terra btn-block" onclick="openVet()" id="vetBtn" aria-label="Connect with a licensed veterinarian for consultation">Connect to a vet now · $19</button>
+    <button class="btn btn-ghost btn-block" onclick="resetApp()" style="margin-top:10px" aria-label="Clear results and start a new analysis">Start over</button>
   </div>
 </section>
 
@@ -358,9 +359,29 @@ function switchPet(){
 function onUpload(e){
   const file = e.target.files && e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => startAnalysis(ev.target.result);
-  reader.readAsDataURL(file);
+
+  // Validate file
+  const validation = validateFileUpload(file, {
+    maxSize: 10 * 1024 * 1024,
+    types: ['image/jpeg', 'image/png', 'image/webp']
+  });
+
+  if (!validation.valid) {
+    validation.errors.forEach(err => toast(err, { kind: 'warn' }));
+    return;
+  }
+
+  try {
+    const reader = new FileReader();
+    reader.onerror = () => {
+      toast('Failed to read file. Please try again.', { kind: 'warn' });
+    };
+    reader.onload = ev => startAnalysis(ev.target.result);
+    reader.readAsDataURL(file);
+  } catch (err) {
+    console.error('File read error:', err);
+    toast('Error reading file', { kind: 'warn' });
+  }
 }
 
 function runSample(){
@@ -458,7 +479,25 @@ function resetApp(){
 }
 
 // ──── Vet call simulation ────
-function openVet(){
+async function openVet(){
+  // Confirmation before $19 charge
+  const confirmed = await confirmAction(
+    'Connect to a vet?',
+    'This will initiate a live video call with a licensed veterinarian. $19 charge will apply.',
+    false
+  );
+
+  if (!confirmed) return;
+
+  // Save current state before vet call
+  const currentResult = {
+    species: currentSpecies,
+    timestamp: Date.now(),
+    triageLevel: document.getElementById('triageLevel')?.textContent,
+    condition: document.getElementById('triageCondition')?.textContent
+  };
+  StorageHelper.set('spot_last_result', currentResult);
+
   document.getElementById('vetOverlay').classList.add('on');
   document.getElementById('vetQueueStage').classList.add('on');
   document.getElementById('vetLiveStage').classList.remove('on');

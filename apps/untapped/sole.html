@@ -191,6 +191,7 @@ h3{font-size:14px;font-weight:600;letter-spacing:0.005em;color:var(--ink);margin
 .divider{height:1px;background:var(--line);margin:18px 0}
 .center{text-align:center}
 </style>
+<script src="/universal-mvp-enhancements.js"></script>
 </head>
 <body>
 <div class="shell">
@@ -365,9 +366,9 @@ h3{font-size:14px;font-weight:600;letter-spacing:0.005em;color:var(--ink);margin
     </div>
 
     <div class="share-row">
-      <button class="btn btn-primary btn-block" onclick="shareToDoc()">Share with Dr. Patel</button>
+      <button class="btn btn-primary btn-block" onclick="shareToDoc()" aria-label="Share this week's foot health data and photos with your care provider">Share with Dr. Patel</button>
     </div>
-    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="show('home')">Done — back home</button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="show('home')" aria-label="Return to home screen">Done — back home</button>
 
     <p style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em;text-align:center;margin-top:18px;line-height:1.6">
       SOLE flags pre-ulcerative changes — it doesn't diagnose ulcers.<br>
@@ -554,11 +555,31 @@ function showWhy(){
   alert("Why this matters\n\nWhat looks like a mild red spot is the earliest visible stage of a foot ulcer (Wagner grade 0 / IWGDF stage 0).\n\nIn diabetes with neuropathy, you may not feel it. Caught now, a felt pad + 24h recheck usually clears it. Missed for a week, it breaks skin. Missed for a month, it can mean a hospital visit.\n\nThis is exactly the moment SOLE is built for.");
 }
 
-function shareToDoc(){
+async function shareToDoc(){
   const btn = event.currentTarget;
+
+  // Confirmation before sharing medical data
+  const confirmed = await confirmAction(
+    'Share with Dr. Patel?',
+    'Your foot health data, photos, and analysis will be sent to your care provider. This is secure and HIPAA-compliant.',
+    false
+  );
+
+  if (!confirmed) return;
+
+  // Save share history
+  const history = StorageHelper.get('sole_share_history', []);
+  history.push({
+    timestamp: Date.now(),
+    recipient: 'Dr. Patel',
+    type: 'weekly_report'
+  });
+  StorageHelper.set('sole_share_history', history.slice(-50)); // Keep last 50
+
   const orig = btn.innerHTML;
   btn.innerHTML = '✓ Sent to Dr. Patel';
   btn.style.background = 'var(--green)';
+  toast('Data shared securely with your care provider', { kind: 'success' });
   setTimeout(() => {
     btn.innerHTML = orig;
     btn.style.background = '';

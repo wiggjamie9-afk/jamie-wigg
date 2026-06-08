@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="DREAMS">
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=">
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22DREAMS%22%2C%22short_name%22%3A%22DREAMS%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230B0820%22%2C%22theme_color%22%3A%220B0820%22%2C%22orientation%22%3A%22portrait%22%7D">
+<script src="/universal-mvp-enhancements.js"></script>
 <style>
 :root {
   --bg:#0B0820; --bg-2:#15102e; --bg-3:#1f1840;
@@ -121,6 +122,12 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 /* Swipe hint (first load only) */
 .swipe-hint{position:fixed;bottom:36px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:rgba(255,255,255,0.4);text-transform:uppercase;z-index:99;pointer-events:none;animation:hintFade 4s ease-in-out 1.5s forwards}
 @keyframes hintFade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
+
+/* Offline banner */
+.offline-banner{position:fixed;top:max(16px,env(safe-area-inset-top));left:7vw;right:7vw;background:rgba(220,100,100,0.15);border:1px solid rgba(220,100,100,0.4);border-radius:8px;padding:12px 16px;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--gold);z-index:95;text-align:center}
+
+/* Inline error messages */
+.error-msg{display:block;font-family:var(--mono);font-size:11px;color:#ff8a80;margin-top:8px;letter-spacing:0.05em}
 
 @media (max-width:380px){
   h1{font-size:36px}
@@ -234,11 +241,11 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <h2>Adjust the night.</h2>
       <div class="setting-row">
         <span class="setting-label">Soundscape on by default</span>
-        <div class="toggle on" id="setSound" onclick="this.classList.toggle('on')"></div>
+        <button class="toggle on" id="setSound" role="switch" aria-checked="true" aria-label="Soundscape on by default"></button>
       </div>
       <div class="setting-row">
         <span class="setting-label">Voice-guided breath</span>
-        <div class="toggle" id="setVoice" onclick="this.classList.toggle('on')"></div>
+        <button class="toggle" id="setVoice" role="switch" aria-checked="false" aria-label="Voice-guided breath"></button>
       </div>
       <div class="setting-row">
         <span class="setting-label">Breath cycle count</span>
@@ -308,11 +315,35 @@ document.addEventListener('keydown', e => {
 // ──── Intention ────
 function setIntention(text){
   document.getElementById('intention').value = text;
+  clearIntentionError();
+}
+function clearIntentionError(){
+  const existing = document.getElementById('intention-error');
+  if (existing) existing.remove();
 }
 function saveIntentionAndGo(){
-  state.intention = document.getElementById('intention').value;
-  localStorage.setItem('dreams.intention', state.intention);
-  goTo(2);
+  const intentionInput = document.getElementById('intention');
+  state.intention = intentionInput.value.trim();
+  clearIntentionError();
+
+  if (!state.intention){
+    const errorMsg = document.createElement('span');
+    errorMsg.id = 'intention-error';
+    errorMsg.className = 'error-msg';
+    errorMsg.textContent = 'Add a line before proceeding to the ritual.';
+    intentionInput.parentNode.insertBefore(errorMsg, intentionInput.nextSibling);
+    MVPEnhancements.showToast('Please set an intention', 'error');
+    return;
+  }
+
+  try {
+    MVPEnhancements.setToStorage('dreams.intention', state.intention);
+    MVPEnhancements.showToast('Intention saved', 'success');
+    goTo(2);
+  } catch (e) {
+    console.error('Failed to save intention:', e);
+    MVPEnhancements.showToast('Failed to save intention', 'error');
+  }
 }
 
 // ──── 4-7-8 breath ritual ────
@@ -372,27 +403,39 @@ function toggleRitual(){
   if (state.ritualActive){
     state.ritualActive = false;
     playBtn.textContent = '▶';
+    playBtn.setAttribute('aria-label', 'Play');
     ritualStatus.textContent = 'Paused. Tap ▶ to continue.';
     if (state.audioOn) stopAudio();
+    MVPEnhancements.showToast('Ritual paused', 'info');
   } else {
     state.ritualActive = true;
     playBtn.textContent = '⏸';
+    playBtn.setAttribute('aria-label', 'Pause');
     ritualStatus.textContent = 'Breathing. Match the orb.';
     if (state.audioOn) startAudio();
+    MVPEnhancements.showToast('Ritual started', 'success');
     ritualLoop();
   }
 }
 
 function resetRitual(){
-  state.ritualActive = false;
-  state.cyclesDone = 0;
-  playBtn.textContent = '▶';
-  breathLabel.textContent = 'Tap to begin';
-  breathCount.textContent = '4–7–8';
-  ritualStatus.textContent = 'Six cycles. About one minute.';
-  ritualCycles.textContent = '';
-  orb.classList.remove('inhale','hold','exhale');
-  if (state.audioOn) stopAudio();
+  MVPEnhancements.showModalConfirm(
+    'Reset this ritual?',
+    'Your progress will be cleared.',
+    () => {
+      state.ritualActive = false;
+      state.cyclesDone = 0;
+      playBtn.textContent = '▶';
+      playBtn.setAttribute('aria-label', 'Play');
+      breathLabel.textContent = 'Tap to begin';
+      breathCount.textContent = '4–7–8';
+      ritualStatus.textContent = 'Six cycles. About one minute.';
+      ritualCycles.textContent = '';
+      orb.classList.remove('inhale','hold','exhale');
+      if (state.audioOn) stopAudio();
+      MVPEnhancements.showToast('Ritual reset', 'info');
+    }
+  );
 }
 
 function finishRitual(){
@@ -453,10 +496,18 @@ function stopAudio(){
 function toggleAudio(){
   state.audioOn = !state.audioOn;
   audioBtn.textContent = state.audioOn ? '🔊' : '🔇';
+  audioBtn.setAttribute('aria-label', state.audioOn ? 'Soundscape on' : 'Soundscape off');
   audioBtn.style.background = state.audioOn ? 'var(--violet)' : '';
   audioBtn.style.color = state.audioOn ? 'var(--bg)' : '';
   if (state.audioOn && state.ritualActive) startAudio();
   else stopAudio();
+  MVPEnhancements.showToast(`Soundscape ${state.audioOn ? 'on' : 'off'}`, 'info');
+  // Persist toggle to localStorage
+  try {
+    MVPEnhancements.setToStorage('dreams.audioOn', state.audioOn);
+  } catch (e) {
+    console.error('Failed to save audio setting:', e);
+  }
 }
 
 // ──── Dream journal ────
@@ -472,73 +523,103 @@ function addTag(tag){
 }
 
 function saveDream(){
-  const text = document.getElementById('dreamEntry').value.trim();
+  const dreamEntry = document.getElementById('dreamEntry');
+  const text = dreamEntry.value.trim();
+
   if (!text){
-    alert('Add a line or two before saving.');
+    MVPEnhancements.showToast('Add a line or two before saving', 'error');
+    const existing = document.getElementById('dream-error');
+    if (existing) existing.remove();
+    const errorMsg = document.createElement('span');
+    errorMsg.id = 'dream-error';
+    errorMsg.className = 'error-msg';
+    errorMsg.textContent = 'Your dream recall is empty. Share at least a fragment.';
+    dreamEntry.parentNode.insertBefore(errorMsg, dreamEntry.nextSibling);
     return;
   }
-  const dreams = JSON.parse(localStorage.getItem('dreams.journal') || '[]');
-  dreams.unshift({
-    text,
-    tags: [...state.currentDreamTags],
-    date: new Date().toISOString()
-  });
-  localStorage.setItem('dreams.journal', JSON.stringify(dreams.slice(0, 200)));
-  document.getElementById('dreamEntry').value = '';
-  state.currentDreamTags = [];
-  document.querySelectorAll('#panels .panel:nth-child(4) .chip').forEach(c => c.classList.remove('on'));
-  refreshHistory();
-  goTo(4);
+
+  const existing = document.getElementById('dream-error');
+  if (existing) existing.remove();
+
+  try {
+    const dreams = JSON.parse(MVPEnhancements.getFromStorage('dreams.journal') || '[]');
+    dreams.unshift({
+      text,
+      tags: [...state.currentDreamTags],
+      date: new Date().toISOString()
+    });
+    MVPEnhancements.setToStorage('dreams.journal', JSON.stringify(dreams.slice(0, 200)));
+    MVPEnhancements.showToast('Dream saved to journal', 'success');
+    dreamEntry.value = '';
+    state.currentDreamTags = [];
+    document.querySelectorAll('#panels .panel:nth-child(4) .chip').forEach(c => c.classList.remove('on'));
+    refreshHistory();
+    goTo(4);
+  } catch (e) {
+    console.error('Failed to save dream:', e);
+    MVPEnhancements.showToast('Failed to save dream', 'error');
+  }
 }
 
 function saveSession(){
-  const sessions = JSON.parse(localStorage.getItem('dreams.sessions') || '[]');
-  sessions.unshift({
-    intention: state.intention,
-    cycles: state.cyclesDone,
-    date: new Date().toISOString()
-  });
-  localStorage.setItem('dreams.sessions', JSON.stringify(sessions.slice(0, 200)));
-  refreshHistory();
+  try {
+    const sessions = JSON.parse(MVPEnhancements.getFromStorage('dreams.sessions') || '[]');
+    sessions.unshift({
+      intention: state.intention,
+      cycles: state.cyclesDone,
+      date: new Date().toISOString()
+    });
+    MVPEnhancements.setToStorage('dreams.sessions', JSON.stringify(sessions.slice(0, 200)));
+    MVPEnhancements.showToast('Session saved', 'success');
+    refreshHistory();
+  } catch (e) {
+    console.error('Failed to save session:', e);
+    MVPEnhancements.showToast('Failed to save session', 'error');
+  }
 }
 
 function refreshHistory(){
-  const sessions = JSON.parse(localStorage.getItem('dreams.sessions') || '[]');
-  const dreams = JSON.parse(localStorage.getItem('dreams.journal') || '[]');
-  document.getElementById('statTotal').textContent = sessions.length;
-  document.getElementById('statDreams').textContent = dreams.length;
-  // Compute streak (consecutive days)
-  let streak = 0;
-  const days = new Set(sessions.map(s => s.date.slice(0,10)));
-  let d = new Date();
-  while (days.has(d.toISOString().slice(0,10))){
-    streak++;
-    d.setDate(d.getDate() - 1);
+  try {
+    const sessions = JSON.parse(MVPEnhancements.getFromStorage('dreams.sessions') || '[]');
+    const dreams = JSON.parse(MVPEnhancements.getFromStorage('dreams.journal') || '[]');
+    document.getElementById('statTotal').textContent = sessions.length;
+    document.getElementById('statDreams').textContent = dreams.length;
+    // Compute streak (consecutive days)
+    let streak = 0;
+    const days = new Set(sessions.map(s => s.date.slice(0,10)));
+    let d = new Date();
+    while (days.has(d.toISOString().slice(0,10))){
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    document.getElementById('statStreak').textContent = streak;
+    // Render session list (merged with dreams)
+    const list = document.getElementById('sessionList');
+    if (sessions.length === 0 && dreams.length === 0){
+      list.innerHTML = '<div class="empty-state">No nights yet. Complete a ritual to begin.</div>';
+      return;
+    }
+    const items = [];
+    sessions.slice(0, 10).forEach(s => {
+      items.push({date: s.date, type: 'session', text: s.intention || '(no intention set)', cycles: s.cycles});
+    });
+    dreams.slice(0, 10).forEach(d => {
+      items.push({date: d.date, type: 'dream', text: d.text, tags: d.tags});
+    });
+    items.sort((a,b) => b.date.localeCompare(a.date));
+    list.innerHTML = items.slice(0, 20).map(item => {
+      const dt = new Date(item.date);
+      const label = dt.toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'});
+      const time = dt.toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
+      const meta = item.type === 'session'
+        ? `${label} · ${time} · Ritual (${item.cycles} cycles)`
+        : `${label} · ${time} · Dream${item.tags && item.tags.length ? ' · ' + item.tags.join(' · ') : ''}`;
+      return `<div class="session-card"><div class="session-meta">${meta}</div><div class="session-snippet">${escapeHtml(item.text)}</div></div>`;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to refresh history:', e);
+    document.getElementById('sessionList').innerHTML = '<div class="empty-state">Error loading history.</div>';
   }
-  document.getElementById('statStreak').textContent = streak;
-  // Render session list (merged with dreams)
-  const list = document.getElementById('sessionList');
-  if (sessions.length === 0 && dreams.length === 0){
-    list.innerHTML = '<div class="empty-state">No nights yet. Complete a ritual to begin.</div>';
-    return;
-  }
-  const items = [];
-  sessions.slice(0, 10).forEach(s => {
-    items.push({date: s.date, type: 'session', text: s.intention || '(no intention set)', cycles: s.cycles});
-  });
-  dreams.slice(0, 10).forEach(d => {
-    items.push({date: d.date, type: 'dream', text: d.text, tags: d.tags});
-  });
-  items.sort((a,b) => b.date.localeCompare(a.date));
-  list.innerHTML = items.slice(0, 20).map(item => {
-    const dt = new Date(item.date);
-    const label = dt.toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'});
-    const time = dt.toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
-    const meta = item.type === 'session'
-      ? `${label} · ${time} · Ritual (${item.cycles} cycles)`
-      : `${label} · ${time} · Dream${item.tags && item.tags.length ? ' · ' + item.tags.join(' · ') : ''}`;
-    return `<div class="session-card"><div class="session-meta">${meta}</div><div class="session-snippet">${escapeHtml(item.text)}</div></div>`;
-  }).join('');
 }
 
 function escapeHtml(s){
@@ -546,18 +627,98 @@ function escapeHtml(s){
 }
 
 function resetAll(){
-  if (!confirm('Reset all sessions, dreams, and intention?')) return;
-  localStorage.removeItem('dreams.intention');
-  localStorage.removeItem('dreams.sessions');
-  localStorage.removeItem('dreams.journal');
-  refreshHistory();
-  document.getElementById('intention').value = '';
+  MVPEnhancements.showModalConfirm(
+    'Reset all data?',
+    'This will delete all sessions, dreams, and your intention. This cannot be undone.',
+    () => {
+      try {
+        localStorage.removeItem('dreams.intention');
+        localStorage.removeItem('dreams.sessions');
+        localStorage.removeItem('dreams.journal');
+        refreshHistory();
+        document.getElementById('intention').value = '';
+        MVPEnhancements.showToast('All data cleared', 'info');
+      } catch (e) {
+        console.error('Failed to reset data:', e);
+        MVPEnhancements.showToast('Failed to reset data', 'error');
+      }
+    }
+  );
 }
 
+// ──── Settings toggles (keyboard-accessible) ────
+const setSound = document.getElementById('setSound');
+const setVoice = document.getElementById('setVoice');
+
+function updateToggleState(toggle, isOn) {
+  toggle.classList.toggle('on', isOn);
+  toggle.setAttribute('aria-checked', isOn);
+}
+
+function handleToggleClick(toggle, storageKey) {
+  const isOn = !toggle.classList.contains('on');
+  updateToggleState(toggle, isOn);
+  try {
+    MVPEnhancements.setToStorage(storageKey, isOn);
+    MVPEnhancements.showToast(`${toggle.getAttribute('aria-label')}: ${isOn ? 'on' : 'off'}`, 'info');
+  } catch (e) {
+    console.error(`Failed to save ${storageKey}:`, e);
+  }
+}
+
+function handleToggleKeydown(e, toggle, storageKey) {
+  if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    handleToggleClick(toggle, storageKey);
+  }
+}
+
+setSound.addEventListener('click', () => handleToggleClick(setSound, 'dreams.soundDefault'));
+setSound.addEventListener('keydown', (e) => handleToggleKeydown(e, setSound, 'dreams.soundDefault'));
+
+setVoice.addEventListener('click', () => handleToggleClick(setVoice, 'dreams.voiceGuided'));
+setVoice.addEventListener('keydown', (e) => handleToggleKeydown(e, setVoice, 'dreams.voiceGuided'));
+
+// ──── Offline detection ────
+function updateOnlineStatus() {
+  if (!navigator.onLine) {
+    let banner = document.getElementById('offline-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'offline-banner';
+      banner.className = 'offline-banner';
+      banner.textContent = 'You are offline. Data will sync when reconnected.';
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
+  } else {
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.remove();
+  }
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
 // ──── Init ────
-const saved = localStorage.getItem('dreams.intention');
-if (saved) document.getElementById('intention').value = saved;
-refreshHistory();
+try {
+  const saved = MVPEnhancements.getFromStorage('dreams.intention');
+  if (saved) document.getElementById('intention').value = saved;
+
+  // Restore settings from localStorage
+  const soundDefault = MVPEnhancements.getFromStorage('dreams.soundDefault');
+  const voiceGuided = MVPEnhancements.getFromStorage('dreams.voiceGuided');
+  const audioOn = MVPEnhancements.getFromStorage('dreams.audioOn');
+
+  if (soundDefault !== null) updateToggleState(setSound, JSON.parse(soundDefault));
+  if (voiceGuided !== null) updateToggleState(setVoice, JSON.parse(voiceGuided));
+  if (audioOn !== null) state.audioOn = JSON.parse(audioOn);
+
+  refreshHistory();
+} catch (e) {
+  console.error('Failed to initialize app:', e);
+  MVPEnhancements.showToast('Error loading saved data', 'error');
+}
 
 // Hide swipe hint after first scroll
 let hintShown = true;

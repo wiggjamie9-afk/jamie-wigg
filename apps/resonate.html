@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>RESONATE — closed-loop generative music</title>
+<script src="/universal-mvp-enhancements.js"></script>
 <meta name="description" content="Music that breathes with you. A closed-loop session that adapts a generative drone to your heart and breath. Focus, Calm, Rest. On-device, AU$30 once.">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#0A0F1F">
@@ -73,6 +74,7 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 .mode-card{background:rgba(244,228,188,0.04);border:1px solid rgba(212,175,55,0.2);border-radius:14px;padding:22px 24px;cursor:pointer;transition:all 0.25s;display:flex;justify-content:space-between;align-items:center;gap:14px}
 .mode-card:hover,.mode-card.on{border-color:var(--gold);background:rgba(212,175,55,0.08)}
 .mode-card.on{box-shadow:0 0 24px rgba(212,175,55,0.15)}
+.mode-card:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 .mode-title{font-family:var(--serif);font-size:30px;line-height:1;color:var(--ink)}
 .mode-card.on .mode-title{color:var(--gold)}
 .mode-sub{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-top:6px}
@@ -129,6 +131,23 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 .swipe-hint{position:fixed;bottom:36px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:rgba(244,228,188,0.4);text-transform:uppercase;z-index:99;pointer-events:none;animation:hintFade 4s ease-in-out 1.5s forwards}
 @keyframes hintFade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
 
+/* Toast notifications */
+.toast-container{position:fixed;bottom:max(80px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:200;pointer-events:none}
+.toast{background:var(--gold);color:var(--bg);padding:12px 20px;border-radius:8px;font-family:var(--mono);font-size:12px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;box-shadow:0 4px 12px rgba(212,175,55,0.3);pointer-events:auto;animation:toastSlide 0.3s ease}
+@keyframes toastSlide{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+
+/* Offline indicator */
+.offline-indicator{position:fixed;top:max(56px,calc(env(safe-area-inset-top) + 40px));left:7vw;background:rgba(212,175,55,0.2);border:1px solid rgba(212,175,55,0.4);border-radius:8px;padding:8px 14px;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;color:var(--cream);z-index:95;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.offline-indicator.show{opacity:1}
+
+/* Loading spinner */
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(212,175,55,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,15,31,0.8);display:flex;align-items:center;justify-content:center;z-index:150;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.spinner-overlay.show{opacity:1;pointer-events:auto}
+.spinner-content{display:flex;flex-direction:column;align-items:center;gap:20px}
+.spinner-label{font-family:var(--mono);font-size:12px;letter-spacing:0.15em;color:var(--cream);text-transform:uppercase}
+
 /* Subtle pulse on the orb when active */
 @keyframes goldPulse{0%,100%{filter:drop-shadow(0 0 12px rgba(212,175,55,0.4))}50%{filter:drop-shadow(0 0 28px rgba(212,175,55,0.8))}}
 .orb-svg.active{animation:goldPulse 4s ease-in-out infinite}
@@ -170,22 +189,22 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <div class="eyebrow">PANEL 2 · CHOOSE A STATE</div>
       <h2>Where are you <em>headed?</em></h2>
       <p>Tap a state. The drone composes around that intention.</p>
-      <div class="mode-grid" id="modeGrid">
-        <div class="mode-card" data-mode="focus" onclick="setMode('focus')">
+      <div class="mode-grid" id="modeGrid" role="radiogroup" aria-label="Breathing mode selection">
+        <div class="mode-card" data-mode="focus" role="radio" tabindex="0" aria-checked="false" aria-label="Focus mode: Alert, upright, making something at 432, 528, 648 Hz" onclick="setMode('focus')" onkeydown="handleModeKeydown(event, 'focus')">
           <div>
             <div class="mode-title">Focus</div>
             <div class="mode-sub">Alert · upright · making something</div>
           </div>
           <div class="mode-hz">432 · 528 · 648 Hz</div>
         </div>
-        <div class="mode-card" data-mode="calm" onclick="setMode('calm')">
+        <div class="mode-card" data-mode="calm" role="radio" tabindex="0" aria-checked="false" aria-label="Calm mode: Settled, breathing slow, arriving at 174, 396, 528 Hz" onclick="setMode('calm')" onkeydown="handleModeKeydown(event, 'calm')">
           <div>
             <div class="mode-title">Calm</div>
             <div class="mode-sub">Settled · breathing slow · arriving</div>
           </div>
           <div class="mode-hz">174 · 396 · 528 Hz</div>
         </div>
-        <div class="mode-card" data-mode="rest" onclick="setMode('rest')">
+        <div class="mode-card" data-mode="rest" role="radio" tabindex="0" aria-checked="false" aria-label="Rest mode: Horizontal, letting go, sleep edge at 110, 220, 330 Hz" onclick="setMode('rest')" onkeydown="handleModeKeydown(event, 'rest')">
           <div>
             <div class="mode-title">Rest</div>
             <div class="mode-sub">Horizontal · letting go · sleep edge</div>
@@ -201,14 +220,14 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
   <section class="panel" aria-label="Session">
     <div class="session-stage">
       <div class="eyebrow" style="align-self:flex-start">PANEL 3 · LIVE SESSION</div>
-      <div class="bio-row">
+      <div class="bio-row" aria-live="polite" aria-label="Biometric readings">
         <div class="bio-card">
-          <div class="bio-num" id="hrNum">—</div>
+          <div class="bio-num" id="hrNum" aria-label="Heart rate">—</div>
           <div class="bio-label">Heart</div>
           <div class="bio-unit">bpm</div>
         </div>
         <div class="bio-card">
-          <div class="bio-num" id="brNum">—</div>
+          <div class="bio-num" id="brNum" aria-label="Breath rate">—</div>
           <div class="bio-label">Breath</div>
           <div class="bio-unit">per min</div>
         </div>
@@ -226,15 +245,15 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
           <circle cx="100" cy="100" r="80" fill="none" stroke="#D4AF37" stroke-width="1" stroke-opacity="0.5" id="orbRing"/>
         </svg>
       </div>
-      <div class="coherence-display">
-        <div class="coh-num" id="cohNum">—</div>
+      <div class="coherence-display" aria-live="polite" aria-label="Coherence reading">
+        <div class="coh-num" id="cohNum" aria-label="Coherence score">—</div>
         <div class="coh-label">Coherence</div>
-        <div class="mode-pill" id="modePill">— mode</div>
+        <div class="mode-pill" id="modePill" aria-label="Current mode">— mode</div>
       </div>
       <div class="session-controls">
-        <button class="icon-btn" id="playBtn" onclick="toggleSession()" aria-label="Play / pause">▶</button>
-        <button class="icon-btn" onclick="cycleMode()" aria-label="Next mode">⤳</button>
-        <button class="icon-btn" onclick="resetSession()" aria-label="Reset">↺</button>
+        <button class="icon-btn" id="playBtn" onclick="toggleSession()" aria-label="Start session" aria-pressed="false">▶</button>
+        <button class="icon-btn" onclick="cycleMode()" aria-label="Cycle to next breathing mode" aria-disabled="false">⤳</button>
+        <button class="icon-btn" onclick="resetSession()" aria-label="Reset session data and stats">↺</button>
       </div>
     </div>
   </section>
@@ -307,7 +326,7 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
         <span class="setting-value">AU$30 · paid</span>
       </div>
       <div style="margin-top:30px;text-align:center">
-        <button class="btn btn-ghost" onclick="resetAll()">Reset all data</button>
+        <button class="btn btn-ghost" onclick="resetAll()" aria-label="Reset all sessions and mode settings permanently">Reset all data</button>
       </div>
       <p style="text-align:center;margin-top:24px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.15em">RHYTHMIX FREQUENCY · RESONATE v1 · rhythmixapp.com.au/resonate</p>
     </div>
@@ -318,7 +337,72 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 <div class="dots" id="dots"></div>
 <div class="swipe-hint" id="swipeHint">swipe → to explore</div>
 
+<div class="offline-indicator" id="offlineIndicator" aria-live="polite">No internet connection</div>
+<div class="spinner-overlay" id="spinnerOverlay">
+  <div class="spinner-content">
+    <div class="loading-spinner"></div>
+    <div class="spinner-label" id="spinnerLabel">Initializing audio...</div>
+  </div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+
 <script>
+// ──── Toast notification system ────
+function showToast(message, duration = 3000){
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// ──── Spinner overlay ────
+function showSpinner(label = 'Initializing audio...'){
+  document.getElementById('spinnerLabel').textContent = label;
+  document.getElementById('spinnerOverlay').classList.add('show');
+}
+function hideSpinner(){
+  document.getElementById('spinnerOverlay').classList.remove('show');
+}
+
+// ──── Offline detection ────
+function updateOfflineStatus(){
+  const indicator = document.getElementById('offlineIndicator');
+  if (!navigator.onLine){
+    indicator.classList.add('show');
+  } else {
+    indicator.classList.remove('show');
+  }
+}
+window.addEventListener('online', updateOfflineStatus);
+window.addEventListener('offline', updateOfflineStatus);
+// Initial check
+updateOfflineStatus();
+
+// ──── Keyboard navigation for mode cards ────
+function handleModeKeydown(e, mode){
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight'){
+    e.preventDefault();
+    const next = document.querySelector(`[data-mode="${mode}"]`)?.nextElementSibling;
+    if (next && next.classList.contains('mode-card')){
+      next.focus();
+    }
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft'){
+    e.preventDefault();
+    const prev = document.querySelector(`[data-mode="${mode}"]`)?.previousElementSibling;
+    if (prev && prev.classList.contains('mode-card')){
+      prev.focus();
+    }
+  } else if (e.key === 'Enter' || e.key === ' '){
+    e.preventDefault();
+    setMode(mode);
+  }
+}
+
 // ──── State ────
 const MODES = {
   focus: { name: 'Focus', freqs: [432, 528, 648], targetBr: 12, targetHr: 72 },
@@ -367,19 +451,40 @@ document.addEventListener('keydown', e => {
 
 // ──── Mode select ────
 function setMode(m){
+  // Prevent mode switch during active session without confirmation
+  if (state.active){
+    const confirmed = MVPEnhancements && MVPEnhancements.confirm
+      ? MVPEnhancements.confirm('Switch mode during session?', 'The drone will retune to your new selection.')
+      : confirm('Switch mode during session? The drone will retune to your new selection.');
+    if (!confirmed) return;
+  }
+
   state.mode = m;
   localStorage.setItem('resonate.mode', m);
   refreshModeUI();
+  showToast(`Mode changed to ${MODES[m].name}`);
+
   if (state.active){
     // Smoothly retune the drone
     rebuildDrone();
   }
 }
 function refreshModeUI(){
-  document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('on', c.dataset.mode === state.mode));
+  document.querySelectorAll('.mode-card').forEach(c => {
+    const isSelected = c.dataset.mode === state.mode;
+    c.classList.toggle('on', isSelected);
+    c.setAttribute('aria-checked', isSelected.toString());
+  });
   document.getElementById('modePill').textContent = MODES[state.mode].name + ' mode';
 }
 function cycleMode(){
+  // Prevent mode switch during active session without confirmation
+  if (state.active){
+    const confirmed = MVPEnhancements && MVPEnhancements.confirm
+      ? MVPEnhancements.confirm('Switch mode during session?', 'The drone will retune to your new selection.')
+      : confirm('Switch mode during session? The drone will retune to your new selection.');
+    if (!confirmed) return;
+  }
   const keys = Object.keys(MODES);
   const next = keys[(keys.indexOf(state.mode) + 1) % keys.length];
   setMode(next);
@@ -395,14 +500,27 @@ function toggleSession(){
   else startSession();
 }
 function startSession(){
+  // Validate: ensure a mode is selected
+  if (!state.mode || !MODES[state.mode]){
+    showToast('Please select a breathing mode');
+    return;
+  }
+
   state.active = true;
   state.startedAt = Date.now();
   state.cohHistory = [];
   state.peakCoh = 0;
   state.t = 0;
   playBtn.textContent = '⏸';
+  playBtn.setAttribute('aria-label', 'Stop session');
+  playBtn.setAttribute('aria-pressed', 'true');
   orbSvg.classList.add('active');
+
+  showSpinner('Starting audio...');
   startAudio();
+  hideSpinner();
+  showToast('Session started');
+
   // Bio simulation tick (every 500ms)
   state.loopTimer = setInterval(tick, 500);
   // Orb breathing animation (smoother, 60ms)
@@ -411,9 +529,12 @@ function startSession(){
 function stopSession(){
   if (state.active && state.startedAt){
     saveSession();
+    showToast('Session saved');
   }
   state.active = false;
   playBtn.textContent = '▶';
+  playBtn.setAttribute('aria-label', 'Start session');
+  playBtn.setAttribute('aria-pressed', 'false');
   orbSvg.classList.remove('active');
   clearInterval(state.loopTimer);
   clearInterval(state.orbTimer);
@@ -428,6 +549,7 @@ function resetSession(){
   document.getElementById('brNum').textContent = '—';
   document.getElementById('cohNum').textContent = '—';
   renderSpark();
+  showToast('Session data cleared');
 }
 
 // ──── Simulated biometrics ────
@@ -479,37 +601,63 @@ function ensureAudio(){
   if (state.audioCtx) return;
   try {
     state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch(e){ console.error('No Web Audio:', e); }
+  } catch(e){
+    console.error('Web Audio API unavailable:', e);
+    showToast('Audio not available on this device');
+    hideSpinner();
+    return false;
+  }
+  return true;
 }
 function startAudio(){
-  ensureAudio();
-  if (!state.audioCtx) return;
-  if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
-  stopAudio();
-  const ctx = state.audioCtx;
-  const master = ctx.createGain();
-  master.gain.value = 0.0;
-  master.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 2.5);
-  master.connect(ctx.destination);
-  state.masterGain = master;
-  const freqs = MODES[state.mode].freqs;
-  freqs.forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    osc.frequency.value = freq;
-    osc.type = i === 0 ? 'sine' : (i === 1 ? 'triangle' : 'sine');
-    const g = ctx.createGain();
-    g.gain.value = i === 0 ? 0.45 : (i === 1 ? 0.28 : 0.18);
-    // slow LFO on amplitude for shimmer
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.05 + i * 0.04;
-    const lfoG = ctx.createGain();
-    lfoG.gain.value = 0.12;
-    lfo.connect(lfoG).connect(g.gain);
-    lfo.start();
-    osc.connect(g).connect(master);
-    osc.start();
-    state.oscillators.push(osc, lfo);
-  });
+  if (!ensureAudio()){
+    state.active = false;
+    playBtn.textContent = '▶';
+    playBtn.setAttribute('aria-pressed', 'false');
+    return;
+  }
+
+  try {
+    if (!state.audioCtx) return;
+    if (state.audioCtx.state === 'suspended'){
+      state.audioCtx.resume().catch(e => {
+        console.error('Failed to resume audio context:', e);
+        showToast('Could not start audio');
+      });
+    }
+    stopAudio();
+    const ctx = state.audioCtx;
+    const master = ctx.createGain();
+    master.gain.value = 0.0;
+    master.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 2.5);
+    master.connect(ctx.destination);
+    state.masterGain = master;
+    const freqs = MODES[state.mode].freqs;
+    freqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.frequency.value = freq;
+      osc.type = i === 0 ? 'sine' : (i === 1 ? 'triangle' : 'sine');
+      const g = ctx.createGain();
+      g.gain.value = i === 0 ? 0.45 : (i === 1 ? 0.28 : 0.18);
+      // slow LFO on amplitude for shimmer
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.05 + i * 0.04;
+      const lfoG = ctx.createGain();
+      lfoG.gain.value = 0.12;
+      lfo.connect(lfoG).connect(g.gain);
+      lfo.start();
+      osc.connect(g).connect(master);
+      osc.start();
+      state.oscillators.push(osc, lfo);
+    });
+  } catch(e){
+    console.error('Audio startup failed:', e);
+    showToast('Audio failed to start');
+    state.active = false;
+    playBtn.textContent = '▶';
+    playBtn.setAttribute('aria-pressed', 'false');
+    hideSpinner();
+  }
 }
 function rebuildDrone(){
   if (!state.audioCtx) return;
@@ -607,12 +755,17 @@ function refreshHistory(){
 }
 
 function resetAll(){
-  if (!confirm('Reset all sessions and mode selection?')) return;
+  const confirmed = MVPEnhancements && MVPEnhancements.confirm
+    ? MVPEnhancements.confirm('Reset all data?', 'This will delete all session history and restore default settings. This cannot be undone.')
+    : confirm('Reset all sessions and mode selection?');
+  if (!confirmed) return;
+
   localStorage.removeItem('resonate.sessions');
   localStorage.removeItem('resonate.mode');
   state.mode = 'calm';
   refreshModeUI();
   refreshHistory();
+  showToast('All data reset');
 }
 
 // ──── Init ────

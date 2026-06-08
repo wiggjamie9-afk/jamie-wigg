@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <script src="/universal-mvp-enhancements.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -632,9 +633,9 @@
 
     <!-- Controls -->
     <div class="controls">
-      <button class="btn-reset" id="btn-reset" title="Reset" onclick="resetTimer()">↺</button>
-      <button class="btn-main" id="btn-main" onclick="toggleTimer()">START</button>
-      <button class="btn-skip" id="btn-skip" title="Skip" onclick="skipPhase()">⏭</button>
+      <button class="btn-reset" id="btn-reset" aria-label="Reset timer" title="Reset" onclick="resetTimer()">↺</button>
+      <button class="btn-main" id="btn-main" aria-label="Start or pause timer" onclick="toggleTimer()">START</button>
+      <button class="btn-skip" id="btn-skip" aria-label="Skip to next phase" title="Skip" onclick="skipPhase()">⏭</button>
     </div>
 
     <!-- Flow State Banner -->
@@ -766,7 +767,8 @@
       <div class="volume-row">
         <span class="volume-label">🔈 Quiet</span>
         <input type="range" id="volume-slider" min="0" max="100" value="40"
-          oninput="setVolume(this.value)">
+          aria-label="Sound volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40"
+          oninput="setVolume(this.value); this.setAttribute('aria-valuenow', this.value)">
         <span class="volume-label" style="text-align:right">Loud 🔊</span>
       </div>
     </div>
@@ -1446,7 +1448,9 @@ function toggleTimer() {
   if (!state.isPro) {
     const todaySessions = stats.todaySessions || 0;
     if (todaySessions >= 3 && state.mode === 'focus' && !state.running) {
-      openPaywall(); return;
+      showToast('⚠️ Free plan: 3 sessions max per day. Upgrade for unlimited.');
+      setTimeout(() => openPaywall(), 600);
+      return;
     }
   }
 
@@ -1492,14 +1496,24 @@ function pauseTimer() {
 }
 
 function resetTimer() {
-  clearInterval(state.intervalId);
-  state.running = false;
-  initTimer(state.mode);
-  const btn = document.getElementById('btn-main');
-  btn.textContent = 'START';
-  btn.classList.remove('running');
-  document.getElementById('timer-svg').classList.remove('running');
-  document.getElementById('adaptive-tip').classList.remove('show');
+  MVPEnhancements.confirm(
+    'Reset the timer to the beginning?',
+    { label: 'Reset', isDangerous: false },
+    () => {
+      try {
+        clearInterval(state.intervalId);
+        state.running = false;
+        initTimer(state.mode);
+        const btn = document.getElementById('btn-main');
+        btn.textContent = 'START';
+        btn.classList.remove('running');
+        document.getElementById('timer-svg').classList.remove('running');
+        document.getElementById('adaptive-tip').classList.remove('show');
+      } catch (e) {
+        showToast('⚠️ Error resetting timer');
+      }
+    }
+  );
 }
 
 function tick() {

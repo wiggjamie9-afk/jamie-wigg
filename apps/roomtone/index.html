@@ -319,6 +319,52 @@
     z-index: 100;
   }
   .toast.show { opacity: 1; }
+  /* MVP enhancements */
+  .toast {
+    animation: slideUp .2s ease-out;
+  }
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+  .toast.show {
+    animation: none;
+  }
+
+  /* Better button feedback */
+  button {
+    transition: all 0.12s ease-out;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Focus visible for accessibility */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Error state */
+  [aria-invalid="true"] {
+    border-color: var(--danger) !important;
+  }
+
+  /* Loading state */
+  [aria-busy="true"] {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
   /* small screens */
   @media (max-width: 360px) {
     .scene-name { font-size: 36px; }
@@ -341,7 +387,7 @@
     <div class="meter" id="meter" aria-hidden="true"></div>
   </section>
 
-  <button class="live-btn" id="live-btn">Start Roomtone</button>
+  <button class="live-btn" id="live-btn" aria-label="Start Roomtone - Begins real-time environmental audio processing" aria-describedby="scene-sub">Start Roomtone</button>
 
   <div id="headphone-warn" class="help warn" style="display:none">
     <b>Use headphones or paired hearing aids.</b> Roomtone routes processed mic audio to your audio output — playing it through the phone speaker will create a feedback loop.
@@ -453,7 +499,10 @@ function load(key) {
 async function startAudio() {
   if (state.isLive) return;
   const Ctx = window.AudioContext || window.webkitAudioContext;
-  if (!Ctx) { toast("This browser doesn't support Web Audio."); return; }
+  if (!Ctx) {
+    toast("❌ Your browser doesn't support Web Audio. Try Chrome, Safari, or Firefox.");
+    return;
+  }
   try {
     state.ctx = new Ctx({ latencyHint: 'interactive' });
   } catch (e) {
@@ -470,7 +519,13 @@ async function startAudio() {
       video: false,
     });
   } catch (err) {
-    toast('Microphone permission denied. Roomtone needs the mic to work.');
+    if (err.name === 'NotAllowedError') {
+      toast('🔒 Mic permission denied. Go to Settings → Roomtone → Microphone and tap Allow.');
+    } else if (err.name === 'NotFoundError') {
+      toast('❌ No microphone found. Check your device audio settings.');
+    } else {
+      toast(`Mic error: ${err.name}. Try restarting Roomtone.`);
+    }
     return;
   }
   await state.ctx.resume();
@@ -998,7 +1053,11 @@ function init() {
     applyEQ();
     toast(`${SCENES[k].name} scene reset`);
   });
-  document.getElementById('data-clear').addEventListener('click', () => {
+  document.getElementById('data-clear').addEventListener('click', async () => {
+    // Confirm before destructive action
+    if (!confirm('Clear all personalization settings? This cannot be undone.')) {
+      return;
+    }
     state.audiogram = [0,0,0,0,0,0,0,0];
     state.sceneTweaks = {};
     save('audiogram', state.audiogram);
@@ -1006,7 +1065,7 @@ function init() {
     refreshAudiogramGrid();
     refreshSceneTweakGrid();
     applyEQ();
-    toast('Personalization cleared');
+    toast('✓ Personalization cleared');
   });
 
   updateUI();
@@ -1062,6 +1121,114 @@ function showInstallHintIfNeeded() {
   });
 }
 setTimeout(showInstallHintIfNeeded, 200);
+
+// ========== ROOMTONE MVP ENHANCEMENTS ==========
+// Better error handling, confirmations, and accessibility
+
+(function() {
+  // Enhanced feedback for settings changes
+  const originalSave = (typeof window.save !== 'undefined') ? window.save : null;
+
+  // Wrap audiogram changes with feedback
+  if (window.FREQS) {
+    const sliders = document.querySelectorAll('.eq-band input[type="range"]');
+    sliders.forEach((slider, idx) => {
+      slider.addEventListener('change', () => {
+        setTimeout(() => {
+          toast('✓ Audiogram updated');
+        }, 100);
+      });
+    });
+  }
+
+  // Scene tweaks feedback
+  const sceneSelects = document.querySelectorAll('.scene-select');
+  sceneSelects.forEach((select) => {
+    select.addEventListener('change', () => {
+      setTimeout(() => {
+        toast('✓ Scene settings saved');
+      }, 100);
+    });
+  });
+
+  // Compare button accessibility
+  const compareBtn = document.getElementById('compare-btn');
+  if (compareBtn) {
+    compareBtn.setAttribute('aria-label', 'Compare - Hold to bypass all audio processing and hear raw microphone. Release to return to processed audio.');
+    compareBtn.setAttribute('role', 'button');
+  }
+
+  // Scene chips accessibility
+  const chips = document.querySelectorAll('.chip');
+  chips.forEach((chip) => {
+    const text = chip.textContent.trim();
+    chip.setAttribute('aria-label', `${text} - Tap to force this scene. Tap again to return to auto detection.`);
+    chip.setAttribute('role', 'button');
+  });
+
+  // Panel accessibility
+  const panels = document.querySelectorAll('details.panel');
+  panels.forEach((panel) => {
+    const summary = panel.querySelector('summary');
+    if (summary) {
+      summary.setAttribute('role', 'button');
+      summary.setAttribute('aria-expanded', panel.hasAttribute('open'));
+    }
+    panel.addEventListener('toggle', () => {
+      summary.setAttribute('aria-expanded', panel.hasAttribute('open'));
+    });
+  });
+
+  // Live button feedback
+  const liveBtn = document.getElementById('live-btn');
+  if (liveBtn) {
+    const originalOnClick = liveBtn.onclick;
+    liveBtn.addEventListener('click', () => {
+      if (!state.isLive) {
+        setTimeout(() => {
+          if (state.isLive) {
+            toast('🎤 Roomtone is now listening');
+          }
+        }, 500);
+      }
+    });
+  }
+
+  // Keyboard support hint
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '?') {
+      toast('🎧 Pair headphones first • Start listening • Compare (hold) • Choose scene • Personalize in settings');
+    }
+  });
+
+  // Accessibility: Announce state changes
+  const statusTag = document.getElementById('status-tag');
+  const originalUpdateUI = window.updateUI;
+  if (typeof originalUpdateUI === 'function') {
+    window.updateUI = function() {
+      originalUpdateUI.apply(this, arguments);
+      if (statusTag) {
+        const liveBtn = document.getElementById('live-btn');
+        const newStatus = liveBtn?.textContent || 'standby';
+        if (statusTag.textContent !== newStatus) {
+          statusTag.setAttribute('aria-live', 'polite');
+          statusTag.textContent = newStatus;
+        }
+      }
+    };
+  }
+
+  // Better error recovery: suggest next steps
+  window.onbeforeunload = (e) => {
+    // Soft warning only if audio is actively running
+    if (window.state && window.state.isLive) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  };
+
+  console.log('[Roomtone] MVP enhancements loaded');
+})();
 
 })();
 </script>

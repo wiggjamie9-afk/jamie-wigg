@@ -11,6 +11,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <script src="/universal-mvp-enhancements.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -875,12 +876,12 @@
         <div class="tp-fields">
           <div class="tp-input-wrap">
             <div class="tp-input-label">HOUR</div>
-            <input type="number" class="tp-input" id="bedHour" min="1" max="12" placeholder="10" inputmode="numeric">
+            <input type="number" class="tp-input" id="bedHour" min="1" max="12" placeholder="10" inputmode="numeric" aria-label="Bedtime hour">
           </div>
           <div class="tp-separator">:</div>
           <div class="tp-input-wrap">
             <div class="tp-input-label">MIN</div>
-            <input type="number" class="tp-input" id="bedMin" min="0" max="59" placeholder="30" inputmode="numeric">
+            <input type="number" class="tp-input" id="bedMin" min="0" max="59" placeholder="30" inputmode="numeric" aria-label="Bedtime minutes">
           </div>
           <div class="tp-input-wrap" style="max-width:58px;">
             <div class="tp-input-label">AM/PM</div>
@@ -909,12 +910,12 @@
         <div class="tp-fields">
           <div class="tp-input-wrap">
             <div class="tp-input-label">HOUR</div>
-            <input type="number" class="tp-input" id="wakeHour" min="1" max="12" placeholder="6" inputmode="numeric">
+            <input type="number" class="tp-input" id="wakeHour" min="1" max="12" placeholder="6" inputmode="numeric" aria-label="Wake time hour">
           </div>
           <div class="tp-separator">:</div>
           <div class="tp-input-wrap">
             <div class="tp-input-label">MIN</div>
-            <input type="number" class="tp-input" id="wakeMin" min="0" max="59" placeholder="30" inputmode="numeric">
+            <input type="number" class="tp-input" id="wakeMin" min="0" max="59" placeholder="30" inputmode="numeric" aria-label="Wake time minutes">
           </div>
           <div class="tp-input-wrap" style="max-width:58px;">
             <div class="tp-input-label">AM/PM</div>
@@ -1167,7 +1168,10 @@ function loadData() {
       const daysElapsed = (Date.now() - parseInt(ts)) / 86400000;
       trialActive = daysElapsed <= 7;
     }
-  } catch(e) { logs = []; }
+  } catch(e) {
+    logs = [];
+    showToast('⚠️ Error loading data, starting fresh');
+  }
 }
 
 function saveData() {
@@ -1414,7 +1418,7 @@ function renderHistoryList() {
         </div>
       </div>
       <div class="hi-badge ${cls}">${durH}h ${durM}m</div>
-      <button class="hi-del" onclick="deleteLog(${realIdx})" title="Delete">✕</button>
+      <button class="hi-del" aria-label="Delete sleep log entry" onclick="deleteLog(${realIdx})" title="Delete">✕</button>
     </div>`;
   }).join('');
 }
@@ -1562,72 +1566,86 @@ function calcDuration(bedH, bedM, wakeH, wakeM) {
 }
 
 function logSleep() {
-  const bH = document.getElementById('bedHour').value;
-  const bM = document.getElementById('bedMin').value;
-  const bAP = document.getElementById('bedAmpm').value;
-  const wH = document.getElementById('wakeHour').value;
-  const wM = document.getElementById('wakeMin').value;
-  const wAP = document.getElementById('wakeAmpm').value;
+  try {
+    const bH = document.getElementById('bedHour').value;
+    const bM = document.getElementById('bedMin').value;
+    const bAP = document.getElementById('bedAmpm').value;
+    const wH = document.getElementById('wakeHour').value;
+    const wM = document.getElementById('wakeMin').value;
+    const wAP = document.getElementById('wakeAmpm').value;
 
-  if (!bH || !bM || !wH || !wM) {
-    showToast('⚠️ Fill in all time fields');
-    return;
-  }
+    if (!bH || !bM || !wH || !wM) {
+      showToast('⚠️ Fill in all time fields');
+      return;
+    }
 
-  const bed  = to24h(bH, bM, bAP);
-  const wake = to24h(wH, wM, wAP);
-  const duration = calcDuration(bed.h, bed.m, wake.h, wake.m);
+    const bed  = to24h(bH, bM, bAP);
+    const wake = to24h(wH, wM, wAP);
+    const duration = calcDuration(bed.h, bed.m, wake.h, wake.m);
 
-  if (duration < 30 || duration > 20 * 60) {
-    showToast('⚠️ Check your times — does that look right?');
-    return;
-  }
+    if (duration < 30 || duration > 20 * 60) {
+      showToast('⚠️ Check your times — does that look right?');
+      return;
+    }
 
-  const today = new Date();
-  // Use today's date; if bedtime is PM and it's past midnight, could be yesterday
-  const dateStr = dateKey(today);
+    const today = new Date();
+    // Use today's date; if bedtime is PM and it's past midnight, could be yesterday
+    const dateStr = dateKey(today);
 
-  const bedTime24  = `${String(bed.h).padStart(2,'0')}:${String(bed.m).padStart(2,'0')}`;
-  const wakeTime24 = `${String(wake.h).padStart(2,'0')}:${String(wake.m).padStart(2,'0')}`;
+    const bedTime24  = `${String(bed.h).padStart(2,'0')}:${String(bed.m).padStart(2,'0')}`;
+    const wakeTime24 = `${String(wake.h).padStart(2,'0')}:${String(wake.m).padStart(2,'0')}`;
 
-  // Check for duplicate today
-  const existingIdx = logs.findIndex(l => l.date === dateStr);
+    // Check for duplicate today
+    const existingIdx = logs.findIndex(l => l.date === dateStr);
 
-  const entry = {
-    date: dateStr,
-    bedtime: bedTime24,
-    waketime: wakeTime24,
-    bedtimeDisplay: `${bH}:${String(bM).padStart(2,'0')} ${bAP}`,
-    waketimeDisplay: `${wH}:${String(wM).padStart(2,'0')} ${wAP}`,
-    duration,
-    ts: Date.now()
-  };
+    const entry = {
+      date: dateStr,
+      bedtime: bedTime24,
+      waketime: wakeTime24,
+      bedtimeDisplay: `${bH}:${String(bM).padStart(2,'0')} ${bAP}`,
+      waketimeDisplay: `${wH}:${String(wM).padStart(2,'0')} ${wAP}`,
+      duration,
+      ts: Date.now()
+    };
 
-  if (existingIdx >= 0) {
-    logs[existingIdx] = entry;
-    showToast('✅ Today\'s log updated');
-  } else {
-    logs.push(entry);
-    // Keep max 90 days
-    if (logs.length > 90) logs.shift();
-    showToast('✅ Sleep logged!');
-  }
+    if (existingIdx >= 0) {
+      logs[existingIdx] = entry;
+      showToast('✅ Today\'s log updated');
+    } else {
+      logs.push(entry);
+      // Keep max 90 days
+      if (logs.length > 90) logs.shift();
+      showToast('✅ Sleep logged!');
+    }
 
-  saveData();
-  updateDurPreview();
-  renderAll();
+    saveData();
+    updateDurPreview();
+    renderAll();
 
-  // Check paywall if not pro
-  if (!isPro && !trialActive && logs.length > 7) {
-    setTimeout(openPaywall, 1000);
+    // Check paywall if not pro
+    if (!isPro && !trialActive && logs.length > 7) {
+      setTimeout(openPaywall, 1000);
+    }
+  } catch (e) {
+    showToast('⚠️ Error logging sleep');
   }
 }
 
 function deleteLog(idx) {
-  logs.splice(idx, 1);
-  saveData();
-  renderAll();
-  showToast('Deleted');
+  MVPEnhancements.confirm(
+    'Delete this sleep log entry? This action cannot be undone.',
+    { label: 'Delete', isDangerous: true },
+    () => {
+      try {
+        logs.splice(idx, 1);
+        saveData();
+        renderAll();
+        showToast('✓ Sleep log deleted');
+      } catch (e) {
+        showToast('⚠️ Error deleting log');
+      }
+    }
+  );
 }
 
 function setQuickTime(type, hour, min, ampm) {
