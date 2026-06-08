@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Period Buddy – Women's Health</title>
+    <style>
+        :root { --primary: #EC4899; --bg: #0F172A; --light: #1E293B; --text: #F1F5F9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+        .container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #DB2777 100%); padding: 24px 20px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: var(--light); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid var(--primary); }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+        input { width: 100%; padding: 10px 12px; background: var(--bg); border: 2px solid #334155; border-radius: 8px; color: var(--text); margin-bottom: 10px; }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+        button:hover { background: #DB2777; }
+        .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 12px 0; }
+        .day-btn { padding: 12px; border: 2px solid #334155; background: var(--bg); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .day-btn.period { background: var(--primary); border-color: var(--primary); }
+        .label { display: block; font-size: 12px; color: #CBD5E1; margin-bottom: 4px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🩸 PERIOD BUDDY</h1>
+            <p style="font-size: 12px;">Track your cycle</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>📅 Log Period</h2>
+                <label>Start date</label>
+                <input type="date" id="startDate">
+                <label>Duration (days)</label>
+                <input type="number" id="duration" placeholder="5" min="1" max="10">
+                <button onclick="logPeriod()">Log Period</button>
+            </div>
+
+            <div class="card">
+                <h2>📊 This Month</h2>
+                <div id="calendar" class="day-grid"></div>
+            </div>
+
+            <div class="card">
+                <h2>ℹ️ Info</h2>
+                <div id="info" style="font-size: 13px; line-height: 1.6; color: #CBD5E1;">
+                    <p>Track your period to predict cycles and manage symptoms.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('startDate').valueAsDate = new Date();
+
+        function logPeriod() {
+            const start = document.getElementById('startDate').value;
+            const duration = parseInt(document.getElementById('duration').value);
+
+            if (!start || !duration) { alert('Fill all fields'); return; }
+
+            let periods = JSON.parse(localStorage.getItem('periods') || '[]');
+            periods.push({ start, duration });
+            localStorage.setItem('periods', JSON.stringify(periods));
+            document.getElementById('duration').value = '';
+            displayCalendar();
+        }
+
+        function displayCalendar() {
+            const periods = JSON.parse(localStorage.getItem('periods') || '[]');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+
+            let html = '';
+            const days = new Date(year, month + 1, 0).getDate();
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            dayNames.forEach(day => {
+                html += `<div style="font-size: 11px; font-weight: 600; color: #CBD5E1; text-align: center;">${day}</div>`;
+            });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            for (let i = 0; i < firstDay; i++) html += '<div></div>';
+
+            for (let day = 1; day <= days; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isPeriod = periods.some(p => {
+                    const start = new Date(p.start);
+                    const end = new Date(start);
+                    end.setDate(end.getDate() + p.duration);
+                    const current = new Date(dateStr);
+                    return current >= start && current <= end;
+                });
+
+                html += `<button class="day-btn ${isPeriod ? 'period' : ''}" onclick="alert('${isPeriod ? 'Period day' : 'Not logged'}')">${day}</button>`;
+            }
+
+            document.getElementById('calendar').innerHTML = html;
+        }
+
+        displayCalendar();
+    </script>
+</body>
+</html>

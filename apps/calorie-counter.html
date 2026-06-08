@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorie Counter – Food Tracking</title>
+    <style>
+        :root { --primary: #F59E0B; --bg: #0F172A; --light: #1E293B; --text: #F1F5F9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+        .container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #D97706 100%); padding: 24px 20px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: var(--light); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid var(--primary); }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+        input { width: 100%; padding: 10px 12px; background: var(--bg); border: 2px solid #334155; border-radius: 8px; color: var(--text); margin-bottom: 10px; font-size: 13px; }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 8px; color: #0F172A; font-weight: 600; cursor: pointer; }
+        button:hover { background: #D97706; }
+        .food { background: var(--bg); padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .calorie-total { font-size: 32px; font-weight: 700; color: var(--primary); text-align: center; margin: 12px 0; }
+        .label { display: block; font-size: 12px; color: #CBD5E1; margin-bottom: 4px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍎 CALORIE COUNTER</h1>
+            <p style="font-size: 12px;">Track daily intake</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>Daily Goal</h2>
+                <input type="number" id="goal" placeholder="2000" value="2000" min="1000" max="4000">
+                <button onclick="setGoal()">Set Goal</button>
+            </div>
+
+            <div class="card">
+                <h2>📊 Today</h2>
+                <div class="calorie-total" id="total">0</div>
+                <div style="text-align: center; font-size: 12px; color: #CBD5E1;" id="remaining">2000 cal remaining</div>
+            </div>
+
+            <div class="card">
+                <h2>➕ Log Food</h2>
+                <label>Food name</label>
+                <input type="text" id="food" placeholder="E.g., Apple, Rice bowl">
+                <label>Calories</label>
+                <input type="number" id="cals" placeholder="100" min="0">
+                <button onclick="addFood()">Log Food</button>
+            </div>
+
+            <div class="card">
+                <h2>🍽️ Today's Foods</h2>
+                <div id="foodList">No foods logged</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dailyGoal = 2000;
+
+        function setGoal() {
+            dailyGoal = parseInt(document.getElementById('goal').value) || 2000;
+            updateDisplay();
+        }
+
+        function addFood() {
+            const food = document.getElementById('food').value;
+            const cals = parseInt(document.getElementById('cals').value);
+
+            if (!food || !cals) { alert('Fill all fields'); return; }
+
+            const today = new Date().toISOString().split('T')[0];
+            let foods = JSON.parse(localStorage.getItem('foods_' + today) || '[]');
+            foods.push({ food, cals, id: Date.now() });
+            localStorage.setItem('foods_' + today, JSON.stringify(foods));
+
+            document.getElementById('food').value = '';
+            document.getElementById('cals').value = '';
+            updateDisplay();
+        }
+
+        function deleteFood(id) {
+            const today = new Date().toISOString().split('T')[0];
+            let foods = JSON.parse(localStorage.getItem('foods_' + today) || '[]');
+            foods = foods.filter(f => f.id !== id);
+            localStorage.setItem('foods_' + today, JSON.stringify(foods));
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const today = new Date().toISOString().split('T')[0];
+            const foods = JSON.parse(localStorage.getItem('foods_' + today) || '[]');
+            const total = foods.reduce((sum, f) => sum + f.cals, 0);
+
+            document.getElementById('total').textContent = total;
+            document.getElementById('remaining').textContent = Math.max(0, dailyGoal - total) + ' cal remaining';
+
+            const list = document.getElementById('foodList');
+            if (foods.length === 0) {
+                list.innerHTML = '<p style="color: #CBD5E1; font-size: 12px;">No foods logged</p>';
+                return;
+            }
+
+            list.innerHTML = foods.map(f => `
+                <div class="food">
+                    <div>${f.food}</div>
+                    <div style="display: flex; gap: 8px;">
+                        <span style="font-weight: 600;">${f.cals}cal</span>
+                        <button onclick="deleteFood(${f.id})" style="width: auto; padding: 4px 8px; margin: 0; background: #DC2626;">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
