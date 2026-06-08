@@ -138,7 +138,7 @@ Return ONLY a valid JSON object with exactly these fields, no other text:
   ]
 }}
 
-Create 12 scenes. Each scene is 10 seconds (120 seconds total).
+Create exactly 10 scenes. Each scene is 10 seconds (100 seconds total).
 
 IMAGE PROMPT RULES:
 1. Start EVERY image prompt with professional watercolour style descriptor
@@ -971,6 +971,175 @@ def generate_music(duration_secs: int, episode_dir: Path) -> Path:
 
 # ── 5b. Thumbnail generation ───────────────────────────────────────────────────────────
 
+def generate_opening_slide(script: dict, episode_dir: Path) -> Path:
+    """Generate an opening title slide video (5 seconds).
+
+    Layout: navy night sky background with golden title text and show name.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    W, H = 1920, 1080
+    img = Image.new("RGB", (W, H))
+    draw = ImageDraw.Draw(img)
+
+    # Navy starry night gradient
+    for y in range(H):
+        ratio = y / H
+        r = int(5 + (15 - 5) * ratio)
+        g = int(10 + (20 - 10) * ratio)
+        b = int(50 + (30 - 50) * ratio)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Stars
+    import random
+    rng = random.Random(42)
+    for _ in range(300):
+        x = rng.randint(0, W)
+        y = rng.randint(0, int(H * 0.75))
+        size = rng.choice([1, 1, 1, 2])
+        brightness = rng.randint(150, 255)
+        draw.ellipse([x - size, y - size, x + size, y + size],
+                     fill=(brightness, brightness, int(brightness * 0.9)))
+
+    # Fonts
+    font_paths_bold = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    ]
+    font_paths_reg = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ]
+
+    def load_font(paths, size):
+        for fp in paths:
+            if Path(fp).exists():
+                try:
+                    return ImageFont.truetype(fp, size)
+                except Exception:
+                    continue
+        return ImageFont.load_default()
+
+    font_title = load_font(font_paths_bold, 88)
+    font_show = load_font(font_paths_reg, 48)
+
+    GOLD = (255, 215, 70)
+    WHITE = (240, 240, 255)
+
+    title = script.get("title", SHOW_NAME)
+
+    def centred(text, font, colour, y):
+        bbox = draw.textbbox((0, 0), text, font=font)
+        x = (W - (bbox[2] - bbox[0])) // 2
+        draw.text((x + 3, y + 3), text, font=font, fill=(0, 0, 15))
+        draw.text((x, y), text, font=font, fill=colour)
+
+    # Centre title and show name
+    centred(title, font_title, GOLD, 340)
+    centred(SHOW_NAME, font_show, WHITE, 520)
+
+    frame_path = episode_dir / "opening_frame.jpg"
+    img.save(str(frame_path), "JPEG", quality=95)
+
+    # Convert to 5-second video
+    vid_path = episode_dir / "opening.mp4"
+    result = subprocess.run([
+        "ffmpeg", "-y", "-loop", "1", "-i", str(frame_path),
+        "-t", "5",
+        "-vf", "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=#0a1a32,format=yuv420p",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "24",
+        str(vid_path)
+    ], capture_output=True)
+
+    if result.returncode == 0:
+        print(f"  ✓ Opening slide generated")
+    else:
+        print(f"  ⚠ Opening slide generation failed")
+
+    return vid_path
+
+
+def generate_closing_slide(episode_dir: Path, next_episode_title: str = "Next Bedtime Story") -> Path:
+    """Generate a closing slide video (5 seconds).
+
+    Shows 'Sweet Dreams!' and upcoming episode teaser.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    W, H = 1920, 1080
+    img = Image.new("RGB", (W, H), (250, 245, 232))  # warm parchment
+    draw = ImageDraw.Draw(img)
+
+    # Soft navy gradient at top quarter for visual interest
+    for y in range(int(H * 0.25)):
+        ratio = y / (H * 0.25)
+        r = int(240 - 80 * ratio)
+        g = int(235 - 75 * ratio)
+        b = int(220 - 60 * ratio)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Fonts
+    font_paths_bold = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    ]
+    font_paths_reg = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ]
+
+    def load_font(paths, size):
+        for fp in paths:
+            if Path(fp).exists():
+                try:
+                    return ImageFont.truetype(fp, size)
+                except Exception:
+                    continue
+        return ImageFont.load_default()
+
+    font_main = load_font(font_paths_bold, 96)
+    font_next = load_font(font_paths_reg, 56)
+    font_show = load_font(font_paths_reg, 42)
+
+    DARK_BROWN = (58, 34, 12)
+    GOLD = (195, 158, 72)
+
+    def centred(text, font, colour, y):
+        bbox = draw.textbbox((0, 0), text, font=font)
+        x = (W - (bbox[2] - bbox[0])) // 2
+        draw.text((x, y), text, font=font, fill=colour)
+
+    # Main message
+    centred("Sweet Dreams!", font_main, DARK_BROWN, 250)
+
+    # Next episode teaser
+    centred("Next time...", font_next, GOLD, 500)
+    centred(next_episode_title, font_next, DARK_BROWN, 600)
+
+    # Show name at bottom
+    centred(SHOW_NAME, font_show, DARK_BROWN, 850)
+
+    frame_path = episode_dir / "closing_frame.jpg"
+    img.save(str(frame_path), "JPEG", quality=95)
+
+    # Convert to 5-second video
+    vid_path = episode_dir / "closing.mp4"
+    result = subprocess.run([
+        "ffmpeg", "-y", "-loop", "1", "-i", str(frame_path),
+        "-t", "5",
+        "-vf", "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=#FAF5E8,format=yuv420p",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "24",
+        str(vid_path)
+    ], capture_output=True)
+
+    if result.returncode == 0:
+        print(f"  ✓ Closing slide generated")
+    else:
+        print(f"  ⚠ Closing slide generation failed")
+
+    return vid_path
+
+
 def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
     """Create a 1280×720 YouTube thumbnail: navy night sky + golden title + show name."""
     from PIL import Image, ImageDraw, ImageFont
@@ -1620,6 +1789,14 @@ def main():
             new_total = sum(s["duration"] for s in script["scenes"])
             print(f"  ℹ Rescaled scene durations {scene_total}s → {new_total:.1f}s to match narration")
 
+    # 2.5 Opening slide
+    print("[2.5/6] Generating opening title slide...")
+    try:
+        opening_video = generate_opening_slide(script, episode_dir)
+    except Exception as e:
+        print(f"  ⚠ Opening slide failed: {e}")
+        opening_video = None
+
     # 3. Scene images + videos
     # Priority: Higgsfield → FLUX (OpenMontage) → Stock photos → Pollinations → gradient
     scene_videos = []
@@ -1687,15 +1864,31 @@ def main():
             )
             scene_videos.append(vid)
 
+    # 3.5 Closing slide
+    print("[3.5/6] Generating closing slide...")
+    try:
+        closing_video = generate_closing_slide(episode_dir, "Coming Soon!")
+    except Exception as e:
+        print(f"  ⚠ Closing slide failed: {e}")
+        closing_video = None
+
     # 4. Music — Pixabay royalty-free (OpenMontage) first, ffmpeg tones fallback
-    total_secs = sum(s.get("duration", 8) for s in script.get("scenes", [])) + 15
+    total_secs = sum(s.get("duration", 8) for s in script.get("scenes", [])) + 15 + 5 + 5  # +5s for opening and closing
     music = generate_music_pixabay(total_secs, episode_dir)
     if not music.exists() or music.stat().st_size < 100:
         music = generate_music(total_secs, episode_dir)
 
     # 5. Assemble
     if scene_videos:
-        final_video = assemble_video(scene_videos, narration, music,
+        # Build full video: opening + scenes + closing
+        all_videos = []
+        if opening_video and opening_video.exists():
+            all_videos.append(opening_video)
+        all_videos.extend(scene_videos)
+        if closing_video and closing_video.exists():
+            all_videos.append(closing_video)
+
+        final_video = assemble_video(all_videos, narration, music,
                                      episode_dir, script["title"])
     else:
         # Ultimate fallback: single-colour slate with narration
