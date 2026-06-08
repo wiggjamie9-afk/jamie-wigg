@@ -1240,6 +1240,69 @@ def build_seo_description(script: dict) -> str:
 
 # ── 5d. Ebook (PDF picture book) ───────────────────────────────────────────────────────────
 
+def upload_ebook_to_gumroad(ebook_path: Path, script: dict) -> bool:
+    """Upload generated ebook to Gumroad automatically."""
+    gumroad_api_key = os.getenv("GUMROAD_API_KEY")
+    if not gumroad_api_key:
+        print("  ℹ GUMROAD_API_KEY not set — skipping Gumroad upload")
+        return False
+
+    print("[5f] Uploading ebook to Gumroad...")
+    title = script.get("title", "Bedtime Story")
+    description = (
+        f"Sonny's Cozy Quokka Bedtime Tales — {title}\n\n"
+        f"Join Sonny the little quokka on a gentle adventure through the Australian bush at bedtime.\n\n"
+        f"🌙 Inside this illustrated picture book:\n"
+        f"• 12-14 beautiful watercolour scenes\n"
+        f"• Full story text (perfect for reading aloud)\n"
+        f"• Professional children's book artwork\n"
+        f"• Calming, cosy bedtime story\n"
+        f"• 10+ minutes of reading time\n\n"
+        f"Perfect for ages 1-5 at bedtime or quiet time."
+    )
+
+    try:
+        with open(ebook_path, "rb") as f:
+            files = {"file": f}
+            data = {
+                "title": f"Sonny's Cozy Quokka Bedtime Tales — {title}",
+                "description": description,
+                "price": "3.99",
+                "currency": "usd",
+            }
+            headers = {"Authorization": f"Bearer {gumroad_api_key}"}
+
+            r = requests.post(
+                "https://api.gumroad.com/v2/products",
+                headers=headers,
+                data=data,
+                files=files,
+                timeout=120,
+            )
+
+        if r.status_code in (200, 201):
+            result = r.json()
+            product_url = result.get("product", {}).get("url", "")
+            if product_url:
+                print(f"  ✓ Gumroad upload successful: {product_url}")
+                return True
+            else:
+                print(f"  ✓ Gumroad upload successful")
+                return True
+        else:
+            print(f"  ⚠ Gumroad upload failed: {r.status_code}")
+            try:
+                err = r.json()
+                print(f"     Error: {err.get('message', err)}")
+            except Exception:
+                print(f"     Response: {r.text[:200]}")
+            return False
+
+    except Exception as e:
+        print(f"  ⚠ Gumroad upload error: {e}")
+        return False
+
+
 def generate_ebook(script: dict, episode_dir: Path) -> Path:
     """Generate a PDF picture book matching the video booklet style.
 
@@ -1915,10 +1978,18 @@ def main():
 
     # 5e. Ebook (PDF picture book)
     print("[5e] Generating ebook (PDF picture book)...")
+    ebook_path = None
     try:
-        generate_ebook(script, episode_dir)
+        ebook_path = generate_ebook(script, episode_dir)
     except Exception as e:
         print(f"  ⚠ Ebook generation failed: {e}")
+
+    # 5f. Auto-upload ebook to Gumroad
+    if ebook_path and ebook_path.exists():
+        try:
+            upload_ebook_to_gumroad(ebook_path, script)
+        except Exception as e:
+            print(f"  ⚠ Gumroad upload failed: {e}")
 
     # 6. Upload
     upload_ok = False
