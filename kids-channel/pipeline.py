@@ -1011,80 +1011,118 @@ def generate_music(duration_secs: int, episode_dir: Path) -> Path:
 
 # ── 5b. Thumbnail generation ───────────────────────────────────────────────────────────
 
-def generate_opening_slide(script: dict, episode_dir: Path) -> Path:
+def generate_opening_slide(script: dict, episode_dir: Path, cover_image_path: Path = None) -> Path:
     """Generate an opening title slide video (5 seconds).
 
-    Layout: navy night sky background with golden title text and show name.
+    If cover_image_path provided: use it as the opening slide (scaled to 16:9)
+    Otherwise: create navy night sky with title text
     """
     from PIL import Image, ImageDraw, ImageFont
 
     W, H = 1920, 1080
-    img = Image.new("RGB", (W, H))
-    draw = ImageDraw.Draw(img)
 
-    # Navy starry night gradient
-    for y in range(H):
-        ratio = y / H
-        r = int(5 + (15 - 5) * ratio)
-        g = int(10 + (20 - 10) * ratio)
-        b = int(50 + (30 - 50) * ratio)
-        draw.line([(0, y), (W, y)], fill=(r, g, b))
+    # If we have a cover image, use it as opening slide
+    if cover_image_path and cover_image_path.exists():
+        try:
+            opening_frame_path = episode_dir / "opening_frame.jpg"
+            # Load cover and scale to 16:9 landscape
+            cover = Image.open(cover_image_path).convert("RGB")
+            # Scale cover image to 16:9 (1920x1080)
+            cover_w, cover_h = cover.size
+            aspect = W / H  # 16/9
+            cover_aspect = cover_w / cover_h  # typically 3/4 for book cover
 
-    # Stars
-    import random
-    rng = random.Random(42)
-    for _ in range(300):
-        x = rng.randint(0, W)
-        y = rng.randint(0, int(H * 0.75))
-        size = rng.choice([1, 1, 1, 2])
-        brightness = rng.randint(150, 255)
-        draw.ellipse([x - size, y - size, x + size, y + size],
-                     fill=(brightness, brightness, int(brightness * 0.9)))
+            if cover_aspect < aspect:
+                # Cover is narrower than 16:9, scale by width and pad vertically
+                new_w = W
+                new_h = int(W / (cover_w / cover_h))
+                cover = cover.resize((new_w, new_h), Image.LANCZOS)
+                pad_top = (new_h - H) // 2
+                cover = cover.crop((0, pad_top, W, pad_top + H))
+            else:
+                # Cover is wider than 16:9, scale by height and pad horizontally
+                new_h = H
+                new_w = int(H * (cover_w / cover_h))
+                cover = cover.resize((new_w, new_h), Image.LANCZOS)
+                pad_left = (new_w - W) // 2
+                cover = cover.crop((pad_left, 0, pad_left + W, H))
 
-    # Fonts
-    font_paths_bold = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-    ]
-    font_paths_reg = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-    ]
+            cover.save(str(opening_frame_path), "JPEG", quality=95)
+            print(f"  ✓ Opening slide using cover image")
+        except Exception as e:
+            print(f"  ⚠ Failed to use cover image: {e} — falling back to text slide")
+            opening_frame_path = None
+    else:
+        opening_frame_path = None
 
-    def load_font(paths, size):
-        for fp in paths:
-            if Path(fp).exists():
-                try:
-                    return ImageFont.truetype(fp, size)
-                except Exception:
-                    continue
-        return ImageFont.load_default()
+    # Fallback: create text-based opening if no cover or it failed
+    if not opening_frame_path:
+        img = Image.new("RGB", (W, H))
+        draw = ImageDraw.Draw(img)
 
-    font_title = load_font(font_paths_bold, 88)
-    font_show = load_font(font_paths_reg, 48)
+        # Navy starry night gradient
+        for y in range(H):
+            ratio = y / H
+            r = int(5 + (15 - 5) * ratio)
+            g = int(10 + (20 - 10) * ratio)
+            b = int(50 + (30 - 50) * ratio)
+            draw.line([(0, y), (W, y)], fill=(r, g, b))
 
-    GOLD = (255, 215, 70)
-    WHITE = (240, 240, 255)
+        # Stars
+        import random
+        rng = random.Random(42)
+        for _ in range(300):
+            x = rng.randint(0, W)
+            y = rng.randint(0, int(H * 0.75))
+            size = rng.choice([1, 1, 1, 2])
+            brightness = rng.randint(150, 255)
+            draw.ellipse([x - size, y - size, x + size, y + size],
+                         fill=(brightness, brightness, int(brightness * 0.9)))
 
-    title = script.get("title", SHOW_NAME)
+        # Fonts
+        font_paths_bold = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        ]
+        font_paths_reg = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        ]
 
-    def centred(text, font, colour, y):
-        bbox = draw.textbbox((0, 0), text, font=font)
-        x = (W - (bbox[2] - bbox[0])) // 2
-        draw.text((x + 3, y + 3), text, font=font, fill=(0, 0, 15))
-        draw.text((x, y), text, font=font, fill=colour)
+        def load_font(paths, size):
+            for fp in paths:
+                if Path(fp).exists():
+                    try:
+                        return ImageFont.truetype(fp, size)
+                    except Exception:
+                        continue
+            return ImageFont.load_default()
 
-    # Centre title and show name
-    centred(title, font_title, GOLD, 340)
-    centred(SHOW_NAME, font_show, WHITE, 520)
+        font_title = load_font(font_paths_bold, 88)
+        font_show = load_font(font_paths_reg, 48)
 
-    frame_path = episode_dir / "opening_frame.jpg"
-    img.save(str(frame_path), "JPEG", quality=95)
+        GOLD = (255, 215, 70)
+        WHITE = (240, 240, 255)
 
-    # Convert to 5-second video
+        title = script.get("title", SHOW_NAME)
+
+        def centred(text, font, colour, y):
+            bbox = draw.textbbox((0, 0), text, font=font)
+            x = (W - (bbox[2] - bbox[0])) // 2
+            draw.text((x + 3, y + 3), text, font=font, fill=(0, 0, 15))
+            draw.text((x, y), text, font=font, fill=colour)
+
+        # Centre title and show name
+        centred(title, font_title, GOLD, 340)
+        centred(SHOW_NAME, font_show, WHITE, 520)
+
+        opening_frame_path = episode_dir / "opening_frame.jpg"
+        img.save(str(opening_frame_path), "JPEG", quality=95)
+
+    # Convert frame to 5-second video
     vid_path = episode_dir / "opening.mp4"
     result = subprocess.run([
-        "ffmpeg", "-y", "-loop", "1", "-i", str(frame_path),
+        "ffmpeg", "-y", "-loop", "1", "-i", str(opening_frame_path),
         "-t", "5",
         "-vf", "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=#0a1a32,format=yuv420p",
         "-c:v", "libx264", "-preset", "fast", "-crf", "24",
@@ -1343,6 +1381,161 @@ def upload_ebook_to_gumroad(ebook_path: Path, script: dict) -> bool:
         return False
 
 
+def generate_cover_image(script: dict, episode_num: int, episode_dir: Path) -> Path:
+    """Generate a professional book cover image for the episode.
+
+    Style: Professional watercolour children's book cover
+    Layout: Title + subtitle + author + illustration (Sunny + companion animal)
+    Uses: Opening slide + ebook cover + YouTube thumbnail
+    """
+    cover_path = episode_dir / "cover.jpg"
+    title = script.get("title", "Bedtime Story")
+
+    # Build the cover prompt with strict style matching
+    cover_prompt = (
+        f"Professional watercolour children's book cover, Beatrix Potter style. "
+        f"BOOK TITLE: 'Sunny the Quokka' (golden/yellow text, large, top center). "
+        f"SUBTITLE: '{title}' (white text, smaller, below title). "
+        f"AUTHOR: 'By Jamie Wigg' (white text, small, bottom center). "
+        f"ILLUSTRATION: Sunny the quokka (golden-brown, small rounded body, large warm brown eyes, tiny ears) "
+        f"sitting with a companion animal from the story (both cosy and gentle). "
+        f"BACKGROUND: Australian bush at night, deep indigo-navy sky with stars, full moon (warm cream tone), "
+        f"gum trees with loose sketchy linework, glowing fireflies. "
+        f"STYLE: Hand-painted watercolour on textured cold-press paper, visible brushstrokes, soft pigment bleeds, "
+        f"warm earthy palette (ochres, siennas, soft greens, deep blues). "
+        f"TEXT ON COVER: Golden/cream text on sky background, professional book cover layout. "
+        f"NO additional text or decorations. Safe for toddlers ages 1-5. "
+        f"Seed: {episode_num * 42} (for consistency across covers)."
+    )
+
+    try:
+        # Try Replicate FLUX first (best quality)
+        if REPLICATE_API_TOKEN:
+            print(f"  ⏳ Generating cover via Replicate FLUX...")
+            headers = {
+                "Authorization": f"Token {REPLICATE_API_TOKEN}",
+                "Content-Type": "application/json",
+                "Prefer": "wait=60",
+            }
+            payload = {
+                "input": {
+                    "prompt": cover_prompt,
+                    "aspect_ratio": "3:4",  # Book cover ratio
+                    "output_format": "jpg",
+                    "output_quality": 95,
+                    "num_inference_steps": 28,
+                    "guidance": 3.5,
+                    "num_outputs": 1,
+                    "seed": episode_num * 42,
+                }
+            }
+            r = requests.post(
+                "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions",
+                headers=headers, json=payload, timeout=180,
+            )
+            if r.status_code in (200, 201):
+                prediction = r.json()
+                if prediction.get("status") == "succeeded":
+                    img_url = prediction["output"]
+                else:
+                    poll_url = prediction["urls"]["get"]
+                    poll_headers = {"Authorization": f"Token {REPLICATE_API_TOKEN}"}
+                    deadline = time.time() + 300
+                    img_url = None
+                    while time.time() < deadline:
+                        time.sleep(3)
+                        pr = requests.get(poll_url, headers=poll_headers, timeout=30)
+                        pred = pr.json()
+                        if pred.get("status") == "succeeded":
+                            img_url = pred["output"][0] if isinstance(pred["output"], list) else pred["output"]
+                            break
+                        if pred.get("status") in ("failed", "canceled"):
+                            break
+
+                    if img_url:
+                        img_data = requests.get(img_url, timeout=60).content
+                        if len(img_data) > 5000:
+                            cover_path.write_bytes(img_data)
+                            print(f"  ✓ Cover generated (Replicate FLUX, {len(img_data)//1024}KB)")
+                            return cover_path
+
+        # Fallback to PIL-generated cover if API fails
+        print(f"  ↩ Generating cover via PIL (fallback)...")
+        from PIL import Image, ImageDraw, ImageFont
+
+        W, H = 800, 1120  # Book cover ratio 3:4
+        img = Image.new("RGB", (W, H))
+        draw = ImageDraw.Draw(img)
+
+        # Navy gradient sky background
+        for y in range(H):
+            ratio = y / H
+            r = int(8 + (25 - 8) * ratio)
+            g = int(20 + (50 - 20) * ratio)
+            b = int(60 + (30 - 60) * ratio)
+            draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+        # Stars
+        import random
+        rng = random.Random(episode_num * 42)
+        for _ in range(150):
+            x = rng.randint(0, W)
+            y = rng.randint(0, int(H * 0.7))
+            size = rng.choice([1, 1, 1, 2])
+            brightness = rng.randint(150, 255)
+            draw.ellipse([x - size, y - size, x + size, y + size],
+                        fill=(brightness, brightness, int(brightness * 0.9)))
+
+        # Moon
+        moon_x, moon_y = int(W * 0.75), int(H * 0.15)
+        draw.ellipse([moon_x - 40, moon_y - 40, moon_x + 40, moon_y + 40],
+                    fill=(255, 248, 210))
+
+        # Fonts
+        font_paths = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        ]
+        def load_font(paths, size):
+            for fp in paths:
+                if Path(fp).exists():
+                    try:
+                        return ImageFont.truetype(fp, size)
+                    except:
+                        continue
+            return ImageFont.load_default()
+
+        font_title = load_font(font_paths, 60)
+        font_subtitle = load_font(font_paths, 32)
+        font_author = load_font(font_paths, 24)
+
+        GOLD = (255, 215, 70)
+        WHITE = (240, 240, 255)
+
+        def centred(text, font, colour, y):
+            bbox = draw.textbbox((0, 0), text, font=font)
+            x = (W - (bbox[2] - bbox[0])) // 2
+            draw.text((x, y), text, font=font, fill=colour)
+
+        # Title
+        centred("Sunny", font_title, GOLD, 150)
+        centred("the Quokka", font_title, GOLD, 220)
+
+        # Subtitle
+        centred(title, font_subtitle, WHITE, 340)
+
+        # Author
+        centred("By Jamie Wigg", font_author, WHITE, 950)
+
+        img.save(str(cover_path), "JPEG", quality=95)
+        print(f"  ✓ Cover generated (PIL fallback)")
+        return cover_path
+
+    except Exception as e:
+        print(f"  ⚠ Cover generation failed: {e}")
+        return None
+
+
 def generate_ebook(script: dict, episode_dir: Path) -> Path:
     """Generate a PDF picture book matching the video booklet style.
 
@@ -1472,9 +1665,10 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
 
     # ── Cover page ────────────────────────────────────────────────────────────
     cover, draw = parchment_page()
-    # Try to use first scene image as cover illustration (top half)
+    # Try to use generated cover image first, then scene images
     cover_illus_h = int(PH * 0.58)
     cover_candidates = [
+        episode_dir / "cover.jpg",  # Professional generated cover (primary)
         episode_dir / "scene_01.jpg",
         episode_dir / "scene_01.png",
         episode_dir / "thumbnail.jpg",
@@ -1500,7 +1694,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     char_w = (test_bbox[2] - test_bbox[0]) / 18
     title_lines = tw.wrap(title_text, width=max(10, int((PW - 80) / char_w)))[:3]
     for tl in title_lines:
-        centred_text(draw, tl, font_title, DARK_BROWN, title_y)
+        centred_text(draw, tl, font_title, TEXT_BROWN, title_y)
         bbox = draw.textbbox((0, 0), tl, font=font_title)
         title_y += (bbox[3] - bbox[1]) + 8
 
@@ -1549,7 +1743,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     # Moon crescent suggestion
     draw.ellipse([cx-60, cy-60, cx+60, cy+60], fill=(255, 245, 190))
 
-    centred_text(draw, "Sweet dreams!", font_close, DARK_BROWN, int(PH * 0.52))
+    centred_text(draw, "Sweet dreams!", font_close, TEXT_BROWN, int(PH * 0.52))
     centred_text(draw, "See you next time, little one ✨", font_by, MID_BROWN, int(PH * 0.64))
 
     # Gold rule
@@ -1837,6 +2031,28 @@ def main():
         (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
         print(f"  ✓ Title: {script['title']}")
 
+    # Derive episode number from queue position or filename
+    queue_path = OUTPUT_DIR.parent / "queue.txt"
+    episode_num = 1
+    if args.script_file:
+        # Count position in queue
+        script_file_norm = Path(args.script_file.strip()).name
+        if queue_path.exists():
+            with open(queue_path) as f:
+                for idx, line in enumerate(f, 1):
+                    if script_file_norm in line or Path(line.strip()).name == script_file_norm:
+                        episode_num = idx
+                        break
+    print(f"  ℹ Episode #{episode_num}")
+
+    # 1.5 Generate professional book cover (used as opening slide + ebook cover + thumbnail)
+    print("[1.5/6] Generating professional book cover...")
+    try:
+        cover_path = generate_cover_image(script, episode_num, episode_dir)
+    except Exception as e:
+        print(f"  ⚠ Cover generation failed: {e}")
+        cover_path = None
+
     # 2. Narration — ElevenLabs first, Piper TTS free fallback
     narration = generate_narration(script["narration"], episode_dir)
     if not narration.exists() or narration.stat().st_size < 100:
@@ -1895,7 +2111,7 @@ def main():
     # 2.5 Opening slide
     print("[2.5/6] Generating opening title slide...")
     try:
-        opening_video = generate_opening_slide(script, episode_dir)
+        opening_video = generate_opening_slide(script, episode_dir, cover_image_path=cover_path)
     except Exception as e:
         print(f"  ⚠ Opening slide failed: {e}")
         opening_video = None
