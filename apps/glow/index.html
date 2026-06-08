@@ -11,6 +11,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <script src="/universal-mvp-enhancements.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -701,6 +702,8 @@
     <div class="card" style="padding:14px">
       <div class="form-label" style="margin-bottom:8px">Paste ingredients below</div>
       <textarea class="scan-textarea" id="scan-input"
+        aria-label="Paste ingredient list"
+        maxlength="2000"
         placeholder="e.g. Water, Niacinamide, Glycerin, Ceramide NP, Hyaluronic Acid, Sodium Lauryl Sulfate..."></textarea>
       <button class="btn-primary" onclick="analyseIngredients()" style="margin-top:10px">
         Analyse ingredients
@@ -722,23 +725,23 @@
     <div class="journal-entry-form">
       <div class="form-label" style="margin-bottom:10px">How's your skin today?</div>
       <div class="mood-row" id="mood-row">
-        <button class="mood-btn" data-mood="great" onclick="selectMood('great')">
+        <button class="mood-btn" data-mood="great" aria-label="Great skin" onclick="selectMood('great')">
           <span class="mood-emoji">✨</span>
           <span class="mood-label">Great</span>
         </button>
-        <button class="mood-btn" data-mood="good" onclick="selectMood('good')">
+        <button class="mood-btn" data-mood="good" aria-label="Good skin" onclick="selectMood('good')">
           <span class="mood-emoji">😊</span>
           <span class="mood-label">Good</span>
         </button>
-        <button class="mood-btn" data-mood="ok" onclick="selectMood('ok')">
+        <button class="mood-btn" data-mood="ok" aria-label="OK skin" onclick="selectMood('ok')">
           <span class="mood-emoji">😐</span>
           <span class="mood-label">OK</span>
         </button>
-        <button class="mood-btn" data-mood="bad" onclick="selectMood('bad')">
+        <button class="mood-btn" data-mood="bad" aria-label="Bad skin day" onclick="selectMood('bad')">
           <span class="mood-emoji">😟</span>
           <span class="mood-label">Bad</span>
         </button>
-        <button class="mood-btn" data-mood="terrible" onclick="selectMood('terrible')">
+        <button class="mood-btn" data-mood="terrible" aria-label="Terrible skin day" onclick="selectMood('terrible')">
           <span class="mood-emoji">😫</span>
           <span class="mood-label">Ugh</span>
         </button>
@@ -1117,11 +1120,23 @@ function completeRoutine() {
 
 function removeStep(id) {
   const tab = S.activeRoutineTab;
-  routine[tab] = (routine[tab] || []).filter(x => x !== id);
-  // Also remove from the other tab if present
-  // (product still exists in products list)
-  save('routine', routine);
-  renderRoutine();
+  const product = products.find(p => p.id === id);
+  const productName = product ? product.name : 'product';
+
+  MVPEnhancements.confirm(
+    `Remove "${productName}" from this routine?`,
+    { label: 'Remove', isDangerous: true },
+    () => {
+      try {
+        routine[tab] = (routine[tab] || []).filter(x => x !== id);
+        save('routine', routine);
+        renderRoutine();
+        showToast('✓ Removed from routine');
+      } catch (e) {
+        showToast('⚠️ Error removing product');
+      }
+    }
+  );
 }
 
 function moveStep(id, dir) {
@@ -1172,36 +1187,40 @@ function updateStreakDisplay() {
 
 // ── INGREDIENT SCANNER ────────────────
 function analyseIngredients() {
-  const raw = document.getElementById('scan-input').value.trim();
-  if (!raw) { showToast('Paste an ingredient list first'); return; }
+  try {
+    const raw = document.getElementById('scan-input').value.trim();
+    if (!raw) { showToast('Paste an ingredient list first'); return; }
 
-  const lower = raw.toLowerCase();
-  // Split by comma or newline
-  const parts = lower.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+    const lower = raw.toLowerCase();
+    // Split by comma or newline
+    const parts = lower.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
 
-  const found = { good: [], bad: [], conflicts: [] };
+    const found = { good: [], bad: [], conflicts: [] };
 
-  BENEFICIAL.forEach(b => {
-    if (parts.some(p => p.includes(b)) && !found.good.includes(b)) {
-      found.good.push(b);
-    }
-  });
-  IRRITANTS.forEach(i => {
-    if (parts.some(p => p.includes(i)) && !found.bad.includes(i)) {
-      found.bad.push(i);
-    }
-  });
-  CONFLICTS.forEach(([a, b, msg]) => {
-    const hasA = found.good.includes(a) || found.bad.includes(a) ||
-                 parts.some(p => p.includes(a));
-    const hasB = found.good.includes(b) || found.bad.includes(b) ||
-                 parts.some(p => p.includes(b));
-    if (hasA && hasB) {
-      found.conflicts.push({ pair: [a, b], msg });
-    }
-  });
+    BENEFICIAL.forEach(b => {
+      if (parts.some(p => p.includes(b)) && !found.good.includes(b)) {
+        found.good.push(b);
+      }
+    });
+    IRRITANTS.forEach(i => {
+      if (parts.some(p => p.includes(i)) && !found.bad.includes(i)) {
+        found.bad.push(i);
+      }
+    });
+    CONFLICTS.forEach(([a, b, msg]) => {
+      const hasA = found.good.includes(a) || found.bad.includes(a) ||
+                   parts.some(p => p.includes(a));
+      const hasB = found.good.includes(b) || found.bad.includes(b) ||
+                   parts.some(p => p.includes(b));
+      if (hasA && hasB) {
+        found.conflicts.push({ pair: [a, b], msg });
+      }
+    });
 
-  renderScanResult(found);
+    renderScanResult(found);
+  } catch (e) {
+    showToast('⚠️ Error analysing ingredients');
+  }
 }
 
 function renderScanResult(r) {
@@ -1373,8 +1392,27 @@ function peekEntry(entry) {
       <div style="font-size:13px;color:var(--muted2);margin-top:4px">${label}</div>
     </div>
     ${entry.note ? `<div class="journal-detail"><div class="journal-detail-note">${escHtml(entry.note)}</div></div>` : '<div style="text-align:center;color:var(--muted);font-size:13px">No note recorded</div>'}
+    <button class="btn-ghost" onclick="deleteJournalEntry('${entry.date}')" style="width:100%;margin-top:16px;color:var(--red);border-color:rgba(248,113,113,0.2)">Delete entry</button>
   `;
   openModal('peek-modal');
+}
+
+function deleteJournalEntry(date) {
+  MVPEnhancements.confirm(
+    'Delete this journal entry? This action cannot be undone.',
+    { label: 'Delete', isDangerous: true },
+    () => {
+      try {
+        journal = journal.filter(e => e.date !== date);
+        save('journal', journal);
+        closeModal('peek-modal');
+        renderJournal();
+        showToast('✓ Entry deleted');
+      } catch (e) {
+        showToast('⚠️ Error deleting entry');
+      }
+    }
+  );
 }
 
 // ── PRODUCTS LIST ─────────────────────
@@ -1421,16 +1459,29 @@ function toggleRunningLow(id) {
 }
 
 function deleteProduct(id) {
-  products = products.filter(p => p.id !== id);
-  routine.am = (routine.am || []).filter(x => x !== id);
-  routine.pm = (routine.pm || []).filter(x => x !== id);
-  done.am = (done.am || []).filter(x => x !== id);
-  done.pm = (done.pm || []).filter(x => x !== id);
-  save('products', products);
-  save('routine', routine);
-  save('done', done);
-  renderProductsList();
-  showToast('Product removed');
+  const product = products.find(p => p.id === id);
+  const productName = product ? product.name : 'product';
+
+  MVPEnhancements.confirm(
+    `Delete "${productName}"? This will affect all routines this product is in.`,
+    { label: 'Delete', isDangerous: true },
+    () => {
+      try {
+        products = products.filter(p => p.id !== id);
+        routine.am = (routine.am || []).filter(x => x !== id);
+        routine.pm = (routine.pm || []).filter(x => x !== id);
+        done.am = (done.am || []).filter(x => x !== id);
+        done.pm = (done.pm || []).filter(x => x !== id);
+        save('products', products);
+        save('routine', routine);
+        save('done', done);
+        renderProductsList();
+        showToast('✓ Product deleted');
+      } catch (e) {
+        showToast('⚠️ Error deleting product');
+      }
+    }
+  );
 }
 
 // ── MODALS ────────────────────────────
