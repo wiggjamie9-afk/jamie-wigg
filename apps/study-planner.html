@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner – Learn Smart</title>
+    <style>
+        :root { --primary: #3B82F6; --bg-dark: #0F172A; --bg-light: #1E293B; --text-primary: #F1F5F9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-primary); }
+        .container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #1E40AF 100%); padding: 24px 20px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: var(--bg-light); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid var(--primary); }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+        input { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 2px solid #334155; border-radius: 8px; color: var(--text-primary); margin-bottom: 10px; font-size: 13px; }
+        input:focus { outline: none; border-color: var(--primary); }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+        button:hover { background: #1E40AF; }
+        .task { background: var(--bg-dark); padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .task-info { flex: 1; }
+        .task-title { font-weight: 600; }
+        .task-time { font-size: 12px; color: #CBD5E1; margin-top: 4px; }
+        .label { display: block; font-size: 12px; color: #CBD5E1; margin-bottom: 4px; font-weight: 600; }
+        .complete-btn { width: auto; padding: 6px 10px; margin: 0; background: #10B981; color: white; flex: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 STUDY PLANNER</h1>
+            <p style="font-size: 12px;">Smart learning schedule</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>➕ Add Study Task</h2>
+                <label>Subject</label>
+                <input type="text" id="subject" placeholder="E.g., Math">
+                <label>Topic</label>
+                <input type="text" id="topic" placeholder="E.g., Algebra">
+                <label>Time (minutes)</label>
+                <input type="number" id="time" placeholder="30" min="5">
+                <button onclick="addTask()">Add Task</button>
+            </div>
+
+            <div class="card">
+                <h2>📖 Today's Plan</h2>
+                <div id="taskList">No tasks yet</div>
+                <p id="totalTime" style="margin-top: 12px; font-size: 12px; color: #CBD5E1;">Total study time: 0 min</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addTask() {
+            const subject = document.getElementById('subject').value;
+            const topic = document.getElementById('topic').value;
+            const time = parseInt(document.getElementById('time').value);
+
+            if (!subject || !topic || !time) { alert('Fill all fields'); return; }
+
+            let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            tasks.push({ subject, topic, time, completed: false, id: Date.now() });
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+
+            document.getElementById('subject').value = '';
+            document.getElementById('topic').value = '';
+            document.getElementById('time').value = '';
+            displayTasks();
+        }
+
+        function completeTask(id) {
+            let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const task = tasks.find(t => t.id === id);
+            if (task) task.completed = !task.completed;
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            displayTasks();
+        }
+
+        function deleteTask(id) {
+            let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            tasks = tasks.filter(t => t.id !== id);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            displayTasks();
+        }
+
+        function displayTasks() {
+            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const list = document.getElementById('taskList');
+            const total = tasks.reduce((sum, t) => sum + t.time, 0);
+
+            document.getElementById('totalTime').textContent = `Total study time: ${total} min`;
+
+            if (tasks.length === 0) {
+                list.innerHTML = '<p style="color: #CBD5E1; font-size: 12px;">No tasks yet</p>';
+                return;
+            }
+
+            list.innerHTML = tasks.map(t => `
+                <div class="task" style="opacity: ${t.completed ? '0.6' : '1'};">
+                    <div class="task-info">
+                        <div class="task-title" style="text-decoration: ${t.completed ? 'line-through' : 'none'}">${t.subject}: ${t.topic}</div>
+                        <div class="task-time">⏱ ${t.time} minutes</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="complete-btn" onclick="completeTask(${t.id})">${t.completed ? '✓' : 'Do'}</button>
+                        <button onclick="deleteTask(${t.id})" style="padding: 6px 10px; margin: 0; background: #DC2626; color: white; width: auto;">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        displayTasks();
+    </script>
+</body>
+</html>
