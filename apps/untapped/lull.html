@@ -120,6 +120,7 @@ h1 em{font-style:italic;color:var(--coral)}
   h1{font-size:28px}
 }
 </style>
+<script src="/universal-mvp-enhancements.js"></script>
 </head>
 <body>
 
@@ -483,15 +484,27 @@ async function startListen(){
   let useReal = false;
   try {
     if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
-      mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      sourceNode = audioCtx.createMediaStreamSource(mediaStream);
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 1024;
-      sourceNode.connect(analyser);
-      useReal = true;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        sourceNode = audioCtx.createMediaStreamSource(mediaStream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        sourceNode.connect(analyser);
+        useReal = true;
+      } catch(permErr) {
+        console.warn('Microphone permission denied:', permErr.name);
+        if (typeof toast === 'function') {
+          toast('Microphone access denied. Using demo mode.', { kind: 'warn' });
+        }
+        useReal = false;
+      }
     }
   } catch(e){
+    console.error('Audio context error:', e);
+    if (typeof toast === 'function') {
+      toast('Audio system unavailable. Using demo mode.', { kind: 'warn' });
+    }
     useReal = false;
   }
   if(useReal) drawWaveReal(); else drawWaveSim();
