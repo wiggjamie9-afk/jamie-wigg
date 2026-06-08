@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="RHYTHMIX LIVE">
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=">
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22RHYTHMIX%20LIVE%22%2C%22short_name%22%3A%22LIVE%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2308050d%22%2C%22theme_color%22%3A%22%2308050d%22%2C%22orientation%22%3A%22portrait%22%7D">
+<script src="/universal-mvp-enhancements.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap');
 :root {
@@ -154,6 +155,18 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 .swipe-hint{position:fixed;bottom:36px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:rgba(255,255,255,0.4);text-transform:uppercase;z-index:99;pointer-events:none;animation:hintFade 4s ease-in-out 1.5s forwards}
 @keyframes hintFade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
 
+/* Offline banner */
+.offline-banner{position:fixed;top:max(60px,env(safe-area-inset-top) + 44px);left:0;right:0;background:#1a1a1a;border-bottom:1px solid var(--hot);padding:12px 7vw;text-align:center;font-size:13px;color:var(--hot);z-index:95;display:none;font-weight:500;letter-spacing:0.04em}
+.offline-banner.show{display:block}
+
+/* Loading spinner */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(138,246,255,0.3);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(8,5,13,0.85);display:none;z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:20px;backdrop-filter:blur(2px)}
+.loading-overlay.show{display:flex}
+.loading-text{font-family:var(--mono);font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:var(--cyan)}
+
 @media (max-width:380px){
   h1{font-size:38px}
   .panel{padding:5vh 5vw 14vh}
@@ -162,6 +175,12 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 </style>
 </head>
 <body>
+<div class="offline-banner" id="offlineBanner" role="alert" aria-live="assertive">You are offline — renders will be saved locally</div>
+<div class="loading-overlay" id="loadingOverlay" aria-label="Loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">analyzing track...</div>
+</div>
+
 <div class="brand">
   <span class="mark">RHYTHMIX <em>LIVE</em></span>
   <span class="crumb">v1 · beat-synced</span>
@@ -178,8 +197,8 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <h1>Made the song. <em>Now what?</em></h1>
       <p class="lede">Drop your track. Pick your engines. Get a music video cut to every beat — vertical for TikTok, square for the grid, landscape for the channel. One render. Four pipelines.</p>
       <div class="welcome-cta-row">
-        <button class="btn btn-primary" onclick="goTo(1)">Upload a track →</button>
-        <button class="btn btn-ghost" onclick="goTo(4)">See renders</button>
+        <button class="btn btn-primary" onclick="goTo(1)" aria-label="Upload a track">Upload a track →</button>
+        <button class="btn btn-ghost" onclick="goTo(4)" aria-label="See past renders">See renders</button>
       </div>
       <p class="mono" style="margin-top:30px;color:var(--muted)">Swipe → between screens. Or use arrow keys.</p>
     </div>
@@ -191,34 +210,34 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <div class="eyebrow">PANEL 2 · UPLOAD &amp; PIPELINE</div>
       <h2>Drop the track.</h2>
       <p>WAV / MP3 / FLAC. Up to 12 minutes. Stays on this device until you render.</p>
-      <label class="drop-zone" id="dropZone" for="fileInput">
+      <label class="drop-zone" id="dropZone" for="fileInput" role="button" tabindex="0" aria-label="Drop audio file or click to choose">
         <div class="drop-icon">↓</div>
         <div class="drop-title" id="dropTitle">Drop audio or tap to choose</div>
         <div class="drop-sub" id="dropSub">we'll read the BPM &amp; key</div>
         <div class="drop-file" id="dropFile"></div>
-        <input type="file" id="fileInput" accept="audio/*" style="display:none">
+        <input type="file" id="fileInput" accept="audio/*" style="display:none" aria-label="Audio file upload">
       </label>
 
       <div class="section-label">Pipelines — pick one or more</div>
-      <div class="chip-row" id="engineRow">
-        <span class="chip" data-engine="Kling">Kling</span>
-        <span class="chip" data-engine="Hunyuan">Hunyuan</span>
-        <span class="chip" data-engine="Luma">Luma</span>
-        <span class="chip" data-engine="MiniMax">MiniMax</span>
+      <div class="chip-row" id="engineRow" role="group" aria-label="Video engines">
+        <span class="chip" data-engine="Kling" role="button" tabindex="0" aria-label="Kling engine">Kling</span>
+        <span class="chip" data-engine="Hunyuan" role="button" tabindex="0" aria-label="Hunyuan engine">Hunyuan</span>
+        <span class="chip" data-engine="Luma" role="button" tabindex="0" aria-label="Luma engine">Luma</span>
+        <span class="chip" data-engine="MiniMax" role="button" tabindex="0" aria-label="MiniMax engine">MiniMax</span>
       </div>
 
       <div class="section-label">Mood</div>
-      <div class="chip-row" id="moodRow">
-        <span class="chip cyan" data-mood="cinematic">cinematic</span>
-        <span class="chip cyan" data-mood="dreamy">dreamy</span>
-        <span class="chip cyan" data-mood="hyper">hyper</span>
-        <span class="chip cyan" data-mood="soulful">soulful</span>
-        <span class="chip cyan" data-mood="abstract">abstract</span>
+      <div class="chip-row" id="moodRow" role="group" aria-label="Mood selection">
+        <span class="chip cyan" data-mood="cinematic" role="button" tabindex="0" aria-label="Cinematic mood">cinematic</span>
+        <span class="chip cyan" data-mood="dreamy" role="button" tabindex="0" aria-label="Dreamy mood">dreamy</span>
+        <span class="chip cyan" data-mood="hyper" role="button" tabindex="0" aria-label="Hyper mood">hyper</span>
+        <span class="chip cyan" data-mood="soulful" role="button" tabindex="0" aria-label="Soulful mood">soulful</span>
+        <span class="chip cyan" data-mood="abstract" role="button" tabindex="0" aria-label="Abstract mood">abstract</span>
       </div>
 
       <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="goToSync()">Sync to beat →</button>
-        <button class="btn btn-ghost" onclick="goTo(2)">Skip · demo track</button>
+        <button class="btn btn-primary" onclick="goToSync()" aria-label="Proceed to sync selected track to beat">Sync to beat →</button>
+        <button class="btn btn-ghost" onclick="goTo(2)" aria-label="Skip file upload and use demo track">Skip · demo track</button>
       </div>
     </div>
   </section>
@@ -230,19 +249,19 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <h2>Cut to every beat.</h2>
       <div class="bpm-row">
         <span><span class="stat-cyan">120</span> BPM · 4/4</span>
-        <span id="syncFileLabel">demo · loop_120.wav</span>
+        <span id="syncFileLabel" aria-label="Current file">demo · loop_120.wav</span>
       </div>
-      <div class="waveform" id="waveform">
-        <div class="wave-playhead" id="playhead" style="left:18px"></div>
+      <div class="waveform" id="waveform" role="img" aria-label="Waveform visualization with beat markers">
+        <div class="wave-playhead" id="playhead" style="left:18px" aria-hidden="true"></div>
       </div>
-      <div class="wave-meta">
-        <span id="syncTime">00:00 / 00:32</span>
-        <span id="syncBeats">beat 0 · cut every 1/4</span>
+      <div class="wave-meta" aria-live="polite" aria-atomic="true" aria-label="Playback time and beat information">
+        <span id="syncTime" aria-label="Playback time">00:00 / 00:32</span>
+        <span id="syncBeats" aria-label="Beat count">beat 0 · cut every 1/4</span>
       </div>
-      <div class="wave-controls">
-        <button class="icon-btn" id="syncPlayBtn" onclick="toggleSync()" aria-label="Play / pause">▶</button>
-        <button class="icon-btn" onclick="resetSync()" aria-label="Reset">↺</button>
-        <button class="icon-btn" onclick="goTo(3)" aria-label="To render" title="To render queue">→</button>
+      <div class="wave-controls" role="group" aria-label="Waveform controls">
+        <button class="icon-btn" id="syncPlayBtn" onclick="toggleSync()" aria-label="Play or pause waveform">▶</button>
+        <button class="icon-btn" onclick="resetSync()" aria-label="Reset waveform to start">↺</button>
+        <button class="icon-btn" onclick="goTo(3)" aria-label="Go to render queue" title="To render queue">→</button>
       </div>
       <p style="text-align:center;margin-top:24px" class="mono">120 BPM = beat every 0.5s · shot-cut markers on each downbeat</p>
     </div>
@@ -254,26 +273,26 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <div class="eyebrow">PANEL 4 · RENDER QUEUE</div>
       <h2>Three cuts. One queue.</h2>
       <p>Same beat-grid, three aspect ratios. Render starts on tap, finishes in ~10s, saves to history.</p>
-      <div class="queue-list" id="queueList">
+      <div class="queue-list" id="queueList" role="region" aria-label="Render queue">
         <div class="queue-card" data-idx="0">
           <div class="queue-head"><span class="queue-name">Vertical · 60s</span><span class="queue-spec">9:16 · 1080×1920</span></div>
-          <div class="queue-status" data-status>idle · TikTok / Reels</div>
-          <div class="progress-track"><div class="progress-fill" data-fill></div></div>
+          <div class="queue-status" data-status aria-live="polite" aria-atomic="true" role="status">idle · TikTok / Reels</div>
+          <div class="progress-track"><div class="progress-fill" data-fill role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div></div>
         </div>
         <div class="queue-card" data-idx="1">
           <div class="queue-head"><span class="queue-name">Square · 15s</span><span class="queue-spec">1:1 · 1080×1080</span></div>
-          <div class="queue-status" data-status>idle · IG grid / hook</div>
-          <div class="progress-track"><div class="progress-fill" data-fill></div></div>
+          <div class="queue-status" data-status aria-live="polite" aria-atomic="true" role="status">idle · IG grid / hook</div>
+          <div class="progress-track"><div class="progress-fill" data-fill role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div></div>
         </div>
         <div class="queue-card" data-idx="2">
           <div class="queue-head"><span class="queue-name">Landscape · 4 min</span><span class="queue-spec">16:9 · 1920×1080</span></div>
-          <div class="queue-status" data-status>idle · YouTube full</div>
-          <div class="progress-track"><div class="progress-fill" data-fill></div></div>
+          <div class="queue-status" data-status aria-live="polite" aria-atomic="true" role="status">idle · YouTube full</div>
+          <div class="progress-track"><div class="progress-fill" data-fill role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div></div>
         </div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="startRender()">Render all →</button>
-        <button class="btn btn-ghost" onclick="goTo(4)">View history</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap" role="group" aria-label="Render queue actions">
+        <button class="btn btn-primary" onclick="startRender()" aria-label="Start rendering all three formats">Render all →</button>
+        <button class="btn btn-ghost" onclick="goTo(4)" aria-label="Navigate to view render history">View history</button>
       </div>
     </div>
   </section>
@@ -299,18 +318,18 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
     <div class="settings-wrap">
       <div class="eyebrow">PANEL 6 · SETTINGS</div>
       <h2>Pick your tier.</h2>
-      <div class="tier-grid" id="tierGrid">
-        <div class="tier-card" data-tier="free">
+      <div class="tier-grid" id="tierGrid" role="group" aria-label="Subscription tier options">
+        <div class="tier-card" data-tier="free" role="button" tabindex="0" aria-label="Free tier: 1 render per day with watermark using 1 engine" onclick="document.querySelector('.tier-card[data-tier=\'free\']').click()">
           <div class="tier-radio"></div>
           <div class="tier-body"><div class="tier-name">Free</div><div class="tier-sub">1 render / day · watermark · 1 engine</div></div>
           <div class="tier-price">$0</div>
         </div>
-        <div class="tier-card" data-tier="pro">
+        <div class="tier-card" data-tier="pro" role="button" tabindex="0" aria-label="Pro tier: unlimited renders with all engines and no watermark for $19 per month" onclick="document.querySelector('.tier-card[data-tier=\'pro\']').click()">
           <div class="tier-radio"></div>
           <div class="tier-body"><div class="tier-name">Pro</div><div class="tier-sub">unlimited renders · all engines · no watermark</div></div>
           <div class="tier-price">$19<span style="font-size:11px;color:var(--muted)">/mo</span></div>
         </div>
-        <div class="tier-card" data-tier="studio">
+        <div class="tier-card" data-tier="studio" role="button" tabindex="0" aria-label="Studio tier: 4K quality, priority queue, API access, and stems/MIDI export for $49 per month" onclick="document.querySelector('.tier-card[data-tier=\'studio\']').click()">
           <div class="tier-radio"></div>
           <div class="tier-body"><div class="tier-name">Studio</div><div class="tier-sub">4K · priority queue · API · stems / midi export</div></div>
           <div class="tier-price">$49<span style="font-size:11px;color:var(--muted)">/mo</span></div>
@@ -319,7 +338,7 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 
       <div class="setting-row">
         <span class="setting-label">Fan-out merch link</span>
-        <div class="toggle" id="setMerch" onclick="toggleMerch()"></div>
+        <div class="toggle" id="setMerch" onclick="toggleMerch()" role="switch" aria-checked="false" aria-label="Enable Fan-out merch link integration" tabindex="0"></div>
       </div>
       <div class="setting-row">
         <span class="setting-label">Beat detection</span>
@@ -334,7 +353,7 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
         <span class="setting-value">Local · localStorage</span>
       </div>
       <div style="margin-top:30px;text-align:center">
-        <button class="btn btn-ghost" onclick="resetAll()">Reset all data</button>
+        <button class="btn btn-ghost" onclick="resetAll()" aria-label="Destructive action: reset all renders, settings, and uploaded track">Reset all data</button>
       </div>
       <p style="text-align:center;margin-top:24px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.15em">RHYTHMIX LIVE · v1 · rhythmixapp.com.au/live</p>
     </div>
@@ -358,8 +377,74 @@ const state = {
   tier: 'free',
   merch: false,
   rendering: false,
-  renderTimer: null
+  renderTimer: null,
+  isOnline: navigator.onLine
 };
+
+// Valid file types and max size (12 MB)
+const VALID_AUDIO_TYPES = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/ogg'];
+const MAX_FILE_SIZE = 12 * 1024 * 1024;
+const VALID_ENGINES = ['Kling', 'Hunyuan', 'Luma', 'MiniMax'];
+const VALID_MOODS = ['cinematic', 'dreamy', 'hyper', 'soulful', 'abstract'];
+
+// ──── Offline detection ────
+function updateOnlineStatus(){
+  state.isOnline = navigator.onLine;
+  const banner = document.getElementById('offlineBanner');
+  if (!state.isOnline){
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ──── UI helpers ────
+function showLoading(text = 'analyzing track...'){
+  const overlay = document.getElementById('loadingOverlay');
+  const loadingText = document.getElementById('loadingText');
+  loadingText.textContent = text;
+  overlay.classList.add('show');
+}
+function hideLoading(){
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.remove('show');
+}
+function showToast(message, type = 'info'){
+  if (window.MVPEnhancements && window.MVPEnhancements.toast){
+    window.MVPEnhancements.toast(message, type);
+  }
+}
+function showConfirm(message){
+  return new Promise(resolve => {
+    if (window.MVPEnhancements && window.MVPEnhancements.confirm){
+      window.MVPEnhancements.confirm(message, resolve);
+    } else {
+      resolve(confirm(message));
+    }
+  });
+}
+
+// ──── File validation ────
+function validateFile(file){
+  if (!file) return { valid: false, error: 'No file selected' };
+
+  if (!file.type || !VALID_AUDIO_TYPES.some(t => file.type.startsWith(t.split('/')[0]))){
+    const ext = file.name.toLowerCase().split('.').pop();
+    const validExts = ['mp3', 'wav', 'flac', 'ogg', 'm4a'];
+    if (!validExts.includes(ext)){
+      return { valid: false, error: 'Invalid file type. Use MP3, WAV, FLAC, OGG, or M4A.' };
+    }
+  }
+
+  if (file.size > MAX_FILE_SIZE){
+    return { valid: false, error: 'File too large. Maximum is 12 MB.' };
+  }
+
+  return { valid: true };
+}
 
 // ──── Panel navigation ────
 const panels = document.getElementById('panels');
@@ -397,6 +482,15 @@ fileInput.addEventListener('change', e => {
   const f = e.target.files && e.target.files[0];
   if (f) acceptFile(f);
 });
+
+// Add Enter/Space key support to drop zone
+dropZone.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){
+    e.preventDefault();
+    fileInput.click();
+  }
+});
+
 ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => {
   e.preventDefault(); dropZone.classList.add('drag');
 }));
@@ -409,50 +503,107 @@ dropZone.addEventListener('drop', e => {
 });
 
 function acceptFile(f){
-  state.fileName = f.name;
-  localStorage.setItem('live.file', f.name);
-  dropZone.classList.add('has-file');
-  dropTitle.textContent = 'Track loaded';
-  dropSub.textContent = 'BPM detected · ready to sync';
-  dropFile.textContent = '♪ ' + f.name + ' · ' + (f.size/1024/1024).toFixed(1) + ' MB';
-  document.getElementById('syncFileLabel').textContent = f.name;
+  try {
+    const validation = validateFile(f);
+    if (!validation.valid){
+      showToast(validation.error, 'error');
+      return;
+    }
+
+    showLoading('analyzing track...');
+    // Simulate analysis delay
+    setTimeout(() => {
+      try {
+        state.fileName = f.name;
+        localStorage.setItem('live.file', f.name);
+        dropZone.classList.add('has-file');
+        dropTitle.textContent = 'Track loaded';
+        dropSub.textContent = 'BPM detected · ready to sync';
+        dropFile.textContent = '♪ ' + f.name + ' · ' + (f.size/1024/1024).toFixed(1) + ' MB';
+        document.getElementById('syncFileLabel').textContent = f.name;
+        hideLoading();
+        showToast('Track uploaded successfully', 'success');
+      } catch (err){
+        hideLoading();
+        showToast('Error loading track: ' + err.message, 'error');
+      }
+    }, 1200);
+  } catch (err){
+    showToast('Error processing file: ' + err.message, 'error');
+  }
 }
 
 // ──── Engine + mood chips ────
-document.getElementById('engineRow').addEventListener('click', e => {
+function handleChipClick(e, isEngine = true){
   const c = e.target.closest('.chip'); if (!c) return;
-  const eng = c.dataset.engine;
-  c.classList.toggle('on');
-  if (state.engines.includes(eng)) state.engines = state.engines.filter(x => x !== eng);
-  else state.engines.push(eng);
-  localStorage.setItem('live.engines', JSON.stringify(state.engines));
-});
-document.getElementById('moodRow').addEventListener('click', e => {
-  const c = e.target.closest('.chip'); if (!c) return;
-  document.querySelectorAll('#moodRow .chip').forEach(x => x.classList.remove('on'));
-  c.classList.add('on');
-  state.mood = c.dataset.mood;
-  localStorage.setItem('live.mood', state.mood);
-});
+  if (isEngine){
+    const eng = c.dataset.engine;
+    c.classList.toggle('on');
+    if (state.engines.includes(eng)) state.engines = state.engines.filter(x => x !== eng);
+    else state.engines.push(eng);
+    localStorage.setItem('live.engines', JSON.stringify(state.engines));
+  } else {
+    document.querySelectorAll('#moodRow .chip').forEach(x => x.classList.remove('on'));
+    c.classList.add('on');
+    state.mood = c.dataset.mood;
+    localStorage.setItem('live.mood', state.mood);
+  }
+}
+
+function handleChipKeydown(e, isEngine = true){
+  if (e.key === 'Enter' || e.key === ' '){
+    e.preventDefault();
+    handleChipClick({ target: e.target }, isEngine);
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown'){
+    e.preventDefault();
+    const next = e.target.nextElementSibling;
+    if (next) next.focus();
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    const prev = e.target.previousElementSibling;
+    if (prev) prev.focus();
+  }
+}
+
+document.getElementById('engineRow').addEventListener('click', e => handleChipClick(e, true));
+document.getElementById('engineRow').addEventListener('keydown', e => handleChipKeydown(e, true));
+document.getElementById('moodRow').addEventListener('click', e => handleChipClick(e, false));
+document.getElementById('moodRow').addEventListener('keydown', e => handleChipKeydown(e, false));
 
 function goToSync(){
-  if (!state.engines.length){
-    // Default to Kling if none picked
-    const first = document.querySelector('#engineRow .chip');
-    if (first){ first.classList.add('on'); state.engines = ['Kling']; }
+  try {
+    // Validate that user has selected both engine and mood
+    if (!state.engines || !state.engines.length){
+      showToast('Please select at least one engine', 'error');
+      return;
+    }
+    if (!state.mood){
+      showToast('Please select a mood', 'error');
+      return;
+    }
+
+    // Validate selections
+    for (const eng of state.engines){
+      if (!VALID_ENGINES.includes(eng)){
+        showToast('Invalid engine: ' + eng, 'error');
+        return;
+      }
+    }
+    if (!VALID_MOODS.includes(state.mood)){
+      showToast('Invalid mood: ' + state.mood, 'error');
+      return;
+    }
+
+    localStorage.setItem('live.engines', JSON.stringify(state.engines));
+    localStorage.setItem('live.mood', state.mood);
+    goTo(2);
+  } catch (err){
+    showToast('Error: ' + err.message, 'error');
   }
-  if (!state.mood){
-    const first = document.querySelector('#moodRow .chip');
-    if (first){ first.classList.add('on'); state.mood = 'cinematic'; }
-  }
-  localStorage.setItem('live.engines', JSON.stringify(state.engines));
-  localStorage.setItem('live.mood', state.mood);
-  goTo(2);
 }
 
 // ──── Waveform / beat-sync ────
-const waveform = document.getElementById('waveform');
-const playhead = document.getElementById('playhead');
+let waveform, playhead;
 const BAR_COUNT = 64;
 const BPM = 120;
 const BEAT_MS = 60000 / BPM; // 500ms per beat
@@ -461,30 +612,43 @@ const TRACK_MS = TRACK_BEATS * BEAT_MS;
 
 // Build bars + beat markers
 (function buildWaveform(){
-  const seed = [];
-  // Deterministic pseudo-amplitude pattern (peaks on beats)
-  for (let i = 0; i < BAR_COUNT; i++){
-    const beatPhase = (i / BAR_COUNT) * TRACK_BEATS;
-    const onBeat = Math.abs(beatPhase - Math.round(beatPhase)) < 0.15;
-    const downbeat = Math.round(beatPhase) % 4 === 0 && onBeat;
-    const base = 30 + Math.sin(i * 0.7) * 18 + Math.cos(i * 0.31) * 14;
-    const peak = downbeat ? 50 : (onBeat ? 30 : 0);
-    seed.push(Math.max(12, Math.min(98, base + peak + (i % 5) * 3)));
-  }
-  state.waveBars = seed;
-  seed.forEach(h => {
-    const b = document.createElement('div');
-    b.className = 'wave-bar';
-    b.style.height = h + '%';
-    waveform.appendChild(b);
-  });
-  // Beat markers (every 4 beats = strong, others subtle)
-  // Markers as % of width (excluding playhead/padding)
-  for (let beat = 0; beat <= TRACK_BEATS; beat += 4){
-    const m = document.createElement('div');
-    m.className = 'beat-marker strong';
-    m.style.left = (beat / TRACK_BEATS * 100) + '%';
-    waveform.appendChild(m);
+  try {
+    if (!window.AudioContext && !window.webkitAudioContext){
+      console.warn('Web Audio API not available in this browser');
+    }
+
+    waveform = document.getElementById('waveform');
+    playhead = document.getElementById('playhead');
+    if (!waveform || !playhead) throw new Error('Waveform elements not found');
+
+    const seed = [];
+    // Deterministic pseudo-amplitude pattern (peaks on beats)
+    for (let i = 0; i < BAR_COUNT; i++){
+      const beatPhase = (i / BAR_COUNT) * TRACK_BEATS;
+      const onBeat = Math.abs(beatPhase - Math.round(beatPhase)) < 0.15;
+      const downbeat = Math.round(beatPhase) % 4 === 0 && onBeat;
+      const base = 30 + Math.sin(i * 0.7) * 18 + Math.cos(i * 0.31) * 14;
+      const peak = downbeat ? 50 : (onBeat ? 30 : 0);
+      seed.push(Math.max(12, Math.min(98, base + peak + (i % 5) * 3)));
+    }
+    state.waveBars = seed;
+    seed.forEach(h => {
+      const b = document.createElement('div');
+      b.className = 'wave-bar';
+      b.style.height = h + '%';
+      waveform.appendChild(b);
+    });
+    // Beat markers (every 4 beats = strong, others subtle)
+    // Markers as % of width (excluding playhead/padding)
+    for (let beat = 0; beat <= TRACK_BEATS; beat += 4){
+      const m = document.createElement('div');
+      m.className = 'beat-marker strong';
+      m.style.left = (beat / TRACK_BEATS * 100) + '%';
+      waveform.appendChild(m);
+    }
+  } catch (err){
+    console.error('Waveform initialization error:', err);
+    showToast('Error initializing waveform: ' + err.message, 'error');
   }
 })();
 
@@ -539,43 +703,82 @@ function fmt(s){ return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(
 
 // ──── Render queue ────
 function startRender(){
-  if (state.rendering) return;
-  state.rendering = true;
-  const cards = document.querySelectorAll('.queue-card');
-  cards.forEach(c => {
-    c.classList.remove('done','active');
-    c.querySelector('[data-fill]').style.width = '0%';
-    c.querySelector('[data-status]').textContent = 'queued';
-  });
-  let i = 0;
-  function renderOne(){
-    if (i >= cards.length){
-      state.rendering = false;
-      saveSession();
+  try {
+    if (state.rendering){
+      showToast('Render already in progress', 'info');
       return;
     }
-    const card = cards[i];
-    card.classList.add('active');
-    card.querySelector('[data-status]').textContent = 'rendering · ' + (state.engines.join(' + ') || 'Kling');
-    let pct = 0;
-    const dur = 10000;
-    const step = 100;
-    const t0 = performance.now();
-    state.renderTimer = setInterval(() => {
-      const elapsed = performance.now() - t0;
-      pct = Math.min(100, (elapsed / dur) * 100);
-      card.querySelector('[data-fill]').style.width = pct + '%';
-      if (pct >= 100){
-        clearInterval(state.renderTimer);
-        card.classList.remove('active');
-        card.classList.add('done');
-        card.querySelector('[data-status]').textContent = 'done · ready to download';
-        i++;
-        setTimeout(renderOne, 250);
+
+    // Validate selections before rendering
+    if (!state.engines || !state.engines.length){
+      showToast('Please select at least one engine', 'error');
+      return;
+    }
+    if (!state.mood){
+      showToast('Please select a mood', 'error');
+      return;
+    }
+
+    // Check online status for render operations
+    if (!navigator.onLine){
+      showToast('Offline — renders will be saved locally but may require connection to finalize', 'warning');
+    }
+
+    state.rendering = true;
+    showLoading('preparing render queue...');
+    const cards = document.querySelectorAll('.queue-card');
+    cards.forEach(c => {
+      c.classList.remove('done','active');
+      c.querySelector('[data-fill]').style.width = '0%';
+      const statusEl = c.querySelector('[data-status]');
+      statusEl.textContent = 'queued';
+      statusEl.setAttribute('aria-live', 'polite');
+      statusEl.setAttribute('aria-atomic', 'true');
+    });
+
+    setTimeout(() => {
+      hideLoading();
+      let i = 0;
+      function renderOne(){
+        if (i >= cards.length){
+          state.rendering = false;
+          saveSession();
+          showToast('Render complete! ' + cards.length + ' files ready.', 'success');
+          return;
+        }
+        const card = cards[i];
+        card.classList.add('active');
+        const engineText = (state.engines && state.engines.length) ? state.engines.join(' + ') : 'Kling';
+        const statusEl = card.querySelector('[data-status]');
+        statusEl.textContent = 'rendering · ' + engineText;
+        let pct = 0;
+        const dur = 10000;
+        const step = 100;
+        const t0 = performance.now();
+        state.renderTimer = setInterval(() => {
+          const elapsed = performance.now() - t0;
+          pct = Math.min(100, (elapsed / dur) * 100);
+          const fillEl = card.querySelector('[data-fill]');
+          fillEl.style.width = pct + '%';
+          fillEl.setAttribute('aria-valuenow', Math.round(pct));
+          if (pct >= 100){
+            clearInterval(state.renderTimer);
+            card.classList.remove('active');
+            card.classList.add('done');
+            statusEl.textContent = 'done · ready to download';
+            fillEl.setAttribute('aria-valuenow', 100);
+            i++;
+            setTimeout(renderOne, 250);
+          }
+        }, step);
       }
-    }, step);
+      renderOne();
+    }, 800);
+  } catch (err){
+    state.rendering = false;
+    hideLoading();
+    showToast('Render error: ' + err.message, 'error');
   }
-  renderOne();
 }
 
 function saveSession(){
@@ -634,59 +837,119 @@ document.getElementById('tierGrid').addEventListener('click', e => {
   state.tier = c.dataset.tier;
   localStorage.setItem('live.tier', state.tier);
 });
+
+// Keyboard support for tier cards
+document.getElementById('tierGrid').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){
+    e.preventDefault();
+    const c = e.target.closest('.tier-card');
+    if (c){
+      document.querySelectorAll('.tier-card').forEach(x => x.classList.remove('on'));
+      c.classList.add('on');
+      state.tier = c.dataset.tier;
+      localStorage.setItem('live.tier', state.tier);
+    }
+  }
+});
+
 function toggleMerch(){
   state.merch = !state.merch;
-  document.getElementById('setMerch').classList.toggle('on', state.merch);
+  const toggle = document.getElementById('setMerch');
+  toggle.classList.toggle('on', state.merch);
+  toggle.setAttribute('aria-checked', state.merch ? 'true' : 'false');
   localStorage.setItem('live.merch', state.merch ? '1':'0');
 }
 
+// Keyboard support for toggle
+document.getElementById('setMerch').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){
+    e.preventDefault();
+    toggleMerch();
+  }
+});
+
 function resetAll(){
-  if (!confirm('Reset all renders, settings, and track?')) return;
-  ['live.file','live.engines','live.mood','live.sessions','live.tier','live.merch'].forEach(k => localStorage.removeItem(k));
-  state.fileName = ''; state.engines = []; state.mood = ''; state.tier = 'free'; state.merch = false;
-  dropZone.classList.remove('has-file');
-  dropTitle.textContent = 'Drop audio or tap to choose';
-  dropSub.textContent = "we'll read the BPM & key";
-  dropFile.textContent = '';
-  document.querySelectorAll('#engineRow .chip, #moodRow .chip').forEach(c => c.classList.remove('on'));
-  document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('on'));
-  document.querySelector('.tier-card[data-tier="free"]').classList.add('on');
-  document.getElementById('setMerch').classList.remove('on');
-  refreshHistory();
+  if (window.MVPEnhancements && window.MVPEnhancements.confirm){
+    window.MVPEnhancements.confirm('Reset all renders, settings, and track?', confirmed => {
+      if (!confirmed) return;
+      try {
+        ['live.file','live.engines','live.mood','live.sessions','live.tier','live.merch'].forEach(k => localStorage.removeItem(k));
+        state.fileName = ''; state.engines = []; state.mood = ''; state.tier = 'free'; state.merch = false;
+        dropZone.classList.remove('has-file');
+        dropTitle.textContent = 'Drop audio or tap to choose';
+        dropSub.textContent = "we'll read the BPM & key";
+        dropFile.textContent = '';
+        document.querySelectorAll('#engineRow .chip, #moodRow .chip').forEach(c => c.classList.remove('on'));
+        document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('on'));
+        document.querySelector('.tier-card[data-tier="free"]').classList.add('on');
+        document.getElementById('setMerch').classList.remove('on');
+        refreshHistory();
+        showToast('All data reset', 'success');
+      } catch (err){
+        showToast('Error resetting data: ' + err.message, 'error');
+      }
+    });
+  } else {
+    if (confirm('Reset all renders, settings, and track?')){
+      try {
+        ['live.file','live.engines','live.mood','live.sessions','live.tier','live.merch'].forEach(k => localStorage.removeItem(k));
+        state.fileName = ''; state.engines = []; state.mood = ''; state.tier = 'free'; state.merch = false;
+        dropZone.classList.remove('has-file');
+        dropTitle.textContent = 'Drop audio or tap to choose';
+        dropSub.textContent = "we'll read the BPM & key";
+        dropFile.textContent = '';
+        document.querySelectorAll('#engineRow .chip, #moodRow .chip').forEach(c => c.classList.remove('on'));
+        document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('on'));
+        document.querySelector('.tier-card[data-tier="free"]').classList.add('on');
+        document.getElementById('setMerch').classList.remove('on');
+        refreshHistory();
+        showToast('All data reset', 'success');
+      } catch (err){
+        showToast('Error resetting data: ' + err.message, 'error');
+      }
+    }
+  }
 }
 
 // ──── Init ────
 (function init(){
-  const f = localStorage.getItem('live.file');
-  if (f){
-    state.fileName = f;
-    dropZone.classList.add('has-file');
-    dropTitle.textContent = 'Track loaded';
-    dropSub.textContent = 'BPM detected · ready to sync';
-    dropFile.textContent = '♪ ' + f;
-    document.getElementById('syncFileLabel').textContent = f;
+  try {
+    const f = localStorage.getItem('live.file');
+    if (f){
+      state.fileName = f;
+      dropZone.classList.add('has-file');
+      dropTitle.textContent = 'Track loaded';
+      dropSub.textContent = 'BPM detected · ready to sync';
+      dropFile.textContent = '♪ ' + f;
+      document.getElementById('syncFileLabel').textContent = f;
+    }
+    const en = JSON.parse(localStorage.getItem('live.engines') || '[]');
+    state.engines = en.filter(name => VALID_ENGINES.includes(name));
+    state.engines.forEach(name => {
+      const c = document.querySelector('#engineRow .chip[data-engine="' + name + '"]');
+      if (c) c.classList.add('on');
+    });
+    const m = localStorage.getItem('live.mood');
+    if (m && VALID_MOODS.includes(m)){
+      state.mood = m;
+      const c = document.querySelector('#moodRow .chip[data-mood="' + m + '"]');
+      if (c) c.classList.add('on');
+    }
+    const t = localStorage.getItem('live.tier') || 'free';
+    state.tier = t;
+    const tc = document.querySelector('.tier-card[data-tier="' + t + '"]');
+    if (tc) tc.classList.add('on');
+    if (localStorage.getItem('live.merch') === '1'){
+      state.merch = true;
+      const toggle = document.getElementById('setMerch');
+      toggle.classList.add('on');
+      toggle.setAttribute('aria-checked', 'true');
+    }
+    refreshHistory();
+  } catch (err){
+    console.error('Init error:', err);
+    showToast('Error loading saved data: ' + err.message, 'error');
   }
-  const en = JSON.parse(localStorage.getItem('live.engines') || '[]');
-  state.engines = en;
-  en.forEach(name => {
-    const c = document.querySelector('#engineRow .chip[data-engine="' + name + '"]');
-    if (c) c.classList.add('on');
-  });
-  const m = localStorage.getItem('live.mood');
-  if (m){
-    state.mood = m;
-    const c = document.querySelector('#moodRow .chip[data-mood="' + m + '"]');
-    if (c) c.classList.add('on');
-  }
-  const t = localStorage.getItem('live.tier') || 'free';
-  state.tier = t;
-  const tc = document.querySelector('.tier-card[data-tier="' + t + '"]');
-  if (tc) tc.classList.add('on');
-  if (localStorage.getItem('live.merch') === '1'){
-    state.merch = true;
-    document.getElementById('setMerch').classList.add('on');
-  }
-  refreshHistory();
 })();
 
 // Hide swipe hint after first scroll
