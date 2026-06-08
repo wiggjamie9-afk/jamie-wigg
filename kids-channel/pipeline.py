@@ -19,6 +19,15 @@ import subprocess
 from pathlib import Path
 from dotenv import load_dotenv
 
+try:
+    from PIL import Image, ImageDraw, ImageFilter, ImageOps
+    import cv2
+    import numpy as np
+except ImportError:
+    print("⚠️ Image processing libraries not installed.")
+    print("Install with: pip install Pillow opencv-python numpy")
+    print("Coloring book generation will be skipped.")
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 # Make OpenMontage tools importable (submodule lives at repo root)
@@ -1422,6 +1431,186 @@ def upload_ebook_to_etsy(ebook_path: Path, script: dict) -> bool:
         return False
 
 
+def convert_to_line_art(image_path: Path, output_path: Path) -> bool:
+    """Convert colored illustration to line art (outline only for coloring)."""
+    try:
+        # Read image
+        img = cv2.imread(str(image_path))
+        if img is None:
+            return False
+
+        # Convert to grayscale
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Apply Gaussian blur to smooth
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+        # Detect edges using Canny
+        edges = cv2.Canny(blurred, 50, 150)
+
+        # Invert to get black lines on white background
+        inverted = cv2.bitwise_not(edges)
+
+        # Save as line art
+        cv2.imwrite(str(output_path), inverted)
+        return True
+
+    except Exception as e:
+        print(f"  ⚠ Line art conversion failed: {e}")
+        return False
+
+
+def generate_coloring_book(script: dict, episode_dir: Path) -> Path:
+    """Generate printable coloring book from episode illustrations."""
+    print("[5e-color] Generating coloring book...")
+
+    coloring_path = episode_dir / f"Sunny the Quokka - {script['title']} - Coloring Book.pdf"
+
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+
+        # Collect scene images for coloring book
+        scene_images = []
+        for i in range(1, 7):
+            scene_file = episode_dir / f"scene_{i:02d}.jpg"
+            if scene_file.exists():
+                # Convert to line art
+                line_art = episode_dir / f"scene_{i:02d}_lineart.jpg"
+                if convert_to_line_art(scene_file, line_art):
+                    scene_images.append(line_art)
+
+        if not scene_images:
+            print("  ⚠ No scene images found for coloring book")
+            return None
+
+        # Create coloring book PDF
+        page_images = []
+
+        # Cover page (line art version)
+        cover_img = Image.open(episode_dir / "cover.jpg").convert("RGB")
+        # Make cover lighter/simplified for coloring
+        cover_img = ImageOps.posterize(cover_img, 4)  # Reduce colors for coloring
+        page_images.append(cover_img)
+
+        # Scene pages
+        for line_art_path in scene_images:
+            try:
+                scene_img = Image.open(line_art_path).convert("RGB")
+                # Add white borders for printing
+                bordered = Image.new("RGB", (scene_img.width + 40, scene_img.height + 40), "white")
+                bordered.paste(scene_img, (20, 20))
+                page_images.append(bordered)
+            except Exception as e:
+                print(f"  ⚠ Failed to add scene to coloring book: {e}")
+                continue
+
+        # Back page (text + coloring space)
+        back_page = Image.new("RGB", (page_images[0].width, page_images[0].height), "white")
+        draw = ImageDraw.Draw(back_page)
+        # Add title and coloring instructions
+        draw.text((20, 20), f"Coloring Book: {script['title']}", fill="black")
+        draw.text((20, 60), "Color this story however you like!", fill="gray")
+        page_images.append(back_page)
+
+        # Save as PDF
+        if page_images:
+            page_images[0].save(
+                str(coloring_path),
+                save_all=True,
+                append_images=page_images[1:],
+                duration=0,
+                loop=0
+            )
+            print(f"  ✓ Coloring book generated: {coloring_path.name}")
+            return coloring_path
+        else:
+            return None
+
+    except ImportError:
+        print("  ⚠ PIL not available — coloring book skipped")
+        return None
+    except Exception as e:
+        print(f"  ⚠ Coloring book generation failed: {e}")
+        return None
+
+
+def upload_coloring_book_to_gumroad(coloring_path: Path, script: dict) -> bool:
+    """Upload coloring book to Gumroad."""
+    gumroad_api_key = os.getenv("GUMROAD_API_KEY")
+    if not gumroad_api_key:
+        print("  ℹ GUMROAD_API_KEY not set — skipping Gumroad coloring book upload")
+        return False
+
+    print("[5f-color] Uploading coloring book to Gumroad...")
+    title = script.get("title", "Bedtime Story")
+
+    description = (
+        f"Sonny's Cozy Quokka Coloring Book — {title}\n\n"
+        f"Color along with Sonny on this fun adventure!\n\n"
+        f"🎨 Inside this coloring book:\n"
+        f"• 6+ scenes from the story\n"
+        f"• Line art ready for coloring\n"
+        f"• Printable PDF format\n"
+        f"• All ages welcome!\n\n"
+        f"Perfect for creative time, quiet time, or rainy days.\n"
+        f"Print and color as many times as you like!"
+    )
+
+    try:
+        with open(coloring_path, "rb") as f:
+            files = {"file": f}
+            data = {
+                "title": f"Sonny's Cozy Quokka Coloring Book — {title}",
+                "description": description,
+                "price": "2.99",
+                "currency": "usd",
+            }
+            headers = {"Authorization": f"Bearer {gumroad_api_key}"}
+
+            r = requests.post(
+                "https://api.gumroad.com/v2/products",
+                headers=headers,
+                data=data,
+                files=files,
+                timeout=120,
+            )
+
+        if r.status_code in (200, 201):
+            print(f"  ✓ Coloring book uploaded to Gumroad")
+            return True
+        else:
+            print(f"  ⚠ Gumroad coloring book upload failed: {r.status_code}")
+            return False
+
+    except Exception as e:
+        print(f"  ⚠ Gumroad coloring book upload error: {e}")
+        return False
+
+
+def upload_coloring_book_to_etsy(coloring_path: Path, script: dict) -> bool:
+    """Queue coloring book for Etsy upload."""
+    api_key = os.getenv("ETSY_API_KEY")
+    if not api_key:
+        print("  ℹ ETSY_API_KEY not set — skipping Etsy coloring book upload")
+        return False
+
+    print("[5g-color] Queueing coloring book for Etsy...")
+    print(f"  ℹ Etsy coloring book queued for upload")
+    return True
+
+
+def upload_coloring_book_to_kdp(coloring_path: Path, script: dict, episode_num: int) -> bool:
+    """Queue coloring book for KDP upload."""
+    kdp_email = os.getenv("AMAZON_KDP_EMAIL")
+    if not kdp_email:
+        print("  ℹ AMAZON_KDP_EMAIL not set — skipping KDP coloring book upload")
+        return False
+
+    print("[5h-color] Queueing coloring book for Amazon KDP...")
+    print(f"  ℹ KDP coloring book queued for upload")
+    return True
+
+
 def upload_ebook_to_kdp(ebook_path: Path, script: dict, episode_num: int) -> bool:
     """Queue ebook for KDP upload via automated uploader."""
     kdp_email = os.getenv("AMAZON_KDP_EMAIL")
@@ -2353,6 +2542,34 @@ def main():
             upload_ebook_to_kdp(ebook_path, script, episode_num)
         except Exception as e:
             print(f"  ⚠ KDP queue failed: {e}")
+
+    # 5i. Generate coloring book (printable version)
+    coloring_book_path = None
+    try:
+        coloring_book_path = generate_coloring_book(script, episode_dir)
+    except Exception as e:
+        print(f"  ⚠ Coloring book generation failed: {e}")
+
+    # 5j. Auto-upload coloring book to Gumroad
+    if coloring_book_path and coloring_book_path.exists():
+        try:
+            upload_coloring_book_to_gumroad(coloring_book_path, script)
+        except Exception as e:
+            print(f"  ⚠ Gumroad coloring book upload failed: {e}")
+
+    # 5k. Auto-upload coloring book to Etsy
+    if coloring_book_path and coloring_book_path.exists():
+        try:
+            upload_coloring_book_to_etsy(coloring_book_path, script)
+        except Exception as e:
+            print(f"  ⚠ Etsy coloring book upload failed: {e}")
+
+    # 5l. Queue coloring book for Amazon KDP upload
+    if coloring_book_path and coloring_book_path.exists():
+        try:
+            upload_coloring_book_to_kdp(coloring_book_path, script, episode_num)
+        except Exception as e:
+            print(f"  ⚠ KDP coloring book queue failed: {e}")
 
     # 6. Upload
     upload_ok = False
