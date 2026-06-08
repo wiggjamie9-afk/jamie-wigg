@@ -1422,6 +1422,48 @@ def upload_ebook_to_etsy(ebook_path: Path, script: dict) -> bool:
         return False
 
 
+def upload_ebook_to_kdp(ebook_path: Path, script: dict, episode_num: int) -> bool:
+    """Queue ebook for KDP upload via automated uploader."""
+    kdp_email = os.getenv("AMAZON_KDP_EMAIL")
+    kdp_password = os.getenv("AMAZON_KDP_PASSWORD")
+
+    if not kdp_email or not kdp_password:
+        print("  ℹ AMAZON_KDP_EMAIL/PASSWORD not set — skipping KDP upload")
+        return False
+
+    print("[5h] Queueing ebook for Amazon KDP upload...")
+
+    # Create upload queue entry
+    queue_file = Path(__file__).parent / "ebooks" / ".kdp-upload-queue.json"
+    queue = []
+
+    if queue_file.exists():
+        try:
+            with open(queue_file) as f:
+                queue = json.load(f)
+        except:
+            queue = []
+
+    # Add to queue
+    queue.append({
+        "episode_num": episode_num,
+        "title": script.get("title", "Bedtime Story"),
+        "pdf_path": str(ebook_path),
+        "timestamp": time.time(),
+        "status": "queued"
+    })
+
+    # Save queue
+    try:
+        with open(queue_file, "w") as f:
+            json.dump(queue, f, indent=2)
+        print(f"  ℹ KDP upload queued (run kdp-auto-upload.py to process)")
+        return True
+    except Exception as e:
+        print(f"  ⚠ KDP queue failed: {e}")
+        return False
+
+
 def generate_cover_image(script: dict, episode_num: int, episode_dir: Path) -> Path:
     """Use the exact professional cover templates provided by user.
 
@@ -2304,6 +2346,13 @@ def main():
             upload_ebook_to_etsy(ebook_path, script)
         except Exception as e:
             print(f"  ⚠ Etsy upload failed: {e}")
+
+    # 5h. Queue ebook for Amazon KDP upload
+    if ebook_path and ebook_path.exists():
+        try:
+            upload_ebook_to_kdp(ebook_path, script, episode_num)
+        except Exception as e:
+            print(f"  ⚠ KDP queue failed: {e}")
 
     # 6. Upload
     upload_ok = False

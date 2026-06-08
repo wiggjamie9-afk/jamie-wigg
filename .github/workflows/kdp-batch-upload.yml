@@ -1,0 +1,53 @@
+name: Amazon KDP Batch Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      episodes:
+        description: "Number of episodes to upload (0 for all queued)"
+        required: false
+        type: string
+        default: "0"
+  schedule:
+    - cron: "0 1 * * 0"  # Weekly on Sundays at 1 AM UTC
+
+jobs:
+  kdp-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install selenium webdriver-manager
+
+      - name: Download ChromeDriver
+        run: |
+          python -c "from webdriver_manager.chrome import ChromeDriverManager; ChromeDriverManager().install()"
+
+      - name: Run KDP uploader
+        env:
+          AMAZON_KDP_EMAIL: ${{ secrets.AMAZON_KDP_EMAIL }}
+          AMAZON_KDP_PASSWORD: ${{ secrets.AMAZON_KDP_PASSWORD }}
+        run: |
+          cd kids-channel/ebooks
+          python3 kdp-auto-upload.py
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kdp-upload-results
+          path: kids-channel/ebooks/.kdp-upload-queue.json
+          retention-days: 30
