@@ -45,22 +45,40 @@ SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
 CHARACTER_NAME = "Sonny"
 CHARACTER_DESC = "a sweet small quokka with golden-brown fur, big warm brown eyes, tiny round ears, gentle curious expression"
 VISUAL_STYLE = (
-    "STRICT STYLE CONSISTENCY — every episode must match this reference exactly:\n"
-    "Professional watercolour children's picture book illustration (Beatrix Potter / Jill Barklem style).\n"
-    "Hand-painted watercolour on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle washes.\n"
-    "Warm earthy palette: ochres, burnt siennas, soft greens, deep blues.\n"
-    "Australian bush at night with soft moonlight. Deep indigo-navy starry sky with hand-dotted stars.\n"
-    "Gum trees with loose, sketchy linework. Glowing moon (warm cream/yellow tone).\n"
-    "Sonny the quokka — IDENTICAL appearance in EVERY scene:\n"
-    "  • Small golden-brown fur (exact shade: warm tan)\n"
-    "  • Large warm brown eyes (gentle, curious expression — NEVER angry or scared)\n"
-    "  • Tiny round ears (soft, not pointed)\n"
-    "  • Soft body proportions (cuddly, safe, cosy)\n"
-    "  • Always sitting or resting position (bedtime appropriate)\n"
-    "Lighting: Soft warm glow from moon. No harsh shadows. Gentle ambient light.\n"
-    "Avoid: flat digital, sharp lines, smooth gradients, 3D render, airbrushed, photorealistic, plastic look, bright neons.\n"
-    "Safety: No scary animals, dark creatures, or unsettling imagery. ONLY cosy, gentle, sleepy vibes.\n"
-    "NO TEXT ON ILLUSTRATION — text goes in cream parchment band below (handled by layout, not image)."
+    "REFERENCE CHARACTER LOCKED — Sunny MUST look IDENTICAL in EVERY episode:\n"
+    "\n"
+    "SUNNY THE QUOKKA CHARACTER (NO VARIATIONS):\n"
+    "  • Fur: Golden-warm brown (specific honey/tan tone, consistent across all episodes)\n"
+    "  • Body: Small, rounded, cuddly proportions (NOT large, NOT thin)\n"
+    "  • Eyes: Large warm brown eyes, gentle & curious expression (NEVER angry, scared, or mean)\n"
+    "  • Ears: Tiny round ears with soft pink/tan inner color (NOT large, NOT pointed)\n"
+    "  • Paws: Small, delicate feet\n"
+    "  • Expression: Always peaceful, gentle, curious, safe, cosy\n"
+    "  • Posture: Sitting or standing upright (bedtime appropriate)\n"
+    "  • Size: Small marsupial (same size in EVERY scene)\n"
+    "\n"
+    "REFERENCE: Use the illustration style from the Sonny's Cozy Quokka Bedtime Tales book.\n"
+    "Every instance of Sunny must be indistinguishable from the reference images.\n"
+    "\n"
+    "ILLUSTRATION STYLE:\n"
+    "  • Professional watercolour (Beatrix Potter/Jill Barklem style)\n"
+    "  • Hand-painted appearance with visible brushstrokes\n"
+    "  • Soft pigment bleeds and gentle colour washes\n"
+    "  • Warm earthy palette: ochres, burnt siennas, soft greens, deep blues\n"
+    "  • Australian bush at night with soft moonlight\n"
+    "  • Deep indigo-navy starry sky with hand-dotted stars\n"
+    "  • Gum trees with loose sketchy linework\n"
+    "  • Glowing moon (warm cream/yellow tone)\n"
+    "  • Textured cold-press paper grain visible\n"
+    "\n"
+    "CRITICAL RULES:\n"
+    "  1. NO TEXT on illustration — text goes ONLY in parchment band below\n"
+    "  2. Sunny MUST be recognizable by fur colour, eye size, ear shape across ALL episodes\n"
+    "  3. Companion animals (if any): gentle, sleepy, cosy — never scary\n"
+    "  4. Lighting: Soft warm glow only — no harsh shadows\n"
+    "  5. Avoid: digital art, sharp lines, 3D, photorealistic, plastic look, bright neons\n"
+    "\n"
+    "SEED LOCKING: Use seed-based generation to force character consistency."
 )
 SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sonny the little Quokka — cozy bedtime stories for toddlers at bedtime or quiet time."
 
@@ -907,7 +925,7 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
         for line in lines:
             bbox = draw.textbbox((0, 0), line, font=font_body)
             x = (W - (bbox[2] - bbox[0])) // 2
-            draw.text((x, y), line, font=font_body, fill=DARK_BROWN)
+            draw.text((x, y), line, font=font_body, fill=TEXT_BROWN)  # BROWN text, not black
             y += LINE_H
 
     # Page number — centered at very bottom of parchment band
@@ -1343,7 +1361,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
 
     # ── Palette (matches video booklet exactly) ───────────────────────────────
     PARCHMENT  = (250, 245, 232)
-    DARK_BROWN = (58,  34,  12)
+    TEXT_BROWN = (101, 67, 33)  # Warm brown text (NOT black) — readable & matches reference
     GOLD_LINE  = (195, 158, 72)
     GOLD_TEXT  = (180, 138, 40)
     PAGE_COL   = (160, 125, 75)
@@ -1437,7 +1455,7 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
         for line in lines:
             bbox = draw.textbbox((0, 0), line, font=font_body)
             x = (PW - (bbox[2] - bbox[0])) // 2
-            draw.text((x, y), line, font=font_body, fill=DARK_BROWN)
+            draw.text((x, y), line, font=font_body, fill=(101, 67, 33))  # BROWN text
             y += LINE_H
 
         if page_num > 0:
