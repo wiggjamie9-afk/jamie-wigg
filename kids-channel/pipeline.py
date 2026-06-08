@@ -831,6 +831,7 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
 
     # Warm parchment palette (children's book cream)
     PARCHMENT   = (250, 245, 232)
+    TEXT_BROWN  = (101, 67, 33)  # Warm brown text for readability
     DARK_BROWN  = (58, 34, 12)
     GOLD_LINE   = (195, 158, 72)
     PAGE_COLOUR = (160, 125, 75)
