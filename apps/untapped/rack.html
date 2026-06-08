@@ -134,6 +134,7 @@ footer{padding:32px;border-top:1px solid var(--line);text-align:center;font-fami
   .grid-header h2{font-size:24px}
 }
 </style>
+<script src="/universal-mvp-enhancements.js"></script>
 </head>
 <body>
 
@@ -305,17 +306,49 @@ fi.addEventListener('change', e => {
 
 function handleFiles(files){
   const arr = Array.from(files).slice(0,40);
+
+  // Validate all files before processing
+  const errors = [];
+  arr.forEach(file => {
+    const validation = validateFileUpload(file, {
+      maxSize: 10 * 1024 * 1024,
+      types: ['image/jpeg', 'image/png', 'image/webp']
+    });
+    if (!validation.valid) {
+      errors.push(`${file.name}: ${validation.errors.join(', ')}`);
+    }
+  });
+
+  if (errors.length > 0) {
+    errors.forEach(err => toast(err, { kind: 'warn' }));
+    return;
+  }
+
+  // Save pile state before scanning
+  StorageHelper.set('rack_pile_backup', {
+    count: arr.length,
+    timestamp: Date.now()
+  });
+
   // Read previews
   const thumbs = [];
   let loaded = 0;
   arr.forEach((file,i) => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      thumbs[i] = ev.target.result;
-      loaded++;
-      if (loaded === arr.length) startScan(thumbs);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const reader = new FileReader();
+      reader.onerror = () => {
+        toast(`Failed to read ${file.name}`, { kind: 'warn' });
+      };
+      reader.onload = ev => {
+        thumbs[i] = ev.target.result;
+        loaded++;
+        if (loaded === arr.length) startScan(thumbs);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('File read error:', err);
+      toast('Error reading files', { kind: 'warn' });
+    }
   });
 }
 
