@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="HUM">
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=">
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22HUM%22%2C%22short_name%22%3A%22HUM%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a0e%22%2C%22theme_color%22%3A%22%230a0a0e%22%2C%22orientation%22%3A%22portrait%22%7D">
+<script src="/universal-mvp-enhancements.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap');
 :root {
@@ -135,13 +136,39 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 .swipe-hint{position:fixed;bottom:36px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:rgba(255,255,255,0.4);text-transform:uppercase;z-index:99;pointer-events:none;animation:hintFade 4s ease-in-out 1.5s forwards}
 @keyframes hintFade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
 
+/* Toast notifications */
+.toast-container{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));right:7vw;display:flex;flex-direction:column;gap:8px;z-index:101;max-width:320px}
+.toast{background:var(--bg-3);border:1px solid rgba(155,107,255,0.3);border-radius:8px;padding:14px 18px;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:slideIn 0.3s ease-out}
+.toast.success{border-color:rgba(155,107,255,0.5);color:rgba(155,107,255,0.9)}
+.toast.error{border-color:rgba(255,100,100,0.5);color:rgba(255,150,150,1)}
+.toast.loading{border-color:rgba(155,107,255,0.3);opacity:0.9}
+@keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideOut{from{transform:translateX(0);opacity:1}to{transform:translateX(400px);opacity:0}}
+.toast.removing{animation:slideOut 0.3s ease-out forwards}
+
+/* Offline banner */
+.offline-banner{position:fixed;top:0;left:0;right:0;background:rgba(255,100,100,0.15);border-bottom:1px solid rgba(255,100,100,0.4);padding:8px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:rgba(255,150,150,1);z-index:102;transform:translateY(-100%);transition:transform 0.3s}
+.offline-banner.visible{transform:translateY(0)}
+
+/* Loading spinner */
+.loader-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(155,107,255,0.3);border-top-color:var(--violet);border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Aria-live region */
+[aria-live]{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
 @media (max-width:380px){
   h1{font-size:36px}
   .panel{padding:5vh 5vw 14vh}
+  .toast-container{right:5vw;left:5vw}
 }
 </style>
 </head>
 <body>
+<div class="offline-banner" id="offlineBanner">You are offline. Data will save when back online.</div>
+<div class="toast-container" id="toastContainer"></div>
+<div id="sessionStatus" aria-live="polite" aria-atomic="false"></div>
+
 <div class="brand">
   <span class="mark">RHYTHMIX FREQUENCY <em style="color:var(--violet-soft);font-weight:500">· HUM</em></span>
   <span class="crumb">v1 · AU$30</span>
@@ -157,8 +184,8 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <h1>Hum yourself <em>back into rhythm.</em></h1>
       <p class="lede">One to three minutes a day. Coherent breath, a chosen tone, your own voice. Vagus nerve, vibrated. On device, kept private.</p>
       <div class="welcome-cta-row">
-        <button class="btn btn-primary" onclick="goTo(1)">Begin →</button>
-        <button class="btn btn-ghost" onclick="goTo(4)">See streak</button>
+        <button class="btn btn-primary" onclick="goTo(1)" aria-label="Begin humming session">Begin →</button>
+        <button class="btn btn-ghost" onclick="goTo(4)" aria-label="View your practice streak">See streak</button>
       </div>
       <p class="mono" style="margin-top:30px;color:var(--muted)">Swipe → between screens. Or use arrow keys.</p>
     </div>
@@ -173,20 +200,20 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 
       <div class="group-label">Session length</div>
       <div class="chip-row" id="lenChips">
-        <span class="chip" data-len="60">60s<span class="sub">reset</span></span>
-        <span class="chip on" data-len="90">90s<span class="sub">daily</span></span>
-        <span class="chip" data-len="180">180s<span class="sub">deep</span></span>
+        <span class="chip" data-len="60" role="button" tabindex="0" aria-label="60 second reset session">60s<span class="sub">reset</span></span>
+        <span class="chip on" data-len="90" role="button" tabindex="0" aria-label="90 second daily session">90s<span class="sub">daily</span></span>
+        <span class="chip" data-len="180" role="button" tabindex="0" aria-label="180 second deep session">180s<span class="sub">deep</span></span>
       </div>
 
       <div class="group-label">Tone family</div>
       <div class="chip-row" id="toneChips">
-        <span class="chip on" data-freq="432" data-name="432 Hz · Verdi">432<span class="sub">verdi</span></span>
-        <span class="chip" data-freq="528" data-name="528 Hz · Solfeggio">528<span class="sub">solfeggio</span></span>
-        <span class="chip" data-freq="7.83" data-name="7.83 Hz · Schumann">7.83<span class="sub">schumann</span></span>
+        <span class="chip on" data-freq="432" data-name="432 Hz · Verdi" role="button" tabindex="0" aria-label="432 Hz Verdi tone">432<span class="sub">verdi</span></span>
+        <span class="chip" data-freq="528" data-name="528 Hz · Solfeggio" role="button" tabindex="0" aria-label="528 Hz Solfeggio tone">528<span class="sub">solfeggio</span></span>
+        <span class="chip" data-freq="7.83" data-name="7.83 Hz · Schumann" role="button" tabindex="0" aria-label="7.83 Hz Schumann tone">7.83<span class="sub">schumann</span></span>
       </div>
 
       <div style="margin-top:30px">
-        <button class="btn btn-primary" onclick="beginSession()">Begin →</button>
+        <button class="btn btn-primary" onclick="beginSession()" aria-label="Start breathing and humming session with selected tone">Begin →</button>
       </div>
     </div>
   </section>
@@ -204,9 +231,9 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <div class="session-status" id="sessionStatus">5 in · 5 out · coherence breath</div>
       <div class="session-meta" id="sessionMeta"></div>
       <div class="session-controls">
-        <button class="icon-btn" id="playBtn" onclick="toggleSession()" aria-label="Play / pause">▶</button>
-        <button class="hum-btn" id="humBtn" onclick="markHum()">I hummed</button>
-        <button class="icon-btn" onclick="endSession()" aria-label="End">■</button>
+        <button class="icon-btn" id="playBtn" onclick="toggleSession()" aria-label="Play or pause breathing pacer">▶</button>
+        <button class="hum-btn" id="humBtn" onclick="markHum()" aria-label="Mark a humming moment in this session">I hummed</button>
+        <button class="icon-btn" onclick="endSession()" aria-label="End the current session">■</button>
       </div>
       <div class="hum-count" id="humCount">0 hums marked</div>
     </div>
@@ -225,8 +252,8 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       </div>
       <p class="mono" id="resultSaved" style="color:var(--violet-soft);margin-bottom:24px">— · awaiting first session</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="goTo(4)">See history →</button>
-        <button class="btn btn-ghost" onclick="goTo(1)">Another</button>
+        <button class="btn btn-primary" onclick="goTo(4)" aria-label="View your session history">See history →</button>
+        <button class="btn btn-ghost" onclick="goTo(1)" aria-label="Start another session">Another</button>
       </div>
     </div>
   </section>
@@ -266,14 +293,14 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
       <h2>Tune your <em>practice.</em></h2>
       <div class="setting-row">
         <span class="setting-label">Voice cues (inhale / exhale)</span>
-        <div class="toggle" id="setVoice" onclick="toggleSetting('voice', this)"></div>
+        <div class="toggle" id="setVoice" onclick="toggleSetting('voice', this)" role="switch" aria-checked="false" aria-label="Toggle voice cues for inhale and exhale"></div>
       </div>
       <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:10px">
         <span class="setting-label">Default frequency</span>
         <div class="select-row" id="defaultFreqChips">
-          <span class="chip on" data-freq="432">432 Hz</span>
-          <span class="chip" data-freq="528">528 Hz</span>
-          <span class="chip" data-freq="7.83">7.83 Hz</span>
+          <span class="chip on" data-freq="432" role="button" tabindex="0" aria-label="Set default frequency to 432 Hz">432 Hz</span>
+          <span class="chip" data-freq="528" role="button" tabindex="0" aria-label="Set default frequency to 528 Hz">528 Hz</span>
+          <span class="chip" data-freq="7.83" role="button" tabindex="0" aria-label="Set default frequency to 7.83 Hz">7.83 Hz</span>
         </div>
       </div>
       <div class="setting-row">
@@ -289,7 +316,7 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
         <span class="setting-value">AU$30 · paid</span>
       </div>
       <div style="margin-top:30px;text-align:center">
-        <button class="btn btn-ghost" onclick="resetAll()">Reset all data</button>
+        <button class="btn btn-ghost" onclick="resetAll()" aria-label="Reset all sessions and settings, cannot be undone">Reset all data</button>
       </div>
       <p style="text-align:center;margin-top:24px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.15em">RHYTHMIX FREQUENCY · HUM v1 · rhythmixapp.com.au/hum</p>
     </div>
@@ -301,6 +328,53 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 <div class="swipe-hint" id="swipeHint">swipe → to explore</div>
 
 <script>
+// ──── Toast notification system ────
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  if (type !== 'loading') {
+    setTimeout(() => {
+      toast.classList.add('removing');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+  return toast;
+}
+
+// ──── Debounce utility ────
+function debounce(fn, delay) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
+
+// ──── Offline detection ────
+function updateOnlineStatus() {
+  const banner = document.getElementById('offlineBanner');
+  if (navigator.onLine) {
+    banner.classList.remove('visible');
+  } else {
+    banner.classList.add('visible');
+    showToast('You are offline. Data will save when back online.', 'info', 4000);
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ──── Visibility change: pause audio ────
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && state.sessionActive) {
+    pauseSession();
+  }
+});
+
 // ──── State ────
 const state = {
   length: 90,
@@ -317,8 +391,12 @@ const state = {
   pacerInterval: null,
   voiceCues: false,
   defaultFreq: 432,
-  lastResult: null
+  lastResult: null,
+  humDebounce: null
 };
+
+// Initialize debounced hum function
+state.humDebounce = debounce(markHumActual, 300);
 
 // ──── Panel navigation ────
 const panels = document.getElementById('panels');
@@ -343,6 +421,18 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') panels.scrollBy({left: -window.innerWidth, behavior: 'smooth'});
 });
 
+// ──── Keyboard-navigable chips ────
+function setupChipKeyboard(selector) {
+  document.querySelectorAll(selector).forEach(c => {
+    c.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        c.click();
+      }
+    });
+  });
+}
+
 // ──── Chip pickers (length + tone) ────
 document.querySelectorAll('#lenChips .chip').forEach(c => {
   c.onclick = () => {
@@ -351,6 +441,8 @@ document.querySelectorAll('#lenChips .chip').forEach(c => {
     state.length = parseInt(c.dataset.len, 10);
   };
 });
+setupChipKeyboard('#lenChips .chip');
+
 document.querySelectorAll('#toneChips .chip').forEach(c => {
   c.onclick = () => {
     document.querySelectorAll('#toneChips .chip').forEach(x => x.classList.remove('on'));
@@ -359,14 +451,17 @@ document.querySelectorAll('#toneChips .chip').forEach(c => {
     state.freqName = c.dataset.name;
   };
 });
+setupChipKeyboard('#toneChips .chip');
+
 document.querySelectorAll('#defaultFreqChips .chip').forEach(c => {
   c.onclick = () => {
     document.querySelectorAll('#defaultFreqChips .chip').forEach(x => x.classList.remove('on'));
     c.classList.add('on');
     state.defaultFreq = parseFloat(c.dataset.freq);
-    localStorage.setItem('hum.defaultFreq', state.defaultFreq);
+    safeLocalStorage('set', 'hum.defaultFreq', state.defaultFreq);
   };
 });
+setupChipKeyboard('#defaultFreqChips .chip');
 
 function beginSession(){
   goTo(2);
@@ -452,10 +547,15 @@ function pauseSession(){
   if (state.tickInterval){ clearInterval(state.tickInterval); state.tickInterval = null; }
 }
 
-function markHum(){
+function markHumActual(){
   if (!state.sessionActive) return;
   state.hums++;
   humCountEl.textContent = state.hums + (state.hums === 1 ? ' hum marked' : ' hums marked');
+  showToast('✓ Hum marked', 'success', 1200);
+}
+
+function markHum(){
+  state.humDebounce();
 }
 
 function endSession(){
@@ -499,27 +599,44 @@ function showResult(){
 // ──── Web Audio: pure sine tone at chosen frequency ────
 function ensureAudio(){
   if (state.audioCtx) return;
-  try { state.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-  catch(e){ console.error('No Web Audio:', e); }
+  try {
+    state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    showToast('Audio initialized', 'success', 1500);
+  } catch(e) {
+    console.error('No Web Audio:', e);
+    showToast('Audio unavailable on this device', 'error', 4000);
+  }
 }
 
 function startTone(freq){
+  const spinner = showToast('Starting tone...', 'loading');
   ensureAudio();
-  if (!state.audioCtx) return;
-  if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
-  stopTone();
-  const ctx = state.audioCtx;
-  const osc = ctx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.value = freq;
-  const gain = ctx.createGain();
-  // Fade in over 1s to target 0.12
-  gain.gain.setValueAtTime(0, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 1);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start();
-  state.osc = osc;
-  state.gain = gain;
+  if (!state.audioCtx) {
+    showToast('Cannot initialize audio context', 'error', 3000);
+    spinner.remove();
+    return;
+  }
+  try {
+    if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+    stopTone();
+    const ctx = state.audioCtx;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 1);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    state.osc = osc;
+    state.gain = gain;
+    spinner.classList.add('removing');
+    setTimeout(() => spinner.remove(), 300);
+  } catch(e) {
+    console.error('Tone error:', e);
+    showToast('Error starting tone', 'error', 3000);
+    spinner.remove();
+  }
 }
 
 function stopTone(){
@@ -535,114 +652,179 @@ function stopTone(){
   }
 }
 
+// ──── Safe localStorage wrapper ────
+function safeLocalStorage(action, key, value) {
+  try {
+    if (action === 'set') {
+      localStorage.setItem(key, value);
+    } else if (action === 'get') {
+      return localStorage.getItem(key);
+    } else if (action === 'remove') {
+      localStorage.removeItem(key);
+    }
+  } catch(e) {
+    if (e.name === 'QuotaExceededError') {
+      showToast('Storage full. Unable to save.', 'error', 4000);
+    } else if (e.name === 'SecurityError') {
+      showToast('Storage access denied.', 'error', 4000);
+    } else {
+      showToast('Storage error: ' + e.message, 'error', 4000);
+    }
+    console.error('localStorage error:', e);
+  }
+}
+
 // ──── Persistence ────
 function saveSession(duration){
-  const sessions = JSON.parse(localStorage.getItem('hum.sessions') || '[]');
-  sessions.unshift({
-    duration,
-    hums: state.hums,
-    freq: state.freq,
-    freqName: state.freqName,
-    date: new Date().toISOString()
-  });
-  localStorage.setItem('hum.sessions', JSON.stringify(sessions.slice(0, 300)));
-  refreshHistory();
+  const spinner = showToast('Saving session...', 'loading');
+  try {
+    const sessionsJson = safeLocalStorage('get', 'hum.sessions') || '[]';
+    const sessions = JSON.parse(sessionsJson);
+    sessions.unshift({
+      duration,
+      hums: state.hums,
+      freq: state.freq,
+      freqName: state.freqName,
+      date: new Date().toISOString()
+    });
+    safeLocalStorage('set', 'hum.sessions', JSON.stringify(sessions.slice(0, 300)));
+    spinner.classList.add('removing');
+    setTimeout(() => {
+      spinner.remove();
+      showToast('✓ Session saved', 'success', 2000);
+    }, 300);
+    refreshHistory();
+  } catch(e) {
+    spinner.remove();
+    showToast('Failed to save session', 'error', 3000);
+    console.error('Save session error:', e);
+  }
 }
 
 function refreshHistory(){
-  const sessions = JSON.parse(localStorage.getItem('hum.sessions') || '[]');
-  const totalSec = sessions.reduce((a,s) => a + (s.duration||0), 0);
-  document.getElementById('hSessions').textContent = sessions.length;
-  document.getElementById('hMinutes').textContent = Math.round(totalSec/60);
-  // Streak
-  let streak = 0;
-  const days = new Set(sessions.map(s => s.date.slice(0,10)));
-  let d = new Date();
-  while (days.has(d.toISOString().slice(0,10))){
-    streak++;
-    d.setDate(d.getDate() - 1);
+  try {
+    const sessionsJson = safeLocalStorage('get', 'hum.sessions') || '[]';
+    const sessions = JSON.parse(sessionsJson);
+    const totalSec = sessions.reduce((a,s) => a + (s.duration||0), 0);
+    document.getElementById('hSessions').textContent = sessions.length;
+    document.getElementById('hMinutes').textContent = Math.round(totalSec/60);
+    // Streak
+    let streak = 0;
+    const days = new Set(sessions.map(s => s.date.slice(0,10)));
+    let d = new Date();
+    while (days.has(d.toISOString().slice(0,10))){
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    document.getElementById('hStreak').textContent = streak;
+    // Heatmap: last 14 days, oldest left, today right
+    const heatmap = document.getElementById('heatmap');
+    const todayStr = new Date().toISOString().slice(0,10);
+    const dayTotals = {};
+    sessions.forEach(s => {
+      const k = s.date.slice(0,10);
+      dayTotals[k] = (dayTotals[k] || 0) + (s.duration||0);
+    });
+    let html = '';
+    for (let i = 13; i >= 0; i--){
+      const dt = new Date(); dt.setDate(dt.getDate() - i);
+      const k = dt.toISOString().slice(0,10);
+      const secs = dayTotals[k] || 0;
+      let cls = '';
+      if (secs >= 300) cls = 'h4';
+      else if (secs >= 180) cls = 'h3';
+      else if (secs >= 90) cls = 'h2';
+      else if (secs > 0) cls = 'h1';
+      const today = k === todayStr ? ' today' : '';
+      const title = dt.toLocaleDateString(undefined,{month:'short',day:'numeric'}) + ' · ' + secs + 's';
+      html += '<div class="heat-cell ' + cls + today + '" title="' + title + '"></div>';
+    }
+    heatmap.innerHTML = html;
+    // Session list
+    const list = document.getElementById('sessionList');
+    if (sessions.length === 0){
+      list.innerHTML = '<div class="empty-state">No sessions yet. Hum to begin.</div>';
+      return;
+    }
+    list.innerHTML = sessions.slice(0, 12).map(s => {
+      const dt = new Date(s.date);
+      const label = dt.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+      const time = dt.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+      const meta = label + ' · ' + time + ' · ' + (s.freqName||s.freq+' Hz');
+      const snip = s.duration + 's · ' + (s.hums||0) + (s.hums === 1 ? ' hum' : ' hums');
+      return '<div class="session-card"><div class="session-card-meta">' + meta + '</div><div class="session-snippet">' + snip + '</div></div>';
+    }).join('');
+  } catch(e) {
+    console.error('History refresh error:', e);
+    showToast('Unable to load history', 'error', 3000);
   }
-  document.getElementById('hStreak').textContent = streak;
-  // Heatmap: last 14 days, oldest left, today right
-  const heatmap = document.getElementById('heatmap');
-  const todayStr = new Date().toISOString().slice(0,10);
-  const dayTotals = {};
-  sessions.forEach(s => {
-    const k = s.date.slice(0,10);
-    dayTotals[k] = (dayTotals[k] || 0) + (s.duration||0);
-  });
-  let html = '';
-  for (let i = 13; i >= 0; i--){
-    const dt = new Date(); dt.setDate(dt.getDate() - i);
-    const k = dt.toISOString().slice(0,10);
-    const secs = dayTotals[k] || 0;
-    let cls = '';
-    if (secs >= 300) cls = 'h4';
-    else if (secs >= 180) cls = 'h3';
-    else if (secs >= 90) cls = 'h2';
-    else if (secs > 0) cls = 'h1';
-    const today = k === todayStr ? ' today' : '';
-    const title = dt.toLocaleDateString(undefined,{month:'short',day:'numeric'}) + ' · ' + secs + 's';
-    html += '<div class="heat-cell ' + cls + today + '" title="' + title + '"></div>';
-  }
-  heatmap.innerHTML = html;
-  // Session list
-  const list = document.getElementById('sessionList');
-  if (sessions.length === 0){
-    list.innerHTML = '<div class="empty-state">No sessions yet. Hum to begin.</div>';
-    return;
-  }
-  list.innerHTML = sessions.slice(0, 12).map(s => {
-    const dt = new Date(s.date);
-    const label = dt.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-    const time = dt.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
-    const meta = label + ' · ' + time + ' · ' + (s.freqName||s.freq+' Hz');
-    const snip = s.duration + 's · ' + (s.hums||0) + (s.hums === 1 ? ' hum' : ' hums');
-    return '<div class="session-card"><div class="session-card-meta">' + meta + '</div><div class="session-snippet">' + snip + '</div></div>';
-  }).join('');
 }
 
 // ──── Settings ────
 function toggleSetting(key, el){
   el.classList.toggle('on');
   const on = el.classList.contains('on');
+  el.setAttribute('aria-checked', on ? 'true' : 'false');
   if (key === 'voice'){
     state.voiceCues = on;
-    localStorage.setItem('hum.voiceCues', on ? '1' : '0');
+    safeLocalStorage('set', 'hum.voiceCues', on ? '1' : '0');
+    showToast((on ? '✓ Voice cues on' : '✓ Voice cues off'), 'success', 1500);
   }
 }
 
 function resetAll(){
-  if (!confirm('Reset all sessions and settings?')) return;
-  localStorage.removeItem('hum.sessions');
-  localStorage.removeItem('hum.voiceCues');
-  localStorage.removeItem('hum.defaultFreq');
-  state.lastResult = null;
-  showResult();
-  refreshHistory();
+  if (window.MVPEnhancements && window.MVPEnhancements.confirm) {
+    window.MVPEnhancements.confirm(
+      'Reset all sessions and settings? This cannot be undone.',
+      () => {
+        safeLocalStorage('remove', 'hum.sessions');
+        safeLocalStorage('remove', 'hum.voiceCues');
+        safeLocalStorage('remove', 'hum.defaultFreq');
+        state.lastResult = null;
+        showResult();
+        refreshHistory();
+        showToast('✓ All data cleared', 'success', 2000);
+      }
+    );
+  } else {
+    if (!confirm('Reset all sessions and settings?')) return;
+    safeLocalStorage('remove', 'hum.sessions');
+    safeLocalStorage('remove', 'hum.voiceCues');
+    safeLocalStorage('remove', 'hum.defaultFreq');
+    state.lastResult = null;
+    showResult();
+    refreshHistory();
+    showToast('✓ All data cleared', 'success', 2000);
+  }
 }
 
 // ──── Init ────
-const savedVoice = localStorage.getItem('hum.voiceCues') === '1';
-if (savedVoice){
-  state.voiceCues = true;
-  document.getElementById('setVoice').classList.add('on');
+try {
+  const savedVoice = safeLocalStorage('get', 'hum.voiceCues') === '1';
+  if (savedVoice){
+    state.voiceCues = true;
+    document.getElementById('setVoice').classList.add('on');
+    document.getElementById('setVoice').setAttribute('aria-checked', 'true');
+  }
+  const savedFreq = parseFloat(safeLocalStorage('get', 'hum.defaultFreq'));
+  if (savedFreq){
+    state.defaultFreq = savedFreq;
+    state.freq = savedFreq;
+    document.querySelectorAll('#defaultFreqChips .chip').forEach(c => {
+      c.classList.toggle('on', parseFloat(c.dataset.freq) === savedFreq);
+    });
+    document.querySelectorAll('#toneChips .chip').forEach(c => {
+      const m = parseFloat(c.dataset.freq) === savedFreq;
+      c.classList.toggle('on', m);
+      if (m) state.freqName = c.dataset.name;
+    });
+  }
+  refreshHistory();
+  showResult();
+} catch(e) {
+  console.error('Init error:', e);
+  showToast('Unable to load settings', 'error', 3000);
 }
-const savedFreq = parseFloat(localStorage.getItem('hum.defaultFreq'));
-if (savedFreq){
-  state.defaultFreq = savedFreq;
-  state.freq = savedFreq;
-  document.querySelectorAll('#defaultFreqChips .chip').forEach(c => {
-    c.classList.toggle('on', parseFloat(c.dataset.freq) === savedFreq);
-  });
-  document.querySelectorAll('#toneChips .chip').forEach(c => {
-    const m = parseFloat(c.dataset.freq) === savedFreq;
-    c.classList.toggle('on', m);
-    if (m) state.freqName = c.dataset.name;
-  });
-}
-refreshHistory();
-showResult();
 
 // Hide swipe hint after first scroll
 let hintShown = true;
