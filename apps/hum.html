@@ -165,9 +165,9 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 </style>
 </head>
 <body>
-<div class="offline-banner" id="offlineBanner">You are offline. Data will save when back online.</div>
+<div class="offline-banner" id="offlineBanner" role="alert" aria-live="assertive">You are offline. Data will save when back online.</div>
 <div class="toast-container" id="toastContainer"></div>
-<div id="sessionStatus" aria-live="polite" aria-atomic="false"></div>
+<div id="ariaSessionStatus" aria-live="polite" aria-atomic="false" role="status"></div>
 
 <div class="brand">
   <span class="mark">RHYTHMIX FREQUENCY <em style="color:var(--violet-soft);font-weight:500">· HUM</em></span>
@@ -571,6 +571,8 @@ function endSession(){
     sessionStatus.textContent = 'Too brief to save.';
     pacerLabel.textContent = 'Try again';
     pacerTime.textContent = '5 · 5';
+    const ariaStatus = document.getElementById('ariaSessionStatus');
+    ariaStatus.textContent = 'Session too brief to save. Try a longer session.';
     return;
   }
   sessionStatus.textContent = 'Saved.';
@@ -692,12 +694,16 @@ function saveSession(duration){
     setTimeout(() => {
       spinner.remove();
       showToast('✓ Session saved', 'success', 2000);
+      const ariaStatus = document.getElementById('ariaSessionStatus');
+      ariaStatus.textContent = 'Session saved. ' + duration + ' seconds, ' + state.hums + ' hums marked.';
     }, 300);
     refreshHistory();
   } catch(e) {
     spinner.remove();
     showToast('Failed to save session', 'error', 3000);
     console.error('Save session error:', e);
+    const ariaStatus = document.getElementById('ariaSessionStatus');
+    ariaStatus.textContent = 'Failed to save session.';
   }
 }
 
@@ -744,6 +750,8 @@ function refreshHistory(){
     const list = document.getElementById('sessionList');
     if (sessions.length === 0){
       list.innerHTML = '<div class="empty-state">No sessions yet. Hum to begin.</div>';
+      const ariaStatus = document.getElementById('ariaSessionStatus');
+      ariaStatus.textContent = 'No sessions yet.';
       return;
     }
     list.innerHTML = sessions.slice(0, 12).map(s => {
@@ -754,9 +762,13 @@ function refreshHistory(){
       const snip = s.duration + 's · ' + (s.hums||0) + (s.hums === 1 ? ' hum' : ' hums');
       return '<div class="session-card"><div class="session-card-meta">' + meta + '</div><div class="session-snippet">' + snip + '</div></div>';
     }).join('');
+    const ariaStatus = document.getElementById('ariaSessionStatus');
+    ariaStatus.textContent = 'History loaded. ' + sessions.length + ' sessions, ' + streak + ' day streak.';
   } catch(e) {
     console.error('History refresh error:', e);
     showToast('Unable to load history', 'error', 3000);
+    const ariaStatus = document.getElementById('ariaSessionStatus');
+    ariaStatus.textContent = 'Unable to load history.';
   }
 }
 
@@ -765,10 +777,13 @@ function toggleSetting(key, el){
   el.classList.toggle('on');
   const on = el.classList.contains('on');
   el.setAttribute('aria-checked', on ? 'true' : 'false');
+  const ariaStatus = document.getElementById('ariaSessionStatus');
   if (key === 'voice'){
     state.voiceCues = on;
     safeLocalStorage('set', 'hum.voiceCues', on ? '1' : '0');
+    const msg = on ? 'Voice cues enabled' : 'Voice cues disabled';
     showToast((on ? '✓ Voice cues on' : '✓ Voice cues off'), 'success', 1500);
+    ariaStatus.textContent = msg;
   }
 }
 
