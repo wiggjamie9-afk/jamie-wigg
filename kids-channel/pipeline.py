@@ -1665,49 +1665,59 @@ def generate_ebook(script: dict, episode_dir: Path) -> Path:
     pages = []
 
     # ── Cover page ────────────────────────────────────────────────────────────
-    cover, draw = parchment_page()
-    # Try to use generated cover image first, then scene images
-    cover_illus_h = int(PH * 0.58)
-    cover_candidates = [
-        episode_dir / "cover.jpg",  # Professional generated cover (primary)
-        episode_dir / "scene_01.jpg",
-        episode_dir / "scene_01.png",
-        episode_dir / "thumbnail.jpg",
-    ]
-    cover_img = next((p for p in cover_candidates if p.exists()), None)
-    if cover_img:
-        paste_illustration(cover, cover_img, cover_illus_h)
+    # EXACT: Check if professional cover image exists (the exact template images)
+    cover_img_path = episode_dir / "cover.jpg"
+
+    if cover_img_path.exists():
+        # Use EXACT professional cover as full first page (no parchment band)
+        try:
+            cover_img = Image.open(cover_img_path).convert("RGB")
+            # Resize to fit ebook page dimensions (portrait, 800x1120)
+            img_w, img_h = cover_img.size
+            # Scale to fit width, preserve aspect
+            scale = PW / img_w
+            new_h = int(img_h * scale)
+            cover_img = cover_img.resize((PW, new_h), Image.LANCZOS)
+
+            # Create page and paste cover image
+            cover_page = Image.new("RGB", (PW, PH), PARCHMENT)
+            if new_h >= PH:
+                # Crop if taller than page
+                offset = min((new_h - PH) // 3, 60)
+                cover_img = cover_img.crop((0, offset, PW, offset + PH))
+            else:
+                # Center vertically if shorter
+                paste_y = (PH - new_h) // 2
+                cover_page.paste(cover_img, (0, paste_y))
+                cover_page = Image.new("RGB", (PW, PH), PARCHMENT)
+
+            cover_page.paste(cover_img, (0, 0))
+            pages.append(cover_page)
+        except Exception:
+            # Fallback to default cover design
+            cover, draw = parchment_page()
+            cover_illus_h = int(PH * 0.58)
+            for y in range(cover_illus_h):
+                ratio = y / cover_illus_h
+                r = int(8 + 20 * ratio); g = int(14 + 28 * ratio); b = int(46 + 35 * ratio)
+                draw.line([(0, y), (PW, y)], fill=(r, g, b))
+            draw.rectangle([(0, cover_illus_h), (PW, cover_illus_h + 4)], fill=GOLD_LINE)
+            title_text = script.get("title", SHOW_NAME)
+            title_y = cover_illus_h + 30
+            centred_text(draw, title_text, font_title, TEXT_BROWN, title_y)
+            pages.append(cover)
     else:
-        # Navy starry gradient when no image yet
+        # Fallback: Create parchment cover with title
+        cover, draw = parchment_page()
+        cover_illus_h = int(PH * 0.58)
         for y in range(cover_illus_h):
             ratio = y / cover_illus_h
             r = int(8 + 20 * ratio); g = int(14 + 28 * ratio); b = int(46 + 35 * ratio)
             draw.line([(0, y), (PW, y)], fill=(r, g, b))
-
-    # Gold rule below illustration
-    draw.rectangle([(0, cover_illus_h), (PW, cover_illus_h + 4)], fill=GOLD_LINE)
-
-    # Title block on parchment
-    title_text = script.get("title", SHOW_NAME)
-    title_y = cover_illus_h + 30
-    # Wrap title
-    test_bbox = draw.textbbox((0, 0), "W" * 18, font=font_title)
-    char_w = (test_bbox[2] - test_bbox[0]) / 18
-    title_lines = tw.wrap(title_text, width=max(10, int((PW - 80) / char_w)))[:3]
-    for tl in title_lines:
-        centred_text(draw, tl, font_title, TEXT_BROWN, title_y)
-        bbox = draw.textbbox((0, 0), tl, font=font_title)
-        title_y += (bbox[3] - bbox[1]) + 8
-
-    # Gold decorative rule
-    rule_y = title_y + 14
-    draw.rectangle([(PW//4, rule_y), (3*PW//4, rule_y + 2)], fill=GOLD_LINE)
-
-    # Show name + author
-    centred_text(draw, SHOW_NAME, font_by, MID_BROWN, rule_y + 18)
-    centred_text(draw, "By Jamie Wigg", font_by, GOLD_TEXT, rule_y + 52)
-
-    pages.append(cover)
+        draw.rectangle([(0, cover_illus_h), (PW, cover_illus_h + 4)], fill=GOLD_LINE)
+        title_text = script.get("title", SHOW_NAME)
+        centred_text(draw, title_text, font_title, TEXT_BROWN, cover_illus_h + 30)
+        pages.append(cover)
 
     # ── Scene pages ───────────────────────────────────────────────────────────
     for i, scene in enumerate(script.get("scenes", [])):
