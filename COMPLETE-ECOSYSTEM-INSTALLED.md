@@ -17,13 +17,15 @@
 - **UI UX Pro Max skill** — 161 reasoning rules, 67 styles, 161 palettes
 - **Pre-delivery checklists** — Accessibility, responsive, animation, contrast
 
-### 2. ECC — Enterprise Claude Code (64 agents, 261 skills)
+### 2. ECC — Enterprise Claude Code (64 agents, 261 skills + Role-Based LLM Routing)
 **Status:** ✅ Installed globally  
 **Location:** `~/.claude/rules/ecc/`, Claude Code plugin system
 
 **What you get:**
 - **64 agents** — Planner, architect, code-reviewer, security-reviewer, build-error-resolver, Python/Go/TypeScript reviewers, etc.
 - **261 skills** — API design, patterns, TDD, security, testing, documentation, content generation, etc.
+- **Role-based LLM routing** — DEFAULT, ECONOMY, CHAT, NANO, DRAFT roles with ordered fallback chains (see `.env.example`)
+- **Multi-provider support** — Claude, Groq, OpenRouter with automatic credential-aware fallback
 - **Rules** — common/, typescript/, python/ (always-follow guidelines)
 - **Hooks** — Auto-formatting, validation, session persistence
 - **MCP servers** — GitHub, Context7, Exa, Playwright, sequential-thinking, memory
@@ -37,18 +39,19 @@
 /go-review, /python-review, etc.    → Language-specific review
 ```
 
-### 3. MoneyPrinterTurbo (Automated Video Generation)
+### 3. MoneyPrinterTurbo (Automated Video Generation + Multi-Language Support)
 **Status:** ✅ Cloned, Python environment configured  
 **Location:** `./MoneyPrinterTurbo/` (separate repo, working directory)
 
-**What it does:** Topic → Script → Materials → Subtitles → Music → High-def MP4
+**What it does:** Topic → Script → Materials → Subtitles → Music → High-def MP4 (55+ languages)
 
 **Installed:**
 - Python 3.11 environment (via uv)
-- 124 dependencies (FastAPI, Streamlit, moviepy, TTS, ASR, LLM integrations)
+- 125 dependencies (FastAPI, Streamlit, moviepy, TTS, ASR, LLM integrations)
 - Config template (`config.toml`)
 - Setup guide for RHYTHMIX integration (`SETUP-FOR-RHYTHMIX.md`)
 - **Supervision 0.28.0** — Computer vision annotation + object detection for intelligent material selection & quality gates
+- **langdetect 1.0.9** — Auto-detect script language (55+ supported), route to appropriate TTS engine + subtitle fonts
 
 **To start:**
 ```bash
@@ -215,6 +218,7 @@ System self-improves for tomorrow's work.
 | ECC Plugin | Claude Code plugin system | ✅ Installed |
 | ECC Rules | `~/.claude/rules/ecc/` | ✅ Installed |
 | ECC Agents | Global (via plugin) | ✅ Installed |
+| ECC Agents with LLM Role Routing | `.env` config | ✅ Ready (see `.env.example`) |
 | ECC Skills | Global (via plugin) | ✅ Installed |
 
 ### Working Directory (Ready to Use)
@@ -237,11 +241,16 @@ System self-improves for tomorrow's work.
 ### ECC (Already Available in Claude Code)
 ```
 /ecc:plan              Plan a feature
-/code-review           Review code
-/build-fix             Fix build errors
-/security-scan         Deep security audit
+/code-review           Review code (uses DEFAULT_LLMS)
+/build-fix             Fix build errors (uses ECONOMY_LLMS)
+/security-scan         Deep security audit (uses DEFAULT_LLMS)
 /quality-gate          Verify quality gates
 /model sonnet|opus     Switch models
+
+# Configure LLM roles in .env:
+# DEFAULT_LLMS=anthropic:claude-opus-4-8,anthropic:claude-sonnet-4-6
+# ECONOMY_LLMS=anthropic:claude-haiku-4-5,groq:mixtral-8x7b-32768
+# ... (see .env.example and ROLE-BASED-LLM-CONFIG.md)
 ```
 
 ### MoneyPrinterTurbo (Ready to Run)
