@@ -1226,6 +1226,8 @@
     <!-- TOAST CONTAINER -->
     <div id="toastContainer"></div>
 
+    <!-- Tesseract.js: open-source OCR, runs entirely in the browser. No API key, no backend. -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         // MULTILINGUAL SUPPORT (Top 10 Languages)
         const translations = {
@@ -1618,24 +1620,69 @@
             });
         }
 
-        // BOOK MANAGEMENT
-        function createBook(title, imageData) {
-            showToast('📸 Scanning... (OCR integration coming next)', 'success');
+        // Map app language -> Tesseract language pack
+        const tesseractLangMap = {
+            en: 'eng', es: 'spa', fr: 'fra', pt: 'por', de: 'deu',
+            ja: 'jpn', hi: 'hin', zh: 'chi_sim', ar: 'ara', ru: 'rus'
+        };
 
-            const book = {
-                id: Date.now(),
-                title: title.replace(/\.[^/.]+$/, ''),
-                image: imageData,
-                content: 'Sample text for ' + title + '. This is a placeholder. In the next phase, we will integrate Google Cloud Vision API for OCR to extract actual text from images.',
-                dateAdded: new Date().toLocaleDateString(),
-                progress: 0,
-                lastRead: new Date().toLocaleDateString()
-            };
+        // BOOK MANAGEMENT — real OCR via Tesseract.js (in-browser, no API key)
+        async function createBook(title, imageData) {
+            if (typeof Tesseract === 'undefined') {
+                showToast('OCR engine still loading — check your connection and try again.', 'error');
+                return;
+            }
 
-            state.books.push(book);
-            saveLibrary();
-            showScreen('library');
-            renderLibrary();
+            // Progress UI
+            const uploadArea = document.getElementById('uploadArea');
+            const originalHTML = uploadArea ? uploadArea.innerHTML : '';
+            if (uploadArea) {
+                uploadArea.innerHTML = `
+                    <div class="upload-area-icon">⏳</div>
+                    <div class="upload-area-text">Scanning your page…</div>
+                    <div class="upload-area-subtext" id="ocrProgress">Reading the words… 0%</div>`;
+            }
+
+            const lang = tesseractLangMap[currentLanguage] || 'eng';
+
+            try {
+                const result = await Tesseract.recognize(imageData, lang, {
+                    logger: (m) => {
+                        if (m.status === 'recognizing text') {
+                            const pct = Math.round(m.progress * 100);
+                            const el = document.getElementById('ocrProgress');
+                            if (el) el.textContent = `Reading the words… ${pct}%`;
+                        }
+                    }
+                });
+
+                const text = (result.data.text || '').trim();
+
+                if (uploadArea) uploadArea.innerHTML = originalHTML;
+
+                if (!text || text.length < 3) {
+                    showToast('I couldn\'t find clear text. Try better lighting and hold steady.', 'error');
+                    return;
+                }
+
+                const book = {
+                    id: Date.now(),
+                    title: title.replace(/\.[^/.]+$/, ''),
+                    image: imageData,
+                    content: text,
+                    dateAdded: new Date().toLocaleDateString(),
+                    progress: 0,
+                    lastRead: new Date().toLocaleDateString()
+                };
+
+                state.books.push(book);
+                saveLibrary();
+                showToast('✓ Scanned! Found ' + text.split(/\s+/).length + ' words.', 'success');
+                openBook(book.id);
+            } catch (err) {
+                if (uploadArea) uploadArea.innerHTML = originalHTML;
+                showToast('Scan failed: ' + (err.message || 'unknown error') + '. Try again.', 'error');
+            }
         }
 
         function saveLibrary() {
@@ -1889,37 +1936,139 @@
         }
 
         function closeReader() {
+            stopSpeech();
             state.currentBook = null;
             state.isPlaying = false;
             showScreen('library');
         }
 
-        // READER CONTROLS
-        function togglePlayPause() {
-            state.isPlaying = !state.isPlaying;
-            document.getElementById('playBtn').textContent = state.isPlaying ? '⏸️' : '▶️';
-            if (state.isPlaying) {
-                simulateReading();
+        // READER CONTROLS — real TTS via the browser's built-in Web Speech API (free, offline, no key)
+        // Map app language -> BCP-47 voice locale
+        const speechLangMap = {
+            en: 'en-US', es: 'es-ES', fr: 'fr-FR', pt: 'pt-BR', de: 'de-DE',
+            ja: 'ja-JP', hi: 'hi-IN', zh: 'zh-CN', ar: 'ar-SA', ru: 'ru-RU'
+        };
+
+        function pickVoice(locale) {
+            const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+            if (!voices.length) return null;
+            // exact locale, then language prefix, then default
+            return voices.find(v => v.lang === locale)
+                || voices.find(v => v.lang && v.lang.startsWith(locale.split('-')[0]))
+                || voices[0];
+        }
+
+        function getAllWordSpans() {
+            return Array.from(document.querySelectorAll('#readerText .word'));
+        }
+
+        function highlightWordAt(charIndex) {
+            if (!state.settings.highlightWords) return;
+            const spans = getAllWordSpans();
+            // Walk spans, tracking cumulative character offset to find the spoken word
+            let offset = 0;
+            for (const span of spans) {
+                const len = span.textContent.length + 1; // +1 for the space between words
+                if (charIndex >= offset && charIndex < offset + len) {
+                    spans.forEach(s => s.classList.remove('current'));
+                    span.classList.add('current');
+                    span.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    return;
+                }
+                offset += len;
             }
         }
 
-        function simulateReading() {
-            if (!state.isPlaying) return;
-            // Voice narration will be integrated with TTS in Week 2
-            setTimeout(simulateReading, 100);
+        function stopSpeech() {
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            getAllWordSpans().forEach(s => s.classList.remove('current'));
+        }
+
+        function togglePlayPause() {
+            if (!('speechSynthesis' in window)) {
+                showToast('Your browser does not support voice. Try Chrome or Safari.', 'error');
+                return;
+            }
+
+            const synth = window.speechSynthesis;
+
+            if (state.isPlaying) {
+                // pause
+                synth.pause();
+                state.isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶️';
+                return;
+            }
+
+            // resume if paused mid-utterance
+            if (synth.paused && synth.speaking) {
+                synth.resume();
+                state.isPlaying = true;
+                document.getElementById('playBtn').textContent = '⏸️';
+                return;
+            }
+
+            // fresh start
+            const text = state.currentBook ? state.currentBook.content : document.getElementById('readerText').innerText;
+            if (!text) return;
+
+            const utter = new SpeechSynthesisUtterance(text);
+            const locale = speechLangMap[currentLanguage] || 'en-US';
+            const voice = pickVoice(locale);
+            if (voice) utter.voice = voice;
+            utter.lang = locale;
+            utter.rate = parseFloat(state.settings.speed) || 1;
+
+            utter.onboundary = (e) => {
+                if (e.name === 'word' || e.charIndex !== undefined) {
+                    highlightWordAt(e.charIndex);
+                }
+            };
+            utter.onend = () => {
+                state.isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶️';
+                getAllWordSpans().forEach(s => s.classList.remove('current'));
+                if (state.currentBook) {
+                    state.currentBook.progress = 100;
+                    saveLibrary();
+                }
+            };
+            utter.onerror = () => {
+                state.isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶️';
+            };
+
+            synth.cancel(); // clear any queued speech
+            synth.speak(utter);
+            state.currentUtterance = utter;
+            state.isPlaying = true;
+            document.getElementById('playBtn').textContent = '⏸️';
         }
 
         function skipBackward() {
-            showToast('⏮️ Skipped back 30 seconds', 'success');
+            // restart current reading (simple, reliable behaviour for an MVP)
+            stopSpeech();
+            state.isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶️';
+            togglePlayPause();
         }
 
         function skipForward() {
-            showToast('⏭️ Skipped forward 30 seconds', 'success');
+            stopSpeech();
+            state.isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶️';
+            showToast('Reached the end of this page.', 'success');
         }
 
         function updateReaderSpeed(speed) {
             document.getElementById('readerSpeedValue').textContent = speed + 'x';
             updateSpeed(speed);
+            // apply live: restart so the new rate takes effect
+            if (state.isPlaying) {
+                stopSpeech();
+                state.isPlaying = false;
+                togglePlayPause();
+            }
         }
 
         function bookmarkPage() {
@@ -1993,14 +2142,30 @@
         let buddyModeActive = false;
         let buddyVoiceSpeed = 1;
 
+        // Real text-to-speech for any string, in the current language
+        function speak(text) {
+            if (!('speechSynthesis' in window)) {
+                showToast('Voice not supported in this browser. Try Chrome or Safari.', 'error');
+                return;
+            }
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            const locale = speechLangMap[currentLanguage] || 'en-US';
+            const voice = pickVoice(locale);
+            if (voice) utter.voice = voice;
+            utter.lang = locale;
+            utter.rate = buddyVoiceSpeed || 1;
+            synth.speak(utter);
+        }
+
         function playBuddyMessage() {
             const greeting = document.getElementById('buddyGreeting');
-            showToast('🎵 Playing message (TTS in Week 2: ElevenLabs)', 'success');
-            // In Week 2: will integrate ElevenLabs TTS here
+            const text = greeting ? greeting.textContent.replace(/^["']|["']$/g, '') : '';
+            speak(text);
             greeting.style.background = 'rgba(16, 185, 129, 0.2)';
-            setTimeout(() => {
-                greeting.style.background = '';
-            }, 2000);
+            const utterEnd = () => { greeting.style.background = ''; };
+            setTimeout(utterEnd, Math.min(text.length * 80, 15000));
         }
 
         function adjustBuddySpeed(speed) {
@@ -2049,6 +2214,7 @@
             }
 
             showToast(`📖 Buddy says: "${response}"`, 'success');
+            speak(response); // read the answer aloud — the whole point of Buddy Mode
         }
 
         // KEYBOARD SHORTCUTS FOR BUDDY MODE
@@ -2079,6 +2245,12 @@
             toast.textContent = message;
             document.getElementById('toastContainer').appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Warm up the speech engine — voices load asynchronously on many browsers
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
 
         // Start app

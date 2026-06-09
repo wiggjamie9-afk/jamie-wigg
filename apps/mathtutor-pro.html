@@ -702,8 +702,8 @@
             <!-- INPUT SECTION -->
             <div class="problem-input-panel">
                 <div class="input-tabs">
-                    <button class="tab-btn active" onclick="switchInputTab('type')">📝 Type Problem</button>
-                    <button class="tab-btn" onclick="switchInputTab('photo')">📸 Upload Photo</button>
+                    <button class="tab-btn active" data-tab="type" onclick="switchInputTab('type', event)">📝 Type Problem</button>
+                    <button class="tab-btn" data-tab="photo" onclick="switchInputTab('photo', event)">📸 Upload Photo</button>
                 </div>
 
                 <div id="typeTab">
@@ -892,6 +892,8 @@
     <!-- TOAST CONTAINER -->
     <div id="toastContainer"></div>
 
+    <!-- Tesseract.js: open-source OCR, runs in the browser. No API key, no backend. -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         // MULTILINGUAL SUPPORT (Top 10 Languages)
         const translations = {
@@ -1362,11 +1364,14 @@
             }
         }
 
-        function switchInputTab(tab) {
+        function switchInputTab(tab, evt) {
             document.getElementById('typeTab').style.display = tab === 'type' ? 'block' : 'none';
             document.getElementById('photoTab').style.display = tab === 'photo' ? 'block' : 'none';
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            const trigger = (evt && evt.target) ||
+                document.querySelector(`.tab-btn[data-tab="${tab}"]`) ||
+                document.querySelectorAll('.tab-btn')[tab === 'type' ? 0 : 1];
+            if (trigger) trigger.classList.add('active');
         }
 
         // PROBLEM SOLVING
@@ -1381,36 +1386,116 @@
             displaySolution(problem);
         }
 
+        // ---- Real math engine (no API needed for common cases) ----
+
+        // Safely evaluate an arithmetic expression: digits, + - * / ( ) . % and ^
+        function safeEval(expr) {
+            const cleaned = expr
+                .replace(/×/g, '*').replace(/÷/g, '/')
+                .replace(/\^/g, '**')
+                .replace(/[^0-9+\-*/().%\s*]/g, '');
+            if (!/[0-9]/.test(cleaned)) return null;
+            try {
+                // eslint-disable-next-line no-new-func
+                const val = Function('"use strict";return (' + cleaned + ')')();
+                return (typeof val === 'number' && isFinite(val)) ? val : null;
+            } catch { return null; }
+        }
+
+        // Solve a linear equation in x, e.g. "2x + 5 = 13"
+        function solveLinear(problem) {
+            const m = problem.replace(/\s+/g, '').match(/^(.+)=(.+)$/);
+            if (!m || !/x/i.test(problem)) return null;
+            // Build f(x) = LHS - RHS, sample two points to get slope/intercept (linear)
+            const f = (x) => {
+                const sub = (side) => side
+                    .replace(/([0-9.])x/gi, '$1*x')
+                    .replace(/x/gi, '(' + x + ')')
+                    .replace(/×/g, '*').replace(/÷/g, '/');
+                const lhs = safeEval(sub(m[1]));
+                const rhs = safeEval(sub(m[2]));
+                if (lhs === null || rhs === null) return null;
+                return lhs - rhs;
+            };
+            const f0 = f(0), f1 = f(1);
+            if (f0 === null || f1 === null) return null;
+            const slope = f1 - f0;
+            if (slope === 0) return null;
+            const x = -f0 / slope;
+            return Math.round(x * 1e6) / 1e6;
+        }
+
+        // "25% of 80"
+        function solvePercent(problem) {
+            const m = problem.replace(/\s+/g, '').match(/([0-9.]+)%of([0-9.]+)/i);
+            if (!m) return null;
+            return (parseFloat(m[1]) / 100) * parseFloat(m[2]);
+        }
+
+        function buildSteps(problem) {
+            // 1) Percentage
+            const pct = solvePercent(problem);
+            if (pct !== null) {
+                const m = problem.replace(/\s+/g, '').match(/([0-9.]+)%of([0-9.]+)/i);
+                return {
+                    answer: String(pct),
+                    steps: [
+                        { num: 1, title: 'Understand "percent of"', content: `"${m[1]}% of ${m[2]}" means take ${m[1]} out of every 100 parts of ${m[2]}.`, explanation: 'Percent just means "out of 100".' },
+                        { num: 2, title: 'Turn the percent into a decimal', content: `${m[1]}% = ${m[1]} ÷ 100 = ${parseFloat(m[1]) / 100}`, explanation: 'Move the decimal point two places left.' },
+                        { num: 3, title: 'Multiply', content: `${parseFloat(m[1]) / 100} × ${m[2]} = ${pct}`, explanation: '"of" in maths means multiply.' },
+                        { num: 4, title: 'Check', content: `Does ${pct} look like about ${m[1]}% of ${m[2]}? Yes.`, explanation: 'A quick sense-check builds confidence.' }
+                    ]
+                };
+            }
+
+            // 2) Linear equation
+            const xVal = solveLinear(problem);
+            if (xVal !== null) {
+                return {
+                    answer: 'x = ' + xVal,
+                    steps: [
+                        { num: 1, title: 'Read the equation', content: `You need to find the value of x that makes both sides equal: ${problem}`, explanation: 'x is the unknown number we are hunting for.' },
+                        { num: 2, title: 'Get x by itself', content: 'Do the same operation to BOTH sides to keep the equation balanced — move plain numbers away from x first, then divide.', explanation: 'Whatever you do to one side, do to the other.' },
+                        { num: 3, title: 'Solve', content: `Working it through gives x = ${xVal}.`, explanation: 'Each step keeps the two sides equal.' },
+                        { num: 4, title: 'Check by substituting', content: `Put x = ${xVal} back into the original equation — both sides match.`, explanation: 'Substituting back proves the answer is right.' }
+                    ]
+                };
+            }
+
+            // 3) Plain arithmetic
+            const val = safeEval(problem);
+            if (val !== null) {
+                return {
+                    answer: String(Math.round(val * 1e6) / 1e6),
+                    steps: [
+                        { num: 1, title: 'Read the expression', content: `Calculate: ${problem}`, explanation: 'Identify the numbers and the operations.' },
+                        { num: 2, title: 'Order of operations', content: 'Work through Brackets, then ×/÷, then +/− (BODMAS).', explanation: 'Doing operations in the right order matters.' },
+                        { num: 3, title: 'Result', content: `${problem} = ${Math.round(val * 1e6) / 1e6}`, explanation: 'Take it one operation at a time.' },
+                        { num: 4, title: 'Check', content: 'Estimate roughly in your head — does the answer feel about right?', explanation: 'Estimating catches big mistakes.' }
+                    ]
+                };
+            }
+
+            return null; // word problem / advanced — needs the AI tutor
+        }
+
         function displaySolution(problem) {
             document.getElementById('problemDisplay').textContent = problem;
 
-            // Sample solution structure (will be replaced with Claude API + Math AI)
-            const steps = [
-                {
-                    num: 1,
-                    title: 'Identify the problem',
-                    content: 'Read the problem carefully and understand what is being asked',
-                    explanation: 'Always start by understanding what you need to find'
-                },
-                {
-                    num: 2,
-                    title: 'Plan your approach',
-                    content: 'Think about which math operations or strategies will help',
-                    explanation: 'There are often multiple ways to solve a problem'
-                },
-                {
-                    num: 3,
-                    title: 'Solve step by step',
-                    content: 'Show each step clearly so you can check your work',
-                    explanation: 'Breaking it down helps you catch mistakes'
-                },
-                {
-                    num: 4,
-                    title: 'Check your answer',
-                    content: 'Verify your solution by working backwards or trying another method',
-                    explanation: 'Checking is how you become confident in your answer'
-                }
-            ];
+            const solved = buildSteps(problem);
+
+            let steps, answer;
+            if (solved) {
+                steps = solved.steps;
+                answer = solved.answer;
+            } else {
+                // Couldn't solve mechanically — be honest and route to the tutor
+                steps = [
+                    { num: 1, title: 'This one needs reasoning', content: 'I can instantly solve arithmetic (e.g. 12 × 7 + 3), percentages (e.g. 25% of 80) and simple equations (e.g. 2x + 5 = 13).', explanation: 'These run fully on your device — no internet needed.' },
+                    { num: 2, title: 'Word problems & advanced topics', content: 'For word problems, geometry proofs or calculus, tap "Ask the Tutor" — and connect an AI key in Settings to unlock full step-by-step reasoning.', explanation: 'Honest about what works today vs. what needs the AI brain.' }
+                ];
+                answer = 'Try the AI Tutor for this one';
+            }
 
             const stepsHTML = steps.map(step => `
                 <div class="step">
@@ -1426,26 +1511,120 @@
             `).join('');
 
             document.getElementById('stepsContainer').innerHTML = stepsHTML;
-            document.getElementById('finalAnswer').textContent = 'Solution will appear here (next phase: Claude API integration)';
+            document.getElementById('finalAnswer').textContent = answer;
             document.getElementById('solutionDisplay').style.display = 'block';
 
             updateStats();
-            showToast('✓ Problem analyzed! (Full AI solving in Week 2)', 'success');
+            if (solved) {
+                showToast('✓ Solved! Tap "Play Explanation" to hear it.', 'success');
+            } else {
+                showToast('This needs the AI Tutor — arithmetic, % and simple equations solve instantly here.', 'success');
+            }
         }
 
-        function handleImageUpload(event) {
+        async function handleImageUpload(event) {
             const file = event.target.files[0];
-            if (file) {
-                showToast('📸 Image captured! OCR processing in Week 2', 'success');
-                // In Week 2: integrate Google Cloud Vision for OCR
+            if (!file) return;
+            if (typeof Tesseract === 'undefined') {
+                showToast('OCR engine still loading — check your connection and try again.', 'error');
+                return;
             }
+
+            showToast('📸 Reading the problem from your photo…', 'success');
+            const dataUrl = await new Promise((resolve) => {
+                const r = new FileReader();
+                r.onload = (e) => resolve(e.target.result);
+                r.readAsDataURL(file);
+            });
+
+            try {
+                const result = await Tesseract.recognize(dataUrl, 'eng', {
+                    logger: (m) => {
+                        if (m.status === 'recognizing text') {
+                            showToast('Reading… ' + Math.round(m.progress * 100) + '%', 'success');
+                        }
+                    }
+                });
+                const text = (result.data.text || '').trim().split('\n')[0]; // first line = the problem
+                if (!text) {
+                    showToast('Couldn\'t read the problem. Try better lighting.', 'error');
+                    return;
+                }
+                // Drop it into the type box and solve it for real
+                switchInputTab('type');
+                document.getElementById('problemInput').value = text;
+                showToast('✓ Read: "' + text + '"', 'success');
+                solveProblem();
+            } catch (err) {
+                showToast('Scan failed: ' + (err.message || 'try again'), 'error');
+            }
+        }
+
+        // Real text-to-speech via the browser's built-in Web Speech API (free, offline, no key)
+        const speechLangMap = {
+            en: 'en-US', es: 'es-ES', fr: 'fr-FR', pt: 'pt-BR', de: 'de-DE',
+            ja: 'ja-JP', hi: 'hi-IN', zh: 'zh-CN', ar: 'ar-SA', ru: 'ru-RU'
+        };
+
+        function pickVoice(locale) {
+            const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+            if (!voices.length) return null;
+            return voices.find(v => v.lang === locale)
+                || voices.find(v => v.lang && v.lang.startsWith(locale.split('-')[0]))
+                || voices[0];
+        }
+
+        // Make math notation speakable: x² -> "x squared", etc.
+        function speakableMath(text) {
+            return text
+                .replace(/\^2/g, ' squared ')
+                .replace(/\^3/g, ' cubed ')
+                .replace(/\*/g, ' times ')
+                .replace(/\//g, ' divided by ')
+                .replace(/=/g, ' equals ')
+                .replace(/\+/g, ' plus ')
+                .replace(/√/g, ' square root of ')
+                .replace(/π/g, ' pi ');
+        }
+
+        function speak(text) {
+            if (!('speechSynthesis' in window)) {
+                showToast('Voice not supported in this browser. Try Chrome or Safari.', 'error');
+                return;
+            }
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            const utter = new SpeechSynthesisUtterance(speakableMath(text));
+            const locale = speechLangMap[currentLanguage] || 'en-US';
+            const voice = pickVoice(locale);
+            if (voice) utter.voice = voice;
+            utter.lang = locale;
+            utter.rate = parseFloat(state.voiceSpeed) || 1;
+            synth.speak(utter);
+            return utter;
         }
 
         function toggleVoicePlayback() {
             const btn = document.getElementById('playBtn');
-            const isPlaying = btn.textContent.includes('Stop');
-            btn.textContent = isPlaying ? '▶️ Play Explanation' : '⏸️ Stop';
-            showToast(isPlaying ? 'Voice stopped' : '🎵 Voice narration starting (Week 2: ElevenLabs)', 'success');
+            const synth = window.speechSynthesis;
+
+            if (synth && synth.speaking) {
+                synth.cancel();
+                btn.textContent = '▶️ Play Explanation';
+                return;
+            }
+
+            // Read the whole solution aloud: each step + final answer
+            const steps = Array.from(document.querySelectorAll('#stepsContainer .step-content'))
+                .map(el => el.textContent.trim());
+            const answer = document.getElementById('finalAnswer').textContent;
+            const fullText = steps.join('. ') + '. The final answer is: ' + answer;
+
+            const utter = speak(fullText);
+            if (utter) {
+                btn.textContent = '⏸️ Stop';
+                utter.onend = () => { btn.textContent = '▶️ Play Explanation'; };
+            }
         }
 
         function updateVoiceSpeed(speed) {
@@ -1496,6 +1675,9 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
             state.chatHistory.push({ sender, text });
+
+            // The tutor reads its answers aloud — voice-first for dyslexic/ADHD learners
+            if (sender === 'ai') speak(text);
         }
 
         function generateTutorResponse(question) {
@@ -1577,6 +1759,12 @@
             toast.textContent = message;
             document.getElementById('toastContainer').appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Warm up the speech engine — voices load asynchronously on many browsers
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
 
         // Start app
