@@ -45,9 +45,10 @@
 
 **Installed:**
 - Python 3.11 environment (via uv)
-- 123 dependencies (FastAPI, Streamlit, moviepy, TTS, ASR, LLM integrations)
+- 124 dependencies (FastAPI, Streamlit, moviepy, TTS, ASR, LLM integrations)
 - Config template (`config.toml`)
 - Setup guide for RHYTHMIX integration (`SETUP-FOR-RHYTHMIX.md`)
+- **Supervision 0.28.0** — Computer vision annotation + object detection for intelligent material selection & quality gates
 
 **To start:**
 ```bash
