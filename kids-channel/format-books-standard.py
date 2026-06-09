@@ -13,6 +13,9 @@ OUTPUT_DIR = Path("/home/user/jamie-wigg/formatted-books")
 EPISODES_DIR = Path("/home/user/jamie-wigg/kids-channel/episodes")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# Pre-load sorted episode directories
+EPISODE_DIRS = sorted([d for d in EPISODES_DIR.iterdir() if d.is_dir() and (d / "script.json").exists()])
+
 # LOCKED BOOK COVER TEMPLATE
 COVER_TEMPLATE = """
 ================================================================================
@@ -47,11 +50,11 @@ TEXT (2 LINES):
 
 def load_episode_script(episode_num):
     """Load episode script from JSON"""
-    episode_dir = EPISODES_DIR / f"episode-{episode_num:03d}"
-    script_file = episode_dir / "script.json"
-
-    if not script_file.exists():
+    if episode_num < 1 or episode_num > len(EPISODE_DIRS):
         return None
+
+    episode_dir = EPISODE_DIRS[episode_num - 1]
+    script_file = episode_dir / "script.json"
 
     try:
         with open(script_file, 'r') as f:
@@ -85,7 +88,7 @@ def create_book_from_story(episode_num, story_data):
         return False
 
     story_title = story_data.get("title", f"Episode {episode_num}")
-    story_text = story_data.get("story", "")
+    story_text = story_data.get("narration", "")
 
     if not story_text:
         return False
