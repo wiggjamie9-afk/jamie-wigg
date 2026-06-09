@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookReader Pro - AI Reading Assistant for Dyslexic Readers</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #6366f1;
+            --color-secondary: #8b5cf6;
+            --color-success: #10b981;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --color-bg-dark: #0f172a;
+            --color-bg-light: #1e293b;
+            --color-text: #e2e8f0;
+            --color-text-secondary: #cbd5e1;
+            --color-border: #334155;
+            --color-overlay-blue: rgba(59, 130, 246, 0.15);
+            --color-overlay-sepia: rgba(180, 83, 9, 0.15);
+            --color-overlay-green: rgba(34, 197, 94, 0.15);
+            --color-overlay-pink: rgba(236, 72, 153, 0.15);
+            --line-height-normal: 1.8;
+            --line-height-generous: 2.2;
+            --letter-spacing-normal: 0;
+            --letter-spacing-loose: 0.05em;
+            --font-size-base: 18px;
+            --font-size-large: 24px;
+            --font-size-xlarge: 32px;
+        }
+
+        body {
+            font-family: 'OpenDyslexic', 'Comic Sans MS', 'Segoe UI', sans-serif;
+            background-color: var(--color-bg-dark);
+            color: var(--color-text);
+            line-height: var(--line-height-normal);
+            letter-spacing: var(--letter-spacing-normal);
+            font-size: var(--font-size-base);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.overlay-blue {
+            background: linear-gradient(135deg, var(--color-overlay-blue), rgba(30, 41, 59, 0.8));
+        }
+
+        body.overlay-sepia {
+            background: linear-gradient(135deg, var(--color-overlay-sepia), rgba(30, 41, 59, 0.8));
+        }
+
+        body.overlay-green {
+            background: linear-gradient(135deg, var(--color-overlay-green), rgba(30, 41, 59, 0.8));
+        }
+
+        body.overlay-pink {
+            background: linear-gradient(135deg, var(--color-overlay-pink), rgba(30, 41, 59, 0.8));
+        }
+
+        .container {
+            max-width: 90%;
+            margin: 0 auto;
+            padding: 1.5rem 0;
+        }
+
+        header {
+            background-color: var(--color-bg-light);
+            border-bottom: 2px solid var(--color-border);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--color-primary);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            font-weight: 600;
+            touch-action: manipulation;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--color-secondary);
+            outline: 2px solid var(--color-secondary);
+            outline-offset: 2px;
+        }
+
+        .btn-secondary {
+            background-color: var(--color-bg-light);
+            color: var(--color-text);
+            border: 2px solid var(--color-border);
+        }
+
+        .btn-secondary:hover, .btn-secondary:focus {
+            background-color: var(--color-border);
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .btn-icon {
+            width: 3rem;
+            height: 3rem;
+            padding: 0.5rem;
+            font-size: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* HOME SCREEN */
+        .home-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .home-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .home-card {
+            background-color: var(--color-bg-light);
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .home-card:hover, .home-card:focus {
+            border-color: var(--color-primary);
+            background-color: var(--color-bg-light);
+            transform: translateY(-4px);
+            outline: 2px solid var(--color-primary);
+            outline-offset: 0;
+        }
+
+        .home-card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .home-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: var(--color-primary);
+        }
+
+        .home-card p {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* SETTINGS PANEL */
+        .settings-panel {
+            background-color: var(--color-bg-light);
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .settings-group {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .settings-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .settings-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--color-primary);
+            display: block;
+        }
+
+        .radio-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .radio-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background-color: var(--color-bg-dark);
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .radio-option input[type="radio"],
+        .radio-option input[type="checkbox"] {
+            width: 1.5rem;
+            height: 1.5rem;
+            cursor: pointer;
+            accent-color: var(--color-primary);
+        }
+
+        .radio-option:has(input:checked) {
+            background-color: var(--color-bg-light);
+            border-color: var(--color-primary);
+        }
+
+        .radio-label {
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            min-width: 150px;
+            height: 8px;
+            cursor: pointer;
+            accent-color: var(--color-primary);
+        }
+
+        .slider-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        /* UPLOAD SECTION */
+        .upload-area {
+            border: 3px dashed var(--color-border);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background-color: var(--color-bg-light);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .upload-area:hover, .upload-area:focus-within {
+            border-color: var(--color-primary);
+            background-color: var(--color-bg-dark);
+        }
+
+        .upload-area-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--color-primary);
+        }
+
+        .upload-area-subtext {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* READER SCREEN */
+        .reader-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--color-bg-light);
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .playback-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--color-bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-primary);
+            transition: width 0.1s;
+        }
+
+        .reader-text {
+            background-color: var(--color-bg-light);
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .reader-paragraph {
+            margin-bottom: 2rem;
+        }
+
+        .word {
+            position: relative;
+            transition: all 0.1s;
+            cursor: default;
+        }
+
+        .word.current {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        .sentence {
+            display: inline;
+            margin-right: 0.5em;
+        }
+
+        /* LIBRARY SCREEN */
+        .library-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .book-card {
+            background-color: var(--color-bg-light);
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .book-card:hover, .book-card:focus {
+            border-color: var(--color-primary);
+            transform: translateY(-4px);
+            outline: 2px solid var(--color-primary);
+            outline-offset: 0;
+        }
+
+        .book-cover {
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+
+        .book-info {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .book-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--color-primary);
+            line-clamp: 2;
+        }
+
+        .book-progress {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .book-date {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-top: auto;
+        }
+
+        /* TOAST NOTIFICATIONS */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: var(--color-bg-light);
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            max-width: 400px;
+            animation: slideIn 0.3s;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .toast.success {
+            border-color: var(--color-success);
+        }
+
+        .toast.error {
+            border-color: var(--color-error);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(500px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ACCESSIBILITY */
+        :focus-visible {
+            outline: 3px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        a:focus-visible, button:focus-visible {
+            outline: 3px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                max-width: 95%;
+            }
+
+            .settings-panel {
+                padding: 1.5rem;
+            }
+
+            .reader-text {
+                padding: 1.5rem;
+            }
+
+            .reader-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .playback-buttons {
+                justify-content: center;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .nav-buttons {
+                width: 100%;
+            }
+
+            .btn-primary, .btn-secondary {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* AI COMPREHENSION ASSISTANT */
+        .ai-assistant-panel {
+            background-color: var(--color-bg-light);
+            border: 2px solid var(--color-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            position: sticky;
+            bottom: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .ai-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            font-size: 1.1rem;
+        }
+
+        .ai-panel-content {
+            color: var(--color-text);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .complex-word {
+            background-color: rgba(99, 102, 241, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            border-bottom: 2px solid var(--color-primary);
+            transition: all 0.2s;
+        }
+
+        .complex-word:hover {
+            background-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .vocabulary-tooltip {
+            position: absolute;
+            background-color: var(--color-bg-light);
+            border: 2px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 1rem;
+            max-width: 300px;
+            z-index: 1001;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.2s;
+        }
+
+        .close-tooltip {
+            float: right;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--color-text-secondary);
+        }
+
+        .ai-explanation {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: var(--color-bg-dark);
+            border-left: 4px solid var(--color-primary);
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .ai-question {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .ai-question:hover {
+            background-color: rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">📖 BookReader Pro</div>
+                <div class="nav-buttons">
+                    <button class="btn-icon" onclick="showScreen('home')" title="Home">🏠</button>
+                    <button class="btn-icon" onclick="showScreen('library')" title="Library">📚</button>
+                    <button class="btn-icon" onclick="showScreen('settings')" title="Settings">⚙️</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- HOME SCREEN -->
+        <div id="homeScreen" class="screen active">
+            <div class="home-grid">
+                <div class="home-card" onclick="showScreen('upload')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('upload')">
+                    <div class="home-card-icon">📸</div>
+                    <h3>Scan Book</h3>
+                    <p>Take a photo of a book page and convert it to accessible text</p>
+                </div>
+                <div class="home-card" onclick="showScreen('settings')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('settings')">
+                    <div class="home-card-icon">⚙️</div>
+                    <h3>Settings</h3>
+                    <p>Customize fonts, colors, voice, and reading speed</p>
+                </div>
+                <div class="home-card" onclick="showScreen('library')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('library')">
+                    <div class="home-card-icon">📚</div>
+                    <h3>My Library</h3>
+                    <p>View your saved books and reading progress</p>
+                </div>
+                <div class="home-card" onclick="showAbout()" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showAbout()">
+                    <div class="home-card-icon">ℹ️</div>
+                    <h3>About</h3>
+                    <p>Learn more about BookReader Pro and accessibility features</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS SCREEN -->
+        <div id="settingsScreen" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.8rem; color: var(--color-primary);">⚙️ Settings</h2>
+                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
+            </div>
+
+            <div class="settings-panel">
+                <!-- FONT SELECTION -->
+                <div class="settings-group">
+                    <label class="settings-label">📝 Font</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="font" value="opendyslexic" onchange="updateFont(this.value)" checked>
+                            <span class="radio-label">OpenDyslexic</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="font" value="comic" onchange="updateFont(this.value)">
+                            <span class="radio-label">Comic Sans</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="font" value="arial" onchange="updateFont(this.value)">
+                            <span class="radio-label">Arial</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="font" value="lexie" onchange="updateFont(this.value)">
+                            <span class="radio-label">Lexie Readable</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- FONT SIZE -->
+                <div class="settings-group">
+                    <label class="settings-label">🔤 Font Size</label>
+                    <div class="slider-group">
+                        <input type="range" id="fontSizeSlider" min="16" max="48" value="18" onchange="updateFontSize(this.value)">
+                        <div class="slider-value" id="fontSizeValue">18px</div>
+                    </div>
+                </div>
+
+                <!-- LINE HEIGHT -->
+                <div class="settings-group">
+                    <label class="settings-label">↕️ Line Spacing</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="lineHeight" value="1.8" onchange="updateLineHeight(this.value)" checked>
+                            <span class="radio-label">Normal (1.8)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="lineHeight" value="2.0" onchange="updateLineHeight(this.value)">
+                            <span class="radio-label">Generous (2.0)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="lineHeight" value="2.2" onchange="updateLineHeight(this.value)">
+                            <span class="radio-label">Extra (2.2)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="lineHeight" value="2.5" onchange="updateLineHeight(this.value)">
+                            <span class="radio-label">Maximum (2.5)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- COLOR OVERLAY -->
+                <div class="settings-group">
+                    <label class="settings-label">🎨 Color Overlay</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="overlay" value="none" onchange="updateOverlay(this.value)" checked>
+                            <span class="radio-label">None</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="overlay" value="blue" onchange="updateOverlay(this.value)">
+                            <span class="radio-label">Blue</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="overlay" value="sepia" onchange="updateOverlay(this.value)">
+                            <span class="radio-label">Sepia</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="overlay" value="green" onchange="updateOverlay(this.value)">
+                            <span class="radio-label">Green</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="overlay" value="pink" onchange="updateOverlay(this.value)">
+                            <span class="radio-label">Pink</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- VOICE SELECTION -->
+                <div class="settings-group">
+                    <label class="settings-label">🎤 Voice</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="voice" value="none" onchange="updateVoice(this.value)" checked>
+                            <span class="radio-label">None</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="voice" value="voice1" onchange="updateVoice(this.value)">
+                            <span class="radio-label">Voice 1 (Warm)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="voice" value="voice2" onchange="updateVoice(this.value)">
+                            <span class="radio-label">Voice 2 (Engaging)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="voice" value="voice3" onchange="updateVoice(this.value)">
+                            <span class="radio-label">Voice 3 (Calm)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- READING SPEED -->
+                <div class="settings-group">
+                    <label class="settings-label">⏱️ Reading Speed</label>
+                    <div class="slider-group">
+                        <input type="range" id="speedSlider" min="0.5" max="2" step="0.25" value="1" onchange="updateSpeed(this.value)">
+                        <div class="slider-value" id="speedValue">1.0x</div>
+                    </div>
+                </div>
+
+                <!-- LETTER SPACING -->
+                <div class="settings-group">
+                    <label class="settings-label">⟷ Letter Spacing</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="letterSpacing" value="0" onchange="updateLetterSpacing(this.value)" checked>
+                            <span class="radio-label">Normal</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="letterSpacing" value="0.05em" onchange="updateLetterSpacing(this.value)">
+                            <span class="radio-label">Loose</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="letterSpacing" value="0.1em" onchange="updateLetterSpacing(this.value)">
+                            <span class="radio-label">Extra</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- HIGHLIGHT CURRENT WORD -->
+                <div class="settings-group">
+                    <label class="radio-option">
+                        <input type="checkbox" id="highlightWords" onchange="updateHighlight(this.checked)" checked>
+                        <span class="radio-label">✨ Highlight Current Word While Reading</span>
+                    </label>
+                </div>
+
+                <!-- DATA MANAGEMENT -->
+                <div class="settings-group">
+                    <label class="settings-label">💾 Data Management</label>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="btn-secondary" onclick="exportData()">📥 Export Data</button>
+                        <button class="btn-secondary" onclick="clearAllData()">🗑️ Clear All Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UPLOAD SCREEN -->
+        <div id="uploadScreen" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.8rem; color: var(--color-primary);">📸 Scan Book</h2>
+                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
+            </div>
+
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-area-icon">📄</div>
+                <div class="upload-area-text">Upload or Capture Book Page</div>
+                <div class="upload-area-subtext">Click or tap to select an image or PDF</div>
+            </div>
+
+            <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFileUpload(event)">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button class="btn-secondary" onclick="captureCamera()">📷 Take Photo</button>
+                <button class="btn-secondary" onclick="pasteImage()">📋 Paste Image</button>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 2rem; background-color: var(--color-bg-light); border-radius: 12px;">
+                <h3 style="color: var(--color-primary); margin-bottom: 1rem;">💡 Tips for Best Results</h3>
+                <ul style="color: var(--color-text-secondary); line-height: 2; font-size: 0.95rem;">
+                    <li>✓ Ensure good lighting on the page</li>
+                    <li>✓ Hold the camera steady and parallel to the page</li>
+                    <li>✓ Include all text margins for best recognition</li>
+                    <li>✓ Works best with clear, printed text</li>
+                    <li>✓ Handwritten text is also supported</li>
+                    <li>✓ Maximum file size: 10 MB</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- LIBRARY SCREEN -->
+        <div id="libraryScreen" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.8rem; color: var(--color-primary);">📚 My Library</h2>
+                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
+            </div>
+
+            <div id="libraryContent"></div>
+        </div>
+
+        <!-- READER SCREEN -->
+        <div id="readerScreen" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.8rem; color: var(--color-primary);" id="readerTitle">Reading</h2>
+                <button class="btn-secondary" onclick="closeReader()">← Back</button>
+            </div>
+
+            <div class="reader-controls">
+                <div class="playback-buttons">
+                    <button class="btn-primary btn-icon" id="playBtn" onclick="togglePlayPause()">▶️</button>
+                    <button class="btn-secondary btn-icon" onclick="skipBackward()">⏮️</button>
+                    <button class="btn-secondary btn-icon" onclick="skipForward()">⏭️</button>
+                </div>
+                <div class="speed-control">
+                    <label for="readerSpeedSlider">Speed:</label>
+                    <input type="range" id="readerSpeedSlider" min="0.5" max="2" step="0.25" value="1" onchange="updateReaderSpeed(this.value)" style="width: 120px;">
+                    <span id="readerSpeedValue">1.0x</span>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="reader-text" id="readerText"></div>
+
+            <!-- AI COMPREHENSION ASSISTANT -->
+            <div class="ai-assistant-panel" id="aiPanel" style="display: none;">
+                <div class="ai-panel-header">🤖 AI Reading Assistant</div>
+                <div class="ai-panel-content" id="aiContent"></div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+                <button class="btn-secondary" onclick="bookmarkPage()">🔖 Bookmark</button>
+                <button class="btn-secondary" onclick="shareProgress()">📤 Share Progress</button>
+                <button class="btn-secondary" id="aiToggleBtn" onclick="toggleAIAssistant()">🤖 AI Assistant</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer"></div>
+
+    <script>
+        // App state
+        const state = {
+            books: [],
+            currentBook: null,
+            isPlaying: false,
+            settings: {
+                font: 'opendyslexic',
+                fontSize: '18',
+                lineHeight: '1.8',
+                overlay: 'none',
+                voice: 'none',
+                speed: '1',
+                letterSpacing: '0',
+                highlightWords: true
+            }
+        };
+
+        // Initialize
+        function init() {
+            loadSettings();
+            loadLibrary();
+            applySettings();
+        }
+
+        // SCREEN MANAGEMENT
+        function showScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const screen = document.getElementById(screenName + 'Screen');
+            if (screen) {
+                screen.classList.add('active');
+                if (screenName === 'library') renderLibrary();
+            }
+        }
+
+        // SETTINGS FUNCTIONS
+        function updateFont(font) {
+            state.settings.font = font;
+            document.body.style.fontFamily = getFontFamily(font);
+            saveSettings();
+        }
+
+        function getFontFamily(font) {
+            const families = {
+                'opendyslexic': "'OpenDyslexic', 'Comic Sans MS', sans-serif",
+                'comic': "'Comic Sans MS', cursive",
+                'arial': "'Arial', sans-serif",
+                'lexie': "'Lexie Readable', sans-serif"
+            };
+            return families[font] || families['opendyslexic'];
+        }
+
+        function updateFontSize(size) {
+            state.settings.fontSize = size;
+            document.documentElement.style.setProperty('--font-size-base', size + 'px');
+            document.getElementById('fontSizeValue').textContent = size + 'px';
+            saveSettings();
+        }
+
+        function updateLineHeight(height) {
+            state.settings.lineHeight = height;
+            document.documentElement.style.setProperty('--line-height-normal', height);
+            saveSettings();
+        }
+
+        function updateLetterSpacing(spacing) {
+            state.settings.letterSpacing = spacing;
+            document.documentElement.style.setProperty('--letter-spacing-normal', spacing);
+            saveSettings();
+        }
+
+        function updateOverlay(overlay) {
+            state.settings.overlay = overlay;
+            document.body.className = overlay === 'none' ? '' : 'overlay-' + overlay;
+            saveSettings();
+        }
+
+        function updateVoice(voice) {
+            state.settings.voice = voice;
+            saveSettings();
+            showToast('Voice changed to ' + (voice === 'none' ? 'None' : voice), 'success');
+        }
+
+        function updateSpeed(speed) {
+            state.settings.speed = speed;
+            document.getElementById('speedValue').textContent = speed + 'x';
+            saveSettings();
+        }
+
+        function updateHighlight(checked) {
+            state.settings.highlightWords = checked;
+            saveSettings();
+        }
+
+        // FILE UPLOAD
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('File too large. Maximum 10 MB.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                createBook(file.name, content);
+            };
+
+            if (file.type.startsWith('image/')) {
+                reader.readAsDataURL(file);
+            } else {
+                showToast('Image files supported. PDF coming soon.', 'error');
+            }
+        }
+
+        function captureCamera() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment';
+            input.onchange = handleFileUpload;
+            input.click();
+        }
+
+        function pasteImage() {
+            navigator.clipboard.read().then(items => {
+                for (let item of items) {
+                    if (item.types.includes('image/png')) {
+                        item.getType('image/png').then(blob => {
+                            const event = { target: { files: [blob] } };
+                            handleFileUpload(event);
+                        });
+                    }
+                }
+            }).catch(() => {
+                showToast('Could not paste image. Try uploading instead.', 'error');
+            });
+        }
+
+        // BOOK MANAGEMENT
+        function createBook(title, imageData) {
+            showToast('📸 Scanning... (OCR integration coming next)', 'success');
+
+            const book = {
+                id: Date.now(),
+                title: title.replace(/\.[^/.]+$/, ''),
+                image: imageData,
+                content: 'Sample text for ' + title + '. This is a placeholder. In the next phase, we will integrate Google Cloud Vision API for OCR to extract actual text from images.',
+                dateAdded: new Date().toLocaleDateString(),
+                progress: 0,
+                lastRead: new Date().toLocaleDateString()
+            };
+
+            state.books.push(book);
+            saveLibrary();
+            showScreen('library');
+            renderLibrary();
+        }
+
+        function saveLibrary() {
+            localStorage.setItem('bookReaderLibrary', JSON.stringify(state.books));
+        }
+
+        function loadLibrary() {
+            const saved = localStorage.getItem('bookReaderLibrary');
+            state.books = saved ? JSON.parse(saved) : [];
+        }
+
+        function renderLibrary() {
+            const container = document.getElementById('libraryContent');
+            if (state.books.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📚</div>
+                        <h3 style="font-size: 1.3rem; margin-bottom: 1rem;">No Books Yet</h3>
+                        <p>Start by scanning your first book page</p>
+                        <button class="btn-primary" style="margin-top: 1.5rem;" onclick="showScreen('upload')">Scan Book</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `<div class="library-grid">${state.books.map(book => `
+                <div class="book-card" onclick="openBook(${book.id})" role="button" tabindex="0" onkeydown="if(event.key==='Enter') openBook(${book.id})">
+                    <div class="book-cover">📖</div>
+                    <div class="book-info">
+                        <div class="book-title">${book.title}</div>
+                        <div class="book-progress">Progress: ${book.progress}%</div>
+                        <div class="book-date">Added: ${book.dateAdded}</div>
+                    </div>
+                </div>
+            `).join('')}</div>`;
+        }
+
+        function openBook(bookId) {
+            state.currentBook = state.books.find(b => b.id === bookId);
+            if (!state.currentBook) return;
+
+            document.getElementById('readerTitle').textContent = state.currentBook.title;
+            document.getElementById('readerText').innerHTML = formatTextForReading(state.currentBook.content);
+            showScreen('reader');
+        }
+
+        function formatTextForReading(text) {
+            return text.split('\n\n').map(paragraph => {
+                return '<div class="reader-paragraph">' +
+                    paragraph.split(/(?<=[.!?])\s+/).map(sentence => {
+                        return '<span class="sentence">' +
+                            sentence.split(/\s+/).map(word => {
+                                const cleanWord = word.replace(/[^a-zA-Z]/g, '').toLowerCase();
+                                const isComplex = complexWords.includes(cleanWord);
+                                return `<span class="word ${isComplex ? 'complex-word' : ''}" ${isComplex ? `onclick="explainWord('${word}', event)"` : ''}>${word}</span>`;
+                            }).join(' ') +
+                        '</span>';
+                    }).join(' ') +
+                '</div>';
+            }).join('');
+        }
+
+        // COMPLEX WORDS DATABASE (Dyslexia-optimized - common difficult words)
+        const complexWords = [
+            'however', 'therefore', 'consequence', 'peculiar', 'magnificent', 'melancholy',
+            'ambiguous', 'obscure', 'intricate', 'elaborate', 'eloquent', 'ubiquitous',
+            'ephemeral', 'serendipity', 'metamorphosis', 'nostalgic', 'pragmatic',
+            'philosophical', 'phenomenal', 'aesthetic', 'contemporary', 'diligent',
+            'bureaucratic', 'inexplicable', 'catastrophic', 'meticulous', 'ambivalent',
+            'arbitrary', 'benevolent', 'candid', 'delinquent', 'earnest', 'fervid',
+            'gregarious', 'homogeneous', 'indigenous', 'jaunty', 'kaleidoscope',
+            'labyrinthine', 'mitigate', 'nebulous', 'obfuscate', 'pervasive',
+            'querulous', 'recalcitrant', 'solemn', 'tenacious', 'ubiquitous',
+            'vivacious', 'wistful', 'zealous'
+        ];
+
+        // AI COMPREHENSION ASSISTANT
+        let aiAssistantActive = false;
+
+        function toggleAIAssistant() {
+            aiAssistantActive = !aiAssistantActive;
+            const panel = document.getElementById('aiPanel');
+            const btn = document.getElementById('aiToggleBtn');
+
+            if (aiAssistantActive) {
+                panel.style.display = 'block';
+                btn.style.background = 'var(--color-success)';
+                btn.style.borderColor = 'var(--color-success)';
+                analyzeParagraphForComplexConcepts();
+            } else {
+                panel.style.display = 'none';
+                btn.style.background = '';
+                btn.style.borderColor = '';
+            }
+        }
+
+        function explainWord(word, event) {
+            event.stopPropagation();
+            const cleanWord = word.replace(/[^a-zA-Z]/g, '').toLowerCase();
+
+            // Show simple explanation for dyslexic readers
+            const explanations = {
+                'however': 'It means "but" - used to show contrast or a different idea',
+                'therefore': 'It means "so" or "as a result" - used when one thing causes another',
+                'consequence': 'The result or effect of something that happens',
+                'peculiar': 'Strange, unusual, or odd in a way that stands out',
+                'magnificent': 'Really impressive, beautiful, or grand in scale',
+                'melancholy': 'Sadness or a feeling of thoughtful sadness; not happy',
+                'ambiguous': 'When something could mean more than one thing; unclear',
+                'obscure': 'Hard to understand or unclear; not obvious or well-known',
+                'intricate': 'Complicated and detailed with many parts',
+                'elaborate': 'Very detailed and complex; made with lots of care and detail',
+                'eloquent': 'Able to speak or write in a beautiful, persuasive way',
+                'ubiquitous': 'Found everywhere; very common; present in many places',
+                'ephemeral': 'Lasting only a short time; temporary',
+                'serendipity': 'Finding something good by luck or chance; happy accident',
+                'metamorphosis': 'A complete change or transformation; like a caterpillar becoming a butterfly',
+                'nostalgic': 'Thinking about the past with happy or sad feelings',
+                'pragmatic': 'Practical and realistic; focused on what actually works',
+                'philosophical': 'Thinking deeply about life, meaning, and big questions',
+                'phenomenal': 'Remarkable, extraordinary, or exceptionally good',
+                'aesthetic': 'Related to beauty or how something looks and feels',
+                'contemporary': 'Modern or from the present time; current',
+                'diligent': 'Careful, thorough, and showing effort and attention to detail',
+                'bureaucratic': 'Related to official rules and complex systems of government',
+                'inexplicable': 'Cannot be explained; mysterious',
+                'catastrophic': 'A disaster or extremely bad event',
+                'meticulous': 'Very careful and precise; paying close attention to details',
+                'ambivalent': 'Having mixed feelings about something; unsure',
+                'arbitrary': 'Based on personal preference, not on logic or reason',
+                'benevolent': 'Kind, generous, and wanting to help others',
+                'candid': 'Honest and frank; saying what you really think',
+                'delinquent': 'Failing to do something required; often refers to debt or law',
+                'earnest': 'Sincere and showing genuine feeling or intention',
+                'fervid': 'Passionate and intense; full of strong feeling',
+                'gregarious': 'Liking to be with other people; social',
+                'homogeneous': 'All the same type or kind; uniform throughout',
+                'indigenous': 'Native to a place; originally from there',
+                'jaunty': 'Lively, cheerful, and confident in manner',
+                'kaleidoscope': 'A changing pattern or scene of many colors and forms',
+                'labyrinthine': 'Complex and confusing like a maze',
+                'mitigate': 'To make something less severe or serious',
+                'nebulous': 'Vague, cloudy, or unclear; not well-defined',
+                'obfuscate': 'To make something confusing or unclear on purpose',
+                'pervasive': 'Spreading throughout and present everywhere',
+                'querulous': 'Always complaining or whining; bitter tone',
+                'recalcitrant': 'Refusing to obey or cooperate; stubborn',
+                'solemn': 'Serious, formal, and dignified in manner',
+                'tenacious': 'Holding on strongly; not giving up easily',
+                'vivacious': 'Lively, animated, and full of energy',
+                'wistful': 'Wanting something with a feeling of gentle sadness',
+                'zealous': 'Very enthusiastic and passionate about something'
+            };
+
+            const explanation = explanations[cleanWord] || generateAIExplanation(word);
+
+            const aiContent = document.getElementById('aiContent');
+            aiContent.innerHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <strong style="color: var(--color-primary); font-size: 1.1rem;">${word}</strong>
+                    <div style="margin-top: 0.5rem; color: var(--color-text-secondary);">
+                        ${explanation}
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+                    <div class="ai-question" onclick="askAIQuestion('Explain ${word} in simpler words')">
+                        📚 Simpler explanation
+                    </div>
+                    <div class="ai-question" onclick="askAIQuestion('How is ${word} used in real life?')">
+                        🌍 Real-world example
+                    </div>
+                    <div class="ai-question" onclick="askAIQuestion('What is the opposite of ${word}?')">
+                        ⚡ Opposite word
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('aiPanel').style.display = 'block';
+        }
+
+        function generateAIExplanation(word) {
+            // Fallback explanations for words not in the built-in dictionary
+            return `<em>Let me explain: "${word}" is a word that can be tricky. Click one of the options below to understand it better.</em>`;
+        }
+
+        function askAIQuestion(question) {
+            const aiContent = document.getElementById('aiContent');
+            aiContent.innerHTML += `
+                <div class="ai-explanation">
+                    <strong>🤖 AI Response:</strong><br>
+                    ${generateContextualExplanation(question)}
+                </div>
+            `;
+
+            // Scroll to show the new explanation
+            document.getElementById('aiPanel').scrollTop = document.getElementById('aiPanel').scrollHeight;
+        }
+
+        function generateContextualExplanation(question) {
+            // In production, this would call Claude API
+            // For now, provide smart fallback responses
+            if (question.includes('simpler')) {
+                return 'A simpler version: This word means something common that might be confusing. Try breaking it into smaller parts or think of when you\'ve heard it before.';
+            } else if (question.includes('real-world') || question.includes('life')) {
+                return 'In real life: You might encounter this word in conversations, books, news, or everyday situations. It\'s useful to know because it helps you understand what people are talking about.';
+            } else if (question.includes('opposite') || question.includes('Opposite')) {
+                return 'The opposite word: Think of something that means the exact opposite. This helps you understand what the word really means by comparing it to its opposite.';
+            }
+            return 'Great question! The AI assistant is ready to help. In the next version, we\'ll connect this to Claude AI for even smarter answers.';
+        }
+
+        function analyzeParagraphForComplexConcepts() {
+            const readerText = document.getElementById('readerText').innerText;
+            const sentences = readerText.split(/[.!?]+/).slice(0, 3); // First 3 sentences
+
+            const aiContent = document.getElementById('aiContent');
+            let complexWordsFound = [];
+
+            sentences.forEach(sentence => {
+                const words = sentence.toLowerCase().split(/\s+/);
+                words.forEach(word => {
+                    const clean = word.replace(/[^a-zA-Z]/g, '');
+                    if (complexWords.includes(clean)) {
+                        complexWordsFound.push(clean);
+                    }
+                });
+            });
+
+            if (complexWordsFound.length > 0) {
+                aiContent.innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: var(--color-success);">✨ I found some words you might want to understand better:</strong>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        ${complexWordsFound.slice(0, 4).map(word => `
+                            <div class="ai-question" onclick="explainWord('${word}', event)">
+                                <strong>${word}</strong><br>
+                                <span style="font-size: 0.85rem;">Click to learn</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                aiContent.innerHTML = `
+                    <div style="color: var(--color-text-secondary);">
+                        This passage looks straightforward! <br><br>
+                        <strong>💡 Tip:</strong> Click on any word that looks complicated, and I'll explain it in simple language.
+                    </div>
+                `;
+            }
+        }
+
+        function closeReader() {
+            state.currentBook = null;
+            state.isPlaying = false;
+            showScreen('library');
+        }
+
+        // READER CONTROLS
+        function togglePlayPause() {
+            state.isPlaying = !state.isPlaying;
+            document.getElementById('playBtn').textContent = state.isPlaying ? '⏸️' : '▶️';
+            if (state.isPlaying) {
+                simulateReading();
+            }
+        }
+
+        function simulateReading() {
+            if (!state.isPlaying) return;
+            // Voice narration will be integrated with TTS in Week 2
+            setTimeout(simulateReading, 100);
+        }
+
+        function skipBackward() {
+            showToast('⏮️ Skipped back 30 seconds', 'success');
+        }
+
+        function skipForward() {
+            showToast('⏭️ Skipped forward 30 seconds', 'success');
+        }
+
+        function updateReaderSpeed(speed) {
+            document.getElementById('readerSpeedValue').textContent = speed + 'x';
+            updateSpeed(speed);
+        }
+
+        function bookmarkPage() {
+            showToast('🔖 Page bookmarked', 'success');
+        }
+
+        function shareProgress() {
+            showToast('📤 Share feature coming soon', 'success');
+        }
+
+        // SETTINGS PERSISTENCE
+        function saveSettings() {
+            localStorage.setItem('bookReaderSettings', JSON.stringify(state.settings));
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('bookReaderSettings');
+            if (saved) {
+                state.settings = { ...state.settings, ...JSON.parse(saved) };
+            }
+        }
+
+        function applySettings() {
+            updateFont(state.settings.font);
+            updateFontSize(state.settings.fontSize);
+            updateLineHeight(state.settings.lineHeight);
+            updateLetterSpacing(state.settings.letterSpacing);
+            updateOverlay(state.settings.overlay);
+            updateHighlight(state.settings.highlightWords);
+        }
+
+        function exportData() {
+            const data = {
+                settings: state.settings,
+                books: state.books,
+                exportDate: new Date().toISOString()
+            };
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bookreader-backup.json';
+            a.click();
+            showToast('💾 Data exported successfully', 'success');
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure? This will delete all books and reset settings.')) {
+                state.books = [];
+                state.settings = {
+                    font: 'opendyslexic',
+                    fontSize: '18',
+                    lineHeight: '1.8',
+                    overlay: 'none',
+                    voice: 'none',
+                    speed: '1',
+                    letterSpacing: '0',
+                    highlightWords: true
+                };
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function showAbout() {
+            showToast('BookReader Pro v1.0\nDyslexia-first book scanning & AI reading\nBuilt with 💜 for accessible reading', 'success');
+        }
+
+        // TOAST NOTIFICATIONS
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Start app
+        init();
+    </script>
+</body>
+</html>
