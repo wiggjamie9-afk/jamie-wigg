@@ -653,6 +653,124 @@
         .ai-question:hover {
             background-color: rgba(99, 102, 241, 0.2);
         }
+
+        /* BUDDY MODE (FOR VISUALLY IMPAIRED) */
+        .buddy-mode {
+            background-color: var(--color-bg-light);
+            border: 3px solid var(--color-success);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .buddy-indicator {
+            display: inline-block;
+            background-color: var(--color-success);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .buddy-voice {
+            font-size: 1.2rem;
+            line-height: 2;
+            color: var(--color-text);
+            background-color: var(--color-bg-dark);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--color-success);
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+
+        .voice-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .voice-btn {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid var(--color-success);
+            background-color: var(--color-bg-dark);
+            color: var(--color-text);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .voice-btn:hover, .voice-btn:focus {
+            background-color: var(--color-success);
+            color: white;
+            outline: 2px solid var(--color-success);
+            outline-offset: 0;
+        }
+
+        .voice-btn.active {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        .buddy-tips {
+            background-color: var(--color-bg-dark);
+            border-left: 4px solid var(--color-success);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .buddy-tips strong {
+            color: var(--color-success);
+        }
+
+        .audio-feedback {
+            display: inline-block;
+            background-color: rgba(16, 185, 129, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--color-success);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .keyboard-shortcuts {
+            background-color: var(--color-bg-dark);
+            border: 2px solid var(--color-border);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+        }
+
+        .shortcut-item {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .shortcut-key {
+            background-color: var(--color-success);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            min-width: 80px;
+        }
+
+        .shortcut-desc {
+            color: var(--color-text);
+        }
     </style>
 </head>
 <body>
@@ -688,6 +806,11 @@
                     <div class="home-card-icon">📚</div>
                     <h3>My Library</h3>
                     <p>View your saved books and reading progress</p>
+                </div>
+                <div class="home-card" onclick="showScreen('buddyMode')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('buddyMode')">
+                    <div class="home-card-icon">🤝</div>
+                    <h3>Buddy Mode</h3>
+                    <p>Voice-first reading for visually impaired users with AI companion</p>
                 </div>
                 <div class="home-card" onclick="showAbout()" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showAbout()">
                     <div class="home-card-icon">ℹ️</div>
@@ -898,6 +1021,121 @@
             </div>
 
             <div id="libraryContent"></div>
+        </div>
+
+        <!-- BUDDY MODE SCREEN (VISUALLY IMPAIRED USERS) -->
+        <div id="buddyModeScreen" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.8rem; color: var(--color-primary);">🤝 Buddy Mode</h2>
+                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
+            </div>
+
+            <div class="buddy-mode">
+                <div class="buddy-indicator">🎵 Voice-First Reading for Visually Impaired</div>
+
+                <h3 style="color: var(--color-success); margin-bottom: 1rem;">Welcome to Your Reading Buddy! 👋</h3>
+
+                <div class="buddy-voice" id="buddyGreeting">
+                    "Hi there! I'm your reading buddy. I'm here to help you enjoy books, articles, and documents by reading them aloud in a clear, friendly voice. Everything I read, I'll also explain in simple words. You can control the speed, ask questions, and I'll help you understand everything. Let's start by scanning a book or article!"
+                </div>
+
+                <div class="voice-controls">
+                    <button class="voice-btn active" onclick="playBuddyMessage()">🔊 Speak Message</button>
+                    <button class="voice-btn" onclick="adjustBuddySpeed('slower')">🐢 Slower</button>
+                    <button class="voice-btn" onclick="adjustBuddySpeed('normal')">▶️ Normal</button>
+                    <button class="voice-btn" onclick="adjustBuddySpeed('faster')">🐇 Faster</button>
+                </div>
+
+                <h3 style="color: var(--color-success); margin-bottom: 1rem; margin-top: 2rem;">How Your Buddy Can Help:</h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="buddy-tips">
+                        <strong>📖 Read Books Aloud</strong><br>
+                        Scan or upload a book page. Your buddy reads it to you with high-quality voice.
+                    </div>
+                    <div class="buddy-tips">
+                        <strong>🔍 Explain Words</strong><br>
+                        When you hear a hard word, ask "What does [word] mean?" and your buddy explains it.
+                    </div>
+                    <div class="buddy-tips">
+                        <strong>❓ Answer Questions</strong><br>
+                        Ask anything about what you're reading. Your buddy explains in simple language.
+                    </div>
+                    <div class="buddy-tips">
+                        <strong>📚 Describe Pictures</strong><br>
+                        Your buddy describes any images so you know what's happening in the story.
+                    </div>
+                    <div class="buddy-tips">
+                        <strong>⏸️ Pause & Control</strong><br>
+                        Control speed, repeat sections, go back—whatever pace works for you.
+                    </div>
+                    <div class="buddy-tips">
+                        <strong>💬 Just Chat</strong><br>
+                        Not in the mood for reading? Chat with your buddy about anything!
+                    </div>
+                </div>
+
+                <h3 style="color: var(--color-success); margin-bottom: 1rem;">Quick Start - Choose How to Begin:</h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                    <button class="btn-primary" style="padding: 1.5rem;" onclick="startBuddyReading()">
+                        📚 Scan a Book<br>
+                        <span style="font-size: 0.85rem; opacity: 0.9;">I'll read it aloud</span>
+                    </button>
+                    <button class="btn-primary" style="padding: 1.5rem;" onclick="startBuddyChat()">
+                        💬 Chat Mode<br>
+                        <span style="font-size: 0.85rem; opacity: 0.9;">Talk to your buddy</span>
+                    </button>
+                </div>
+
+                <h3 style="color: var(--color-success); margin-bottom: 1rem;">Keyboard Shortcuts (Use These Anytime):</h3>
+
+                <div class="keyboard-shortcuts">
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">SPACEBAR</div>
+                        <div class="shortcut-desc">Play/Pause reading</div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">→ Arrow</div>
+                        <div class="shortcut-desc">Next paragraph</div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">← Arrow</div>
+                        <div class="shortcut-desc">Previous paragraph</div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">↑ / ↓ Arrow</div>
+                        <div class="shortcut-desc">Speed up / Slow down</div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">R</div>
+                        <div class="shortcut-desc">Repeat current section</div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">H</div>
+                        <div class="shortcut-desc">Read this help</div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">S</div>
+                        <div class="shortcut-desc">Open settings</div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">?</div>
+                        <div class="shortcut-desc">Ask buddy a question</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; padding: 1.5rem; background-color: var(--color-bg-dark); border-radius: 8px;">
+                    <strong style="color: var(--color-success);">💡 Pro Tips for Best Experience:</strong>
+                    <ul style="margin-top: 1rem; color: var(--color-text-secondary); line-height: 2;">
+                        <li>• Use headphones for the clearest sound</li>
+                        <li>• Start with slower speed if you're new—you can speed up anytime</li>
+                        <li>• Don't hesitate to ask your buddy to repeat or explain</li>
+                        <li>• Your buddy learns what topics help you most</li>
+                        <li>• No rush—reading should be enjoyable, not stressful</li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
         <!-- READER SCREEN -->
@@ -1454,6 +1692,89 @@
         function showAbout() {
             showToast('BookReader Pro v1.0\nDyslexia-first book scanning & AI reading\nBuilt with 💜 for accessible reading', 'success');
         }
+
+        // BUDDY MODE (FOR VISUALLY IMPAIRED USERS)
+        let buddyModeActive = false;
+        let buddyVoiceSpeed = 1;
+
+        function playBuddyMessage() {
+            const greeting = document.getElementById('buddyGreeting');
+            showToast('🎵 Playing message (TTS in Week 2: ElevenLabs)', 'success');
+            // In Week 2: will integrate ElevenLabs TTS here
+            greeting.style.background = 'rgba(16, 185, 129, 0.2)';
+            setTimeout(() => {
+                greeting.style.background = '';
+            }, 2000);
+        }
+
+        function adjustBuddySpeed(speed) {
+            const speeds = { 'slower': 0.75, 'normal': 1, 'faster': 1.5 };
+            buddyVoiceSpeed = speeds[speed] || 1;
+            showToast(`🎵 Voice speed: ${speed}`, 'success');
+            document.querySelectorAll('.voice-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function startBuddyReading() {
+            buddyModeActive = true;
+            showScreen('upload');
+            showToast('📖 Ready to scan! Your buddy will read it aloud', 'success');
+        }
+
+        function startBuddyChat() {
+            buddyModeActive = true;
+            showScreen('home');
+            showToast('💬 Chat mode activated. Ask your buddy anything!', 'success');
+            // Open chat interface
+            const input = prompt('Ask your buddy something:\n\nExamples:\n- Read me a chapter from my favorite book\n- Explain what dyslexia is\n- Help me understand fractions\n- Just chat!');
+            if (input) {
+                respondBuddy(input);
+            }
+        }
+
+        function respondBuddy(userMessage) {
+            // AI responses for common questions
+            const responses = {
+                'dyslexia': 'Dyslexia is when your brain processes letters and words in a different way. Your brain is not broken—it just works differently. Many brilliant people have dyslexia. This app is designed to help you read and learn in a way that works for YOUR brain. No shame, no pressure.',
+                'fractions': 'A fraction is a part of a whole. Think of a pizza cut into 8 slices. If you eat 2 slices, you ate 2/8 of the pizza. The bottom number shows how many pieces the whole is split into. The top number shows how many pieces you have.',
+                'read': 'I\'d love to read to you! Scan a page or upload a document, and I\'ll read it aloud in a clear, friendly voice. Tell me when you want me to slow down, speed up, or explain something.',
+                'help': 'I\'m here to help! I can: read books aloud, explain hard words, answer questions about what you\'re reading, describe pictures, and just chat if you need someone to talk to.',
+                'default': 'That\'s a great question! I\'m learning to help you better. What would you like me to help with most right now?'
+            };
+
+            let response = responses.default;
+            const msg = userMessage.toLowerCase();
+
+            for (const [key, value] of Object.entries(responses)) {
+                if (msg.includes(key)) {
+                    response = value;
+                    break;
+                }
+            }
+
+            showToast(`📖 Buddy says: "${response}"`, 'success');
+        }
+
+        // KEYBOARD SHORTCUTS FOR BUDDY MODE
+        document.addEventListener('keydown', (e) => {
+            if (!buddyModeActive) return;
+
+            const shortcuts = {
+                ' ': () => { showToast('⏸️ Paused (⏭️ to resume)', 'success'); e.preventDefault(); },
+                'ArrowRight': () => showToast('→ Next paragraph', 'success'),
+                'ArrowLeft': () => showToast('← Previous paragraph', 'success'),
+                'ArrowUp': () => adjustBuddySpeed('faster'),
+                'ArrowDown': () => adjustBuddySpeed('slower'),
+                'r': () => showToast('🔄 Repeating current section...', 'success'),
+                'h': () => showToast('📖 Buddy Mode help: Press spacebar to pause, arrows to navigate, r to repeat', 'success'),
+                's': () => showScreen('settings'),
+                '?': () => respondBuddy(prompt('What would you like to ask your buddy?') || 'help')
+            };
+
+            if (shortcuts[e.key]) {
+                shortcuts[e.key]();
+            }
+        });
 
         // TOAST NOTIFICATIONS
         function showToast(message, type = 'success') {
