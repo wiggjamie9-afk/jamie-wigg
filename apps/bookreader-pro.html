@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>BookReader Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --accent: #ec4899;
+            --bg: #0f172a;
+            --text: #f8fafc;
+            --text-secondary: #cbd5e1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #1a1f3a 100%);
+            color: var(--text);
+        }
+
+        .app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding-top: max(env(safe-area-inset-top), 12px);
+        }
+
+        .header {
+            padding: 16px 20px;
+            font-size: 28px;
+            font-weight: 700;
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .carousel-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+        }
+
+        .carousel {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            touch-action: none;
+        }
+
+        .screen {
+            flex-shrink: 0;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .screen-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        .home-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .card {
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 24px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .card:active {
+            opacity: 0.8;
+            transform: scale(0.98);
+        }
+
+        .card-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--primary);
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(139, 92, 246, 0.05);
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            user-select: none;
+        }
+
+        .upload-zone:active {
+            background: rgba(139, 92, 246, 0.1);
+            transform: scale(0.98);
+        }
+
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 16px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .upload-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .upload-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .reader-text {
+            font-family: 'Crimson Text', serif;
+            font-size: 18px;
+            line-height: 2;
+            color: var(--text);
+        }
+
+        .word.highlight {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 52px;
+            transition: all 0.3s;
+            user-select: none;
+            flex: 1;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+            transform: scale(0.96);
+        }
+
+        .btn-icon {
+            width: 52px;
+            height: 52px;
+            padding: 0;
+            font-size: 20px;
+            flex: 0;
+        }
+
+        .pagination {
+            position: fixed;
+            bottom: max(env(safe-area-inset-bottom), 20px);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: var(--primary);
+            width: 28px;
+            border-radius: 4px;
+        }
+
+        .library-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .book-card {
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .book-card:active {
+            opacity: 0.8;
+        }
+
+        .book-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .book-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .book-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 16px;
+            font-family: inherit;
+            margin-bottom: 12px;
+            min-height: 100px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">📚 BookReader</div>
+
+        <div class="carousel-container">
+            <div class="carousel" id="carousel">
+                <!-- SCREEN 0: HOME -->
+                <div class="screen">
+                    <div class="screen-title">Welcome</div>
+                    <div class="home-grid">
+                        <div class="card" onclick="goTo(1)">
+                            <div class="card-icon">📷</div>
+                            <div class="card-title">Scan Book</div>
+                            <div class="card-desc">Capture any page and listen with natural voice</div>
+                        </div>
+                        <div class="card" onclick="goTo(3)">
+                            <div class="card-icon">📖</div>
+                            <div class="card-title">My Library</div>
+                            <div class="card-desc">Access all your saved books</div>
+                        </div>
+                        <div class="card" onclick="goTo(4)">
+                            <div class="card-icon">⚙️</div>
+                            <div class="card-title">Settings</div>
+                            <div class="card-desc">Customize your experience</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCREEN 1: UPLOAD -->
+                <div class="screen">
+                    <div class="screen-title">Scan</div>
+                    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-title">Tap to Scan</div>
+                        <div class="upload-subtitle">Take a photo of any book page</div>
+                        <input type="file" id="fileInput" accept="image/*" onchange="handleUpload(event)">
+                    </div>
+                    <div id="ocrProgress" style="display:none;">
+                        <div class="spinner"></div>
+                        <div style="text-align:center; font-size:14px; color:var(--text-secondary);">Reading... <span id="ocrPercent">0</span>%</div>
+                        <div class="progress-bar"><div class="progress-fill" id="ocrFill" style="width:0%"></div></div>
+                    </div>
+                </div>
+
+                <!-- SCREEN 2: READER -->
+                <div class="screen">
+                    <div class="screen-title">Reading</div>
+                    <div class="controls">
+                        <button class="btn btn-icon" onclick="togglePlay()">▶️</button>
+                        <button class="btn btn-icon" onclick="stopReading()">⏹️</button>
+                        <input type="range" min="0.5" max="2" step="0.1" value="1" onchange="setSpeed(this.value)" style="flex:1;">
+                    </div>
+                    <div class="reader-text" id="readerText"></div>
+                </div>
+
+                <!-- SCREEN 3: LIBRARY -->
+                <div class="screen">
+                    <div class="screen-title">Library</div>
+                    <div class="library-grid" id="libraryGrid">
+                        <div style="grid-column:1/-1; text-align:center; color:var(--text-secondary); padding:40px 0;">No books yet</div>
+                    </div>
+                </div>
+
+                <!-- SCREEN 4: SETTINGS -->
+                <div class="screen">
+                    <div class="screen-title">Settings</div>
+                    <div style="font-size:16px; color:var(--text-secondary);">Settings coming soon...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pagination">
+            <div class="dot active" onclick="goTo(0)"></div>
+            <div class="dot" onclick="goTo(1)"></div>
+            <div class="dot" onclick="goTo(2)"></div>
+            <div class="dot" onclick="goTo(3)"></div>
+            <div class="dot" onclick="goTo(4)"></div>
+        </div>
+    </div>
+
+    <script>
+        const carousel = document.getElementById('carousel');
+        let currentIndex = 0;
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+
+        carousel.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isDragging = true;
+        });
+
+        carousel.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentX = e.touches[0].clientX;
+            const diff = currentX - startX;
+            carousel.style.transition = 'none';
+            carousel.style.transform = `translateX(calc(-${currentIndex * 100}% + ${diff}px))`;
+        });
+
+        carousel.addEventListener('touchend', () => {
+            isDragging = false;
+            const diff = currentX - startX;
+            const threshold = 50;
+
+            if (Math.abs(diff) > threshold) {
+                if (diff > 0 && currentIndex > 0) {
+                    currentIndex--;
+                } else if (diff < 0 && currentIndex < 4) {
+                    currentIndex++;
+                }
+            }
+
+            updateCarousel();
+        });
+
+        function goTo(index) {
+            currentIndex = index;
+            updateCarousel();
+        }
+
+        function updateCarousel() {
+            carousel.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            carousel.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+            document.querySelectorAll('.dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentIndex);
+            });
+        }
+
+        let books = JSON.parse(localStorage.getItem('brBooks') || '[]');
+        let currentBook = null;
+        let isPlaying = false;
+        let words = [];
+
+        async function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                document.getElementById('ocrProgress').style.display = 'block';
+
+                try {
+                    const result = await Tesseract.recognize(evt.target.result, 'eng', {
+                        logger: m => {
+                            if (m.status === 'recognizing') {
+                                const p = Math.round(m.progress * 100);
+                                document.getElementById('ocrPercent').textContent = p;
+                                document.getElementById('ocrFill').style.width = p + '%';
+                            }
+                        }
+                    });
+
+                    currentBook = {
+                        id: Date.now(),
+                        title: 'Book ' + new Date().toLocaleDateString(),
+                        text: result.data.text,
+                        date: new Date().toLocaleDateString()
+                    };
+
+                    words = currentBook.text.split(/\s+/).filter(w => w.length > 0);
+                    renderReader();
+                    books.push(currentBook);
+                    localStorage.setItem('brBooks', JSON.stringify(books));
+                    renderLibrary();
+
+                    document.getElementById('ocrProgress').style.display = 'none';
+                    goTo(2);
+                } catch (err) {
+                    alert('Error reading image');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderReader() {
+            const container = document.getElementById('readerText');
+            container.innerHTML = words.map((w, i) => `<span class="word" data-i="${i}">${w}</span> `).join('');
+        }
+
+        function togglePlay() {
+            if (!currentBook) return;
+            isPlaying = !isPlaying;
+            const utterance = new SpeechSynthesisUtterance(words.join(' '));
+            utterance.rate = parseFloat(document.querySelector('input[type="range"]').value);
+            if (isPlaying) window.speechSynthesis.speak(utterance);
+            else window.speechSynthesis.cancel();
+        }
+
+        function stopReading() {
+            isPlaying = false;
+            window.speechSynthesis.cancel();
+        }
+
+        function setSpeed(val) {
+            if (isPlaying) {
+                stopReading();
+                setTimeout(togglePlay, 100);
+            }
+        }
+
+        function renderLibrary() {
+            const grid = document.getElementById('libraryGrid');
+            if (books.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-secondary); padding:40px 0;">No books yet</div>';
+                return;
+            }
+            grid.innerHTML = books.map((b, i) => `
+                <div class="book-card" onclick="currentBook = books[${i}]; words = currentBook.text.split(/\\s+/).filter(w => w.length > 0); renderReader(); goTo(2);">
+                    <div class="book-icon">📖</div>
+                    <div class="book-title">${b.title}</div>
+                    <div class="book-date">${b.date}</div>
+                </div>
+            `).join('');
+        }
+
+        renderLibrary();
+    </script>
+</body>
+</html>
