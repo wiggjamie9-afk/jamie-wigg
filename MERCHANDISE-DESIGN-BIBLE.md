@@ -9,80 +9,191 @@
 ## REFERENCE MOCKUPS (THE LAW)
 
 ### 1. SUNNY'S ADVENTURE CLUB — T-SHIRT DESIGN
-**Source Image**: Reference photo #8
+**Source Image**: Reference photo - "8. SUNNY'S ADVENTURE CLUB - T-SHIRT DESIGN"
 **EXACT SPECIFICATIONS**:
-- **Characters**: Sunny the quokka + another animal character (koala) TOGETHER in one circular badge
-- **Badge**: Circular frame with decorative elements around the edge
-- **Colors**: Navy background + Gold/tan accents + Cream text
-- **Decorative Elements**: Stars, botanical elements, ornamental borders around badge
-- **Text**: 
-  - Top: "SUNNY'S ADVENTURE CLUB" (large, gold)
-  - Bottom: "Kind Hearts ✦ Big Dreams ✦ Brave Adventures" (cream)
-- **Layout**: Badge centered, characters prominent, decorative frame, text below
-- **Style**: Professional, illustrated, warm, inviting
-- **Print**: Screen print or premium DTG
+- **Illustration Style**: Professional detailed artwork (not generic shapes)
+- **Characters**: Sunny (golden quokka) + gray/blue character (companion animal) TOGETHER
+- **Character Position**: Both characters front-facing, side by side, centered
+- **Badge Design**: Dark navy circular seal/badge background behind characters
+- **Ornamental Frame**: Ornate laurel wreaths on left and right sides
+- **Decorative Elements**: Gold flourishes, ornamental botanical designs
+- **Text Placement**:
+  - Top arc: "SUNNY'S" (large, gold/cream, serif font)
+  - Center: ADVENTURE CLUB" (large, gold/cream, serif font)
+  - Bottom line: "Kind Hearts ✦ Big Dreams ✦ Brave Adventures" (cream, elegant)
+- **Colors**: Dark navy background + Gold ornamental elements + Cream/white text
+- **Layout**: Perfectly balanced, professional badge design, ornaments frame the composition
+- **Illustration Quality**: High-detail, professional artwork, warm character expressions
+- **Print**: Premium screen print or DTG
 - **Retail Price**: $24.99
 
-**RULE**: The two characters MUST be together. The badge MUST be circular. The text MUST be exact.
+**RULE**: Illustration MUST match professional quality shown. Characters MUST be together. Badge MUST have ornate laurel frame. Text MUST be exact placement and wording.
 
 ---
 
 ### 2. SNUGGLE IN — PAJAMA SET
-**Source Image**: Reference photo #9
+**Source Image**: Reference photo - "Snuggle In" design
 **EXACT SPECIFICATIONS**:
-- **Character**: Sunny reading a book (or holding book)
-- **Background**: Navy/dark blue
-- **Stars**: Scattered gold/cream stars throughout design
-- **Text**:
-  - "Snuggle In" (large)
-  - "Listen" (secondary)
-  - "Dream Big" (secondary)
-- **Colors**: Navy background + Gold/cream stars + Cream text
-- **Layout**: Character prominent, stars scattered, text integrated
-- **Sleeve Design**: Navy trim on sleeves (shown in mockup)
+- **Illustration Style**: Professional detailed artwork with warm lighting
+- **Character**: Sunny reading an open book (book clearly visible and illustrated)
+- **Character Position**: Centered, large and prominent
+- **Setting**: Cozy scene with illustrated elements
+- **Lantern**: Glowing lantern beside Sunny (warm yellow glow)
+- **Background**: Dark navy/blue starry background
+- **Stars**: Gold/cream stars scattered throughout, snowflake-like elements
+- **Ornamental Details**: Gold flourishes, possibly ivy or floral vine elements
+- **Text Placement**:
+  - Left side upper: "Snuggle In" (large, gold/cream)
+  - Center: "Listen" (medium, gold/cream)
+  - Right side: "Dream Big" (medium, gold/cream)
+- **Colors**: Dark navy background + Gold glowing elements + Cream/white text + Warm illustration tones
+- **Lighting**: Warm glow from lantern, stars, professional lighting illustration
+- **Layout**: Character centered, lantern beside, text integrated naturally
+- **Illustration Quality**: High-detail, professional, cozy and magical feeling
 - **Pajama Style**: Long sleeve top + matching bottoms
 - **Retail Price**: $34.99
 
-**RULE**: Sunny MUST be reading/holding book. Text placement MUST match mockup. Stars MUST be scattered throughout.
+**RULE**: Illustration MUST show Sunny reading book with lantern. Text MUST be placed as shown. Must have warm, cozy lighting. Stars MUST be scattered. Professional quality REQUIRED.
 
 ---
 
-### 3. FASHION PANTS PATTERN
-**Source Image**: Reference photo #10
+### 3. PEACEFUL SCENIC — PILLOW/HOME DESIGN
+**Source Image**: Reference photo - Peaceful landscape scene
 **EXACT SPECIFICATIONS**:
-- **Pattern Elements**: Repeating Sunny + moons + stars + decorative botanicals
-- **Background**: Navy/dark blue
-- **Pattern Repeat**: Regular, alternating arrangement
-- **Colors**: Navy + Gold/tan elements + Cream accents
-- **Main Subject**: Sunny character repeated throughout
-- **Secondary Elements**: Crescent moons, stars, leaf/botanical patterns
-- **Layout**: Full all-over pattern, balanced, sophisticated
-- **Print Method**: All-over print
-- **Fit**: Fashion pants/lounge pants style
-- **Retail Price**: $28.99
+- **Illustration Style**: Professional landscape illustration with dreamy quality
+- **Character**: Sunny sitting peacefully in natural landscape (not standing)
+- **Character Position**: Center-left, prominent but contemplative
+- **Landscape Elements**: 
+  - Large full moon (bright, glowing)
+  - Silhouetted trees and foliage
+  - Flowers and botanical elements (detailed)
+  - Natural terrain/earth
+- **Sky**: Dark navy starry night sky with stars scattered
+- **Atmospheric Effect**: Dreamy, peaceful, magical mood
+- **Colors**: Dark navy sky + Gold/cream moon + Gold stars + Nature tones (greens, golds, earthy)
+- **Lighting**: Moonlight illuminating scene, atmospheric glow
+- **Layout**: Balanced landscape composition, character integrated naturally
+- **Illustration Quality**: High-detail, professional landscape illustration, contemplative mood
+- **Print Applications**: Pillow covers, wall art, home goods
+- **Retail Price**: $24.99
 
-**RULE**: Pattern MUST alternate between Sunny, moons, and stars. Navy background MUST be consistent. Pattern MUST look sophisticated, not busy.
+**RULE**: Illustration MUST be detailed landscape. Sunny MUST be sitting peacefully. Moon MUST be prominent. Professional landscape quality REQUIRED.
 
 ---
 
-### 4. ALL-OVER PAJAMA SET
-**Source Image**: Reference photo #11
+### 4. OPEN BOOK — MERCHANDISE DESIGN
+**Source Image**: Reference photo - "Every Great Adventure Begins With A Story"
 **EXACT SPECIFICATIONS**:
-- **Background**: Cream/beige/natural white (NOT navy)
-- **Pattern Elements**: Repeating Sunny illustrations scattered throughout
-- **Density**: Full coverage all-over pattern
-- **Colors**: Cream background + Sunny illustrations (golden brown) + Navy trim
-- **Sleeve/Cuff Trim**: Navy blue trim on wrists and legs
-- **Pajama Style**: Long sleeve top + matching pants/shorts
-- **Layout**: Sunny characters evenly distributed, cohesive pattern
-- **Print Method**: All-over print on cream base
-- **Retail Price**: $34.99
+- **Illustration Style**: Professional detailed artwork in book format
+- **Layout**: Open book design showing two pages
+- **Left Page**: Sunny illustration (golden quokka) with cozy elements, warm lighting
+- **Right Page**: Another character illustration (companion animal)
+- **Page Background**: Illustrated pages with stars, night sky theme
+- **Decorative Border**: Ornamental elements at bottom of book (flourishes, botanical design)
+- **Text Placement**: Bottom banner/scroll with text
+- **Text**: "Every Great Adventure Begins With A Story" (in elegant script/serif)
+- **Colors**: Navy/dark background + Gold text + Cream highlights + Warm illustration tones
+- **Book Details**: Open book pages clearly defined, illustrated pages showing interior
+- **Ornaments**: Bottom has elaborate decorative frame/flourishes
+- **Lighting**: Warm, magical lighting throughout illustration
+- **Illustration Quality**: High-detail professional artwork, whimsical and warm
+- **Applications**: T-shirts, hoodies, merchandise backs
+- **Retail Price**: $24.99
 
-**RULE**: Cream background is REQUIRED. Navy trim is REQUIRED. Sunny MUST be repeated throughout. No stars/moons on this version - character-focused only.
+**RULE**: Illustration MUST show open book with two characters on pages. Text MUST be on bottom banner. Ornaments MUST frame bottom. Professional artwork quality REQUIRED.
 
 ---
 
-### 5. MERCHANDISE COLLECTION — MULTI-PRODUCT
+### 5. DREAM BIG, LITTLE ONE
+**Source Image**: Reference photo - "Dream Big, Little One"
+**EXACT SPECIFICATIONS**:
+- **Illustration Style**: Professional detailed artwork with magical quality
+- **Character**: Sunny looking upward at sky (contemplative, inspired pose)
+- **Moon**: Large bright moon in upper right
+- **Stars**: Scattered gold/cream stars throughout sky
+- **Flowers**: Detailed flowers and botanical elements (daisies, wildflowers)
+- **Ground**: Natural terrain with flowers
+- **Decorative Elements**: Hanging lanterns, floating sparkles
+- **Text Placement**:
+  - Upper area: "Dream Big," (cream/gold)
+  - Below: "Little One" (cream/gold)
+  - Heart symbol between lines
+- **Colors**: Dark navy starry sky + Cream moon + Gold stars + Warm flower tones + Gold text
+- **Lighting**: Moonlight, warm magical glow
+- **Mood**: Inspirational, dreamy, hopeful
+- **Illustration Quality**: High-detail professional artwork
+- **Applications**: Apparel, home goods
+- **Retail Price**: $24.99
+
+**RULE**: Character MUST be looking upward. Moon MUST be prominent. Flowers MUST be detailed. Text MUST be exact. Professional illustrated quality REQUIRED.
+
+### 6. A WISH SHARED IS NEVER LOST
+**Source Image**: Reference photo - "A Wish Shared Is Never Lost"
+**EXACT SPECIFICATIONS**:
+- **Illustration Style**: Professional detailed landscape illustration
+- **Characters**: Two characters (Sunny + companion) in tree setting
+- **Setting**: Characters perched on tree branch or in tree
+- **Moon**: Large bright moon behind/above characters
+- **Background**: Night sky with stars, trees in silhouette
+- **Tree Elements**: Detailed tree bark, branches, foliage
+- **Decorative Elements**: Stars, sparkles, magical atmospheric elements
+- **Text Placement**: Bottom area with elegant text
+- **Text**: "A Wish Shared Is Never Lost" (gold/cream, elegant font)
+- **Colors**: Dark navy sky + Cream moon + Gold text + Gold stars + Nature tones
+- **Lighting**: Moonlit scene, warm magical atmosphere
+- **Composition**: Balanced, two characters prominent, nature framing
+- **Illustration Quality**: High-detail professional landscape artwork
+- **Applications**: Apparel, home goods, gifts
+- **Retail Price**: $24.99
+
+**RULE**: Two characters MUST be together in tree. Moon MUST be prominent. Professional landscape quality REQUIRED. Text MUST be exact.
+
+### 7. SUNNY COZY CROCKER — BEDTIME STORY
+**Source Image**: Reference photo - "Sunny Cozy Crocker - Bedtime Story"
+**EXACT SPECIFICATIONS**:
+- **Illustration Style**: Professional detailed artwork with cozy atmosphere
+- **Character**: Sunny prominent in center
+- **Lantern**: Glowing lantern beside character (warm yellow glow)
+- **Moon**: Large bright moon in background
+- **Stars**: Scattered gold/cream stars throughout
+- **Trees**: Silhouetted trees in background
+- **Flowers**: Wildflowers and botanical elements (detailed)
+- **Text Placement**:
+  - Upper left: "Sunny" (large, gold)
+  - Below: "Cozy Crocker" (medium, gold)
+  - Below: "Bedtime Story" (medium, gold)
+  - Bottom: "Dream Big, Little One" (cream)
+- **Colors**: Dark navy starry sky + Cream moon + Gold text + Warm illustration tones
+- **Lighting**: Lantern glow, moonlight, cozy magical atmosphere
+- **Mood**: Warm, inviting, bedtime-appropriate
+- **Illustration Quality**: High-detail professional artwork, cozy and magical
+- **Applications**: T-shirts, pajamas, home goods
+- **Retail Price**: $24.99
+
+**RULE**: Lantern MUST glow prominently. Moon MUST be bright. Text arrangement MUST be exact. Professional cozy illustration quality REQUIRED.
+
+### 8. CHRISTMAS WISHES
+**Source Image**: Reference photo - "Christmas Wishes From Sunny"
+**EXACT SPECIFICATIONS**:
+- **Illustration Style**: Professional detailed artwork with holiday theme
+- **Character**: Sunny wearing Santa hat
+- **Accessories**: Holding lantern (warm glow), festive elements
+- **Background**: Dark navy with snowflakes
+- **Snowflakes**: Intricate gold/white snowflake patterns scattered
+- **Decorative Elements**: Red and gold floral/holly elements (seasonal)
+- **Stars**: Gold stars scattered throughout
+- **Text Placement**: Center area with elegant text
+- **Text**: "Christmas Wishes From Sunny" (gold/cream, elegant)
+- **Colors**: Dark navy background + Gold snowflakes + Warm character tones + Red/gold seasonal elements
+- **Lighting**: Lantern glow, magical holiday atmosphere
+- **Mood**: Festive, warm, magical Christmas feeling
+- **Illustration Quality**: High-detail professional artwork, holiday theme
+- **Applications**: Holiday apparel, seasonal merchandise
+- **Retail Price**: $24.99
+
+**RULE**: Santa hat MUST be prominent. Lantern MUST glow. Snowflakes MUST be intricate. Red/gold seasonal elements REQUIRED. Text MUST be exact. Professional holiday illustration quality REQUIRED.
+
+### 9. MERCHANDISE COLLECTION — MULTI-PRODUCT
 **Source Image**: Reference photo #12
 **EXACT SPECIFICATIONS**:
 
