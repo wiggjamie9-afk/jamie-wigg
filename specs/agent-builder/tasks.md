@@ -13,7 +13,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: N1
   - **acceptance**: `npm run dev` starts on localhost:3000; TypeScript compiler passes; Tailwind builds
 
-- [ ] **T2** — Set up authentication & user schema (Supabase or similar)
+- [x] **T2** — Set up authentication & user schema (Supabase or similar)
   - **files**: `agent-builder/lib/auth.ts`, `agent-builder/lib/db.ts`, `agent-builder/migrations/001_users.sql`
   - **depends**: T1
   - **satisfies**: R9
@@ -57,7 +57,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R3
   - **acceptance**: All 5 steps render; user can proceed through workflow; form data persists across steps; preview of agent config updates in real-time
 
-- [ ] **T8** — Build agent type selector UI
+- [x] **T8** — Build agent type selector UI
   - **files**: `agent-builder/components/AgentTypeSelector.tsx`, `agent-builder/components/TypeCard.tsx`
   - **depends**: T4
   - **satisfies**: R1, R2
