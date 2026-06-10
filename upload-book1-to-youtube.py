@@ -69,7 +69,7 @@ def get_youtube_service():
     return service
 
 def upload_video(youtube_service, video_file: Path) -> str:
-    """Upload video to YouTube"""
+    """Upload video to YouTube with metadata"""
     if not video_file.exists():
         raise FileNotFoundError(f"Video file not found: {video_file}")
 
@@ -80,6 +80,7 @@ def upload_video(youtube_service, video_file: Path) -> str:
     print(f"Video: {video_file.name}")
     print(f"Size: {video_file.stat().st_size / 1024 / 1024:.1f}MB")
     print(f"Title: {VIDEO_TITLE}")
+    print(f"Tags: {len(VIDEO_TAGS)} tags")
     print()
 
     body = {
@@ -88,19 +89,33 @@ def upload_video(youtube_service, video_file: Path) -> str:
             "description": VIDEO_DESCRIPTION,
             "tags": VIDEO_TAGS,
             "categoryId": CATEGORY_ID,
+            "defaultLanguage": "en",
+            "defaultAudioLanguage": "en",
         },
         "status": {
             "privacyStatus": "public",
             "embeddable": True,
             "publicStatsViewable": True,
         },
+        "processingDetails": {
+            "processingProgress": {
+                "partsProcessed": 0,
+                "partsTotal": 0,
+                "timeLeftMs": 0
+            }
+        }
     }
 
-    print("Creating request...")
-    media = MediaFileUpload(str(video_file), chunksize=-1, resumable=True)
+    print("Creating upload request with metadata...")
+    print(f"  Title: {body['snippet']['title']}")
+    print(f"  Description length: {len(body['snippet']['description'])} chars")
+    print(f"  Tags: {body['snippet']['tags']}")
+    print()
+
+    media = MediaFileUpload(str(video_file), chunksize=-1, resumable=True, mimetype="video/mp4")
 
     request = youtube_service.videos().insert(
-        part="snippet,status",
+        part="snippet,status,processingDetails",
         body=body,
         media_body=media
     )
@@ -111,18 +126,38 @@ def upload_video(youtube_service, video_file: Path) -> str:
         try:
             status, response = request.next_chunk()
             if status:
-                print(f"  {int(status.progress() * 100)}%")
+                percent = int(status.progress() * 100)
+                print(f"  {percent}%")
         except HttpError as e:
-            print(f"An error occurred: {e}")
+            print(f"✗ Upload error: {e}")
             return None
 
-    print("\n✓ Upload complete!")
-    video_id = response["id"]
-    video_url = f"https://www.youtube.com/watch?v={video_id}"
-    print(f"✓ Video ID: {video_id}")
-    print(f"✓ URL: {video_url}")
+    if response:
+        print("\n✓ Upload complete!")
+        video_id = response.get("id")
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        print(f"✓ Video ID: {video_id}")
+        print(f"✓ URL: {video_url}")
 
-    return video_id
+        # Verify metadata was saved
+        print("\nVerifying metadata...")
+        try:
+            verify = youtube_service.videos().list(
+                part="snippet",
+                id=video_id
+            ).execute()
+            if verify["items"]:
+                saved = verify["items"][0]["snippet"]
+                print(f"✓ Title saved: {saved.get('title')}")
+                print(f"✓ Tags saved: {saved.get('tags', [])}")
+                print(f"✓ Description saved: {len(saved.get('description', ''))} chars")
+        except:
+            print("(Could not verify metadata)")
+
+        return video_id
+    else:
+        print("✗ No response from YouTube")
+        return None
 
 def main():
     if not VIDEO_FILE.exists():
