@@ -4,11 +4,7 @@ import {
   AgentTemplate,
 } from "@/lib/agent-templates";
 
-interface PromptPageProps {
-  searchParams: Promise<Record<string, string>>;
-}
-
-export default async function PromptsPage({ searchParams }: PromptPageProps) {
+export default async function PromptsPage() {
   // Load all templates
   const templates = loadAllTemplates();
   const templatesList = Array.from(templates.values()).sort((a, b) => {
