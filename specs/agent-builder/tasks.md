@@ -19,7 +19,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R9
   - **acceptance**: User signup/login works; users can be queried from DB; protected routes redirect unauthenticated users
 
-- [ ] **T3** — Create project management schema (agents, configs, analytics)
+- [x] **T3** — Create project management schema (agents, configs, analytics)
   - **files**: `agent-builder/migrations/002_projects.sql`, `agent-builder/migrations/003_analytics.sql`, `agent-builder/lib/schema.ts`
   - **depends**: T2
   - **satisfies**: R9, R10, N4
@@ -45,7 +45,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
 
 ## Web App UI & Pages
 
-- [ ] **T6** — Build dashboard page (project list, create new, delete)
+- [x] **T6** — Build dashboard page (project list, create new, delete)
   - **files**: `agent-builder/app/dashboard/page.tsx`, `agent-builder/components/ProjectList.tsx`, `agent-builder/components/CreateProjectButton.tsx`
   - **depends**: T2, T4
   - **satisfies**: R9
@@ -63,7 +63,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R1, R2
   - **acceptance**: 6 agent type cards display; each card shows name, description, use case; clicking a card pre-fills the builder with that template
 
-- [ ] **T9** — Build settings & account page (auth, billing, API keys)
+- [x] **T9** — Build settings & account page (auth, billing, API keys)
   - **files**: `agent-builder/app/settings/page.tsx`, `agent-builder/components/BillingCard.tsx`, `agent-builder/components/APIKeysCard.tsx`
   - **depends**: T2
   - **satisfies**: R9
@@ -91,13 +91,13 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R5, R6
   - **acceptance**: All 3 tiers ($500, $1500, $500) displayed with feature comparison; CTA buttons link to sign-up; mobile layout stacks tiers
 
-- [ ] **T13** — Create agent showcase page (all 6 types with use cases & prompts)
+- [x] **T13** — Create agent showcase page (all 6 types with use cases & prompts)
   - **files**: `sites/agent-builder/agents.html`, `sites/agent-builder/agents-styles.css`
   - **depends**: T4
   - **satisfies**: R1, R6
   - **acceptance**: Each agent type has its own card; description, use cases, sample prompts visible; code examples display with syntax highlighting
 
-- [ ] **T14** — Create API documentation page (endpoints, auth, examples)
+- [x] **T14** — Create API documentation page (endpoints, auth, examples)
   - **files**: `sites/agent-builder/docs.html`, `sites/agent-builder/docs-styles.css`, `launch-kit/agent-builder/api-spec.md`
   - **depends**: T5
   - **satisfies**: R8
@@ -119,7 +119,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R7
   - **acceptance**: narration.wav exists; audio is ~60s long; speech is clear and professional; matches script from T15
 
-- [ ] **T17** — Render promo video to MP4 (HyperFrames → ffmpeg)
+- [x] **T17** — Render promo video to MP4 (HyperFrames → ffmpeg)
   - **files**: `rhythmix-agent-builder-60s/renders/rhythmix-agent-builder-60s.mp4`
   - **depends**: T15, T16
   - **satisfies**: R7, N3
@@ -129,13 +129,13 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
 
 ## Marketing & Launch Assets
 
-- [ ] **T18** — Create copy-paste social media posts & email sequences
+- [x] **T18** — Create copy-paste social media posts & email sequences
   - **files**: `launch-kit/agent-builder/social-posts.md`, `launch-kit/agent-builder/email-sequences.md`
   - **depends**: T11, T12
   - **satisfies**: R6
   - **acceptance**: 10+ social posts (LinkedIn, Twitter, etc.); 3 email sequences (awareness, consideration, conversion); all copy is brand-aligned
 
-- [ ] **T19** — Create blog outlines & comparison sheets
+- [x] **T19** — Create blog outlines & comparison sheets
   - **files**: `launch-kit/agent-builder/blog-outlines.md`, `launch-kit/agent-builder/pricing-comparison.md`
   - **depends**: T12
   - **satisfies**: R6
@@ -151,7 +151,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
 
 ## Testing & Launch Readiness
 
-- [ ] **T21** — Write unit tests for agent config validation
+- [x] **T21** — Write unit tests for agent config validation
   - **files**: `agent-builder/__tests__/agent-config.test.ts`, `agent-builder/__tests__/schemas.test.ts`
   - **depends**: T5
   - **satisfies**: R2
