@@ -1,0 +1,185 @@
+================================================================================
+                    VIDEO PIPELINE — QUICK START GUIDE
+================================================================================
+
+STEP 1: LOCAL MACHINE SETUP (1 hour, one-time)
+─────────────────────────────────────────────────────────────────────────────
+
+Ollama (15 min)
+  brew install ollama && ollama serve &
+  ollama pull mistral
+
+ComfyUI (30 min)
+  git clone https://github.com/comfyui/ComfyUI.git
+  cd ComfyUI && pip install -r requirements.txt && python main.py
+  Download Flux model via UI or manually (~13GB)
+
+AudioCraft (10 min)
+  brew install ffmpeg && pip install audiocraft
+
+VERIFY:
+  curl http://localhost:11434/api/tags  # Ollama
+  curl http://localhost:8188            # ComfyUI
+  ffmpeg -version                       # FFmpeg
+
+
+STEP 2: GENERATE VIDEOS (from cloud environment)
+─────────────────────────────────────────────────────────────────────────────
+
+SINGLE VIDEO:
+
+  from app.services.complete_pipeline import CompleteVideoPipeline
+  
+  pipeline = CompleteVideoPipeline()
+  result = pipeline.generate_video(
+      topic="Street vendor's daily hustle",
+      scene_count=4,
+      title="vendor_story"
+  )
+  
+  Output: vendor_story_final.mp4 (1080×1920, ~4 minutes)
+
+
+BATCH (100 APPS):
+
+  topics = [
+      "Street vendor's morning routine",
+      "Freelancer finding first client",
+      "Smallholder farmer's daily work",
+      # ... 100 apps
+  ]
+  
+  for i, topic in enumerate(topics, 1):
+      pipeline.generate_video(
+          topic=topic,
+          scene_count=4,
+          title=f"app_{i:03d}"
+      )
+  
+  Total time: ~6.7 hours (parallelizable)
+
+
+PIPELINE FLOW:
+  
+  Topic
+    ↓
+  Ollama (Script + visual prompts)
+    ↓
+  ComfyUI (AI images: 540×960)
+    ↓
+  AudioCraft (Background music)
+    ↓
+  Kokoro (Narration TTS)
+    ↓
+  FFmpeg (Ken Burns video: 1080×1920)
+    ↓
+  Output MP4
+
+
+CONFIGURATION:
+
+  pipeline = CompleteVideoPipeline(
+      output_dir="videos",                           # Save location
+      llm_model="mistral",                           # Ollama model
+      music_model="facebook/musicgen-medium",        # Music model
+      comfyui_url="http://localhost:8188",           # ComfyUI API
+      kokoro_voice="af_bella"                        # TTS voice
+  )
+
+
+AVAILABLE VOICES (Kokoro TTS):
+  af_bella, am_michael, af_sarah, en_default, ...
+  Full list: https://github.com/hexgrad/kokoro
+
+
+TROUBLESHOOTING:
+
+  Ollama not running?
+    ollama serve &
+  
+  ComfyUI port in use?
+    lsof -i :8188 && kill -9 <PID>
+  
+  AudioCraft ffmpeg error?
+    brew install ffmpeg
+  
+  GPU not detected?
+    # NVIDIA: python -m torch.utils.collect_env | grep CUDA
+    # Apple: python -c "import torch; print(torch.backends.mps.is_available())"
+    # AMD: rocm-smi
+
+
+PERFORMANCE:
+
+  Per video (4 scenes, GPU with 10GB+ VRAM):
+    Ollama:     10s   (script)
+    ComfyUI:    2min  (images)
+    AudioCraft: 1min  (music)
+    Kokoro:     5s    (narration)
+    FFmpeg:     30s   (assembly)
+    ─────────────────
+    TOTAL:      ~4 min
+
+
+COST:
+
+  Paid APIs (Replicate + ElevenLabs): $0.60 per video
+  This Pipeline:                       $0 per video
+  Savings per 100 videos:              $60
+
+
+FILES STRUCTURE:
+
+  app/
+  ├── README.md                         # Full documentation
+  ├── OPEN_MODELS_PIPELINE.md           # Setup guide
+  ├── FULL_STACK_PIPELINE.md            # Deep reference
+  └── services/
+      ├── ollama_llm.py                 # Script generation
+      ├── music_gen.py                  # Music composition
+      ├── video_pipeline.py             # Basic pipeline
+      └── complete_pipeline.py          # Full orchestrator
+
+
+WHAT'S INCLUDED:
+
+  ✓ Ollama (local LLM - Mistral/Gemma4)
+  ✓ ComfyUI (local image gen - Flux.1-dev)
+  ✓ AudioCraft (local music gen - MusicGen)
+  ✓ Kokoro TTS (local narration - 30+ voices)
+  ✓ FFmpeg (local video assembly)
+  
+  All open-source, nothing proprietary, zero API costs
+
+
+NEXT STEPS:
+
+  1. Complete SETUP_LOCAL_MACHINE.md on your machine
+  2. Verify all services running (Ollama, ComfyUI, AudioCraft)
+  3. Run test video from cloud environment
+  4. Scale to 100 APPS mission (batch generation)
+
+
+DOCUMENTATION:
+
+  SETUP_LOCAL_MACHINE.md    - Step-by-step installation guide
+  QUICK_START.txt           - This file
+  app/README.md             - Comprehensive documentation
+  app/OPEN_MODELS_PIPELINE.md - Quick setup reference
+  app/FULL_STACK_PIPELINE.md  - Deep technical reference
+
+
+SUPPORT:
+
+  Issues with setup?
+    - Check SETUP_LOCAL_MACHINE.md Troubleshooting section
+    - Verify service is running: curl http://localhost:PORT
+    - Check GitHub issues:
+      * Ollama: https://github.com/ollama/ollama/issues
+      * ComfyUI: https://github.com/comfyui/ComfyUI/issues
+      * AudioCraft: https://github.com/facebookresearch/audiocraft/issues
+
+
+================================================================================
+                          Ready to generate videos?
+================================================================================
