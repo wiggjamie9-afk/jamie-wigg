@@ -51,7 +51,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R9
   - **acceptance**: Dashboard displays user's agents; "Create New" button works; agents can be deleted; page is mobile-responsive
 
-- [ ] **T7** — Build 5-step agent builder workflow
+- [x] **T7** — Build 5-step agent builder workflow
   - **files**: `agent-builder/app/builder/page.tsx`, `agent-builder/components/BuilderSteps.tsx`, `agent-builder/components/StepOne*.tsx` (Create through Fine-tune)
   - **depends**: T4, T5, T6
   - **satisfies**: R3
@@ -141,7 +141,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R6
   - **acceptance**: 3 blog post outlines; 2 comparison sheets (vs. competitors, vs. building manually); outlines include headlines, structure, CTAs
 
-- [ ] **T20** — Create deployment & quickstart guides
+- [x] **T20** — Create deployment & quickstart guides
   - **files**: `launch-kit/agent-builder/deployment-guide.md`, `launch-kit/agent-builder/quickstart.md`
   - **depends**: T14
   - **satisfies**: R8
