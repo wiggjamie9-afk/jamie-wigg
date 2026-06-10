@@ -1,95 +1,80 @@
-name: Deploy Agent Builder to Cloudflare Pages
+name: Deploy Agent Builder
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [main]
     paths:
       - 'agent-builder/**'
-      - 'sites/agent-builder/**'
-  workflow_dispatch:
-
-concurrency:
-  group: agent-builder-deploy-${{ github.ref }}
-  cancel-in-progress: true
+      - '.github/workflows/deploy-agent-builder.yml'
 
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
+      
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: agent-builder/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: agent-builder
-
-      - name: Lint
-        run: pnpm lint
-        working-directory: agent-builder
-
-      - name: Build static export
-        run: pnpm build
-        working-directory: agent-builder
-
-      - name: Upload app artifact
-        uses: actions/upload-artifact@v4
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: agent-builder/package-lock.json
+      
+      - name: Install
+        run: cd agent-builder && npm install
+      
+      - name: Build
+        run: cd agent-builder && npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
         with:
-          name: agent-builder-out
-          path: agent-builder/out
-          retention-days: 1
+          name: agent-builder-dist
+          path: agent-builder/out/
 
   deploy-preview:
-    name: Deploy preview
-    needs: build
     if: github.ref != 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
+    
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
         with:
-          name: agent-builder-out
-          path: agent-builder/out
-
+          name: agent-builder-dist
+          path: ./out
+      
       - name: Deploy to Cloudflare Pages (preview)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy agent-builder/out --project-name=agent-builder-app --branch=${{ github.head_ref || github.ref_name }}
+          command: pages deploy out --project-name=starlightmix-studio
+          secrets: |
+            GITHUB_TOKEN
 
   deploy-production:
-    name: Deploy production
-    needs: build
     if: github.ref == 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://agent-builder.starlightmix.com
-    permissions:
-      contents: read
-      deployments: write
+    environment: production
+    
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
         with:
-          name: agent-builder-out
-          path: agent-builder/out
-
+          name: agent-builder-dist
+          path: ./out
+      
       - name: Deploy to Cloudflare Pages (production)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy agent-builder/out --project-name=agent-builder-app --branch=main
+          command: pages deploy out --project-name=starlightmix-studio
+          secrets: |
+            GITHUB_TOKEN
