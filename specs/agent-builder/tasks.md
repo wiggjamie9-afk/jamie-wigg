@@ -35,7 +35,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R1, R4
   - **acceptance**: All 6 templates exist; each has environment defaults, session config, system prompt, examples, success criteria; templates can be loaded in memory
 
-- [ ] **T5** — Build agent configuration validator & serializer
+- [x] **T5** — Build agent configuration validator & serializer
   - **files**: `agent-builder/lib/agent-config.ts`, `agent-builder/lib/schemas.ts`
   - **depends**: T4
   - **satisfies**: R2
@@ -69,7 +69,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R9
   - **acceptance**: Users can view tier, see billing info, generate/revoke API keys; page is mobile-responsive
 
-- [ ] **T10** — Build copy-paste prompts display & export
+- [x] **T10** — Build copy-paste prompts display & export
   - **files**: `agent-builder/app/builder/prompts/page.tsx`, `agent-builder/components/PromptViewer.tsx`, `agent-builder/lib/prompt-export.ts`
   - **depends**: T4
   - **satisfies**: R4
@@ -113,7 +113,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R7, N3
   - **acceptance**: HTML composition renders; script is narrative of 5-step workflow; hyperframes.json is valid; composition can be previewed in browser
 
-- [ ] **T16** — Generate narration for promo video (TTS via Kokoro)
+- [x] **T16** — Generate narration for promo video (TTS via Kokoro)
   - **files**: `rhythmix-agent-builder-60s/narration.wav`, `rhythmix-agent-builder-60s/script.txt`
   - **depends**: T15
   - **satisfies**: R7
