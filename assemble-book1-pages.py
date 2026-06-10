@@ -65,8 +65,8 @@ def main():
     print("\nPage 1: Cover...")
     pages.append(("BOOK-1-PAGE-01-COVER.png", create_cover_page()))
 
-    # Pages 2-17: Story pages
-    for page_num in range(2, 17):
+    # Pages 2-17: Story pages (16 pages total)
+    for page_num in range(2, 18):
         story_page = PAGES_DIR / f"BOOK-1-PAGE-{page_num:02d}-WATERCOLOR.png"
         if story_page.exists():
             print(f"Page {page_num}: Loading story page...")
