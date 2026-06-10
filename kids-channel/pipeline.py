@@ -50,10 +50,10 @@ VISUAL_STYLE = (
     "Warm earthy palette: ochres, burnt siennas, soft greens, deep blues. "
     "Australian bush at night with soft moonlight. Deep indigo-navy sky scattered with hand-dotted stars. "
     "Gum trees framing scene with loose sketchy linework. Glowing fireflies with warm golden highlights. "
-    "Sonny the quokka as main character - always consistent appearance: small marsupial, soft golden-brown fur detail, "
-    "large warm brown eyes, gentle curious expression, tiny round ears, cosy and safe feeling. "
-    "Avoid: flat digital art, sharp clean lines, smooth gradients, glossy 3D render, airbrushed, photorealistic, "
-    "plastic look, bright neon colours. No text or captions. Safe for toddlers ages 1-5."
+    "Sonny the quokka as main character - always consistent appearance: a small CHUBBY ROUND quokka "
+    "(compact teddy-bear-like marsupial, NOT a kangaroo), soft golden-brown fur detail, "
+    "large warm brown eyes, short snout with a gentle natural smile, tiny round ears, cosy and safe feeling. "
+    "No text or captions. Safe for toddlers ages 1-5."
 )
 SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sonny the little Quokka — cozy bedtime stories for toddlers at bedtime or quiet time."
 
@@ -613,25 +613,150 @@ def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Pat
     return None
 
 
-def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
-    """Generate a scene image via Replicate FLUX Dev — uses your existing Replicate account.
-    Add REPLICATE_API_TOKEN to GitHub Secrets (same token as the creative-stack MCP server).
-    Generates professional watercolour children's book illustrations."""
+# Canonical character description — one tight block, used everywhere a model
+# draws Sonny. FLUX has no negative prompts, so this spells out what a quokka
+# IS rather than listing styles to avoid (listed "avoid" terms leak into the
+# image as content).
+SONNY_CHARACTER = (
+    "Sonny the quokka: a small CHUBBY ROUND quokka (the famous 'happiest animal' "
+    "— a compact teddy-bear-like marsupial, NOT a kangaroo, NOT a mouse), "
+    "plump round body, golden-brown soft fur, big warm dark-brown eyes, "
+    "small round ears, short snout with a gentle natural smile"
+)
+
+WATERCOLOUR_STYLE = (
+    "Professional watercolour children's picture book illustration, Beatrix Potter and Jill Barklem style. "
+    "Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes. "
+    "Loose painterly technique, warm earthy palette (ochres, burnt siennas, soft greens, deep navy blues)."
+)
+
+CHARACTER_REF_PATH = Path(__file__).parent / "character" / "sonny-ref.jpg"
+CHARACTER_REF_SEED = 7777
+
+
+def get_character_ref(episode_dir: Path) -> Path | None:
+    """Return the canonical Sonny reference image used to keep the character
+    identical across every scene and every episode.
+
+    Uses the committed reference at kids-channel/character/sonny-ref.jpg when
+    present; otherwise generates it once with a FIXED seed and prompt (so the
+    result is reproducible) and saves it there for the workflow to commit."""
+    if CHARACTER_REF_PATH.exists() and CHARACTER_REF_PATH.stat().st_size > 5000:
+        print(f"  ✓ Character ref: {CHARACTER_REF_PATH} (committed)")
+        return CHARACTER_REF_PATH
     if not REPLICATE_API_TOKEN:
         return None
-    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
-    full_prompt = (
-        f"Professional watercolour children's picture book illustration, Beatrix Potter and Jill Barklem style. "
-        f"Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes. "
-        f"Loose painterly technique, imperfect handmade edges, warm earthy palette (ochres, burnt siennas, soft greens, deep blues). "
-        f"Deep indigo-navy Australian night sky scattered with tiny hand-dotted stars and gentle moonlight. "
-        f"Gum trees framing scene with loose, sketchy linework. Glowing fireflies with warm golden highlights. "
-        f"Sonny the quokka as main character — small golden-brown marsupial with soft detailed fur, "
-        f"large warm brown eyes, gentle curious expression, tiny round ears. Consistent appearance. "
-        f"Scene: {prompt[:300]}. "
-        f"Textured paper grain visible throughout, soft hand-painted edges, warm cosy feeling, safe for children. "
-        f"Avoid: flat vector art, digital lines, smooth gradients, 3D render, airbrushed, photorealistic, sharp crisp edges."
+    print("  ⏳ Generating canonical Sonny character reference (one-off, fixed seed)...")
+    ref_prompt = (
+        f"{WATERCOLOUR_STYLE} "
+        f"Full-body character portrait of {SONNY_CHARACTER}. "
+        f"Sitting upright on a moonlit patch of grass, facing slightly toward the viewer, whole body visible, "
+        f"deep indigo-navy Australian night sky behind with tiny hand-dotted stars and a few glowing fireflies. "
+        f"Clear well-lit view of the character, soft hand-painted edges, warm cosy feeling, safe for toddlers. No text."
     )
+    tmp_dir = episode_dir
+    result = _replicate_flux_predict(ref_prompt, tmp_dir / "character_ref.jpg",
+                                     seed=CHARACTER_REF_SEED, label="character ref")
+    if result:
+        CHARACTER_REF_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CHARACTER_REF_PATH.write_bytes(result.read_bytes())
+        print(f"  ✓ Character ref saved: {CHARACTER_REF_PATH}")
+        return CHARACTER_REF_PATH
+    return None
+
+
+def generate_scene_image_kontext(prompt: str, scene_id: int, episode_dir: Path,
+                                 ref_path: Path) -> Path | None:
+    """Generate a scene image via Replicate FLUX Kontext using the canonical
+    Sonny reference image — keeps the character visually identical in every
+    scene instead of re-rolling a new animal each time."""
+    if not REPLICATE_API_TOKEN or not ref_path or not ref_path.exists():
+        return None
+    import base64
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    ref_b64 = base64.b64encode(ref_path.read_bytes()).decode()
+    kontext_prompt = (
+        f"Keep this exact quokka character completely unchanged — same fur colour, same face, "
+        f"same round body proportions, same gentle smile. Paint the character into a new scene: "
+        f"{prompt[:280]}. "
+        f"Maintain the same hand-painted watercolour children's book style, textured paper, "
+        f"deep navy night sky, warm palette. No text."
+    )
+    headers = {
+        "Authorization": f"Token {REPLICATE_API_TOKEN}",
+        "Content-Type": "application/json",
+        "Prefer": "wait=60",
+    }
+    payload = {
+        "input": {
+            "prompt": kontext_prompt,
+            "input_image": f"data:image/jpeg;base64,{ref_b64}",
+            "aspect_ratio": "16:9",
+            "output_format": "jpg",
+            "seed": scene_id * 17,
+        }
+    }
+    for attempt in range(4):
+        try:
+            print(f"  ⏳ Scene {scene_id} FLUX Kontext{' (retry)' if attempt else ''}...")
+            r = requests.post(
+                "https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-dev/predictions",
+                headers=headers, json=payload, timeout=180,
+            )
+            if r.status_code == 429:
+                wait = 15 * (attempt + 1)
+                print(f"  ⏳ Scene {scene_id} rate-limited (429), waiting {wait}s...")
+                time.sleep(wait)
+                continue
+            if r.status_code == 404:
+                print("  ⚠ flux-kontext-dev not available on this account — falling back to FLUX Dev")
+                return None
+            if r.status_code not in (200, 201):
+                print(f"  ⚠ Kontext start failed: {r.status_code} {r.text[:200]}")
+                return None
+            img_url = _poll_replicate_prediction(r.json())
+            if not img_url:
+                return None
+            img_data = requests.get(img_url, timeout=60).content
+            if len(img_data) > 5000:
+                img_path.write_bytes(img_data)
+                print(f"  ✓ Scene {scene_id} image (FLUX Kontext, {len(img_data)//1024}KB)")
+                return img_path
+        except Exception as e:
+            print(f"  ⚠ Scene {scene_id} Kontext failed: {e}")
+    return None
+
+
+def _poll_replicate_prediction(prediction: dict) -> str | None:
+    """Poll a Replicate prediction until it succeeds; return the output URL."""
+    if prediction.get("status") == "succeeded":
+        img_url = prediction["output"]
+    else:
+        poll_url = prediction["urls"]["get"]
+        poll_headers = {"Authorization": f"Token {REPLICATE_API_TOKEN}"}
+        deadline = time.time() + 300
+        img_url = None
+        while time.time() < deadline:
+            time.sleep(3)
+            pr = requests.get(poll_url, headers=poll_headers, timeout=30)
+            pred = pr.json()
+            if pred.get("status") == "succeeded":
+                img_url = pred["output"]
+                break
+            if pred.get("status") in ("failed", "canceled"):
+                print(f"  ⚠ Replicate prediction {pred.get('status')}: {pred.get('error')}")
+                return None
+        if not img_url:
+            print("  ⚠ Replicate timed out")
+            return None
+    if isinstance(img_url, list):
+        img_url = img_url[0]
+    return img_url
+
+
+def _replicate_flux_predict(full_prompt: str, img_path: Path, seed: int,
+                            label: str = "image") -> Path | None:
+    """Run a single FLUX Dev prediction on Replicate and save the image."""
     headers = {
         "Authorization": f"Token {REPLICATE_API_TOKEN}",
         "Content-Type": "application/json",
@@ -646,56 +771,57 @@ def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path
             "num_inference_steps": 28,
             "guidance": 3.5,
             "num_outputs": 1,
-            "seed": scene_id * 17,
+            "seed": seed,
         }
     }
     for attempt in range(5):
         try:
-            print(f"  ⏳ Scene {scene_id} Replicate FLUX Dev{' (retry)' if attempt else ''}...")
             r = requests.post(
                 "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions",
                 headers=headers, json=payload, timeout=180,
             )
             if r.status_code == 429:
                 wait = 15 * (attempt + 1)
-                print(f"  ⏳ Scene {scene_id} rate-limited (429), waiting {wait}s before retry {attempt+1}/4...")
+                print(f"  ⏳ {label} rate-limited (429), waiting {wait}s...")
                 time.sleep(wait)
                 continue
             if r.status_code not in (200, 201):
                 print(f"  ⚠ Replicate start failed: {r.status_code} {r.text[:200]}")
                 return None
-            prediction = r.json()
-            if prediction.get("status") == "succeeded":
-                img_url = prediction["output"]
-            else:
-                poll_url = prediction["urls"]["get"]
-                poll_headers = {"Authorization": f"Token {REPLICATE_API_TOKEN}"}
-                deadline = time.time() + 300
-                img_url = None
-                while time.time() < deadline:
-                    time.sleep(3)
-                    pr = requests.get(poll_url, headers=poll_headers, timeout=30)
-                    pred = pr.json()
-                    if pred.get("status") == "succeeded":
-                        img_url = pred["output"]
-                        break
-                    if pred.get("status") in ("failed", "canceled"):
-                        print(f"  ⚠ Replicate prediction {pred.get('status')}: {pred.get('error')}")
-                        return None
-                if not img_url:
-                    print(f"  ⚠ Replicate timed out")
-                    return None
-            if isinstance(img_url, list):
-                img_url = img_url[0]
+            img_url = _poll_replicate_prediction(r.json())
+            if not img_url:
+                return None
             img_data = requests.get(img_url, timeout=60).content
             if len(img_data) > 5000:
                 img_path.write_bytes(img_data)
-                print(f"  ✓ Scene {scene_id} image (Replicate FLUX Dev, {len(img_data)//1024}KB)")
                 return img_path
             print(f"  ⚠ Replicate image too small ({len(img_data)} bytes)")
         except Exception as e:
-            print(f"  ⚠ Scene {scene_id} Replicate failed: {e}")
+            print(f"  ⚠ {label} Replicate failed: {e}")
     return None
+
+
+def generate_scene_image_replicate(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
+    """Generate a scene image via Replicate FLUX Dev — uses your existing Replicate account.
+    Add REPLICATE_API_TOKEN to GitHub Secrets (same token as the creative-stack MCP server).
+    Generates professional watercolour children's book illustrations."""
+    if not REPLICATE_API_TOKEN:
+        return None
+    img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
+    full_prompt = (
+        f"{WATERCOLOUR_STYLE} "
+        f"Deep indigo-navy Australian night sky scattered with tiny hand-dotted stars and gentle moonlight. "
+        f"Gum trees framing scene with loose, sketchy linework. Glowing fireflies with warm golden highlights. "
+        f"Main character: {SONNY_CHARACTER}. "
+        f"Scene: {prompt[:300]}. "
+        f"Textured paper grain visible throughout, soft hand-painted edges, warm cosy feeling, safe for children. No text."
+    )
+    print(f"  ⏳ Scene {scene_id} Replicate FLUX Dev...")
+    result = _replicate_flux_predict(full_prompt, img_path, seed=scene_id * 17,
+                                     label=f"Scene {scene_id}")
+    if result:
+        print(f"  ✓ Scene {scene_id} image (Replicate FLUX Dev, {result.stat().st_size//1024}KB)")
+    return result
 
 
 def generate_scene_image_stock(prompt: str, scene_id: int, episode_dir: Path) -> Path | None:
@@ -972,31 +1098,66 @@ def generate_music(duration_secs: int, episode_dir: Path) -> Path:
 # ── 5b. Thumbnail generation ───────────────────────────────────────────────────────────
 
 def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
-    """Create a 1280×720 YouTube thumbnail: navy night sky + golden title + show name."""
+    """Create a 1280×720 YouTube thumbnail from the episode's best scene art
+    (darkened band for the title) — falls back to a navy starfield only when
+    no scene image exists."""
     from PIL import Image, ImageDraw, ImageFont
 
     W, H = 1280, 720
-    img = Image.new("RGB", (W, H))
+    img = None
+
+    # Use real episode artwork as the background — the thumbnail is the single
+    # most-seen image for the episode, so it should show the actual painting.
+    scene_art = sorted(episode_dir.glob("scene_*.jpg"))
+    if scene_art:
+        try:
+            art = Image.open(scene_art[0]).convert("RGB")
+            # Cover-crop to 1280×720
+            ar_src = art.width / art.height
+            ar_dst = W / H
+            if ar_src > ar_dst:
+                new_w = int(art.height * ar_dst)
+                left = (art.width - new_w) // 2
+                art = art.crop((left, 0, left + new_w, art.height))
+            else:
+                new_h = int(art.width / ar_dst)
+                top = (art.height - new_h) // 2
+                art = art.crop((0, top, art.width, top + new_h))
+            img = art.resize((W, H), Image.LANCZOS)
+            # Darken the lower third so the title text stays readable
+            overlay = Image.new("L", (W, H), 0)
+            odraw = ImageDraw.Draw(overlay)
+            for y in range(int(H * 0.55), H):
+                alpha = int(170 * (y - H * 0.55) / (H * 0.45))
+                odraw.line([(0, y), (W, y)], fill=alpha)
+            black = Image.new("RGB", (W, H), (5, 8, 25))
+            img = Image.composite(black, img, overlay)
+        except Exception as e:
+            print(f"  ⚠ Thumbnail art failed ({e}) — using starfield fallback")
+            img = None
+
+    draw = None
+    if img is None:
+        img = Image.new("RGB", (W, H))
+        draw = ImageDraw.Draw(img)
+        # Navy gradient background
+        for y in range(H):
+            ratio = y / H
+            r = int(5 + (15 - 5) * ratio)
+            g = int(10 + (20 - 10) * ratio)
+            b = int(50 + (30 - 50) * ratio)
+            draw.line([(0, y), (W, y)], fill=(r, g, b))
+        # Stars
+        import random
+        rng = random.Random(42)
+        for _ in range(200):
+            x = rng.randint(0, W)
+            y = rng.randint(0, int(H * 0.75))
+            size = rng.choice([1, 1, 1, 2])
+            brightness = rng.randint(150, 255)
+            draw.ellipse([x - size, y - size, x + size, y + size],
+                         fill=(brightness, brightness, int(brightness * 0.9)))
     draw = ImageDraw.Draw(img)
-
-    # Navy gradient background
-    for y in range(H):
-        ratio = y / H
-        r = int(5 + (15 - 5) * ratio)
-        g = int(10 + (20 - 10) * ratio)
-        b = int(50 + (30 - 50) * ratio)
-        draw.line([(0, y), (W, y)], fill=(r, g, b))
-
-    # Stars
-    import random
-    rng = random.Random(42)
-    for _ in range(200):
-        x = rng.randint(0, W)
-        y = rng.randint(0, int(H * 0.75))
-        size = rng.choice([1, 1, 1, 2])
-        brightness = rng.randint(150, 255)
-        draw.ellipse([x - size, y - size, x + size, y + size],
-                     fill=(brightness, brightness, int(brightness * 0.9)))
 
     # Font loading
     font_paths_bold = [
@@ -1020,7 +1181,9 @@ def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
     font_title = load_font(font_paths_bold, 72)
     font_show  = load_font(font_paths_reg, 36)
 
-    title = script.get("title", SHOW_NAME)
+    # Strip SEO suffixes like "| Bedtime Story" — they belong in the YouTube
+    # title, not painted across the artwork
+    title = script.get("title", SHOW_NAME).split("|")[0].strip()
     if len(title) > 40:
         # Split into two lines
         words = title.split()
@@ -1040,12 +1203,12 @@ def generate_thumbnail(script: dict, episode_dir: Path) -> Path:
         draw.text((x, y), text, font=font, fill=colour)
 
     if line2:
-        centred(line1, font_title, GOLD, 200)
-        centred(line2, font_title, GOLD, 290)
+        centred(line1, font_title, GOLD, 460)
+        centred(line2, font_title, GOLD, 550)
     else:
-        centred(line1, font_title, GOLD, 240)
+        centred(line1, font_title, GOLD, 510)
 
-    centred(SHOW_NAME, font_show, WHITE, 440)
+    centred(SHOW_NAME, font_show, WHITE, 645)
 
     thumb_path = episode_dir / "thumbnail.jpg"
     img.save(str(thumb_path), "JPEG", quality=90)
@@ -1640,35 +1803,45 @@ def main():
         _tok_len = len(REPLICATE_API_TOKEN) if REPLICATE_API_TOKEN else 0
         print(f"  🔑 REPLICATE_API_TOKEN: {'set (' + str(_tok_len) + ' chars)' if _tok_len else 'NOT SET — will use fallback'}")
         if REPLICATE_API_TOKEN:
-            print("[3/6] Generating scene images via Replicate FLUX Schnell...")
+            print("[3/6] Generating scene images via Replicate FLUX (Kontext + character ref)...")
         elif FAL_KEY:
             print("[3/6] Generating scene images via FAL.ai FLUX...")
         else:
             print("[3/6] Generating scene images via Pollinations FLUX (free)...")
             print("  ℹ  For AI-quality art: add REPLICATE_API_TOKEN to GitHub Secrets")
 
+        # Canonical character reference — keeps Sonny identical in every scene
+        character_ref = get_character_ref(episode_dir) if REPLICATE_API_TOKEN else None
+
         for scene in script["scenes"]:
             img_path = None
 
-            # 1st choice: Replicate FLUX Schnell — your existing Replicate account
-            if REPLICATE_API_TOKEN:
+            # 1st choice: FLUX Kontext with the Sonny reference image —
+            # the character looks the same in every scene and every episode
+            if character_ref:
+                img_path = generate_scene_image_kontext(
+                    scene["image_prompt"], scene["id"], episode_dir, character_ref
+                )
+
+            # 2nd choice: Replicate FLUX Dev (fresh roll, character may drift)
+            if not img_path and REPLICATE_API_TOKEN:
                 img_path = generate_scene_image_replicate(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # 2nd choice: FAL.ai FLUX Schnell (needs FAL_KEY)
+            # 3rd choice: FAL.ai FLUX Schnell (needs FAL_KEY)
             if not img_path and FAL_KEY:
                 img_path = generate_scene_image_fal_direct(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # 3rd choice: Pollinations FLUX — free, no key, may timeout on shared runners
+            # 4th choice: Pollinations FLUX — free, no key, may timeout on shared runners
             if not img_path:
                 img_path = generate_scene_image_pollinations(
                     scene["image_prompt"], scene["id"], episode_dir
                 )
 
-            # 4th choice: stock photos (Pexels/Pixabay — free API keys)
+            # 5th choice: stock photos (Pexels/Pixabay — free API keys)
             if not img_path:
                 img_path = generate_scene_image_stock(
                     scene["image_prompt"], scene["id"], episode_dir
