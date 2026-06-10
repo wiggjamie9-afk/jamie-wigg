@@ -1,0 +1,95 @@
+name: Deploy Agent Builder to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'agent-builder/**'
+      - 'sites/agent-builder/**'
+  workflow_dispatch:
+
+concurrency:
+  group: agent-builder-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: agent-builder/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: agent-builder
+
+      - name: Lint
+        run: pnpm lint
+        working-directory: agent-builder
+
+      - name: Build static export
+        run: pnpm build
+        working-directory: agent-builder
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-builder-out
+          path: agent-builder/out
+          retention-days: 1
+
+  deploy-preview:
+    name: Deploy preview
+    needs: build
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-builder-out
+          path: agent-builder/out
+
+      - name: Deploy to Cloudflare Pages (preview)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy agent-builder/out --project-name=agent-builder-app --branch=${{ github.head_ref || github.ref_name }}
+
+  deploy-production:
+    name: Deploy production
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://agent-builder.starlightmix.com
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-builder-out
+          path: agent-builder/out
+
+      - name: Deploy to Cloudflare Pages (production)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy agent-builder/out --project-name=agent-builder-app --branch=main
