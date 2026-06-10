@@ -1,0 +1,68 @@
+name: Generate Book 1 Watercolor Pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (don't commit)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  generate-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: claude/github-sunny-file-search-65awr
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install requests pillow
+
+      - name: Generate watercolor pages
+        env:
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+        run: |
+          python3 generate-book1-watercolor-pages.py
+
+      - name: List generated files
+        run: |
+          ls -lh BOOK-1-ILLUSTRATED-PAGES/
+
+      - name: Commit and push
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          git add BOOK-1-ILLUSTRATED-PAGES/
+          git commit -m "Add Book 1 watercolor illustrated pages (16 pages generated)" || echo "No changes to commit"
+          git push origin claude/github-sunny-file-search-65awr
+
+      - name: Upload pages as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: book1-watercolor-pages
+          path: BOOK-1-ILLUSTRATED-PAGES/
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Book 1 Watercolor Generation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Generated pages:" >> $GITHUB_STEP_SUMMARY
+          ls BOOK-1-ILLUSTRATED-PAGES/ >> $GITHUB_STEP_SUMMARY || echo "No pages generated"
