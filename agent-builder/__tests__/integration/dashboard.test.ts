@@ -53,7 +53,7 @@ function createTestAgent(overrides?: Partial<AgentConfig>): AgentConfig {
       memory_type: 'conversation' as const,
       context_window: 8192,
     },
-    events: ['session_start', 'message_sent', 'session_end'] as const,
+    events: ['session_start', 'message_sent', 'session_end'],
     prompts: {
       system: 'Review code',
       examples: [{ input: 'Review this', expected_output: 'Review results' }],
@@ -62,7 +62,7 @@ function createTestAgent(overrides?: Partial<AgentConfig>): AgentConfig {
     tier: 'starter' as const,
   };
 
-  const completed = completeAgentConfig(base);
+  const completed = completeAgentConfig(base as any);
   return { ...completed, ...overrides };
 }
 
@@ -365,7 +365,7 @@ describe('Dashboard Integration Tests', () => {
       expect(updated?.id).toBe(originalId);
     });
 
-    it('should update timestamp on modification', () => {
+    it('should update timestamp on modification', async () => {
       const agent = createTestAgent();
       const originalUpdatedAt = agent.updated_at;
 
@@ -373,13 +373,13 @@ describe('Dashboard Integration Tests', () => {
       const loaded = getAgent(agent.id)!;
 
       // Simulate time passing
-      setTimeout(() => {
-        loaded.updated_at = new Date().toISOString();
-        saveAgent(loaded);
+      await new Promise(resolve => setTimeout(resolve, 10));
 
-        const updated = getAgent(agent.id)!;
-        expect(updated.updated_at >= originalUpdatedAt).toBe(true);
-      }, 10);
+      loaded.updated_at = new Date().toISOString();
+      saveAgent(loaded);
+
+      const updated = getAgent(agent.id)!;
+      expect(updated.updated_at >= originalUpdatedAt).toBe(true);
     });
 
     it('should support partial updates', () => {
