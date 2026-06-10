@@ -7,7 +7,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
 
 ## Setup & Infrastructure
 
-- [ ] **T1** — Initialize Next.js 15 app with TypeScript, Tailwind v4, React 19
+- [x] **T1** — Initialize Next.js 15 app with TypeScript, Tailwind v4, React 19
   - **files**: `agent-builder/`, `agent-builder/package.json`, `agent-builder/tsconfig.json`, `agent-builder/tailwind.config.ts`, `agent-builder/next.config.ts`
   - **depends**: —
   - **satisfies**: N1
@@ -29,7 +29,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
 
 ## Agent Templates & Prompts
 
-- [ ] **T4** — Create 6 agent type templates with prompts
+- [x] **T4** — Create 6 agent type templates with prompts
   - **files**: `agent-builder/templates/{code-review,document-processing,research,security-audit,data-analysis,customer-support}.json`, `agent-builder/lib/agent-templates.ts`
   - **depends**: —
   - **satisfies**: R1, R4
@@ -79,13 +79,13 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
 
 ## Landing Page
 
-- [ ] **T11** — Create landing page (home section, hero, agent showcase, CTA)
+- [x] **T11** — Create landing page (home section, hero, agent showcase, CTA)
   - **files**: `sites/agent-builder/index.html`, `sites/agent-builder/styles.css`
   - **depends**: —
   - **satisfies**: R6, N2
   - **acceptance**: Loads in <3s on 3G; hero section explains core concepts; 6 agent types displayed with icons/descriptions; sign-up CTA visible
 
-- [ ] **T12** — Create pricing page (3 tiers, comparison table, FAQs)
+- [x] **T12** — Create pricing page (3 tiers, comparison table, FAQs)
   - **files**: `sites/agent-builder/pricing.html`, `sites/agent-builder/pricing-styles.css`
   - **depends**: —
   - **satisfies**: R5, R6
@@ -107,7 +107,7 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
 
 ## Promo Video
 
-- [ ] **T15** — Create 60s HyperFrames promo composition (script, narration, visuals)
+- [x] **T15** — Create 60s HyperFrames promo composition (script, narration, visuals)
   - **files**: `rhythmix-agent-builder-60s/index.html`, `rhythmix-agent-builder-60s/script.txt`, `rhythmix-agent-builder-60s/hyperframes.json`, `rhythmix-agent-builder-60s/gsap.min.js`
   - **depends**: —
   - **satisfies**: R7, N3
