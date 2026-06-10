@@ -40,7 +40,8 @@ export type AgentTemplateType =
   | "data-analysis"
   | "customer-support";
 
-const TEMPLATES_DIR = path.join(__dirname, "../templates");
+// Get the templates directory - works in both dev and production builds
+const TEMPLATES_DIR = path.resolve(process.cwd(), "templates");
 
 /**
  * Load a single agent template by type
@@ -65,6 +66,11 @@ export function loadTemplate(type: AgentTemplateType): AgentTemplate {
  */
 export function loadAllTemplates(): Map<AgentTemplateType, AgentTemplate> {
   const templates = new Map<AgentTemplateType, AgentTemplate>();
+
+  // Handle case where TEMPLATES_DIR doesn't exist (e.g., during static build)
+  if (!fs.existsSync(TEMPLATES_DIR)) {
+    return templates;
+  }
 
   const files = fs.readdirSync(TEMPLATES_DIR);
 

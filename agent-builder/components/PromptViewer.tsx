@@ -29,8 +29,8 @@ export default function PromptViewer({
   );
 
   const handleCopySystemPrompt = async () => {
-    const copied = await copyToClipboard(prompt.system);
-    if (copied) {
+    const success = await copyToClipboard(prompt.system);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
