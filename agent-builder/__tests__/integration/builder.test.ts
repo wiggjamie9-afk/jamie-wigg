@@ -131,7 +131,7 @@ class BuilderSimulator {
       tier: this.config.tier || 'starter',
     };
 
-    return completeAgentConfig(base);
+    return completeAgentConfig(base as any);
   }
 }
 
