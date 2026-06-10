@@ -155,7 +155,7 @@ export function StepTwoEnvironment({
           className="w-full px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         <p className="text-sm text-gray-600 mt-2">
-          This prompt defines your agent's core behavior and personality.
+          This prompt defines your agent&apos;s core behavior and personality.
         </p>
       </div>
 
@@ -163,7 +163,7 @@ export function StepTwoEnvironment({
       <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
         <p className="text-sm text-green-900">
           <span className="font-semibold">🎯 Best Practice:</span> Be specific in your
-          system prompt. Include the agent's role, key responsibilities, and any
+          system prompt. Include the agent&apos;s role, key responsibilities, and any
           constraints or guidelines it should follow.
         </p>
       </div>

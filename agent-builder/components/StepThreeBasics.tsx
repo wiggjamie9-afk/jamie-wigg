@@ -53,7 +53,7 @@ export function StepThreeBasics({
     <div className="w-full">
       <h2 className="text-2xl font-bold text-gray-900 mb-2">Build Basics</h2>
       <p className="text-gray-600 mb-8">
-        Define your agent's core behavior, add examples of how it should respond, and set
+        Define your agent&apos;s core behavior, add examples of how it should respond, and set
         success criteria.
       </p>
 
@@ -71,7 +71,7 @@ export function StepThreeBasics({
           className="w-full px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         <p className="text-sm text-gray-600 mt-2">
-          This helps document your agent's purpose and intended behavior.
+          This helps document your agent&apos;s purpose and intended behavior.
         </p>
       </div>
 
@@ -84,7 +84,7 @@ export function StepThreeBasics({
           id="agent-prompt"
           value={config.prompts.system}
           onChange={handlePromptChange}
-          placeholder="Define the specific instructions and guidelines for your agent's behavior..."
+          placeholder="Define the specific instructions and guidelines for your agent&apos;s behavior..."
           rows={5}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
@@ -195,8 +195,8 @@ export function StepThreeBasics({
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-sm text-blue-900">
           <span className="font-semibold">📝 Note:</span> Success criteria help measure
-          whether your agent is achieving its goals. Examples: "Response is under 200 words",
-          "Identifies all code issues", "Provides actionable recommendations".
+          whether your agent is achieving its goals. Examples: &ldquo;Response is under 200 words&rdquo;,
+          &ldquo;Identifies all code issues&rdquo;, &ldquo;Provides actionable recommendations&rdquo;.
         </p>
       </div>
     </div>
