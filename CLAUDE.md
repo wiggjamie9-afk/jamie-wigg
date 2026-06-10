@@ -31,47 +31,113 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo videos, web apps, and the STARLIGHTMIX Studio web application. The live site is at **`rhythmixapp.com.au`** (GitHub Pages, deploying the repo root).
+This workspace hosts multiple interconnected projects:
+
+1. **RHYTHMIX** — AI music platform marketing assets and promo videos (HyperFrames pipeline)
+2. **100 APPS Mission** — Rapid app development for underserved markets (street vendors, freelancers, smallholders, etc.)
+3. **STARLIGHTMIX Studio** — Music-to-video generator web app (Next.js 15 → Cloudflare Pages)
+4. **Marketing site** — Live at **`rhythmixapp.com.au`** (GitHub Pages, deploying the repo root)
+
+The repository serves as both a content/video production workspace and a rapid app development laboratory.
 
 ### Top-level layout
 
 | Path | What it is |
 |---|---|
+| **Core Projects** | |
 | `studio/` | **STARLIGHTMIX Studio** web app — Next.js 15 static export → Cloudflare Pages. Primary software project. |
+| `livestock/` | **HerdCheck** — livestock screening PWA (lameness, mastitis, calving predictor). Full offline PWA with service worker, `scoring.js`, `vision.js`, `i18n.js`. |
+| `recovery/` | **Reset** — recovery app prototype for team sport (iOS-style, full PWA). |
+| **Video & Marketing** | |
 | `rhythmix-<name>-<length>/` | HyperFrames video Promo/Cut folders (50+ folders). `rhythmix-overview-60s/` is the canonical example. |
 | `rhythmix-teaser-60s/DESIGN.md` | Brand design system (palette, type, motion). Lock all styleguides to this. |
-| `apps/` | Small standalone HTML apps: `dreams.html`, `hum.html`, `live.html`, `resonate.html`, plus `roomtone/` (PWA) and `untapped/` (portfolio of 10 app concepts with landing pages). |
-| `livestock/` | **HerdCheck** — livestock screening PWA (lameness, mastitis, calving predictor for smallholders). Full offline PWA with service worker, `scoring.js`, `vision.js`, `i18n.js`. |
-| `recovery/` | **Reset** — recovery app prototype for team sport (iOS-style, full PWA). |
-| `recovery-ios/` | Capacitor iOS wrapper for the Reset recovery app. Used by Codemagic iOS build (`codemagic.yaml`). |
-| `capacitor/` | Capacitor iOS wrapper for STARLIGHTMIX Studio. Wraps `studio/out/` via `www/` sync. |
-| `sites/<slug>/` | Site-build pipeline output (sitemap → wireframe → styleguide → HTML pages). |
-| `infra/` | Self-hosted wiki setup: Wiki.js + Postgres + Caddy via Docker Compose (`infra/wiki/`). |
-| `specs/<slug>/` | Spec-driven feature folders (`requirements.md` + `design.md` + `tasks.md`). Current specs: `rhythmix-app/`, `roomtone/`, `codex-app/`. |
-| `launch-kit/` | Launch kit assets for `codex/`, `hum/`, `rhythmix/`. |
-| `video/` | Dormant Remotion 4 + React 19 starter. `MyComposition` returns `null`. Not used for Promos (see ADR-0001). |
-| `text.txt`, `text 2.txt`, `text 3.txt` | Legacy RHYTHMIX landing-page HTML/CSS fragments (pre-pipeline). Reference only. |
 | `*.html` at root | Live marketing site pages served at `rhythmixapp.com.au` (see full list below). |
-| `thumbnails/` | Rendered thumbnail PNGs for the frequency/story video series. |
 | `videos/` | Rendered MP4s linked from `README.md`. |
+| `thumbnails/` | Rendered thumbnail PNGs for the frequency/story video series. |
+| **Apps & PWAs** | |
+| `apps/` | Small standalone HTML apps: `dreams.html`, `hum.html`, `live.html`, `resonate.html`, plus `roomtone/` (PWA) and `untapped/` (portfolio of 10 app concepts). |
+| **iOS Wrappers** | |
+| `recovery-ios/` | Capacitor iOS wrapper for the Reset recovery app. Used by Codemagic iOS build. |
+| `capacitor/` | Capacitor iOS wrapper for STARLIGHTMIX Studio. Wraps `studio/out/` via `www/` sync. |
+| **Content & Sites** | |
+| `sites/<slug>/` | Site-build pipeline output (sitemap → wireframe → styleguide → HTML pages). |
+| `launch-kit/` | Launch kit assets for `codex/`, `hum/`, `rhythmix/`. |
+| `content/` | Additional content assets. |
+| **Infrastructure & Config** | |
+| `infra/` | Self-hosted wiki setup: Wiki.js + Postgres + Caddy via Docker Compose (`infra/wiki/`). |
+| `specs/<slug>/` | Spec-driven feature folders (`requirements.md` + `design.md` + `tasks.md`). |
+| `docs/` | ADRs (`docs/adr/`), agent docs (`docs/agents/`), security notes (`docs/security/`), reference copy (`docs/refs/`). |
 | `.agents/skills/` | Source-of-truth skill bundles (hand-edited / synced from upstreams). |
 | `.claude/skills/` | Mostly symlinks into `.agents/skills/` plus local-only skills. |
 | `.claude/agents/` | FleetView sub-agent definition files (one `.md` per agent type). |
-| `docs/` | ADRs (`docs/adr/`), agent docs (`docs/agents/`), security notes (`docs/security/shannon.md`), reference copy (`docs/refs/`). |
-| `scripts/` | Repo-level scripts: `openclaw-install.sh`, `render-thumbnails.mjs`, `build-announcement.mjs`, `build-manifesto.mjs`. |
+| `.github/workflows/` | GitHub Actions: Pages deploy, Studio deploy, YouTube auth, episode publishing. |
+| `scripts/` | Repo-level scripts: `openclaw-install.sh`, `render-thumbnails.mjs`, `build-announcement.mjs`. |
+| **Generated & Legacy** | |
+| `video/` | Dormant Remotion 4 + React 19 starter. Not used for Promos (see ADR-0001). |
 | `graphify-out/` | Generated knowledge-graph snapshot. Do not hand-edit. |
-| `content/` | Additional content assets. |
+| `text.txt`, `text 2.txt`, `text 3.txt` | Legacy RHYTHMIX landing-page HTML/CSS fragments. Reference only. |
 
 **Reference docs at root:**
+
+*Core workflow:*
 - `CONTEXT.md` — domain language (Promo, Cut, Narration, Hook)
 - `CREATIVE-AI-STACK.md` — iPhone-oriented creative AI toolchain
 - `KOKORO-SETUP.md` — Kokoro TTS installation & usage for HyperFrames narration
+
+*App development mission:*
+- `100_APPS_MISSION.md` — Vision and 20 trending app ideas for underserved markets
+- `100_APP_BUILD_TEMPLATE.md` — App scaffolding template and best practices
+- `100_APP_MISSION_LAUNCH_STRATEGY.md` — Launch playbook for each app
+- `20_TRENDING_APPS_COMPLETE.md` — Complete feature specs for priority apps
+- `APK_BUILD_QUICKSTART.md` — Android build & distribution workflow
+- `ANDROID_BUILD_SETUP.md` — Android toolchain setup and configuration
+- `DEPLOYMENT_CHECKLIST.md` — Pre-launch verification checklist
+- `EXECUTION_MASTER_GUIDE.md` — End-to-end execution framework
+
+*Platform setup:*
 - `SETUP-AGENT-TARS.md` — Agent TARS / UI-TARS desktop setup
 - `SETUP-HERMES.md` — Hermes Agent CLI setup
-- `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
 - `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
+- `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
+
+## 100 APPS Mission
+
+A rapid app development initiative targeting underserved global markets (people making <$20K/year). Goal: 20 priority apps built, tested, and deployed within 30 days.
+
+### Priority App Categories
+
+- **Income generation**: Street vendor tracking, freelance aggregator, skills marketplace
+- **Healthcare**: Smallholder livestock screening (lameness, mastitis, calving predictor), rural clinic records, medication checker
+- **Education**: Offline literacy apps, language tutoring, skill courses
+- **Financial**: Micro-savings, expense tracking, currency converter
+- **Logistics**: Last-mile delivery tracking, route optimization for informal economy
+
+### Development Workflow
+
+1. **Spec**: Use `100_APP_BUILD_TEMPLATE.md` to scaffold app structure
+2. **Build**: Create offline-first PWAs (service worker + IndexedDB) supporting low-end devices ($30 phones)
+3. **Localization**: 10+ languages, multiple currency support, regional customization
+4. **Deploy**: Android APK + web URLs. See `APK_BUILD_QUICKSTART.md`
+5. **Launch**: Use `100_APP_MISSION_LAUNCH_STRATEGY.md` for regional go-to-market
+
+### Key Constraints
+
+- **Works offline** — no dependency on internet (saves data costs for users)
+- **~100KB app size** — fits on low-storage devices
+- **Works on $30 Android phones** — tested on Android 7+
+- **Multi-language** — auto-detect locale, support local scripts
+- **Freemium** — free for essential use, premium for power users
+
+### Deployment Targets
+
+- Google Play Store (official Android apps)
+- F-Droid (open-source Android market)
+- Web URLs (PWA + phone bookmark install)
+- APK direct download (for offline distribution via USB/memory cards)
+
+**Key reference**: `EXECUTION_MASTER_GUIDE.md` for orchestrating parallel builds, testing, and deployments.
 
 ## STARLIGHTMIX Studio Web App (`studio/`)
 
@@ -176,6 +242,37 @@ Full site and PWA built via the site-build pipeline. Includes:
 - `sw.js`, `PRIVACY.md`, `TERMS.md`, `sitemap.md`, `styleguide.md`, `wireframes/`
 
 See `MORNING.md` for a quickstart guide to running it locally.
+
+## Episodic Content & YouTube Publishing
+
+The repo now supports rapid episodic content generation and YouTube publishing via orchestrated workflows.
+
+### Episode Series
+
+- **Glowworm** — Primary episodic series. Episodes auto-generated, published to YouTube channel.
+- **Little Sunny** — Secondary series with different narrative structure.
+
+### Publishing Pipeline
+
+```
+Step 3.7 Flash (script/story) → Episode brief (logline + acts + promo) → HyperFrames composition → Render → YouTube publish
+```
+
+### Workflow Automation
+
+- **Episode generation** → `glowworm.yml` and `little-sunny-episode.yml` trigger full pipelines
+- **Channel art** → `generate-channel-art.yml` creates thumbnails, banners, social cards per episode
+- **YouTube auth** → `youtube-auth.yml` + `youtube-auth-step2.yml` establish OAuth2 with YouTube API
+- **Token refresh** → `refresh-youtube-token.yml` keeps credentials valid across publishing runs
+
+### Integration Points
+
+- **Flash MCP server** — Generates episode briefs with `flash_episode_brief` (reasoning='high' for complex multi-act structures)
+- **HyperFrames** — Composes video from brief output using RHYTHMIX-locked styleguide
+- **ffmpeg** → Renders to MP4
+- **YouTube API** → Publishes with metadata, thumbnails, premiere scheduling
+
+**Key reference**: Pass Flash output into `/rhythmix-site` or `/site-build` to generate episode landing pages.
 
 ## HyperFrames Video Pipeline
 
@@ -379,6 +476,24 @@ Deploys `studio/out/` (Next.js static export) to Cloudflare Pages `starlightmix-
 
 iOS Capacitor build for `recovery-ios/`. Unsigned debug build on `mac_mini_m2`. Artifacts emailed to `wiggjamie9@gmail.com`. Triggered manually or via Codemagic dashboard.
 
+### YouTube Workflows
+
+- **`youtube-auth.yml`** — Initial OAuth2 setup for YouTube API access. Generates auth tokens.
+- **`youtube-auth-step2.yml`** — Second step of YouTube auth flow. Completes token exchange.
+- **`setup-youtube-auth.yml`** — Manual setup trigger for YouTube channel authentication.
+- **`refresh-youtube-token.yml`** — Periodic token refresh to maintain API access.
+
+These workflows manage authentication for publishing and channel management operations.
+
+### Episode Workflows
+
+- **`glowworm.yml`** — Triggers episode generation and publishing pipeline (Glowworm episode series).
+- **`run-glowworm-episode.yml`** — Manual trigger to run a specific Glowworm episode build.
+- **`little-sunny-episode.yml`** — Triggers Little Sunny episode series pipeline.
+- **`generate-channel-art.yml`** — Generates channel-specific artwork and thumbnails for episodes.
+
+These workflows orchestrate the rapid episode production and publishing to YouTube.
+
 ## Dev Container (`.devcontainer/`)
 
 VS Code / GitHub Codespace container based on `mcr.microsoft.com/devcontainers/javascript-node:20`. Post-create script (`post-create.sh`) installs `ffmpeg` + `aubio-tools` and sets up the RHYTHMIX Studio CLI for a one-command demo (`bash rhythmix-studio/demo.sh`).
@@ -413,13 +528,32 @@ See `sites/README.md`.
 
 ## Conventions
 
+### Video & Marketing
+
 - **New Promos** → HyperFrames folder at repo root (`rhythmix-<name>-<length>/`). Do not use Remotion.
 - **New site pages** → `sites/<slug>/` via pipeline, then promote to root `.html` files when ready for production.
-- **New app concepts** → `apps/<name>/` or `apps/<name>.html`. Standalone non-RHYTHMIX apps (livestock, recovery) go in their own root directory.
-- **Skill edits** → edit in `.agents/skills/<name>/` (the symlink target), never directly in `.claude/skills/` symlinks. Local-only skills are edited directly in `.claude/skills/<name>/`.
-- **Lockfile** → keep `video/package-lock.json` in sync with `video/package.json`. Keep root `package-lock.json` in sync too.
-- **Gitignore** → `node_modules/`, `.remotion/`, `graphify-out/cache/`, `.claude-playwright/` are excluded.
 - **Content warnings** → `README.md` flags that `tiktok-reels-shorts.mp4`, `instagram-facebook.mp4`, `youtube.mp4` contain unverified metrics/testimonials. Only `teaser-coming-soon*.mp4` is safe to publish as-is.
+
+### App Development (100 APPS Mission)
+
+- **New apps** → Follow `100_APP_BUILD_TEMPLATE.md` structure. Each app is an offline-first PWA with service worker + IndexedDB.
+- **App naming** → Capitalized, one-word or two-word names. E.g., `VendorTracker`, `GigsMaster`, `HerdCheck`.
+- **Storage patterns** → Use IndexedDB for structured data, localStorage for preferences. Implement sync when online.
+- **Multi-language** → All strings in `i18n.js` or equivalent. Auto-detect user locale; fallback to English.
+- **APK distribution** → Sign with release keystore. Target Android 7+ (API 24). File size target: <100KB base app.
+- **Testing** → Device tests on Android 7, 10, 12+. Test on low-end hardware (2GB RAM, slow storage).
+
+### Code & Infrastructure
+
+- **Skill edits** → edit in `.agents/skills/<name>/` (the symlink target), never directly in `.claude/skills/` symlinks. Local-only skills are edited directly in `.claude/skills/<name>/`.
+- **Lockfiles** → keep `video/package-lock.json` in sync with `video/package.json`. Keep root `package-lock.json` in sync too. Same for `studio/package-lock.json`.
+- **Gitignore** → `node_modules/`, `.remotion/`, `graphify-out/cache/`, `.claude-playwright/` are excluded.
+
+### Episode Publishing (YouTube Workflows)
+
+- **Episode workflow** → Script → TTS → Episode brief (via Flash) → Video composition → Render → Publish.
+- **Channel art** → Generate via `generate-channel-art.yml` before publishing. Includes thumbnails, banners, social cards.
+- **YouTube secrets** → Auth tokens refreshed via `refresh-youtube-token.yml`. Never commit API keys.
 
 ## Subagent Model Routing
 
