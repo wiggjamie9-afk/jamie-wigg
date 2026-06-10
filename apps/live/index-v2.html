@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>LIVE — Beat-Synced Music Videos</title>
+  <meta name="description" content="Upload a track. Pick aspect ratio. Get beat-synced AI music video in seconds. Portrait, square, landscape renders. AU$14.99.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#1a0a3d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LIVE">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Outfit:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* Creative tool palette: indigo + neon lime + white + hot pink */
+      --bg-primary: #1a0a3d;
+      --bg-secondary: #2d1559;
+      --bg-tertiary: #3d1f6d;
+      --accent-lime: #b3ff00;
+      --accent-pink: #ff006e;
+      --accent-purple: #7b2cbf;
+      --text-primary: #ffffff;
+      --text-secondary: #d4d1df;
+      --text-muted: #8a7fa0;
+      --neon-lime: #b3ff00;
+      --glow-lime: rgba(179, 255, 0, 0.2);
+      --glow-pink: rgba(255, 0, 110, 0.15);
+
+      /* Typography */
+      --font-display: 'Playfair Display', serif;
+      --font-body: 'Outfit', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      position: relative;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 40%, var(--glow-pink) 0%, transparent 50%),
+        radial-gradient(circle at 80% 60%, var(--glow-lime) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Panels */
+    .panels {
+      display: flex;
+      flex-direction: row;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+      z-index: 1;
+    }
+
+    .panels::-webkit-scrollbar { display: none; }
+
+    .panel {
+      flex: 0 0 100vw;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow-y: auto;
+      overflow-y: overlay;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      padding: 8vh 6vw 14vh;
+      position: relative;
+    }
+
+    /* Brand bar */
+    .brand {
+      position: fixed;
+      top: max(16px, env(safe-area-inset-top));
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 6vw;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .brand-mark {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+      color: var(--accent-lime);
+      text-shadow: 0 0 20px rgba(179, 255, 0, 0.4);
+    }
+
+    .brand-price {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* Navigation dots */
+    .dots {
+      position: fixed;
+      bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      z-index: 40;
+      pointer-events: none;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(179, 255, 0, 0.2);
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: auto;
+    }
+
+    .dot.active {
+      background: var(--accent-lime);
+      transform: scale(1.6);
+      box-shadow: 0 0 16px rgba(179, 255, 0, 0.8);
+    }
+
+    /* Typography */
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(44px, 11vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      margin-bottom: 18px;
+      text-shadow: 0 4px 20px rgba(179, 255, 0, 0.15);
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 7vw, 48px);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      text-shadow: 0 2px 12px rgba(179, 255, 0, 0.1);
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-pink);
+      margin-bottom: 20px;
+      opacity: 0.95;
+    }
+
+    p {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+      max-width: 560px;
+    }
+
+    .lede {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text-primary);
+      margin-bottom: 28px;
+      max-width: 560px;
+      font-weight: 500;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6em;
+      padding: 14px 28px;
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-height: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-lime), #9dff00);
+      color: var(--bg-primary);
+      border-color: transparent;
+      box-shadow: 0 4px 16px rgba(179, 255, 0, 0.3);
+    }
+
+    .btn-primary:hover, .btn-primary:active {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(179, 255, 0, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(179, 255, 0, 0.1);
+      color: var(--accent-lime);
+      border: 1px solid var(--accent-lime);
+    }
+
+    .btn-secondary:hover, .btn-secondary:active {
+      background: rgba(179, 255, 0, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(179, 255, 0, 0.3);
+    }
+
+    /* Welcome */
+    .welcome-hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 580px;
+      width: 100%;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+
+    /* Upload drop zone */
+    .drop-zone {
+      border: 2px dashed var(--accent-lime);
+      border-radius: 8px;
+      padding: 32px 20px;
+      text-align: center;
+      background: rgba(179, 255, 0, 0.04);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone:hover, .drop-zone.drag {
+      border-color: var(--accent-pink);
+      background: rgba(255, 0, 110, 0.06);
+      box-shadow: 0 0 30px rgba(179, 255, 0, 0.2);
+    }
+
+    .drop-zone.has-file {
+      border-color: var(--accent-lime);
+      background: rgba(179, 255, 0, 0.08);
+      border-style: solid;
+    }
+
+    .drop-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .drop-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .drop-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .drop-file {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent-lime);
+      margin-top: 10px;
+      letter-spacing: 0.08em;
+      word-break: break-all;
+    }
+
+    /* Chips */
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 16px 0 24px;
+    }
+
+    .chip {
+      padding: 10px 14px;
+      background: rgba(179, 255, 0, 0.08);
+      border: 1px solid rgba(179, 255, 0, 0.3);
+      border-radius: 4px;
+      font-family: var(--font-body);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chip:hover, .chip.active {
+      background: var(--accent-lime);
+      color: var(--bg-primary);
+      border-color: var(--accent-lime);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(179, 255, 0, 0.4);
+    }
+
+    /* Waveform */
+    .waveform {
+      position: relative;
+      height: 160px;
+      background: linear-gradient(180deg, rgba(179, 255, 0, 0.04), rgba(255, 0, 110, 0.04));
+      border-radius: 8px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .wave-bar {
+      flex: 1;
+      min-width: 2px;
+      background: linear-gradient(180deg, var(--accent-lime), var(--accent-pink));
+      border-radius: 2px;
+      transition: height 0.12s ease-out;
+      opacity: 0.85;
+    }
+
+    .wave-playhead {
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: var(--accent-lime);
+      box-shadow: 0 0 10px var(--accent-lime);
+      transition: left 0.06s linear;
+      z-index: 2;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 24px 0;
+    }
+
+    .stat-card {
+      background: rgba(179, 255, 0, 0.05);
+      border: 1px solid rgba(179, 255, 0, 0.2);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      background: rgba(179, 255, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--accent-lime);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Render queue */
+    .queue-card {
+      background: rgba(179, 255, 0, 0.05);
+      border: 1px solid rgba(179, 255, 0, 0.15);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .queue-card.active {
+      border-color: var(--accent-lime);
+      background: rgba(179, 255, 0, 0.1);
+      box-shadow: 0 0 20px rgba(179, 255, 0, 0.2);
+    }
+
+    .queue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .queue-name {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--accent-lime);
+    }
+
+    .queue-status {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: rgba(179, 255, 0, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-lime), var(--accent-pink));
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Session cards */
+    .session-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .session-card {
+      background: rgba(179, 255, 0, 0.05);
+      border: 1px solid rgba(179, 255, 0, 0.15);
+      border-left: 3px solid var(--accent-pink);
+      border-radius: 6px;
+      padding: 14px 16px;
+      transition: all 0.3s ease;
+    }
+
+    .session-card:hover {
+      background: rgba(179, 255, 0, 0.1);
+      transform: translateX(4px);
+    }
+
+    .session-meta {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .session-text {
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--text-primary);
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--text-muted);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Toggle */
+    .toggle {
+      width: 44px;
+      height: 24px;
+      border-radius: 4px;
+      background: rgba(179, 255, 0, 0.1);
+      border: 1px solid rgba(179, 255, 0, 0.3);
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 2px;
+      background: var(--text-primary);
+      transition: all 0.3s ease;
+    }
+
+    .toggle.on {
+      background: rgba(179, 255, 0, 0.25);
+      border-color: var(--accent-lime);
+    }
+
+    .toggle.on::after {
+      transform: translateX(20px);
+      background: var(--accent-lime);
+    }
+
+    /* Swipe hint */
+    .swipe-hint {
+      position: fixed;
+      bottom: 70px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(179, 255, 0, 0.4);
+      z-index: 30;
+      pointer-events: none;
+      animation: hintFade 4s ease-in-out 1.5s forwards;
+    }
+
+    @keyframes hintFade {
+      0%, 80% { opacity: 1; }
+      100% { opacity: 0; visibility: hidden; }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      h1 { font-size: 36px; }
+      h2 { font-size: 28px; }
+      .panel { padding: 6vh 5vw 14vh; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Brand bar -->
+  <div class="brand">
+    <span class="brand-mark">▶ LIVE</span>
+    <span class="brand-price">AU$14.99</span>
+  </div>
+
+  <!-- Panels -->
+  <div class="panels" id="panels">
+
+    <!-- Panel 1: Welcome -->
+    <section class="panel" aria-label="Welcome">
+      <div class="welcome-hero">
+        <div class="eyebrow">Music Video Generation</div>
+        <h1>Your track, <em>visualized.</em></h1>
+        <p class="lede">Upload an audio file. Pick aspect ratio. Get beat-synced AI music video in seconds. Portrait, square, landscape — all in one render queue.</p>
+        <div class="cta-row">
+          <button class="btn btn-primary" onclick="goTo(1)">Upload track ▶</button>
+          <button class="btn btn-secondary" onclick="goTo(4)">My renders</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 2: Upload & Configure -->
+    <section class="panel" aria-label="Upload">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 580px; width: 100%; margin: 0 auto;">
+        <div class="eyebrow">Step 1 · Your Audio</div>
+        <h2>Drop a track.</h2>
+
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+          <div class="drop-icon">🎵</div>
+          <div class="drop-title">Drop audio file</div>
+          <div class="drop-sub">MP3, WAV, or M4A · up to 10 min</div>
+          <div class="drop-file" id="fileName"></div>
+        </div>
+        <input type="file" id="fileInput" style="display: none;" accept="audio/*">
+
+        <div style="margin-top: 24px;">
+          <div style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-pink); margin-bottom: 12px;">Render Format</div>
+          <div class="chips" id="formatChips">
+            <span class="chip" data-format="portrait">📱<br>Portrait</span>
+            <span class="chip active" data-format="square">□<br>Square</span>
+            <span class="chip" data-format="landscape">▬<br>Landscape</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="queueRender()" style="margin-top: 28px; width: 100%;">Queue render ▶</button>
+      </div>
+    </section>
+
+    <!-- Panel 3: Live Render -->
+    <section class="panel" aria-label="Render">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 580px; width: 100%; margin: 0 auto;">
+        <div class="eyebrow">Step 2 · Rendering</div>
+        <h2>Watch it come to life.</h2>
+
+        <div style="margin: 24px 0;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);">Processing</span>
+            <span style="font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--accent-lime);" id="renderPercent">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="renderProgress"></div>
+          </div>
+        </div>
+
+        <div class="waveform" id="waveform"></div>
+
+        <div style="text-align: center; margin-top: 20px;">
+          <div style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);" id="renderStatus">Starting...</div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="goTo(3)" style="margin-top: 28px; width: 100%;">Cancel</button>
+      </div>
+    </section>
+
+    <!-- Panel 4: Render Queue -->
+    <section class="panel" aria-label="Queue">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 580px; width: 100%; margin: 0 auto;">
+        <div class="eyebrow">Your Renders</div>
+        <h2>Render history.</h2>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-num" id="statRendered">0</div>
+            <div class="stat-label">Rendered</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statQueued">0</div>
+            <div class="stat-label">Queued</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statTotal">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+        </div>
+
+        <div id="queueList">
+          <div class="empty-state">Queue a render to get started.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 5: Settings -->
+    <section class="panel" aria-label="Settings">
+      <div style="max-width: 520px; width: 100%; margin: 0 auto;">
+        <div class="eyebrow">Settings</div>
+        <h2>Rendering preferences.</h2>
+
+        <div style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(179, 255, 0, 0.15);">
+            <span style="color: var(--text-primary);">Auto-render on upload</span>
+            <div class="toggle on" id="toggleAuto" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(179, 255, 0, 0.15);">
+            <span style="color: var(--text-primary);">Default format</span>
+            <span style="color: var(--accent-lime); font-size: 12px;">Square</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(179, 255, 0, 0.15);">
+            <span style="color: var(--text-primary);">Quality preset</span>
+            <span style="color: var(--accent-lime); font-size: 12px;">High</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0;">
+            <span style="color: var(--text-primary);">Render speed</span>
+            <span style="color: var(--accent-lime); font-size: 12px;">Standard</span>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="resetAll()" style="margin-top: 30px; width: 100%;">Clear history</button>
+        <p style="text-align: center; margin-top: 40px; font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em;">LIVE v2 · Beat-synced music videos</p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Dots -->
+  <div class="dots" id="dots"></div>
+  <div class="swipe-hint" id="swipeHint">Swipe → to explore</div>
+
+  <script>
+    // ════════════════════════════════════════════════════════════════════════════════
+    // STATE
+    // ════════════════════════════════════════════════════════════════════════════════
+
+    const state = {
+      selectedFile: null,
+      selectedFormat: 'square',
+      renderQueue: [],
+      currentRender: null
+    };
+
+    // ════════════════════════════════════════════════════════════════════════════════
+    // PANEL NAVIGATION
+    // ════════════════════════════════════════════════════════════════════════════════
+
+    const panels = document.getElementById('panels');
+    const sections = document.querySelectorAll('.panel');
+    const dotsContainer = document.getElementById('dots');
+
+    sections.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.onclick = () => goTo(i);
+      dotsContainer.appendChild(dot);
+    });
+
+    function goTo(i) {
+      panels.scrollTo({ left: window.innerWidth * i, behavior: 'smooth' });
+    }
+
+    panels.addEventListener('scroll', () => {
+      const i = Math.round(panels.scrollLeft / window.innerWidth);
+      document.querySelectorAll('.dot').forEach((d, idx) => d.classList.toggle('active', idx === i));
+    }, { passive: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') panels.scrollBy({ left: window.innerWidth, behavior: 'smooth' });
+      if (e.key === 'ArrowLeft') panels.scrollBy({ left: -window.innerWidth, behavior: 'smooth' });
+    });
+
+    // ════════════════════════════════════════════════════════════════════════════════
+    // FILE UPLOAD
+    // ════════════════════════════════════════════════════════════════════════════════
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('audio/')) {
+        selectFile(file);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) selectFile(file);
+    });
+
+    function selectFile(file) {
+      state.selectedFile = file;
+      dropZone.classList.add('has-file');
+      document.getElementById('fileName').textContent = file.name;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════════
+    // FORMAT SELECTION
+    // ════════════════════════════════════════════════════════════════════════════════
+
+    document.querySelectorAll('#formatChips .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#formatChips .chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.selectedFormat = chip.dataset.format;
+      });
+    });
+
+    // ════════════════════════════════════════════════════════════════════════════════
+    // RENDER QUEUE
+    // ════════════════════════════════════════════════════════════════════════════════
+
+    function queueRender() {
+      if (!state.selectedFile) {
+        alert('Please select an audio file first.');
+        return;
+      }
+
+      const render = {
+        id: Date.now(),
+        filename: state.selectedFile.name,
+        format: state.selectedFormat,
+        status: 'queued',
+        progress: 0,
+        date: new Date().toISOString()
+      };
+
+      state.renderQueue.unshift(render);
+      localStorage.setItem('live.renders', JSON.stringify(state.renderQueue));
+
+      // Start render
+      startRender(render);
+      goTo(2);
+    }
+
+    function startRender(render) {
+      state.currentRender = render;
+      let progress = 0;
+
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(interval);
+          finishRender();
+        }
+
+        document.getElementById('renderPercent').textContent = Math.round(progress) + '%';
+        document.getElementById('renderProgress').style.width = progress + '%';
+        document.getElementById('renderStatus').textContent = ['Analyzing beats', 'Generating frames', 'Syncing audio', 'Final polish'][Math.floor(progress / 25)] || 'Complete';
+
+        state.currentRender.progress = progress;
+      }, 300);
+    }
+
+    function finishRender() {
+      state.currentRender.status = 'done';
+      state.currentRender.progress = 100;
+      document.getElementById('renderStatus').textContent = 'Render complete!';
+      document.getElementById('renderPercent').textContent = '100%';
+
+      localStorage.setItem('live.renders', JSON.stringify(state.renderQueue));
+      refreshQueue();
+
+      setTimeout(() => goTo(3), 1500);
+    }
+
+    function refreshQueue() {
+      const renders = JSON.parse(localStorage.getItem('live.renders') || '[]');
+      state.renderQueue = renders;
+
+      const done = renders.filter(r => r.status === 'done').length;
+      const queued = renders.filter(r => r.status === 'queued').length;
+
+      document.getElementById('statRendered').textContent = done;
+      document.getElementById('statQueued').textContent = queued;
+      document.getElementById('statTotal').textContent = renders.length;
+
+      const list = document.getElementById('queueList');
+      if (renders.length === 0) {
+        list.innerHTML = '<div class="empty-state">Queue a render to get started.</div>';
+        return;
+      }
+
+      list.innerHTML = renders.map(r => {
+        const dt = new Date(r.date);
+        const label = dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+        const time = dt.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        const statusLabel = r.status === 'done' ? '✓ Complete' : '⏳ Queued';
+        return `<div class="queue-card ${r.status === 'done' ? 'active' : ''}"><div class="queue-header"><span class="queue-name">${escapeHtml(r.filename)}</span><span class="queue-spec">${r.format.toUpperCase()}</span></div><div class="queue-status">${statusLabel}</div><div class="progress-bar"><div class="progress-fill" style="width: ${r.progress}%"></div></div></div>`;
+      }).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+    }
+
+    function resetAll() {
+      if (!confirm('Clear all render history?')) return;
+      localStorage.removeItem('live.renders');
+      state.renderQueue = [];
+      refreshQueue();
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════════
+    // INIT
+    // ════════════════════════════════════════════════════════════════════════════════
+
+    refreshQueue();
+
+    // Generate waveform visualization
+    const waveform = document.getElementById('waveform');
+    for (let i = 0; i < 40; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'wave-bar';
+      bar.style.height = (20 + Math.random() * 80) + '%';
+      waveform.appendChild(bar);
+    }
+
+    panels.addEventListener('scroll', () => {
+      const hint = document.getElementById('swipeHint');
+      if (hint) hint.remove();
+    }, { passive: true, once: true });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => { });
+    }
+  </script>
+</body>
+</html>
