@@ -157,19 +157,19 @@ Run `/spec-run agent-builder` to execute all tasks in dependency-sorted waves. E
   - **satisfies**: R2
   - **acceptance**: Tests cover valid configs, invalid configs, edge cases; test suite passes
 
-- [ ] **T22** — Write integration tests for dashboard & builder workflow
+- [x] **T22** — Write integration tests for dashboard & builder workflow
   - **files**: `agent-builder/__tests__/integration/dashboard.test.ts`, `agent-builder/__tests__/integration/builder.test.ts`
   - **depends**: T6, T7
   - **satisfies**: R3, R9
   - **acceptance**: Tests cover user login, project creation, builder workflow end-to-end; all tests pass
 
-- [ ] **T23** — Lighthouse audit & mobile responsiveness check
+- [x] **T23** — Lighthouse audit & mobile responsiveness check
   - **files**: `agent-builder/lighthouse-report.md`, `agent-builder/accessibility-report.md`
   - **depends**: T6, T7, T9, T11, T12, T13
   - **satisfies**: N2, N5
   - **acceptance**: Lighthouse score >85 on all pages; mobile layout verified on iPhone SE, iPad, desktop; no accessibility warnings
 
-- [ ] **T24** — Build & deploy to Cloudflare Pages (app + landing page)
+- [x] **T24** — Build & deploy to Cloudflare Pages (app + landing page)
   - **files**: `agent-builder/wrangler.toml`, `.github/workflows/deploy-agent-builder.yml`
   - **depends**: T1, T6, T7, T9, T11, T12, T13, T14
   - **satisfies**: All
