@@ -17,6 +17,29 @@ import io
 OUTPUT_DIR = Path("/home/user/jamie-wigg/BOOK-1-ILLUSTRATED-PAGES")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# SUNNY CHARACTER SPECIFICATION (THE BIBLE)
+# Reference: User's 3 watercolor reference images
+SUNNY_CHARACTER = """
+Sunny the quokka:
+- BODY: Extremely chubby and round (teddy-bear-like), NOT lean
+- FUR: Warm golden-brown color (never dark or grey)
+- EYES: Large, gentle, warm brown eyes with kind expression
+- EARS: Small, round ears, short snout
+- EXPRESSION: Natural gentle smile, peaceful and calm
+- POSES: Often in peaceful, restful poses (sitting, lying down, curled up)
+- DETAILS: Sometimes wearing cozy details (pajamas, blankets, wrapped in warmth)
+"""
+
+VISUAL_STYLE = """
+Artistic Style (THE BIBLE):
+- MEDIUM: Hand-painted watercolor on textured paper
+- TECHNIQUE: Visible brushstrokes, pigment bleeds, organic edges
+- PALETTE: Warm earthy tones - golds, burnt siennas, soft greens, deep navy blues
+- SETTING: Australian bush scenes at night (moonlit meadows, gum trees, wildflowers, gentle streams)
+- MOOD: Cozy, safe, calm, bedtime-appropriate, peaceful
+- COMPOSITION: Moonlit settings with stars, natural elements (flowers, water, trees, fireflies), Sunny as peaceful central focus, soft warm golden light
+"""
+
 # Story pages data (16 pages)
 PAGES = [
     {
@@ -25,7 +48,7 @@ PAGES = [
             "The sky was the colour of ripe plums when Sunny first saw them.",
             "One. Then three. Then many."
         ],
-        "illustration_prompt": "Soft watercolor illustration of Sunny the quokka (golden-brown fur, warm brown eyes, gentle smile) in the Australian bush as the sky turns plum colors. First flying fox silhouettes appearing above. Peaceful, watching moment. Watercolor painted style, soft warm golds and purples, breathing room."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Sunny the quokka in the Australian bush as the sky turns plum colors. First flying fox silhouettes appearing above. Sunny sitting peacefully, watching moment. Hand-painted watercolor with soft brushstrokes, visible pigment bleeds. Palette: warm golds, soft purples, breathing room."
     },
     {
         "number": 3,
@@ -41,7 +64,7 @@ PAGES = [
             "No flap, no flutter, just a long, smooth, swooping glide.",
             "Sunny stood very still and watched."
         ],
-        "illustration_prompt": "Watercolor of Sunny the quokka standing motionless in the grass, looking up in wonder. Flying foxes gracefully gliding in smooth arcs above. Her peaceful, focused expression. The moment of connection between watcher and watched. Soft purples and golds."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Sunny standing motionless in grass, looking up in wonder. Flying foxes gracefully gliding in smooth arcs above. Her peaceful, focused expression. Hand-painted watercolor with soft brushstrokes. Palette: soft purples, warm golds."
     },
     {
         "number": 5,
@@ -49,7 +72,7 @@ PAGES = [
             "They were so large and so quiet.",
             "She had not known something so big could move so softly."
         ],
-        "illustration_prompt": "Watercolor of large flying foxes (closer view) gliding above Sunny. Their size apparent, but movement appears gentle and ethereal. Soft shadows and light. Peaceful, magical mood. Show the contrast between size and softness."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Large flying foxes (closer view) gliding above Sunny. Their size apparent, but movement appears gentle and ethereal. Sunny small below, expressing wonder. Soft shadows and light. Hand-painted watercolor with visible brushstrokes."
     },
     {
         "number": 6,
@@ -57,7 +80,7 @@ PAGES = [
             "One flew low, close enough that Sunny could see",
             "the warm dark fur of its body and its little fox-like face."
         ],
-        "illustration_prompt": "Watercolor of flying fox swooping low near Sunny. Close enough to see detail: neat ears, bright eyes, pointed nose, dark warm fur. Sunny's face shows gentle wonder and awe. Intimate, magical moment of connection. Watercolor, soft colors."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Flying fox swooping low near Sunny. Close enough to see detail. Sunny's chubby round face shows gentle wonder and awe. Intimate, magical moment of connection. Hand-painted watercolor, soft warm colors."
     },
     {
         "number": 7,
@@ -65,7 +88,7 @@ PAGES = [
             "Neat ears, bright eyes, a pointed nose.",
             "It swooped toward a flowering tree and hovered for just a moment."
         ],
-        "illustration_prompt": "Watercolor of flying fox hovering gracefully near flowering branches. Detail visible on the fox's face and body. Flowers glow gently in the twilight. Sunny visible below watching. Tender, intimate moment. Soft painted watercolor style."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Flying fox hovering gracefully near flowering branches. Flowers glow gently in twilight. Sunny visible below watching peacefully. Tender, intimate moment. Hand-painted watercolor on textured paper with visible brushstrokes."
     },
     {
         "number": 8,
@@ -73,7 +96,7 @@ PAGES = [
             "Drinking from a blossom.",
             "Then it was gone again, back into the darkening sky."
         ],
-        "illustration_prompt": "Watercolor of flying fox hovering over blossoms, drawing nectar from flowers. Sky darkening further (deeper purples and early blues). Sense of movement and departure. Sunny below. The moment passes, but the magic remains."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Flying fox hovering over blossoms, drawing nectar from flowers. Sky darkening (deeper purples and early blues). Sunny peaceful below. Hand-painted watercolor with pigment bleeds, soft edges."
     },
     {
         "number": 9,
@@ -81,7 +104,7 @@ PAGES = [
             "The others followed their own paths —",
             "long curved arcs through the air, each one different."
         ],
-        "illustration_prompt": "Watercolor of multiple flying foxes (3-5 visible) each tracing their own graceful curved paths across the sky. Each arc is unique and beautiful. Movement implied through their positioning. Sky deeper purple now. Show the variety and beauty of nature."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Multiple flying foxes (3-5) tracing graceful curved paths across sky. Each arc unique and beautiful. Sunny watching below. Sky deeper purple. Hand-painted watercolor, warm earthy palette."
     },
     {
         "number": 10,
@@ -89,7 +112,7 @@ PAGES = [
             "Each one beautiful.",
             "Sunny watched until the sky turned from plum to deep navy."
         ],
-        "illustration_prompt": "Watercolor of Sunny watching as multiple flying foxes glide in beautiful arcs. Sky actively transitioning from plum to deep navy. First stars appearing. Show the passage of time and deepening of night. Peaceful watching. Watercolor soft edges."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Sunny watching as multiple flying foxes glide in beautiful arcs. Sky actively transitioning to deep navy. First stars appearing. Sunny's peaceful expression. Hand-painted watercolor with soft brushstrokes."
     },
     {
         "number": 11,
@@ -97,7 +120,7 @@ PAGES = [
             "The stars came out, and still the flying foxes moved above her.",
             "Silent and grand."
         ],
-        "illustration_prompt": "Watercolor of deep navy starry sky full of twinkling stars. Flying foxes visible as graceful dark shapes gliding against the stars. Silent and majestic. Show the full beauty of the nighttime scene. Everything bathed in starlight. Soft watercolor painting."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Deep navy starry sky full of twinkling stars. Flying foxes visible as graceful dark shapes gliding against the stars. Sunny as peaceful focus below. Silent and majestic. Hand-painted watercolor, everything bathed in starlight."
     },
     {
         "number": 12,
@@ -105,7 +128,7 @@ PAGES = [
             "She sat down in the soft grass and looked up.",
             "The bush was full of quiet."
         ],
-        "illustration_prompt": "Watercolor of Sunny the quokka sitting peacefully in soft grass, looking upward in calm observation. Starry navy sky above. Flying foxes moving silently. Everything still and peaceful. The hush of night. Very serene watercolor painting."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Sunny sitting peacefully in soft grass, looking upward in calm observation. Chubby golden-brown quokka with gentle expression. Starry navy sky above. Flying foxes moving silently. Hand-painted watercolor, very serene."
     },
     {
         "number": 13,
@@ -113,7 +136,7 @@ PAGES = [
             "The flying foxes were just shapes now —",
             "dark against the dark sky, moving and moving."
         ],
-        "illustration_prompt": "Watercolor of flying foxes as dark silhouettes against the deep navy sky. Stars scattered throughout. Sunny small in the foreground or middle distance. Peaceful and contemplative mood. The mystery and magic of night. Soft watercolor style."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Flying foxes as dark silhouettes against deep navy sky. Stars scattered throughout. Sunny peaceful in foreground. Contemplative, mysterious, magical mood. Hand-painted watercolor with soft edges and visible brushstrokes."
     },
     {
         "number": 14,
@@ -121,7 +144,7 @@ PAGES = [
             "She breathed out a long, slow breath.",
             "And drifted off beneath the wings of night."
         ],
-        "illustration_prompt": "Watercolor of Sunny the quokka's eyes gently closing or closed, expression very peaceful and content. Flying foxes gliding overhead like protective wings. Stars twinkling. Very soft, dreamy quality. The transition to sleep beginning."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Sunny's eyes gently closing, expression very peaceful and content. Golden-brown chubby quokka curled peacefully. Flying foxes gliding overhead like protective wings. Stars twinkling. Hand-painted watercolor, very soft and dreamy."
     },
     {
         "number": 15,
@@ -129,7 +152,7 @@ PAGES = [
             "Her eyes grew heavy.",
             "The stars twinkled on, keeping watch through the night."
         ],
-        "illustration_prompt": "Watercolor of Sunny lying in grass, deeply drowsy or falling asleep, peaceful smile on her face. Starry night sky above. Flying foxes moving gently in the air. Everything soft and soothing. Perfect pre-sleep imagery. Dreamy watercolor."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Sunny lying in grass, deeply drowsy or falling asleep, peaceful smile on her face. Chubby golden-brown quokka curled up. Starry night sky above. Flying foxes moving gently. Hand-painted watercolor, soft and soothing."
     },
     {
         "number": 16,
@@ -137,7 +160,7 @@ PAGES = [
             "And a tiny smile stayed on her face.",
             "Goodnight, Sunny. Goodnight, flying foxes. Goodnight, little one."
         ],
-        "illustration_prompt": "Watercolor of Sunny asleep in the soft grass with a gentle smile. Full starry sky above. Moon gently illuminating the scene. Flying foxes gliding peacefully. Everything wrapped in calm and safety. The ultimate bedtime image - warm, protected, peaceful."
+        "illustration_prompt": f"{SUNNY_CHARACTER}\n{VISUAL_STYLE}\nScene: Sunny asleep in soft grass with gentle smile. Chubby golden-brown quokka at peace. Full starry sky above, moon gently illuminating. Flying foxes gliding peacefully overhead. Ultimate bedtime image - warm, protected, peaceful."
     }
 ]
 
