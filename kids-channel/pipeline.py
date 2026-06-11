@@ -43,17 +43,18 @@ PIPER_VOICE     = "en_US-lessac-medium"
 # ── Show config (update once you have a character) ──────────────────────────────
 SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
 CHARACTER_NAME = "Sonny"
-CHARACTER_DESC = "a sweet small quokka with golden-brown fur, big warm brown eyes, tiny round ears, gentle curious expression"
+CHARACTER_DESC = "Sonny: a CHUBBY ROUND quokka with warm golden-brown fur, large gentle brown eyes, tiny round ears, sweet natural smile, teddy-bear-like body shape"
 VISUAL_STYLE = (
     "Professional watercolour children's picture book illustration (like Beatrix Potter, Jill Barklem, Alison Friend style). "
-    "Hand-painted watercolour on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle washes. "
-    "Warm earthy palette: ochres, burnt siennas, soft greens, deep blues. "
-    "Australian bush at night with soft moonlight. Deep indigo-navy sky scattered with hand-dotted stars. "
-    "Gum trees framing scene with loose sketchy linework. Glowing fireflies with warm golden highlights. "
-    "Sonny the quokka as main character - always consistent appearance: a small CHUBBY ROUND quokka "
-    "(compact teddy-bear-like marsupial, NOT a kangaroo), soft golden-brown fur detail, "
-    "large warm brown eyes, short snout with a gentle natural smile, tiny round ears, cosy and safe feeling. "
-    "No text or captions. Safe for toddlers ages 1-5."
+    "Hand-painted watercolour on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes. "
+    "Warm earthy palette: warm golds, burnt siennas, soft sage greens, deep indigo-navy blues, pale golden moonlight. "
+    "Australian bush scenes at night with soft moonlight and stars. "
+    "Sonny the quokka always appears CHUBBY and ROUND (like a teddy bear, NOT skinny or elongated). "
+    "Sonny's fur is WARM GOLDEN-BROWN, never dark or grey. Warm brown eyes, gentle smile, tiny round ears. "
+    "Sonny often in peaceful restful poses: sitting contentedly, lying down in grass, curled up cozy. "
+    "Sonny sometimes wearing cozy details like pajamas or a blanket around shoulders. "
+    "Scene includes: gum trees with loose sketchy linework, wildflowers, gentle streams or water, moonlit meadows, fireflies with warm glows. "
+    "Soft, safe, calming bedtime mood. No text or captions. Safe for toddlers ages 1-5."
 )
 SHOW_DESC = "Calm, magical Australian bush bedtime adventures with Sonny the little Quokka — cozy bedtime stories for toddlers at bedtime or quiet time."
 
@@ -393,10 +394,11 @@ def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: P
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     # Short prompt: URL-length safe, faster to process, professional watercolor focus
     short_prompt = (
-        f"Professional watercolour children's book illustration, Beatrix Potter style. "
-        f"Sonny the quokka — golden-brown fur, big warm brown eyes, gentle expression. "
-        f"{prompt[:150]}. Australian bush, moonlit, starry night, gum trees, fireflies, "
-        f"brushstrokes, textured paper, warm palette, no text, safe for children"
+        f"Professional watercolour Beatrix Potter style children's book illustration. "
+        f"Sonny: chubby round quokka with warm golden-brown fur, big gentle brown eyes, sweet smile. "
+        f"Often in peaceful restful poses, sometimes with cozy blankets. "
+        f"{prompt[:120]}. Australian bush, moonlit night, stars, gum trees, soft warm palette. "
+        f"Hand-painted visible brushstrokes, textured paper, no text, safe for children."
     )
     encoded = requests.utils.quote(short_prompt)
     headers = {"User-Agent": "SonnyBot/1.0", "Accept": "image/*"}
@@ -581,11 +583,11 @@ def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Pat
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     os.environ.setdefault("FAL_KEY", FAL_KEY)
     full_prompt = (
-        f"Professional watercolour children's picture book illustration, Beatrix Potter style. "
-        f"Hand-painted on textured cold-press paper, visible brushstrokes, soft pigment bleeds. "
-        f"Sonny the quokka with golden-brown fur and big warm brown eyes as main character. "
-        f"Australian bush at night, deep navy indigo sky with stars, soft moonlight, glowing fireflies, gum trees. "
-        f"Warm earthy palette. Scene: {prompt[:280]}. No text. Safe for toddlers."
+        f"Professional watercolour Beatrix Potter style children's book illustration. "
+        f"Sonny: CHUBBY ROUND quokka with WARM GOLDEN-BROWN fur, big gentle brown eyes, sweet smile. "
+        f"Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds. "
+        f"Australian bush at night: deep navy sky, stars, soft moonlight, glowing fireflies, gum trees, wildflowers. "
+        f"Scene: {prompt[:250]}. Warm earthy palette. No text. Safe for toddlers."
     )
     try:
         import fal_client
@@ -618,16 +620,18 @@ def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Pat
 # IS rather than listing styles to avoid (listed "avoid" terms leak into the
 # image as content).
 SONNY_CHARACTER = (
-    "Sonny the quokka: a small CHUBBY ROUND quokka (the famous 'happiest animal' "
-    "— a compact teddy-bear-like marsupial, NOT a kangaroo, NOT a mouse), "
-    "plump round body, golden-brown soft fur, big warm dark-brown eyes, "
-    "small round ears, short snout with a gentle natural smile"
+    "Sonny the quokka: EXTREMELY CHUBBY and ROUND (compact teddy-bear shape, plump rounded body), "
+    "WARM GOLDEN-BROWN soft fur (never dark, never grey), large gentle warm brown eyes with kind expression, "
+    "small round ears, short snout with a natural gentle smile, always appears cosy and peaceful. "
+    "Often sitting, lying down, or resting in calm poses. Sometimes wearing cozy details like pajamas or a blanket."
 )
 
 WATERCOLOUR_STYLE = (
     "Professional watercolour children's picture book illustration, Beatrix Potter and Jill Barklem style. "
-    "Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes. "
-    "Loose painterly technique, warm earthy palette (ochres, burnt siennas, soft greens, deep navy blues)."
+    "Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes, "
+    "loose sketchy linework. Warm cosy palette: warm golds, burnt siennas, soft sage greens, deep indigo-navy blues, "
+    "pale golden moonlight. Australian bush scenes at night: moonlit meadows, gum trees, wildflowers, gentle streams. "
+    "Soft, safe, calming bedtime mood. No text or captions. Safe for toddlers ages 1-5."
 )
 
 CHARACTER_REF_PATH = Path(__file__).parent / "character" / "sonny-ref.jpg"
@@ -650,9 +654,10 @@ def get_character_ref(episode_dir: Path) -> Path | None:
     ref_prompt = (
         f"{WATERCOLOUR_STYLE} "
         f"Full-body character portrait of {SONNY_CHARACTER}. "
-        f"Sitting upright on a moonlit patch of grass, facing slightly toward the viewer, whole body visible, "
-        f"deep indigo-navy Australian night sky behind with tiny hand-dotted stars and a few glowing fireflies. "
-        f"Clear well-lit view of the character, soft hand-painted edges, warm cosy feeling, safe for toddlers. No text."
+        f"Sitting contentedly on a moonlit patch of grass, facing slightly toward the viewer, whole body visible. "
+        f"Deep indigo-navy Australian night sky with hand-dotted stars and glowing fireflies. "
+        f"Warm golden moonlight illuminating the character. Clear well-lit portrait, soft hand-painted edges. "
+        f"Warm cosy bedtime mood, safe for toddlers. No text or captions."
     )
     tmp_dir = episode_dir
     result = _replicate_flux_predict(ref_prompt, tmp_dir / "character_ref.jpg",
