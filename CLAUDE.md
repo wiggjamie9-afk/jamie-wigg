@@ -575,3 +575,26 @@ When spawning subagents via the `Agent` tool, default to **Haiku** for simple me
 - **Issue tracker** → GitHub Issues on `wiggjamie9-afk/jamie-wigg`. See `docs/agents/issue-tracker.md`.
 - **Triage labels** → `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 - **Domain docs** → `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`. Read before introducing new terms.
+
+## Development Principles (Andrej Karpathy)
+
+### 1. Think Before Coding
+- State assumptions explicitly
+- Surface ambiguities before implementing
+- Propose tradeoffs, don't hide them
+
+### 2. Simplicity First
+- No features beyond what's asked
+- No premature abstractions
+- If 200 lines could be 50, rewrite it
+
+### 3. Surgical Changes
+- Touch only what you must
+- Don't "improve" adjacent code
+- Remove only imports/variables YOUR changes made unused
+
+### 4. Goal-Driven Execution
+- Define verifiable success criteria
+- Transform imperatives into declarative goals
+- Loop until criteria are met
+
