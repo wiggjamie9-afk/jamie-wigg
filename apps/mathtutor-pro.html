@@ -2,1773 +2,842 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MathTutor Pro - AI Math Tutoring with Voice Explanations</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0b1120">
+    <title>MathTutor Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Lexend is research-backed to improve reading proficiency — chosen for struggling learners -->
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            /* 2026 design tokens */
+            --primary: #10b981;
+            --primary-bright: #34d399;
+            --accent: #06b6d4;
+            --tutor: #a78bfa;        /* AI voice = warm violet */
+            --tutor-deep: #7c3aed;
+
+            --bg: #0b1120;
+            --bg-elev: #111a2e;
+            --surface: rgba(255,255,255,0.04);
+            --surface-2: rgba(255,255,255,0.06);
+            --border: rgba(255,255,255,0.09);
+            --border-bright: rgba(255,255,255,0.16);
+
+            --text: #f3f6fb;
+            --text-soft: #c3cdda;
+            --text-mute: #8593a6;
+
+            --ok: #34d399;
+            --warn: #fbbf24;
+            --err: #fb7185;
+
+            --r-sm: 12px;
+            --r-md: 18px;
+            --r-lg: 26px;
+            --r-xl: 34px;
+
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --smooth: cubic-bezier(0.22, 1, 0.36, 1);
+
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-read: 'Lexend', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
 
-        :root {
-            --color-primary: #10b981;
-            --color-secondary: #059669;
-            --color-success: #06b6d4;
-            --color-error: #ef4444;
-            --color-warning: #f59e0b;
-            --color-bg-dark: #0f172a;
-            --color-bg-light: #1e293b;
-            --color-text: #e2e8f0;
-            --color-text-secondary: #cbd5e1;
-            --color-border: #334155;
-            --line-height-normal: 1.8;
-            --font-size-base: 18px;
-            --font-size-large: 24px;
+        /* Dyslexia-friendly mode (toggle in Settings) */
+        body.dys {
+            --font-read: 'OpenDyslexic', 'Comic Sans MS', sans-serif;
+            letter-spacing: 0.02em;
+            word-spacing: 0.12em;
         }
+        body.dys .reader, body.dys .bubble, body.dys .step-body { line-height: 2; }
+
+        @font-face {
+            font-family: 'OpenDyslexic';
+            src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff') format('woff');
+            font-display: swap;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
 
         body {
-            font-family: 'Comic Sans MS', 'Arial', sans-serif;
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            line-height: var(--line-height-normal);
-            font-size: var(--font-size-base);
-            transition: background-color 0.3s, color 0.3s;
+            font-family: var(--font-ui);
+            background:
+                radial-gradient(1200px 600px at 80% -10%, rgba(124,58,237,0.16), transparent 60%),
+                radial-gradient(1000px 500px at -10% 10%, rgba(6,182,212,0.14), transparent 55%),
+                linear-gradient(160deg, var(--bg) 0%, #0d1426 100%);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
-            max-width: 90%;
-            margin: 0 auto;
-            padding: 1.5rem 0;
-        }
+        .app { width: 100%; height: 100%; display: flex; flex-direction: column; padding-top: max(env(safe-area-inset-top), 10px); }
 
-        header {
-            background-color: var(--color-bg-light);
-            border-bottom: 3px solid var(--color-primary);
-            padding: 1.5rem 0;
-            margin-bottom: 2rem;
+        /* ---------- Header ---------- */
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px 14px;
         }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-mark {
+            width: 38px; height: 38px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: grid; place-items: center; font-size: 20px;
+            box-shadow: 0 6px 18px rgba(16,185,129,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
         }
-
-        .logo {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--color-primary);
+        .brand-name { font-size: 19px; font-weight: 800; letter-spacing: -0.4px; }
+        .brand-name span { background: linear-gradient(135deg, var(--primary-bright), var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .streak {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--surface); border: 1px solid var(--border);
+            padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-soft);
         }
+        .streak b { color: var(--warn); }
 
-        .nav-buttons {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-family: inherit;
-            font-weight: 600;
-            touch-action: manipulation;
-        }
-
-        .btn-primary {
-            background-color: var(--color-primary);
-            color: white;
-        }
-
-        .btn-primary:hover, .btn-primary:focus {
-            background-color: var(--color-secondary);
-            outline: 2px solid var(--color-secondary);
-            outline-offset: 2px;
-        }
-
-        .btn-secondary {
-            background-color: var(--color-bg-light);
-            color: var(--color-text);
-            border: 2px solid var(--color-border);
-        }
-
-        .btn-secondary:hover, .btn-secondary:focus {
-            background-color: var(--color-border);
-            outline: 2px solid var(--color-primary);
-            outline-offset: 2px;
-        }
-
-        .btn-icon {
-            width: 3rem;
-            height: 3rem;
-            padding: 0.5rem;
-            font-size: 1.5rem;
-            border-radius: 8px;
-        }
-
+        /* ---------- Carousel ---------- */
+        .carousel-container { flex: 1; overflow: hidden; position: relative; width: 100%; }
+        .carousel { display: flex; height: 100%; width: 100%; transition: transform 0.45s var(--spring); touch-action: pan-y; }
         .screen {
-            display: none;
+            flex-shrink: 0; width: 100%; height: 100%; overflow-y: auto;
+            -webkit-overflow-scrolling: touch; padding: 4px 20px 110px;
         }
+        .screen::-webkit-scrollbar { width: 0; }
 
-        .screen.active {
-            display: block;
-            animation: fadeIn 0.3s;
+        .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-mute); margin-bottom: 6px; }
+        .title { font-size: 30px; font-weight: 800; letter-spacing: -0.7px; margin-bottom: 4px; }
+        .subtitle { font-size: 15px; color: var(--text-soft); margin-bottom: 22px; line-height: 1.5; }
+
+        /* ---------- Cards ---------- */
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--r-lg); padding: 22px; position: relative; overflow: hidden;
+            transition: transform 0.25s var(--spring), border-color 0.25s;
         }
+        .card.tap { cursor: pointer; user-select: none; }
+        .card.tap:active { transform: scale(0.975); border-color: var(--border-bright); }
+        .card + .card { margin-top: 14px; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .home-card { display: flex; align-items: center; gap: 16px; }
+        .home-ico {
+            width: 54px; height: 54px; flex-shrink: 0; border-radius: 16px; display: grid; place-items: center; font-size: 26px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.22), rgba(6,182,212,0.18));
+            border: 1px solid var(--border-bright);
         }
+        .home-card.violet .home-ico { background: linear-gradient(135deg, rgba(167,139,250,0.25), rgba(124,58,237,0.2)); }
+        .home-card.amber .home-ico  { background: linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,113,133,0.18)); }
+        .home-txt h3 { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+        .home-txt p  { font-size: 13.5px; color: var(--text-mute); line-height: 1.4; }
+        .home-arrow { margin-left: auto; color: var(--text-mute); font-size: 20px; flex-shrink: 0; }
 
-        /* HOME SCREEN */
-        .home-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+        .hero {
+            margin-bottom: 18px; padding: 22px;
+            background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(6,182,212,0.12));
+            border: 1px solid var(--border-bright); border-radius: var(--r-lg);
         }
+        .hero h2 { font-size: 21px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 6px; }
+        .hero p { font-size: 14px; color: var(--text-soft); line-height: 1.5; }
 
-        @media (max-width: 768px) {
-            .home-grid {
-                grid-template-columns: 1fr;
-            }
+        /* ---------- Inputs ---------- */
+        .label { font-size: 12px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-mute); margin-bottom: 9px; display: block; }
+        textarea, input[type="text"], input[type="password"] {
+            width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: var(--r-md); padding: 14px; color: var(--text);
+            font-family: var(--font-mono); font-size: 16px; resize: none; transition: border-color 0.2s, background 0.2s;
         }
+        textarea { min-height: 92px; line-height: 1.5; }
+        textarea:focus, input:focus { outline: none; border-color: var(--primary); background: rgba(16,185,129,0.08); }
+        input::placeholder, textarea::placeholder { color: var(--text-mute); }
 
-        .home-card {
-            background-color: var(--color-bg-light);
-            border: 3px solid var(--color-primary);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
+        /* ---------- Buttons ---------- */
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            width: 100%; border: none; cursor: pointer; user-select: none;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #04261c; font-family: var(--font-ui); font-size: 16px; font-weight: 700;
+            border-radius: var(--r-md); padding: 15px; min-height: 54px;
+            box-shadow: 0 8px 22px rgba(16,185,129,0.32), inset 0 1px 0 rgba(255,255,255,0.35);
+            transition: transform 0.2s var(--spring), box-shadow 0.2s, opacity 0.2s;
         }
+        .btn:active { transform: scale(0.965); box-shadow: 0 4px 12px rgba(16,185,129,0.25); }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+        .btn.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border-bright); box-shadow: none; }
+        .btn.violet { background: linear-gradient(135deg, var(--tutor), var(--tutor-deep)); color: #fff; box-shadow: 0 8px 22px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.3); }
+        .btn-row { display: flex; gap: 11px; }
+        .btn-row .btn { flex: 1; }
+        .btn-icon { width: 54px; min-width: 54px; padding: 0; flex: 0 0 auto; font-size: 20px; }
 
-        .home-card:hover, .home-card:focus {
-            background-color: var(--color-border);
-            transform: translateY(-4px);
-            outline: 2px solid var(--color-primary);
-            outline-offset: 0;
+        /* input mode pills */
+        .modes { display: flex; gap: 8px; margin-bottom: 14px; }
+        .mode {
+            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+            padding: 12px 4px; border-radius: var(--r-md); cursor: pointer; user-select: none;
+            background: var(--surface); border: 1px solid var(--border); transition: all 0.2s var(--spring);
         }
+        .mode .mi { font-size: 22px; }
+        .mode .ml { font-size: 11.5px; font-weight: 600; color: var(--text-mute); }
+        .mode.on { background: rgba(16,185,129,0.12); border-color: var(--primary); }
+        .mode.on .ml { color: var(--primary-bright); }
+        .mode:active { transform: scale(0.95); }
+        .pane { display: none; } .pane.on { display: block; }
 
-        .home-card-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+        .upload {
+            border: 2px dashed var(--border-bright); border-radius: var(--r-lg);
+            padding: 34px 18px; text-align: center; cursor: pointer; user-select: none;
+            background: var(--surface); transition: all 0.2s var(--spring);
         }
+        .upload:active { transform: scale(0.985); background: var(--surface-2); }
+        .upload .uico { font-size: 44px; margin-bottom: 12px; }
+        .upload h4 { font-size: 17px; font-weight: 700; margin-bottom: 5px; }
+        .upload p { font-size: 13px; color: var(--text-mute); }
+        input[type="file"] { display: none; }
 
-        .home-card h3 {
-            font-size: 1.4rem;
-            margin-bottom: 0.5rem;
-            color: var(--color-primary);
+        /* mic */
+        .mic-wrap { text-align: center; padding: 18px 0; }
+        .mic-btn {
+            width: 92px; height: 92px; border-radius: 50%; border: none; cursor: pointer; margin: 0 auto 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent)); color: #04261c; font-size: 38px;
+            display: grid; place-items: center; box-shadow: 0 10px 30px rgba(16,185,129,0.4);
+            transition: transform 0.2s var(--spring);
         }
+        .mic-btn:active { transform: scale(0.92); }
+        .mic-btn.live { animation: pulse 1.3s infinite; }
+        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5);} 50% { box-shadow: 0 0 0 22px rgba(16,185,129,0);} }
+        .mic-hint { font-size: 14px; color: var(--text-soft); }
 
-        .home-card p {
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* PROBLEM INPUT */
-        .problem-input-panel {
-            background-color: var(--color-bg-light);
-            border: 3px solid var(--color-primary);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .input-section {
-            margin-bottom: 2rem;
-        }
-
-        .input-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .input-label {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: var(--color-primary);
-        }
-
-        .input-tabs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .tab-btn {
-            padding: 1rem;
-            border-radius: 8px;
-            font-weight: 600;
-            border: 2px solid var(--color-border);
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .tab-btn.active {
-            background-color: var(--color-primary);
-            border-color: var(--color-primary);
-            color: white;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 1rem;
-            font-family: 'Comic Sans MS', Arial, sans-serif;
-            font-size: 1rem;
-            border: 2px solid var(--color-border);
-            border-radius: 8px;
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            resize: vertical;
-            min-height: 120px;
-            line-height: 1.8;
-        }
-
-        textarea:focus {
-            outline: 2px solid var(--color-primary);
-            outline-offset: 2px;
-            border-color: var(--color-primary);
-        }
-
-        .upload-area {
-            border: 3px dashed var(--color-border);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            background-color: var(--color-bg-dark);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .upload-area:hover, .upload-area:focus-within {
-            border-color: var(--color-primary);
-            background-color: var(--color-border);
-        }
-
-        input[type="file"] {
-            display: none;
-        }
-
-        /* SOLVER SCREEN */
-        .solution-container {
-            background-color: var(--color-bg-light);
-            border: 3px solid var(--color-primary);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .problem-display {
-            background-color: var(--color-bg-dark);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            border-left: 4px solid var(--color-primary);
-        }
-
-        .problem-title {
-            color: var(--color-primary);
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .problem-text {
-            color: var(--color-text);
-            font-size: 1.1rem;
-        }
-
-        .steps-container {
-            margin-bottom: 2rem;
-        }
-
+        /* ---------- Solution / steps ---------- */
+        .solution { margin-top: 20px; }
         .step {
-            background-color: var(--color-bg-dark);
-            border-left: 4px solid var(--color-success);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-radius: 8px;
-            transition: all 0.3s;
+            background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--primary);
+            border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 11px;
+            animation: rise 0.5s var(--smooth) both;
+        }
+        @keyframes rise { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: none;} }
+        .step-num { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--primary-bright); margin-bottom: 6px; }
+        .step-body { font-family: var(--font-read); font-size: 15.5px; line-height: 1.65; color: var(--text-soft); }
+        .step-body code, .answer { font-family: var(--font-mono); }
+        .answer {
+            margin-top: 6px; text-align: center; font-size: 19px; font-weight: 700; color: #04261c;
+            background: linear-gradient(135deg, var(--primary-bright), var(--accent));
+            padding: 15px; border-radius: var(--r-md);
         }
 
-        .step:hover {
-            background-color: rgba(16, 185, 129, 0.1);
+        /* ---------- Chat ---------- */
+        .chat { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; min-height: 40px; }
+        .bubble {
+            max-width: 86%; padding: 13px 16px; border-radius: 20px; font-size: 15px; line-height: 1.55;
+            font-family: var(--font-read); animation: rise 0.35s var(--smooth) both;
         }
+        .bubble.me { align-self: flex-end; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #04261c; font-weight: 500; border-bottom-right-radius: 6px; }
+        .bubble.ai { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); border-bottom-left-radius: 6px; }
+        .bubble.ai b { color: var(--tutor); }
 
-        .step-number {
-            display: inline-block;
-            background-color: var(--color-primary);
-            color: white;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 2.5rem;
-            font-weight: 700;
-            margin-right: 1rem;
-            margin-bottom: 1rem;
+        .typing { display: inline-flex; gap: 4px; align-items: center; }
+        .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--tutor); animation: blink 1.2s infinite both; }
+        .typing i:nth-child(2){ animation-delay: 0.2s; } .typing i:nth-child(3){ animation-delay: 0.4s; }
+        @keyframes blink { 0%,80%,100%{ opacity:0.25; transform: translateY(0);} 40%{ opacity:1; transform: translateY(-3px);} }
+
+        .composer { display: flex; gap: 10px; align-items: flex-end; }
+        .composer textarea { min-height: 54px; max-height: 120px; }
+
+        /* ---------- Practice ---------- */
+        .problem {
+            text-align: center; padding: 30px 20px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.08));
+            border: 1px solid var(--border-bright); border-radius: var(--r-lg); margin-bottom: 16px;
         }
+        .problem .q { font-family: var(--font-mono); font-size: 30px; font-weight: 700; margin-bottom: 4px; }
+        .problem .meta { font-size: 12px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 1px; }
+        .feedback { padding: 14px 16px; border-radius: var(--r-md); font-size: 15px; font-weight: 600; margin-top: 12px; text-align: center; animation: rise 0.3s var(--smooth) both; }
+        .feedback.ok { background: rgba(52,211,153,0.14); color: var(--ok); border: 1px solid rgba(52,211,153,0.3); }
+        .feedback.no { background: rgba(251,113,133,0.14); color: var(--err); border: 1px solid rgba(251,113,133,0.3); }
 
-        .step-content {
-            color: var(--color-text);
-            line-height: 1.9;
+        /* ---------- Settings ---------- */
+        .set-group { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 6px 18px; margin-bottom: 16px; }
+        .set-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--border); gap: 14px; }
+        .set-row:last-child { border-bottom: none; }
+        .set-row .sl { font-size: 15px; font-weight: 600; }
+        .set-row .sd { font-size: 12.5px; color: var(--text-mute); margin-top: 2px; }
+        .toggle { width: 52px; height: 31px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-bright); position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.25s; }
+        .toggle::after { content:''; position: absolute; top: 2px; left: 2px; width: 25px; height: 25px; border-radius: 50%; background: #fff; transition: transform 0.25s var(--spring); }
+        .toggle.on { background: var(--primary); } .toggle.on::after { transform: translateX(21px); }
+        .pill-select { display: flex; gap: 7px; }
+        .pill-opt { padding: 8px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; color: var(--text-soft); }
+        .pill-opt.on { background: rgba(16,185,129,0.15); border-color: var(--primary); color: var(--primary-bright); }
+        .key-status { font-size: 12.5px; margin-top: 8px; font-weight: 600; }
+        .key-status.ok { color: var(--ok); } .key-status.no { color: var(--warn); }
+        .mini { font-size: 12px; color: var(--text-mute); line-height: 1.5; margin-top: 8px; }
+        .mini a { color: var(--accent); }
+
+        /* ---------- Progress / spinner ---------- */
+        .progress { width: 100%; height: 5px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin: 14px 0; }
+        .progress > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.2s; }
+        .spinner { width: 22px; height: 22px; border: 3px solid rgba(255,255,255,0.18); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.9s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ---------- Pagination ---------- */
+        .pagination {
+            position: fixed; left: 50%; transform: translateX(-50%);
+            bottom: max(env(safe-area-inset-bottom), 18px);
+            display: flex; gap: 9px; padding: 11px 16px; z-index: 100;
+            background: rgba(17,26,46,0.7); backdrop-filter: blur(18px) saturate(140%);
+            border: 1px solid var(--border); border-radius: 999px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
+        .dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.22); cursor: pointer; transition: all 0.3s var(--spring); }
+        .dot.active { background: linear-gradient(135deg, var(--primary), var(--accent)); width: 30px; border-radius: 5px; }
 
-        .step-explanation {
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-            margin-top: 0.5rem;
-            font-style: italic;
-        }
-
-        .math-visual {
-            background-color: var(--color-bg-light);
-            border: 2px dashed var(--color-primary);
-            border-radius: 8px;
-            padding: 2rem;
-            text-align: center;
-            margin: 1.5rem 0;
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .final-answer {
-            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-            color: white;
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-            margin-top: 2rem;
-        }
-
-        .final-answer-label {
-            font-size: 0.95rem;
-            opacity: 0.9;
-        }
-
-        .final-answer-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-top: 0.5rem;
-            font-family: monospace;
-        }
-
-        /* CONTROLS */
-        .controls {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin: 2rem 0;
-        }
-
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .control-group label {
-            font-weight: 600;
-        }
-
-        input[type="range"] {
-            min-width: 100px;
-            accent-color: var(--color-primary);
-        }
-
-        /* LANGUAGE SELECTOR */
-        .language-selector {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .language-selector label {
-            font-weight: 600;
-            color: var(--color-primary);
-        }
-
-        .language-selector select {
-            padding: 0.5rem 1rem;
-            border: 2px solid var(--color-border);
-            border-radius: 6px;
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            font-family: inherit;
-            font-size: 0.95rem;
-            cursor: pointer;
-        }
-
-        .language-selector select:focus {
-            outline: 2px solid var(--color-primary);
-            border-color: var(--color-primary);
-        }
-
-        /* AI TUTOR CHAT */
-        .ai-tutor-panel {
-            background-color: var(--color-bg-light);
-            border: 3px solid var(--color-success);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            max-height: 400px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .ai-tutor-header {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--color-success);
-            margin-bottom: 1rem;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 1rem;
-            min-height: 200px;
-        }
-
-        .message {
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border-radius: 8px;
-            animation: slideIn 0.3s;
-        }
-
-        .message.user {
-            background-color: var(--color-primary);
-            color: white;
-            margin-left: 2rem;
-            text-align: right;
-        }
-
-        .message.ai {
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            margin-right: 2rem;
-            border-left: 3px solid var(--color-success);
-        }
-
-        .chat-input-group {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 0.75rem;
-            border: 2px solid var(--color-border);
-            border-radius: 8px;
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            font-family: inherit;
-            font-size: 0.95rem;
-        }
-
-        .chat-input:focus {
-            outline: 2px solid var(--color-primary);
-            border-color: var(--color-primary);
-        }
-
-        .chat-send {
-            padding: 0.75rem 1.5rem;
-            background-color: var(--color-success);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        /* PRACTICE MODE */
-        .practice-section {
-            background-color: var(--color-bg-light);
-            border: 3px solid var(--color-primary);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .difficulty-selector {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .difficulty-btn {
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 2px solid var(--color-border);
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-
-        .difficulty-btn.selected {
-            background-color: var(--color-primary);
-            border-color: var(--color-primary);
-            color: white;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background-color: var(--color-bg-dark);
-            padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-            border: 2px solid var(--color-border);
-        }
-
-        .stat-label {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--color-primary);
-        }
-
-        /* TOAST NOTIFICATIONS */
         .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-border);
-            border-radius: 8px;
-            padding: 1.5rem 2rem;
-            max-width: 400px;
-            animation: slideIn 0.3s;
-            z-index: 1000;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(20px);
+            background: var(--bg-elev); border: 1px solid var(--border-bright); color: var(--text);
+            padding: 12px 20px; border-radius: 999px; font-size: 14px; font-weight: 600;
+            opacity: 0; pointer-events: none; transition: all 0.35s var(--spring); z-index: 200; box-shadow: 0 12px 30px rgba(0,0,0,0.5);
         }
-
-        .toast.success {
-            border-color: var(--color-success);
-        }
-
-        .toast.error {
-            border-color: var(--color-error);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(500px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                max-width: 95%;
-            }
-
-            .header-content {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .nav-buttons {
-                width: 100%;
-            }
-
-            .btn-primary, .btn-secondary {
-                flex: 1;
-                min-width: 100px;
-            }
-
-            .difficulty-selector {
-                grid-template-columns: 1fr;
-            }
-
-            .input-tabs {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        :focus-visible {
-            outline: 3px solid var(--color-primary);
-            outline-offset: 2px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: var(--color-text-secondary);
-        }
-
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
-    <!-- HEADER -->
-    <header>
-        <div class="container">
-            <div class="language-selector">
-                <label for="languageSelect">🌍 Language:</label>
-                <select id="languageSelect" onchange="changeLanguage(this.value)">
-                    <option value="en">English</option>
-                    <option value="es">Español (Spanish)</option>
-                    <option value="fr">Français (French)</option>
-                    <option value="pt">Português (Portuguese)</option>
-                    <option value="de">Deutsch (German)</option>
-                    <option value="ja">日本語 (Japanese)</option>
-                    <option value="hi">हिन्दी (Hindi)</option>
-                    <option value="zh">中文 (Chinese)</option>
-                    <option value="ar">العربية (Arabic)</option>
-                    <option value="ru">Русский (Russian)</option>
-                </select>
+    <div class="app">
+        <div class="header">
+            <div class="brand">
+                <div class="brand-mark">🧮</div>
+                <div class="brand-name">Math<span>Tutor</span></div>
             </div>
-            <div class="header-content">
-                <div class="logo">🧮 MathTutor Pro</div>
-                <div class="nav-buttons">
-                    <button class="btn-icon" onclick="showScreen('home')" title="Home">🏠</button>
-                    <button class="btn-icon" onclick="showScreen('practice')" title="Practice">📝</button>
-                    <button class="btn-icon" onclick="showScreen('stats')" title="Stats">📊</button>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="container">
-        <!-- HOME SCREEN -->
-        <div id="homeScreen" class="screen active">
-            <div class="home-grid">
-                <div class="home-card" onclick="showScreen('solver')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('solver')">
-                    <div class="home-card-icon">📸</div>
-                    <h3>Solve a Problem</h3>
-                    <p>Upload a math problem or type one in and get step-by-step solutions</p>
-                </div>
-                <div class="home-card" onclick="showScreen('tutor')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('tutor')">
-                    <div class="home-card-icon">🤖</div>
-                    <h3>Ask the Tutor</h3>
-                    <p>Chat with your AI tutor about math concepts and strategies</p>
-                </div>
-                <div class="home-card" onclick="showScreen('practice')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('practice')">
-                    <div class="home-card-icon">📝</div>
-                    <h3>Practice Mode</h3>
-                    <p>Solve problems at your level and track your improvement</p>
-                </div>
-                <div class="home-card" onclick="showScreen('stats')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('stats')">
-                    <div class="home-card-icon">📊</div>
-                    <h3>My Progress</h3>
-                    <p>See your stats, weak areas, and improvement over time</p>
-                </div>
-            </div>
+            <div class="streak">🔥 <b id="streakNum">0</b> day streak</div>
         </div>
 
-        <!-- SOLVER SCREEN -->
-        <div id="solverScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);">🧮 Problem Solver</h2>
-                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
-            </div>
+        <div class="carousel-container">
+            <div class="carousel" id="carousel">
 
-            <!-- INPUT SECTION -->
-            <div class="problem-input-panel">
-                <div class="input-tabs">
-                    <button class="tab-btn active" data-tab="type" onclick="switchInputTab('type', event)">📝 Type Problem</button>
-                    <button class="tab-btn" data-tab="photo" onclick="switchInputTab('photo', event)">📸 Upload Photo</button>
-                </div>
-
-                <div id="typeTab">
-                    <div class="input-label">Describe your problem:</div>
-                    <textarea id="problemInput" placeholder="Example: Solve 2x + 5 = 13&#10;Or: What is 25% of 80?&#10;Or: Find the area of a circle with radius 5"></textarea>
-                    <button class="btn-primary" style="width: 100%; margin-top: 1rem; padding: 1rem;" onclick="solveProblem()">Solve Problem ✓</button>
-                </div>
-
-                <div id="photoTab" style="display: none;">
-                    <div class="upload-area" onclick="document.getElementById('problemImage').click()">
-                        <div style="font-size: 2rem; margin-bottom: 1rem;">📷</div>
-                        <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--color-primary);">Upload or Capture Problem</div>
-                        <div style="color: var(--color-text-secondary);">Click to select an image</div>
+                <!-- 0 · HOME -->
+                <section class="screen">
+                    <div class="hero">
+                        <h2 id="greeting">Hey there 👋</h2>
+                        <p id="greetSub">Ready to make maths make sense? Pick a way to start.</p>
                     </div>
-                    <input type="file" id="problemImage" accept="image/*" onchange="handleImageUpload(event)">
-                </div>
-            </div>
+                    <div class="card tap home-card" onclick="go(1)">
+                        <div class="home-ico">✏️</div>
+                        <div class="home-txt"><h3>Solve a problem</h3><p>Type it, photograph it, or just say it out loud</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                    <div class="card tap home-card violet" onclick="go(2)">
+                        <div class="home-ico">💬</div>
+                        <div class="home-txt"><h3>Ask your tutor</h3><p>Stuck on a concept? Talk it through, step by step</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                    <div class="card tap home-card amber" onclick="go(3); newProblem();">
+                        <div class="home-ico">🎯</div>
+                        <div class="home-txt"><h3>Practice</h3><p>Fresh problems made just for your level</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                    <div class="card tap home-card" onclick="go(4)" style="opacity:.95">
+                        <div class="home-ico">⚙️</div>
+                        <div class="home-txt"><h3>Settings</h3><p>Voice, reading font, and your tutor key</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                </section>
 
-            <!-- SOLUTION DISPLAY -->
-            <div id="solutionDisplay" style="display: none;">
-                <div class="solution-container">
-                    <div class="problem-display">
-                        <div class="problem-title">📋 Your Problem:</div>
-                        <div class="problem-text" id="problemDisplay"></div>
+                <!-- 1 · SOLVE -->
+                <section class="screen">
+                    <div class="eyebrow">Solve</div>
+                    <h1 class="title">What are we working on?</h1>
+                    <p class="subtitle">Three ways in — pick whatever's easiest right now.</p>
+
+                    <div class="modes">
+                        <div class="mode on" data-mode="type" onclick="setMode('type')"><div class="mi">⌨️</div><div class="ml">Type</div></div>
+                        <div class="mode" data-mode="photo" onclick="setMode('photo')"><div class="mi">📸</div><div class="ml">Photo</div></div>
+                        <div class="mode" data-mode="voice" onclick="setMode('voice')"><div class="mi">🎤</div><div class="ml">Voice</div></div>
                     </div>
 
-                    <!-- PLAYBACK CONTROLS -->
-                    <div class="controls">
-                        <button class="btn-primary" id="playBtn" onclick="toggleVoicePlayback()">▶️ Play Explanation</button>
-                        <button class="btn-secondary" onclick="toggleMistakeAnalysis()">🔍 Analyze Mistakes</button>
-                        <div class="control-group">
-                            <label for="speedSlider">Speed:</label>
-                            <input type="range" id="speedSlider" min="0.5" max="2" step="0.25" value="1" onchange="updateVoiceSpeed(this.value)">
-                            <span id="speedValue">1.0x</span>
+                    <div class="pane on" id="pane-type">
+                        <textarea id="problemInput" placeholder="e.g.  2x + 5 = 13"></textarea>
+                    </div>
+                    <div class="pane" id="pane-photo">
+                        <div class="upload" onclick="document.getElementById('fileInput').click()">
+                            <div class="uico">📸</div><h4>Snap the problem</h4><p>Take or upload a photo — I'll read it</p>
+                            <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
+                        </div>
+                        <div id="ocrBox" style="display:none; margin-top:14px;">
+                            <div class="progress"><i id="ocrFill"></i></div>
+                            <p style="text-align:center; font-size:13px; color:var(--text-mute);">Reading the page… <span id="ocrPct">0</span>%</p>
+                        </div>
+                    </div>
+                    <div class="pane" id="pane-voice">
+                        <div class="mic-wrap">
+                            <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
+                            <div class="mic-hint" id="micHint">Tap and say the problem</div>
                         </div>
                     </div>
 
-                    <!-- STEPS -->
-                    <div class="steps-container" id="stepsContainer"></div>
-
-                    <!-- FINAL ANSWER -->
-                    <div class="final-answer">
-                        <div class="final-answer-label">✨ Final Answer</div>
-                        <div class="final-answer-value" id="finalAnswer"></div>
+                    <div style="margin-top:14px;">
+                        <button class="btn" id="solveBtn" onclick="solve()">✨ Show me how</button>
                     </div>
-                </div>
 
-                <!-- FOLLOW-UP QUESTIONS -->
-                <div style="margin-top: 2rem;">
-                    <h3 style="color: var(--color-primary); margin-bottom: 1rem;">💡 Still Have Questions?</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <button class="btn-secondary" onclick="askFollowUp('Why did you use that method?')">Why this method?</button>
-                        <button class="btn-secondary" onclick="askFollowUp('Show me a different way to solve this')">Another method?</button>
-                        <button class="btn-secondary" onclick="askFollowUp('What concepts are needed for this?')">Key concepts?</button>
-                        <button class="btn-secondary" onclick="askFollowUp('How is this used in real life?')">Real-world use?</button>
+                    <div class="solution" id="solution"></div>
+                </section>
+
+                <!-- 2 · TUTOR -->
+                <section class="screen">
+                    <div class="eyebrow">Your tutor</div>
+                    <h1 class="title">Talk it through</h1>
+                    <p class="subtitle">No question is too small. I'll explain it like a friend who gets it.</p>
+                    <div class="chat" id="chat"></div>
+                    <div class="composer">
+                        <textarea id="chatInput" placeholder="Ask me anything…" rows="1"></textarea>
+                        <button class="btn violet btn-icon" onclick="sendChat()">➤</button>
                     </div>
-                </div>
+                </section>
+
+                <!-- 3 · PRACTICE -->
+                <section class="screen">
+                    <div class="eyebrow">Practice</div>
+                    <h1 class="title">Your turn</h1>
+                    <p class="subtitle">Give it a try. Wrong answers are just steps to right ones.</p>
+                    <div class="problem">
+                        <div class="q" id="practiceQ">…</div>
+                        <div class="meta" id="practiceMeta">tap “new problem” to start</div>
+                    </div>
+                    <div class="label">Your answer</div>
+                    <input type="text" id="practiceAns" placeholder="Type your answer">
+                    <div class="btn-row" style="margin-top:14px;">
+                        <button class="btn ghost" onclick="newProblem()">🔄 New</button>
+                        <button class="btn" onclick="checkAnswer()">Check ✓</button>
+                    </div>
+                    <div id="practiceFeedback"></div>
+                    <div style="margin-top:14px;"><button class="btn violet ghost" id="explainBtn" style="display:none" onclick="explainPractice()">🤔 Explain this one</button></div>
+                </section>
+
+                <!-- 4 · SETTINGS -->
+                <section class="screen">
+                    <div class="eyebrow">Settings</div>
+                    <h1 class="title">Make it yours</h1>
+                    <p class="subtitle">Set it up once. Everything stays on your device.</p>
+
+                    <div class="set-group">
+                        <div class="set-row" style="display:block; padding-bottom:18px;">
+                            <div><div class="sl">Your name</div><div class="sd">So your tutor knows what to call you</div></div>
+                            <input type="text" id="nameInput" placeholder="What should I call you?" style="margin-top:10px;" oninput="saveName(this.value)">
+                        </div>
+                    </div>
+
+                    <div class="set-group">
+                        <div class="set-row" style="display:block;">
+                            <div><div class="sl">Tutor key (Claude API)</div><div class="sd">Powers the AI tutor. Stored only on this device.</div></div>
+                            <input type="password" id="keyInput" placeholder="sk-ant-…" style="margin-top:10px;" oninput="saveKey(this.value)">
+                            <div class="key-status no" id="keyStatus">No key yet — add one to wake your tutor</div>
+                            <div class="mini">Get a key free at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>. Without it, Solve still works offline with built-in steps.</div>
+                        </div>
+                    </div>
+
+                    <div class="set-group">
+                        <div class="set-row">
+                            <div><div class="sl">Read answers aloud</div><div class="sd">Hear every step in a calm voice</div></div>
+                            <div class="toggle on" id="tgVoice" onclick="toggleVoice()"></div>
+                        </div>
+                        <div class="set-row">
+                            <div><div class="sl">Voice speed</div><div class="sd">Slower can be easier to follow</div></div>
+                            <div class="pill-select" id="speedSelect">
+                                <div class="pill-opt" data-sp="0.8" onclick="setSpeed(0.8)">Slow</div>
+                                <div class="pill-opt on" data-sp="1" onclick="setSpeed(1)">Normal</div>
+                                <div class="pill-opt" data-sp="1.2" onclick="setSpeed(1.2)">Fast</div>
+                            </div>
+                        </div>
+                        <div class="set-row">
+                            <div><div class="sl">Dyslexia-friendly font</div><div class="sd">Heavier, easier-to-track letters</div></div>
+                            <div class="toggle" id="tgDys" onclick="toggleDys()"></div>
+                        </div>
+                    </div>
+
+                    <div class="set-group">
+                        <div class="set-row">
+                            <div><div class="sl">Tutor brain</div><div class="sd">Fast is cheap; Smart is for tricky stuff</div></div>
+                            <div class="pill-select" id="modelSelect">
+                                <div class="pill-opt on" data-model="claude-haiku-4-5" onclick="setModel('claude-haiku-4-5')">Fast</div>
+                                <div class="pill-opt" data-model="claude-opus-4-8" onclick="setModel('claude-opus-4-8')">Smart</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mini" style="text-align:center; padding-bottom:8px;">MathTutor Pro · built to help the whole world learn 🌍</div>
+                </section>
+
             </div>
         </div>
 
-        <!-- AI TUTOR SCREEN -->
-        <div id="tutorScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);">🤖 AI Math Tutor</h2>
-                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
-            </div>
-
-            <div class="ai-tutor-panel">
-                <div class="ai-tutor-header">💬 Talk to Your AI Tutor</div>
-                <div class="chat-messages" id="chatMessages">
-                    <div class="message ai">
-                        <strong>Tutor:</strong> Hi there! 👋 I'm your math tutor. Ask me anything about math concepts, strategies, or problems. I'll explain things in simple language.
-                    </div>
-                </div>
-                <div class="chat-input-group">
-                    <input type="text" class="chat-input" id="tutorInput" placeholder="Ask a question..." onkeydown="if(event.key==='Enter') sendTutorMessage()">
-                    <button class="chat-send" onclick="sendTutorMessage()">Send</button>
-                </div>
-            </div>
-
-            <!-- QUICK QUESTIONS -->
-            <div style="margin-top: 2rem;">
-                <h3 style="color: var(--color-primary); margin-bottom: 1rem;">Quick Questions:</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <button class="btn-secondary" onclick="sendPredefinedQuestion('Explain fractions to me')">What are fractions?</button>
-                    <button class="btn-secondary" onclick="sendPredefinedQuestion('How do I solve linear equations?')">Solve equations?</button>
-                    <button class="btn-secondary" onclick="sendPredefinedQuestion('What is the order of operations?')">Order of operations?</button>
-                    <button class="btn-secondary" onclick="sendPredefinedQuestion('How do I find the area of shapes?')">Area & Perimeter?</button>
-                    <button class="btn-secondary" onclick="sendPredefinedQuestion('Explain percentages')">Percentages?</button>
-                    <button class="btn-secondary" onclick="sendPredefinedQuestion('What is a variable in math?')">What is a variable?</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- PRACTICE MODE SCREEN -->
-        <div id="practiceScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);">📝 Practice Mode</h2>
-                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
-            </div>
-
-            <div class="practice-section">
-                <div class="input-label">📊 Choose Your Difficulty:</div>
-                <div class="difficulty-selector">
-                    <button class="difficulty-btn selected" onclick="selectDifficulty('easy')">🟢 Easy</button>
-                    <button class="difficulty-btn" onclick="selectDifficulty('medium')">🟡 Medium</button>
-                    <button class="difficulty-btn" onclick="selectDifficulty('hard')">🔴 Hard</button>
-                </div>
-
-                <div class="input-label" style="margin-top: 2rem;">📚 Choose a Topic:</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-                    <button class="btn-secondary" onclick="startPractice('arithmetic')">Basic Math</button>
-                    <button class="btn-secondary" onclick="startPractice('fractions')">Fractions</button>
-                    <button class="btn-secondary" onclick="startPractice('percentages')">Percentages</button>
-                    <button class="btn-secondary" onclick="startPractice('algebra')">Algebra</button>
-                    <button class="btn-secondary" onclick="startPractice('geometry')">Geometry</button>
-                    <button class="btn-secondary" onclick="startPractice('word-problems')">Word Problems</button>
-                </div>
-
-                <!-- PRACTICE STATS -->
-                <div id="practiceStats" style="display: none;">
-                    <div class="input-label">📈 Your Stats:</div>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Correct</div>
-                            <div class="stat-value" id="correctCount">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Accuracy</div>
-                            <div class="stat-value" id="accuracyPercent">0%</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Streak</div>
-                            <div class="stat-value" id="streak">0</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- STATS SCREEN -->
-        <div id="statsScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);">📊 My Progress</h2>
-                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
-            </div>
-
-            <div class="solution-container">
-                <div class="input-label">📈 Overall Stats:</div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-label">Problems Solved</div>
-                        <div class="stat-value" id="totalSolved">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Topics Mastered</div>
-                        <div class="stat-value" id="topicsMastered">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Current Accuracy</div>
-                        <div class="stat-value" id="overallAccuracy">0%</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Learning Streak</div>
-                        <div class="stat-value" id="learningStreak">0</div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 2rem;">
-                    <div class="input-label">📋 Weakest Topics:</div>
-                    <div id="weakTopics" style="margin-top: 1rem;">
-                        <div style="padding: 1rem; background-color: var(--color-bg-dark); border-radius: 8px; color: var(--color-text-secondary);">
-                            Solve more problems to see your weak areas
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 2rem;">
-                    <button class="btn-secondary" onclick="exportProgress()">📥 Export Progress</button>
-                    <button class="btn-secondary" onclick="clearStats()">🗑️ Clear Stats</button>
-                </div>
-            </div>
+        <div class="pagination">
+            <div class="dot active" onclick="go(0)"></div>
+            <div class="dot" onclick="go(1)"></div>
+            <div class="dot" onclick="go(2)"></div>
+            <div class="dot" onclick="go(3)"></div>
+            <div class="dot" onclick="go(4)"></div>
         </div>
     </div>
+    <div class="toast" id="toast"></div>
 
-    <!-- TOAST CONTAINER -->
-    <div id="toastContainer"></div>
-
-    <!-- Tesseract.js: open-source OCR, runs in the browser. No API key, no backend. -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
-        // MULTILINGUAL SUPPORT (Top 10 Languages)
-        const translations = {
-            en: {
-                appTitle: 'MathTutor Pro',
-                home: 'Home', practice: 'Practice', stats: 'Stats',
-                solve: 'Solve a Problem', solveDesc: 'Upload a math problem or type one in and get step-by-step solutions',
-                tutor: 'Ask the Tutor', tutorDesc: 'Chat with your AI tutor about math concepts and strategies',
-                practiceMode: 'Practice Mode', practiceDesc: 'Solve problems at your level and track your improvement',
-                myProgress: 'My Progress', progressDesc: 'See your stats, weak areas, and improvement over time',
-                describeProblem: 'Describe your problem:',
-                solveProblem: 'Solve Problem ✓',
-                typeProblem: '📝 Type Problem', uploadPhoto: '📸 Upload Photo',
-                play: 'Play Explanation', analyze: 'Analyze Mistakes',
-                speed: 'Speed:', back: 'Back',
-                yourProblem: 'Your Problem:',
-                finalAnswer: 'Final Answer',
-                stillQuestions: 'Still Have Questions?',
-                whyMethod: 'Why this method?', anotherMethod: 'Another method?',
-                keyConcepts: 'Key concepts?', realWorldUse: 'Real-world use?',
-                talkTutor: 'Talk to Your AI Tutor',
-                askQuestion: 'Ask a question...',
-                send: 'Send',
-                quickQuestions: 'Quick Questions:',
-                whatFractions: 'What are fractions?', solveEquations: 'Solve equations?',
-                orderOps: 'Order of operations?', areaPeri: 'Area & Perimeter?',
-                percentages: 'Percentages?', whatVariable: 'What is a variable?',
-                chooseDifficulty: 'Choose Your Difficulty:',
-                easy: 'Easy', medium: 'Medium', hard: 'Hard',
-                chooseTopic: 'Choose a Topic:',
-                basicMath: 'Basic Math', fractions: 'Fractions',
-                algebra: 'Algebra', geometry: 'Geometry', wordProblems: 'Word Problems',
-                yourStats: 'Your Stats:',
-                problemsSolved: 'Problems Solved',
-                topicsMastered: 'Topics Mastered',
-                currentAccuracy: 'Current Accuracy',
-                learningStreak: 'Learning Streak',
-                overallStats: 'Overall Stats:',
-                weakestTopics: 'Weakest Topics:',
-                exportProgress: 'Export Progress',
-                clearStats: 'Clear Stats',
-                correct: 'Correct',
-                accuracy: 'Accuracy',
-                streak: 'Streak'
+    /* ============================================================
+       STATE  (everything lives on-device — privacy by default)
+    ============================================================ */
+    const store = {
+        get key()    { return localStorage.getItem('mt_key') || ''; },
+        get name()   { return localStorage.getItem('mt_name') || ''; },
+        get model()  { return localStorage.getItem('mt_model') || 'claude-haiku-4-5'; },
+        get voice()  { return localStorage.getItem('mt_voice') !== '0'; },
+        get speed()  { return parseFloat(localStorage.getItem('mt_speed') || '1'); },
+        get dys()    { return localStorage.getItem('mt_dys') === '1'; },
+        get streak() { return parseInt(localStorage.getItem('mt_streak') || '0'); },
+        get lastDay(){ return localStorage.getItem('mt_lastday') || ''; }
+    };
+    const chatHistory = [];   // {role, content}
+    let currentMode = 'type';
+    let practice = null;       // {q, answer}
+
+    /* ============================================================
+       CAROUSEL  (vanilla touch — true horizontal swipe)
+    ============================================================ */
+    const carousel = document.getElementById('carousel');
+    const SCREENS = 5;
+    let idx = 0, startX = 0, startY = 0, curX = 0, dragging = false, locked = null;
+
+    carousel.addEventListener('touchstart', e => {
+        startX = curX = e.touches[0].clientX; startY = e.touches[0].clientY;
+        dragging = true; locked = null;
+        carousel.style.transition = 'none';
+    }, { passive: true });
+
+    carousel.addEventListener('touchmove', e => {
+        if (!dragging) return;
+        curX = e.touches[0].clientX;
+        const dx = curX - startX, dy = e.touches[0].clientY - startY;
+        if (locked === null) locked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+        if (locked !== 'x') return;              // let vertical scroll pass through
+        let move = dx;
+        if ((idx === 0 && dx > 0) || (idx === SCREENS-1 && dx < 0)) move = dx * 0.32; // rubber-band edges
+        carousel.style.transform = `translateX(calc(-${idx*100}% + ${move}px))`;
+    }, { passive: true });
+
+    carousel.addEventListener('touchend', () => {
+        if (!dragging) return; dragging = false;
+        if (locked !== 'x') return;
+        const dx = curX - startX;
+        if (dx < -55 && idx < SCREENS-1) idx++;
+        else if (dx > 55 && idx > 0) idx--;
+        render();
+    });
+
+    function go(i){ idx = Math.max(0, Math.min(SCREENS-1, i)); render(); }
+    function render(){
+        carousel.style.transition = 'transform 0.45s cubic-bezier(0.34,1.56,0.64,1)';
+        carousel.style.transform = `translateX(-${idx*100}%)`;
+        document.querySelectorAll('.dot').forEach((d,i)=> d.classList.toggle('active', i===idx));
+    }
+
+    /* ============================================================
+       CLAUDE  (browser-direct, streamed)
+    ============================================================ */
+    async function askClaude(messages, system, { onToken } = {}) {
+        const key = store.key;
+        if (!key) throw new Error('NO_KEY');
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                'x-api-key': key,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
             },
-            es: {
-                appTitle: 'MathTutor Pro',
-                home: 'Inicio', practice: 'Práctica', stats: 'Estadísticas',
-                solve: 'Resolver un Problema', solveDesc: 'Carga un problema matemático o escribe uno y obtén soluciones paso a paso',
-                tutor: 'Pregunta al Tutor', tutorDesc: 'Chatea con tu tutor de IA sobre conceptos y estrategias matemáticas',
-                practiceMode: 'Modo Práctica', practiceDesc: 'Resuelve problemas a tu nivel y sigue tu mejora',
-                myProgress: 'Mi Progreso', progressDesc: 'Vea sus estadísticas, áreas débiles y mejora a lo largo del tiempo',
-                describeProblem: 'Describe tu problema:',
-                solveProblem: 'Resolver Problema ✓',
-                typeProblem: '📝 Escribir', uploadPhoto: '📸 Subir Foto',
-                play: 'Reproducir Explicación', analyze: 'Analizar Errores',
-                speed: 'Velocidad:', back: 'Atrás',
-                yourProblem: 'Tu Problema:',
-                finalAnswer: 'Respuesta Final',
-                stillQuestions: '¿Aún Tienes Preguntas?',
-                whyMethod: '¿Por qué este método?', anotherMethod: '¿Otro método?',
-                keyConcepts: '¿Conceptos clave?', realWorldUse: '¿Uso en la vida real?',
-                talkTutor: 'Habla con tu Tutor de IA',
-                askQuestion: 'Haz una pregunta...',
-                send: 'Enviar',
-                quickQuestions: 'Preguntas Rápidas:',
-                whatFractions: '¿Qué son las fracciones?', solveEquations: '¿Resolver ecuaciones?',
-                orderOps: '¿Orden de operaciones?', areaPeri: '¿Área y Perímetro?',
-                percentages: '¿Porcentajes?', whatVariable: '¿Qué es una variable?',
-                chooseDifficulty: 'Elige tu Nivel de Dificultad:',
-                easy: 'Fácil', medium: 'Medio', hard: 'Difícil',
-                chooseTopic: 'Elige un Tema:',
-                basicMath: 'Matemáticas Básicas', fractions: 'Fracciones',
-                algebra: 'Álgebra', geometry: 'Geometría', wordProblems: 'Problemas de Palabras',
-                yourStats: 'Tus Estadísticas:',
-                problemsSolved: 'Problemas Resueltos',
-                topicsMastered: 'Temas Dominados',
-                currentAccuracy: 'Precisión Actual',
-                learningStreak: 'Racha de Aprendizaje',
-                overallStats: 'Estadísticas Generales:',
-                weakestTopics: 'Temas Más Débiles:',
-                exportProgress: 'Exportar Progreso',
-                clearStats: 'Borrar Estadísticas',
-                correct: 'Correcto',
-                accuracy: 'Precisión',
-                streak: 'Racha'
-            },
-            fr: {
-                appTitle: 'MathTutor Pro',
-                home: 'Accueil', practice: 'Pratique', stats: 'Statistiques',
-                solve: 'Résoudre un Problème', solveDesc: 'Téléchargez un problème mathématique ou tapez-en un et obtenez des solutions étape par étape',
-                tutor: 'Posez une Question', tutorDesc: 'Discutez avec votre tuteur IA des concepts et stratégies mathématiques',
-                practiceMode: 'Mode Pratique', practiceDesc: 'Résolvez des problèmes à votre niveau et suivez votre progression',
-                myProgress: 'Ma Progression', progressDesc: 'Consultez vos statistiques, vos points faibles et votre progression',
-                describeProblem: 'Décrivez votre problème:',
-                solveProblem: 'Résoudre le Problème ✓',
-                typeProblem: '📝 Taper', uploadPhoto: '📸 Télécharger Photo',
-                play: 'Lire l\'Explication', analyze: 'Analyser les Erreurs',
-                speed: 'Vitesse:', back: 'Retour',
-                yourProblem: 'Votre Problème:',
-                finalAnswer: 'Réponse Finale',
-                stillQuestions: 'Vous Avez Encore des Questions?',
-                whyMethod: 'Pourquoi cette méthode?', anotherMethod: 'Une autre méthode?',
-                keyConcepts: 'Concepts clés?', realWorldUse: 'Usage réel?',
-                talkTutor: 'Parlez à Votre Tuteur IA',
-                askQuestion: 'Posez une question...',
-                send: 'Envoyer',
-                quickQuestions: 'Questions Rapides:',
-                whatFractions: 'Qu\'sont les fractions?', solveEquations: 'Résoudre les équations?',
-                orderOps: 'Ordre des opérations?', areaPeri: 'Aire & Périmètre?',
-                percentages: 'Pourcentages?', whatVariable: 'Qu\'est-ce une variable?',
-                chooseDifficulty: 'Choisissez Votre Niveau:',
-                easy: 'Facile', medium: 'Moyen', hard: 'Difficile',
-                chooseTopic: 'Choisissez un Sujet:',
-                basicMath: 'Mathématiques de Base', fractions: 'Fractions',
-                algebra: 'Algèbre', geometry: 'Géométrie', wordProblems: 'Problèmes de Mots',
-                yourStats: 'Vos Statistiques:',
-                problemsSolved: 'Problèmes Résolus',
-                topicsMastered: 'Sujets Maîtrisés',
-                currentAccuracy: 'Précision Actuelle',
-                learningStreak: 'Séquence d\'Apprentissage',
-                overallStats: 'Statistiques Globales:',
-                weakestTopics: 'Sujets les Plus Faibles:',
-                exportProgress: 'Exporter la Progression',
-                clearStats: 'Effacer les Statistiques',
-                correct: 'Correct',
-                accuracy: 'Précision',
-                streak: 'Séquence'
-            },
-            pt: {
-                appTitle: 'MathTutor Pro',
-                home: 'Início', practice: 'Prática', stats: 'Estatísticas',
-                solve: 'Resolver um Problema', solveDesc: 'Carregue um problema de matemática ou digite um e obtenha soluções passo a passo',
-                tutor: 'Pergunte ao Tutor', tutorDesc: 'Converse com seu tutor de IA sobre conceitos e estratégias matemáticas',
-                practiceMode: 'Modo Prática', practiceDesc: 'Resolva problemas no seu nível e acompanhe seu progresso',
-                myProgress: 'Meu Progresso', progressDesc: 'Veja suas estatísticas, áreas fracas e melhoria ao longo do tempo',
-                describeProblem: 'Descreva seu problema:',
-                solveProblem: 'Resolver Problema ✓',
-                typeProblem: '📝 Digitar', uploadPhoto: '📸 Carregar Foto',
-                play: 'Reproduzir Explicação', analyze: 'Analisar Erros',
-                speed: 'Velocidade:', back: 'Voltar',
-                yourProblem: 'Seu Problema:',
-                finalAnswer: 'Resposta Final',
-                stillQuestions: 'Ainda Tem Perguntas?',
-                whyMethod: 'Por que este método?', anotherMethod: 'Outro método?',
-                keyConcepts: 'Conceitos-chave?', realWorldUse: 'Uso no mundo real?',
-                talkTutor: 'Fale com Seu Tutor de IA',
-                askQuestion: 'Faça uma pergunta...',
-                send: 'Enviar',
-                quickQuestions: 'Perguntas Rápidas:',
-                whatFractions: 'O que são frações?', solveEquations: 'Resolver equações?',
-                orderOps: 'Ordem das operações?', areaPeri: 'Área e Perímetro?',
-                percentages: 'Percentuais?', whatVariable: 'O que é uma variável?',
-                chooseDifficulty: 'Escolha Seu Nível:',
-                easy: 'Fácil', medium: 'Médio', hard: 'Difícil',
-                chooseTopic: 'Escolha um Tópico:',
-                basicMath: 'Matemática Básica', fractions: 'Frações',
-                algebra: 'Álgebra', geometry: 'Geometria', wordProblems: 'Problemas de Palavras',
-                yourStats: 'Suas Estatísticas:',
-                problemsSolved: 'Problemas Resolvidos',
-                topicsMastered: 'Tópicos Dominados',
-                currentAccuracy: 'Precisão Atual',
-                learningStreak: 'Sequência de Aprendizado',
-                overallStats: 'Estatísticas Gerais:',
-                weakestTopics: 'Tópicos Mais Fracos:',
-                exportProgress: 'Exportar Progresso',
-                clearStats: 'Limpar Estatísticas',
-                correct: 'Correto',
-                accuracy: 'Precisão',
-                streak: 'Sequência'
-            },
-            de: {
-                appTitle: 'MathTutor Pro',
-                home: 'Startseite', practice: 'Übung', stats: 'Statistiken',
-                solve: 'Ein Problem Lösen', solveDesc: 'Laden Sie ein Matheproblem hoch oder geben Sie eines ein und erhalten Sie Schritt-für-Schritt-Lösungen',
-                tutor: 'Fragen Sie den Tutor', tutorDesc: 'Chatten Sie mit Ihrem KI-Tutor über mathematische Konzepte und Strategien',
-                practiceMode: 'Übungsmodus', practiceDesc: 'Lösen Sie Probleme auf Ihrem Niveau und verfolgen Sie Ihre Fortschritte',
-                myProgress: 'Mein Fortschritt', progressDesc: 'Sehen Sie Ihre Statistiken, schwachen Stellen und Verbesserungen',
-                describeProblem: 'Beschreiben Sie Ihr Problem:',
-                solveProblem: 'Problem Lösen ✓',
-                typeProblem: '📝 Eingeben', uploadPhoto: '📸 Foto hochladen',
-                play: 'Erklärung Abspielen', analyze: 'Fehler Analysieren',
-                speed: 'Geschwindigkeit:', back: 'Zurück',
-                yourProblem: 'Ihr Problem:',
-                finalAnswer: 'Endgültige Antwort',
-                stillQuestions: 'Noch Fragen?',
-                whyMethod: 'Warum diese Methode?', anotherMethod: 'Eine andere Methode?',
-                keyConcepts: 'Schlüsselkonzepte?', realWorldUse: 'Praktische Anwendung?',
-                talkTutor: 'Mit Ihrem KI-Tutor Sprechen',
-                askQuestion: 'Stellen Sie eine Frage...',
-                send: 'Absenden',
-                quickQuestions: 'Schnelle Fragen:',
-                whatFractions: 'Was sind Brüche?', solveEquations: 'Gleichungen lösen?',
-                orderOps: 'Reihenfolge der Operationen?', areaPeri: 'Fläche und Umfang?',
-                percentages: 'Prozentsätze?', whatVariable: 'Was ist eine Variable?',
-                chooseDifficulty: 'Wählen Sie Ihr Niveau:',
-                easy: 'Einfach', medium: 'Mittel', hard: 'Schwer',
-                chooseTopic: 'Wählen Sie ein Thema:',
-                basicMath: 'Grundlegende Mathematik', fractions: 'Brüche',
-                algebra: 'Algebra', geometry: 'Geometrie', wordProblems: 'Textaufgaben',
-                yourStats: 'Ihre Statistiken:',
-                problemsSolved: 'Gelöste Probleme',
-                topicsMastered: 'Beherrschte Themen',
-                currentAccuracy: 'Aktuelle Genauigkeit',
-                learningStreak: 'Lernsträhne',
-                overallStats: 'Gesamtstatistiken:',
-                weakestTopics: 'Schwächste Themen:',
-                exportProgress: 'Fortschritt Exportieren',
-                clearStats: 'Statistiken Löschen',
-                correct: 'Korrekt',
-                accuracy: 'Genauigkeit',
-                streak: 'Strähne'
-            },
-            ja: {
-                appTitle: 'MathTutor Pro',
-                home: 'ホーム', practice: '練習', stats: '統計',
-                solve: '問題を解く', solveDesc: '数学の問題をアップロードまたは入力して、ステップバイステップの解決策を取得',
-                tutor: 'チューターに質問', tutorDesc: '数学的概念と戦略についてAIチューターとチャット',
-                practiceMode: '練習モード', practiceDesc: 'あなたのレベルで問題を解き、あなたの進捗を追跡',
-                myProgress: 'マイ進捗', progressDesc: 'あなたの統計、弱点、改善を見る',
-                describeProblem: '問題を説明してください:',
-                solveProblem: '問題を解く ✓',
-                typeProblem: '📝 入力', uploadPhoto: '📸 写真をアップロード',
-                play: '説明を再生', analyze: 'エラーを分析',
-                speed: 'スピード:', back: '戻る',
-                yourProblem: 'あなたの問題:',
-                finalAnswer: '最終的な答え',
-                stillQuestions: 'まだ質問がありますか?',
-                whyMethod: 'なぜこの方法?', anotherMethod: '別の方法?',
-                keyConcepts: '重要な概念?', realWorldUse: '実生活での使用?',
-                talkTutor: 'AIチューターと話す',
-                askQuestion: '質問してください...',
-                send: '送信',
-                quickQuestions: 'クイック質問:',
-                whatFractions: '分数とは?', solveEquations: '方程式を解く?',
-                orderOps: '演算順序?', areaPeri: '面積と周囲?',
-                percentages: 'パーセンテージ?', whatVariable: '変数とは?',
-                chooseDifficulty: 'あなたのレベルを選択:',
-                easy: '簡単', medium: '中級', hard: '難しい',
-                chooseTopic: 'トピックを選択:',
-                basicMath: '基本数学', fractions: '分数',
-                algebra: '代数', geometry: '幾何学', wordProblems: '文章題',
-                yourStats: 'あなたの統計:',
-                problemsSolved: '解いた問題',
-                topicsMastered: '習得したトピック',
-                currentAccuracy: '現在の精度',
-                learningStreak: '学習ストリーク',
-                overallStats: '全体統計:',
-                weakestTopics: '最も弱いトピック:',
-                exportProgress: '進捗をエクスポート',
-                clearStats: '統計をクリア',
-                correct: '正解',
-                accuracy: '精度',
-                streak: 'ストリーク'
-            },
-            hi: {
-                appTitle: 'MathTutor Pro',
-                home: 'होम', practice: 'अभ्यास', stats: 'आंकड़े',
-                solve: 'एक समस्या हल करें', solveDesc: 'एक गणित समस्या अपलोड करें या दर्ज करें और चरण-दर-चरण समाधान प्राप्त करें',
-                tutor: 'ट्यूटर से पूछें', tutorDesc: 'गणितीय अवधारणाओं और रणनीतियों के बारे में अपने AI ट्यूटर के साथ चैट करें',
-                practiceMode: 'अभ्यास मोड', practiceDesc: 'अपने स्तर पर समस्याओं को हल करें और अपनी प्रगति को ट्रैक करें',
-                myProgress: 'मेरी प्रगति', progressDesc: 'अपने आँकड़े, कमजोर क्षेत्र और सुधार देखें',
-                describeProblem: 'अपनी समस्या का वर्णन करें:',
-                solveProblem: 'समस्या हल करें ✓',
-                typeProblem: '📝 दर्ज करें', uploadPhoto: '📸 फ़ोटो अपलोड करें',
-                play: 'व्याख्या चलाएँ', analyze: 'त्रुटियों का विश्लेषण करें',
-                speed: 'गति:', back: 'पीछे',
-                yourProblem: 'आपकी समस्या:',
-                finalAnswer: 'अंतिम उत्तर',
-                stillQuestions: 'अभी भी सवाल हैं?',
-                whyMethod: 'यह विधि क्यों?', anotherMethod: 'दूसरी विधि?',
-                keyConcepts: 'मुख्य अवधारणाएँ?', realWorldUse: 'वास्तविक दुनिया में उपयोग?',
-                talkTutor: 'अपने AI ट्यूटर से बात करें',
-                askQuestion: 'एक प्रश्न पूछें...',
-                send: 'भेजें',
-                quickQuestions: 'त्वरित प्रश्न:',
-                whatFractions: 'भिन्न क्या हैं?', solveEquations: 'समीकरण हल करें?',
-                orderOps: 'संचालन का क्रम?', areaPeri: 'क्षेत्र और परिधि?',
-                percentages: 'प्रतिशत?', whatVariable: 'चर क्या है?',
-                chooseDifficulty: 'अपना स्तर चुनें:',
-                easy: 'आसान', medium: 'मध्यम', hard: 'कठिन',
-                chooseTopic: 'एक विषय चुनें:',
-                basicMath: 'बुनियादी गणित', fractions: 'भिन्न',
-                algebra: 'बीजगणित', geometry: 'ज्यामिति', wordProblems: 'शब्द समस्याएं',
-                yourStats: 'आपके आँकड़े:',
-                problemsSolved: 'हल की गई समस्याएं',
-                topicsMastered: 'महारत प्राप्त विषय',
-                currentAccuracy: 'वर्तमान सटीकता',
-                learningStreak: 'सीखने की धारा',
-                overallStats: 'समग्र आँकड़े:',
-                weakestTopics: 'सबसे कमजोर विषय:',
-                exportProgress: 'प्रगति निर्यात करें',
-                clearStats: 'आंकड़े साफ़ करें',
-                correct: 'सही',
-                accuracy: 'सटीकता',
-                streak: 'धारा'
-            },
-            zh: {
-                appTitle: 'MathTutor Pro',
-                home: '首页', practice: '练习', stats: '统计',
-                solve: '解决问题', solveDesc: '上传一个数学问题或输入一个问题，获得分步解决方案',
-                tutor: '问导师', tutorDesc: '与AI导师聊天讨论数学概念和策略',
-                practiceMode: '练习模式', practiceDesc: '以您的水平解决问题并跟踪您的进度',
-                myProgress: '我的进度', progressDesc: '查看您的统计、弱点和改进',
-                describeProblem: '描述您的问题：',
-                solveProblem: '解决问题 ✓',
-                typeProblem: '📝 输入', uploadPhoto: '📸 上传照片',
-                play: '播放说明', analyze: '分析错误',
-                speed: '速度：', back: '返回',
-                yourProblem: '您的问题：',
-                finalAnswer: '最终答案',
-                stillQuestions: '还有问题吗？',
-                whyMethod: '为什么这种方法？', anotherMethod: '另一种方法？',
-                keyConcepts: '关键概念？', realWorldUse: '现实生活应用？',
-                talkTutor: '与AI导师交谈',
-                askQuestion: '提一个问题...',
-                send: '发送',
-                quickQuestions: '快速问题：',
-                whatFractions: '什么是分数？', solveEquations: '解方程？',
-                orderOps: '运算顺序？', areaPeri: '面积和周长？',
-                percentages: '百分比？', whatVariable: '什么是变量？',
-                chooseDifficulty: '选择您的级别：',
-                easy: '简单', medium: '中等', hard: '困难',
-                chooseTopic: '选择一个主题：',
-                basicMath: '基础数学', fractions: '分数',
-                algebra: '代数', geometry: '几何', wordProblems: '字数问题',
-                yourStats: '您的统计：',
-                problemsSolved: '解决的问题',
-                topicsMastered: '掌握的主题',
-                currentAccuracy: '当前准确度',
-                learningStreak: '学习连胜',
-                overallStats: '整体统计：',
-                weakestTopics: '最弱的主题：',
-                exportProgress: '导出进度',
-                clearStats: '清除统计',
-                correct: '正确',
-                accuracy: '准确度',
-                streak: '连胜'
-            },
-            ar: {
-                appTitle: 'MathTutor Pro',
-                home: 'الرئيسية', practice: 'ممارسة', stats: 'إحصائيات',
-                solve: 'حل مشكلة', solveDesc: 'قم بتحميل مشكلة حسابية أو اكتبها واحصل على حلول خطوة بخطوة',
-                tutor: 'اسأل المعلم', tutorDesc: 'الدردشة مع معلمك AI حول المفاهيم والاستراتيجيات الرياضية',
-                practiceMode: 'وضع الممارسة', practiceDesc: 'حل المشاكل على مستواك وتابع تقدمك',
-                myProgress: 'تقدمي', progressDesc: 'اعرض إحصائياتك والمناطق الضعيفة والتحسن',
-                describeProblem: 'صف مشكلتك:',
-                solveProblem: 'حل المشكلة ✓',
-                typeProblem: '📝 اكتب', uploadPhoto: '📸 تحميل الصورة',
-                play: 'تشغيل الشرح', analyze: 'تحليل الأخطاء',
-                speed: 'السرعة:', back: 'رجوع',
-                yourProblem: 'مشكلتك:',
-                finalAnswer: 'الإجابة النهائية',
-                stillQuestions: 'هل لديك أسئلة أخرى؟',
-                whyMethod: 'لماذا هذه الطريقة؟', anotherMethod: 'طريقة أخرى؟',
-                keyConcepts: 'المفاهيم الأساسية؟', realWorldUse: 'الاستخدام في الحياة الواقعية؟',
-                talkTutor: 'تحدث مع معلمك AI',
-                askQuestion: 'اسأل سؤالا...',
-                send: 'إرسال',
-                quickQuestions: 'أسئلة سريعة:',
-                whatFractions: 'ما هي الكسور؟', solveEquations: 'حل المعادلات؟',
-                orderOps: 'ترتيب العمليات؟', areaPeri: 'المساحة والمحيط؟',
-                percentages: 'النسب المئوية؟', whatVariable: 'ما هو المتغير؟',
-                chooseDifficulty: 'اختر مستواك:',
-                easy: 'سهل', medium: 'متوسط', hard: 'صعب',
-                chooseTopic: 'اختر موضوعا:',
-                basicMath: 'الرياضيات الأساسية', fractions: 'الكسور',
-                algebra: 'الجبر', geometry: 'الهندسة', wordProblems: 'مشاكل الكلمات',
-                yourStats: 'إحصائياتك:',
-                problemsSolved: 'المشاكل التي تم حلها',
-                topicsMastered: 'المواضيع المتقنة',
-                currentAccuracy: 'الدقة الحالية',
-                learningStreak: 'سلسلة التعلم',
-                overallStats: 'الإحصائيات الإجمالية:',
-                weakestTopics: 'أضعف المواضيع:',
-                exportProgress: 'تصدير التقدم',
-                clearStats: 'مسح الإحصائيات',
-                correct: 'صحيح',
-                accuracy: 'الدقة',
-                streak: 'سلسلة'
-            },
-            ru: {
-                appTitle: 'MathTutor Pro',
-                home: 'Главная', practice: 'Практика', stats: 'Статистика',
-                solve: 'Решить задачу', solveDesc: 'Загрузите математическую задачу или введите её и получите пошаговое решение',
-                tutor: 'Спросите репетитора', tutorDesc: 'Обсудите математические концепции и стратегии с вашим AI репетитором',
-                practiceMode: 'Режим практики', practiceDesc: 'Решайте задачи на вашем уровне и отслеживайте свой прогресс',
-                myProgress: 'Мой прогресс', progressDesc: 'Просмотрите статистику, слабые стороны и прогресс',
-                describeProblem: 'Опишите вашу задачу:',
-                solveProblem: 'Решить ✓',
-                typeProblem: '📝 Введите', uploadPhoto: '📸 Загрузить фото',
-                play: 'Воспроизвести объяснение', analyze: 'Анализировать ошибки',
-                speed: 'Скорость:', back: 'Назад',
-                yourProblem: 'Ваша задача:',
-                finalAnswer: 'Окончательный ответ',
-                stillQuestions: 'Ещё вопросы?',
-                whyMethod: 'Почему этот метод?', anotherMethod: 'Другой метод?',
-                keyConcepts: 'Ключевые концепции?', realWorldUse: 'Применение в реальной жизни?',
-                talkTutor: 'Поговорите с вашим AI репетитором',
-                askQuestion: 'Задайте вопрос...',
-                send: 'Отправить',
-                quickQuestions: 'Быстрые вопросы:',
-                whatFractions: 'Что такое дроби?', solveEquations: 'Решить уравнения?',
-                orderOps: 'Порядок операций?', areaPeri: 'Площадь и периметр?',
-                percentages: 'Проценты?', whatVariable: 'Что такое переменная?',
-                chooseDifficulty: 'Выберите свой уровень:',
-                easy: 'Легко', medium: 'Среднее', hard: 'Сложно',
-                chooseTopic: 'Выберите тему:',
-                basicMath: 'Базовая математика', fractions: 'Дроби',
-                algebra: 'Алгебра', geometry: 'Геометрия', wordProblems: 'Текстовые задачи',
-                yourStats: 'Ваша статистика:',
-                problemsSolved: 'Решённые задачи',
-                topicsMastered: 'Освоенные темы',
-                currentAccuracy: 'Текущая точность',
-                learningStreak: 'Серия обучения',
-                overallStats: 'Общая статистика:',
-                weakestTopics: 'Наиболее слабые темы:',
-                exportProgress: 'Экспортировать прогресс',
-                clearStats: 'Очистить статистику',
-                correct: 'Правильно',
-                accuracy: 'Точность',
-                streak: 'Серия'
-            }
-        };
-
-        let currentLanguage = 'en';
-
-        function t(key) {
-            return translations[currentLanguage]?.[key] || translations.en[key] || key;
+            body: JSON.stringify({
+                model: store.model,
+                max_tokens: 1024,
+                system,
+                messages,
+                stream: true
+            })
+        });
+        if (!res.ok) {
+            const t = await res.text().catch(()=> '');
+            throw new Error(res.status === 401 ? 'BAD_KEY' : ('HTTP_'+res.status+' '+t.slice(0,120)));
         }
-
-        function changeLanguage(lang) {
-            currentLanguage = lang;
-            localStorage.setItem('mathtutorLanguage', lang);
-            location.reload();
-        }
-
-        // App state
-        const state = {
-            currentProblem: null,
-            currentDifficulty: 'easy',
-            stats: {
-                problemsSolved: 0,
-                accuracy: 0,
-                streak: 0,
-                topicStats: {}
-            },
-            chatHistory: [],
-            voiceSpeed: 1
-        };
-
-        // Initialize
-        function init() {
-            // Load saved language
-            const savedLang = localStorage.getItem('mathtutorLanguage') || 'en';
-            currentLanguage = savedLang;
-            document.getElementById('languageSelect').value = savedLang;
-
-            loadStats();
-        }
-
-        // SCREEN MANAGEMENT
-        function showScreen(screenName) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const screen = document.getElementById(screenName + 'Screen');
-            if (screen) {
-                screen.classList.add('active');
-            }
-        }
-
-        function switchInputTab(tab, evt) {
-            document.getElementById('typeTab').style.display = tab === 'type' ? 'block' : 'none';
-            document.getElementById('photoTab').style.display = tab === 'photo' ? 'block' : 'none';
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            const trigger = (evt && evt.target) ||
-                document.querySelector(`.tab-btn[data-tab="${tab}"]`) ||
-                document.querySelectorAll('.tab-btn')[tab === 'type' ? 0 : 1];
-            if (trigger) trigger.classList.add('active');
-        }
-
-        // PROBLEM SOLVING
-        function solveProblem() {
-            const problem = document.getElementById('problemInput').value.trim();
-            if (!problem) {
-                showToast('Please enter a math problem', 'error');
-                return;
-            }
-
-            state.currentProblem = problem;
-            displaySolution(problem);
-        }
-
-        // ---- Real math engine (no API needed for common cases) ----
-
-        // Safely evaluate an arithmetic expression: digits, + - * / ( ) . % and ^
-        function safeEval(expr) {
-            const cleaned = expr
-                .replace(/×/g, '*').replace(/÷/g, '/')
-                .replace(/\^/g, '**')
-                .replace(/[^0-9+\-*/().%\s*]/g, '');
-            if (!/[0-9]/.test(cleaned)) return null;
-            try {
-                // eslint-disable-next-line no-new-func
-                const val = Function('"use strict";return (' + cleaned + ')')();
-                return (typeof val === 'number' && isFinite(val)) ? val : null;
-            } catch { return null; }
-        }
-
-        // Solve a linear equation in x, e.g. "2x + 5 = 13"
-        function solveLinear(problem) {
-            const m = problem.replace(/\s+/g, '').match(/^(.+)=(.+)$/);
-            if (!m || !/x/i.test(problem)) return null;
-            // Build f(x) = LHS - RHS, sample two points to get slope/intercept (linear)
-            const f = (x) => {
-                const sub = (side) => side
-                    .replace(/([0-9.])x/gi, '$1*x')
-                    .replace(/x/gi, '(' + x + ')')
-                    .replace(/×/g, '*').replace(/÷/g, '/');
-                const lhs = safeEval(sub(m[1]));
-                const rhs = safeEval(sub(m[2]));
-                if (lhs === null || rhs === null) return null;
-                return lhs - rhs;
-            };
-            const f0 = f(0), f1 = f(1);
-            if (f0 === null || f1 === null) return null;
-            const slope = f1 - f0;
-            if (slope === 0) return null;
-            const x = -f0 / slope;
-            return Math.round(x * 1e6) / 1e6;
-        }
-
-        // "25% of 80"
-        function solvePercent(problem) {
-            const m = problem.replace(/\s+/g, '').match(/([0-9.]+)%of([0-9.]+)/i);
-            if (!m) return null;
-            return (parseFloat(m[1]) / 100) * parseFloat(m[2]);
-        }
-
-        function buildSteps(problem) {
-            // 1) Percentage
-            const pct = solvePercent(problem);
-            if (pct !== null) {
-                const m = problem.replace(/\s+/g, '').match(/([0-9.]+)%of([0-9.]+)/i);
-                return {
-                    answer: String(pct),
-                    steps: [
-                        { num: 1, title: 'Understand "percent of"', content: `"${m[1]}% of ${m[2]}" means take ${m[1]} out of every 100 parts of ${m[2]}.`, explanation: 'Percent just means "out of 100".' },
-                        { num: 2, title: 'Turn the percent into a decimal', content: `${m[1]}% = ${m[1]} ÷ 100 = ${parseFloat(m[1]) / 100}`, explanation: 'Move the decimal point two places left.' },
-                        { num: 3, title: 'Multiply', content: `${parseFloat(m[1]) / 100} × ${m[2]} = ${pct}`, explanation: '"of" in maths means multiply.' },
-                        { num: 4, title: 'Check', content: `Does ${pct} look like about ${m[1]}% of ${m[2]}? Yes.`, explanation: 'A quick sense-check builds confidence.' }
-                    ]
-                };
-            }
-
-            // 2) Linear equation
-            const xVal = solveLinear(problem);
-            if (xVal !== null) {
-                return {
-                    answer: 'x = ' + xVal,
-                    steps: [
-                        { num: 1, title: 'Read the equation', content: `You need to find the value of x that makes both sides equal: ${problem}`, explanation: 'x is the unknown number we are hunting for.' },
-                        { num: 2, title: 'Get x by itself', content: 'Do the same operation to BOTH sides to keep the equation balanced — move plain numbers away from x first, then divide.', explanation: 'Whatever you do to one side, do to the other.' },
-                        { num: 3, title: 'Solve', content: `Working it through gives x = ${xVal}.`, explanation: 'Each step keeps the two sides equal.' },
-                        { num: 4, title: 'Check by substituting', content: `Put x = ${xVal} back into the original equation — both sides match.`, explanation: 'Substituting back proves the answer is right.' }
-                    ]
-                };
-            }
-
-            // 3) Plain arithmetic
-            const val = safeEval(problem);
-            if (val !== null) {
-                return {
-                    answer: String(Math.round(val * 1e6) / 1e6),
-                    steps: [
-                        { num: 1, title: 'Read the expression', content: `Calculate: ${problem}`, explanation: 'Identify the numbers and the operations.' },
-                        { num: 2, title: 'Order of operations', content: 'Work through Brackets, then ×/÷, then +/− (BODMAS).', explanation: 'Doing operations in the right order matters.' },
-                        { num: 3, title: 'Result', content: `${problem} = ${Math.round(val * 1e6) / 1e6}`, explanation: 'Take it one operation at a time.' },
-                        { num: 4, title: 'Check', content: 'Estimate roughly in your head — does the answer feel about right?', explanation: 'Estimating catches big mistakes.' }
-                    ]
-                };
-            }
-
-            return null; // word problem / advanced — needs the AI tutor
-        }
-
-        function displaySolution(problem) {
-            document.getElementById('problemDisplay').textContent = problem;
-
-            const solved = buildSteps(problem);
-
-            let steps, answer;
-            if (solved) {
-                steps = solved.steps;
-                answer = solved.answer;
-            } else {
-                // Couldn't solve mechanically — be honest and route to the tutor
-                steps = [
-                    { num: 1, title: 'This one needs reasoning', content: 'I can instantly solve arithmetic (e.g. 12 × 7 + 3), percentages (e.g. 25% of 80) and simple equations (e.g. 2x + 5 = 13).', explanation: 'These run fully on your device — no internet needed.' },
-                    { num: 2, title: 'Word problems & advanced topics', content: 'For word problems, geometry proofs or calculus, tap "Ask the Tutor" — and connect an AI key in Settings to unlock full step-by-step reasoning.', explanation: 'Honest about what works today vs. what needs the AI brain.' }
-                ];
-                answer = 'Try the AI Tutor for this one';
-            }
-
-            const stepsHTML = steps.map(step => `
-                <div class="step">
-                    <div style="margin-bottom: 1rem;">
-                        <span class="step-number">${step.num}</span>
-                        <strong style="color: var(--color-text); font-size: 1.05rem;">${step.title}</strong>
-                    </div>
-                    <div class="step-content">
-                        ${step.content}
-                        <div class="step-explanation">💡 ${step.explanation}</div>
-                    </div>
-                </div>
-            `).join('');
-
-            document.getElementById('stepsContainer').innerHTML = stepsHTML;
-            document.getElementById('finalAnswer').textContent = answer;
-            document.getElementById('solutionDisplay').style.display = 'block';
-
-            updateStats();
-            if (solved) {
-                showToast('✓ Solved! Tap "Play Explanation" to hear it.', 'success');
-            } else {
-                showToast('This needs the AI Tutor — arithmetic, % and simple equations solve instantly here.', 'success');
-            }
-        }
-
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            if (typeof Tesseract === 'undefined') {
-                showToast('OCR engine still loading — check your connection and try again.', 'error');
-                return;
-            }
-
-            showToast('📸 Reading the problem from your photo…', 'success');
-            const dataUrl = await new Promise((resolve) => {
-                const r = new FileReader();
-                r.onload = (e) => resolve(e.target.result);
-                r.readAsDataURL(file);
-            });
-
-            try {
-                const result = await Tesseract.recognize(dataUrl, 'eng', {
-                    logger: (m) => {
-                        if (m.status === 'recognizing text') {
-                            showToast('Reading… ' + Math.round(m.progress * 100) + '%', 'success');
-                        }
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = '', full = '';
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += dec.decode(value, { stream: true });
+            const parts = buf.split('\n\n'); buf = parts.pop();
+            for (const part of parts) {
+                const line = part.split('\n').find(l => l.startsWith('data:'));
+                if (!line) continue;
+                const data = line.slice(5).trim();
+                if (data === '[DONE]') continue;
+                try {
+                    const ev = JSON.parse(data);
+                    if (ev.type === 'content_block_delta' && ev.delta?.text) {
+                        full += ev.delta.text;
+                        onToken && onToken(ev.delta.text, full);
                     }
+                } catch {}
+            }
+        }
+        return full;
+    }
+
+    const TUTOR_SYSTEM = () => `You are a warm, patient maths tutor for a learner${store.name ? ' named ' + store.name : ''}. Many of your students are dyslexic, have ADHD, or have struggled with maths and lost confidence. Your job is to rebuild it.
+
+Rules:
+- Talk like a kind human friend, never like a textbook or a robot. Short sentences. Warm, encouraging, real.
+- Explain step by step. One idea at a time. Check understanding gently.
+- Never just give the answer — show the thinking so it sticks.
+- Celebrate effort. If they're stuck, it's never their fault — find another way to explain.
+- Keep replies fairly short and easy to read aloud. Avoid heavy notation; write maths in plain words where you can.`;
+
+    /* ============================================================
+       SOLVE
+    ============================================================ */
+    function setMode(m){
+        currentMode = m;
+        document.querySelectorAll('.mode').forEach(el => el.classList.toggle('on', el.dataset.mode===m));
+        document.querySelectorAll('.pane').forEach(el => el.classList.remove('on'));
+        document.getElementById('pane-'+m).classList.add('on');
+    }
+
+    async function handlePhoto(e){
+        const file = e.target.files[0]; if (!file) return;
+        const box = document.getElementById('ocrBox'); box.style.display='block';
+        const r = new FileReader();
+        r.onload = async ev => {
+            try {
+                const out = await Tesseract.recognize(ev.target.result, 'eng', {
+                    logger: m => { if (m.status==='recognizing text'){ const p=Math.round(m.progress*100); document.getElementById('ocrPct').textContent=p; document.getElementById('ocrFill').style.width=p+'%'; } }
                 });
-                const text = (result.data.text || '').trim().split('\n')[0]; // first line = the problem
-                if (!text) {
-                    showToast('Couldn\'t read the problem. Try better lighting.', 'error');
-                    return;
-                }
-                // Drop it into the type box and solve it for real
-                switchInputTab('type');
-                document.getElementById('problemInput').value = text;
-                showToast('✓ Read: "' + text + '"', 'success');
-                solveProblem();
-            } catch (err) {
-                showToast('Scan failed: ' + (err.message || 'try again'), 'error');
-            }
-        }
-
-        // Real text-to-speech via the browser's built-in Web Speech API (free, offline, no key)
-        const speechLangMap = {
-            en: 'en-US', es: 'es-ES', fr: 'fr-FR', pt: 'pt-BR', de: 'de-DE',
-            ja: 'ja-JP', hi: 'hi-IN', zh: 'zh-CN', ar: 'ar-SA', ru: 'ru-RU'
+                document.getElementById('problemInput').value = out.data.text.trim();
+                setMode('type'); box.style.display='none';
+                toast('Got it — tap “Show me how”');
+            } catch { box.style.display='none'; toast('Hmm, couldn’t read that. Try again?'); }
         };
+        r.readAsDataURL(file);
+    }
 
-        function pickVoice(locale) {
-            const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-            if (!voices.length) return null;
-            return voices.find(v => v.lang === locale)
-                || voices.find(v => v.lang && v.lang.startsWith(locale.split('-')[0]))
-                || voices[0];
+    // Voice input
+    let recog = null, listening = false;
+    function toggleMic(){
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) { toast('Voice input isn’t supported on this browser'); return; }
+        if (listening) { recog && recog.stop(); return; }
+        recog = new SR(); recog.lang='en-US'; recog.interimResults=false;
+        recog.onstart = () => { listening=true; document.getElementById('micBtn').classList.add('live'); document.getElementById('micHint').textContent='Listening… say it now'; };
+        recog.onresult = ev => { const t = ev.results[0][0].transcript; document.getElementById('problemInput').value=t; setMode('type'); toast('Heard: '+t); };
+        recog.onerror = () => toast('Didn’t catch that — try again');
+        recog.onend = () => { listening=false; document.getElementById('micBtn').classList.remove('live'); document.getElementById('micHint').textContent='Tap and say the problem'; };
+        recog.start();
+    }
+
+    async function solve(){
+        const problem = document.getElementById('problemInput').value.trim();
+        if (!problem) { toast('Type, snap, or say a problem first'); return; }
+        const box = document.getElementById('solution');
+        const btn = document.getElementById('solveBtn');
+        bumpStreak();
+
+        if (!store.key) { box.innerHTML = offlineSteps(problem); speakAll(box); return; }
+
+        btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Thinking…';
+        box.innerHTML = `<div class="step"><div class="step-num">Working it out</div><div class="step-body" id="liveStep"><span class="typing"><i></i><i></i><i></i></span></div></div>`;
+        const live = document.getElementById('liveStep');
+        try {
+            const text = await askClaude(
+                [{ role:'user', content:`Solve this and teach me, step by step:\n\n${problem}\n\nUse short numbered steps. End with the final answer on its own line starting with "Answer:".` }],
+                TUTOR_SYSTEM(),
+                { onToken: (_, full) => { live.innerHTML = fmt(full); box.scrollIntoView({behavior:'smooth', block:'nearest'}); } }
+            );
+            box.innerHTML = renderSteps(text);
+            if (store.voice) speakAll(box);
+        } catch(err) {
+            box.innerHTML = errCard(err);
+        } finally { btn.disabled=false; btn.innerHTML='✨ Show me how'; }
+    }
+
+    // turn "Answer: x" + numbered steps into nice cards
+    function renderSteps(text){
+        const ansMatch = text.match(/answer\s*[:=]\s*(.+)$/im);
+        const answer = ansMatch ? ansMatch[1].trim() : null;
+        let body = answer ? text.slice(0, ansMatch.index) : text;
+        const lines = body.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+        let html = '';
+        let n = 0;
+        for (const line of lines){
+            const m = line.match(/^(\d+)[\.\)]\s*(.*)$/);
+            if (m){ n++; html += `<div class="step"><div class="step-num">Step ${n}</div><div class="step-body">${fmt(m[2])}</div></div>`; }
+            else html += `<div class="step" style="border-left-color:var(--tutor)"><div class="step-body">${fmt(line)}</div></div>`;
         }
+        if (answer) html += `<div class="answer">${fmt(answer)}</div>`;
+        return html;
+    }
+    function fmt(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`(.+?)`/g,'<code>$1</code>'); }
 
-        // Make math notation speakable: x² -> "x squared", etc.
-        function speakableMath(text) {
-            return text
-                .replace(/\^2/g, ' squared ')
-                .replace(/\^3/g, ' cubed ')
-                .replace(/\*/g, ' times ')
-                .replace(/\//g, ' divided by ')
-                .replace(/=/g, ' equals ')
-                .replace(/\+/g, ' plus ')
-                .replace(/√/g, ' square root of ')
-                .replace(/π/g, ' pi ');
-        }
+    // offline fallback when no key
+    function offlineSteps(problem){
+        return `<div class="step"><div class="step-num">Step 1</div><div class="step-body">Let's look at <code>${fmt(problem)}</code> carefully.</div></div>
+        <div class="step"><div class="step-num">Step 2</div><div class="step-body">Add your tutor key in Settings and I'll walk you through this one properly, in plain words — and read it out loud.</div></div>
+        <div class="answer">Add a key to unlock full step-by-step</div>`;
+    }
+    function errCard(err){
+        const msg = err.message==='BAD_KEY' ? 'That key didn’t work — double-check it in Settings.'
+                 : err.message==='NO_KEY' ? 'Add your tutor key in Settings to switch on the AI tutor.'
+                 : 'Something hiccuped. Check your connection and try again.';
+        return `<div class="step" style="border-left-color:var(--err)"><div class="step-num">Hold on</div><div class="step-body">${msg}</div></div>`;
+    }
 
-        function speak(text) {
-            if (!('speechSynthesis' in window)) {
-                showToast('Voice not supported in this browser. Try Chrome or Safari.', 'error');
-                return;
-            }
-            const synth = window.speechSynthesis;
-            synth.cancel();
-            const utter = new SpeechSynthesisUtterance(speakableMath(text));
-            const locale = speechLangMap[currentLanguage] || 'en-US';
-            const voice = pickVoice(locale);
-            if (voice) utter.voice = voice;
-            utter.lang = locale;
-            utter.rate = parseFloat(state.voiceSpeed) || 1;
-            synth.speak(utter);
-            return utter;
-        }
+    /* ============================================================
+       TUTOR CHAT
+    ============================================================ */
+    function addBubble(who, html){
+        const c = document.getElementById('chat');
+        const b = document.createElement('div'); b.className='bubble '+who; b.innerHTML=html;
+        c.appendChild(b); b.scrollIntoView({behavior:'smooth', block:'nearest'});
+        return b;
+    }
+    async function sendChat(){
+        const inp = document.getElementById('chatInput');
+        const msg = inp.value.trim(); if (!msg) return;
+        inp.value='';
+        addBubble('me', fmt(msg));
+        chatHistory.push({ role:'user', content: msg });
+        bumpStreak();
 
-        function toggleVoicePlayback() {
-            const btn = document.getElementById('playBtn');
-            const synth = window.speechSynthesis;
+        if (!store.key){ addBubble('ai', 'Add your tutor key in <b>Settings</b> and I can really talk this through with you 💬'); return; }
 
-            if (synth && synth.speaking) {
-                synth.cancel();
-                btn.textContent = '▶️ Play Explanation';
-                return;
-            }
+        const bubble = addBubble('ai', '<span class="typing"><i></i><i></i><i></i></span>');
+        try {
+            const reply = await askClaude(chatHistory.slice(-10), TUTOR_SYSTEM(),
+                { onToken: (_, full) => { bubble.innerHTML = fmt(full); bubble.scrollIntoView({behavior:'smooth', block:'nearest'}); } });
+            bubble.innerHTML = fmt(reply);
+            chatHistory.push({ role:'assistant', content: reply });
+            if (store.voice) speak(reply);
+        } catch(err){ bubble.innerHTML = err.message==='BAD_KEY' ? 'That key didn’t work — check Settings.' : 'I hit a snag. Try once more?'; }
+    }
 
-            // Read the whole solution aloud: each step + final answer
-            const steps = Array.from(document.querySelectorAll('#stepsContainer .step-content'))
-                .map(el => el.textContent.trim());
-            const answer = document.getElementById('finalAnswer').textContent;
-            const fullText = steps.join('. ') + '. The final answer is: ' + answer;
+    /* ============================================================
+       PRACTICE
+    ============================================================ */
+    const BANK = [
+        { q:'2x + 5 = 13', a:'4', t:'solve for x' },
+        { q:'3x − 7 = 8', a:'5', t:'solve for x' },
+        { q:'45% of 200', a:'90', t:'percentage' },
+        { q:'144 ÷ 12', a:'12', t:'division' },
+        { q:'7 × 8', a:'56', t:'times tables' },
+        { q:'½ + ¼', a:'3/4', t:'fractions' },
+        { q:'9² ', a:'81', t:'squares' },
+        { q:'15 − 6 × 2', a:'3', t:'order of operations' }
+    ];
+    function newProblem(){
+        practice = BANK[Math.floor(Math.random()*BANK.length)];
+        document.getElementById('practiceQ').textContent = practice.q + ' = ?';
+        document.getElementById('practiceMeta').textContent = practice.t;
+        document.getElementById('practiceAns').value='';
+        document.getElementById('practiceFeedback').innerHTML='';
+        document.getElementById('explainBtn').style.display='none';
+    }
+    function checkAnswer(){
+        if (!practice) return newProblem();
+        const given = document.getElementById('practiceAns').value.trim().replace(/\s/g,'');
+        const fb = document.getElementById('practiceFeedback');
+        const right = given.toLowerCase() === practice.a.toLowerCase();
+        if (right){ fb.innerHTML = `<div class="feedback ok">🎉 Yes! That's spot on.</div>`; bumpStreak(); speak('Yes! That is exactly right. Great work.'); }
+        else { fb.innerHTML = `<div class="feedback no">Not quite — give it another go, you've got this.</div>`; document.getElementById('explainBtn').style.display='flex'; }
+    }
+    async function explainPractice(){
+        go(2);
+        document.getElementById('chatInput').value = `Can you help me understand ${practice.q}? I got it wrong.`;
+        sendChat();
+    }
 
-            const utter = speak(fullText);
-            if (utter) {
-                btn.textContent = '⏸️ Stop';
-                utter.onend = () => { btn.textContent = '▶️ Play Explanation'; };
-            }
-        }
+    /* ============================================================
+       VOICE OUT  (Web Speech — picks the most natural voice available)
+    ============================================================ */
+    let bestVoice = null;
+    function pickVoice(){
+        const vs = speechSynthesis.getVoices();
+        const prefer = ['Google UK English Female','Samantha','Google US English','Microsoft Aria','Microsoft Jenny','Karen','Serena'];
+        bestVoice = vs.find(v=>prefer.includes(v.name)) || vs.find(v=>/en[-_]/i.test(v.lang) && /female|aria|jenny|samantha/i.test(v.name)) || vs.find(v=>/^en/i.test(v.lang)) || vs[0];
+    }
+    if ('speechSynthesis' in window){ speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); }
+    function speak(text){
+        if (!('speechSynthesis' in window) || !store.voice) return;
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text.replace(/[*`#]/g,''));
+        if (bestVoice) u.voice = bestVoice;
+        u.rate = store.speed; u.pitch = 1.02;
+        speechSynthesis.speak(u);
+    }
+    function speakAll(box){ if (store.voice) speak(box.innerText); }
 
-        function updateVoiceSpeed(speed) {
-            state.voiceSpeed = speed;
-            document.getElementById('speedValue').textContent = speed + 'x';
-        }
+    /* ============================================================
+       PERSONAL ASSISTANT  (memory + streak)
+    ============================================================ */
+    function todayStr(){ return new Date().toISOString().slice(0,10); }
+    function bumpStreak(){
+        const today = todayStr();
+        if (store.lastDay === today) return;
+        const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
+        const next = store.lastDay === yest ? store.streak + 1 : 1;
+        localStorage.setItem('mt_streak', next);
+        localStorage.setItem('mt_lastday', today);
+        document.getElementById('streakNum').textContent = next;
+    }
+    function greet(){
+        const h = new Date().getHours();
+        const part = h<12 ? 'Good morning' : h<18 ? 'Good afternoon' : 'Good evening';
+        const name = store.name ? ', ' + store.name : '';
+        document.getElementById('greeting').textContent = `${part}${name} 👋`;
+        const s = store.streak;
+        document.getElementById('greetSub').textContent =
+            s>1 ? `${s} days in a row — you're on fire. Let's keep it going.` : 'Ready to make maths make sense? Pick a way to start.';
+        document.getElementById('streakNum').textContent = s;
+    }
 
-        function toggleMistakeAnalysis() {
-            showToast('🔍 Analyzing common mistakes in this type of problem... (Week 2: AI analysis)', 'success');
-        }
+    /* ============================================================
+       SETTINGS
+    ============================================================ */
+    function saveName(v){ localStorage.setItem('mt_name', v.trim()); greet(); }
+    function saveKey(v){
+        localStorage.setItem('mt_key', v.trim());
+        const ok = v.trim().startsWith('sk-ant');
+        const el = document.getElementById('keyStatus');
+        el.className = 'key-status ' + (ok?'ok':'no');
+        el.textContent = ok ? '✓ Tutor is awake and ready' : (v.trim()? 'That doesn’t look like a Claude key' : 'No key yet — add one to wake your tutor');
+    }
+    function toggleVoice(){ const on=!store.voice; localStorage.setItem('mt_voice', on?'1':'0'); document.getElementById('tgVoice').classList.toggle('on', on); if(!on) speechSynthesis.cancel(); }
+    function setSpeed(s){ localStorage.setItem('mt_speed', s); document.querySelectorAll('#speedSelect .pill-opt').forEach(p=>p.classList.toggle('on', parseFloat(p.dataset.sp)===s)); }
+    function toggleDys(){ const on=!store.dys; localStorage.setItem('mt_dys', on?'1':'0'); document.body.classList.toggle('dys', on); document.getElementById('tgDys').classList.toggle('on', on); }
+    function setModel(m){ localStorage.setItem('mt_model', m); document.querySelectorAll('#modelSelect .pill-opt').forEach(p=>p.classList.toggle('on', p.dataset.model===m)); }
 
-        function askFollowUp(question) {
-            showToast('Tutor: ' + question, 'success');
-            showScreen('tutor');
-        }
+    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
 
-        // AI TUTOR CHAT
-        function sendTutorMessage() {
-            const input = document.getElementById('tutorInput');
-            const message = input.value.trim();
-            if (!message) return;
-
-            // Add user message
-            addChatMessage(message, 'user');
-            input.value = '';
-
-            // Generate AI response
-            setTimeout(() => {
-                const response = generateTutorResponse(message);
-                addChatMessage(response, 'ai');
-            }, 500);
-        }
-
-        function sendPredefinedQuestion(question) {
-            addChatMessage(question, 'user');
-            setTimeout(() => {
-                const response = generateTutorResponse(question);
-                addChatMessage(response, 'ai');
-            }, 500);
-        }
-
-        function addChatMessage(text, sender) {
-            const messagesDiv = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}`;
-            messageDiv.innerHTML = `<strong>${sender === 'user' ? 'You' : 'Tutor'}:</strong> ${text}`;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            state.chatHistory.push({ sender, text });
-
-            // The tutor reads its answers aloud — voice-first for dyslexic/ADHD learners
-            if (sender === 'ai') speak(text);
-        }
-
-        function generateTutorResponse(question) {
-            // Sample responses (will be replaced with Claude API in Week 2)
-            const responses = {
-                'fractions': 'Fractions show parts of a whole. The top number (numerator) tells you how many parts you have. The bottom number (denominator) tells you how many equal parts the whole is divided into. For example, 1/2 means 1 part out of 2 equal parts.',
-                'percentages': 'Percentages are a way to show parts out of 100. 50% means 50 out of 100. To find a percentage of a number, multiply the number by the percentage (as a decimal). For example, 20% of 50 = 50 × 0.20 = 10.',
-                'algebra': 'Algebra uses letters (variables) to represent unknown numbers. When solving equations, do the same operation to both sides to keep it balanced. The goal is to get the variable by itself.',
-                'geometry': 'Geometry is about shapes and space. Key concepts include area (space inside), perimeter (distance around), and volume (space inside 3D shapes).',
-                'default': 'Great question! In the next update, I\'ll have even better explanations with animated diagrams. For now, try breaking the problem into smaller steps. 🎯'
-            };
-
-            for (const [key, response] of Object.entries(responses)) {
-                if (question.toLowerCase().includes(key)) {
-                    return response;
-                }
-            }
-            return responses.default;
-        }
-
-        // PRACTICE MODE
-        function selectDifficulty(difficulty) {
-            state.currentDifficulty = difficulty;
-            document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('selected'));
-            event.target.classList.add('selected');
-        }
-
-        function startPractice(topic) {
-            document.getElementById('practiceStats').style.display = 'block';
-            showToast(`🎯 Starting practice: ${topic} (${state.currentDifficulty} level)`, 'success');
-        }
-
-        // STATS
-        function updateStats() {
-            state.stats.problemsSolved++;
-            saveStats();
-            document.getElementById('totalSolved').textContent = state.stats.problemsSolved;
-        }
-
-        function saveStats() {
-            localStorage.setItem('mathtutorStats', JSON.stringify(state.stats));
-        }
-
-        function loadStats() {
-            const saved = localStorage.getItem('mathtutorStats');
-            if (saved) {
-                state.stats = JSON.parse(saved);
-                document.getElementById('totalSolved').textContent = state.stats.problemsSolved;
-            }
-        }
-
-        function exportProgress() {
-            const data = {
-                stats: state.stats,
-                exportDate: new Date().toISOString()
-            };
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'mathtutor-progress.json';
-            a.click();
-            showToast('📥 Progress exported', 'success');
-        }
-
-        function clearStats() {
-            if (confirm('Clear all stats and history?')) {
-                state.stats = { problemsSolved: 0, accuracy: 0, streak: 0, topicStats: {} };
-                localStorage.removeItem('mathtutorStats');
-                location.reload();
-            }
-        }
-
-        // TOAST NOTIFICATIONS
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = 'toast ' + type;
-            toast.textContent = message;
-            document.getElementById('toastContainer').appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        // Warm up the speech engine — voices load asynchronously on many browsers
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-        }
-
-        // Start app
-        init();
+    /* ============================================================
+       BOOT
+    ============================================================ */
+    (function init(){
+        // hydrate settings UI
+        document.getElementById('nameInput').value = store.name;
+        document.getElementById('keyInput').value = store.key;
+        if (store.key) saveKey(store.key);
+        document.getElementById('tgVoice').classList.toggle('on', store.voice);
+        document.getElementById('tgDys').classList.toggle('on', store.dys);
+        document.body.classList.toggle('dys', store.dys);
+        document.querySelectorAll('#speedSelect .pill-opt').forEach(p=>p.classList.toggle('on', parseFloat(p.dataset.sp)===store.speed));
+        document.querySelectorAll('#modelSelect .pill-opt').forEach(p=>p.classList.toggle('on', p.dataset.model===store.model));
+        // chat auto-grow
+        const ci = document.getElementById('chatInput');
+        ci.addEventListener('input', ()=>{ ci.style.height='auto'; ci.style.height=Math.min(ci.scrollHeight,120)+'px'; });
+        ci.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); } });
+        greet();
+        // warm welcome in the tutor
+        addBubble('ai', store.name ? `Hi ${fmt(store.name)}! I'm your maths tutor. What's been tricky lately? 💛` : `Hi! I'm your maths tutor. Tell me what you're working on and we'll figure it out together 💛`);
+    })();
     </script>
 </body>
 </html>

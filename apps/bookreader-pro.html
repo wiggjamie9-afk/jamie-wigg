@@ -2,2259 +2,490 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookReader Pro - AI Reading Assistant for Dyslexic Readers</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0e0a1a">
+    <title>BookReader Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         :root {
-            --color-primary: #6366f1;
-            --color-secondary: #8b5cf6;
-            --color-success: #10b981;
-            --color-error: #ef4444;
-            --color-warning: #f59e0b;
-            --color-bg-dark: #0f172a;
-            --color-bg-light: #1e293b;
-            --color-text: #e2e8f0;
-            --color-text-secondary: #cbd5e1;
-            --color-border: #334155;
-            --color-overlay-blue: rgba(59, 130, 246, 0.15);
-            --color-overlay-sepia: rgba(180, 83, 9, 0.15);
-            --color-overlay-green: rgba(34, 197, 94, 0.15);
-            --color-overlay-pink: rgba(236, 72, 153, 0.15);
-            --line-height-normal: 1.8;
-            --line-height-generous: 2.2;
-            --letter-spacing-normal: 0;
-            --letter-spacing-loose: 0.05em;
-            --font-size-base: 18px;
-            --font-size-large: 24px;
-            --font-size-xlarge: 32px;
-        }
+            --primary: #a78bfa;
+            --primary-bright: #c4b5fd;
+            --accent: #f472b6;
+            --tutor: #38bdf8;
+            --tutor-deep: #0ea5e9;
 
+            --bg: #0e0a1a;
+            --bg-elev: #17122a;
+            --surface: rgba(255,255,255,0.045);
+            --surface-2: rgba(255,255,255,0.07);
+            --border: rgba(255,255,255,0.09);
+            --border-bright: rgba(255,255,255,0.16);
+
+            --text: #f5f3fb;
+            --text-soft: #cfc8e0;
+            --text-mute: #9489aa;
+
+            --ok: #4ade80;
+            --warn: #fbbf24;
+            --err: #fb7185;
+
+            --r-sm: 12px; --r-md: 18px; --r-lg: 26px; --r-xl: 34px;
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --smooth: cubic-bezier(0.22, 1, 0.36, 1);
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-read: 'Lexend', sans-serif;
+        }
+        body.dys { --font-read: 'OpenDyslexic','Comic Sans MS',sans-serif; letter-spacing:0.02em; word-spacing:0.14em; }
+        body.dys .reader { line-height: 2.3; }
+        @font-face { font-family:'OpenDyslexic'; src:url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff') format('woff'); font-display:swap; }
+
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; }
+        html, body { width:100%; height:100%; overflow:hidden; }
         body {
-            font-family: 'OpenDyslexic', 'Comic Sans MS', 'Segoe UI', sans-serif;
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            line-height: var(--line-height-normal);
-            letter-spacing: var(--letter-spacing-normal);
-            font-size: var(--font-size-base);
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        body.overlay-blue {
-            background: linear-gradient(135deg, var(--color-overlay-blue), rgba(30, 41, 59, 0.8));
-        }
-
-        body.overlay-sepia {
-            background: linear-gradient(135deg, var(--color-overlay-sepia), rgba(30, 41, 59, 0.8));
-        }
-
-        body.overlay-green {
-            background: linear-gradient(135deg, var(--color-overlay-green), rgba(30, 41, 59, 0.8));
-        }
-
-        body.overlay-pink {
-            background: linear-gradient(135deg, var(--color-overlay-pink), rgba(30, 41, 59, 0.8));
-        }
-
-        .container {
-            max-width: 90%;
-            margin: 0 auto;
-            padding: 1.5rem 0;
-        }
-
-        header {
-            background-color: var(--color-bg-light);
-            border-bottom: 2px solid var(--color-border);
-            padding: 1.5rem 0;
-            margin-bottom: 2rem;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .logo {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--color-primary);
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-family: inherit;
-            font-weight: 600;
-            touch-action: manipulation;
-        }
-
-        .btn-primary {
-            background-color: var(--color-primary);
-            color: white;
-        }
-
-        .btn-primary:hover, .btn-primary:focus {
-            background-color: var(--color-secondary);
-            outline: 2px solid var(--color-secondary);
-            outline-offset: 2px;
-        }
-
-        .btn-secondary {
-            background-color: var(--color-bg-light);
-            color: var(--color-text);
-            border: 2px solid var(--color-border);
-        }
-
-        .btn-secondary:hover, .btn-secondary:focus {
-            background-color: var(--color-border);
-            outline: 2px solid var(--color-primary);
-            outline-offset: 2px;
-        }
-
-        .btn-icon {
-            width: 3rem;
-            height: 3rem;
-            padding: 0.5rem;
-            font-size: 1.5rem;
-            border-radius: 8px;
-        }
-
-        .screen {
-            display: none;
-        }
-
-        .screen.active {
-            display: block;
-            animation: fadeIn 0.3s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* HOME SCREEN */
-        .home-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        @media (max-width: 768px) {
-            .home-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .home-card {
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-border);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .home-card:hover, .home-card:focus {
-            border-color: var(--color-primary);
-            background-color: var(--color-bg-light);
-            transform: translateY(-4px);
-            outline: 2px solid var(--color-primary);
-            outline-offset: 0;
-        }
-
-        .home-card-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .home-card h3 {
-            font-size: 1.4rem;
-            margin-bottom: 0.5rem;
-            color: var(--color-primary);
-        }
-
-        .home-card p {
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* SETTINGS PANEL */
-        .settings-panel {
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-border);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .settings-group {
-            margin-bottom: 2rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid var(--color-border);
-        }
-
-        .settings-group:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .settings-label {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--color-primary);
-            display: block;
-        }
-
-        .radio-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        @media (max-width: 768px) {
-            .radio-group {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .radio-option {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 1rem;
-            background-color: var(--color-bg-dark);
-            border: 2px solid var(--color-border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .radio-option input[type="radio"],
-        .radio-option input[type="checkbox"] {
-            width: 1.5rem;
-            height: 1.5rem;
-            cursor: pointer;
-            accent-color: var(--color-primary);
-        }
-
-        .radio-option:has(input:checked) {
-            background-color: var(--color-bg-light);
-            border-color: var(--color-primary);
-        }
-
-        .radio-label {
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        .slider-group {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        input[type="range"] {
-            flex: 1;
-            min-width: 150px;
-            height: 8px;
-            cursor: pointer;
-            accent-color: var(--color-primary);
-        }
-
-        .slider-value {
-            min-width: 60px;
-            text-align: center;
-            font-weight: 600;
-            color: var(--color-primary);
-        }
-
-        /* UPLOAD SECTION */
-        .upload-area {
-            border: 3px dashed var(--color-border);
-            border-radius: 12px;
-            padding: 3rem 2rem;
-            text-align: center;
-            background-color: var(--color-bg-light);
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 2rem;
-        }
-
-        .upload-area:hover, .upload-area:focus-within {
-            border-color: var(--color-primary);
-            background-color: var(--color-bg-dark);
-        }
-
-        .upload-area-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .upload-area-text {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--color-primary);
-        }
-
-        .upload-area-subtext {
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        input[type="file"] {
-            display: none;
-        }
-
-        /* READER SCREEN */
-        .reader-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .playback-buttons {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .speed-control {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            font-weight: 600;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background-color: var(--color-bg-dark);
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 1.5rem 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background-color: var(--color-primary);
-            transition: width 0.1s;
-        }
-
-        .reader-text {
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-border);
-            border-radius: 12px;
-            padding: 2.5rem;
-            margin-bottom: 2rem;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            hyphens: auto;
-        }
-
-        .reader-paragraph {
-            margin-bottom: 2rem;
-        }
-
-        .word {
-            position: relative;
-            transition: all 0.1s;
-            cursor: default;
-        }
-
-        .word.current {
-            background-color: var(--color-primary);
-            color: white;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-weight: 700;
-        }
-
-        .sentence {
-            display: inline;
-            margin-right: 0.5em;
-        }
-
-        /* LIBRARY SCREEN */
-        .library-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .book-card {
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-border);
-            border-radius: 12px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .book-card:hover, .book-card:focus {
-            border-color: var(--color-primary);
-            transform: translateY(-4px);
-            outline: 2px solid var(--color-primary);
-            outline-offset: 0;
-        }
-
-        .book-cover {
-            width: 100%;
-            aspect-ratio: 3/4;
-            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: white;
-        }
-
-        .book-info {
-            padding: 1.5rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .book-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: var(--color-primary);
-            line-clamp: 2;
-        }
-
-        .book-progress {
-            font-size: 0.9rem;
-            color: var(--color-text-secondary);
-            margin-bottom: 1rem;
-        }
-
-        .book-date {
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-            margin-top: auto;
-        }
-
-        /* TOAST NOTIFICATIONS */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-border);
-            border-radius: 8px;
-            padding: 1.5rem 2rem;
-            max-width: 400px;
-            animation: slideIn 0.3s;
-            z-index: 1000;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        }
-
-        .toast.success {
-            border-color: var(--color-success);
-        }
-
-        .toast.error {
-            border-color: var(--color-error);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(500px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        /* ACCESSIBILITY */
-        :focus-visible {
-            outline: 3px solid var(--color-primary);
-            outline-offset: 2px;
-        }
-
-        a:focus-visible, button:focus-visible {
-            outline: 3px solid var(--color-primary);
-            outline-offset: 2px;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                max-width: 95%;
-            }
-
-            .settings-panel {
-                padding: 1.5rem;
-            }
-
-            .reader-text {
-                padding: 1.5rem;
-            }
-
-            .reader-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .playback-buttons {
-                justify-content: center;
-            }
-
-            .header-content {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .nav-buttons {
-                width: 100%;
-            }
-
-            .btn-primary, .btn-secondary {
-                flex: 1;
-                min-width: 120px;
-            }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: var(--color-text-secondary);
-        }
-
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        /* AI COMPREHENSION ASSISTANT */
-        .ai-assistant-panel {
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-primary);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 2rem;
-            position: sticky;
-            bottom: 0;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .ai-panel-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
-            color: var(--color-primary);
-            font-size: 1.1rem;
-        }
-
-        .ai-panel-content {
-            color: var(--color-text);
-            line-height: 1.8;
-            font-size: 1rem;
-        }
-
-        .complex-word {
-            background-color: rgba(99, 102, 241, 0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            border-bottom: 2px solid var(--color-primary);
-            transition: all 0.2s;
-        }
-
-        .complex-word:hover {
-            background-color: rgba(99, 102, 241, 0.4);
-        }
-
-        .vocabulary-tooltip {
-            position: absolute;
-            background-color: var(--color-bg-light);
-            border: 2px solid var(--color-primary);
-            border-radius: 8px;
-            padding: 1rem;
-            max-width: 300px;
-            z-index: 1001;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            animation: slideIn 0.2s;
-        }
-
-        .close-tooltip {
-            float: right;
-            cursor: pointer;
-            font-size: 1.2rem;
-            color: var(--color-text-secondary);
-        }
-
-        .ai-explanation {
-            margin-top: 1rem;
-            padding: 1rem;
-            background-color: var(--color-bg-dark);
-            border-left: 4px solid var(--color-primary);
-            border-radius: 4px;
-            font-size: 0.95rem;
-        }
-
-        .ai-question {
-            margin-top: 1rem;
-            padding: 1rem;
-            background-color: rgba(99, 102, 241, 0.1);
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .ai-question:hover {
-            background-color: rgba(99, 102, 241, 0.2);
-        }
-
-        /* BUDDY MODE (FOR VISUALLY IMPAIRED) */
-        .buddy-mode {
-            background-color: var(--color-bg-light);
-            border: 3px solid var(--color-success);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .buddy-indicator {
-            display: inline-block;
-            background-color: var(--color-success);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-
-        .buddy-voice {
-            font-size: 1.2rem;
-            line-height: 2;
-            color: var(--color-text);
-            background-color: var(--color-bg-dark);
-            padding: 1.5rem;
-            border-radius: 8px;
-            border-left: 4px solid var(--color-success);
-            margin-bottom: 1.5rem;
-            font-style: italic;
-        }
-
-        .voice-controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .voice-btn {
-            padding: 1rem;
-            border-radius: 8px;
-            border: 2px solid var(--color-success);
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .voice-btn:hover, .voice-btn:focus {
-            background-color: var(--color-success);
-            color: white;
-            outline: 2px solid var(--color-success);
-            outline-offset: 0;
-        }
-
-        .voice-btn.active {
-            background-color: var(--color-success);
-            color: white;
-        }
-
-        .buddy-tips {
-            background-color: var(--color-bg-dark);
-            border-left: 4px solid var(--color-success);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-        }
-
-        .buddy-tips strong {
-            color: var(--color-success);
-        }
-
-        .audio-feedback {
-            display: inline-block;
-            background-color: rgba(16, 185, 129, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            font-weight: 600;
-            color: var(--color-success);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        .keyboard-shortcuts {
-            background-color: var(--color-bg-dark);
-            border: 2px solid var(--color-border);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 1.5rem;
-        }
-
-        .shortcut-item {
-            margin-bottom: 1rem;
-            display: flex;
-            gap: 1rem;
-            align-items: flex-start;
-        }
-
-        .shortcut-key {
-            background-color: var(--color-success);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            min-width: 80px;
-        }
-
-        .shortcut-desc {
-            color: var(--color-text);
-        }
-
-        /* LANGUAGE SELECTOR */
-        .language-selector {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .language-selector label {
-            font-weight: 600;
-            color: var(--color-primary);
-        }
-
-        .language-selector select {
-            padding: 0.5rem 1rem;
-            border: 2px solid var(--color-border);
-            border-radius: 6px;
-            background-color: var(--color-bg-dark);
-            color: var(--color-text);
-            font-family: inherit;
-            font-size: 0.95rem;
-            cursor: pointer;
-        }
-
-        .language-selector select:focus {
-            outline: 2px solid var(--color-primary);
-            border-color: var(--color-primary);
-        }
+            font-family: var(--font-ui); color: var(--text); -webkit-font-smoothing:antialiased;
+            background:
+                radial-gradient(1100px 560px at 85% -8%, rgba(244,114,182,0.16), transparent 60%),
+                radial-gradient(1000px 520px at -10% 8%, rgba(167,139,250,0.18), transparent 58%),
+                linear-gradient(160deg, var(--bg) 0%, #120c24 100%);
+        }
+        .app { width:100%; height:100%; display:flex; flex-direction:column; padding-top:max(env(safe-area-inset-top),10px); }
+
+        .header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px 14px; }
+        .brand { display:flex; align-items:center; gap:10px; }
+        .brand-mark { width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,var(--primary),var(--accent)); display:grid; place-items:center; font-size:20px; box-shadow:0 6px 18px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.4); }
+        .brand-name { font-size:19px; font-weight:800; letter-spacing:-0.4px; }
+        .brand-name span { background:linear-gradient(135deg,var(--primary-bright),var(--accent)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        .streak { display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); padding:7px 12px; border-radius:999px; font-size:13px; font-weight:600; color:var(--text-soft); }
+        .streak b { color:var(--warn); }
+
+        .carousel-container { flex:1; overflow:hidden; position:relative; width:100%; }
+        .carousel { display:flex; height:100%; width:100%; transition:transform 0.45s var(--spring); touch-action:pan-y; }
+        .screen { flex-shrink:0; width:100%; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:4px 20px 110px; }
+        .screen::-webkit-scrollbar { width:0; }
+
+        .eyebrow { font-size:12px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-mute); margin-bottom:6px; }
+        .title { font-size:30px; font-weight:800; letter-spacing:-0.7px; margin-bottom:4px; }
+        .subtitle { font-size:15px; color:var(--text-soft); margin-bottom:22px; line-height:1.5; }
+
+        .hero { margin-bottom:18px; padding:22px; background:linear-gradient(135deg,rgba(167,139,250,0.2),rgba(244,114,182,0.12)); border:1px solid var(--border-bright); border-radius:var(--r-lg); }
+        .hero h2 { font-size:21px; font-weight:800; letter-spacing:-0.4px; margin-bottom:6px; }
+        .hero p { font-size:14px; color:var(--text-soft); line-height:1.5; }
+
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:22px; position:relative; overflow:hidden; transition:transform 0.25s var(--spring), border-color 0.25s; }
+        .card.tap { cursor:pointer; user-select:none; } .card.tap:active { transform:scale(0.975); border-color:var(--border-bright); }
+        .card + .card { margin-top:14px; }
+        .home-card { display:flex; align-items:center; gap:16px; }
+        .home-ico { width:54px; height:54px; flex-shrink:0; border-radius:16px; display:grid; place-items:center; font-size:26px; background:linear-gradient(135deg,rgba(167,139,250,0.24),rgba(244,114,182,0.18)); border:1px solid var(--border-bright); }
+        .home-card.blue .home-ico { background:linear-gradient(135deg,rgba(56,189,248,0.24),rgba(14,165,233,0.18)); }
+        .home-txt h3 { font-size:17px; font-weight:700; margin-bottom:3px; } .home-txt p { font-size:13.5px; color:var(--text-mute); line-height:1.4; }
+        .home-arrow { margin-left:auto; color:var(--text-mute); font-size:20px; }
+
+        .label { font-size:12px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:var(--text-mute); margin-bottom:9px; display:block; }
+        textarea, input[type="text"], input[type="password"] { width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:14px; color:var(--text); font-family:var(--font-ui); font-size:16px; resize:none; transition:border-color 0.2s, background 0.2s; }
+        textarea:focus, input:focus { outline:none; border-color:var(--primary); background:rgba(167,139,250,0.08); }
+        input::placeholder, textarea::placeholder { color:var(--text-mute); }
+
+        .btn { display:flex; align-items:center; justify-content:center; gap:9px; width:100%; border:none; cursor:pointer; user-select:none;
+            background:linear-gradient(135deg,var(--primary),var(--accent)); color:#1a0b2e; font-family:var(--font-ui); font-size:16px; font-weight:700;
+            border-radius:var(--r-md); padding:15px; min-height:54px; box-shadow:0 8px 22px rgba(167,139,250,0.32), inset 0 1px 0 rgba(255,255,255,0.35);
+            transition:transform 0.2s var(--spring), box-shadow 0.2s, opacity 0.2s; }
+        .btn:active { transform:scale(0.965); } .btn:disabled { opacity:0.5; cursor:default; }
+        .btn.ghost { background:var(--surface-2); color:var(--text); border:1px solid var(--border-bright); box-shadow:none; }
+        .btn.blue { background:linear-gradient(135deg,var(--tutor),var(--tutor-deep)); color:#04222e; box-shadow:0 8px 22px rgba(56,189,248,0.32), inset 0 1px 0 rgba(255,255,255,0.3); }
+        .btn-row { display:flex; gap:11px; } .btn-row .btn { flex:1; }
+        .btn-icon { width:54px; min-width:54px; padding:0; flex:0 0 auto; font-size:20px; }
+
+        .upload { border:2px dashed var(--border-bright); border-radius:var(--r-lg); padding:40px 18px; text-align:center; cursor:pointer; user-select:none; background:var(--surface); transition:all 0.2s var(--spring); }
+        .upload:active { transform:scale(0.985); background:var(--surface-2); }
+        .upload .uico { font-size:48px; margin-bottom:12px; animation:float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
+        .upload h4 { font-size:18px; font-weight:700; margin-bottom:5px; } .upload p { font-size:13px; color:var(--text-mute); }
+        input[type="file"] { display:none; }
+
+        .reader-bar { display:flex; gap:11px; margin-bottom:16px; align-items:center; }
+        .reader { font-family:var(--font-read); font-size:20px; line-height:2.1; color:var(--text-soft); }
+        .reader .w { transition:background 0.15s, color 0.15s; border-radius:5px; padding:1px 2px; cursor:pointer; }
+        .reader .w.on { background:linear-gradient(135deg,var(--primary),var(--accent)); color:#1a0b2e; font-weight:600; }
+        .reader .w:active { background:var(--surface-2); }
+        .empty { text-align:center; color:var(--text-mute); padding:60px 20px; }
+        .empty .ei { font-size:46px; margin-bottom:14px; }
+
+        .chat { display:flex; flex-direction:column; gap:12px; margin-bottom:16px; min-height:40px; }
+        .bubble { max-width:86%; padding:13px 16px; border-radius:20px; font-size:15px; line-height:1.55; font-family:var(--font-read); animation:rise 0.35s var(--smooth) both; }
+        @keyframes rise { from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+        .bubble.me { align-self:flex-end; background:linear-gradient(135deg,var(--tutor),var(--tutor-deep)); color:#04222e; font-weight:500; border-bottom-right-radius:6px; }
+        .bubble.ai { align-self:flex-start; background:var(--surface-2); border:1px solid var(--border); border-bottom-left-radius:6px; }
+        .bubble.ai b { color:var(--primary-bright); }
+        .typing { display:inline-flex; gap:4px; align-items:center; }
+        .typing i { width:7px; height:7px; border-radius:50%; background:var(--tutor); animation:blink 1.2s infinite both; }
+        .typing i:nth-child(2){ animation-delay:0.2s; } .typing i:nth-child(3){ animation-delay:0.4s; }
+        @keyframes blink { 0%,80%,100%{ opacity:0.25; transform:translateY(0);} 40%{ opacity:1; transform:translateY(-3px);} }
+        .composer { display:flex; gap:10px; align-items:flex-end; }
+        .composer textarea { min-height:54px; max-height:120px; }
+        .chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+        .chip { padding:9px 14px; border-radius:999px; font-size:13px; font-weight:600; background:var(--surface-2); border:1px solid var(--border); cursor:pointer; color:var(--text-soft); }
+        .chip:active { transform:scale(0.96); }
+
+        .set-group { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:6px 18px; margin-bottom:16px; }
+        .set-row { display:flex; align-items:center; justify-content:space-between; padding:16px 0; border-bottom:1px solid var(--border); gap:14px; }
+        .set-row:last-child { border-bottom:none; }
+        .set-row .sl { font-size:15px; font-weight:600; } .set-row .sd { font-size:12.5px; color:var(--text-mute); margin-top:2px; }
+        .toggle { width:52px; height:31px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border-bright); position:relative; cursor:pointer; flex-shrink:0; transition:background 0.25s; }
+        .toggle::after { content:''; position:absolute; top:2px; left:2px; width:25px; height:25px; border-radius:50%; background:#fff; transition:transform 0.25s var(--spring); }
+        .toggle.on { background:var(--primary); } .toggle.on::after { transform:translateX(21px); }
+        .pill-select { display:flex; gap:7px; }
+        .pill-opt { padding:8px 13px; border-radius:999px; font-size:13px; font-weight:600; background:var(--surface-2); border:1px solid var(--border); cursor:pointer; color:var(--text-soft); }
+        .pill-opt.on { background:rgba(167,139,250,0.16); border-color:var(--primary); color:var(--primary-bright); }
+        .key-status { font-size:12.5px; margin-top:8px; font-weight:600; } .key-status.ok { color:var(--ok);} .key-status.no { color:var(--warn);}
+        .mini { font-size:12px; color:var(--text-mute); line-height:1.5; margin-top:8px; } .mini a { color:var(--accent); }
+
+        .progress { width:100%; height:5px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin:14px 0; }
+        .progress > i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--primary),var(--accent)); transition:width 0.2s; }
+
+        .pagination { position:fixed; left:50%; transform:translateX(-50%); bottom:max(env(safe-area-inset-bottom),18px); display:flex; gap:9px; padding:11px 16px; z-index:100; background:rgba(23,18,42,0.7); backdrop-filter:blur(18px) saturate(140%); border:1px solid var(--border); border-radius:999px; box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+        .dot { width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,0.22); cursor:pointer; transition:all 0.3s var(--spring); }
+        .dot.active { background:linear-gradient(135deg,var(--primary),var(--accent)); width:30px; border-radius:5px; }
+
+        .toast { position:fixed; left:50%; bottom:92px; transform:translateX(-50%) translateY(20px); background:var(--bg-elev); border:1px solid var(--border-bright); color:var(--text); padding:12px 20px; border-radius:999px; font-size:14px; font-weight:600; opacity:0; pointer-events:none; transition:all 0.35s var(--spring); z-index:200; box-shadow:0 12px 30px rgba(0,0,0,0.5); }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
-    <!-- HEADER -->
-    <header>
-        <div class="container">
-            <div class="language-selector">
-                <label for="languageSelect">🌍 Language:</label>
-                <select id="languageSelect" onchange="changeLanguage(this.value)">
-                    <option value="en">English</option>
-                    <option value="es">Español (Spanish)</option>
-                    <option value="fr">Français (French)</option>
-                    <option value="pt">Português (Portuguese)</option>
-                    <option value="de">Deutsch (German)</option>
-                    <option value="ja">日本語 (Japanese)</option>
-                    <option value="hi">हिन्दी (Hindi)</option>
-                    <option value="zh">中文 (Chinese)</option>
-                    <option value="ar">العربية (Arabic)</option>
-                    <option value="ru">Русский (Russian)</option>
-                </select>
-            </div>
-            <div class="header-content">
-                <div class="logo">📖 BookReader Pro</div>
-                <div class="nav-buttons">
-                    <button class="btn-icon" onclick="showScreen('home')" title="Home">🏠</button>
-                    <button class="btn-icon" onclick="showScreen('library')" title="Library">📚</button>
-                    <button class="btn-icon" onclick="showScreen('settings')" title="Settings">⚙️</button>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="container">
-        <!-- HOME SCREEN -->
-        <div id="homeScreen" class="screen active">
-            <div class="home-grid">
-                <div class="home-card" onclick="showScreen('upload')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('upload')">
-                    <div class="home-card-icon">📸</div>
-                    <h3>Scan Book</h3>
-                    <p>Take a photo of a book page and convert it to accessible text</p>
-                </div>
-                <div class="home-card" onclick="showScreen('settings')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('settings')">
-                    <div class="home-card-icon">⚙️</div>
-                    <h3>Settings</h3>
-                    <p>Customize fonts, colors, voice, and reading speed</p>
-                </div>
-                <div class="home-card" onclick="showScreen('library')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('library')">
-                    <div class="home-card-icon">📚</div>
-                    <h3>My Library</h3>
-                    <p>View your saved books and reading progress</p>
-                </div>
-                <div class="home-card" onclick="showScreen('buddyMode')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showScreen('buddyMode')">
-                    <div class="home-card-icon">🤝</div>
-                    <h3>Buddy Mode</h3>
-                    <p>Voice-first reading for visually impaired users with AI companion</p>
-                </div>
-                <div class="home-card" onclick="showAbout()" role="button" tabindex="0" onkeydown="if(event.key==='Enter') showAbout()">
-                    <div class="home-card-icon">ℹ️</div>
-                    <h3>About</h3>
-                    <p>Learn more about BookReader Pro and accessibility features</p>
-                </div>
-            </div>
+    <div class="app">
+        <div class="header">
+            <div class="brand"><div class="brand-mark">📖</div><div class="brand-name">Book<span>Reader</span></div></div>
+            <div class="streak">🔥 <b id="streakNum">0</b> day streak</div>
         </div>
 
-        <!-- SETTINGS SCREEN -->
-        <div id="settingsScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);">⚙️ Settings</h2>
-                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
-            </div>
+        <div class="carousel-container">
+            <div class="carousel" id="carousel">
 
-            <div class="settings-panel">
-                <!-- FONT SELECTION -->
-                <div class="settings-group">
-                    <label class="settings-label">📝 Font</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="font" value="opendyslexic" onchange="updateFont(this.value)" checked>
-                            <span class="radio-label">OpenDyslexic</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="font" value="comic" onchange="updateFont(this.value)">
-                            <span class="radio-label">Comic Sans</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="font" value="arial" onchange="updateFont(this.value)">
-                            <span class="radio-label">Arial</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="font" value="lexie" onchange="updateFont(this.value)">
-                            <span class="radio-label">Lexie Readable</span>
-                        </label>
+                <!-- 0 · HOME -->
+                <section class="screen">
+                    <div class="hero">
+                        <h2 id="greeting">Hey there 👋</h2>
+                        <p id="greetSub">Point your camera at any page and let's read it together.</p>
                     </div>
-                </div>
-
-                <!-- FONT SIZE -->
-                <div class="settings-group">
-                    <label class="settings-label">🔤 Font Size</label>
-                    <div class="slider-group">
-                        <input type="range" id="fontSizeSlider" min="16" max="48" value="18" onchange="updateFontSize(this.value)">
-                        <div class="slider-value" id="fontSizeValue">18px</div>
+                    <div class="card tap home-card" onclick="go(1)">
+                        <div class="home-ico">📸</div>
+                        <div class="home-txt"><h3>Scan a page</h3><p>Snap any book and hear it read aloud, word by word</p></div>
+                        <div class="home-arrow">›</div>
                     </div>
-                </div>
-
-                <!-- LINE HEIGHT -->
-                <div class="settings-group">
-                    <label class="settings-label">↕️ Line Spacing</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="lineHeight" value="1.8" onchange="updateLineHeight(this.value)" checked>
-                            <span class="radio-label">Normal (1.8)</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="lineHeight" value="2.0" onchange="updateLineHeight(this.value)">
-                            <span class="radio-label">Generous (2.0)</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="lineHeight" value="2.2" onchange="updateLineHeight(this.value)">
-                            <span class="radio-label">Extra (2.2)</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="lineHeight" value="2.5" onchange="updateLineHeight(this.value)">
-                            <span class="radio-label">Maximum (2.5)</span>
-                        </label>
+                    <div class="card tap home-card blue" onclick="go(3)">
+                        <div class="home-ico">💬</div>
+                        <div class="home-txt"><h3>Ask about words</h3><p>What does it mean? Your reading buddy explains simply</p></div>
+                        <div class="home-arrow">›</div>
                     </div>
-                </div>
-
-                <!-- COLOR OVERLAY -->
-                <div class="settings-group">
-                    <label class="settings-label">🎨 Color Overlay</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="overlay" value="none" onchange="updateOverlay(this.value)" checked>
-                            <span class="radio-label">None</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="overlay" value="blue" onchange="updateOverlay(this.value)">
-                            <span class="radio-label">Blue</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="overlay" value="sepia" onchange="updateOverlay(this.value)">
-                            <span class="radio-label">Sepia</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="overlay" value="green" onchange="updateOverlay(this.value)">
-                            <span class="radio-label">Green</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="overlay" value="pink" onchange="updateOverlay(this.value)">
-                            <span class="radio-label">Pink</span>
-                        </label>
+                    <div class="card tap home-card" onclick="renderLibrary(); go(2)">
+                        <div class="home-ico">📚</div>
+                        <div class="home-txt"><h3>Library</h3><p>Everything you've scanned, ready to read again</p></div>
+                        <div class="home-arrow">›</div>
                     </div>
-                </div>
-
-                <!-- VOICE SELECTION -->
-                <div class="settings-group">
-                    <label class="settings-label">🎤 Voice</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="voice" value="none" onchange="updateVoice(this.value)" checked>
-                            <span class="radio-label">None</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="voice" value="voice1" onchange="updateVoice(this.value)">
-                            <span class="radio-label">Voice 1 (Warm)</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="voice" value="voice2" onchange="updateVoice(this.value)">
-                            <span class="radio-label">Voice 2 (Engaging)</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="voice" value="voice3" onchange="updateVoice(this.value)">
-                            <span class="radio-label">Voice 3 (Calm)</span>
-                        </label>
+                    <div class="card tap home-card" onclick="go(4)">
+                        <div class="home-ico">⚙️</div>
+                        <div class="home-txt"><h3>Settings</h3><p>Voice, reading font, and your reading-buddy key</p></div>
+                        <div class="home-arrow">›</div>
                     </div>
-                </div>
+                </section>
 
-                <!-- READING SPEED -->
-                <div class="settings-group">
-                    <label class="settings-label">⏱️ Reading Speed</label>
-                    <div class="slider-group">
-                        <input type="range" id="speedSlider" min="0.5" max="2" step="0.25" value="1" onchange="updateSpeed(this.value)">
-                        <div class="slider-value" id="speedValue">1.0x</div>
+                <!-- 1 · SCAN -->
+                <section class="screen">
+                    <div class="eyebrow">Scan</div>
+                    <h1 class="title">Let's read a page</h1>
+                    <p class="subtitle">Snap a photo — I'll turn it into clear, spoken words.</p>
+                    <div class="upload" onclick="document.getElementById('fileInput').click()">
+                        <div class="uico">📸</div><h4>Tap to scan</h4><p>Take or upload a photo of any page</p>
+                        <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
                     </div>
-                </div>
-
-                <!-- LETTER SPACING -->
-                <div class="settings-group">
-                    <label class="settings-label">⟷ Letter Spacing</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="letterSpacing" value="0" onchange="updateLetterSpacing(this.value)" checked>
-                            <span class="radio-label">Normal</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="letterSpacing" value="0.05em" onchange="updateLetterSpacing(this.value)">
-                            <span class="radio-label">Loose</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="letterSpacing" value="0.1em" onchange="updateLetterSpacing(this.value)">
-                            <span class="radio-label">Extra</span>
-                        </label>
+                    <div id="ocrBox" style="display:none; margin-top:16px;">
+                        <div class="progress"><i id="ocrFill"></i></div>
+                        <p style="text-align:center; font-size:13px; color:var(--text-mute);">Reading the page… <span id="ocrPct">0</span>%</p>
                     </div>
-                </div>
+                </section>
 
-                <!-- HIGHLIGHT CURRENT WORD -->
-                <div class="settings-group">
-                    <label class="radio-option">
-                        <input type="checkbox" id="highlightWords" onchange="updateHighlight(this.checked)" checked>
-                        <span class="radio-label">✨ Highlight Current Word While Reading</span>
-                    </label>
-                </div>
-
-                <!-- DATA MANAGEMENT -->
-                <div class="settings-group">
-                    <label class="settings-label">💾 Data Management</label>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <button class="btn-secondary" onclick="exportData()">📥 Export Data</button>
-                        <button class="btn-secondary" onclick="clearAllData()">🗑️ Clear All Data</button>
+                <!-- 2 · READER / LIBRARY -->
+                <section class="screen">
+                    <div class="eyebrow">Reading</div>
+                    <h1 class="title" id="readerTitle">Your book</h1>
+                    <div class="reader-bar">
+                        <button class="btn btn-icon" id="playBtn" onclick="togglePlay()">▶️</button>
+                        <button class="btn ghost btn-icon" onclick="stopRead()">⏹️</button>
+                        <button class="btn ghost btn-icon" onclick="go(3)" title="Ask about this">💬</button>
+                        <button class="btn ghost btn-icon" onclick="renderLibrary()" title="Library">📚</button>
                     </div>
-                </div>
+                    <div class="reader" id="reader"><div class="empty"><div class="ei">📖</div>Scan a page to start reading</div></div>
+                </section>
+
+                <!-- 3 · TUTOR -->
+                <section class="screen">
+                    <div class="eyebrow">Reading buddy</div>
+                    <h1 class="title">What can I explain?</h1>
+                    <p class="subtitle">Hard word? Confusing sentence? Tap a quick question or ask your own.</p>
+                    <div class="chips">
+                        <div class="chip" onclick="quick('What does this page mean in simple words?')">Explain the page</div>
+                        <div class="chip" onclick="quick('Summarise what I just read in 2 sentences.')">Quick summary</div>
+                        <div class="chip" onclick="quick('Are there any hard words on this page? Explain them simply.')">Hard words</div>
+                    </div>
+                    <div class="chat" id="chat"></div>
+                    <div class="composer">
+                        <textarea id="chatInput" placeholder="Ask me anything…" rows="1"></textarea>
+                        <button class="btn blue btn-icon" onclick="sendChat()">➤</button>
+                    </div>
+                </section>
+
+                <!-- 4 · SETTINGS -->
+                <section class="screen">
+                    <div class="eyebrow">Settings</div>
+                    <h1 class="title">Make it yours</h1>
+                    <p class="subtitle">Set it up once. Everything stays on your device.</p>
+
+                    <div class="set-group">
+                        <div class="set-row" style="display:block; padding-bottom:18px;">
+                            <div><div class="sl">Your name</div><div class="sd">So your reading buddy knows you</div></div>
+                            <input type="text" id="nameInput" placeholder="What should I call you?" style="margin-top:10px;" oninput="saveName(this.value)">
+                        </div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-row" style="display:block;">
+                            <div><div class="sl">Reading-buddy key (Claude API)</div><div class="sd">Powers the AI helper. Stored only on this device.</div></div>
+                            <input type="password" id="keyInput" placeholder="sk-ant-…" style="margin-top:10px;" oninput="saveKey(this.value)">
+                            <div class="key-status no" id="keyStatus">No key yet — scanning &amp; reading aloud still work without it</div>
+                            <div class="mini">Get a key free at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>.</div>
+                        </div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-row">
+                            <div><div class="sl">Read aloud</div><div class="sd">Hear every word, highlighted as it's spoken</div></div>
+                            <div class="toggle on" id="tgVoice" onclick="toggleVoice()"></div>
+                        </div>
+                        <div class="set-row">
+                            <div><div class="sl">Voice speed</div><div class="sd">Slower is often easier to follow</div></div>
+                            <div class="pill-select" id="speedSelect">
+                                <div class="pill-opt" data-sp="0.7" onclick="setSpeed(0.7)">Slow</div>
+                                <div class="pill-opt on" data-sp="0.9" onclick="setSpeed(0.9)">Calm</div>
+                                <div class="pill-opt" data-sp="1.1" onclick="setSpeed(1.1)">Quick</div>
+                            </div>
+                        </div>
+                        <div class="set-row">
+                            <div><div class="sl">Dyslexia-friendly font</div><div class="sd">Heavier, easier-to-track letters</div></div>
+                            <div class="toggle" id="tgDys" onclick="toggleDys()"></div>
+                        </div>
+                        <div class="set-row">
+                            <div><div class="sl">Bigger text</div><div class="sd">More room between every word</div></div>
+                            <div class="toggle" id="tgBig" onclick="toggleBig()"></div>
+                        </div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-row">
+                            <div><div class="sl">Buddy brain</div><div class="sd">Fast is cheap; Smart is for tricky text</div></div>
+                            <div class="pill-select" id="modelSelect">
+                                <div class="pill-opt on" data-model="claude-haiku-4-5" onclick="setModel('claude-haiku-4-5')">Fast</div>
+                                <div class="pill-opt" data-model="claude-opus-4-8" onclick="setModel('claude-opus-4-8')">Smart</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mini" style="text-align:center; padding-bottom:8px;">BookReader Pro · built to help the whole world read 🌍</div>
+                </section>
+
             </div>
         </div>
 
-        <!-- UPLOAD SCREEN -->
-        <div id="uploadScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);">📸 Scan Book</h2>
-                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
-            </div>
-
-            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-                <div class="upload-area-icon">📄</div>
-                <div class="upload-area-text">Upload or Capture Book Page</div>
-                <div class="upload-area-subtext">Click or tap to select an image or PDF</div>
-            </div>
-
-            <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFileUpload(event)">
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <button class="btn-secondary" onclick="captureCamera()">📷 Take Photo</button>
-                <button class="btn-secondary" onclick="pasteImage()">📋 Paste Image</button>
-            </div>
-
-            <div style="margin-top: 2rem; padding: 2rem; background-color: var(--color-bg-light); border-radius: 12px;">
-                <h3 style="color: var(--color-primary); margin-bottom: 1rem;">💡 Tips for Best Results</h3>
-                <ul style="color: var(--color-text-secondary); line-height: 2; font-size: 0.95rem;">
-                    <li>✓ Ensure good lighting on the page</li>
-                    <li>✓ Hold the camera steady and parallel to the page</li>
-                    <li>✓ Include all text margins for best recognition</li>
-                    <li>✓ Works best with clear, printed text</li>
-                    <li>✓ Handwritten text is also supported</li>
-                    <li>✓ Maximum file size: 10 MB</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- LIBRARY SCREEN -->
-        <div id="libraryScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);">📚 My Library</h2>
-                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
-            </div>
-
-            <div id="libraryContent"></div>
-        </div>
-
-        <!-- BUDDY MODE SCREEN (VISUALLY IMPAIRED USERS) -->
-        <div id="buddyModeScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);">🤝 Buddy Mode</h2>
-                <button class="btn-secondary" onclick="showScreen('home')">← Back</button>
-            </div>
-
-            <div class="buddy-mode">
-                <div class="buddy-indicator">🎵 Voice-First Reading for Visually Impaired</div>
-
-                <h3 style="color: var(--color-success); margin-bottom: 1rem;">Welcome to Your Reading Buddy! 👋</h3>
-
-                <div class="buddy-voice" id="buddyGreeting">
-                    "Hi there! I'm your reading buddy. I'm here to help you enjoy books, articles, and documents by reading them aloud in a clear, friendly voice. Everything I read, I'll also explain in simple words. You can control the speed, ask questions, and I'll help you understand everything. Let's start by scanning a book or article!"
-                </div>
-
-                <div class="voice-controls">
-                    <button class="voice-btn active" onclick="playBuddyMessage()">🔊 Speak Message</button>
-                    <button class="voice-btn" onclick="adjustBuddySpeed('slower')">🐢 Slower</button>
-                    <button class="voice-btn" onclick="adjustBuddySpeed('normal')">▶️ Normal</button>
-                    <button class="voice-btn" onclick="adjustBuddySpeed('faster')">🐇 Faster</button>
-                </div>
-
-                <h3 style="color: var(--color-success); margin-bottom: 1rem; margin-top: 2rem;">How Your Buddy Can Help:</h3>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-                    <div class="buddy-tips">
-                        <strong>📖 Read Books Aloud</strong><br>
-                        Scan or upload a book page. Your buddy reads it to you with high-quality voice.
-                    </div>
-                    <div class="buddy-tips">
-                        <strong>🔍 Explain Words</strong><br>
-                        When you hear a hard word, ask "What does [word] mean?" and your buddy explains it.
-                    </div>
-                    <div class="buddy-tips">
-                        <strong>❓ Answer Questions</strong><br>
-                        Ask anything about what you're reading. Your buddy explains in simple language.
-                    </div>
-                    <div class="buddy-tips">
-                        <strong>📚 Describe Pictures</strong><br>
-                        Your buddy describes any images so you know what's happening in the story.
-                    </div>
-                    <div class="buddy-tips">
-                        <strong>⏸️ Pause & Control</strong><br>
-                        Control speed, repeat sections, go back—whatever pace works for you.
-                    </div>
-                    <div class="buddy-tips">
-                        <strong>💬 Just Chat</strong><br>
-                        Not in the mood for reading? Chat with your buddy about anything!
-                    </div>
-                </div>
-
-                <h3 style="color: var(--color-success); margin-bottom: 1rem;">Quick Start - Choose How to Begin:</h3>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-                    <button class="btn-primary" style="padding: 1.5rem;" onclick="startBuddyReading()">
-                        📚 Scan a Book<br>
-                        <span style="font-size: 0.85rem; opacity: 0.9;">I'll read it aloud</span>
-                    </button>
-                    <button class="btn-primary" style="padding: 1.5rem;" onclick="startBuddyChat()">
-                        💬 Chat Mode<br>
-                        <span style="font-size: 0.85rem; opacity: 0.9;">Talk to your buddy</span>
-                    </button>
-                </div>
-
-                <h3 style="color: var(--color-success); margin-bottom: 1rem;">Keyboard Shortcuts (Use These Anytime):</h3>
-
-                <div class="keyboard-shortcuts">
-                    <div class="shortcut-item">
-                        <div class="shortcut-key">SPACEBAR</div>
-                        <div class="shortcut-desc">Play/Pause reading</div>
-                    </div>
-                    <div class="shortcut-item">
-                        <div class="shortcut-key">→ Arrow</div>
-                        <div class="shortcut-desc">Next paragraph</div>
-                    </div>
-                    <div class="shortcut-item">
-                        <div class="shortcut-key">← Arrow</div>
-                        <div class="shortcut-desc">Previous paragraph</div>
-                    </div>
-                    <div class="shortcut-item">
-                        <div class="shortcut-key">↑ / ↓ Arrow</div>
-                        <div class="shortcut-desc">Speed up / Slow down</div>
-                    </div>
-                    <div class="shortcut-item">
-                        <div class="shortcut-key">R</div>
-                        <div class="shortcut-desc">Repeat current section</div>
-                    </div>
-                    <div class="shortcut-item">
-                        <div class="shortcut-key">H</div>
-                        <div class="shortcut-desc">Read this help</div>
-                    </div>
-                    <div class="shortcut-item">
-                        <div class="shortcut-key">S</div>
-                        <div class="shortcut-desc">Open settings</div>
-                    </div>
-                    <div class="shortcut-item">
-                        <div class="shortcut-key">?</div>
-                        <div class="shortcut-desc">Ask buddy a question</div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 2rem; padding: 1.5rem; background-color: var(--color-bg-dark); border-radius: 8px;">
-                    <strong style="color: var(--color-success);">💡 Pro Tips for Best Experience:</strong>
-                    <ul style="margin-top: 1rem; color: var(--color-text-secondary); line-height: 2;">
-                        <li>• Use headphones for the clearest sound</li>
-                        <li>• Start with slower speed if you're new—you can speed up anytime</li>
-                        <li>• Don't hesitate to ask your buddy to repeat or explain</li>
-                        <li>• Your buddy learns what topics help you most</li>
-                        <li>• No rush—reading should be enjoyable, not stressful</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- READER SCREEN -->
-        <div id="readerScreen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; color: var(--color-primary);" id="readerTitle">Reading</h2>
-                <button class="btn-secondary" onclick="closeReader()">← Back</button>
-            </div>
-
-            <div class="reader-controls">
-                <div class="playback-buttons">
-                    <button class="btn-primary btn-icon" id="playBtn" onclick="togglePlayPause()">▶️</button>
-                    <button class="btn-secondary btn-icon" onclick="skipBackward()">⏮️</button>
-                    <button class="btn-secondary btn-icon" onclick="skipForward()">⏭️</button>
-                </div>
-                <div class="speed-control">
-                    <label for="readerSpeedSlider">Speed:</label>
-                    <input type="range" id="readerSpeedSlider" min="0.5" max="2" step="0.25" value="1" onchange="updateReaderSpeed(this.value)" style="width: 120px;">
-                    <span id="readerSpeedValue">1.0x</span>
-                </div>
-            </div>
-
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-
-            <div class="reader-text" id="readerText"></div>
-
-            <!-- AI COMPREHENSION ASSISTANT -->
-            <div class="ai-assistant-panel" id="aiPanel" style="display: none;">
-                <div class="ai-panel-header">🤖 AI Reading Assistant</div>
-                <div class="ai-panel-content" id="aiContent"></div>
-            </div>
-
-            <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
-                <button class="btn-secondary" onclick="bookmarkPage()">🔖 Bookmark</button>
-                <button class="btn-secondary" onclick="shareProgress()">📤 Share Progress</button>
-                <button class="btn-secondary" id="aiToggleBtn" onclick="toggleAIAssistant()">🤖 AI Assistant</button>
-            </div>
+        <div class="pagination">
+            <div class="dot active" onclick="go(0)"></div>
+            <div class="dot" onclick="go(1)"></div>
+            <div class="dot" onclick="go(2)"></div>
+            <div class="dot" onclick="go(3)"></div>
+            <div class="dot" onclick="go(4)"></div>
         </div>
     </div>
+    <div class="toast" id="toast"></div>
 
-    <!-- TOAST CONTAINER -->
-    <div id="toastContainer"></div>
-
-    <!-- Tesseract.js: open-source OCR, runs entirely in the browser. No API key, no backend. -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
-        // MULTILINGUAL SUPPORT (Top 10 Languages)
-        const translations = {
-            en: {
-                appTitle: 'BookReader Pro',
-                home: 'Home', library: 'Library', settings: 'Settings',
-                scan: 'Scan Book', scanDesc: 'Take a photo of a book page and convert it to accessible text',
-                customize: 'Settings', customizeDesc: 'Customize fonts, colors, voice, and reading speed',
-                myLibrary: 'My Library', myLibraryDesc: 'View your saved books and reading progress',
-                about: 'About', aboutDesc: 'Learn more about BookReader Pro and accessibility features',
-                buddyMode: 'Buddy Mode', buddyModeDesc: 'Voice-first reading for visually impaired users with AI companion',
-                buddyWelcome: 'Welcome to Your Reading Buddy!',
-                buddyGreeting: 'Hi there! I\'m your reading buddy. I\'m here to help you enjoy books by reading them aloud in a clear, friendly voice. Everything I read, I\'ll explain in simple words. Let\'s start!',
-                uploadBook: 'Upload or Capture Book Page',
-                typeText: 'Type Problem', uploadPhoto: 'Upload Photo',
-                font: 'Font', lineSpacing: 'Line Spacing', colorOverlay: 'Color Overlay',
-                voice: 'Voice', speed: 'Reading Speed', letterSpacing: 'Letter Spacing',
-                highlightCurrentWord: 'Highlight Current Word While Reading',
-                exportData: 'Export Data', clearData: 'Clear All Data',
-                back: 'Back', scan: 'Scan Book', play: 'Play Explanation',
-                bookmark: 'Bookmark', share: 'Share Progress',
-                noBooks: 'No Books Yet',
-                startScanning: 'Start by scanning your first book page',
-                progress: 'Progress', added: 'Added',
-                aboutText: 'BookReader Pro v1.0 - Dyslexia-first book scanning & AI reading'
-            },
-            es: {
-                appTitle: 'BookReader Pro',
-                home: 'Inicio', library: 'Biblioteca', settings: 'Configuración',
-                scan: 'Escanear Libro', scanDesc: 'Toma una foto de una página y conviértela en texto accesible',
-                customize: 'Configuración', customizeDesc: 'Personaliza fuentes, colores, voz y velocidad de lectura',
-                myLibrary: 'Mi Biblioteca', myLibraryDesc: 'Ve tus libros guardados y tu progreso de lectura',
-                about: 'Acerca de', aboutDesc: 'Aprende más sobre BookReader Pro y características de accesibilidad',
-                buddyMode: 'Modo Amigo', buddyModeDesc: 'Lectura por voz para usuarios con discapacidad visual',
-                buddyWelcome: '¡Bienvenido a Tu Amigo Lector!',
-                buddyGreeting: '¡Hola! Soy tu amigo lector. Estoy aquí para ayudarte a disfrutar de libros leyéndolos en voz alta con claridad. ¡Comencemos!',
-                uploadBook: 'Sube o Captura una Página del Libro',
-                typeText: 'Escribir', uploadPhoto: 'Subir Foto',
-                font: 'Fuente', lineSpacing: 'Espaciado de Líneas', colorOverlay: 'Capa de Color',
-                voice: 'Voz', speed: 'Velocidad de Lectura', letterSpacing: 'Espaciado de Letras',
-                highlightCurrentWord: 'Resaltar Palabra Actual Durante la Lectura',
-                exportData: 'Exportar Datos', clearData: 'Borrar Todos los Datos',
-                back: 'Atrás', play: 'Reproducir Explicación',
-                bookmark: 'Marcador', share: 'Compartir Progreso',
-                noBooks: 'Sin Libros Aún',
-                startScanning: 'Comienza escaneando tu primera página de libro',
-                progress: 'Progreso', added: 'Añadido',
-                aboutText: 'BookReader Pro v1.0 - Escaneo de libros y lectura IA optimizada para dislexia'
-            },
-            fr: {
-                appTitle: 'BookReader Pro',
-                home: 'Accueil', library: 'Bibliothèque', settings: 'Paramètres',
-                scan: 'Scanner un Livre', scanDesc: 'Prenez une photo d\'une page et convertissez-la en texte accessible',
-                customize: 'Paramètres', customizeDesc: 'Personnalisez les polices, couleurs, voix et vitesse de lecture',
-                myLibrary: 'Ma Bibliothèque', myLibraryDesc: 'Visualisez vos livres enregistrés et votre progression',
-                about: 'À Propos', aboutDesc: 'Découvrez plus sur BookReader Pro et les fonctionnalités d\'accessibilité',
-                buddyMode: 'Mode Ami', buddyModeDesc: 'Lecture vocale pour les utilisateurs malvoyants',
-                buddyWelcome: 'Bienvenue Chez Votre Ami Lecteur!',
-                buddyGreeting: 'Bonjour! Je suis votre ami lecteur. Je suis ici pour vous aider à apprécier les livres en les lisant à voix haute. Commençons!',
-                uploadBook: 'Téléchargez ou Capturez une Page de Livre',
-                typeText: 'Écrire', uploadPhoto: 'Télécharger Photo',
-                font: 'Police', lineSpacing: 'Espacement des Lignes', colorOverlay: 'Calque de Couleur',
-                voice: 'Voix', speed: 'Vitesse de Lecture', letterSpacing: 'Espacement des Lettres',
-                highlightCurrentWord: 'Mettre en Surbrillance le Mot Actuel Pendant la Lecture',
-                exportData: 'Exporter les Données', clearData: 'Effacer Toutes les Données',
-                back: 'Retour', play: 'Lire l\'Explication',
-                bookmark: 'Signet', share: 'Partager la Progression',
-                noBooks: 'Pas de Livres Encore',
-                startScanning: 'Commencez par scanner votre première page de livre',
-                progress: 'Progression', added: 'Ajouté',
-                aboutText: 'BookReader Pro v1.0 - Numérisation de livres et lecture IA optimisée pour la dyslexie'
-            },
-            pt: {
-                appTitle: 'BookReader Pro',
-                home: 'Início', library: 'Biblioteca', settings: 'Configurações',
-                scan: 'Escanear Livro', scanDesc: 'Tire uma foto de uma página e converta em texto acessível',
-                customize: 'Configurações', customizeDesc: 'Personalize fontes, cores, voz e velocidade de leitura',
-                myLibrary: 'Minha Biblioteca', myLibraryDesc: 'Veja seus livros salvos e progresso de leitura',
-                about: 'Sobre', aboutDesc: 'Saiba mais sobre BookReader Pro e recursos de acessibilidade',
-                buddyMode: 'Modo Amigo', buddyModeDesc: 'Leitura por voz para usuários com deficiência visual',
-                buddyWelcome: 'Bem-vindo ao Seu Amigo Leitor!',
-                buddyGreeting: 'Oi! Sou seu amigo leitor. Estou aqui para ajudá-lo a curtir livros lendo em voz alta. Vamos começar!',
-                uploadBook: 'Carregue ou Capture uma Página do Livro',
-                typeText: 'Digitar', uploadPhoto: 'Carregar Foto',
-                font: 'Fonte', lineSpacing: 'Espaçamento de Linhas', colorOverlay: 'Sobreposição de Cor',
-                voice: 'Voz', speed: 'Velocidade de Leitura', letterSpacing: 'Espaçamento de Letras',
-                highlightCurrentWord: 'Destacar Palavra Atual Durante a Leitura',
-                exportData: 'Exportar Dados', clearData: 'Limpar Todos os Dados',
-                back: 'Voltar', play: 'Reproduzir Explicação',
-                bookmark: 'Marcador', share: 'Compartilhar Progresso',
-                noBooks: 'Sem Livros Ainda',
-                startScanning: 'Comece escaneando sua primeira página de livro',
-                progress: 'Progresso', added: 'Adicionado',
-                aboutText: 'BookReader Pro v1.0 - Escaneamento de livros e leitura com IA otimizada para dislexia'
-            },
-            de: {
-                appTitle: 'BookReader Pro',
-                home: 'Startseite', library: 'Bibliothek', settings: 'Einstellungen',
-                scan: 'Buch Scannen', scanDesc: 'Fotografieren Sie eine Seite und konvertieren Sie sie in zugänglichen Text',
-                customize: 'Einstellungen', customizeDesc: 'Passen Sie Schriftarten, Farben, Stimme und Lesegeschwindigkeit an',
-                myLibrary: 'Meine Bibliothek', myLibraryDesc: 'Sehen Sie Ihre gespeicherten Bücher und Lesekenntnisse',
-                about: 'Über', aboutDesc: 'Erfahren Sie mehr über BookReader Pro und Barrierefreiheitsfunktionen',
-                buddyMode: 'Buddy-Modus', buddyModeDesc: 'Sprachgesteuertes Lesen für sehbehinderte Benutzer',
-                buddyWelcome: 'Willkommen bei Ihrem Lesekumpel!',
-                buddyGreeting: 'Hallo! Ich bin dein Lesekumpel. Ich bin hier, um dir zu helfen, Bücher zu genießen, indem ich sie laut vorlese. Lass uns anfangen!',
-                uploadBook: 'Laden Sie eine Buchseite hoch oder erfassen Sie diese',
-                typeText: 'Eingeben', uploadPhoto: 'Foto hochladen',
-                font: 'Schriftart', lineSpacing: 'Zeilenabstand', colorOverlay: 'Farbüberlagerung',
-                voice: 'Stimme', speed: 'Lesegeschwindigkeit', letterSpacing: 'Buchstabenabstand',
-                highlightCurrentWord: 'Aktuelles Wort Beim Lesen Hervorheben',
-                exportData: 'Daten Exportieren', clearData: 'Alle Daten Löschen',
-                back: 'Zurück', play: 'Erklärung Abspielen',
-                bookmark: 'Lesezeichen', share: 'Fortschritt Teilen',
-                noBooks: 'Noch Keine Bücher',
-                startScanning: 'Beginnen Sie mit dem Scannen Ihrer ersten Buchseite',
-                progress: 'Fortschritt', added: 'Hinzugefügt',
-                aboutText: 'BookReader Pro v1.0 - Bucherfassung und KI-Lesehilfe optimiert für Dyslexie'
-            },
-            ja: {
-                appTitle: 'BookReader Pro',
-                home: 'ホーム', library: 'ライブラリ', settings: '設定',
-                scan: '本をスキャン', scanDesc: 'ページの写真を撮ってアクセシブルなテキストに変換',
-                customize: '設定', customizeDesc: 'フォント、色、音声、読書速度をカスタマイズ',
-                myLibrary: 'マイライブラリ', myLibraryDesc: '保存した本と読書進捗を表示',
-                about: 'について', aboutDesc: 'BookReader Proとアクセシビリティ機能の詳細を学ぶ',
-                buddyMode: 'バディモード', buddyModeDesc: '視覚障害者向けの音声ファースト読書',
-                buddyWelcome: 'あなたの読書バディへようこそ！',
-                buddyGreeting: 'こんにちは!僕は読書バディです。本を大きな声で読み上げて、楽しんでもらうお手伝いをします。始めましょう!',
-                uploadBook: '本のページをアップロードまたはキャプチャ',
-                typeText: '入力', uploadPhoto: '写真をアップロード',
-                font: 'フォント', lineSpacing: '行間隔', colorOverlay: 'カラーオーバーレイ',
-                voice: '音声', speed: '読書速度', letterSpacing: '文字間隔',
-                highlightCurrentWord: '読書中に現在の単語をハイライト',
-                exportData: 'データをエクスポート', clearData: 'すべてのデータを削除',
-                back: '戻る', play: '説明を再生',
-                bookmark: 'ブックマーク', share: '進捗を共有',
-                noBooks: 'まだ本がありません',
-                startScanning: '最初の本ページをスキャンして始めましょう',
-                progress: '進捗', added: '追加',
-                aboutText: 'BookReader Pro v1.0 - 難読症向けに最適化された本スキャンとAI読み上げ'
-            },
-            hi: {
-                appTitle: 'BookReader Pro',
-                home: 'होम', library: 'लाइब्रेरी', settings: 'सेटिंग्स',
-                scan: 'किताब स्कैन करें', scanDesc: 'एक पृष्ठ की तस्वीर लें और इसे सुलभ पाठ में बदलें',
-                customize: 'सेटिंग्स', customizeDesc: 'फ़ॉन्ट, रंग, आवाज़ और पढ़ने की गति को अनुकूलित करें',
-                myLibrary: 'मेरी लाइब्रेरी', myLibraryDesc: 'अपनी सहेजी गई किताबें और पढ़ने की प्रगति देखें',
-                about: 'के बारे में', aboutDesc: 'BookReader Pro और पहुँच सुविधाओं के बारे में जानें',
-                buddyMode: 'बडी मोड', buddyModeDesc: 'दृष्टिहीन उपयोगकर्ताओं के लिए वॉयस-फर्स्ट पढ़ना',
-                buddyWelcome: 'अपने पढ़ने वाली बडी का स्वागत है!',
-                buddyGreeting: 'नमस्ते! मैं आपकी पढ़ने वाली बडी हूँ। मैं यहाँ किताबों को ज़ोर से पढ़कर आपको आनंद लेने में मदद करने के लिए हूँ। शुरू करते हैं!',
-                uploadBook: 'किताब का पृष्ठ अपलोड या कैप्चर करें',
-                typeText: 'टाइप करें', uploadPhoto: 'फ़ोटो अपलोड करें',
-                font: 'फ़ॉन्ट', lineSpacing: 'पंक्ति रिक्ति', colorOverlay: 'रंग ओवरले',
-                voice: 'आवाज़', speed: 'पढ़ने की गति', letterSpacing: 'अक्षर रिक्ति',
-                highlightCurrentWord: 'पढ़ने के दौरान वर्तमान शब्द को हाइलाइट करें',
-                exportData: 'डेटा निर्यात करें', clearData: 'सभी डेटा हटाएँ',
-                back: 'पीछे', play: 'व्याख्या चलाएँ',
-                bookmark: 'बुकमार्क', share: 'प्रगति साझा करें',
-                noBooks: 'अभी कोई किताब नहीं',
-                startScanning: 'अपनी पहली किताब के पृष्ठ को स्कैन करके शुरू करें',
-                progress: 'प्रगति', added: 'जोड़ा गया',
-                aboutText: 'BookReader Pro v1.0 - डिस्लेक्सिया के लिए अनुकूलित किताब स्कैनिंग और AI पढ़ना'
-            },
-            zh: {
-                appTitle: 'BookReader Pro',
-                home: '首页', library: '图书馆', settings: '设置',
-                scan: '扫描书籍', scanDesc: '拍照一个页面并将其转换为可访问的文本',
-                customize: '设置', customizeDesc: '自定义字体、颜色、语音和阅读速度',
-                myLibrary: '我的图书馆', myLibraryDesc: '查看您保存的书籍和阅读进度',
-                about: '关于', aboutDesc: '了解有关BookReader Pro和可访问性功能的更多信息',
-                buddyMode: '伙伴模式', buddyModeDesc: '为视障用户提供语音优先阅读',
-                buddyWelcome: '欢迎使用您的阅读伙伴！',
-                buddyGreeting: '你好！我是你的阅读伙伴。我来帮助你大声朗读，享受书籍。让我们开始吧！',
-                uploadBook: '上传或捕获书页',
-                typeText: '输入', uploadPhoto: '上传照片',
-                font: '字体', lineSpacing: '行距', colorOverlay: '颜色叠加',
-                voice: '语音', speed: '阅读速度', letterSpacing: '字母间距',
-                highlightCurrentWord: '阅读时突出显示当前单词',
-                exportData: '导出数据', clearData: '清除所有数据',
-                back: '返回', play: '播放说明',
-                bookmark: '书签', share: '分享进度',
-                noBooks: '还没有书',
-                startScanning: '通过扫描您的第一本书页面开始',
-                progress: '进度', added: '已添加',
-                aboutText: 'BookReader Pro v1.0 - 为阅读困难者优化的书籍扫描和AI阅读'
-            },
-            ar: {
-                appTitle: 'BookReader Pro',
-                home: 'الرئيسية', library: 'المكتبة', settings: 'الإعدادات',
-                scan: 'مسح الكتاب', scanDesc: 'التقط صورة لصفحة وحولها إلى نص يمكن الوصول إليه',
-                customize: 'الإعدادات', customizeDesc: 'خصص الخطوط والألوان والصوت وسرعة القراءة',
-                myLibrary: 'مكتبتي', myLibraryDesc: 'اعرض كتبك المحفوظة وتقدم القراءة',
-                about: 'حول', aboutDesc: 'تعرف على المزيد حول BookReader Pro وميزات الوصول',
-                buddyMode: 'نمط الصديق', buddyModeDesc: 'قراءة موجهة بالصوت للمستخدمين ضعاف البصر',
-                buddyWelcome: 'مرحبا بك في صديق القراءة الخاص بك!',
-                buddyGreeting: 'مرحبا! أنا صديق القراءة الخاص بك. أنا هنا لمساعدتك على الاستمتاع بالكتب بقراءتها بصوت عالٍ. لنبدأ!',
-                uploadBook: 'تحميل أو التقاط صفحة الكتاب',
-                typeText: 'اكتب', uploadPhoto: 'تحميل الصورة',
-                font: 'الخط', lineSpacing: 'تباعد الأسطر', colorOverlay: 'طبقة اللون',
-                voice: 'الصوت', speed: 'سرعة القراءة', letterSpacing: 'تباعد الأحرف',
-                highlightCurrentWord: 'تمييز الكلمة الحالية أثناء القراءة',
-                exportData: 'تصدير البيانات', clearData: 'حذف جميع البيانات',
-                back: 'رجوع', play: 'تشغيل الشرح',
-                bookmark: 'إشارة مرجعية', share: 'مشاركة التقدم',
-                noBooks: 'لا توجد كتب حتى الآن',
-                startScanning: 'ابدأ بمسح صفحتك الأولى من الكتاب',
-                progress: 'التقدم', added: 'تم إضافته',
-                aboutText: 'BookReader Pro v1.0 - مسح الكتب وقراءة الذكاء الاصطناعي المحسنة للعسر القرائي'
-            },
-            ru: {
-                appTitle: 'BookReader Pro',
-                home: 'Главная', library: 'Библиотека', settings: 'Настройки',
-                scan: 'Сканировать Книгу', scanDesc: 'Сфотографируйте страницу и преобразуйте её в доступный текст',
-                customize: 'Настройки', customizeDesc: 'Настройте шрифты, цвета, голос и скорость чтения',
-                myLibrary: 'Моя Библиотека', myLibraryDesc: 'Просмотрите сохранённые книги и прогресс чтения',
-                about: 'О программе', aboutDesc: 'Узнайте больше о BookReader Pro и функциях доступности',
-                buddyMode: 'Режим Помощника', buddyModeDesc: 'Чтение с приоритетом голоса для слабовидящих пользователей',
-                buddyWelcome: 'Добро пожаловать к вашему помощнику по чтению!',
-                buddyGreeting: 'Привет! Я ваш помощник по чтению. Я здесь, чтобы помочь вам наслаждаться книгами, читая их вслух. Давайте начнём!',
-                uploadBook: 'Загрузите или захватите страницу книги',
-                typeText: 'Ввести', uploadPhoto: 'Загрузить фото',
-                font: 'Шрифт', lineSpacing: 'Межстрочный интервал', colorOverlay: 'Цветное наложение',
-                voice: 'Голос', speed: 'Скорость чтения', letterSpacing: 'Межбуквенный интервал',
-                highlightCurrentWord: 'Выделять текущее слово при чтении',
-                exportData: 'Экспортировать данные', clearData: 'Очистить все данные',
-                back: 'Назад', play: 'Воспроизвести объяснение',
-                bookmark: 'Закладка', share: 'Поделиться прогрессом',
-                noBooks: 'Книги ещё не добавлены',
-                startScanning: 'Начните со сканирования первой страницы вашей книги',
-                progress: 'Прогресс', added: 'Добавлено',
-                aboutText: 'BookReader Pro v1.0 - Сканирование книг и чтение на базе ИИ, оптимизированное для дислексии'
-            }
-        };
-
-        let currentLanguage = 'en';
-
-        function t(key) {
-            return translations[currentLanguage]?.[key] || translations.en[key] || key;
-        }
-
-        function changeLanguage(lang) {
-            currentLanguage = lang;
-            localStorage.setItem('bookreaderLanguage', lang);
-            location.reload();
-        }
-
-        // App state
-        const state = {
-            books: [],
-            currentBook: null,
-            isPlaying: false,
-            settings: {
-                font: 'opendyslexic',
-                fontSize: '18',
-                lineHeight: '1.8',
-                overlay: 'none',
-                voice: 'none',
-                speed: '1',
-                letterSpacing: '0',
-                highlightWords: true
-            }
-        };
-
-        // Initialize
-        function init() {
-            // Load saved language
-            const savedLang = localStorage.getItem('bookreaderLanguage') || 'en';
-            currentLanguage = savedLang;
-            document.getElementById('languageSelect').value = savedLang;
-
-            loadSettings();
-            loadLibrary();
-            applySettings();
-        }
-
-        // SCREEN MANAGEMENT
-        function showScreen(screenName) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const screen = document.getElementById(screenName + 'Screen');
-            if (screen) {
-                screen.classList.add('active');
-                if (screenName === 'library') renderLibrary();
-            }
-        }
-
-        // SETTINGS FUNCTIONS
-        function updateFont(font) {
-            state.settings.font = font;
-            document.body.style.fontFamily = getFontFamily(font);
-            saveSettings();
-        }
-
-        function getFontFamily(font) {
-            const families = {
-                'opendyslexic': "'OpenDyslexic', 'Comic Sans MS', sans-serif",
-                'comic': "'Comic Sans MS', cursive",
-                'arial': "'Arial', sans-serif",
-                'lexie': "'Lexie Readable', sans-serif"
-            };
-            return families[font] || families['opendyslexic'];
-        }
-
-        function updateFontSize(size) {
-            state.settings.fontSize = size;
-            document.documentElement.style.setProperty('--font-size-base', size + 'px');
-            document.getElementById('fontSizeValue').textContent = size + 'px';
-            saveSettings();
-        }
-
-        function updateLineHeight(height) {
-            state.settings.lineHeight = height;
-            document.documentElement.style.setProperty('--line-height-normal', height);
-            saveSettings();
-        }
-
-        function updateLetterSpacing(spacing) {
-            state.settings.letterSpacing = spacing;
-            document.documentElement.style.setProperty('--letter-spacing-normal', spacing);
-            saveSettings();
-        }
-
-        function updateOverlay(overlay) {
-            state.settings.overlay = overlay;
-            document.body.className = overlay === 'none' ? '' : 'overlay-' + overlay;
-            saveSettings();
-        }
-
-        function updateVoice(voice) {
-            state.settings.voice = voice;
-            saveSettings();
-            showToast('Voice changed to ' + (voice === 'none' ? 'None' : voice), 'success');
-        }
-
-        function updateSpeed(speed) {
-            state.settings.speed = speed;
-            document.getElementById('speedValue').textContent = speed + 'x';
-            saveSettings();
-        }
-
-        function updateHighlight(checked) {
-            state.settings.highlightWords = checked;
-            saveSettings();
-        }
-
-        // FILE UPLOAD
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (file.size > 10 * 1024 * 1024) {
-                showToast('File too large. Maximum 10 MB.', 'error');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target.result;
-                createBook(file.name, content);
-            };
-
-            if (file.type.startsWith('image/')) {
-                reader.readAsDataURL(file);
-            } else {
-                showToast('Image files supported. PDF coming soon.', 'error');
-            }
-        }
-
-        function captureCamera() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.capture = 'environment';
-            input.onchange = handleFileUpload;
-            input.click();
-        }
-
-        function pasteImage() {
-            navigator.clipboard.read().then(items => {
-                for (let item of items) {
-                    if (item.types.includes('image/png')) {
-                        item.getType('image/png').then(blob => {
-                            const event = { target: { files: [blob] } };
-                            handleFileUpload(event);
-                        });
-                    }
-                }
-            }).catch(() => {
-                showToast('Could not paste image. Try uploading instead.', 'error');
-            });
-        }
-
-        // Map app language -> Tesseract language pack
-        const tesseractLangMap = {
-            en: 'eng', es: 'spa', fr: 'fra', pt: 'por', de: 'deu',
-            ja: 'jpn', hi: 'hin', zh: 'chi_sim', ar: 'ara', ru: 'rus'
-        };
-
-        // BOOK MANAGEMENT — real OCR via Tesseract.js (in-browser, no API key)
-        async function createBook(title, imageData) {
-            if (typeof Tesseract === 'undefined') {
-                showToast('OCR engine still loading — check your connection and try again.', 'error');
-                return;
-            }
-
-            // Progress UI
-            const uploadArea = document.getElementById('uploadArea');
-            const originalHTML = uploadArea ? uploadArea.innerHTML : '';
-            if (uploadArea) {
-                uploadArea.innerHTML = `
-                    <div class="upload-area-icon">⏳</div>
-                    <div class="upload-area-text">Scanning your page…</div>
-                    <div class="upload-area-subtext" id="ocrProgress">Reading the words… 0%</div>`;
-            }
-
-            const lang = tesseractLangMap[currentLanguage] || 'eng';
-
-            try {
-                const result = await Tesseract.recognize(imageData, lang, {
-                    logger: (m) => {
-                        if (m.status === 'recognizing text') {
-                            const pct = Math.round(m.progress * 100);
-                            const el = document.getElementById('ocrProgress');
-                            if (el) el.textContent = `Reading the words… ${pct}%`;
-                        }
-                    }
-                });
-
-                const text = (result.data.text || '').trim();
-
-                if (uploadArea) uploadArea.innerHTML = originalHTML;
-
-                if (!text || text.length < 3) {
-                    showToast('I couldn\'t find clear text. Try better lighting and hold steady.', 'error');
-                    return;
-                }
-
-                const book = {
-                    id: Date.now(),
-                    title: title.replace(/\.[^/.]+$/, ''),
-                    image: imageData,
-                    content: text,
-                    dateAdded: new Date().toLocaleDateString(),
-                    progress: 0,
-                    lastRead: new Date().toLocaleDateString()
-                };
-
-                state.books.push(book);
-                saveLibrary();
-                showToast('✓ Scanned! Found ' + text.split(/\s+/).length + ' words.', 'success');
-                openBook(book.id);
-            } catch (err) {
-                if (uploadArea) uploadArea.innerHTML = originalHTML;
-                showToast('Scan failed: ' + (err.message || 'unknown error') + '. Try again.', 'error');
-            }
-        }
-
-        function saveLibrary() {
-            localStorage.setItem('bookReaderLibrary', JSON.stringify(state.books));
-        }
-
-        function loadLibrary() {
-            const saved = localStorage.getItem('bookReaderLibrary');
-            state.books = saved ? JSON.parse(saved) : [];
-        }
-
-        function renderLibrary() {
-            const container = document.getElementById('libraryContent');
-            if (state.books.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📚</div>
-                        <h3 style="font-size: 1.3rem; margin-bottom: 1rem;">No Books Yet</h3>
-                        <p>Start by scanning your first book page</p>
-                        <button class="btn-primary" style="margin-top: 1.5rem;" onclick="showScreen('upload')">Scan Book</button>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = `<div class="library-grid">${state.books.map(book => `
-                <div class="book-card" onclick="openBook(${book.id})" role="button" tabindex="0" onkeydown="if(event.key==='Enter') openBook(${book.id})">
-                    <div class="book-cover">📖</div>
-                    <div class="book-info">
-                        <div class="book-title">${book.title}</div>
-                        <div class="book-progress">Progress: ${book.progress}%</div>
-                        <div class="book-date">Added: ${book.dateAdded}</div>
-                    </div>
-                </div>
-            `).join('')}</div>`;
-        }
-
-        function openBook(bookId) {
-            state.currentBook = state.books.find(b => b.id === bookId);
-            if (!state.currentBook) return;
-
-            document.getElementById('readerTitle').textContent = state.currentBook.title;
-            document.getElementById('readerText').innerHTML = formatTextForReading(state.currentBook.content);
-            showScreen('reader');
-        }
-
-        function formatTextForReading(text) {
-            return text.split('\n\n').map(paragraph => {
-                return '<div class="reader-paragraph">' +
-                    paragraph.split(/(?<=[.!?])\s+/).map(sentence => {
-                        return '<span class="sentence">' +
-                            sentence.split(/\s+/).map(word => {
-                                const cleanWord = word.replace(/[^a-zA-Z]/g, '').toLowerCase();
-                                const isComplex = complexWords.includes(cleanWord);
-                                return `<span class="word ${isComplex ? 'complex-word' : ''}" ${isComplex ? `onclick="explainWord('${word}', event)"` : ''}>${word}</span>`;
-                            }).join(' ') +
-                        '</span>';
-                    }).join(' ') +
-                '</div>';
-            }).join('');
-        }
-
-        // COMPLEX WORDS DATABASE (Dyslexia-optimized - common difficult words)
-        const complexWords = [
-            'however', 'therefore', 'consequence', 'peculiar', 'magnificent', 'melancholy',
-            'ambiguous', 'obscure', 'intricate', 'elaborate', 'eloquent', 'ubiquitous',
-            'ephemeral', 'serendipity', 'metamorphosis', 'nostalgic', 'pragmatic',
-            'philosophical', 'phenomenal', 'aesthetic', 'contemporary', 'diligent',
-            'bureaucratic', 'inexplicable', 'catastrophic', 'meticulous', 'ambivalent',
-            'arbitrary', 'benevolent', 'candid', 'delinquent', 'earnest', 'fervid',
-            'gregarious', 'homogeneous', 'indigenous', 'jaunty', 'kaleidoscope',
-            'labyrinthine', 'mitigate', 'nebulous', 'obfuscate', 'pervasive',
-            'querulous', 'recalcitrant', 'solemn', 'tenacious', 'ubiquitous',
-            'vivacious', 'wistful', 'zealous'
-        ];
-
-        // AI COMPREHENSION ASSISTANT
-        let aiAssistantActive = false;
-
-        function toggleAIAssistant() {
-            aiAssistantActive = !aiAssistantActive;
-            const panel = document.getElementById('aiPanel');
-            const btn = document.getElementById('aiToggleBtn');
-
-            if (aiAssistantActive) {
-                panel.style.display = 'block';
-                btn.style.background = 'var(--color-success)';
-                btn.style.borderColor = 'var(--color-success)';
-                analyzeParagraphForComplexConcepts();
-            } else {
-                panel.style.display = 'none';
-                btn.style.background = '';
-                btn.style.borderColor = '';
-            }
-        }
-
-        function explainWord(word, event) {
-            event.stopPropagation();
-            const cleanWord = word.replace(/[^a-zA-Z]/g, '').toLowerCase();
-
-            // Show simple explanation for dyslexic readers
-            const explanations = {
-                'however': 'It means "but" - used to show contrast or a different idea',
-                'therefore': 'It means "so" or "as a result" - used when one thing causes another',
-                'consequence': 'The result or effect of something that happens',
-                'peculiar': 'Strange, unusual, or odd in a way that stands out',
-                'magnificent': 'Really impressive, beautiful, or grand in scale',
-                'melancholy': 'Sadness or a feeling of thoughtful sadness; not happy',
-                'ambiguous': 'When something could mean more than one thing; unclear',
-                'obscure': 'Hard to understand or unclear; not obvious or well-known',
-                'intricate': 'Complicated and detailed with many parts',
-                'elaborate': 'Very detailed and complex; made with lots of care and detail',
-                'eloquent': 'Able to speak or write in a beautiful, persuasive way',
-                'ubiquitous': 'Found everywhere; very common; present in many places',
-                'ephemeral': 'Lasting only a short time; temporary',
-                'serendipity': 'Finding something good by luck or chance; happy accident',
-                'metamorphosis': 'A complete change or transformation; like a caterpillar becoming a butterfly',
-                'nostalgic': 'Thinking about the past with happy or sad feelings',
-                'pragmatic': 'Practical and realistic; focused on what actually works',
-                'philosophical': 'Thinking deeply about life, meaning, and big questions',
-                'phenomenal': 'Remarkable, extraordinary, or exceptionally good',
-                'aesthetic': 'Related to beauty or how something looks and feels',
-                'contemporary': 'Modern or from the present time; current',
-                'diligent': 'Careful, thorough, and showing effort and attention to detail',
-                'bureaucratic': 'Related to official rules and complex systems of government',
-                'inexplicable': 'Cannot be explained; mysterious',
-                'catastrophic': 'A disaster or extremely bad event',
-                'meticulous': 'Very careful and precise; paying close attention to details',
-                'ambivalent': 'Having mixed feelings about something; unsure',
-                'arbitrary': 'Based on personal preference, not on logic or reason',
-                'benevolent': 'Kind, generous, and wanting to help others',
-                'candid': 'Honest and frank; saying what you really think',
-                'delinquent': 'Failing to do something required; often refers to debt or law',
-                'earnest': 'Sincere and showing genuine feeling or intention',
-                'fervid': 'Passionate and intense; full of strong feeling',
-                'gregarious': 'Liking to be with other people; social',
-                'homogeneous': 'All the same type or kind; uniform throughout',
-                'indigenous': 'Native to a place; originally from there',
-                'jaunty': 'Lively, cheerful, and confident in manner',
-                'kaleidoscope': 'A changing pattern or scene of many colors and forms',
-                'labyrinthine': 'Complex and confusing like a maze',
-                'mitigate': 'To make something less severe or serious',
-                'nebulous': 'Vague, cloudy, or unclear; not well-defined',
-                'obfuscate': 'To make something confusing or unclear on purpose',
-                'pervasive': 'Spreading throughout and present everywhere',
-                'querulous': 'Always complaining or whining; bitter tone',
-                'recalcitrant': 'Refusing to obey or cooperate; stubborn',
-                'solemn': 'Serious, formal, and dignified in manner',
-                'tenacious': 'Holding on strongly; not giving up easily',
-                'vivacious': 'Lively, animated, and full of energy',
-                'wistful': 'Wanting something with a feeling of gentle sadness',
-                'zealous': 'Very enthusiastic and passionate about something'
-            };
-
-            const explanation = explanations[cleanWord] || generateAIExplanation(word);
-
-            const aiContent = document.getElementById('aiContent');
-            aiContent.innerHTML = `
-                <div style="margin-bottom: 1rem;">
-                    <strong style="color: var(--color-primary); font-size: 1.1rem;">${word}</strong>
-                    <div style="margin-top: 0.5rem; color: var(--color-text-secondary);">
-                        ${explanation}
-                    </div>
-                </div>
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
-                    <div class="ai-question" onclick="askAIQuestion('Explain ${word} in simpler words')">
-                        📚 Simpler explanation
-                    </div>
-                    <div class="ai-question" onclick="askAIQuestion('How is ${word} used in real life?')">
-                        🌍 Real-world example
-                    </div>
-                    <div class="ai-question" onclick="askAIQuestion('What is the opposite of ${word}?')">
-                        ⚡ Opposite word
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('aiPanel').style.display = 'block';
-        }
-
-        function generateAIExplanation(word) {
-            // Fallback explanations for words not in the built-in dictionary
-            return `<em>Let me explain: "${word}" is a word that can be tricky. Click one of the options below to understand it better.</em>`;
-        }
-
-        function askAIQuestion(question) {
-            const aiContent = document.getElementById('aiContent');
-            aiContent.innerHTML += `
-                <div class="ai-explanation">
-                    <strong>🤖 AI Response:</strong><br>
-                    ${generateContextualExplanation(question)}
-                </div>
-            `;
-
-            // Scroll to show the new explanation
-            document.getElementById('aiPanel').scrollTop = document.getElementById('aiPanel').scrollHeight;
-        }
-
-        function generateContextualExplanation(question) {
-            // In production, this would call Claude API
-            // For now, provide smart fallback responses
-            if (question.includes('simpler')) {
-                return 'A simpler version: This word means something common that might be confusing. Try breaking it into smaller parts or think of when you\'ve heard it before.';
-            } else if (question.includes('real-world') || question.includes('life')) {
-                return 'In real life: You might encounter this word in conversations, books, news, or everyday situations. It\'s useful to know because it helps you understand what people are talking about.';
-            } else if (question.includes('opposite') || question.includes('Opposite')) {
-                return 'The opposite word: Think of something that means the exact opposite. This helps you understand what the word really means by comparing it to its opposite.';
-            }
-            return 'Great question! The AI assistant is ready to help. In the next version, we\'ll connect this to Claude AI for even smarter answers.';
-        }
-
-        function analyzeParagraphForComplexConcepts() {
-            const readerText = document.getElementById('readerText').innerText;
-            const sentences = readerText.split(/[.!?]+/).slice(0, 3); // First 3 sentences
-
-            const aiContent = document.getElementById('aiContent');
-            let complexWordsFound = [];
-
-            sentences.forEach(sentence => {
-                const words = sentence.toLowerCase().split(/\s+/);
-                words.forEach(word => {
-                    const clean = word.replace(/[^a-zA-Z]/g, '');
-                    if (complexWords.includes(clean)) {
-                        complexWordsFound.push(clean);
-                    }
-                });
-            });
-
-            if (complexWordsFound.length > 0) {
-                aiContent.innerHTML = `
-                    <div style="margin-bottom: 1rem;">
-                        <strong style="color: var(--color-success);">✨ I found some words you might want to understand better:</strong>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                        ${complexWordsFound.slice(0, 4).map(word => `
-                            <div class="ai-question" onclick="explainWord('${word}', event)">
-                                <strong>${word}</strong><br>
-                                <span style="font-size: 0.85rem;">Click to learn</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            } else {
-                aiContent.innerHTML = `
-                    <div style="color: var(--color-text-secondary);">
-                        This passage looks straightforward! <br><br>
-                        <strong>💡 Tip:</strong> Click on any word that looks complicated, and I'll explain it in simple language.
-                    </div>
-                `;
-            }
-        }
-
-        function closeReader() {
-            stopSpeech();
-            state.currentBook = null;
-            state.isPlaying = false;
-            showScreen('library');
-        }
-
-        // READER CONTROLS — real TTS via the browser's built-in Web Speech API (free, offline, no key)
-        // Map app language -> BCP-47 voice locale
-        const speechLangMap = {
-            en: 'en-US', es: 'es-ES', fr: 'fr-FR', pt: 'pt-BR', de: 'de-DE',
-            ja: 'ja-JP', hi: 'hi-IN', zh: 'zh-CN', ar: 'ar-SA', ru: 'ru-RU'
-        };
-
-        function pickVoice(locale) {
-            const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-            if (!voices.length) return null;
-            // exact locale, then language prefix, then default
-            return voices.find(v => v.lang === locale)
-                || voices.find(v => v.lang && v.lang.startsWith(locale.split('-')[0]))
-                || voices[0];
-        }
-
-        function getAllWordSpans() {
-            return Array.from(document.querySelectorAll('#readerText .word'));
-        }
-
-        function highlightWordAt(charIndex) {
-            if (!state.settings.highlightWords) return;
-            const spans = getAllWordSpans();
-            // Walk spans, tracking cumulative character offset to find the spoken word
-            let offset = 0;
-            for (const span of spans) {
-                const len = span.textContent.length + 1; // +1 for the space between words
-                if (charIndex >= offset && charIndex < offset + len) {
-                    spans.forEach(s => s.classList.remove('current'));
-                    span.classList.add('current');
-                    span.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                    return;
-                }
-                offset += len;
-            }
-        }
-
-        function stopSpeech() {
-            if (window.speechSynthesis) window.speechSynthesis.cancel();
-            getAllWordSpans().forEach(s => s.classList.remove('current'));
-        }
-
-        function togglePlayPause() {
-            if (!('speechSynthesis' in window)) {
-                showToast('Your browser does not support voice. Try Chrome or Safari.', 'error');
-                return;
-            }
-
-            const synth = window.speechSynthesis;
-
-            if (state.isPlaying) {
-                // pause
-                synth.pause();
-                state.isPlaying = false;
-                document.getElementById('playBtn').textContent = '▶️';
-                return;
-            }
-
-            // resume if paused mid-utterance
-            if (synth.paused && synth.speaking) {
-                synth.resume();
-                state.isPlaying = true;
-                document.getElementById('playBtn').textContent = '⏸️';
-                return;
-            }
-
-            // fresh start
-            const text = state.currentBook ? state.currentBook.content : document.getElementById('readerText').innerText;
-            if (!text) return;
-
-            const utter = new SpeechSynthesisUtterance(text);
-            const locale = speechLangMap[currentLanguage] || 'en-US';
-            const voice = pickVoice(locale);
-            if (voice) utter.voice = voice;
-            utter.lang = locale;
-            utter.rate = parseFloat(state.settings.speed) || 1;
-
-            utter.onboundary = (e) => {
-                if (e.name === 'word' || e.charIndex !== undefined) {
-                    highlightWordAt(e.charIndex);
-                }
-            };
-            utter.onend = () => {
-                state.isPlaying = false;
-                document.getElementById('playBtn').textContent = '▶️';
-                getAllWordSpans().forEach(s => s.classList.remove('current'));
-                if (state.currentBook) {
-                    state.currentBook.progress = 100;
-                    saveLibrary();
-                }
-            };
-            utter.onerror = () => {
-                state.isPlaying = false;
-                document.getElementById('playBtn').textContent = '▶️';
-            };
-
-            synth.cancel(); // clear any queued speech
-            synth.speak(utter);
-            state.currentUtterance = utter;
-            state.isPlaying = true;
-            document.getElementById('playBtn').textContent = '⏸️';
-        }
-
-        function skipBackward() {
-            // restart current reading (simple, reliable behaviour for an MVP)
-            stopSpeech();
-            state.isPlaying = false;
-            document.getElementById('playBtn').textContent = '▶️';
-            togglePlayPause();
-        }
-
-        function skipForward() {
-            stopSpeech();
-            state.isPlaying = false;
-            document.getElementById('playBtn').textContent = '▶️';
-            showToast('Reached the end of this page.', 'success');
-        }
-
-        function updateReaderSpeed(speed) {
-            document.getElementById('readerSpeedValue').textContent = speed + 'x';
-            updateSpeed(speed);
-            // apply live: restart so the new rate takes effect
-            if (state.isPlaying) {
-                stopSpeech();
-                state.isPlaying = false;
-                togglePlayPause();
-            }
-        }
-
-        function bookmarkPage() {
-            showToast('🔖 Page bookmarked', 'success');
-        }
-
-        function shareProgress() {
-            showToast('📤 Share feature coming soon', 'success');
-        }
-
-        // SETTINGS PERSISTENCE
-        function saveSettings() {
-            localStorage.setItem('bookReaderSettings', JSON.stringify(state.settings));
-        }
-
-        function loadSettings() {
-            const saved = localStorage.getItem('bookReaderSettings');
-            if (saved) {
-                state.settings = { ...state.settings, ...JSON.parse(saved) };
-            }
-        }
-
-        function applySettings() {
-            updateFont(state.settings.font);
-            updateFontSize(state.settings.fontSize);
-            updateLineHeight(state.settings.lineHeight);
-            updateLetterSpacing(state.settings.letterSpacing);
-            updateOverlay(state.settings.overlay);
-            updateHighlight(state.settings.highlightWords);
-        }
-
-        function exportData() {
-            const data = {
-                settings: state.settings,
-                books: state.books,
-                exportDate: new Date().toISOString()
-            };
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'bookreader-backup.json';
-            a.click();
-            showToast('💾 Data exported successfully', 'success');
-        }
-
-        function clearAllData() {
-            if (confirm('Are you sure? This will delete all books and reset settings.')) {
-                state.books = [];
-                state.settings = {
-                    font: 'opendyslexic',
-                    fontSize: '18',
-                    lineHeight: '1.8',
-                    overlay: 'none',
-                    voice: 'none',
-                    speed: '1',
-                    letterSpacing: '0',
-                    highlightWords: true
-                };
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        function showAbout() {
-            showToast('BookReader Pro v1.0\nDyslexia-first book scanning & AI reading\nBuilt with 💜 for accessible reading', 'success');
-        }
-
-        // BUDDY MODE (FOR VISUALLY IMPAIRED USERS)
-        let buddyModeActive = false;
-        let buddyVoiceSpeed = 1;
-
-        // Real text-to-speech for any string, in the current language
-        function speak(text) {
-            if (!('speechSynthesis' in window)) {
-                showToast('Voice not supported in this browser. Try Chrome or Safari.', 'error');
-                return;
-            }
-            const synth = window.speechSynthesis;
-            synth.cancel();
-            const utter = new SpeechSynthesisUtterance(text);
-            const locale = speechLangMap[currentLanguage] || 'en-US';
-            const voice = pickVoice(locale);
-            if (voice) utter.voice = voice;
-            utter.lang = locale;
-            utter.rate = buddyVoiceSpeed || 1;
-            synth.speak(utter);
-        }
-
-        function playBuddyMessage() {
-            const greeting = document.getElementById('buddyGreeting');
-            const text = greeting ? greeting.textContent.replace(/^["']|["']$/g, '') : '';
-            speak(text);
-            greeting.style.background = 'rgba(16, 185, 129, 0.2)';
-            const utterEnd = () => { greeting.style.background = ''; };
-            setTimeout(utterEnd, Math.min(text.length * 80, 15000));
-        }
-
-        function adjustBuddySpeed(speed) {
-            const speeds = { 'slower': 0.75, 'normal': 1, 'faster': 1.5 };
-            buddyVoiceSpeed = speeds[speed] || 1;
-            showToast(`🎵 Voice speed: ${speed}`, 'success');
-            document.querySelectorAll('.voice-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-        }
-
-        function startBuddyReading() {
-            buddyModeActive = true;
-            showScreen('upload');
-            showToast('📖 Ready to scan! Your buddy will read it aloud', 'success');
-        }
-
-        function startBuddyChat() {
-            buddyModeActive = true;
-            showScreen('home');
-            showToast('💬 Chat mode activated. Ask your buddy anything!', 'success');
-            // Open chat interface
-            const input = prompt('Ask your buddy something:\n\nExamples:\n- Read me a chapter from my favorite book\n- Explain what dyslexia is\n- Help me understand fractions\n- Just chat!');
-            if (input) {
-                respondBuddy(input);
-            }
-        }
-
-        function respondBuddy(userMessage) {
-            // AI responses for common questions
-            const responses = {
-                'dyslexia': 'Dyslexia is when your brain processes letters and words in a different way. Your brain is not broken—it just works differently. Many brilliant people have dyslexia. This app is designed to help you read and learn in a way that works for YOUR brain. No shame, no pressure.',
-                'fractions': 'A fraction is a part of a whole. Think of a pizza cut into 8 slices. If you eat 2 slices, you ate 2/8 of the pizza. The bottom number shows how many pieces the whole is split into. The top number shows how many pieces you have.',
-                'read': 'I\'d love to read to you! Scan a page or upload a document, and I\'ll read it aloud in a clear, friendly voice. Tell me when you want me to slow down, speed up, or explain something.',
-                'help': 'I\'m here to help! I can: read books aloud, explain hard words, answer questions about what you\'re reading, describe pictures, and just chat if you need someone to talk to.',
-                'default': 'That\'s a great question! I\'m learning to help you better. What would you like me to help with most right now?'
-            };
-
-            let response = responses.default;
-            const msg = userMessage.toLowerCase();
-
-            for (const [key, value] of Object.entries(responses)) {
-                if (msg.includes(key)) {
-                    response = value;
-                    break;
-                }
-            }
-
-            showToast(`📖 Buddy says: "${response}"`, 'success');
-            speak(response); // read the answer aloud — the whole point of Buddy Mode
-        }
-
-        // KEYBOARD SHORTCUTS FOR BUDDY MODE
-        document.addEventListener('keydown', (e) => {
-            if (!buddyModeActive) return;
-
-            const shortcuts = {
-                ' ': () => { showToast('⏸️ Paused (⏭️ to resume)', 'success'); e.preventDefault(); },
-                'ArrowRight': () => showToast('→ Next paragraph', 'success'),
-                'ArrowLeft': () => showToast('← Previous paragraph', 'success'),
-                'ArrowUp': () => adjustBuddySpeed('faster'),
-                'ArrowDown': () => adjustBuddySpeed('slower'),
-                'r': () => showToast('🔄 Repeating current section...', 'success'),
-                'h': () => showToast('📖 Buddy Mode help: Press spacebar to pause, arrows to navigate, r to repeat', 'success'),
-                's': () => showScreen('settings'),
-                '?': () => respondBuddy(prompt('What would you like to ask your buddy?') || 'help')
-            };
-
-            if (shortcuts[e.key]) {
-                shortcuts[e.key]();
-            }
+    const store = {
+        get key()    { return localStorage.getItem('br_key') || ''; },
+        get name()   { return localStorage.getItem('br_name') || ''; },
+        get model()  { return localStorage.getItem('br_model') || 'claude-haiku-4-5'; },
+        get voice()  { return localStorage.getItem('br_voice') !== '0'; },
+        get speed()  { return parseFloat(localStorage.getItem('br_speed') || '0.9'); },
+        get dys()    { return localStorage.getItem('br_dys') === '1'; },
+        get big()    { return localStorage.getItem('br_big') === '1'; },
+        get streak() { return parseInt(localStorage.getItem('br_streak') || '0'); },
+        get lastDay(){ return localStorage.getItem('br_lastday') || ''; },
+        get books()  { try { return JSON.parse(localStorage.getItem('br_books')||'[]'); } catch { return []; } },
+        set books(v) { localStorage.setItem('br_books', JSON.stringify(v)); }
+    };
+    const chatHistory = [];
+    let words = [], currentText = '';
+
+    /* Carousel */
+    const carousel = document.getElementById('carousel');
+    const SCREENS = 5;
+    let idx=0, startX=0, startY=0, curX=0, dragging=false, locked=null;
+    carousel.addEventListener('touchstart', e=>{ startX=curX=e.touches[0].clientX; startY=e.touches[0].clientY; dragging=true; locked=null; carousel.style.transition='none'; }, {passive:true});
+    carousel.addEventListener('touchmove', e=>{
+        if(!dragging) return; curX=e.touches[0].clientX;
+        const dx=curX-startX, dy=e.touches[0].clientY-startY;
+        if(locked===null) locked=Math.abs(dx)>Math.abs(dy)?'x':'y';
+        if(locked!=='x') return;
+        let move=dx; if((idx===0&&dx>0)||(idx===SCREENS-1&&dx<0)) move=dx*0.32;
+        carousel.style.transform=`translateX(calc(-${idx*100}% + ${move}px))`;
+    }, {passive:true});
+    carousel.addEventListener('touchend', ()=>{
+        if(!dragging) return; dragging=false; if(locked!=='x') return;
+        const dx=curX-startX;
+        if(dx<-55 && idx<SCREENS-1) idx++; else if(dx>55 && idx>0) idx--;
+        render();
+    });
+    function go(i){ idx=Math.max(0,Math.min(SCREENS-1,i)); render(); }
+    function render(){ carousel.style.transition='transform 0.45s cubic-bezier(0.34,1.56,0.64,1)'; carousel.style.transform=`translateX(-${idx*100}%)`; document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===idx)); }
+
+    /* Claude */
+    async function askClaude(messages, system, { onToken } = {}) {
+        const key = store.key; if(!key) throw new Error('NO_KEY');
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method:'POST',
+            headers:{ 'content-type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+            body: JSON.stringify({ model: store.model, max_tokens:1024, system, messages, stream:true })
         });
-
-        // TOAST NOTIFICATIONS
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = 'toast ' + type;
-            toast.textContent = message;
-            document.getElementById('toastContainer').appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
+        if(!res.ok){ const t=await res.text().catch(()=> ''); throw new Error(res.status===401?'BAD_KEY':('HTTP_'+res.status+' '+t.slice(0,120))); }
+        const reader=res.body.getReader(), dec=new TextDecoder(); let buf='', full='';
+        while(true){ const {value,done}=await reader.read(); if(done) break;
+            buf+=dec.decode(value,{stream:true}); const parts=buf.split('\n\n'); buf=parts.pop();
+            for(const part of parts){ const line=part.split('\n').find(l=>l.startsWith('data:')); if(!line) continue;
+                const data=line.slice(5).trim(); if(data==='[DONE]') continue;
+                try{ const ev=JSON.parse(data); if(ev.type==='content_block_delta'&&ev.delta?.text){ full+=ev.delta.text; onToken&&onToken(ev.delta.text,full); } }catch{}
+            }
         }
+        return full;
+    }
+    const BUDDY_SYSTEM = () => `You are a warm, patient reading buddy for a learner${store.name?' named '+store.name:''}. Many of your readers are dyslexic or struggle with reading and have lost confidence. Rebuild it.
+Rules:
+- Talk like a kind friend, never a textbook. Short, warm sentences.
+- Explain words and meaning in the simplest plain language. Use everyday examples.
+- Be encouraging. Reading is hard for them — never make them feel slow.
+- Keep replies short and easy to read aloud.
+${currentText ? 'Here is the page they are reading, for context:\n"""'+currentText.slice(0,1500)+'"""' : ''}`;
 
-        // Warm up the speech engine — voices load asynchronously on many browsers
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-        }
+    /* Scan */
+    async function handlePhoto(e){
+        const file=e.target.files[0]; if(!file) return;
+        const box=document.getElementById('ocrBox'); box.style.display='block';
+        const r=new FileReader();
+        r.onload=async ev=>{
+            try{
+                const out=await Tesseract.recognize(ev.target.result,'eng',{ logger:m=>{ if(m.status==='recognizing text'){ const p=Math.round(m.progress*100); document.getElementById('ocrPct').textContent=p; document.getElementById('ocrFill').style.width=p+'%'; } } });
+                const text=out.data.text.trim().replace(/\s+/g,' ');
+                box.style.display='none';
+                if(!text){ toast('Couldn’t find words — try a clearer photo'); return; }
+                const title='Page '+new Date().toLocaleDateString();
+                loadText(text, title);
+                const books=store.books; books.unshift({ id:Date.now(), title, text, date:new Date().toLocaleDateString() }); store.books=books.slice(0,30);
+                bumpStreak(); go(2);
+                if(store.voice) setTimeout(togglePlay, 500);
+            }catch{ box.style.display='none'; toast('Hmm, couldn’t read that. Try again?'); }
+        };
+        r.readAsDataURL(file);
+    }
+    function loadText(text, title){
+        currentText=text; words=text.split(/\s+/).filter(Boolean);
+        document.getElementById('readerTitle').textContent=title||'Your book';
+        document.getElementById('reader').innerHTML=words.map((w,i)=>`<span class="w" data-i="${i}" onclick="defineWord(${i})">${esc(w)}</span>`).join(' ');
+    }
+    function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 
-        // Start app
-        init();
+    function renderLibrary(){
+        const books=store.books;
+        document.getElementById('readerTitle').textContent='Library';
+        const reader=document.getElementById('reader');
+        if(!books.length){ reader.innerHTML='<div class="empty"><div class="ei">📚</div>No books yet — scan your first page</div>'; return; }
+        reader.style.fontFamily='var(--font-ui)'; reader.style.fontSize='';
+        reader.innerHTML='<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">'+books.map(b=>`<div onclick="openBook(${b.id})" style="background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px 14px; text-align:center; cursor:pointer;"><div style="font-size:30px; margin-bottom:8px;">📖</div><div style="font-size:13.5px; font-weight:600; margin-bottom:3px;">${esc(b.title)}</div><div style="font-size:11.5px; color:var(--text-mute);">${b.text.split(' ').length} words</div></div>`).join('')+'</div>';
+    }
+    function openBook(id){ const b=store.books.find(x=>x.id===id); if(!b) return; const reader=document.getElementById('reader'); reader.style.fontFamily=''; reader.style.fontSize=store.big?'24px':''; loadText(b.text,b.title); go(2); if(store.voice) setTimeout(togglePlay,400); }
+
+    /* Read aloud with word highlight */
+    let speaking=false, paused=false;
+    function togglePlay(){
+        if(!('speechSynthesis' in window)){ toast('Read-aloud isn’t supported here'); return; }
+        if(!words.length){ toast('Scan a page first'); return; }
+        if(speaking && !paused){ speechSynthesis.pause(); paused=true; document.getElementById('playBtn').textContent='▶️'; return; }
+        if(paused){ speechSynthesis.resume(); paused=false; document.getElementById('playBtn').textContent='⏸️'; return; }
+        startRead();
+    }
+    function startRead(){
+        speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(words.join(' '));
+        if(bestVoice) u.voice=bestVoice; u.rate=store.speed; u.pitch=1.02;
+        const starts=[]; let pos=0; words.forEach(w=>{ starts.push(pos); pos+=w.length+1; });
+        u.onboundary=ev=>{ if(ev.name && ev.name!=='word') return; let i=0; while(i<starts.length-1 && starts[i+1]<=ev.charIndex) i++; highlight(i); };
+        u.onstart=()=>{ speaking=true; paused=false; document.getElementById('playBtn').textContent='⏸️'; };
+        u.onend=()=>{ speaking=false; paused=false; document.getElementById('playBtn').textContent='▶️'; clearHi(); };
+        speechSynthesis.speak(u);
+    }
+    function highlight(i){ clearHi(); const el=document.querySelector(`.w[data-i="${i}"]`); if(el){ el.classList.add('on'); el.scrollIntoView({behavior:'smooth', block:'center'}); } }
+    function clearHi(){ document.querySelectorAll('.reader .w.on').forEach(e=>e.classList.remove('on')); }
+    function stopRead(){ speechSynthesis.cancel(); speaking=false; paused=false; document.getElementById('playBtn').textContent='▶️'; clearHi(); }
+
+    function defineWord(i){ const w=words[i].replace(/[^A-Za-z'-]/g,''); if(!w) return; go(3); document.getElementById('chatInput').value=`What does "${w}" mean?`; sendChat(); }
+
+    /* Chat */
+    function addBubble(who, html){ const c=document.getElementById('chat'); const b=document.createElement('div'); b.className='bubble '+who; b.innerHTML=html; c.appendChild(b); b.scrollIntoView({behavior:'smooth',block:'nearest'}); return b; }
+    function quick(q){ document.getElementById('chatInput').value=q; sendChat(); }
+    async function sendChat(){
+        const inp=document.getElementById('chatInput'); const msg=inp.value.trim(); if(!msg) return; inp.value=''; inp.style.height='auto';
+        addBubble('me', esc(msg)); chatHistory.push({role:'user',content:msg}); bumpStreak();
+        if(!store.key){ addBubble('ai','Add your reading-buddy key in <b>Settings</b> and I can explain anything you read 💬'); return; }
+        const bubble=addBubble('ai','<span class="typing"><i></i><i></i><i></i></span>');
+        try{
+            const reply=await askClaude(chatHistory.slice(-8), BUDDY_SYSTEM(), { onToken:(_,full)=>{ bubble.innerHTML=fmt(full); bubble.scrollIntoView({behavior:'smooth',block:'nearest'}); } });
+            bubble.innerHTML=fmt(reply); chatHistory.push({role:'assistant',content:reply});
+            if(store.voice) speak(reply);
+        }catch(err){ bubble.innerHTML = err.message==='BAD_KEY'?'That key didn’t work — check Settings.':'I hit a snag. Try once more?'; }
+    }
+    function fmt(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); }
+
+    /* Voice out */
+    let bestVoice=null;
+    function pickVoice(){ const vs=speechSynthesis.getVoices(); const prefer=['Google UK English Female','Samantha','Google US English','Microsoft Aria','Microsoft Jenny','Karen','Serena']; bestVoice=vs.find(v=>prefer.includes(v.name))||vs.find(v=>/en[-_]/i.test(v.lang)&&/female|aria|jenny|samantha/i.test(v.name))||vs.find(v=>/^en/i.test(v.lang))||vs[0]; }
+    if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged=pickVoice; pickVoice(); }
+    function speak(text){ if(!('speechSynthesis' in window)||!store.voice) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text.replace(/[*`#]/g,'')); if(bestVoice) u.voice=bestVoice; u.rate=store.speed; u.pitch=1.02; speechSynthesis.speak(u); }
+
+    /* Assistant memory + streak */
+    function todayStr(){ return new Date().toISOString().slice(0,10); }
+    function bumpStreak(){ const today=todayStr(); if(store.lastDay===today) return; const yest=new Date(Date.now()-86400000).toISOString().slice(0,10); const next=store.lastDay===yest?store.streak+1:1; localStorage.setItem('br_streak',next); localStorage.setItem('br_lastday',today); document.getElementById('streakNum').textContent=next; }
+    function greet(){ const h=new Date().getHours(); const part=h<12?'Good morning':h<18?'Good afternoon':'Good evening'; const name=store.name?', '+store.name:''; document.getElementById('greeting').textContent=`${part}${name} 👋`; const s=store.streak; document.getElementById('greetSub').textContent= s>1?`${s} days reading in a row — amazing. Let's keep going.`:'Point your camera at any page and let\'s read it together.'; document.getElementById('streakNum').textContent=s; }
+
+    /* Settings */
+    function saveName(v){ localStorage.setItem('br_name', v.trim()); greet(); }
+    function saveKey(v){ localStorage.setItem('br_key', v.trim()); const ok=v.trim().startsWith('sk-ant'); const el=document.getElementById('keyStatus'); el.className='key-status '+(ok?'ok':'no'); el.textContent= ok?'✓ Your reading buddy is awake':(v.trim()?'That doesn’t look like a Claude key':'No key yet — scanning & reading aloud still work without it'); }
+    function toggleVoice(){ const on=!store.voice; localStorage.setItem('br_voice',on?'1':'0'); document.getElementById('tgVoice').classList.toggle('on',on); if(!on) speechSynthesis.cancel(); }
+    function setSpeed(s){ localStorage.setItem('br_speed',s); document.querySelectorAll('#speedSelect .pill-opt').forEach(p=>p.classList.toggle('on',parseFloat(p.dataset.sp)===s)); }
+    function toggleDys(){ const on=!store.dys; localStorage.setItem('br_dys',on?'1':'0'); document.body.classList.toggle('dys',on); document.getElementById('tgDys').classList.toggle('on',on); }
+    function toggleBig(){ const on=!store.big; localStorage.setItem('br_big',on?'1':'0'); document.getElementById('reader').style.fontSize=on?'24px':''; document.getElementById('tgBig').classList.toggle('on',on); }
+    function setModel(m){ localStorage.setItem('br_model',m); document.querySelectorAll('#modelSelect .pill-opt').forEach(p=>p.classList.toggle('on',p.dataset.model===m)); }
+    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
+
+    /* Boot */
+    (function init(){
+        document.getElementById('nameInput').value=store.name;
+        document.getElementById('keyInput').value=store.key;
+        if(store.key) saveKey(store.key);
+        document.getElementById('tgVoice').classList.toggle('on',store.voice);
+        document.getElementById('tgDys').classList.toggle('on',store.dys);
+        document.getElementById('tgBig').classList.toggle('on',store.big);
+        document.body.classList.toggle('dys',store.dys);
+        if(store.big) document.getElementById('reader').style.fontSize='24px';
+        document.querySelectorAll('#speedSelect .pill-opt').forEach(p=>p.classList.toggle('on',parseFloat(p.dataset.sp)===store.speed));
+        document.querySelectorAll('#modelSelect .pill-opt').forEach(p=>p.classList.toggle('on',p.dataset.model===store.model));
+        const ci=document.getElementById('chatInput');
+        ci.addEventListener('input',()=>{ ci.style.height='auto'; ci.style.height=Math.min(ci.scrollHeight,120)+'px'; });
+        ci.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChat(); } });
+        greet();
+        addBubble('ai', store.name?`Hi ${esc(store.name)}! I'm your reading buddy. Scan a page and I'll help with any word 💛`:`Hi! I'm your reading buddy. Scan a page and I'll help you with any word or sentence 💛`);
+    })();
     </script>
 </body>
 </html>
