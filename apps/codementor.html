@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <meta name="theme-color" content="#0a0e1b">
+    <meta name="theme-color" content="#1f2937">
     <title>CodeMentor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -278,7 +278,12 @@
                     </div>
                     <div class="card tap home-card" onclick="renderSaved(); go(4)">
                         <div class="home-ico">💾</div>
-                        <div class="home-txt"><h3>Saved reviews</h3><p>Everything you've reviewed is here to revisit</p></div>
+                        <div class="home-txt"><h3>Saved reviews</h3><p>Your reviewed code snippets and feedback</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                    <div class="card tap home-card" style="opacity:.95" onclick="showSettings()">
+                        <div class="home-ico">⚙️</div>
+                        <div class="home-txt"><h3>Settings</h3><p>API key, voice, name, and model choice</p></div>
                         <div class="home-arrow">›</div>
                     </div>
                 </section>
@@ -331,60 +336,6 @@
                     <div id="savedList"></div>
                 </section>
 
-                <!-- 5 · SETTINGS -->
-                <section class="screen">
-                    <div class="eyebrow">Settings</div>
-                    <h1 class="title">Make it yours</h1>
-                    <p class="subtitle">Set it up once. Everything stays on your device.</p>
-
-                    <div class="set-group">
-                        <div class="set-row" style="display:block; padding-bottom:18px;">
-                            <div><div class="sl">Your name</div><div class="sd">So the mentor knows what to call you</div></div>
-                            <input type="text" id="nameInput" placeholder="What should I call you?" style="margin-top:10px;" oninput="saveName(this.value)">
-                        </div>
-                    </div>
-
-                    <div class="set-group">
-                        <div class="set-row" style="display:block;">
-                            <div><div class="sl">Claude API key</div><div class="sd">Powers the code analysis. Stored only on this device.</div></div>
-                            <input type="password" id="keyInput" placeholder="sk-ant-…" style="margin-top:10px;" oninput="saveKey(this.value)">
-                            <div class="key-status no" id="keyStatus">No key yet — review still works offline with basic analysis</div>
-                            <div class="mini">Get a key free at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>.</div>
-                        </div>
-                    </div>
-
-                    <div class="set-group">
-                        <div class="set-row">
-                            <div><div class="sl">Read aloud</div><div class="sd">Hear explanations and feedback spoken</div></div>
-                            <div class="toggle on" id="tgVoice" onclick="toggleVoice()"></div>
-                        </div>
-                        <div class="set-row">
-                            <div><div class="sl">Voice speed</div><div class="sd">Slower is easier to follow</div></div>
-                            <div class="pill-select" id="speedSelect">
-                                <div class="pill-opt" data-sp="0.8" onclick="setSpeed(0.8)">Slow</div>
-                                <div class="pill-opt on" data-sp="1" onclick="setSpeed(1)">Normal</div>
-                                <div class="pill-opt" data-sp="1.2" onclick="setSpeed(1.2)">Fast</div>
-                            </div>
-                        </div>
-                        <div class="set-row">
-                            <div><div class="sl">Dyslexia-friendly font</div><div class="sd">Heavier, easier-to-track letters</div></div>
-                            <div class="toggle" id="tgDys" onclick="toggleDys()"></div>
-                        </div>
-                    </div>
-
-                    <div class="set-group">
-                        <div class="set-row">
-                            <div><div class="sl">AI model</div><div class="sd">Fast is cheap; Smart is for complex code</div></div>
-                            <div class="pill-select" id="modelSelect">
-                                <div class="pill-opt on" data-model="claude-haiku-4-5" onclick="setModel('claude-haiku-4-5')">Fast</div>
-                                <div class="pill-opt" data-model="claude-opus-4-8" onclick="setModel('claude-opus-4-8')">Smart</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mini" style="text-align:center; padding-bottom:8px;">CodeMentor · built to help developers code better 🚀</div>
-                </section>
-
             </div>
         </div>
 
@@ -394,7 +345,6 @@
             <div class="dot" onclick="go(2)"></div>
             <div class="dot" onclick="go(3)"></div>
             <div class="dot" onclick="go(4)"></div>
-            <div class="dot" onclick="go(5)"></div>
         </div>
     </div>
     <div class="toast" id="toast"></div>
@@ -419,7 +369,7 @@
        CAROUSEL
     ============================================================ */
     const carousel = document.getElementById('carousel');
-    const SCREENS = 6;
+    const SCREENS = 5;
     let idx = 0, startX = 0, startY = 0, curX = 0, dragging = false, locked = null;
 
     carousel.addEventListener('touchstart', e => {
@@ -739,18 +689,107 @@ Rules:
     /* ============================================================
        BOOT
     ============================================================ */
+    function showSettings(){
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;`;
+        backdrop.onclick = () => hideSettings();
+        const modal = document.createElement('div');
+        modal.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-height:85%;overflow-y:auto;background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;z-index:1000;color:var(--text);font-family:var(--font-ui);font-size:14px;`;
+        modal.id = 'settingsModal';
+        modal.innerHTML = `
+            <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Settings</h2>
+
+            <div class="set-group">
+                <div class="set-row" style="display:block;padding-bottom:18px;">
+                    <div><div class="sl">Your name</div><div class="sd">So the mentor knows what to call you</div></div>
+                    <input type="text" id="settingName" placeholder="What should I call you?" style="margin-top:10px;width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);color:var(--text);font-size:14px;" oninput="saveName(this.value)">
+                </div>
+            </div>
+
+            <div class="set-group">
+                <div class="set-row" style="display:block;">
+                    <div><div class="sl">Claude API key</div><div class="sd">Powers code analysis. Stored only on this device.</div></div>
+                    <input type="password" id="settingKey" placeholder="sk-ant-…" style="margin-top:10px;width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);color:var(--text);font-size:14px;" oninput="saveKey(this.value)">
+                    <div class="key-status no" id="settingStatus">No key yet</div>
+                    <div class="mini">Get a key free at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>.</div>
+                </div>
+            </div>
+
+            <div class="set-group">
+                <div class="set-row">
+                    <div><div class="sl">Read aloud</div><div class="sd">Hear feedback spoken</div></div>
+                    <div class="toggle on" id="settingVoice" onclick="toggleVoice()"></div>
+                </div>
+                <div class="set-row">
+                    <div><div class="sl">Voice speed</div></div>
+                    <div class="pill-select" id="settingSpeed">
+                        <div class="pill-opt" data-sp="0.8" onclick="setSpeed(0.8)">Slow</div>
+                        <div class="pill-opt on" data-sp="1" onclick="setSpeed(1)">Normal</div>
+                        <div class="pill-opt" data-sp="1.2" onclick="setSpeed(1.2)">Fast</div>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div><div class="sl">Dyslexia font</div></div>
+                    <div class="toggle" id="settingDys" onclick="toggleDys()"></div>
+                </div>
+            </div>
+
+            <div class="set-group">
+                <div class="set-row">
+                    <div><div class="sl">AI model</div></div>
+                    <div class="pill-select" id="settingModel">
+                        <div class="pill-opt on" data-model="claude-haiku-4-5" onclick="setModel('claude-haiku-4-5')">Haiku</div>
+                        <div class="pill-opt" data-model="claude-opus-4-8" onclick="setModel('claude-opus-4-8')">Opus</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn ghost" style="width:100%;margin-top:16px;" onclick="hideSettings()">Close</button>
+        `;
+        document.body.appendChild(backdrop);
+        document.body.appendChild(modal);
+        hydrateSettingsModal();
+    }
+
+    function hideSettings(){
+        const modal = document.getElementById('settingsModal');
+        if (modal) modal.remove();
+        const backdrops = document.querySelectorAll('div[style*="z-index:999"]');
+        backdrops.forEach(b => {
+            if (b.style.background && b.style.background.includes('rgba(0,0,0')) b.remove();
+        });
+    }
+
+    function hydrateSettingsModal(){
+        const nameEl = document.getElementById('settingName');
+        const keyEl = document.getElementById('settingKey');
+        if (nameEl) nameEl.value = store.name;
+        if (keyEl) {
+            keyEl.value = store.key;
+            if (store.key) {
+                const ok = store.key.startsWith('sk-ant');
+                const statusEl = document.getElementById('settingStatus');
+                statusEl.className = 'key-status ' + (ok ? 'ok' : 'no');
+                statusEl.textContent = ok ? '✓ Mentor is ready' : 'That doesn\'t look like a Claude key';
+            }
+        }
+        const voiceEl = document.getElementById('settingVoice');
+        if (voiceEl) voiceEl.classList.toggle('on', store.voice);
+        const dysEl = document.getElementById('settingDys');
+        if (dysEl) dysEl.classList.toggle('on', store.dys);
+        const speedEls = document.querySelectorAll('#settingSpeed .pill-opt');
+        speedEls.forEach(p=>p.classList.toggle('on', parseFloat(p.dataset.sp)===store.speed));
+        const modelEls = document.querySelectorAll('#settingModel .pill-opt');
+        modelEls.forEach(p=>p.classList.toggle('on', p.dataset.model===store.model));
+    }
+
     (function init(){
-        document.getElementById('nameInput').value = store.name;
-        document.getElementById('keyInput').value = store.key;
-        if (store.key) saveKey(store.key);
-        document.getElementById('tgVoice').classList.toggle('on', store.voice);
-        document.getElementById('tgDys').classList.toggle('on', store.dys);
-        document.body.classList.toggle('dys', store.dys);
-        document.querySelectorAll('#speedSelect .pill-opt').forEach(p=>p.classList.toggle('on', parseFloat(p.dataset.sp)===store.speed));
-        document.querySelectorAll('#modelSelect .pill-opt').forEach(p=>p.classList.toggle('on', p.dataset.model===store.model));
         const ci = document.getElementById('chatInput');
-        ci.addEventListener('input', ()=>{ ci.style.height='auto'; ci.style.height=Math.min(ci.scrollHeight,120)+'px'; });
-        ci.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); } });
+        if(ci){
+            ci.addEventListener('input', ()=>{ ci.style.height='auto'; ci.style.height=Math.min(ci.scrollHeight,120)+'px'; });
+            ci.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); } });
+        }
+        document.body.classList.toggle('dys', store.dys);
         greet();
         addBubble('ai', store.name ? `Hi ${esc(store.name)}! I'm your code mentor. Paste any code and I'll help you improve it 💛` : `Hi! I'm your code mentor. Paste any code and I'll help you make it better 💛`);
     })();
