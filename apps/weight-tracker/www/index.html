@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weight Tracker – Health Journey</title>
+    <style>
+        :root { --primary: #06B6D4; --bg: #0F172A; --light: #1E293B; --text: #F1F5F9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+        .container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #0891B2 100%); padding: 24px 20px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: var(--light); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid var(--primary); }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+        input { width: 100%; padding: 10px 12px; background: var(--bg); border: 2px solid #334155; border-radius: 8px; color: var(--text); margin-bottom: 10px; }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+        .weight-entry { background: var(--bg); padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .label { display: block; font-size: 12px; color: #CBD5E1; margin-bottom: 4px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚖️ WEIGHT TRACKER</h1>
+            <p style="font-size: 12px;">Track progress</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>📝 Log Weight</h2>
+                <label>Weight (kg)</label>
+                <input type="number" id="weight" placeholder="70" step="0.1" min="20" max="200">
+                <label>Date</label>
+                <input type="date" id="date">
+                <button onclick="addWeight()">Log Weight</button>
+            </div>
+
+            <div class="card">
+                <h2>📊 Progress</h2>
+                <div id="progress" style="font-size: 14px; color: #CBD5E1; line-height: 1.8;">No data yet</div>
+            </div>
+
+            <div class="card">
+                <h2>📋 History</h2>
+                <div id="weightList">No entries yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('date').valueAsDate = new Date();
+
+        function addWeight() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const date = document.getElementById('date').value;
+
+            if (!weight || !date) { alert('Fill all fields'); return; }
+
+            let weights = JSON.parse(localStorage.getItem('weights') || '[]');
+            weights.push({ weight, date });
+            localStorage.setItem('weights', JSON.stringify(weights));
+
+            document.getElementById('weight').value = '';
+            document.getElementById('date').valueAsDate = new Date();
+            displayWeights();
+        }
+
+        function displayWeights() {
+            const weights = JSON.parse(localStorage.getItem('weights') || '[]');
+            const list = document.getElementById('weightList');
+            const prog = document.getElementById('progress');
+
+            if (weights.length === 0) {
+                list.innerHTML = '<p style="color: #CBD5E1; font-size: 12px;">No entries yet</p>';
+                prog.innerHTML = 'No data yet';
+                return;
+            }
+
+            const sorted = weights.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const first = sorted[0].weight;
+            const last = sorted[sorted.length - 1].weight;
+            const diff = (first - last).toFixed(1);
+            const trend = diff > 0 ? `↓ ${diff}kg lost` : `↑ ${Math.abs(diff)}kg gained`;
+
+            prog.innerHTML = `Current: ${last}kg<br>${trend}<br>Since: ${sorted[0].date}`;
+
+            list.innerHTML = sorted.reverse().map(w => `
+                <div class="weight-entry">
+                    <div>
+                        <div style="font-weight: 600;">${w.weight}kg</div>
+                        <div style="font-size: 12px; color: #CBD5E1;">${w.date}</div>
+                    </div>
+                    <div style="color: var(--primary); font-size: 14px;">⚖️</div>
+                </div>
+            `).join('');
+        }
+
+        displayWeights();
+    </script>
+</body>
+</html>

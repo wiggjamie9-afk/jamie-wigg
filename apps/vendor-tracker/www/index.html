@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VENDOR TRACKER: Manage inventory and sales for your small business.">
+    <meta name="theme-color" content="#F59E0B">
+    <title>Vendor Tracker – Inventory & Sales</title>
+    <style>
+        :root {
+            --primary: #F59E0B;
+            --accent: #10B981;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+        .container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #D97706 100%); padding: 24px 20px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary);
+        }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; font-size: 12px; color: #CBD5E1; margin-bottom: 4px; font-weight: 600; }
+        input { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 2px solid #334155; border-radius: 8px; color: var(--text-primary); }
+        input:focus { outline: none; border-color: var(--primary); }
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: #0F172A;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 8px;
+        }
+        button:hover { background: #D97706; }
+        .item {
+            background: var(--bg-dark);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-info { flex: 1; }
+        .item-name { font-weight: 600; }
+        .item-qty { color: #CBD5E1; font-size: 12px; }
+        .item-price { font-weight: 600; color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 VENDOR TRACKER</h1>
+            <p style="font-size: 12px;">Manage your inventory</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>➕ Add Product</h2>
+                <div class="input-group">
+                    <label>Product name</label>
+                    <input type="text" id="productName" placeholder="E.g., Mangoes">
+                </div>
+                <div class="input-group">
+                    <label>Quantity</label>
+                    <input type="number" id="quantity" placeholder="10" min="0">
+                </div>
+                <div class="input-group">
+                    <label>Price per unit</label>
+                    <input type="number" id="price" placeholder="2.50" step="0.01" min="0">
+                </div>
+                <button onclick="addProduct()">Add Product</button>
+            </div>
+
+            <div class="card">
+                <h2>📊 Your Inventory</h2>
+                <div id="inventory">No products yet</div>
+                <p style="margin-top: 12px; font-size: 12px; color: #CBD5E1;">Total value: ₹<span id="totalValue">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addProduct() {
+            const name = document.getElementById('productName').value;
+            const qty = parseInt(document.getElementById('quantity').value);
+            const price = parseFloat(document.getElementById('price').value);
+
+            if (!name || !qty || !price) {
+                alert('Fill all fields');
+                return;
+            }
+
+            let products = JSON.parse(localStorage.getItem('vendor_products') || '[]');
+            products.push({ name, qty, price, id: Date.now() });
+            localStorage.setItem('vendor_products', JSON.stringify(products));
+
+            document.getElementById('productName').value = '';
+            document.getElementById('quantity').value = '';
+            document.getElementById('price').value = '';
+
+            displayInventory();
+        }
+
+        function deleteProduct(id) {
+            let products = JSON.parse(localStorage.getItem('vendor_products') || '[]');
+            products = products.filter(p => p.id !== id);
+            localStorage.setItem('vendor_products', JSON.stringify(products));
+            displayInventory();
+        }
+
+        function displayInventory() {
+            const products = JSON.parse(localStorage.getItem('vendor_products') || '[]');
+            const inv = document.getElementById('inventory');
+
+            if (products.length === 0) {
+                inv.innerHTML = '<p style="color: #CBD5E1; font-size: 12px;">No products yet</p>';
+                document.getElementById('totalValue').textContent = '0';
+                return;
+            }
+
+            let total = 0;
+            inv.innerHTML = products.map(p => {
+                const value = p.qty * p.price;
+                total += value;
+                return `<div class="item"><div class="item-info"><div class="item-name">${p.name}</div><div class="item-qty">Qty: ${p.qty} | ${value.toFixed(2)}</div></div><button onclick="deleteProduct(${p.id})" style="width: auto; padding: 6px 10px; margin: 0;">Delete</button></div>`;
+            }).join('');
+
+            document.getElementById('totalValue').textContent = total.toFixed(2);
+        }
+
+        displayInventory();
+    </script>
+</body>
+</html>
