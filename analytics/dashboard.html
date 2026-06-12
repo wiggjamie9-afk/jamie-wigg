@@ -1,0 +1,1594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Analytics Dashboard — App Performance Tracker</title>
+<meta name="description" content="Real-time analytics dashboard tracking downloads, engagement, conversions, and revenue across all apps.">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a0e27">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0e27;
+  --surface: #0f1432;
+  --surface-alt: #151b3f;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-bright: rgba(255, 255, 255, 0.14);
+  --text: #f0f4f8;
+  --text-muted: #9ca3af;
+  --text-dim: #6b7280;
+  --accent: #60a5fa;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --chart-1: #3b82f6;
+  --chart-2: #ec4899;
+  --chart-3: #8b5cf6;
+  --chart-4: #06b6d4;
+  --chart-5: #14b8a6;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-size: 0.85em;
+}
+
+/* HEADER */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.header-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.header-left h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.header-left p {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+.header-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.date-range-group {
+  display: flex;
+  gap: 8px;
+  background: var(--surface-alt);
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.date-range-btn {
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.date-range-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.date-range-btn:hover {
+  color: var(--text);
+  border-color: var(--border-bright);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:hover {
+  background: var(--surface-alt);
+  border-color: var(--border-bright);
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.btn.primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* MAIN CONTAINER */
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* KPI CARDS */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-change {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kpi-change.positive {
+  color: var(--success);
+}
+
+.kpi-change.negative {
+  color: var(--danger);
+}
+
+.kpi-change.neutral {
+  color: var(--text-dim);
+}
+
+/* SECTIONS */
+.dashboard-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.grid-2col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.grid-3col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.chart-container {
+  position: relative;
+  height: 320px;
+  margin-bottom: 8px;
+}
+
+.chart-container.small {
+  height: 240px;
+}
+
+/* TABLES */
+.table-wrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead {
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+th:hover {
+  background: rgba(96, 165, 250, 0.1);
+}
+
+th.sortable::after {
+  content: ' ⇅';
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+th.sorted-asc::after {
+  content: ' ↑';
+  opacity: 1;
+}
+
+th.sorted-desc::after {
+  content: ' ↓';
+  opacity: 1;
+}
+
+td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr:hover {
+  background: var(--surface-alt);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.app-name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-badge {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.metric-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-growth {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.metric-growth.positive {
+  color: var(--success);
+}
+
+.metric-growth.negative {
+  color: var(--danger);
+}
+
+.metric-growth.neutral {
+  color: var(--text-dim);
+}
+
+/* FUNNEL CHART */
+.funnel-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.funnel-stage {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.funnel-label {
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.funnel-percentage {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.funnel-bar-wrapper {
+  flex: 1;
+  margin: 0 20px;
+  position: relative;
+  height: 8px;
+  background: var(--surface);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.funnel-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--chart-4));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.funnel-number {
+  text-align: right;
+  min-width: 100px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* RETENTION CURVE */
+.retention-table {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.retention-table td {
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+}
+
+.retention-table td:first-child {
+  text-align: left;
+  padding-left: 12px;
+  font-weight: 600;
+}
+
+.retention-cell {
+  background: var(--surface-alt);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-weight: 600;
+}
+
+.retention-cell.high {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success);
+}
+
+.retention-cell.medium {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--warning);
+}
+
+.retention-cell.low {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+}
+
+/* GAUGE */
+.gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.gauge-svg {
+  width: 200px;
+  height: 120px;
+}
+
+.gauge-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* SEGMENTATION */
+.segment-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.segment-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.segment-bar {
+  height: 24px;
+  background: var(--surface);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  position: relative;
+}
+
+.segment-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--chart-4));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg);
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* HEATMAP */
+.heatmap-container {
+  display: grid;
+  gap: 12px;
+}
+
+.heatmap-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.heatmap-app {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.heatmap-bars {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.heatmap-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.heatmap-bar {
+  width: 32px;
+  height: 48px;
+  background: var(--surface-alt);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.heatmap-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, var(--accent), var(--chart-4));
+  border-radius: 4px;
+}
+
+.heatmap-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* EXPORTS & ACTIONS */
+.export-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.export-section button {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.export-section button:hover {
+  background: var(--border-bright);
+  border-color: var(--text-muted);
+}
+
+/* FOOTER */
+.footer {
+  padding: 24px;
+  border-top: 1px solid var(--border);
+  margin-top: 48px;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+  .grid-2col {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-3col {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .date-range-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .action-buttons {
+    width: 100%;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  table {
+    font-size: 12px;
+  }
+
+  th, td {
+    padding: 10px 12px;
+  }
+
+  .heatmap-row {
+    grid-template-columns: 80px 1fr;
+  }
+}
+
+@media print {
+  .header {
+    border-bottom: 2px solid #000;
+  }
+
+  .header-controls {
+    display: none;
+  }
+
+  body {
+    background: white;
+    color: #000;
+  }
+
+  .surface {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+  }
+
+  .chart-card {
+    page-break-inside: avoid;
+  }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-content">
+    <div class="header-left">
+      <h1>Analytics Dashboard</h1>
+      <p>Real-time app performance tracking · Last updated: <span id="lastUpdated">just now</span></p>
+    </div>
+    <div class="header-controls">
+      <div class="date-range-group">
+        <button class="date-range-btn active" data-range="30">30 Days</button>
+        <button class="date-range-btn" data-range="90">90 Days</button>
+        <button class="date-range-btn" data-range="365">12 Months</button>
+      </div>
+      <div class="action-buttons">
+        <button class="btn" onclick="exportCSV()">
+          <span>↓</span> CSV
+        </button>
+        <button class="btn primary" onclick="window.print()">
+          <span>🖨</span> Print
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Downloads</div>
+      <div class="kpi-value" id="kpiDownloads">0</div>
+      <div class="kpi-change positive">
+        <span>↑</span> <span id="kpiDownloadsChange">12.5%</span> vs last period
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Monthly Active Users</div>
+      <div class="kpi-value" id="kpiMAU">0</div>
+      <div class="kpi-change positive">
+        <span>↑</span> <span id="kpiMAUChange">8.3%</span> vs last period
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Premium Subscribers</div>
+      <div class="kpi-value" id="kpiPremium">0</div>
+      <div class="kpi-change positive">
+        <span>↑</span> <span id="kpiPremiumChange">15.2%</span> vs last period
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Monthly Revenue (MRR)</div>
+      <div class="kpi-value" id="kpiMRR">$0</div>
+      <div class="kpi-change positive">
+        <span>↑</span> <span id="kpiMRRChange">18.7%</span> vs last period
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Annual Revenue (ARR)</div>
+      <div class="kpi-value" id="kpiARR">$0</div>
+      <div class="kpi-change positive">
+        <span>↑</span> <span id="kpiARRChange">22.1%</span> vs last period
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Conversion Rate</div>
+      <div class="kpi-value" id="kpiConversion">0%</div>
+      <div class="kpi-change positive">
+        <span>↑</span> <span id="kpiConversionChange">2.3%</span> vs last period
+      </div>
+    </div>
+  </div>
+
+  <!-- REVENUE SECTION -->
+  <div class="dashboard-section">
+    <h2 class="section-title">Revenue Metrics</h2>
+
+    <div class="grid-2col">
+      <div class="chart-card">
+        <h3 style="margin-bottom: 12px; font-size: 14px;">MRR Trend (Last 12 Months)</h3>
+        <div class="chart-container">
+          <canvas id="mrrTrendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3 style="margin-bottom: 12px; font-size: 14px;">Revenue by App</h3>
+        <div class="chart-container">
+          <canvas id="revenueByAppChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3 style="margin-bottom: 12px; font-size: 14px;">Pricing Tier Breakdown</h3>
+      <div class="chart-container small">
+        <canvas id="pricingTierChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER METRICS SECTION -->
+  <div class="dashboard-section">
+    <h2 class="section-title">User Metrics</h2>
+
+    <div class="grid-3col">
+      <div class="chart-card">
+        <h3 style="margin-bottom: 12px; font-size: 14px;">DAU/MAU Ratio</h3>
+        <div class="gauge-container">
+          <svg class="gauge-svg" viewBox="0 0 200 120">
+            <path d="M 20 100 A 80 80 0 0 1 180 100" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="none"/>
+            <path d="M 20 100 A 80 80 0 0 1 120 30" id="gaugeBar" stroke="#60a5fa" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <text x="100" y="115" text-anchor="middle" font-size="14" fill="rgba(255,255,255,0.5)" class="mono">Health</text>
+          </svg>
+          <div class="gauge-value" id="gaugeValue">42%</div>
+          <div class="gauge-label">Daily vs Monthly active (target: 35-45%)</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3 style="margin-bottom: 12px; font-size: 14px;">Acquisition vs Churn</h3>
+        <div class="chart-container small">
+          <canvas id="acquisitionChurnChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3 style="margin-bottom: 12px; font-size: 14px;">Retention Curve</h3>
+        <div class="chart-container small">
+          <canvas id="retentionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONVERSION FUNNEL -->
+  <div class="dashboard-section">
+    <h2 class="section-title">Conversion Funnel</h2>
+
+    <div class="chart-card">
+      <div class="funnel-container" id="funnelContainer">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- APPS PERFORMANCE TABLE -->
+  <div class="dashboard-section">
+    <h2 class="section-title">Apps Performance</h2>
+
+    <div class="table-wrapper">
+      <table id="appsTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-field="name">App Name</th>
+            <th class="sortable" data-field="downloads">Downloads</th>
+            <th class="sortable" data-field="activeUsers">Active Users</th>
+            <th class="sortable" data-field="freeUsers">Free Users</th>
+            <th class="sortable" data-field="premiumUsers">Premium Users</th>
+            <th class="sortable" data-field="mrr">MRR</th>
+            <th class="sortable" data-field="conversionRate">Conv. Rate</th>
+            <th class="sortable" data-field="churnRate">Churn Rate</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody id="appsTableBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- USER SEGMENTATION -->
+  <div class="dashboard-section">
+    <h2 class="section-title">User Segmentation</h2>
+
+    <div class="grid-2col">
+      <div class="chart-card">
+        <h3 style="margin-bottom: 16px; font-size: 14px;">Cohort Retention (by Signup Month)</h3>
+        <div class="retention-table" id="cohortRetention">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3 style="margin-bottom: 16px; font-size: 14px;">Device Breakdown</h3>
+        <div style="display: grid; gap: 12px;">
+          <div class="segment-card">
+            <div class="segment-label">iOS</div>
+            <div class="segment-bar">
+              <div class="segment-fill" style="width: 58%;">58%</div>
+            </div>
+          </div>
+          <div class="segment-card">
+            <div class="segment-label">Android</div>
+            <div class="segment-bar">
+              <div class="segment-fill" style="width: 35%; background: linear-gradient(90deg, #8b5cf6, #06b6d4);">35%</div>
+            </div>
+          </div>
+          <div class="segment-card">
+            <div class="segment-label">Web</div>
+            <div class="segment-bar">
+              <div class="segment-fill" style="width: 7%; background: linear-gradient(90deg, #ec4899, #f59e0b);">7%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURE USAGE HEATMAP -->
+  <div class="dashboard-section">
+    <h2 class="section-title">Top Features Used (by App)</h2>
+
+    <div class="chart-card">
+      <div class="heatmap-container" id="featureHeatmap">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORTS -->
+  <div class="dashboard-section">
+    <h2 class="section-title">Export & Share</h2>
+
+    <div class="export-section">
+      <button onclick="exportCSV()">📊 Download as CSV</button>
+      <button onclick="exportJSON()">📋 Download as JSON</button>
+      <button onclick="window.print()">🖨 Print Report</button>
+      <button onclick="shareReport()">🔗 Copy Share Link</button>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p>Analytics Dashboard · Updated hourly · Data is sample/simulated for demonstration purposes</p>
+</footer>
+
+<script>
+// Configuration
+const CONFIG = {
+  charts: {},
+  data: null,
+  sortField: 'name',
+  sortDirection: 'asc',
+  dateRange: 30,
+};
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadData();
+  initDateRangePicker();
+  renderDashboard();
+  initCharts();
+  updateTimestamp();
+  setInterval(updateTimestamp, 60000);
+});
+
+// Load data from JSON
+async function loadData() {
+  try {
+    const response = await fetch('data.json');
+    CONFIG.data = await response.json();
+  } catch (error) {
+    console.error('Failed to load data:', error);
+    // Use mock data if loading fails
+    CONFIG.data = getMockData();
+  }
+}
+
+// Mock data for testing
+function getMockData() {
+  return {
+    period: 'Last 30 Days',
+    summary: {
+      totalDownloads: 287453,
+      monthlyActiveUsers: 42189,
+      premiumSubscribers: 3847,
+      mrr: 67850,
+      arr: 814200,
+      conversionRate: 9.1,
+      mrrTrend: 18.7,
+      mauTrend: 8.3,
+      premiumTrend: 15.2,
+    },
+    apps: [
+      {
+        name: 'TYMPAN',
+        badge: '#6b4f7a',
+        downloads: 34521,
+        activeUsers: 8934,
+        freeUsers: 7324,
+        premiumUsers: 1610,
+        mrr: 8050,
+        conversionRate: 18.0,
+        churnRate: 3.2,
+        trend: 'up',
+      },
+      {
+        name: 'HERD',
+        badge: '#b85c38',
+        downloads: 28934,
+        activeUsers: 6234,
+        freeUsers: 4891,
+        premiumUsers: 1343,
+        mrr: 6715,
+        conversionRate: 21.5,
+        churnRate: 2.8,
+        trend: 'up',
+      },
+      {
+        name: 'STACK',
+        badge: '#00b4d8',
+        downloads: 25123,
+        activeUsers: 5234,
+        freeUsers: 4012,
+        premiumUsers: 1222,
+        mrr: 6110,
+        conversionRate: 23.3,
+        churnRate: 4.1,
+        trend: 'up',
+      },
+      {
+        name: 'DOCKET',
+        badge: '#780000',
+        downloads: 18934,
+        activeUsers: 3421,
+        freeUsers: 2812,
+        premiumUsers: 609,
+        mrr: 3045,
+        conversionRate: 17.8,
+        churnRate: 5.2,
+        trend: 'down',
+      },
+      {
+        name: 'LULL',
+        badge: '#ff8fa3',
+        downloads: 32145,
+        activeUsers: 7234,
+        freeUsers: 6123,
+        premiumUsers: 1111,
+        mrr: 5555,
+        conversionRate: 15.3,
+        churnRate: 6.1,
+        trend: 'up',
+      },
+      {
+        name: 'RACK',
+        badge: '#39ff14',
+        downloads: 22345,
+        activeUsers: 4123,
+        freeUsers: 3456,
+        premiumUsers: 667,
+        mrr: 3335,
+        conversionRate: 16.2,
+        churnRate: 4.5,
+        trend: 'neutral',
+      },
+      {
+        name: 'PLUMB',
+        badge: '#f97316',
+        downloads: 19234,
+        activeUsers: 2934,
+        freeUsers: 2345,
+        premiumUsers: 589,
+        mrr: 2945,
+        conversionRate: 20.1,
+        churnRate: 3.8,
+        trend: 'up',
+      },
+      {
+        name: 'SPOT',
+        badge: '#c2410c',
+        downloads: 41234,
+        activeUsers: 9234,
+        freeUsers: 8012,
+        premiumUsers: 1222,
+        mrr: 6110,
+        conversionRate: 13.2,
+        churnRate: 2.9,
+        trend: 'up',
+      },
+      {
+        name: 'SOLE',
+        badge: '#fb7185',
+        downloads: 29123,
+        activeUsers: 5123,
+        freeUsers: 4234,
+        premiumUsers: 889,
+        mrr: 4445,
+        conversionRate: 17.3,
+        churnRate: 3.5,
+        trend: 'up',
+      },
+      {
+        name: 'AXLE',
+        badge: '#fbbf24',
+        downloads: 35862,
+        activeUsers: 7812,
+        freeUsers: 6234,
+        premiumUsers: 1578,
+        mrr: 7900,
+        conversionRate: 20.2,
+        churnRate: 2.1,
+        trend: 'up',
+      },
+    ],
+    mrrTrendData: [45000, 48000, 51000, 54000, 57000, 60000, 62000, 64000, 65000, 66000, 67000, 67850],
+    conversionFunnel: {
+      visitors: 1243521,
+      downloads: 287453,
+      activeUsers: 42189,
+      premiumConversions: 3847,
+    },
+    retentionRates: {
+      day1: 65,
+      day7: 42,
+      day30: 28,
+    },
+    cohorts: [
+      { month: 'Jun', d1: 68, d7: 45, d14: 32, d30: 22, d60: 15 },
+      { month: 'Jul', d1: 66, d7: 43, d14: 30, d30: 20, d60: null },
+      { month: 'Aug', d1: 64, d7: 41, d14: 28, d30: null, d60: null },
+    ],
+    features: [
+      {
+        app: 'TYMPAN',
+        features: [
+          { name: 'Environment Detection', usage: 94 },
+          { name: 'Custom Presets', usage: 87 },
+          { name: 'Real-time EQ', usage: 82 },
+        ],
+      },
+      {
+        app: 'HERD',
+        features: [
+          { name: 'Lameness Scoring', usage: 91 },
+          { name: 'Mastitis Detection', usage: 88 },
+          { name: 'Herd Reports', usage: 76 },
+        ],
+      },
+      {
+        app: 'STACK',
+        features: [
+          { name: 'Source Detection', usage: 89 },
+          { name: 'Recommendations', usage: 84 },
+          { name: 'History Tracking', usage: 71 },
+        ],
+      },
+    ],
+  };
+}
+
+// Render all dashboard elements
+function renderDashboard() {
+  const data = CONFIG.data;
+
+  // Update KPI cards
+  document.getElementById('kpiDownloads').textContent = formatNumber(data.summary.totalDownloads);
+  document.getElementById('kpiDownloadsChange').textContent = `+${data.summary.mrrTrend.toFixed(1)}%`;
+
+  document.getElementById('kpiMAU').textContent = formatNumber(data.summary.monthlyActiveUsers);
+  document.getElementById('kpiMAUChange').textContent = `+${data.summary.mauTrend.toFixed(1)}%`;
+
+  document.getElementById('kpiPremium').textContent = formatNumber(data.summary.premiumSubscribers);
+  document.getElementById('kpiPremiumChange').textContent = `+${data.summary.premiumTrend.toFixed(1)}%`;
+
+  document.getElementById('kpiMRR').textContent = formatCurrency(data.summary.mrr);
+  document.getElementById('kpiMRRChange').textContent = `+${data.summary.mrrTrend.toFixed(1)}%`;
+
+  document.getElementById('kpiARR').textContent = formatCurrency(data.summary.arr);
+  document.getElementById('kpiARRChange').textContent = `+${(data.summary.mrrTrend * 0.85).toFixed(1)}%`;
+
+  document.getElementById('kpiConversion').textContent = data.summary.conversionRate.toFixed(1) + '%';
+  document.getElementById('kpiConversionChange').textContent = `+${(data.summary.conversionRate * 0.15).toFixed(1)}%`;
+
+  // Render apps table
+  renderAppsTable();
+
+  // Render conversion funnel
+  renderFunnel();
+
+  // Render cohort retention
+  renderCohorts();
+
+  // Render feature heatmap
+  renderFeatureHeatmap();
+
+  // Update gauge
+  updateGauge();
+}
+
+// Format number with commas
+function formatNumber(num) {
+  return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+// Format currency
+function formatCurrency(num) {
+  return '$' + (num / 1000).toFixed(0) + 'k';
+}
+
+// Render apps table
+function renderAppsTable() {
+  const tbody = document.getElementById('appsTableBody');
+  tbody.innerHTML = '';
+
+  const apps = CONFIG.data.apps.sort((a, b) => {
+    const aVal = a[CONFIG.sortField];
+    const bVal = b[CONFIG.sortField];
+
+    if (typeof aVal === 'string') {
+      return CONFIG.sortDirection === 'asc'
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+
+    return CONFIG.sortDirection === 'asc'
+      ? aVal - bVal
+      : bVal - aVal;
+  });
+
+  apps.forEach(app => {
+    const row = document.createElement('tr');
+    const trendEmoji = app.trend === 'up' ? '📈' : app.trend === 'down' ? '📉' : '➡️';
+    const trendColor = app.trend === 'up' ? 'positive' : app.trend === 'down' ? 'negative' : 'neutral';
+
+    row.innerHTML = `
+      <td>
+        <div class="app-name">
+          <div class="app-badge" style="background: ${app.badge}"></div>
+          ${app.name}
+        </div>
+      </td>
+      <td class="metric-value">${formatNumber(app.downloads)}</td>
+      <td class="metric-value">${formatNumber(app.activeUsers)}</td>
+      <td class="metric-value">${formatNumber(app.freeUsers)}</td>
+      <td class="metric-value">${formatNumber(app.premiumUsers)}</td>
+      <td class="metric-value">${formatCurrency(app.mrr)}</td>
+      <td class="metric-value">${app.conversionRate.toFixed(1)}%</td>
+      <td class="metric-value">${app.churnRate.toFixed(1)}%</td>
+      <td class="metric-growth ${trendColor}">${trendEmoji}</td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  // Add table sorting
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const field = th.dataset.field;
+      if (CONFIG.sortField === field) {
+        CONFIG.sortDirection = CONFIG.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        CONFIG.sortField = field;
+        CONFIG.sortDirection = 'asc';
+      }
+
+      // Update visual indicators
+      document.querySelectorAll('th').forEach(h => {
+        h.classList.remove('sorted-asc', 'sorted-desc');
+      });
+      th.classList.add(`sorted-${CONFIG.sortDirection}`);
+
+      renderAppsTable();
+    });
+  });
+}
+
+// Render conversion funnel
+function renderFunnel() {
+  const funnel = CONFIG.data.conversionFunnel;
+  const stages = [
+    { label: 'Visitors', value: funnel.visitors },
+    { label: 'Downloads', value: funnel.downloads },
+    { label: 'Active Users', value: funnel.activeUsers },
+    { label: 'Premium', value: funnel.premiumConversions },
+  ];
+
+  const container = document.getElementById('funnelContainer');
+  container.innerHTML = '';
+
+  stages.forEach((stage, i) => {
+    const percentage = (stage.value / funnel.visitors) * 100;
+    const prevValue = i === 0 ? stage.value : stages[i - 1].value;
+    const dropoff = ((prevValue - stage.value) / prevValue) * 100;
+
+    const div = document.createElement('div');
+    div.className = 'funnel-stage';
+    div.innerHTML = `
+      <div class="funnel-label">
+        <strong>${stage.label}</strong>
+        <div class="funnel-percentage">${percentage.toFixed(1)}% of initial</div>
+      </div>
+      <div class="funnel-bar-wrapper">
+        <div class="funnel-bar" style="width: ${percentage}%"></div>
+      </div>
+      <div class="funnel-number">
+        <div>${formatNumber(stage.value)}</div>
+        ${i > 0 ? `<div style="font-size: 11px; color: var(--text-dim);">-${dropoff.toFixed(1)}%</div>` : ''}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// Render cohort retention table
+function renderCohorts() {
+  const container = document.getElementById('cohortRetention');
+  const cohorts = CONFIG.data.cohorts;
+
+  let html = `
+    <tr>
+      <td><strong>Cohort</strong></td>
+      <td><strong>D+1</strong></td>
+      <td><strong>D+7</strong></td>
+      <td><strong>D+14</strong></td>
+      <td><strong>D+30</strong></td>
+      <td><strong>D+60</strong></td>
+    </tr>
+  `;
+
+  cohorts.forEach(cohort => {
+    const getClass = (val) => !val ? '' : val >= 40 ? 'high' : val >= 25 ? 'medium' : 'low';
+    html += `
+      <tr>
+        <td><strong>${cohort.month}</strong></td>
+        <td><div class="retention-cell ${getClass(cohort.d1)}">${cohort.d1}%</div></td>
+        <td><div class="retention-cell ${getClass(cohort.d7)}">${cohort.d7}%</div></td>
+        <td><div class="retention-cell ${getClass(cohort.d14)}">${cohort.d14}%</div></td>
+        <td><div class="retention-cell ${getClass(cohort.d30)}">${cohort.d30 ? cohort.d30 + '%' : '—'}</div></td>
+        <td><div class="retention-cell ${getClass(cohort.d60)}">${cohort.d60 ? cohort.d60 + '%' : '—'}</div></td>
+      </tr>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// Render feature heatmap
+function renderFeatureHeatmap() {
+  const container = document.getElementById('featureHeatmap');
+  container.innerHTML = '';
+
+  CONFIG.data.features.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'heatmap-row';
+
+    const bars = item.features.map(f => `
+      <div class="heatmap-cell">
+        <div class="heatmap-bar">
+          <div class="heatmap-fill" style="height: ${f.usage}%"></div>
+        </div>
+        <div class="heatmap-label">${f.name}</div>
+      </div>
+    `).join('');
+
+    row.innerHTML = `
+      <div class="heatmap-app">${item.app}</div>
+      <div class="heatmap-bars">${bars}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// Update gauge
+function updateGauge() {
+  const dau = CONFIG.data.summary.monthlyActiveUsers * 0.42;
+  const mau = CONFIG.data.summary.monthlyActiveUsers;
+  const ratio = (dau / mau) * 100;
+
+  const gaugeBar = document.getElementById('gaugeBar');
+  const angle = (ratio / 100) * 160;
+  gaugeBar.setAttribute('d', `M 20 100 A 80 80 0 0 1 ${20 + 80 * Math.cos(Math.PI + (angle * Math.PI / 180))} ${100 + 80 * Math.sin(Math.PI + (angle * Math.PI / 180))}`);
+  document.getElementById('gaugeValue').textContent = ratio.toFixed(0) + '%';
+}
+
+// Initialize charts
+function initCharts() {
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: 'rgba(255, 255, 255, 0.7)',
+          font: { size: 12 },
+        },
+      },
+    },
+    scales: {
+      y: {
+        ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+      },
+      x: {
+        ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+      },
+    },
+  };
+
+  // MRR Trend
+  const mrrCtx = document.getElementById('mrrTrendChart').getContext('2d');
+  CONFIG.charts.mrrTrend = new Chart(mrrCtx, {
+    type: 'line',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      datasets: [{
+        label: 'MRR',
+        data: CONFIG.data.mrrTrendData,
+        borderColor: '#60a5fa',
+        backgroundColor: 'rgba(96, 165, 250, 0.05)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#60a5fa',
+        pointBorderColor: '#0a0e27',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+      }],
+    },
+    options: {
+      ...chartOptions,
+      plugins: {
+        ...chartOptions.plugins,
+        filler: { propagate: true },
+      },
+    },
+  });
+
+  // Revenue by App
+  const revenueCtx = document.getElementById('revenueByAppChart').getContext('2d');
+  CONFIG.charts.revenueByApp = new Chart(revenueCtx, {
+    type: 'bar',
+    data: {
+      labels: CONFIG.data.apps.map(a => a.name),
+      datasets: [{
+        label: 'MRR',
+        data: CONFIG.data.apps.map(a => a.mrr),
+        backgroundColor: [
+          '#6b4f7a', '#b85c38', '#00b4d8', '#780000', '#ff8fa3',
+          '#39ff14', '#f97316', '#c2410c', '#fb7185', '#fbbf24',
+        ],
+      }],
+    },
+    options: chartOptions,
+  });
+
+  // Pricing Tier
+  const pricingCtx = document.getElementById('pricingTierChart').getContext('2d');
+  const premiumRevenue = CONFIG.data.summary.mrr * 0.78;
+  const basicRevenue = CONFIG.data.summary.mrr * 0.22;
+
+  CONFIG.charts.pricingTier = new Chart(pricingCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Premium', 'Free + Ads'],
+      datasets: [{
+        data: [premiumRevenue, basicRevenue],
+        backgroundColor: ['#60a5fa', 'rgba(96, 165, 250, 0.2)'],
+        borderColor: '#0f1432',
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      ...chartOptions,
+      plugins: {
+        ...chartOptions.plugins,
+        legend: {
+          ...chartOptions.plugins.legend,
+          position: 'bottom',
+        },
+      },
+    },
+  });
+
+  // Acquisition vs Churn
+  const acqCtx = document.getElementById('acquisitionChurnChart').getContext('2d');
+  CONFIG.charts.acqChurn = new Chart(acqCtx, {
+    type: 'line',
+    data: {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+      datasets: [
+        {
+          label: 'New Signups',
+          data: [1200, 1400, 1100, 1600],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.05)',
+          tension: 0.4,
+        },
+        {
+          label: 'Churn',
+          data: [340, 380, 320, 400],
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.05)',
+          tension: 0.4,
+        },
+      ],
+    },
+    options: chartOptions,
+  });
+
+  // Retention Curve
+  const retCtx = document.getElementById('retentionChart').getContext('2d');
+  CONFIG.charts.retention = new Chart(retCtx, {
+    type: 'line',
+    data: {
+      labels: ['D+1', 'D+7', 'D+30'],
+      datasets: [{
+        label: 'Retention %',
+        data: [
+          CONFIG.data.retentionRates.day1,
+          CONFIG.data.retentionRates.day7,
+          CONFIG.data.retentionRates.day30,
+        ],
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139, 92, 246, 0.05)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#8b5cf6',
+      }],
+    },
+    options: chartOptions,
+  });
+}
+
+// Date range picker
+function initDateRangePicker() {
+  document.querySelectorAll('.date-range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.date-range-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      CONFIG.dateRange = parseInt(btn.dataset.range);
+      // In a real app, this would reload data
+    });
+  });
+}
+
+// Update last updated timestamp
+function updateTimestamp() {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  const displayHours = hours % 12 || 12;
+  document.getElementById('lastUpdated').textContent = `${displayHours}:${minutes.toString().padStart(2, '0')}${ampm}`;
+}
+
+// Export as CSV
+function exportCSV() {
+  let csv = 'App Name,Downloads,Active Users,Free Users,Premium Users,MRR,Conversion Rate (%),Churn Rate (%)\n';
+
+  CONFIG.data.apps.forEach(app => {
+    csv += `"${app.name}",${app.downloads},${app.activeUsers},${app.freeUsers},${app.premiumUsers},${app.mrr},${app.conversionRate},${app.churnRate}\n`;
+  });
+
+  downloadFile(csv, 'analytics-report.csv', 'text/csv');
+}
+
+// Export as JSON
+function exportJSON() {
+  const json = JSON.stringify(CONFIG.data, null, 2);
+  downloadFile(json, 'analytics-report.json', 'application/json');
+}
+
+// Download file helper
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Share report
+function shareReport() {
+  const url = window.location.href;
+  navigator.clipboard.writeText(url).then(() => {
+    alert('Report link copied to clipboard!');
+  });
+}
+</script>
+
+</body>
+</html>
