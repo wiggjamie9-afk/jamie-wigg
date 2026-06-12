@@ -1,0 +1,15 @@
+# Gentle Warmth: The Illustrated Bedtime Aesthetic
+
+## A Design Philosophy for Children's Story Characters
+
+Gentle Warmth is the visual language of unconditional comfort—expressed through meticulously crafted form, warm materiality, and the patient accumulation of intimate detail. Every line is intentional; every color choice the product of painstaking consideration by someone at the absolute top of their field. The aesthetic does not announce itself; it envelops the viewer in an atmosphere of safety, warmth, and peaceful contemplation.
+
+The character exists in three-dimensional space rendered as illustration—neither cartoon simplification nor photorealistic cold distance, but a precise middle ground where realism serves emotional truth. Fur texture is observed with scientific attention to how light falls, how individual hairs catch warmth, how shadow anchors form. This is not accidental softness; this is the result of countless hours of meticulous craftsmanship, the product of deep expertise in character design. Every proportion—from the chubby roundness of the body to the size of the eyes relative to the face—was calibrated through iterative refinement to maximize visual warmth and emotional resonance.
+
+Color is the primary communicative force. Warm golden-brown is not decoration; it is the visual embodiment of safety and natural comfort. Cream accents (ear lining, belly) provide gentle contrast without disruption, creating a spatial hierarchy that guides the viewer's eye through the composition. Deep warm shadows ground the form, prevent it from floating, make it tangible. The palette is limited, intentional, cohesive—every hue selected through painstaking attention to how children's minds register warmth before language.
+
+Composition speaks through pose and placement. The character sits, rests, watches with peaceful attention—postures of listening, of openness, never of demand. The expression is naturally peaceful, a subtle smile suggesting contemplation rather than performance. Eyes are large and gentle, proportioned to communicate kindness without cuteness. This balance—between professional execution and emotional accessibility—is the mark of master-level character design, the kind that appears inevitable only after countless refinements have been discarded.
+
+The world around the character is rendered with equal care: moonlit Australian bush, wildflowers, ancient trees, stars scattered across deep navy sky. Every element is detailed, intricate, the product of observational patience. Light is warm and diffused, as if filtered through memory. Backgrounds do not distract; they contextualize, creating a unified spatial environment where the character belongs naturally, unmistakably at home.
+
+This is illustration in service of bedtime story—visual language designed to calm, to prepare for sleep, to suggest that the world contains peaceful beauty and gentle creatures worthy of protection. Every element screams expert craftsmanship, the kind of work that took countless hours, was labored over with care by someone operating at the absolute frontier of their field.
