@@ -19,9 +19,9 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # SUNNY CHARACTER SPECIFICATION - LOCKED IN (SAME FOR EVERY PAGE)
 # This character description is IDENTICAL across all 16 pages to ensure pixel-perfect consistency
-SUNNY_CHARACTER_LOCKED = """Sunny the quokka: extremely chubby and round like a teddy bear, warm golden-brown fur (never dark), large gentle warm brown eyes with kind expression, small round ears with cream lining, natural peaceful smile, calm peaceful expression. 3D CGI animation style (Bluey/Pixar). This exact same character must appear identically in every page."""
+SUNNY_CHARACTER_LOCKED = """Sunny the quokka: extremely chubby and round like a teddy bear, warm golden-brown fur with realistic texture (never dark or grey), large gentle warm brown eyes with kind, peaceful expression, small round ears with cream-colored lining, natural soft smile showing gentle contentment, peaceful calm demeanor. Must appear IDENTICAL in every page - same proportions, same expression, same fur color. Professional illustrated style (detailed, warm, realistic yet friendly)."""
 
-VISUAL_STYLE_LOCKED = """3D CGI illustration style (professional animation quality like Bluey). Soft, warm, child-friendly. Palette: warm golds, soft purples, deep navy blues, cream accents. Australian bush setting at night with moonlight. Cozy, safe, calm, bedtime-appropriate mood. Every page features the same Sunny character in different peaceful poses."""
+VISUAL_STYLE_LOCKED = """High-quality professional children's book illustration style (like the reference images provided). Detailed, warm, intricate. Realistic fur texture on character. Warm golden and moonlit lighting with gentle glow. Beautiful detailed backgrounds: Australian bush, gum trees, wildflowers, grass, stars, moon. Watercolor-like painted quality with rich detail. Palette: warm golds, soft purples, deep navy blues, cream, natural earth tones. Cozy, safe, calm, bedtime-appropriate mood. Every illustration is meticulously detailed with professional craftsmanship. Same Sunny character appears IDENTICALLY in each page in different peaceful poses."""
 
 # Story pages data (16 pages)
 PAGES = [
@@ -31,7 +31,7 @@ PAGES = [
             "The sky was the colour of ripe plums when Sunny first saw them.",
             "One. Then three. Then many."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny sitting peacefully in Australian bush, watching sky turn plum colors with flying fox silhouettes appearing above. {VISUAL_STYLE_LOCKED}"
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} sitting peacefully in Australian bush. Scene: Sky turning plum colors at dusk, first flying fox silhouettes appearing above. Detailed natural background with gum trees, wildflowers, grass. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 3,
@@ -39,7 +39,7 @@ PAGES = [
             "Flying foxes, sailing out from their roost in the old fig tree.",
             "Their wings were wide and dark, moving through the air without a sound."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Flying foxes with wide spread wings gliding from an old fig tree. Multiple foxes at different heights. Dark graceful shapes against plum-colored sky. Show the beauty and silence of their movement. Professional animation quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Flying foxes with wide spread wings gliding from an old fig tree. Multiple foxes at different heights. Dark graceful shapes against plum-colored sky. Show the beauty and silence of their movement. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 4,
@@ -47,7 +47,7 @@ PAGES = [
             "No flap, no flutter, just a long, smooth, swooping glide.",
             "Sunny stood very still and watched."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny standing motionless in grass, looking up in wonder. Flying foxes gracefully gliding in smooth arcs above. Her peaceful, focused expression. 3D CGI, warm lighting, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny standing motionless in grass, looking up in wonder. Flying foxes gracefully gliding in smooth arcs above. Her peaceful, focused expression. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 5,
@@ -55,7 +55,7 @@ PAGES = [
             "They were so large and so quiet.",
             "She had not known something so big could move so softly."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Large flying foxes (closer view) gliding above Sunny. Their size apparent, but movement appears gentle and ethereal. Sunny small below, expressing wonder. 3D CGI illustration, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Large flying foxes (closer view) gliding above Sunny. Their size apparent, but movement appears gentle and ethereal. Sunny small below, expressing wonder. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 6,
@@ -63,7 +63,7 @@ PAGES = [
             "One flew low, close enough that Sunny could see",
             "the warm dark fur of its body and its little fox-like face."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Flying fox swooping low near Sunny. Close enough to see detail. Sunny's chubby round face shows gentle wonder and awe. Intimate, magical moment. 3D CGI, warm colors, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Flying fox swooping low near Sunny. Close enough to see detail. Sunny's chubby round face shows gentle wonder and awe. Intimate, magical moment. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 7,
@@ -79,7 +79,7 @@ PAGES = [
             "Drinking from a blossom.",
             "Then it was gone again, back into the darkening sky."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Flying fox hovering over blossoms, drawing nectar from flowers. Sky darkening (deeper purples and early blues). Sunny peaceful below. 3D CGI, warm lighting, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Flying fox hovering over blossoms, drawing nectar from flowers. Sky darkening (deeper purples and early blues). Sunny peaceful below. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 9,
@@ -87,7 +87,7 @@ PAGES = [
             "The others followed their own paths —",
             "long curved arcs through the air, each one different."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Multiple flying foxes (3-5) tracing graceful curved paths across sky. Each arc unique and beautiful. Sunny watching below. Sky deeper purple. 3D CGI, warm palette, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Multiple flying foxes (3-5) tracing graceful curved paths across sky. Each arc unique and beautiful. Sunny watching below. Sky deeper purple. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 10,
@@ -103,7 +103,7 @@ PAGES = [
             "The stars came out, and still the flying foxes moved above her.",
             "Silent and grand."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Deep navy starry sky full of twinkling stars. Flying foxes visible as graceful dark shapes gliding against the stars. Sunny as peaceful focus below. 3D CGI, everything bathed in starlight, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Deep navy starry sky full of twinkling stars. Flying foxes visible as graceful dark shapes gliding against the stars. Sunny as peaceful focus below. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 12,
@@ -111,7 +111,7 @@ PAGES = [
             "She sat down in the soft grass and looked up.",
             "The bush was full of quiet."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny sitting peacefully in soft grass, looking upward in calm observation. Chubby golden-brown quokka with gentle expression. Starry navy sky above. Flying foxes moving silently. 3D CGI, very serene, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny sitting peacefully in soft grass, looking upward in calm observation. Chubby golden-brown quokka with gentle expression. Starry navy sky above. Flying foxes moving silently. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 13,
@@ -119,7 +119,7 @@ PAGES = [
             "The flying foxes were just shapes now —",
             "dark against the dark sky, moving and moving."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Flying foxes as dark silhouettes against deep navy sky. Stars scattered throughout. Sunny peaceful in foreground. Contemplative, mysterious, magical mood. 3D CGI, professional animation quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Flying foxes as dark silhouettes against deep navy sky. Stars scattered throughout. Sunny peaceful in foreground. Contemplative, mysterious, magical mood. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 14,
@@ -127,7 +127,7 @@ PAGES = [
             "She breathed out a long, slow breath.",
             "And drifted off beneath the wings of night."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny's eyes gently closing, expression very peaceful and content. Golden-brown chubby quokka curled peacefully. Flying foxes gliding overhead like protective wings. Stars twinkling. 3D CGI, very soft and dreamy, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny's eyes gently closing, expression very peaceful and content. Golden-brown chubby quokka curled peacefully. Flying foxes gliding overhead like protective wings. Stars twinkling. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 15,
@@ -135,7 +135,7 @@ PAGES = [
             "Her eyes grew heavy.",
             "The stars twinkled on, keeping watch through the night."
         ],
-        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny lying in grass, deeply drowsy or falling asleep, peaceful smile on her face. Chubby golden-brown quokka curled up. Starry night sky above. Flying foxes moving gently. 3D CGI, soft and soothing, professional quality."
+        "illustration_prompt": f"{SUNNY_CHARACTER_LOCKED} Scene: Sunny lying in grass, deeply drowsy or falling asleep, peaceful smile on her face. Chubby golden-brown quokka curled up. Starry night sky above. Flying foxes moving gently. {VISUAL_STYLE_LOCKED}"
     },
     {
         "number": 16,
@@ -154,7 +154,7 @@ def generate_image_with_replicate(prompt: str, api_token: str) -> Image.Image:
         raise ValueError("REPLICATE_API_TOKEN not provided")
 
     # Use 3D CGI style prompt enhancement
-    full_prompt = f"{prompt}\n\nStyle: High-quality 3D CGI illustration in the style of Bluey/Pixar animation. Soft, warm, child-friendly. Professional animation quality. Bedtime story aesthetic. Cozy, safe, calm mood."
+    full_prompt = f"{prompt}\n\nStyle: High-quality 3D CGI illustration in the style of Bluey/Pixar animation. Soft, warm, child-friendly. {VISUAL_STYLE_LOCKED} Bedtime story aesthetic. Cozy, safe, calm mood."
 
     headers = {"Authorization": f"Token {api_token}"}
 
