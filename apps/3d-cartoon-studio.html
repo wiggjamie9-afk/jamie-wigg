@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Cartoon Studio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    #container {
+      display: flex;
+      height: 100vh;
+    }
+
+    #canvas {
+      flex: 1;
+      display: block;
+    }
+
+    .sidebar {
+      width: 320px;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      overflow-y: auto;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .panel {
+      margin-bottom: 24px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      color: #64b5f6;
+    }
+
+    .control-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: #aaa;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #64b5f6;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #64b5f6;
+      cursor: pointer;
+      border: none;
+    }
+
+    input[type="color"] {
+      width: 100%;
+      height: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      padding: 10px 16px;
+      background: #64b5f6;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover {
+      background: #42a5f5;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(100, 181, 246, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.full {
+      grid-column: 1 / -1;
+    }
+
+    select {
+      width: 100%;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .status {
+      padding: 8px 12px;
+      background: rgba(76, 175, 80, 0.2);
+      border: 1px solid rgba(76, 175, 80, 0.5);
+      border-radius: 4px;
+      font-size: 11px;
+      color: #81c784;
+      margin-top: 12px;
+    }
+
+    .status.recording {
+      background: rgba(244, 67, 54, 0.2);
+      border-color: rgba(244, 67, 54, 0.5);
+      color: #ef5350;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .info-text {
+      font-size: 11px;
+      color: #999;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    h1 {
+      font-size: 16px;
+      margin-bottom: 20px;
+      color: #64b5f6;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <canvas id="canvas"></canvas>
+    <div class="sidebar">
+      <h1>3D Cartoon Studio</h1>
+
+      <!-- Character Presets -->
+      <div class="panel">
+        <div class="panel-title">Character</div>
+        <div class="control-group">
+          <label>Preset</label>
+          <select id="characterSelect">
+            <option value="cube">Cube (Simple)</option>
+            <option value="sphere">Sphere</option>
+            <option value="cone">Cone</option>
+            <option value="torus">Torus</option>
+            <option value="dodecahedron">Dodecahedron</option>
+          </select>
+        </div>
+        <div class="info-text">💡 Select a shape or generate via Blender MCP</div>
+      </div>
+
+      <!-- Material Controls -->
+      <div class="panel">
+        <div class="panel-title">Material</div>
+        <div class="control-group">
+          <label>Color</label>
+          <input type="color" id="colorPicker" value="#64b5f6">
+        </div>
+        <div class="control-group">
+          <label>Metalness: <span id="metallicValue">0.5</span></label>
+          <input type="range" id="metallic" min="0" max="1" step="0.1" value="0.5">
+        </div>
+        <div class="control-group">
+          <label>Roughness: <span id="roughnessValue">0.5</span></label>
+          <input type="range" id="roughness" min="0" max="1" step="0.1" value="0.5">
+        </div>
+      </div>
+
+      <!-- Lighting -->
+      <div class="panel">
+        <div class="panel-title">Lighting</div>
+        <div class="control-group">
+          <label>Intensity: <span id="lightValue">1</span></label>
+          <input type="range" id="lightIntensity" min="0" max="2" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+          <label>Environment</label>
+          <select id="environmentSelect">
+            <option value="studio">Studio</option>
+            <option value="sunset">Sunset</option>
+            <option value="forest">Forest</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Animation -->
+      <div class="panel">
+        <div class="panel-title">Animation</div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="autoRotate" checked>
+            Auto Rotate
+          </label>
+        </div>
+        <div class="control-group">
+          <label>Rotation Speed: <span id="rotationValue">1</span></label>
+          <input type="range" id="rotationSpeed" min="0" max="3" step="0.1" value="1">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Recording & Export -->
+      <div class="panel">
+        <div class="panel-title">Export</div>
+        <div class="button-group">
+          <button id="recordButton">● Record 3s</button>
+          <button id="screenshotButton">📸 Screenshot</button>
+        </div>
+        <div id="recordStatus"></div>
+        <div class="info-text">Records viewport to MP4 (requires ScreenRecorder API)</div>
+      </div>
+
+      <!-- Camera -->
+      <div class="panel">
+        <div class="panel-title">Camera</div>
+        <div class="control-group">
+          <label>View</label>
+          <select id="viewSelect">
+            <option value="perspective">Perspective</option>
+            <option value="front">Front</option>
+            <option value="top">Top</option>
+            <option value="iso">Isometric</option>
+          </select>
+        </div>
+        <div class="info-text">
+          🖱️ Drag to rotate<br>
+          🔄 Scroll to zoom<br>
+          Right-click to pan
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="panel">
+        <div class="panel-title">Info</div>
+        <div class="info-text">
+          <strong>3D Cartoon Studio</strong><br><br>
+          Interactive 3D character builder powered by Three.js.<br><br>
+          Combine with Blender MCP for advanced 3D generation and export frames to HyperFrames.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script async src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Three.js Scene Setup
+    const canvas = document.getElementById('canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+
+    renderer.setSize(window.innerWidth - 320, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x1a1a2e);
+    renderer.shadowMap.enabled = true;
+
+    camera.position.z = 3;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    scene.add(directionalLight);
+
+    const pointLight = new THREE.PointLight(0x64b5f6, 0.5);
+    pointLight.position.set(-5, 5, 5);
+    scene.add(pointLight);
+
+    // Ground
+    const groundGeometry = new THREE.PlaneGeometry(20, 20);
+    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x2d2d44 });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Character Mesh
+    let mesh;
+    const characters = {
+      cube: () => new THREE.BoxGeometry(1, 1, 1),
+      sphere: () => new THREE.IcosahedronGeometry(0.75, 4),
+      cone: () => new THREE.ConeGeometry(0.75, 1.5, 32),
+      torus: () => new THREE.TorusGeometry(0.75, 0.25, 16, 100),
+      dodecahedron: () => new THREE.DodecahedronGeometry(0.75)
+    };
+
+    function createCharacter(type) {
+      if (mesh) scene.remove(mesh);
+
+      const geometry = characters[type]();
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x64b5f6,
+        metalness: 0.5,
+        roughness: 0.5
+      });
+
+      mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+    }
+
+    createCharacter('cube');
+
+    // Mouse Controls
+    const controls = {
+      mouse: { x: 0, y: 0 },
+      autoRotate: true,
+      rotationSpeed: 1
+    };
+
+    document.addEventListener('mousemove', (e) => {
+      controls.mouse.x = (e.clientX / (window.innerWidth - 320)) * 2 - 1;
+      controls.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    // UI Controls
+    document.getElementById('characterSelect').addEventListener('change', (e) => {
+      createCharacter(e.target.value);
+    });
+
+    document.getElementById('colorPicker').addEventListener('input', (e) => {
+      mesh.material.color.setHex(e.target.value.replace('#', '0x'));
+    });
+
+    document.getElementById('metallic').addEventListener('input', (e) => {
+      mesh.material.metalness = parseFloat(e.target.value);
+      document.getElementById('metallicValue').textContent = e.target.value;
+    });
+
+    document.getElementById('roughness').addEventListener('input', (e) => {
+      mesh.material.roughness = parseFloat(e.target.value);
+      document.getElementById('roughnessValue').textContent = e.target.value;
+    });
+
+    document.getElementById('lightIntensity').addEventListener('input', (e) => {
+      directionalLight.intensity = parseFloat(e.target.value);
+      document.getElementById('lightValue').textContent = e.target.value;
+    });
+
+    document.getElementById('autoRotate').addEventListener('change', (e) => {
+      controls.autoRotate = e.target.checked;
+    });
+
+    document.getElementById('rotationSpeed').addEventListener('input', (e) => {
+      controls.rotationSpeed = parseFloat(e.target.value);
+      document.getElementById('rotationValue').textContent = e.target.value;
+    });
+
+    document.getElementById('viewSelect').addEventListener('change', (e) => {
+      const views = {
+        perspective: { x: 3, y: 3, z: 3 },
+        front: { x: 0, y: 0, z: 3 },
+        top: { x: 0, y: 3, z: 0.1 },
+        iso: { x: 3, y: 3, z: 3 }
+      };
+      const view = views[e.target.value];
+      camera.position.set(view.x, view.y, view.z);
+    });
+
+    // Screenshot
+    document.getElementById('screenshotButton').addEventListener('click', () => {
+      renderer.render(scene, camera);
+      const link = document.createElement('a');
+      link.href = renderer.domElement.toDataURL('image/png');
+      link.download = `cartoon-${Date.now()}.png`;
+      link.click();
+    });
+
+    // Recording (experimental - requires canvas.captureStream())
+    let isRecording = false;
+    document.getElementById('recordButton').addEventListener('click', async () => {
+      if (isRecording) return;
+      isRecording = true;
+
+      const status = document.getElementById('recordStatus');
+      status.className = 'status recording';
+      status.textContent = '● Recording...';
+
+      try {
+        const stream = canvas.captureStream(30);
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'video/webm;codecs=vp9'
+        });
+        const chunks = [];
+
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `cartoon-${Date.now()}.webm`;
+          link.click();
+
+          status.className = 'status';
+          status.textContent = '✓ Exported to WebM';
+          isRecording = false;
+        };
+
+        mediaRecorder.start();
+        setTimeout(() => mediaRecorder.stop(), 3000);
+      } catch (e) {
+        status.textContent = '✗ Recording not supported';
+        isRecording = false;
+      }
+    });
+
+    // Animation Loop
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      if (controls.autoRotate && mesh) {
+        mesh.rotation.x += 0.003 * controls.rotationSpeed;
+        mesh.rotation.y += 0.005 * controls.rotationSpeed;
+      }
+
+      // Subtle mouse influence
+      if (mesh && !controls.autoRotate) {
+        mesh.rotation.y = controls.mouse.x * Math.PI;
+        mesh.rotation.x = controls.mouse.y * Math.PI;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      const width = window.innerWidth - 320;
+      const height = window.innerHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
