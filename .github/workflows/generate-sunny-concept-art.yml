@@ -1,0 +1,46 @@
+name: Generate Sunny Concept Art
+
+on:
+  workflow_dispatch:
+
+jobs:
+  concept-art:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests pillow
+
+      - name: Generate concept art
+        env:
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+        run: python3 generate-sunny-concept-art.py
+
+      - name: Commit and push
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          git add SUNNY-CONCEPT-ART/
+          git commit -m "Add Sunny concept art (FLUX 1.1 Pro, illustrated storybook style)" || echo "No changes"
+          git push origin "${{ github.ref_name }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sunny-concept-art
+          path: SUNNY-CONCEPT-ART/
+          retention-days: 30
