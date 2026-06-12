@@ -54,18 +54,31 @@ CONCEPTS = [
 ]
 
 
+def create_prediction(prompt: str, headers: dict) -> dict:
+    """Create a prediction, retrying on 429 rate limits (low-credit accounts
+    are throttled to 1 request burst / 6 per minute)."""
+    for attempt in range(10):
+        resp = requests.post(
+            "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions",
+            headers=headers,
+            json={"input": {"prompt": prompt, "aspect_ratio": "16:9", "output_format": "png",
+                            "output_quality": 100, "prompt_upsampling": True}},
+            timeout=300,
+        )
+        if resp.status_code == 201:
+            return resp.json()
+        if resp.status_code == 429:
+            wait = max(int(resp.json().get("retry_after", 12)), 12)
+            print(f"  rate limited, waiting {wait}s (attempt {attempt + 1}/10)...")
+            time.sleep(wait)
+            continue
+        raise RuntimeError(f"Replicate error {resp.status_code}: {resp.text}")
+    raise RuntimeError("Rate limited after 10 retries")
+
+
 def generate(prompt: str, token: str) -> Image.Image:
     headers = {"Authorization": f"Token {token}"}
-    resp = requests.post(
-        "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions",
-        headers=headers,
-        json={"input": {"prompt": prompt, "aspect_ratio": "16:9", "output_format": "png",
-                        "output_quality": 100, "prompt_upsampling": True}},
-        timeout=300,
-    )
-    if resp.status_code != 201:
-        raise RuntimeError(f"Replicate error {resp.status_code}: {resp.text}")
-    pred = resp.json()
+    pred = create_prediction(prompt, headers)
 
     while pred["status"] not in ("succeeded", "failed", "canceled"):
         time.sleep(4)
@@ -90,7 +103,9 @@ def main():
         return 1
 
     failed = []
-    for concept in CONCEPTS:
+    for i, concept in enumerate(CONCEPTS):
+        if i > 0:
+            time.sleep(12)  # stay under the 6-requests/minute low-credit throttle
         print(f"Generating {concept['name']}...")
         try:
             image = generate(concept["prompt"], token)
