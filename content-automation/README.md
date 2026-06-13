@@ -114,6 +114,58 @@ python3 caption_generator.py video.mp4 \
 
 ---
 
+## 📝 Script Generation
+
+Generate video scripts, social captions, and event descriptions from prompts.
+
+### Usage
+
+**60-second narration script:**
+```bash
+python3 script_generator.py --prompt "Event Platform Launch" --type narration
+```
+
+**Social media captions (3 variations):**
+```bash
+python3 script_generator.py --prompt "Tech conference in Austin" --type social
+```
+
+**Event description (200 words):**
+```bash
+python3 script_generator.py --prompt "Music festival announcement" --type event-description
+```
+
+**Viral video hooks (15 sec each):**
+```bash
+python3 script_generator.py --prompt "New product reveal" --type video-hook
+```
+
+**Product pitch script (30 sec):**
+```bash
+python3 script_generator.py --prompt "AI music platform" --type product-pitch
+```
+
+**Save to file:**
+```bash
+python3 script_generator.py --prompt "Event Name" --type narration --output event_narration.txt
+```
+
+**Use different AI provider:**
+```bash
+python3 script_generator.py --prompt "Event Name" --provider claude
+python3 script_generator.py --prompt "Event Name" --provider replicate
+```
+
+### Providers
+
+| Provider | Quality | Speed | Cost |
+|----------|---------|-------|------|
+| **OpenAI GPT-4o mini** | Excellent | Fast | Per-token |
+| **Anthropic Claude 3.5** | Excellent | Fast | Per-token |
+| **Replicate Mixtral** | Very Good | Medium | Per-request |
+
+---
+
 ## 🖼️ Image Generation (Multi-Provider)
 
 Generate images from text using Leonardo AI, Replicate, Craiyon, or Higgsfield.
@@ -161,24 +213,61 @@ python3 image_generator.py --title "Portrait" --generator replicate --model flux
 | **Craiyon** | Medium | Good | Free tier available | None (free) |
 | **Higgsfield** | Fast | Excellent | Per-image | `HIGGSFIELD_API_KEY` |
 
-### Setup
+### Environment Setup
+
+**Get API keys (or free tiers):**
 
 ```bash
-# Replicate (recommended for quality)
-export REPLICATE_API_TOKEN="your-token"
-# Get token at https://replicate.com/
+# Script generation (pick one or all)
+export OPENAI_API_KEY="your-token"              # https://platform.openai.com/
+export ANTHROPIC_API_KEY="your-key"             # https://console.anthropic.com/
+export REPLICATE_API_TOKEN="your-token"         # https://replicate.com/
 
-# Leonardo AI
-export LEONARDO_API_KEY="your-key"
-# Get key at https://leonardo.ai/
-
-# Higgsfield
-export HIGGSFIELD_API_KEY="your-key"
-# Get key at https://higgsfield.ai/
-
-# Craiyon (optional, no API key needed)
-pip install craiyon
+# Image generation
+export LEONARDO_API_KEY="your-key"               # https://leonardo.ai/
+export HIGGSFIELD_API_KEY="your-key"             # https://higgsfield.ai/
+# Replicate token (above) also works for images
+# Craiyon is free (no API key needed)
 ```
+
+**Save to ~/.bash_profile or ~/.zshrc for persistence:**
+
+```bash
+cat >> ~/.zshrc << 'EOF'
+# Content Automation Tools API Keys
+export OPENAI_API_KEY="your-openai-token"
+export ANTHROPIC_API_KEY="your-anthropic-key"
+export REPLICATE_API_TOKEN="your-replicate-token"
+export LEONARDO_API_KEY="your-leonardo-key"
+export HIGGSFIELD_API_KEY="your-higgsfield-key"
+EOF
+
+source ~/.zshrc
+```
+
+**Or create a `.env` file in content-automation/ (gitignored):**
+
+```bash
+# .env (never commit this)
+OPENAI_API_KEY=your-token
+ANTHROPIC_API_KEY=your-key
+REPLICATE_API_TOKEN=your-token
+LEONARDO_API_KEY=your-key
+HIGGSFIELD_API_KEY=your-key
+```
+
+Then load it before running scripts:
+
+```bash
+source .env
+python3 script_generator.py --prompt "Event Name"
+```
+
+**Free tiers available:**
+- **Replicate** — free tier with credits
+- **Craiyon** — fully free (no API key)
+- **OpenAI** — $5 free trial credits
+- **Claude** — free tier available
 
 ---
 
@@ -191,25 +280,31 @@ Schedule posts to YouTube, TikTok, Instagram, Twitter, etc.
 ## Installation
 
 ```bash
-# Core tools
-pip install Pillow              # Thumbnail generator
-pip install openai-whisper      # Captions (Whisper)
-pip install requests            # HTTP requests (image generation)
+# Quick: install everything
+pip install -r requirements.txt
 
-# Image generation (choose providers you need)
-pip install replicate           # Replicate API (FLUX, Sana, etc.)
-pip install craiyon             # Craiyon/DALL-E mini (local-friendly)
+# Or install individually by feature:
 
-# Griptape integration (for Leonardo AI)
-pip install griptape            # Griptape framework
+# Thumbnails
+pip install Pillow
 
-# Social scheduler (coming)
-pip install instagrapi python-twitter
+# Captions from video
+pip install openai-whisper faster-whisper
+
+# Script generation
+pip install openai anthropic replicate
+
+# Image generation
+pip install requests replicate craiyon griptape
+
+# Video processing
+pip install ffmpeg-python
 ```
 
-**Quick setup:**
+**For macOS (via Homebrew):**
 ```bash
-pip install -r requirements.txt
+brew install ffmpeg                    # Video processing
+pip install -r requirements.txt        # Python packages
 ```
 
 ---
@@ -221,11 +316,38 @@ content-automation/
 ├── thumbnail_generator.py    # YouTube-optimized thumbnails (1280×720)
 ├── caption_generator.py       # Auto-captions from video (Whisper)
 ├── image_generator.py         # Text-to-image (Leonardo, Replicate, Craiyon, Higgsfield)
+├── script_generator.py        # Script generation (OpenAI, Claude, Replicate)
 ├── social_scheduler.py        # Multi-platform scheduling (Coming)
 ├── requirements.txt           # Python dependencies
+├── .env                       # API keys (gitignored)
 └── README.md
 ```
 
 ---
 
-**Next:** Set up caption auto-generation with Whisper.
+## 🎬 Complete Content Creation Workflow
+
+Create a full video package (script, thumbnail, captions) in one flow:
+
+```bash
+# 1. Generate script
+python3 script_generator.py --prompt "Event Platform Launch" --type narration --output script.txt
+
+# 2. Generate thumbnail
+python3 thumbnail_generator.py --title "Event Platform Launch" --output thumbnail.png
+
+# 3. Generate scene image
+python3 image_generator.py --title "Event Platform Launch" --generator replicate --output scene.png
+
+# 4. Generate captions from your video
+python3 caption_generator.py my_video.mp4 --output captions.srt
+
+# 5. Burn captions into video
+python3 caption_generator.py my_video.mp4 --burn my_video_captioned.mp4
+```
+
+**Result:** `script.txt`, `thumbnail.png`, `scene.png`, `captions.srt`, `my_video_captioned.mp4` — ready for YouTube/TikTok/Instagram.
+
+---
+
+**Next:** Hook these tools into your event platform for one-click content generation.
