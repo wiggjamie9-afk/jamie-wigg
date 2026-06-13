@@ -46,15 +46,71 @@ batch_generate_thumbnails(titles, output_dir="./thumbnails")
 
 ---
 
-## 📝 Captions/Subtitles (Coming Next)
+## 📝 Captions/Subtitles (Auto-Generate)
 
-Auto-generate SRT subtitles from video using OpenAI Whisper:
+Auto-generate SRT/VTT subtitles from video using OpenAI Whisper.
 
+### Usage
+
+**Generate captions (SRT format):**
 ```bash
-pip install openai-whisper
-whisper video.mp4 --language en --output_format srt
-ffmpeg -i video.mp4 -vf subtitles=video.srt output_with_captions.mp4
+python3 caption_generator.py video.mp4
+# Output: video.srt
 ```
+
+**Custom language/model:**
+```bash
+python3 caption_generator.py video.mp4 --language en --model base
+# Models: tiny, base, small, medium, large
+# Languages: en, zh, ja, fr, es, etc.
+```
+
+**Translate to English:**
+```bash
+python3 caption_generator.py video.mp4 --translate
+```
+
+**Use VAD filter (reduces repetition, slightly slower):**
+```bash
+python3 caption_generator.py video.mp4 --vad
+# Recommended for long videos (>10 min) with silence
+```
+
+**Burn subtitles into video:**
+```bash
+python3 caption_generator.py video.mp4 --burn output_with_captions.mp4
+# Requires FFmpeg
+```
+
+**All options:**
+```bash
+python3 caption_generator.py video.mp4 \
+  --language en \
+  --model base \
+  --format srt \
+  --translate \
+  --vad \
+  --burn output.mp4
+```
+
+### Output Formats
+
+- `srt` — SubRip (YouTube, VLC, most players)
+- `vtt` — WebVTT (HTML5 video, better for web)
+- `json` — JSON (for processing)
+- `txt` — Plain text (transcription only)
+
+### Models
+
+| Model | Speed | Quality | VRAM |
+|-------|-------|---------|------|
+| `tiny` | Fast ⚡ | Lower | 1GB |
+| `base` | Good | Good | 1GB |
+| `small` | Slower | Better | 2GB |
+| `medium` | Slow | Best | 5GB |
+| `large` | Very Slow | Excellent | 10GB |
+
+**Recommendation:** Use `base` or `small` for most content.
 
 ---
 
