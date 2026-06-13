@@ -51,6 +51,29 @@ cd ~/jamie-wigg-workspace/content-automation
 cd ~/jamie-wigg-workspace/event-platform
 ```
 
+## Aider AI (Code Editing Pair Programmer)
+
+```bash
+# Start Aider in your project
+cd ~/jamie-wigg-workspace/event-platform
+~/aider
+
+# Specific files
+aider src/components/EventForm.tsx src/lib/supabase.ts
+
+# Set model
+export ANTHROPIC_API_KEY="your-key"
+aider --model claude-opus-4-1
+
+# Commands in Aider:
+/help              # Show help
+/exit              # Exit
+/diff              # Show changes
+/test              # Run tests
+/run <command>     # Run shell command
+/code              # View code history
+```
+
 ## Hermes Agent (Conversational AI + Messaging Gateway)
 
 ```bash
