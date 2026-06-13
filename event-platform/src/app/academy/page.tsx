@@ -3,6 +3,15 @@
 import { useState } from 'react';
 import Navigation from '@/components/Navigation';
 
+// RHYTHMIX Brand Colors
+const BRAND = {
+  primary: '#3B82F6',    // Blue
+  accent: '#9333EA',     // Purple
+  highlight: '#F97316',  // Orange
+  success: '#10B981',
+  error: '#EF4444',
+};
+
 export default function AcademyLanding() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -25,7 +34,7 @@ export default function AcademyLanding() {
           <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
             Build a $100K/year event platform
             <br />
-            <span className="text-var(--color-accent)">in 90 days</span>
+            <span style={{ color: BRAND.accent }}>in 90 days</span>
           </h1>
           <p className="text-xl md:text-2xl opacity-75 mb-8 max-w-3xl mx-auto">
             The hands-on academy teaching AI automation, real-time sync, and monetization.
@@ -45,7 +54,8 @@ export default function AcademyLanding() {
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-var(--color-accent) text-white rounded-lg font-medium hover:opacity-90 transition"
+                style={{ backgroundColor: BRAND.accent }}
+                className="px-6 py-3 text-white rounded-lg font-medium hover:opacity-90 transition"
               >
                 {submitted ? '✓ Joined' : 'Enroll Now'}
               </button>
@@ -60,15 +70,15 @@ export default function AcademyLanding() {
         {/* Social Proof */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <p className="text-3xl font-bold text-var(--color-accent)">50+</p>
+            <p style={{ color: BRAND.accent }} className="text-3xl font-bold">50+</p>
             <p className="text-sm opacity-75">Students building platforms</p>
           </div>
           <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <p className="text-3xl font-bold text-var(--color-accent)">12 weeks</p>
+            <p style={{ color: BRAND.accent }} className="text-3xl font-bold">12 weeks</p>
             <p className="text-sm opacity-75">From zero to first customer</p>
           </div>
           <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <p className="text-3xl font-bold text-var(--color-accent)">$1K-$10K</p>
+            <p style={{ color: BRAND.accent }} className="text-3xl font-bold">$1K-$10K</p>
             <p className="text-sm opacity-75">MRR by graduation</p>
           </div>
         </div>
@@ -145,7 +155,7 @@ export default function AcademyLanding() {
               key={section.week}
               className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
             >
-              <p className="text-sm font-bold text-var(--color-accent) mb-2">
+              <p style={{ color: BRAND.accent }} className="text-sm font-bold mb-2">
                 Week {section.week}
               </p>
               <p className="font-bold mb-1">{section.title}</p>
@@ -194,7 +204,7 @@ export default function AcademyLanding() {
                 </p>
                 <p className="text-sm mb-4">
                   <span className="opacity-60 block mb-1">After:</span>
-                  <span className="font-bold text-var(--color-accent)">
+                  <span style={{ color: BRAND.accent }} className="font-bold">
                     {story.after}
                   </span>
                 </p>
@@ -254,24 +264,31 @@ export default function AcademyLanding() {
               key={tier.name}
               className={`p-8 rounded-lg border transition ${
                 tier.highlight
-                  ? 'border-var(--color-accent) bg-var(--color-accent) bg-opacity-5'
+                  ? 'border-2'
                   : 'border-gray-200 dark:border-gray-700'
               }`}
+              style={{
+                borderColor: tier.highlight ? BRAND.accent : undefined,
+                backgroundColor: tier.highlight ? `${BRAND.accent}15` : undefined,
+              }}
             >
               <p className="font-bold mb-1">{tier.name}</p>
-              <p className="text-3xl font-bold text-var(--color-accent) mb-1">
+              <p style={{ color: BRAND.accent }} className="text-3xl font-bold mb-1">
                 {tier.price}
               </p>
               <p className="text-sm opacity-60 mb-6">{tier.desc}</p>
               <ul className="space-y-3 text-sm mb-8">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex gap-2">
-                    <span className="text-var(--color-accent)">✓</span>
+                    <span style={{ color: BRAND.accent }}>✓</span>
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
-              <button className="w-full px-4 py-2 bg-var(--color-accent) text-white rounded-lg font-medium hover:opacity-90 transition">
+              <button
+                style={{ backgroundColor: BRAND.accent }}
+                className="w-full px-4 py-2 text-white rounded-lg font-medium hover:opacity-90 transition"
+              >
                 Enroll in {tier.name}
               </button>
             </div>
@@ -347,7 +364,8 @@ export default function AcademyLanding() {
             />
             <button
               type="submit"
-              className="px-6 py-3 bg-var(--color-accent) text-white rounded-lg font-medium hover:opacity-90 transition"
+              style={{ backgroundColor: BRAND.accent }}
+              className="px-6 py-3 text-white rounded-lg font-medium hover:opacity-90 transition"
             >
               Enroll Now
             </button>
