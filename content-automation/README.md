@@ -114,6 +114,74 @@ python3 caption_generator.py video.mp4 \
 
 ---
 
+## 🖼️ Image Generation (Multi-Provider)
+
+Generate images from text using Leonardo AI, Replicate, Craiyon, or Higgsfield.
+
+### Usage
+
+**Basic (Replicate FLUX):**
+```bash
+python3 image_generator.py --title "Sunset over mountain landscape"
+# Output: generated_replicate.png
+```
+
+**With Leonardo AI:**
+```bash
+python3 image_generator.py --title "Event poster design" --generator leonardo
+```
+
+**With Craiyon (DALL-E mini, offline-friendly):**
+```bash
+python3 image_generator.py --title "Album artwork" --generator craiyon
+```
+
+**With Higgsfield (text-to-image + video generation):**
+```bash
+python3 image_generator.py --title "Character design sketch" --generator higgsfield
+```
+
+**Custom output path:**
+```bash
+python3 image_generator.py --title "Thumbnail design" --generator replicate --output my_image.png
+```
+
+**Replicate model variants:**
+```bash
+python3 image_generator.py --title "Portrait" --generator replicate --model flux-dev
+# Models: flux (pro), flux-dev, sana, hyper
+```
+
+### Supported Providers
+
+| Provider | Speed | Quality | Cost | API Key Env Var |
+|----------|-------|---------|------|---|
+| **Replicate** | Fast | Excellent (FLUX 1.1 Pro) | Per-image | `REPLICATE_API_TOKEN` |
+| **Leonardo AI** | Fast | Very Good | Per-image | `LEONARDO_API_KEY` |
+| **Craiyon** | Medium | Good | Free tier available | None (free) |
+| **Higgsfield** | Fast | Excellent | Per-image | `HIGGSFIELD_API_KEY` |
+
+### Setup
+
+```bash
+# Replicate (recommended for quality)
+export REPLICATE_API_TOKEN="your-token"
+# Get token at https://replicate.com/
+
+# Leonardo AI
+export LEONARDO_API_KEY="your-key"
+# Get key at https://leonardo.ai/
+
+# Higgsfield
+export HIGGSFIELD_API_KEY="your-key"
+# Get key at https://higgsfield.ai/
+
+# Craiyon (optional, no API key needed)
+pip install craiyon
+```
+
+---
+
 ## 🤖 Social Media Scheduler (Coming Next)
 
 Schedule posts to YouTube, TikTok, Instagram, Twitter, etc.
@@ -123,9 +191,25 @@ Schedule posts to YouTube, TikTok, Instagram, Twitter, etc.
 ## Installation
 
 ```bash
-pip install Pillow  # Thumbnail generator
-pip install openai-whisper  # Captions
-pip install instagrapi python-twitter  # Scheduler
+# Core tools
+pip install Pillow              # Thumbnail generator
+pip install openai-whisper      # Captions (Whisper)
+pip install requests            # HTTP requests (image generation)
+
+# Image generation (choose providers you need)
+pip install replicate           # Replicate API (FLUX, Sana, etc.)
+pip install craiyon             # Craiyon/DALL-E mini (local-friendly)
+
+# Griptape integration (for Leonardo AI)
+pip install griptape            # Griptape framework
+
+# Social scheduler (coming)
+pip install instagrapi python-twitter
+```
+
+**Quick setup:**
+```bash
+pip install -r requirements.txt
 ```
 
 ---
@@ -134,9 +218,11 @@ pip install instagrapi python-twitter  # Scheduler
 
 ```
 content-automation/
-├── thumbnail_generator.py    # Thumbnail generation
-├── caption_generator.py       # Auto-captions (WIP)
-├── social_scheduler.py        # Multi-platform scheduling (WIP)
+├── thumbnail_generator.py    # YouTube-optimized thumbnails (1280×720)
+├── caption_generator.py       # Auto-captions from video (Whisper)
+├── image_generator.py         # Text-to-image (Leonardo, Replicate, Craiyon, Higgsfield)
+├── social_scheduler.py        # Multi-platform scheduling (Coming)
+├── requirements.txt           # Python dependencies
 └── README.md
 ```
 
