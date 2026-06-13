@@ -6,9 +6,11 @@ import EventForm from '@/components/EventForm';
 import Navigation from '@/components/Navigation';
 import ThemeToggle from '@/components/ThemeToggle';
 import { EventMap } from '@/components/EventMap';
+import { EventSearch, type SearchResult } from '@/components/EventSearch';
 
 export default function Home() {
   const [showForm, setShowForm] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [events, setEvents] = useState<any[]>([
     {
       id: '1',
@@ -64,14 +66,49 @@ export default function Home() {
           </div>
         )}
 
-        {events.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-serif mb-4">Events Near You</h2>
-            <EventMap events={events} height="500px" />
-          </div>
-        )}
+        {/* Search Component */}
+        <div className="mb-8 p-6 rounded-lg bg-white dark:bg-slate-800 shadow-lg">
+          <h2 className="text-2xl font-serif mb-4">Find Events</h2>
+          <EventSearch
+            onResultsFound={(results) => {
+              setSearchResults(results);
+            }}
+          />
+        </div>
 
-        <EventList events={events} />
+        {searchResults ? (
+          // Show search results with map
+          <>
+            {searchResults.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-serif mb-4">
+                  Search Results ({searchResults.length})
+                </h2>
+                <EventMap events={searchResults} height="500px" />
+              </div>
+            )}
+            <div className="flex gap-2 mb-8">
+              <button
+                onClick={() => setSearchResults(null)}
+                className="text-var(--color-accent) hover:underline text-sm font-medium"
+              >
+                ← Back to all events
+              </button>
+            </div>
+            <EventList events={searchResults} />
+          </>
+        ) : (
+          // Show all events
+          <>
+            {events.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-serif mb-4">Events Near You</h2>
+                <EventMap events={events} height="500px" />
+              </div>
+            )}
+            <EventList events={events} />
+          </>
+        )}
       </div>
     </main>
   );
