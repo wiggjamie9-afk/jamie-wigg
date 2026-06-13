@@ -32,23 +32,27 @@ export function useEvents() {
     fetchEvents();
 
     // Real-time subscription: listen for INSERT, UPDATE, DELETE
-    const subscription = supabase
-      .from('events')
-      .on('*', (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setEvents((prev) => [...prev, payload.new as Event]);
-        } else if (payload.eventType === 'UPDATE') {
-          setEvents((prev) =>
-            prev.map((e) => (e.id === payload.new.id ? (payload.new as Event) : e))
-          );
-        } else if (payload.eventType === 'DELETE') {
-          setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+    const channel = supabase
+      .channel('events-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'events' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setEvents((prev) => [...prev, payload.new as Event]);
+          } else if (payload.eventType === 'UPDATE') {
+            setEvents((prev) =>
+              prev.map((e) => (e.id === payload.new.id ? (payload.new as Event) : e))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+          }
         }
-      })
+      )
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      channel.unsubscribe();
     };
   }, [fetchEvents]);
 
