@@ -10,6 +10,8 @@ interface FormData {
   location: string;
   description: string;
   image?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export default function EventForm({
@@ -27,6 +29,28 @@ export default function EventForm({
   });
 
   const [showAssetGenerator, setShowAssetGenerator] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+
+  const handleGetLocation = async () => {
+    setGeoLoading(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+
+      const { latitude, longitude } = position.coords;
+      setFormData((prev) => ({
+        ...prev,
+        latitude,
+        longitude,
+      }));
+    } catch (error) {
+      console.error('Geolocation error:', error);
+      alert('Unable to get location. Please enable location permissions.');
+    } finally {
+      setGeoLoading(false);
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -51,6 +75,8 @@ export default function EventForm({
         location: '',
         description: '',
         image: undefined,
+        latitude: undefined,
+        longitude: undefined,
       });
       setShowAssetGenerator(false);
     }
@@ -123,15 +149,31 @@ export default function EventForm({
 
       <div>
         <label className="block text-sm font-semibold mb-1">Location</label>
-        <input
-          type="text"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-          placeholder="e.g., Downtown Park"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-accent"
-          required
-        />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            placeholder="e.g., Downtown Park"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-accent"
+            required
+          />
+          <button
+            type="button"
+            onClick={handleGetLocation}
+            disabled={geoLoading}
+            className="px-3 py-2 bg-var(--color-accent) text-white rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            title="Use your current location"
+          >
+            {geoLoading ? '📍' : '📍'}
+          </button>
+        </div>
+        {formData.latitude && formData.longitude && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            📍 {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+          </p>
+        )}
       </div>
 
       <div>

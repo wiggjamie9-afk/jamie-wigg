@@ -18,6 +18,8 @@ export type Database = {
           date: string;
           time: string;
           location: string;
+          latitude: number | null;
+          longitude: number | null;
           organizer_id: string;
           attendees_count: number;
         };
@@ -27,6 +29,8 @@ export type Database = {
           date: string;
           time: string;
           location: string;
+          latitude?: number;
+          longitude?: number;
           organizer_id?: string;
         };
         Update: {
@@ -35,6 +39,8 @@ export type Database = {
           date?: string;
           time?: string;
           location?: string;
+          latitude?: number;
+          longitude?: number;
         };
       };
       attendees: {

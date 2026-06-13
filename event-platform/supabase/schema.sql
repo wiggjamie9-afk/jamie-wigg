@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS events (
   date DATE NOT NULL,
   time TIME NOT NULL,
   location TEXT NOT NULL,
+  latitude FLOAT,
+  longitude FLOAT,
   organizer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   attendees_count INTEGER DEFAULT 0
 );
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS attendees (
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS events_date_idx ON events(date);
 CREATE INDEX IF NOT EXISTS events_organizer_idx ON events(organizer_id);
+CREATE INDEX IF NOT EXISTS events_location_idx ON events(latitude, longitude);
 CREATE INDEX IF NOT EXISTS attendees_event_idx ON attendees(event_id);
 CREATE INDEX IF NOT EXISTS attendees_user_idx ON attendees(user_id);
 
