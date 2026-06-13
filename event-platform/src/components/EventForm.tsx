@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AssetGenerator } from './AssetGenerator';
 
 interface FormData {
   title: string;
@@ -8,6 +9,7 @@ interface FormData {
   time: string;
   location: string;
   description: string;
+  image?: string;
 }
 
 export default function EventForm({
@@ -21,7 +23,10 @@ export default function EventForm({
     time: '',
     location: '',
     description: '',
+    image: undefined,
   });
+
+  const [showAssetGenerator, setShowAssetGenerator] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -45,7 +50,9 @@ export default function EventForm({
         time: '',
         location: '',
         description: '',
+        image: undefined,
       });
+      setShowAssetGenerator(false);
     }
   };
 
@@ -63,6 +70,31 @@ export default function EventForm({
           required
         />
       </div>
+
+      {formData.title && (
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setShowAssetGenerator(!showAssetGenerator)}
+            className="text-sm text-var(--color-accent) hover:underline font-medium"
+          >
+            {showAssetGenerator ? '✓ Hide' : '+ Generate Event Image & Description'}
+          </button>
+
+          {showAssetGenerator && (
+            <AssetGenerator
+              eventName={formData.title}
+              eventDescription={formData.description}
+              onImageGenerated={(imageUrl) =>
+                setFormData((prev) => ({ ...prev, image: imageUrl }))
+              }
+              onScriptGenerated={(script) =>
+                setFormData((prev) => ({ ...prev, description: script }))
+              }
+            />
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div>
