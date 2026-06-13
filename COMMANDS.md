@@ -51,6 +51,29 @@ cd ~/jamie-wigg-workspace/content-automation
 cd ~/jamie-wigg-workspace/event-platform
 ```
 
+## OpenHands (AI Agent Platform)
+
+```bash
+# Setup (one-time, requires Python 3.12+)
+cd ~/jamie-wigg-workspace/event-platform
+python3.12 -m venv openhands-env
+source openhands-env/bin/activate
+pip install openhands-ai
+
+# Set API key
+export ANTHROPIC_API_KEY="your-key"
+
+# Run event creation agent
+python3 agent_example.py --task create
+
+# Run event search agent
+python3 agent_example.py --task search
+
+# Run OpenHands CLI web interface
+openhands-cli --model claude-opus-4-1
+# → http://localhost:8000
+```
+
 ## gstack (AI Development Methodology)
 
 ```bash
