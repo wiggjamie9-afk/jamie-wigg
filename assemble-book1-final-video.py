@@ -33,26 +33,26 @@ MOCKUP_COVER = Path("BOOK-1-COMPLETE-18PAGE/PAGE-001-COVER.png")
 MOCKUP_TEASER = Path("BOOK-1-COMPLETE-18PAGE/PAGE-018-TEASER.png")
 OUTPUT_VIDEO = Path("book-1-sunny-watches-stars.mp4")
 
-# Page durations (matching narration timing)
+# Page durations (matching ~90 second narration)
 PAGE_DURATIONS = {
-    1: 3,      # Cover: 3 seconds
-    2: 4.5,    # Golden hour opening
-    3: 4.5,    # Sky deepening
-    4: 4.5,    # First foxes
-    5: 4.5,    # Foxes sailing
-    6: 4,      # Wonder growing
-    7: 4,      # More foxes
-    8: 3.5,    # First star
-    9: 3.5,    # Stars multiply
-    10: 3.5,   # Many stars
-    11: 4,     # Starfield growing
-    12: 4,     # Peaceful stars
-    13: 3.5,   # Deep night
-    14: 3.5,   # Sleeping Sunny
-    15: 3.5,   # Dream scene
-    16: 3.5,   # Night complete
-    17: 3.5,   # Goodnight
-    18: 2,     # Teaser: 2 seconds
+    1: 3.5,    # Cover: 3.5 seconds
+    2: 5.5,    # Golden hour opening
+    3: 5.5,    # Sky deepening
+    4: 5.5,    # First foxes
+    5: 5.5,    # Foxes sailing
+    6: 5,      # Wonder growing
+    7: 5,      # More foxes
+    8: 4.5,    # First star
+    9: 4.5,    # Stars multiply
+    10: 4.5,   # Many stars
+    11: 5,     # Starfield growing
+    12: 5,     # Peaceful stars
+    13: 4.5,   # Deep night
+    14: 4.5,   # Sleeping Sunny
+    15: 4.5,   # Dream scene
+    16: 4.5,   # Night complete
+    17: 4.5,   # Goodnight
+    18: 2.5,   # Teaser: 2.5 seconds
 }
 
 def create_cover_page():

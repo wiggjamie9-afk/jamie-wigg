@@ -7,7 +7,7 @@ This document walks you through generating a professional YouTube-ready video fo
 
 ## What You're Creating
 
-- **18-page illustrated video** (75 seconds total)
+- **18-page illustrated video** (90 seconds total)
 - **16 story pages** with professional watercolor-style illustrations
 - **Consistent character**: Sunny (locked across all pages)
 - **Color progression**: Golden hour → Twilight → Deep night with stars
@@ -121,7 +121,7 @@ python3 generate-book1-narration.py
 **What it does:**
 1. Presents voice options (Grace, Emily, Julia)
 2. You select which voice sounds most motherly
-3. Generates 75 seconds of narration
+3. Generates 90 seconds of narration
 4. Saves as `book-1-narration.wav`
 
 **Voice recommendations:**
@@ -131,7 +131,7 @@ python3 generate-book1-narration.py
 
 **Expected output:**
 ```
-book-1-narration.wav (75 seconds audio)
+book-1-narration.wav (90 seconds audio)
 ```
 
 **ElevenLabs credits used:** ~1 minute = ~1-2 credits
@@ -158,7 +158,7 @@ python3 assemble-book1-final-video.py
 
 **Expected output:**
 ```
-book-1-sunny-watches-stars.mp4 (75 seconds, ~80-150 MB)
+book-1-sunny-watches-stars.mp4 (90 seconds, ~100-180 MB)
 ```
 
 **Encoding time:** 2-5 minutes (depending on your CPU)
@@ -271,7 +271,7 @@ Each page has:
   - `jobs.json` — Tracking file (polling status)
   - `characters.json` — Character reference status
 
-- `book-1-narration.wav` — Audio track (75 seconds)
+- `book-1-narration.wav` — Audio track (90 seconds)
 
 - `book-1-sunny-watches-stars.mp4` — Final video (ready for YouTube)
 

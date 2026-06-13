@@ -12,7 +12,7 @@ Prerequisites:
     - pip install elevenlabs
     - ELEVENLABS_API_KEY in .env or exported as env var
 
-The story text is 75 seconds of narration read in a warm, motherly tone.
+The story text is ~90 seconds of narration read in a warm, motherly tone.
 Available voices: Grace, Emily, Julia (or use your own voice ID)
 """
 
@@ -27,34 +27,34 @@ VOICE_OPTIONS = {
     "Julia": "mXrLmjqKlX7LOlEFW1LH",   # Warm and intimate
 }
 
-# Story text for narration (75 seconds)
-STORY_TEXT = """As the warm golden afternoon faded gently away, little Sunny the quokka sat on her favourite mossy rock and looked up at the sky.
+# Story text for narration (~90 seconds)
+STORY_TEXT = """As the warm golden afternoon faded gently away, little Sunny the quokka sat on her favourite mossy rock and looked up at the sky. The day had been long and full of adventures, and now it was time to rest.
 
-The sky was turning the most beautiful colours Sunny had ever seen. Soft pink, like the inside of a flower. Warm orange, like a ripe peach.
+The sky was turning the most beautiful colours Sunny had ever seen. Soft pink, like the inside of a flower. Warm orange, like a ripe peach. Golden yellows and cream-coloured clouds painted the horizon.
 
-And then, slowly, a deep, soft purple began to spread across the sky, like a cosy blanket being pulled up high. Sunny smiled her gentle smile.
+And then, slowly, a deep, soft purple began to spread across the sky, like a cosy blanket being pulled up high. Sunny smiled her gentle smile and felt the warmth of the day slowly slipping away.
 
-She had never stayed up to watch the evening come before. The bush grew quiet. The birds settled into their nests, tucking their heads beneath their wings.
+She had never stayed up to watch the evening come before. The bush grew quiet. The birds settled into their nests, tucking their heads beneath their wings. Everything felt peaceful and calm.
 
-The crickets began their soft, steady song — cree cree cree — like tiny lullabies all around.
+The crickets began their soft, steady song — cree cree cree — like tiny lullabies all around. The eucalyptus trees swayed gently in the warm breeze.
 
-Sunny waited, very still, her big warm eyes wide with wonder. And then — there it was. One tiny light, twinkling softly in the purple sky.
+Sunny waited, very still, her big warm eyes wide with wonder. And then — there it was. One tiny light, twinkling softly in the purple sky. The very first star.
 
-Oh, said Sunny, very quietly. Then another. And another. One by one, the stars came out to say hello. Each one a small, soft sparkle.
+Oh, said Sunny, very quietly. Then another. And another. One by one, the stars came out to say hello. Each one a small, soft sparkle appearing in the deepening sky.
 
-Like someone had sprinkled glitter across a dark velvet cloth. Sunny had never seen anything so beautiful in all her little life.
+Like someone had sprinkled glitter across a dark velvet cloth. Tiny lights multiplying, dancing softly above. Sunny had never seen anything so beautiful in all her little life.
 
-She lay back on her mossy rock, looking up and up and up at all the tiny lights. There were so many of them.
+She lay back on her mossy rock, looking up and up and up at all the tiny lights. There were so many of them now, filling the entire sky with their gentle glow.
 
-Enough for everyone to have their very own. The warm breeze moved gently through the eucalyptus leaves, making a soft shushing sound. Shhhh.
+Enough for everyone to have their very own. Enough to light the whole world. The warm breeze moved gently through the eucalyptus leaves, making a soft shushing sound. Shhhh.
 
-Shhhh. Sunny's eyes grew heavy. The stars twinkled on, one by one, keeping watch through the night.
+Shhhh. Sunny's eyes grew heavy. The stars twinkled on, one by one, keeping watch through the night. They were like friends, watching over her, keeping her safe.
 
-And as Sunny drifted off to sleep, a tiny smile stayed on her face.
+And as Sunny drifted off to sleep, a tiny smile stayed on her face. Her little paws curled up close. Her breathing grew soft and slow.
 
-Because now she knew — even in the dark, the sky was always full of light.
+Because now she knew — even in the dark, the sky was always full of light. Even when the sun was gone, there were countless little lights watching over her.
 
-Goodnight, Sunny. Goodnight, stars. Sweet dreams until the morning light.
+Goodnight, Sunny. Goodnight, stars. Goodnight, moon. Sweet dreams until the morning light.
 
 The End. Goodnight, little one. May your dreams be as beautiful as Sunny's starry sky."""
 
