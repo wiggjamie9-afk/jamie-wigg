@@ -133,54 +133,56 @@ def wait_for_character(char_id, max_wait=120):
 
 def get_page_prompts():
     """Return the 16 page prompts from PLAN.md specification."""
+    style_ref = "Professional children's book watercolor illustration in the style of 'Sonny's Cozy Quokka' book cover - warm, magical, detailed, cozy, bedtime-appropriate. Soft watercolor blending, visible brushstrokes, organic edges, emotional warmth."
+
     return [
         # Page 1: Golden Hour
-        "A young quokka named Sunny sitting peacefully on a mossy rock during golden hour. The sky is warm with soft pink, ripe peach orange, and beginning purple hues as the sun descends. Eucalyptus trees and wildflowers in the Australian bush around her. Soft watercolor blending, visible brushstrokes. Sunny looks up at the sky with peaceful wonder. Watercolor illustration, professional children's book style.",
+        f"A young quokka named Sunny sitting peacefully on a mossy rock during golden hour. The sky is warm with soft pink, ripe peach orange, and beginning purple hues as the sun descends. Eucalyptus trees and wildflowers in the Australian bush around her. Sunny looks up at the sky with peaceful wonder. {style_ref}",
 
         # Page 2: Sky Deepening
-        "The same scene with colors deepening. Sky now showing more purple and soft orange. A warm breeze moves gently through the eucalyptus leaves making a soft shushing sound. Sunny still sitting peacefully, watching the changing colors. Watercolor soft edges, organic blending. Warm to cool color transition.",
+        f"The same scene with colors deepening. Sky now showing more purple and soft orange. A warm breeze moves gently through the eucalyptus leaves. Sunny still sitting peacefully, watching the changing colors. {style_ref} Warm to cool color transition.",
 
         # Page 3: First Flying Foxes
-        "First flying fox silhouettes appear in the sky — dark graceful shapes against the purple and orange sky. One fox visible, wings spread wide. Sunny sitting below, eyes widening with wonder. The sky is now predominantly purple with hints of orange. Soft watercolor clouds.",
+        f"First flying fox silhouettes appear in the sky — dark graceful shapes against the purple and orange sky. One fox visible, wings spread wide. Sunny sitting below, eyes widening with wonder. The sky is now predominantly purple with hints of orange. {style_ref}",
 
         # Page 4: Flying Foxes Sailing
-        "Multiple flying foxes sailing gracefully through the air, their wings spread wide and dark against the beautiful purple sky. Flying foxes moving in silent, elegant arcs. Sunny watching intently from the mossy rock. More stars beginning to appear. Watercolor style with soft motion blur on the foxes.",
+        f"Multiple flying foxes sailing gracefully through the air, their wings spread wide and dark against the beautiful purple sky. Sunny watching intently from the mossy rock. More stars beginning to appear. {style_ref}",
 
         # Page 5: Wonder Growing
-        "Sunny's expression shows growing wonder as more flying foxes move through the dusky sky. The sky is now a deep purple with soft blue tones. Foxes moving gracefully. Wildflowers and grass in the foreground. Soft watercolor illustration. Starlight beginning to show.",
+        f"Sunny's expression shows growing wonder as more flying foxes move through the dusky sky. The sky is now a deep purple with soft blue tones. Foxes moving gracefully. Wildflowers and grass in the foreground. Starlight beginning to show. {style_ref}",
 
         # Page 6: More Foxes
-        "One by one, more flying foxes appear and move through the increasingly dark purple and deep blue sky. Sunny sitting peacefully, watching them fly. The bush grows quiet. Stars becoming more visible. Soft watercolor painting style with organic edges.",
+        f"One by one, more flying foxes appear and move through the increasingly dark purple and deep blue sky. Sunny sitting peacefully, watching them fly. The bush grows quiet. Stars becoming more visible. {style_ref}",
 
         # Page 7: First Star
-        "One tiny light twinkles softly in the now deep purple and navy sky. The first star has appeared. Sunny watching quietly, eyes wide with delight. Flying foxes still visible as darker silhouettes. Moonlight beginning to illuminate the scene. Watercolor soft brushstrokes.",
+        f"One tiny light twinkles softly in the now deep purple and navy sky. The first star has appeared. Sunny watching quietly, eyes wide with delight. Flying foxes still visible as darker silhouettes. Moonlight beginning to illuminate the scene. {style_ref}",
 
         # Page 8: Stars Multiply
-        "Several stars now visible, twinkling softly like small sparkles. Each one a soft glitter against the dark velvet cloth of the sky. Sunny still watching, peaceful. The bush is now mostly dark with starlight illuminating the scene. Watercolor painting.",
+        f"Several stars now visible, twinkling softly like small sparkles. Each one a soft glitter against the dark velvet cloth of the sky. Sunny still watching, peaceful. The bush is now mostly dark with starlight illuminating the scene. {style_ref}",
 
         # Page 9: Many Stars
-        "Many stars visible across the sky now, a growing starfield. Sunny lying back on the mossy rock, looking up at all the tiny lights. The sky is now a deep navy blue with countless stars. Moonlight illuminating Sunny's peaceful face. Watercolor illustration.",
+        f"Many stars visible across the sky now, a growing starfield. Sunny lying back on the mossy rock, looking up at all the tiny lights. The sky is now a deep navy blue with countless stars. Moonlight illuminating Sunny's peaceful face. {style_ref}",
 
         # Page 10: Starfield Growing
-        "The starfield continues to grow as the night deepens. Sunny lying peacefully on the mossy rock, looking up and up at all the tiny lights. Sky is now very dark navy with many stars. Cool tones dominate. Gentle moonlight. Watercolor soft edges.",
+        f"The starfield continues to grow as the night deepens. Sunny lying peacefully on the mossy rock, looking up at all the tiny lights. Sky is now very dark navy with many stars. Cool tones dominate. Gentle moonlight. {style_ref}",
 
         # Page 11: Peaceful Stars
-        "Sunny's eyes are heavy now, watching the stars from the mossy rock. The warm breeze moves gently through the eucalyptus leaves with a soft shushing sound. The sky is filled with stars. Deep navy and indigo tones. Moonlight soft on Sunny's fur. Watercolor painting.",
+        f"Sunny's eyes are heavy now, watching the stars from the mossy rock. The warm breeze moves gently through the eucalyptus leaves with a soft shushing sound. The sky is filled with stars. Deep navy and indigo tones. Moonlight soft on Sunny's fur. {style_ref}",
 
         # Page 12: Deep Night
-        "Deep night now fully established. The sky is dark navy and indigo with countless stars. Sunny lying on the mossy rock, eyes growing very heavy. The star twinkle on, one by one, keeping watch through the night. Soft watercolor illustration. Peaceful and cozy.",
+        f"Deep night now fully established. The sky is dark navy and indigo with countless stars. Sunny lying on the mossy rock, eyes growing very heavy. The stars twinkle on, one by one, keeping watch through the night. Peaceful and cozy feeling. {style_ref}",
 
         # Page 13: Sleeping Sunny
-        "Sunny drifts off to sleep, a tiny smile on her face. She lies peacefully on the mossy rock under the complete starfield. The sky is dark navy with many twinkling stars. Moonlight illuminates her sleeping form gently. Watercolor soft brushstrokes. Very peaceful, cozy scene.",
+        f"Sunny drifts off to sleep, a tiny smile on her face. She lies peacefully on the mossy rock under the complete starfield. The sky is dark navy with many twinkling stars. Moonlight illuminates her sleeping form gently. Very peaceful, cozy, safe scene. {style_ref}",
 
         # Page 14: Dream Scene
-        "Dream-like scene of Sunny sleeping peacefully. Stars twinkle around her. The night sky is dark indigo and navy with countless stars. Sunny's expression is peaceful and content. The scene feels dreamlike and magical with soft watercolor blending and glow. Moonlight and starlight illuminate everything.",
+        f"Dream-like scene of Sunny sleeping peacefully. Stars twinkle around her. The night sky is dark indigo and navy with countless stars. Sunny's expression is peaceful and content. The scene feels dreamlike and magical with glow effects. Moonlight and starlight illuminate everything. {style_ref}",
 
         # Page 15: Night Complete
-        "The night is fully established. Deep navy sky filled with countless stars creating a complete starfield. Sunny sleeping peacefully on the mossy rock. The scene is peaceful, safe, and calming. Watercolor illustration with soft brushstrokes. Everything bathed in cool starlight and moonlight.",
+        f"The night is fully established. Deep navy sky filled with countless stars creating a complete starfield. Sunny sleeping peacefully on the mossy rock. The scene is peaceful, safe, and calming. Everything bathed in cool starlight and moonlight. {style_ref}",
 
         # Page 16: Goodnight
-        "Final closing moment: Sunny sleeping peacefully, complete starfield surrounding her. The sky is the deepest navy blue, almost black, filled completely with stars. Moonlight soft on her sleeping form. Watercolor painting with beautiful soft edges. The perfect bedtime image. Safe, cozy, magical.",
+        f"Final closing moment: Sunny sleeping peacefully, complete starfield surrounding her. The sky is the deepest navy blue, almost black, filled completely with stars. Moonlight soft on her sleeping form. The perfect bedtime image. Safe, cozy, magical, emotionally warm. {style_ref}",
     ]
 
 def generate_images(character_id):
