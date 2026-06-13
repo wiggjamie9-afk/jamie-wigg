@@ -51,6 +51,42 @@ cd ~/jamie-wigg-workspace/content-automation
 cd ~/jamie-wigg-workspace/event-platform
 ```
 
+## n8n (Visual Workflow Automation)
+
+```bash
+# Quick start with npx
+npx n8n
+# → http://localhost:5678
+
+# Or with Docker
+docker volume create n8n_data
+docker run -d --name n8n -p 5678:5678 \
+  -v n8n_data:/home/node/.n8n \
+  docker.n8n.io/n8nio/n8n
+
+# Rebuild workflows
+docker exec n8n n8n db:reset
+
+# Stop
+docker stop n8n
+```
+
+## LangGraph (Stateful Agent Framework)
+
+```bash
+# Install
+pip install langgraph langsmith
+
+# Create advanced agent (see LANGGRAPH_SETUP.md)
+python3 event_agent.py
+
+# Enable debugging
+export LANGSMITH_API_KEY="your-key"
+export LANGSMITH_TRACING=true
+
+# View traces at https://smith.langchain.com
+```
+
 ## Aider AI (Code Editing Pair Programmer)
 
 ```bash

@@ -2,7 +2,38 @@
 
 Your event platform now has a **complete, production-ready AI development toolkit** with four complementary tools working together:
 
-## The Four Pillars
+## The Complete Stack (6 Tools)
+
+Your event platform now has **six complementary AI and automation tools**:
+
+### Tier 1: Code Development
+- **Aider** — AI pair programmer for code editing
+- **OpenHands** — Autonomous agent workflows
+
+### Tier 2: Conversational & Stateful
+- **Hermes** — Chat with memory and messaging gateways
+- **LangGraph** — Production-grade stateful agents
+
+### Tier 3: Visual & Low-Code
+- **n8n** — Visual workflow automation (400+ integrations)
+
+### Tier 4: Data
+- **Polsia** — Type-safe structured data language
+
+## Quick Reference
+
+| Tool | Purpose | Use When |
+|------|---------|----------|
+| **Aider** | AI Code Editor | Adding features, refactoring, tests |
+| **Hermes** | Chat + Messaging | Questions, design decisions, automation |
+| **OpenHands** | Autonomous Agents | Batch processing, multi-step workflows |
+| **LangGraph** | Stateful Agents | Long-running tasks, persistent memory |
+| **n8n** | Visual Workflows | Integrations, cross-platform automation |
+| **Polsia** | Data Language | Type-safe configs, user input validation |
+
+---
+
+## The Core Pillars
 
 ### 1. **Aider** — AI Code Pair Programmer
 Terminal-based AI assistant that edits code directly in your git repo with full codebase understanding.
@@ -97,7 +128,78 @@ python3 agent_example.py --task create
 
 ---
 
-### 4. **Polsia** — Structured Data Language
+### 4. **LangGraph** — Stateful Agent Framework
+Production-grade framework for building long-running, stateful agents with durable execution and human-in-the-loop capabilities.
+
+**When to use:**
+- Building sophisticated agents that run for extended periods
+- Workflows requiring persistent state across restarts
+- Complex decision trees with human approval steps
+- Debugging agent behavior in production
+- Recording full execution traces
+
+**Example:**
+```python
+from langgraph.graph import StateGraph
+from typing import TypedDict
+
+class EventProcessState(TypedDict):
+    events: list[dict]
+    processed: list[dict]
+    failed: list[dict]
+
+# Build stateful workflow
+graph = StateGraph(EventProcessState)
+graph.add_node("fetch", fetch_events)
+graph.add_node("process", process_event)
+graph.add_edge("fetch", "process")
+
+result = graph.invoke(initial_state)
+```
+
+**Strengths:**
+- ✅ Full state management and persistence
+- ✅ Human-in-the-loop interrupts
+- ✅ Advanced debugging with LangSmith
+- ✅ Durable execution (resume from failures)
+- ✅ Production-ready deployment
+
+---
+
+### 5. **n8n** — Visual Workflow Automation
+No-code visual platform for building complex automations with 400+ integrations (Slack, Discord, Twitter, Stripe, etc.).
+
+**When to use:**
+- Cross-platform automation (social media, email, chat)
+- Scheduled tasks (daily digests, reminders)
+- Webhook-triggered workflows
+- Connecting multiple services without code
+- Self-hosted automation for privacy
+
+**Example:**
+```
+User creates event (Supabase trigger)
+  ↓
+Generate image (HTTP → API)
+  ↓
+Parallel:
+  ├→ Post to Twitter
+  ├→ Post to Discord
+  └→ Send Slack notification
+  ↓
+Log success
+```
+
+**Strengths:**
+- ✅ Visual, no-code development
+- ✅ 400+ pre-built integrations
+- ✅ Self-hosted (privacy/control)
+- ✅ Scheduled & webhook triggers
+- ✅ Conditional logic and error handling
+
+---
+
+### 6. **Polsia** — Structured Data Language
 Type-safe, human-readable syntax for defining events and data structures.
 
 **When to use:**
@@ -200,36 +302,32 @@ event {
 ## The Complete Loop
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                                                     │
-│  1. EXPLORE (Hermes)                               │
-│     - Ask questions                                │
-│     - Get design advice                            │
-│     - Understand patterns                          │
-│     - Check code insights                          │
-│                         │                          │
-│                         ↓                          │
-│  2. IMPLEMENT (Aider)                              │
-│     - Write code                                   │
-│     - Refactor                                     │
-│     - Add tests                                    │
-│     - Git commits                                  │
-│                         │                          │
-│                         ↓                          │
-│  3. AUTOMATE (OpenHands)                           │
-│     - Batch processing                             │
-│     - Multi-step workflows                         │
-│     - Autonomous execution                         │
-│     - Error handling                               │
-│                         │                          │
-│                         ↓                          │
-│  4. VALIDATE (Polsia)                              │
-│     - Define data structure                        │
-│     - Type-safe validation                         │
-│     - Configuration files                          │
-│     - User input                                   │
-│                         │                          │
-│                         └──────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│  1. EXPLORE (Hermes)                                         │
+│     Ask questions, design decisions, understand patterns    │
+│                         │                                    │
+│                         ↓                                    │
+│  2. IMPLEMENT (Aider)                                        │
+│     Write code, refactor, add tests, git commits            │
+│                         │                                    │
+│                         ↓                                    │
+│  3. VALIDATE (Polsia)                                        │
+│     Define data structures, type-safe configs               │
+│                         │                                    │
+│                         ↓                                    │
+│  4. BUILD AGENTS (LangGraph)                                 │
+│     Stateful workflows, human approval, long-running        │
+│                         │                                    │
+│                         ↓                                    │
+│  5. AUTOMATE BATCH (OpenHands)                               │
+│     Parallel processing, error handling, autonomous         │
+│                         │                                    │
+│                         ↓                                    │
+│  6. INTEGRATE PLATFORMS (n8n)                                │
+│     Social media, chat, email, scheduling, webhooks         │
+│                         │                                    │
+│                         └──────────────────────────────────┘
 │
 └─ Repeat for next feature
 ```
