@@ -51,6 +51,29 @@ cd ~/jamie-wigg-workspace/content-automation
 cd ~/jamie-wigg-workspace/event-platform
 ```
 
+## gstack (AI Development Methodology)
+
+```bash
+# Install gstack (one-time, on your Mac)
+git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
+cd ~/.claude/skills/gstack
+./setup
+
+# Enable for team (one-time, in repo)
+(cd ~/.claude/skills/gstack && ./setup --team)
+~/.claude/skills/gstack/bin/gstack-team-init required
+git add .claude/ CLAUDE.md
+git commit -m "Add gstack for AI-assisted development"
+git push origin claude/event-platform-design-f3b0df
+
+# Then use in your project:
+/office-hours        # Plan before you code
+/autoplan            # Generate implementation plan
+/review              # Find bugs in code
+/qa https://...      # Test your app
+/ship                # Push to production
+```
+
 ## Git (Branch: claude/event-platform-design-f3b0df)
 
 ```bash
