@@ -1,169 +1,139 @@
 #!/usr/bin/env python3
 """
-Step 2: Generate warm, motherly voice narration for Book 1
-Uses ElevenLabs for professional quality voice
+ElevenLabs Narration Generation Script
+=======================================
+
+Generates warm, motherly narration for Book 1 using ElevenLabs TTS.
+
+Run this on your local machine (with network access):
+    python3 generate-book1-narration.py
+
+Prerequisites:
+    - pip install elevenlabs
+    - ELEVENLABS_API_KEY in .env or exported as env var
+
+The story text is 75 seconds of narration read in a warm, motherly tone.
+Available voices: Grace, Emily, Julia (or use your own voice ID)
 """
 
 import os
-import sys
-import json
 from pathlib import Path
 
-NARRATION_TEXT = """The sky was the colour of ripe plums when Sunny first saw them. One. Then three. Then many.
+# Configuration
+API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+VOICE_OPTIONS = {
+    "Grace": "hHgKBksqt2OZ0k9YxZF7",   # Warm, motherly, calm
+    "Emily": "eoKVQn7u4w1snyyx77NE",   # Gentle, nurturing
+    "Julia": "mXrLmjqKlX7LOlEFW1LH",   # Warm and intimate
+}
 
-Flying foxes, sailing out from their roost in the old fig tree at the edge of the bush. Their wings were wide and dark, and they moved through the air without a sound — no flap, no flutter, just a long, smooth, swooping glide.
+# Story text for narration (75 seconds)
+STORY_TEXT = """As the warm golden afternoon faded gently away, little Sunny the quokka sat on her favourite mossy rock and looked up at the sky.
 
-Sunny stood very still and watched. They were so large and so quiet. She had not known something so big could move so softly.
+The sky was turning the most beautiful colours Sunny had ever seen. Soft pink, like the inside of a flower. Warm orange, like a ripe peach.
 
-One flew low, close enough that Sunny could see the warm dark fur of its body and its little fox-like face — neat ears, bright eyes, a pointed nose. It swooped toward a flowering tree and hovered for just a moment, drinking from a blossom.
+And then, slowly, a deep, soft purple began to spread across the sky, like a cosy blanket being pulled up high. Sunny smiled her gentle smile.
 
-Then it was gone again, back into the darkening sky. The others followed their own paths — long curved arcs through the air, each one different, each one beautiful.
+She had never stayed up to watch the evening come before. The bush grew quiet. The birds settled into their nests, tucking their heads beneath their wings.
 
-Sunny watched until the sky turned from plum to deep navy and the stars came out, and still the flying foxes moved above her, silent and grand.
+The crickets began their soft, steady song — cree cree cree — like tiny lullabies all around.
 
-She sat down in the soft grass and looked up. The bush was full of quiet. The flying foxes were just shapes now — dark against the dark sky, moving and moving.
+Sunny waited, very still, her big warm eyes wide with wonder. And then — there it was. One tiny light, twinkling softly in the purple sky.
 
-She breathed out a long, slow breath. And drifted off beneath the wings of night.
+Oh, said Sunny, very quietly. Then another. And another. One by one, the stars came out to say hello. Each one a small, soft sparkle.
 
-Her eyes grew heavy. The stars twinkled on, one by one, keeping watch through the night. And as Sunny drifted off to sleep, a tiny smile stayed on her face.
+Like someone had sprinkled glitter across a dark velvet cloth. Sunny had never seen anything so beautiful in all her little life.
+
+She lay back on her mossy rock, looking up and up and up at all the tiny lights. There were so many of them.
+
+Enough for everyone to have their very own. The warm breeze moved gently through the eucalyptus leaves, making a soft shushing sound. Shhhh.
+
+Shhhh. Sunny's eyes grew heavy. The stars twinkled on, one by one, keeping watch through the night.
+
+And as Sunny drifted off to sleep, a tiny smile stayed on her face.
 
 Because now she knew — even in the dark, the sky was always full of light.
 
-Goodnight, Sunny. Goodnight, flying foxes. Goodnight, little one."""
+Goodnight, Sunny. Goodnight, stars. Sweet dreams until the morning light.
 
-OUTPUT_DIR = Path("/home/user/jamie-wigg/BOOK-1-NARRATION")
-OUTPUT_DIR.mkdir(exist_ok=True)
+The End. Goodnight, little one. May your dreams be as beautiful as Sunny's starry sky."""
 
-def generate_with_elevenlabs(text: str, api_key: str) -> bytes:
-    """Generate narration using ElevenLabs API"""
-    import requests
+OUTPUT_FILE = Path("book-1-narration.wav")
 
+def select_voice():
+    """Let user choose which voice to use."""
+    print("\n🎤 Select Narration Voice")
+    print("=" * 50)
+    print("\nAvailable voices (warm and motherly):")
+    for i, (name, voice_id) in enumerate(VOICE_OPTIONS.items(), 1):
+        print(f"  {i}. {name} ({voice_id})")
+
+    print("\nOr provide your own ElevenLabs voice ID")
+    choice = input("\nEnter voice number (1-3) or paste your voice ID: ").strip()
+
+    if choice in ["1", "2", "3"]:
+        voices = list(VOICE_OPTIONS.values())
+        return voices[int(choice) - 1]
+    else:
+        return choice
+
+def generate_narration(api_key, voice_id):
+    """Generate narration using ElevenLabs."""
     if not api_key:
-        raise ValueError("ELEVENLABS_API_KEY not set")
+        print("\n❌ ELEVENLABS_API_KEY not found!")
+        print("   Set it in your .env file or export it:")
+        print("   export ELEVENLABS_API_KEY='your-api-key'")
+        return False
 
-    # Warm, motherly voice - "Rachel" or similar
-    voice_id = "21m00Tcm4TlvDq8ikWAM"  # Rachel - warm, motherly
-
-    headers = {
-        "xi-api-key": api_key,
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "text": text,
-        "model_id": "eleven_monolingual_v1",
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.75,
-            "style": 0.0,
-            "use_speaker_boost": True,
-        }
-    }
-
-    print(f"Generating narration with ElevenLabs...")
-    print(f"  Voice: Rachel (warm, motherly)")
-    print(f"  Text length: {len(text)} characters")
-
-    response = requests.post(
-        f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
-        json=payload,
-        headers=headers,
-        timeout=300
-    )
-
-    if response.status_code != 200:
-        raise Exception(f"ElevenLabs API error: {response.status_code} - {response.text}")
-
-    return response.content
-
-def generate_with_piper(text: str) -> bytes:
-    """Fallback: Generate with local Piper TTS"""
-    import subprocess
-    import tempfile
-
-    print(f"Generating narration with Piper TTS (local)...")
-    print(f"  Voice: en_US-lessac-medium")
-    print(f"  Text length: {len(text)} characters")
-
-    # Write text to temp file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-        f.write(text)
-        temp_txt = f.name
-
-    temp_wav = temp_txt.replace(".txt", ".wav")
+    print(f"\n🎙️  Generating narration...")
+    print(f"   Voice: {voice_id}")
+    print(f"   Output: {OUTPUT_FILE}")
 
     try:
-        # Use piper if available
-        result = subprocess.run(
-            ["piper", "--model", "en_US-lessac-medium", "--output_file", temp_wav],
-            stdin=open(temp_txt),
-            capture_output=True,
-            timeout=300
+        from elevenlabs import ElevenLabs
+        client = ElevenLabs(api_key=api_key)
+
+        # Generate audio
+        audio = client.text_to_speech.convert(
+            voice_id=voice_id,
+            text=STORY_TEXT,
+            model_id="eleven_monolingual_v1",
+            voice_settings={
+                "stability": 0.5,
+                "similarity_boost": 0.75,
+            }
         )
 
-        if result.returncode != 0:
-            raise Exception(f"Piper failed: {result.stderr.decode()}")
+        # Save to file
+        with open(OUTPUT_FILE, 'wb') as f:
+            for chunk in audio:
+                f.write(chunk)
 
-        with open(temp_wav, "rb") as f:
-            audio_data = f.read()
+        print(f"✅ Narration generated: {OUTPUT_FILE}")
+        return True
 
-        return audio_data
-
-    finally:
-        if os.path.exists(temp_txt):
-            os.remove(temp_txt)
-        if os.path.exists(temp_wav):
-            os.remove(temp_wav)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return False
 
 def main():
+    """Main workflow."""
+    print("\n🌙 SUNNY'S BEDTIME TALES - Book 1 Narration Generation")
     print("=" * 70)
-    print("Generating Book 1 Narration")
-    print("=" * 70)
-    print()
 
-    api_key = os.getenv("ELEVENLABS_API_KEY")
+    # Select voice
+    voice_id = select_voice()
+    print(f"\n✅ Selected voice: {voice_id}")
 
-    audio_data = None
+    # Generate narration
+    success = generate_narration(API_KEY, voice_id)
 
-    if api_key:
-        try:
-            audio_data = generate_with_elevenlabs(NARRATION_TEXT, api_key)
-            print("✓ ElevenLabs narration generated")
-        except Exception as e:
-            print(f"⚠ ElevenLabs failed: {e}")
-            print("  Falling back to Piper...")
-
-    if not audio_data:
-        try:
-            audio_data = generate_with_piper(NARRATION_TEXT)
-            print("✓ Piper narration generated")
-        except Exception as e:
-            print(f"✗ Piper failed: {e}")
-            return 1
-
-    # Save audio
-    output_file = OUTPUT_DIR / "narration.mp3"
-    with open(output_file, "wb") as f:
-        f.write(audio_data)
-
-    print(f"\n✓ Narration saved: {output_file}")
-    print(f"✓ File size: {len(audio_data) / 1024 / 1024:.1f}MB")
-
-    # Get duration
-    try:
-        import subprocess
-        result = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1:novalue=1", str(output_file)],
-            capture_output=True,
-            timeout=10
-        )
-        duration = float(result.stdout.decode().strip())
-        print(f"✓ Duration: {duration:.1f} seconds (~{duration/60:.1f} minutes)")
-    except:
-        print("(Could not determine duration)")
-
-    return 0
+    if success:
+        print("\n✅ Narration complete!")
+        print("\nNext step: Run assemble-book1-final-video.py to create the MP4 with narration")
+    else:
+        print("\n❌ Narration generation failed")
+        return False
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
