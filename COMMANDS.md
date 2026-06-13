@@ -51,6 +51,38 @@ cd ~/jamie-wigg-workspace/content-automation
 cd ~/jamie-wigg-workspace/event-platform
 ```
 
+## Hermes Agent (Conversational AI + Messaging Gateway)
+
+```bash
+# Start interactive Hermes CLI
+cd ~ && bash ~/jamie-wigg-workspace/hermes
+# or: ~/jamie-wigg-workspace/hermes
+
+# Set API key first
+export ANTHROPIC_API_KEY="your-key"
+
+# Commands in Hermes CLI:
+/new              # Start new conversation
+/model claude     # Switch to Claude
+/skills           # Browse available skills
+/config set KEY VALUE  # Configure settings
+/retry            # Retry last response
+/undo             # Undo last turn
+
+# Start messaging gateway (Telegram, Discord, Slack, etc.)
+hermes gateway
+
+# List what Hermes knows
+hermes tools      # Show available tools
+hermes skills     # Show installed skills
+
+# Diagnose issues
+hermes doctor
+
+# View memory/context
+cat ~/.hermes/MEMORY.md
+```
+
 ## OpenHands (AI Agent Platform)
 
 ```bash
