@@ -18,7 +18,7 @@ pnpm install
 
 ---
 
-## 🔧 TOOLS REGISTRY (22 Total)
+## 🔧 TOOLS REGISTRY (23 Total)
 
 ### 1. Claude-Mem — Persistent Memory Across Sessions
 **Status:** ✅ Installed  
@@ -1236,6 +1236,58 @@ class HybridLLMClient:
 
 ---
 
+### 23. Kickbacks — Monetize IDE Thinking Time
+**Status:** ✅ Integrated  
+**Version:** 1.0.0  
+**Purpose:** Turn Claude Code / Codex thinking spinner into sponsored ad slots. Passive income via English-ascending auction, up to 50% revenue share.
+**License:** Proprietary (source-available)
+
+**Ad Surfaces:**
+- Spinner overlay (Claude Code VS Code panel)
+- Thinking-shimmer (Codex VS Code panel)
+- Status-bar line (Claude Code terminal CLI)
+- Spinner verb (Claude Code terminal CLI)
+
+**How It Works:**
+1. Install from VS Code Marketplace
+2. Sign in with Google
+3. Earnings start immediately
+4. Check status bar: `Kickbacks ($X.XX today · $Y.YY)`
+
+**Revenue Model:**
+- Advertisers buy blocks (1,000 impressions per block)
+- English-ascending auction determines placement
+- Clicks worth 50× impressions
+- Up to 50% of revenue credited per impression + click
+
+**Earnings Potential:**
+- Conservative: $0.05-0.25/day ($1.50-7.50/month)
+- Power users: $0.80-1.20/day ($24-36/month)
+- At scale (100 users): $150-750/month collective
+
+**For Advertisers:**
+- Visit kickbacks.ai
+- Set bid per 1,000 impressions
+- Upload one-line ad creative
+- Set budget
+- Go live to most technical audience on earth
+
+**Safety:**
+- No personal data collected
+- Token sealed in OS keychain
+- Telemetry is idempotent (no double-counting)
+- Code is public + auditable (read-only mirror)
+- Server-controlled killswitch available
+- Payouts guaranteed via Stripe
+
+**Integration with Ecosystem:**
+- Custom extensions (Plan Enforcer, Spec Writer, etc.) can monetize thinking time
+- Thinking events = impressions = revenue
+- Scale with user adoption
+- 100+ thinking moments/day for power users
+
+---
+
 ## 🔌 Complete Integration Map
 
 ### Data Layer (Pigsty)
@@ -1302,6 +1354,7 @@ OpenManus + LangGraph
 | Spec Writer | ✅ | ✅ | ✅ | ✅ | ✅ | Structured specs, clarity scoring, dependency mapping |
 | Scope Reviewer | ✅ | ✅ | ✅ | ✅ | ✅ | Detect creep, flag off-plan changes, deferred task tracking |
 | Local LLM Suite | ✅ | ✅ | ✅ | ✅ | ✅ | Ollama: Llama2, Mistral, Qwen2, Neural-Chat local inference |
+| Kickbacks | ✅ | ✅ | ✅ | ✅ | ✅ | Monetize thinking spinner: ads, auction, 50% revenue share |
 
 **Legend:** ✅ = active | 📋 = planned/spec | 📦 = available | ☁️ = cloud-hosted
 
@@ -1382,11 +1435,12 @@ brew install avogadro2  # or linux equivalent
 
 **Built with ❤️ for the Claude Ecosystem**
 
-Version: 1.10.0  
+Version: 1.11.0  
 Updated: 2026-06-14  
-Status: Complete 22-Tool Ecosystem + System Design Reference + Video & Design Frameworks + Planning & Execution Discipline + Local LLM Inference + 92+ Skills + 200+ Agents — Production-Ready
+Status: Complete 23-Tool Ecosystem + System Design Reference + Video & Design Frameworks + Planning & Execution Discipline + Local LLM Inference + Monetization Layer + 92+ Skills + 200+ Agents — Production-Ready
 
 ### Changelog
+- **v1.11.0** — Kickbacks (IDE thinking spinner monetization with auction-based ads)
 - **v1.10.0** — Local LLM Suite (Ollama: Llama2, Mistral, Qwen2, Neural-Chat)
 - **v1.9.0** — Plan Enforcer, Spec Writer, Scope Reviewer (execution discipline skills)
 - **v1.8.0** — Impeccable (AI design skill with 41 detector rules) integration
