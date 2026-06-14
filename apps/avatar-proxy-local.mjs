@@ -148,6 +148,79 @@ app.post('/api/higgsfield-generate', async (req, res) => {
   }
 });
 
+// Talking-head animation endpoint (Higgsfield DOP image-to-video / Speech-to-Video)
+const HIGGSFIELD_ANIMATE_ENDPOINT = 'https://api.higgsfield.ai/v1/generate/video';
+app.post('/api/higgsfield-animate', async (req, res) => {
+  const { imageUrl, model = 'dop', motion = 'talking-head', audioUrl = null } = req.body;
+
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    return res.status(400).json({ error: 'Missing imageUrl. Generate a still face first.' });
+  }
+  if (!HIGGSFIELD_API_KEY || !HIGGSFIELD_SECRET) {
+    return res.status(500).json({
+      error: 'Server configuration error: missing Higgsfield API credentials',
+      hint: 'Set HIGGSFIELD_API_KEY and HIGGSFIELD_SECRET in .env',
+    });
+  }
+
+  try {
+    console.log(`\n[${new Date().toISOString()}] Talking-head Animation Request (model=${model}, motion=${motion})`);
+
+    // DOP animates a still; if an ElevenLabs audio URL is supplied we ask for lip-synced Speech-to-Video.
+    const body = {
+      model,
+      image_url: imageUrl,
+      motion,
+      ...(audioUrl ? { audio_url: audioUrl, mode: 'speech-to-video' } : {}),
+    };
+
+    const response = await fetch(HIGGSFIELD_ANIMATE_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HIGGSFIELD_API_KEY}`,
+        'X-API-Secret': HIGGSFIELD_SECRET,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      timeout: 120000, // video generation is slower
+    });
+
+    console.log(`  Higgsfield Response: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`  Error Body: ${errorText.slice(0, 200)}`);
+      return res.status(response.status).json({
+        error: `Higgsfield API error: ${response.status} ${response.statusText}`,
+        details: errorText.slice(0, 100),
+      });
+    }
+
+    const data = await response.json();
+    let videoUrl = null;
+    if (data.data && Array.isArray(data.data) && data.data[0]) {
+      videoUrl = data.data[0].url || data.data[0].video_url;
+    } else if (data.video_url) {
+      videoUrl = data.video_url;
+    } else if (data.url) {
+      videoUrl = data.url;
+    }
+
+    if (!videoUrl) {
+      console.error('  Error: No video URL in response', data);
+      return res.status(500).json({ error: 'No video URL returned from Higgsfield API' });
+    }
+
+    console.log(`  Success! Video URL: ${videoUrl.slice(0, 50)}...`);
+    res.json({ success: true, videoUrl, model, timestamp: new Date().toISOString() });
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`  Fetch Error: ${errorMessage}`);
+    res.status(500).json({ error: `Animation failed: ${errorMessage}` });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -155,6 +228,7 @@ app.use((req, res) => {
     availableEndpoints: [
       'GET /health',
       'POST /api/higgsfield-generate',
+      'POST /api/higgsfield-animate',
     ],
   });
 });

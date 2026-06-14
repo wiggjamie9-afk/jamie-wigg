@@ -471,6 +471,58 @@
             { id: 28, name: 'Imposter Syndrome', emoji: '⭐', color: '#d97706', accent: '#fef3c7', desc: 'Confidence builder' },
         ];
 
+        // Curated "look" per buddy so each generated face is on-brand and warm.
+        // These feed Higgsfield Soul (still portrait) and then DOP / Speech-to-Video (talking head).
+        const AVATAR_PERSONA = {
+            1: 'warm cheerful best friend, mid-30s, genuine relaxed smile, casual knit jumper',
+            2: 'calm reassuring guide, soft eyes, serene expression, gentle therapist energy',
+            3: 'gentle hopeful companion, kind compassionate face, soft natural light',
+            4: 'soothing night-time companion, sleepy calm expression, cosy soft tones',
+            5: 'tender comforting presence, soft empathetic eyes, quietly supportive',
+            6: 'kind grandparent figure, warm wrinkled smile, gentle wise eyes',
+            7: 'reassuring parent-mentor, calm patient expression, approachable',
+            8: 'upbeat youthful mentor, friendly energetic smile, relatable',
+            9: 'steady supportive ally, grounded confident calm, encouraging',
+            10: 'professional friendly coach, smart-casual, confident approachable smile',
+            11: 'inspiring career mentor, sharp warm professional, assured smile',
+            12: 'friendly study partner, bright curious eyes, encouraging',
+            13: 'creative free-spirited collaborator, expressive artistic vibe',
+            14: 'visionary startup mentor, energetic confident, modern',
+            15: 'motivating fitness coach, healthy energetic, bright determined smile',
+            16: 'fresh wholesome nutrition guide, vibrant healthy glow',
+            17: 'adventurous travel companion, sun-kissed friendly explorer',
+            18: 'trustworthy financial mentor, calm reassuring professional',
+            19: 'playful curious explorer, enthusiastic friendly spark',
+            20: 'inspiring life coach, grounded uplifting confident warmth',
+            21: 'protective gentle ally, kind strong reassuring presence',
+            22: 'understanding ADHD-aware friend, energetic empathetic, relatable',
+            23: 'calm accepting companion, soft non-judgemental warmth',
+            24: 'compassionate steady supporter, gentle understanding eyes',
+            25: 'hopeful recovery ally, grounded strong compassionate',
+            26: 'affirming inclusive friend, warm proud accepting smile',
+            27: 'empowering accessible-minded ally, confident warm respect',
+            28: 'encouraging confidence-builder, reassuring grounded warmth',
+        };
+        function buildAvatarPrompt(buddy, custom) {
+            const persona = (custom && custom.trim()) || AVATAR_PERSONA[buddy.id] || `${buddy.desc} companion`;
+            return `Photorealistic friendly portrait headshot of an AI companion: ${persona}. ` +
+                   `Soft cinematic studio lighting, shallow depth of field, looking warmly into camera, ` +
+                   `natural skin texture, gentle approachable expression, premium 2026 quality, neutral softly-blurred background.`;
+        }
+
+        // Render the right media for a buddy avatar: talking-head video > still face > emoji
+        function renderAvatarMedia(buddyId, emoji) {
+            const bd = state.buddyData[buddyId] || {};
+            if (bd.avatarVideoUrl) {
+                return `<video src="${bd.avatarVideoUrl}" poster="${bd.avatarUrl || ''}" muted loop playsinline autoplay
+                          style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>`;
+            }
+            if (bd.avatarUrl) {
+                return `<img src="${bd.avatarUrl}" alt="buddy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+            }
+            return emoji;
+        }
+
         // App state
         const state = {
             currentScreen: 0,
@@ -480,6 +532,8 @@
             elevenLabsKey: '',
             voiceSpeed: 1.0,
             selectedCountry: 'US',
+            // Higgsfield avatar proxy (runs on the user's machine; secret can't live in the browser)
+            proxyUrl: 'http://localhost:3001',
         };
 
         // Initialize
@@ -501,6 +555,7 @@
             }
             state.claudeApiKey = localStorage.getItem('claudeApiKey') || '';
             state.elevenLabsKey = localStorage.getItem('elevenLabsKey') || '';
+            state.proxyUrl = localStorage.getItem('avatarProxyUrl') || 'http://localhost:3001';
             state.voiceSpeed = parseFloat(localStorage.getItem('voiceSpeed') || '1.0');
             state.selectedCountry = localStorage.getItem('selectedCountry') || 'US';
 
@@ -517,7 +572,15 @@
                     affirmation: '',
                     affirmationDate: '',
                     mood: null,
+                    avatarUrl: '',        // Higgsfield Soul still portrait
+                    avatarVideoUrl: '',   // Higgsfield DOP / Speech-to-Video talking-head
+                    avatarPrompt: '',
                 };
+                // Back-fill avatar fields for previously-saved buddies
+                const bd = state.buddyData[buddy.id];
+                if (bd.avatarUrl === undefined) bd.avatarUrl = '';
+                if (bd.avatarVideoUrl === undefined) bd.avatarVideoUrl = '';
+                if (bd.avatarPrompt === undefined) bd.avatarPrompt = '';
             });
         }
 
@@ -530,6 +593,7 @@
             localStorage.setItem('elevenLabsKey', state.elevenLabsKey);
             localStorage.setItem('voiceSpeed', state.voiceSpeed);
             localStorage.setItem('selectedCountry', state.selectedCountry);
+            localStorage.setItem('avatarProxyUrl', state.proxyUrl);
 
             // Save per-buddy data
             Object.entries(state.buddyData).forEach(([buddyId, data]) => {
@@ -550,8 +614,12 @@
                 card.style.setProperty('--glow', `${buddy.color}66`);
                 card.style.animationDelay = (i * 22) + 'ms';
                 card.onclick = () => goToBuddy(buddy.id);
+                const bd = state.buddyData[buddy.id] || {};
+                const face = bd.avatarUrl
+                    ? `<img src="${bd.avatarUrl}" alt="${buddy.name}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`
+                    : buddy.emoji;
                 card.innerHTML = `
-                    <div class="buddy-avatar" style="background: linear-gradient(135deg, ${buddy.color}55, ${buddy.color}22); box-shadow: inset 0 1px 0 var(--glass-hi), 0 6px 16px -6px ${buddy.color}66;">${buddy.emoji}</div>
+                    <div class="buddy-avatar" style="overflow:hidden; background: linear-gradient(135deg, ${buddy.color}55, ${buddy.color}22); box-shadow: inset 0 1px 0 var(--glass-hi), 0 6px 16px -6px ${buddy.color}66;">${face}</div>
                     <div class="buddy-name">${buddy.name}</div>
                     <div class="buddy-desc">${buddy.desc}</div>
                 `;
@@ -589,7 +657,7 @@
                 <button class="back-btn" onclick="goToHub()">← All buddies</button>
                 <div class="buddy-header" style="background: linear-gradient(160deg, ${buddy.color}22, transparent 70%);">
                     <div class="buddy-hero">
-                        <div class="buddy-big-avatar" style="background: linear-gradient(135deg, ${buddy.color}55, ${buddy.color}1f); box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 28px -8px ${buddy.color}66;">${buddy.emoji}</div>
+                        <div class="buddy-big-avatar" id="avatar-${buddy.id}" style="overflow:hidden; background: linear-gradient(135deg, ${buddy.color}55, ${buddy.color}1f); box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 28px -8px ${buddy.color}66;">${renderAvatarMedia(buddy.id, buddy.emoji)}</div>
                         <div class="buddy-info">
                             <h2>${buddy.name}</h2>
                             <p>${buddy.desc}</p>
@@ -715,6 +783,25 @@
 
                     <!-- Settings Tab -->
                     <div class="tab-content" data-tab="settings" style="display: none;">
+                        <div class="section-title">🎭 Avatar Studio · Higgsfield</div>
+                        <div class="check-in-card" style="--glow:${buddy.color}66;">
+                            <div style="display:flex; gap:14px; align-items:center; margin-bottom:14px;">
+                                <div class="buddy-big-avatar" id="studio-preview-${buddy.id}" style="width:64px;height:64px;font-size:32px;overflow:hidden;background:linear-gradient(135deg, ${buddy.color}55, ${buddy.color}1f);">${renderAvatarMedia(buddy.id, buddy.emoji)}</div>
+                                <div style="flex:1;">
+                                    <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Give ${buddy.name} a face</div>
+                                    <div style="font-size:11.5px;color:var(--text-soft);line-height:1.4;">Photoreal portrait (Soul), then bring it to life as a talking head (DOP).</div>
+                                </div>
+                            </div>
+                            <textarea class="notes-input" id="avatar-desc-${buddy.id}" style="min-height:54px;margin-bottom:8px;" placeholder="Describe the look (optional) — default: ${(AVATAR_PERSONA[buddy.id]||'').replace(/"/g,'')}"></textarea>
+                            <button class="mood-btn" style="width:100%;padding:11px;margin-bottom:8px;background:${buddy.color}26;border-color:${buddy.color};" onclick="generateAvatarStill(${buddy.id})">✨ Generate face</button>
+                            <button class="mood-btn" id="animate-btn-${buddy.id}" style="width:100%;padding:11px;margin-bottom:8px;" onclick="animateAvatar(${buddy.id})">🎬 Bring to life (talking head)</button>
+                            <div id="avatar-status-${buddy.id}" style="font-size:11.5px;color:var(--text-soft);min-height:16px;text-align:center;"></div>
+                            <div class="settings-item" style="border:none;padding:8px 0 0;">
+                                <span class="settings-label" style="font-size:12px;">Proxy URL</span>
+                                <input type="text" class="settings-input" id="proxy-url-${buddy.id}" placeholder="http://localhost:3001" onchange="saveProxyUrl(this.value)">
+                            </div>
+                        </div>
+
                         <div class="section-title">⚙️ API Keys</div>
                         <div class="settings-item">
                             <span class="settings-label">Claude API Key</span>
@@ -784,6 +871,13 @@
 
             const countrySelect = screen.querySelector('#country');
             if (countrySelect) countrySelect.value = state.selectedCountry;
+
+            const proxyInput = screen.querySelector(`#proxy-url-${buddy.id}`);
+            if (proxyInput) proxyInput.value = state.proxyUrl;
+
+            // Disable "bring to life" until a still face exists
+            const animateBtn = screen.querySelector(`#animate-btn-${buddy.id}`);
+            if (animateBtn) animateBtn.style.opacity = buddyData.avatarUrl ? '1' : '0.5';
 
             // Populate hotlines
             const hotelinesDiv = screen.querySelector(`#hotlines-${buddy.id}`);
@@ -1255,6 +1349,77 @@
         function changeVoiceSpeed(event) {
             state.voiceSpeed = parseFloat(event.target.value);
             localStorage.setItem('voiceSpeed', state.voiceSpeed);
+        }
+
+        /* ============================================================
+           AVATAR STUDIO  (Higgsfield Soul -> DOP talking head, via proxy)
+        ============================================================ */
+        function saveProxyUrl(v) {
+            state.proxyUrl = (v || '').trim().replace(/\/$/, '') || 'http://localhost:3001';
+            localStorage.setItem('avatarProxyUrl', state.proxyUrl);
+            showToast('Avatar proxy URL saved', 'success');
+        }
+        function setAvatarStatus(buddyId, msg, spinning) {
+            const el = document.getElementById(`avatar-status-${buddyId}`);
+            if (el) el.innerHTML = spinning ? `<span class="loading-spinner" style="vertical-align:-2px;margin-right:6px;"></span>${msg}` : msg;
+        }
+        function refreshAvatarUI(buddyId) {
+            const buddy = BUDDIES.find(b => b.id === buddyId);
+            // Studio preview
+            const prev = document.getElementById(`studio-preview-${buddyId}`);
+            if (prev) prev.innerHTML = renderAvatarMedia(buddyId, buddy.emoji);
+            // Detail header avatar
+            const hdr = document.getElementById(`avatar-${buddyId}`);
+            if (hdr) hdr.innerHTML = renderAvatarMedia(buddyId, buddy.emoji);
+            // Hub card
+            renderHubGrid();
+        }
+        async function generateAvatarStill(buddyId) {
+            const buddy = BUDDIES.find(b => b.id === buddyId);
+            const custom = document.getElementById(`avatar-desc-${buddyId}`)?.value || '';
+            const prompt = buildAvatarPrompt(buddy, custom);
+            setAvatarStatus(buddyId, 'Generating a photoreal face…', true);
+            try {
+                const res = await fetch(`${state.proxyUrl}/api/higgsfield-generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, model: 'soul', size: '512x512' }),
+                });
+                const data = await res.json();
+                if (!res.ok || !data.imageUrl) throw new Error(data.error || 'No image returned');
+                state.buddyData[buddyId].avatarUrl = data.imageUrl;
+                state.buddyData[buddyId].avatarPrompt = prompt;
+                state.buddyData[buddyId].avatarVideoUrl = ''; // new face → clear old talking head
+                saveState();
+                refreshAvatarUI(buddyId);
+                setAvatarStatus(buddyId, '✓ Face ready. Now bring it to life ↓', false);
+                showToast('Face generated!', 'success');
+            } catch (err) {
+                setAvatarStatus(buddyId, `⚠️ ${err.message}. Is the proxy running?`, false);
+                showToast('Avatar generation failed', 'error');
+            }
+        }
+        async function animateAvatar(buddyId) {
+            const bd = state.buddyData[buddyId];
+            if (!bd.avatarUrl) { setAvatarStatus(buddyId, 'Generate a face first ↑', false); return; }
+            setAvatarStatus(buddyId, 'Bringing the face to life (talking head)…', true);
+            try {
+                const res = await fetch(`${state.proxyUrl}/api/higgsfield-animate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl: bd.avatarUrl, model: 'dop', motion: 'talking-head' }),
+                });
+                const data = await res.json();
+                if (!res.ok || !data.videoUrl) throw new Error(data.error || 'No video returned');
+                state.buddyData[buddyId].avatarVideoUrl = data.videoUrl;
+                saveState();
+                refreshAvatarUI(buddyId);
+                setAvatarStatus(buddyId, '✓ Talking head ready!', false);
+                showToast('Talking-head avatar ready!', 'success');
+            } catch (err) {
+                setAvatarStatus(buddyId, `⚠️ ${err.message}. Is the proxy running?`, false);
+                showToast('Animation failed', 'error');
+            }
         }
 
         function changeCountry(event) {
