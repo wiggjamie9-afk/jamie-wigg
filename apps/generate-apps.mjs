@@ -75,6 +75,19 @@ const BUDDY_COLORS = {
   36: '#f59e0b', // amber (Meetup & Social Skills)
   37: '#06b6d4', // cyan (Solo Traveler)
   38: '#d946ef', // fuchsia (Self-Love & Solo Life)
+  // 12 new enterprise wellness buddies
+  39: '#ef4444', // red (Burnout Recovery)
+  40: '#6366f1', // indigo (Executive Stress)
+  41: '#8b5cf6', // purple (Work-Life Balance)
+  42: '#3b82f6', // blue (Sleep Coach)
+  43: '#06b6d4', // cyan (Recovery & Wellness)
+  44: '#f59e0b', // amber (Deep Work)
+  45: '#10b981', // green (Executive Performance)
+  46: '#ec4899', // pink (Remote Work)
+  47: '#f97316', // orange (Nutrition)
+  48: '#14b8a6', // teal (Meditation)
+  49: '#6366f1', // indigo (Healthy Habits)
+  50: '#ef4444', // red (Mental Resilience)
 };
 
 // Buddy emoji map
@@ -87,13 +100,16 @@ const BUDDY_EMOJIS = {
   // New 10: loneliness-focused
   29: '💕', 30: '🌹', 31: '💔', 32: '📱', 33: '🤝', 34: '🏙️',
   35: '👥', 36: '🎉', 37: '✈️', 38: '🌟',
+  // New 12: enterprise wellness
+  39: '🔥', 40: '💼', 41: '⚖️', 42: '😴', 43: '💪', 44: '⏱️',
+  45: '🎯', 46: '🌍', 47: '🥗', 48: '🧘', 49: '🏃', 50: '💪',
 };
 
 // Load template
 const template = fs.readFileSync(path.join(__dirname, 'buddy-app-template.html'), 'utf-8');
 
-// Generate all 28 apps
-console.log('Generating 28 Buddy Apps...\n');
+// Generate all 50 apps
+console.log('Generating 50 Buddy Apps (28 original + 10 loneliness + 12 enterprise)...\n');
 
 for (const [buddyId, personality] of Object.entries(buddyObject)) {
   const id = parseInt(buddyId);
@@ -123,9 +139,9 @@ for (const [buddyId, personality] of Object.entries(buddyObject)) {
   console.log(`✓ buddy-${id}.html (${name})`);
 }
 
-console.log('\n✨ Done! All 38 apps generated (28 original + 10 loneliness-focused).');
+console.log('\n✨ Done! All 50 apps generated (28 original + 10 loneliness + 12 enterprise).');
 console.log('\nNext steps:');
 console.log('  1. Commit all buddy-*.html files');
 console.log('  2. Start the HTTP server: python3 -m http.server 8000');
 console.log('  3. Open http://localhost:8000/apps/buddies.html (launcher hub)');
-console.log('  4. Or open a specific buddy: http://localhost:8000/apps/buddy-29.html (Dating & Romance Coach)');
+console.log('  4. Or open a specific buddy: http://localhost:8000/apps/buddy-39.html (Burnout Recovery)');
