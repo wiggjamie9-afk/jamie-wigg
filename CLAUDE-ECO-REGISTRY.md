@@ -627,9 +627,10 @@ uvicorn app.main:app --reload      # dev server
 - `/dream` — one-shot asset generation (image/video/music/voice/site)
 - `/album-launch` — parallel cover art + track + promo + landing
 
-*Integration Skills:*
+*Integration & Editing Skills:*
 - `huggingface-best`, `huggingface-papers`, `huggingface-datasets` — HuggingFace ecosystem
 - `zapier-workflows` — Zapier automation integration
+- `humanizer` — Remove AI writing patterns (33 pattern detection)
 - OpenClaw CLI skills (when egress unrestricted)
 
 **32 Commands (Slash Commands):**
