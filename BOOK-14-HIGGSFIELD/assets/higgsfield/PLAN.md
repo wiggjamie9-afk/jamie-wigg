@@ -4,13 +4,22 @@
 **Duration:** 75 seconds (16 pages × ~4-5 seconds each)  
 **Character:** Sunny (locked reference, consistent across all 16 pages)  
 **Style:** Professional children's book watercolor (matching "Sonny's Cozy Quokka" book cover aesthetic)  
-**Aspect Ratio:** 1920×1080 (Full HD landscape)
+**Aspect Ratio:** 1920×1080 (Full HD landscape)  
+**Theme:** Protection, shelter, roots of home
 
 ---
 
 ## Visual Style Reference
 
-**Gold Standard:** "Sonny's Cozy Quokka - Bedtime Tales" book cover - Professional, warm, magical children's book illustrations
+**Gold Standard:** "Sonny's Cozy Quokka - Bedtime Tales" book cover
+- Professional, warm, magical children's book illustrations
+- Detailed character rendering with personality and emotion
+- Soft watercolor blending with visible brushstrokes
+- Ancient tree with protective branches
+- Cozy, safe, bedtime-appropriate aesthetic
+- Storybook charm and emotional warmth throughout
+
+**All 16 pages must match this professional quality and aesthetic.**
 
 ---
 
@@ -19,32 +28,35 @@
 **Sunny the Quokka:**
 - Body: Extremely chubby, round, teddy-bear-like shape
 - Fur: Warm golden-brown color (#D4A574)
-- Eyes: Large, gentle, warm brown eyes with kind expression
+- Eyes: Large, gentle, warm brown eyes with peaceful expression
 - Ears: Small, round ears with cream-colored inner lining
-- Expression: Natural peaceful smile, calm, bedtime-ready
+- Expression: Natural peaceful smile, calm, safe, connected
+- Consistency: Use the exact same character design across all 16 pages
+
+**Reference Image:** Concept 2 portrait closeup (will create character ref from this)
 
 ---
 
 ## Story Breakdown
 
-| Page | Text | Notes |
-|------|------|-------|
-| 1 | Sunny's favorite tree was old. Really old. Its trunk was thick and strong. Its branches were high and protective. | Ancient tree |
-| 2 | Its roots spread out like arms ready to hold her. She had known this tree since she was very small. She had played under it. | Known since young |
-| 3 | She had eaten fruit from it. She had rested in its shade. And now, as evening came, she returned to it again. | Returning home |
-| 4 | The tree seemed to welcome her home. The roots made a perfect place to sit—smooth and curved like they had been shaped just for her. | Welcoming roots |
-| 5 | Sunny leaned back against the trunk. The bark was rough but not uncomfortable. It was real. It was solid. It was trustworthy. | Solid trunk |
-| 6 | Above her, the branches spread out like a roof, protecting her from the world. Protecting her from anything that might hurt. | Protective branches |
-| 7 | Holding her safe. Sunny could feel how strong the tree was. How old it was. How it had stood here for years and years. | Strength and age |
-| 8 | Through storms and sun and everything in between. The tree had survived so much. The tree knew how to endure. | Enduring strength |
-| 9 | The tree knew how to keep growing. The tree knew how to shelter the things that lived beneath it. Sunny felt safe under this tree. | Sheltering presence |
-| 10 | She felt known. She felt like this tree had been waiting for her all along. As darkness came, the tree seemed to wrap itself around her even more. | Wrapped protection |
-| 11 | The branches created patterns of shadow and starlight. The roots held her steady. Sunny thought about how trees lived so long. | Shadow patterns |
-| 12 | How they were patient. How they didn't rush toward anything. They just grew and lived and provided shelter. | Patient growth |
-| 13 | She wanted to be like that tree. Steady. Strong. Patient. Providing shelter. But for now, she could just rest. Just sit under the tree. | Learning from tree |
-| 14 | Just feel the safety of it. Her eyes closed. The tree seemed to breathe around her. In and out. The wind moved through the leaves. | Tree breathing |
-| 15 | A lullaby made by the tree itself. Sunny fell asleep under the tree that had known her since she was young. | Lullaby sleep |
-| 16 | Safe in its arms, protected by its strength, cradled by its branches. Sleep safely under this ancient tree. | Final closure |
+| Page | Text |
+|------|------|
+| 1 | Sunny's favorite tree was old. Really old. Its trunk was thick and strong. Its branches were high and protective. Its roots spread out like arms ready to hold her. |
+| 2 | She had known this tree since she was very small. She had played under it. She had eaten fruit from it. She had rested in its shade. And now, as evening came, she returned to it again. |
+| 3 | The tree seemed to welcome her home. The roots made a perfect place to sit—smooth and curved like they had been shaped just for her. Sunny leaned back against the trunk. |
+| 4 | The bark was rough but not uncomfortable. It was real. It was solid. It was trustworthy. Above her, the branches spread out like a roof, protecting her from the world. |
+| 5 | Protecting her from anything that might hurt. Holding her safe. Sunny could feel how strong the tree was. How old it was. |
+| 6 | How it had stood here for years and years, through storms and sun and everything in between. The tree had survived so much. |
+| 7 | The tree knew how to endure. The tree knew how to keep growing. The tree knew how to shelter the things that lived beneath it. Sunny felt safe under this tree. |
+| 8 | She felt known. She felt like this tree had been waiting for her all along. As darkness came, the tree seemed to wrap itself around her even more. |
+| 9 | The branches created patterns of shadow and starlight. The roots held her steady. Sunny thought about how trees lived so long. How they were patient. |
+| 10 | How they didn't rush toward anything. They just grew and lived and provided shelter for those who came to them. She wanted to be like that tree. Steady. Strong. Patient. Providing shelter. |
+| 11 | But for now, she could just rest. Just sit under the tree. Just feel the safety of it. Her eyes closed. |
+| 12 | The tree seemed to breathe around her. In and out. The wind moved through the leaves—a lullaby made by the tree itself. |
+| 13 | Sunny fell asleep under the tree that had known her since she was young, safe in its arms, protected by its strength. |
+| 14 | The tree continued to stand above her, eternal and strong. Its roots held her steadily. Its branches protected her from the night. |
+| 15 | The tree was her shelter, her home, her family. Everything she needed. |
+| 16 | Goodnight, tree. Thank you for standing strong. Thank you for sheltering me. Goodnight, roots. Goodnight, branches. Goodnight, Sunny. Sleep safely under this ancient tree. |
 
 ---
 
@@ -52,32 +64,30 @@
 
 | shot_id | Page | kind | scene | prompt | aspect | character_ref | quality | notes |
 |---------|------|------|-------|--------|--------|---------------|---------|-------|
-| shot-01-ancient-tree | 1 | still | Ancient tree | Sunny's favorite tree—old, very old. Thick strong trunk, high protective branches. Professional children's book watercolor in the style of "Sonny's Cozy Quokka" - warm, detailed character work, soft brushstrokes. The ancient tree depicted with character and strength. Golden afternoon light. Roots visible and welcoming. Protection and strength. | 1920x1080 | sunny | 720p | Character-locked: under tree |
-| shot-02-known-since-young | 2 | still | Long history | Sunny has known this tree since very small. Played under it, eaten fruit from it, rested in shade. Watercolor showing the relationship over time. Golden light, the tree as familiar friend. The history of care and connection. | 1920x1080 | sunny | 720p | Familiar friend |
-| shot-03-returning-home | 3 | still | Evening return | As evening comes, returning to the tree again. The moment of homecoming. Watercolor with warm golden-amber light. The tree waiting. The ritual of return. Safe and expected. | 1920x1080 | sunny | 720p | Homecoming |
-| shot-04-welcoming-roots | 4 | still | Perfect seat | The tree welcomes her home. Roots made a perfect place to sit—smooth and curved like shaped just for her. Watercolor showing the fit between tree and Sunny. Warm browns and greens. Perfect comfort. | 1920x1080 | sunny | 720p | Perfect fit |
-| shot-05-solid-trunk | 5 | still | Trustworthy solid | Sunny leaning against trunk. Bark rough but not uncomfortable. Real. Solid. Trustworthy. Watercolor with the solidity emphasized. Brown tones, the reality of the tree. Something to depend on. | 1920x1080 | sunny | 720p | Solid comfort |
-| shot-06-protective-branches | 6 | still | Branch roof | Branches spread out like a roof, protecting from the world. Protecting from anything that might hurt. Watercolor with the protective canopy framing Sunny. Deep greens and shadows. Complete protection. | 1920x1080 | sunny | 720p | Branch shelter |
-| shot-07-strong-ancient | 7 | still | Strength and age | Sunny feeling the tree's strength and age. How it had stood for years and years through storms and sun. Watercolor with the sense of enduring strength. Brown and green tones. The weight of years. | 1920x1080 | sunny | 720p | Ancient strength |
-| shot-08-enduring-tree | 8 | still | Survival | The tree had survived so much. Knew how to endure. Knew how to keep growing. Watercolor showing resilience. Browns and greens showing the life lived. Growth through challenges. | 1920x1080 | sunny | 720p | Resilience |
-| shot-09-sheltering | 9 | still | Safe shelter | The tree knew how to shelter. Sunny felt safe under it. Felt known. Like the tree had been waiting for her. Watercolor with the intimacy of the relationship. Warm browns, safe greens. Perfect belonging. | 1920x1080 | sunny | 720p | Known and safe |
-| shot-10-wrapping-darkness | 10 | still | Wrapped in darkness | As darkness came, tree seemed to wrap around her more. The sense of being held. Watercolor showing the embrace. Deep browns and shadows. The tree as parent, holding. | 1920x1080 | sunny | 720p | Held embrace |
-| shot-11-shadow-patterns | 11 | still | Shadow starlight | Branches created patterns of shadow and starlight. Roots held steady. Watercolor with the interplay of shadow and light. Stars visible through the canopy. The beauty of the night. | 1920x1080 | sunny | 720p | Shadow patterns |
-| shot-12-patient-growth | 12 | still | Patient tree | Sunny thinking about how trees lived long, were patient. Didn't rush. Just grew and lived and provided shelter. Watercolor showing the patient presence. Deep browns and greens. The wisdom of slowness. | 1920x1080 | sunny | 720p | Patient wisdom |
-| shot-13-learning-tree | 13 | still | Becoming like tree | Sunny wanting to be like the tree—steady, strong, patient, sheltering. But for now, just resting under it. Watercolor with the learning moment. Deep tones. The aspiration and the peace. | 1920x1080 | sunny | 720p | Learning rest |
-| shot-14-tree-breathing | 14 | still | Breathing together | Eyes closing, tree breathing around her. The wind moving through leaves. A lullaby made by the tree. Watercolor showing the connection and rhythm. Deep browns with starlight. The shared breath. | 1920x1080 | sunny | 720p | Shared breath |
-| shot-15-tree-lullaby | 15 | still | Lullaby sleep | Sunny falling asleep under the tree that had known her since young. Safe in its arms, protected, cradled by branches. Watercolor with deep peace. The tree surrounding her completely. Safety and sleep. | 1920x1080 | sunny | 720p | Cradle sleep |
-| shot-16-ancient-safety | 16 | still | Closing - tree peace | Sunny sleeping safely under the ancient tree. Professional children's book watercolor in the style of "Sonny's Cozy Quokka" - warm, magical, peaceful. Protected by strength, cradled by history. Deep night, tree shapes protective. Complete trust and rest. | 1920x1080 | sunny | 720p | Final tree peace |
+| shot-01-ancient-tree | 1 | still | Old tree | Sunny's favorite tree was old, really old. Professional children's book watercolor in the style of "Sonny's Cozy Quokka." Thick, strong trunk. High, protective branches. Roots spread out like arms ready to hold. Golden hour light filtering through branches. Sunny looking at the tree with recognition and love. Soft watercolor brushstrokes. Ancient, strong, protective feeling. Safe, bedtime aesthetic. | 1920x1080 | sunny | 720p | Ancient presence |
+| shot-02-return-home | 2 | still | Long friendship | Sunny had known this tree since she was very small. She had played under it, eaten fruit from it, rested in its shade. Now as evening comes, she returns again. Golden evening light. The tree is familiar and welcoming. Watercolor illustration. The moment feels like homecoming. | 1920x1080 | sunny | 720p | Returning home |
+| shot-03-perfect-roots | 3 | still | Root seat | The tree seemed to welcome her home. The roots made a perfect place to sit—smooth and curved like they had been shaped just for her. Sunny leaning back against the trunk. Warm evening light. Watercolor painting. The roots seem designed for her. | 1920x1080 | sunny | 720p | Welcome seat |
+| shot-04-solid-trunk | 4 | still | Trustworthy bark | The bark was rough but not uncomfortable. It was real, solid, trustworthy. Above, branches spread out like a roof. Protecting from the world, from anything that might hurt. Watercolor illustration. Strong, protective feeling. | 1920x1080 | sunny | 720p | Solid protection |
+| shot-05-branches-roof | 5 | still | Protective canopy | Branches spread like a protective roof. Holding her safe. Sunny could feel how strong the tree was, how old it was. Golden light filtering through canopy. Watercolor painting. The moment feels held and secure. | 1920x1080 | sunny | 720p | Roof above |
+| shot-06-surviving-tree | 6 | still | Enduring strength | The tree had stood here for years and years, through storms and sun and everything in between. It had survived so much. The tree knew how to endure, keep growing, provide shelter. Watercolor illustration showing timelessness. | 1920x1080 | sunny | 720p | Through all seasons |
+| shot-07-shelter-provider | 7 | still | Safe feeling | The tree knew how to shelter the things that lived beneath it. Sunny felt safe under this tree. She felt known. She felt like this tree had been waiting for her. Golden-warm light. Watercolor painting. The moment feels deeply known and cherished. | 1920x1080 | sunny | 720p | Shelter gift |
+| shot-08-darkness-wrapping | 8 | still | Evening embrace | As darkness came, the tree seemed to wrap itself around her even more. The branches created patterns of shadow and starlight. The roots held her steady. Deep evening tones. Watercolor illustration. Protective and intimate. | 1920x1080 | sunny | 720p | Wrapping darkness |
+| shot-09-tree-breathing | 9 | still | Long life | Sunny thought about how trees lived so long, how they were patient, how they didn't rush. They just grew and lived and provided shelter. Deep evening colors. Watercolor painting. The moment feels contemplative and peaceful. | 1920x1080 | sunny | 720p | Patient growth |
+| shot-10-wanting-be-tree | 10 | still | Inspiration | She wanted to be like that tree. Steady. Strong. Patient. Providing shelter. Her eyes showed admiration and aspiration. Deep warm tones. Watercolor illustration. The moment feels inspiring and peaceful. | 1920x1080 | sunny | 720p | Learning strength |
+| shot-11-rest-safety | 11 | still | Finding rest | She could just rest, just sit under the tree, just feel the safety of it. Her eyes closed. Deep warm evening tones. Watercolor painting. The moment feels restful and complete. | 1920x1080 | sunny | 720p | Resting begins |
+| shot-12-tree-breathing | 12 | still | Wind lullaby | The tree seemed to breathe around her. In and out. The wind moved through the leaves—a lullaby made by the tree itself. Deep night tones with wind patterns visible. Watercolor illustration. Peaceful and musical. | 1920x1080 | sunny | 720p | Living breath |
+| shot-13-sleeping-arms | 13 | still | Tree embrace | Sunny fell asleep under the tree that had known her since she was young. Safe in its arms, protected by its strength. Dark night with stars visible through branches. Watercolor painting. The moment feels loved and held. | 1920x1080 | sunny | 720p | Asleep in arms |
+| shot-14-eternal-guard | 14 | still | Standing watch | The tree continued to stand above her, eternal and strong. Its roots held her steadily. Its branches protected her from the night. Deep night tones. Stars visible overhead. Watercolor illustration. | 1920x1080 | sunny | 720p | Night guard |
+| shot-15-shelter-family | 15 | still | Complete shelter | The tree was her shelter, her home, her family. Everything she needed. Deep dark night. Sunny sleeping peacefully beneath. Watercolor illustration. The moment feels complete and whole. | 1920x1080 | sunny | 720p | All in one |
+| shot-16-tree-forever | 16 | still | Ancient sleep | Final shot: Sunny sleeping deeply under the ancient tree. The tree eternal and protective above her. Deep night with stars. Watercolor soft brushstrokes. The perfect bedtime image—held by ancient strength, at peace under protective branches. | 1920x1080 | sunny | 720p | Forever shelter |
 
 ---
 
 ## Color Progression Reference
 
-**Tree Browns (Shots 1-2):** #8B6F47, #A8845D, #9B7B6B  
-**Golden Afternoon (Shots 3-4):** #D4A574, #C99563, #B8845D  
-**Solid Tones (Shots 5-7):** #6B5344, #8B6F47, #5A4A3A  
-**Enduring Strength (Shots 8-10):** #4D4A3A, #3B3A2A, #2B2A1A  
-**Night Tree (Shots 11-16):** #3B2B1B, #2B1B0B, #1B0B00
+**Golden Evening (Shots 1-5):** #FFD699 (golden), #CC9966 (warm tan), #BB8844 (deeper gold)  
+**Twilight Protection (Shots 6-10):** #996633 (warm brown), #774422 (deeper brown), #553311 (very dark brown)  
+**Night Shelter (Shots 11-16):** #332211 (deep brown), #1a1410 (very dark), #0d0a08 (nearly black)
 
 ---
 
@@ -87,9 +97,20 @@
 - **Quality:** 720p (standard, cost-effective)
 - **Enhance Prompt:** true
 - **Custom Reference Strength:** 0.8 (strong Sunny consistency)
-- **Character Reference:** Sunny (consistent across all 16 pages)
+- **Character Reference:** Will create from Concept 2 portrait
 - **Batch Size:** 4 (generate in batches for efficiency)
 
 ---
 
-**Status:** Plan complete. Ready to proceed with image generation.
+## Timeline
+
+- **Step 1:** ✅ Create this PLAN.md
+- **Step 2:** Create character reference from Concept 2 portrait
+- **Step 3:** Generate 16 stills (Soul) in batches
+- **Step 4:** Poll until all jobs complete
+- **Step 5:** Download all images to assets/higgsfield/
+- **Step 6:** Ready for video assembly
+
+---
+
+**Status:** Plan approved. Ready to proceed with character reference creation and image generation.

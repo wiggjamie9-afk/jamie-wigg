@@ -4,13 +4,20 @@
 **Duration:** 75 seconds (16 pages × ~4-5 seconds each)  
 **Character:** Sunny (locked reference, consistent across all 16 pages)  
 **Style:** Professional children's book watercolor (matching "Sonny's Cozy Quokka" book cover aesthetic)  
-**Aspect Ratio:** 1920×1080 (Full HD landscape)
+**Aspect Ratio:** 1920×1080 (Full HD landscape)  
+**Theme:** Day ending, colours changing, peaceful transition
 
 ---
 
 ## Visual Style Reference
 
-**Gold Standard:** "Sonny's Cozy Quokka - Bedtime Tales" book cover - Professional, warm, magical children's book illustrations
+**Gold Standard:** "Sonny's Cozy Quokka - Bedtime Tales" book cover
+- Professional, warm, magical children's book illustrations
+- Detailed character rendering with personality and emotion
+- Soft watercolor blending with visible brushstrokes
+- Rich sunset colours transitioning through the spectrum
+- Cozy, safe, bedtime-appropriate aesthetic
+- Storybook charm and emotional warmth throughout
 
 **All 16 pages must match this professional quality and aesthetic.**
 
@@ -21,32 +28,35 @@
 **Sunny the Quokka:**
 - Body: Extremely chubby, round, teddy-bear-like shape
 - Fur: Warm golden-brown color (#D4A574)
-- Eyes: Large, gentle, warm brown eyes with kind expression
+- Eyes: Large, gentle, warm brown eyes with wonder
 - Ears: Small, round ears with cream-colored inner lining
-- Expression: Natural peaceful smile, calm, bedtime-ready
+- Expression: Natural peaceful smile, calm, watching with awe
+- Consistency: Use the exact same character design across all 16 pages
+
+**Reference Image:** Concept 2 portrait closeup (will create character ref from this)
 
 ---
 
 ## Story Breakdown
 
-| Page | Text | Notes |
-|------|------|-------|
-| 1 | Sunny found the perfect spot to watch the sunset. A high rock with a view of the whole sky. | Perfect vantage point |
-| 2 | As she waited, the light began to change. The harsh brightness of midday softened. The gold of afternoon arrived. | Light changing |
-| 3 | The sun was lower now. Bigger. Deeper in colour. It was like the sun itself was getting ready to sleep. | Sun lowering |
-| 4 | Moving lower and lower toward the horizon. The sky began to paint itself with colours Sunny had never seen before. Orange. Pink. Red. Purple. Colours that seemed to glow from inside. | Colors appearing |
-| 5 | Like the sky itself was a living, breathing, beautiful thing. Each moment, the light changed. Each moment brought new colours. | Living sky |
-| 6 | Each moment was different from the last, but all of them were beautiful. Sunny watched without moving. This was a sacred moment. This was the day saying goodbye. | Sacred watching |
-| 7 | This was the world transforming from day into night. The sun touched the horizon. It seemed to pause there, as if saying one last goodbye before it disappeared completely. | Horizon touch |
-| 8 | The colours grew even more intense—brilliant reds and oranges that seemed to fill the entire sky. And then the sun began to sink. Lower. Lower. Slower and slower. | Intense colors |
-| 9 | Sunny felt like she was sinking too. Like the light was pulling her down into sleep. Like the sunset was a lullaby made of light and colour. | Sinking with sun |
-| 10 | The sky changed again. The sun was half gone. Then three-quarters gone. Then just a sliver of brilliant orange on the horizon. | Sun disappearing |
-| 11 | And then it was gone. The sun had set completely. But the sunset wasn't finished. The colours lingered in the sky. | Lingering colors |
-| 12 | Fading from brilliant orange to softer peach to deeper pink to purple to blue. Gradually, the colours faded. The sky became one colour. | Color fading |
-| 13 | Then that colour deepened. Then the stars began to appear. Sunny felt so peaceful. So calm. So ready for sleep. | Stars appearing |
-| 14 | The day had ended in beauty. The world had transformed. And now night was here, bringing its own kind of beauty, its own kind of peace. | Night arriving |
-| 15 | Goodnight, sun. Thank you for your light and your colours. Goodnight, sky. Goodnight, day. Sleep peacefully as night arrives. | Goodnight sun |
-| 16 | Goodnight, Sunny. Sleep in the afterglow of the sunset. | Final closure |
+| Page | Text |
+|------|------|
+| 1 | Sunny found the perfect spot to watch the sunset. A high rock with a view of the whole sky. As she waited, the light began to change. The harsh brightness of midday softened. The gold of afternoon arrived. |
+| 2 | The sun was lower now. Bigger. Deeper in colour. It was like the sun itself was getting ready to sleep, moving lower and lower toward the horizon. |
+| 3 | The sky began to paint itself with colours Sunny had never seen before. Orange. Pink. Red. Purple. Colours that seemed to glow from inside, like the sky itself was a living, breathing, beautiful thing. |
+| 4 | Each moment, the light changed. Each moment brought new colours. Each moment was different from the last, but all of them were beautiful. Sunny watched without moving. This was a sacred moment. |
+| 5 | This was the day saying goodbye. This was the world transforming from day into night. The sun touched the horizon. It seemed to pause there, as if saying one last goodbye before it disappeared completely. |
+| 6 | The colours grew even more intense—brilliant reds and oranges that seemed to fill the entire sky. And then the sun began to sink. Lower. Lower. Slower and slower. |
+| 7 | Sunny felt like she was sinking too. Like the light was pulling her down into sleep. Like the sunset was a lullaby made of light and colour. |
+| 8 | The sky changed again. The sun was half gone. Then three-quarters gone. Then just a sliver of brilliant orange on the horizon. And then it was gone. The sun had set completely. |
+| 9 | But the sunset wasn't finished. The colours lingered in the sky—fading from brilliant orange to softer peach to deeper pink to purple to blue. Gradually, the colours faded. |
+| 10 | The sky became one colour. Then that colour deepened. Then the stars began to appear. Sunny felt so peaceful. So calm. So ready for sleep. |
+| 11 | The day had ended in beauty. The world had transformed. And now night was here, bringing its own kind of beauty, its own kind of peace. |
+| 12 | Sunny watched the last traces of the sunset fade completely. The stars grew brighter as the darkness deepened. |
+| 13 | Everything in the world was ready for sleep now. The sun was gone. The colors had faded. The night had fully arrived. |
+| 14 | Sunny felt the peace that comes from witnessing this sacred transition. The day had been full and beautiful. The night promised rest and dreams. |
+| 15 | She stood on her high rock, looking at the dark sky now filled with stars. Inside her, the colors of the sunset lived on—warm, peaceful, eternal. |
+| 16 | Goodnight, sun. Thank you for your light and your colours. Goodnight, sky. Goodnight, day. Goodnight, Sunny. Sleep peacefully as night arrives. |
 
 ---
 
@@ -54,32 +64,30 @@
 
 | shot_id | Page | kind | scene | prompt | aspect | character_ref | quality | notes |
 |---------|------|------|-------|--------|--------|---------------|---------|-------|
-| shot-01-perfect-spot | 1 | still | Perfect vantage | Sunny finding the perfect spot—a high rock with a view of the whole sky. Professional children's book watercolor in the style of "Sonny's Cozy Quokka" - warm, detailed character work, soft brushstrokes. The moment before sunset. Golden light. Peaceful anticipation. | 1920x1080 | sunny | 720p | Character-locked: on high rock |
-| shot-02-light-changing | 2 | still | Light softening | The harsh brightness softening. The gold of afternoon arriving. Watercolor illustration with the transition of light. Soft golden tones. The day preparing for evening. | 1920x1080 | sunny | 720p | Afternoon softening |
-| shot-03-sun-lowering | 3 | still | Sun descending | The sun lower now, bigger, deeper in color. The sun getting ready to sleep. Watercolor with rich golden-orange tones. The sun depicted as a living being preparing for rest. Majestic and peaceful. | 1920x1080 | sunny | 720p | Sun descent |
-| shot-04-colors-appearing | 4 | still | Sky painting | The sky painting itself with colors—orange, pink, red, purple. Colors glowing from inside. Watercolor with the colors seeming to emanate from the sky itself. Brilliant, alive, beautiful. | 1920x1080 | sunny | 720p | Color eruption |
-| shot-05-living-sky | 5 | still | Sky breathing | The sky a living, breathing, beautiful thing. Each moment changing, bringing new colors. Watercolor illustration showing the dynamic nature. Colors shifting and transforming. Alive and responsive. | 1920x1080 | sunny | 720p | Living sky |
-| shot-06-sacred-moment | 6 | still | Watching sacred | Sunny watching without moving. This a sacred moment. The day saying goodbye. The world transforming. Watercolor with reverent quality. Deep golden and orange tones. The importance of the moment. | 1920x1080 | sunny | 720p | Sacred watching |
-| shot-07-horizon-touch | 7 | still | Sun on horizon | The sun touching the horizon, pausing as if saying one last goodbye. Watercolor with the sun depicted with personality. The moment of farewell. Brilliant oranges and reds. Poignant and beautiful. | 1920x1080 | sunny | 720p | Farewell moment |
-| shot-08-intense-colors | 8 | still | Brilliant glow | Colors growing intense—brilliant reds and oranges filling the entire sky. The sun beginning to sink. Watercolor with the colors at peak brilliance. Overwhelming beauty. Orange and red dominating. | 1920x1080 | sunny | 720p | Peak brilliance |
-| shot-09-sinking-together | 9 | still | Sinking with light | Sunny feeling like she was sinking too. The light pulling her down into sleep. The sunset a lullaby of light and color. Watercolor showing the connection between sun and Sunny. Orange-red with dreamy quality. | 1920x1080 | sunny | 720p | Unified sinking |
-| shot-10-sun-disappearing | 10 | still | Gradual vanishing | The sun half gone, three-quarters gone, then just a sliver of brilliant orange. Watercolor showing the stages of disappearance. Still brilliant orange. The final moments. | 1920x1080 | sunny | 720p | Vanishing stages |
-| shot-11-gone-lingering | 11 | still | Sunset continues | The sun completely gone. But the sunset isn't finished. Colors lingering in the sky. Watercolor showing the afterglow. The beauty continuing after the sun sets. Soft oranges and peachy tones. | 1920x1080 | sunny | 720p | Lingering glow |
-| shot-12-color-fading | 12 | still | Colors transforming | Colors fading from brilliant orange to softer peach to pink to purple to blue. The sky becoming one color, then deepening. Watercolor showing the progression. The transformation of the whole sky. | 1920x1080 | sunny | 720p | Color progression |
-| shot-13-stars-appearing | 13 | still | Stars appearing | The stars beginning to appear. Sunny feeling peaceful and calm. So ready for sleep. Watercolor with stars twinkling in the deepening blue sky. The transition to night. Complete peace. | 1920x1080 | sunny | 720p | Star arrival |
-| shot-14-night-arriving | 14 | still | Night comes | The day ended in beauty. The world transformed. Night arriving with its own beauty and peace. Watercolor showing the night as equally beautiful as day. Deep blue tones with starlight. The balance of light and dark. | 1920x1080 | sunny | 720p | Night beauty |
-| shot-15-goodnight-sun | 15 | still | Sun farewell | Sunny saying goodnight to the sun and sky and day. Gratitude for the light and colors. Watercolor with peaceful closure. Deep blue night sky with fading sunset colors at the horizon. Grateful and complete. | 1920x1080 | sunny | 720p | Grateful farewell |
-| shot-16-final-glow | 16 | still | Closing - afterglow | Sunny sleeping in the afterglow of the sunset. Professional children's book watercolor in the style of "Sonny's Cozy Quokka" - warm, magical, peaceful. Sleeping Sunny. Deep blue night with warm afterglow on the horizon. Complete and beautiful. | 1920x1080 | sunny | 720p | Final afterglow |
+| shot-01-perfect-spot | 1 | still | High rock watching | Sunny found the perfect spot on a high rock with a view of the whole sky. Professional children's book watercolor in the style of "Sonny's Cozy Quokka." The light is changing from harsh midday to golden afternoon. Warm golden colors. Sunny sitting peacefully, watching. Soft watercolor brushstrokes. The scene feels sacred and calm. Bedtime-appropriate aesthetic. | 1920x1080 | sunny | 720p | Beginning watch |
+| shot-02-softening-light | 2 | still | Afternoon gold | The harsh brightness of midday softened into the gold of afternoon. The sun is lower now, bigger, deeper in color. It's like the sun itself is getting ready to sleep. Golden, warm tones. Sunny watching peacefully. Watercolor illustration. The moment feels sacred and transitional. | 1920x1080 | sunny | 720p | Golden descent |
+| shot-03-glowing-colours | 3 | still | First colours | The sky painting itself with colours Sunny had never seen before. Orange, pink, red, purple. Colours that seemed to glow from inside. The sky itself is a living, breathing, beautiful thing. Vibrant, warm sunset colors. Watercolor illustration with emotional power. | 1920x1080 | sunny | 720p | First palette |
+| shot-04-changing-light | 4 | still | Moment by moment | Each moment the light changed. Each moment brought new colours. Each moment was different but all beautiful. Sunny watched without moving. This was a sacred moment. The day saying goodbye. World transforming from day to night. Colors shifting. Watercolor painting. | 1920x1080 | sunny | 720p | Transformation begins |
+| shot-05-touching-horizon | 5 | still | Horizon pause | The sun touched the horizon and seemed to pause, as if saying one last goodbye before disappearing completely. The moment feels sacred and eternal. Brilliant reds and oranges filling the entire sky. Sunny watching with wonder. Watercolor illustration. | 1920x1080 | sunny | 720p | Last goodbye |
+| shot-06-intense-colours | 6 | still | Peak intensity | The colours grew even more intense—brilliant reds and oranges that seemed to fill the entire sky. The sun began to sink lower and lower, slower and slower. Peak sunset colors. Watercolor painting. The moment feels almost overwhelming in beauty. | 1920x1080 | sunny | 720p | Maximum beauty |
+| shot-07-sinking-lullaby | 7 | still | Light lullaby | Sunny felt like she was sinking too. The light pulled her down into sleep. The sunset was a lullaby made of light and colour. Her expression shows peace and surrender. Brilliant orange to softer pink. Watercolor soft brushstrokes. The moment feels dreamy and soothing. | 1920x1080 | sunny | 720p | Pulled toward sleep |
+| shot-08-vanishing-sun | 8 | still | Sun disappearing | The sun was half gone, then three-quarters gone, then just a sliver of brilliant orange. And then it was gone. The sun had set completely. Deep colors with one last line of orange on the horizon. Sunny watching the final moment. Watercolor illustration. | 1920x1080 | sunny | 720p | Final descent |
+| shot-09-lingering-colours | 9 | still | Colour lingering | The sunset wasn't finished. The colours lingered—fading from brilliant orange to softer peach to deeper pink to purple to blue. Gradually, the colours faded. The sky transformed through the colour spectrum. Watercolor illustration. Beautiful, peaceful transition. | 1920x1080 | sunny | 720p | Colour fading |
+| shot-10-one-colour | 10 | still | Deepening darkness | The sky became one colour, then deepened. Then the stars began to appear. Sunny felt so peaceful, so calm, so ready for sleep. Deep blue-purple tones. First stars visible. Watercolor illustration. The moment feels calm and restful. | 1920x1080 | sunny | 720p | First stars |
+| shot-11-night-arrives | 11 | still | Night beauty | The day had ended in beauty. The world had transformed. Night was here, bringing its own kind of beauty, its own kind of peace. Deep blue sky. Stars visible. The colors of sunset still remembered in the sky. Watercolor illustration. | 1920x1080 | sunny | 720p | Night beauty |
+| shot-12-last-traces | 12 | still | Sunset fading | Sunny watched the last traces of the sunset fade completely. The stars grew brighter as the darkness deepened. The last warm colors disappearing into memory. Deep blue-indigo sky. Watercolor illustration. | 1920x1080 | sunny | 720p | Fading memory |
+| shot-13-ready-sleep | 13 | still | All sleeping | Everything in the world was ready for sleep now. The sun was gone. The colors had faded. The night had fully arrived. Deep night tones. Stars filling the sky. Sunny at peace. Watercolor illustration. | 1920x1080 | sunny | 720p | World at rest |
+| shot-14-sacred-peace | 14 | still | Peaceful witness | Sunny felt the peace that comes from witnessing this sacred transition. The day had been full and beautiful. The night promised rest and dreams. The sky is now deep blue with many stars. Watercolor illustration. Her expression is perfectly peaceful. | 1920x1080 | sunny | 720p | Witness to beauty |
+| shot-15-starry-memory | 15 | still | Sunset lives on | Sunny stood on her high rock, looking at the dark sky filled with stars. Inside her, the colours of the sunset lived on—warm, peaceful, eternal. Deep blue night sky. Stars visible. Watercolor illustration. The moment feels timeless and perfect. | 1920x1080 | sunny | 720p | Eternal colours |
+| shot-16-sunset-goodbye | 16 | still | Final sleep | Final shot: Sunny at rest, the sky dark and full of stars. The colours of the sunset living on in memory and feeling. Deep night, stars overhead. Watercolor soft brushstrokes. The perfect bedtime image—blessed by the day's beauty, now ready for the night's peace. | 1920x1080 | sunny | 720p | Sunset complete |
 
 ---
 
 ## Color Progression Reference
 
-**Golden Hour (Shots 1-2):** #FFB366, #FF9999, #F4D99D  
-**Sun Descending (Shots 3-4):** #FF6B3D, #FF8833, #FF6B3D  
-**Peak Sunset (Shots 5-8):** #FF4D1a, #FF6633, #FF8833  
-**Fading to Night (Shots 9-12):** #FF6B3D, #FF9999, #E6B3FF  
-**Night with Glow (Shots 13-16):** #9966FF, #3366FF, #1a1f4d
+**Afternoon Gold (Shots 1-2):** #FFD699 (golden), #FFC966 (warm orange), #FFB366 (deep gold)  
+**Peak Sunset (Shots 3-8):** #FF6633 (red-orange), #FF3366 (pink), #FF0000 (red), #9933FF (purple)  
+**Fading Night (Shots 9-16):** #6666FF (blue-purple), #3366FF (deep blue), #1a1f4d (navy)
 
 ---
 
@@ -89,9 +97,20 @@
 - **Quality:** 720p (standard, cost-effective)
 - **Enhance Prompt:** true
 - **Custom Reference Strength:** 0.8 (strong Sunny consistency)
-- **Character Reference:** Sunny (consistent across all 16 pages)
+- **Character Reference:** Will create from Concept 2 portrait
 - **Batch Size:** 4 (generate in batches for efficiency)
 
 ---
 
-**Status:** Plan complete. Ready to proceed with image generation.
+## Timeline
+
+- **Step 1:** ✅ Create this PLAN.md
+- **Step 2:** Create character reference from Concept 2 portrait
+- **Step 3:** Generate 16 stills (Soul) in batches
+- **Step 4:** Poll until all jobs complete
+- **Step 5:** Download all images to assets/higgsfield/
+- **Step 6:** Ready for video assembly
+
+---
+
+**Status:** Plan approved. Ready to proceed with character reference creation and image generation.
