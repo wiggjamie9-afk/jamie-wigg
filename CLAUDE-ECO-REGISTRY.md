@@ -373,8 +373,218 @@ Connect these tools to Claude Code via MCP:
 
 ---
 
+### 11. Pigsty — Enterprise PostgreSQL Infrastructure
+**Status:** 📦 Available  
+**Repo:** https://github.com/vonng/pigsty  
+**Purpose:** Enterprise-grade PostgreSQL with HA, PITR, observability, 510 extensions
+
+```bash
+curl -fsSL https://repo.pigsty.io/get | bash -s v4.3.0
+cd ~/pigsty
+./configure -g     # generate config and passwords
+./deploy.yml       # deploy on current node
+```
+
+**Features:**
+- Self-healing HA clusters (Patroni + ETCD)
+- PITR (Point-In-Time Recovery)
+- Redis, MinIO, DuckDB as bonus modules
+- 510 PostgreSQL extensions
+- Victoria + Grafana monitoring
+- Multi-kernel support (Citus, Babelfish, IvorySQL, etc.)
+
+**WebUI:** http://admin_ip:80  
+**Postgres:** admin_ip:5432
+
+**Integration:** Primary data layer for Global FinTech, stock platform, and any data-heavy service.
+
+---
+
+### 12. StockRecommendationPlatform — Multi-Agent Analysis
+**Status:** 📋 Spec  
+**Purpose:** Research-grade stock/options analysis via multi-agent framework
+
+**Stack:**
+- **Framework:** FastAPI + Uvicorn
+- **Agents:** MarketData, Fundamentals, Technicals, Financials, Options, Risk, SentimentML
+- **Data:** Polygon (primary) + yfinance (dev) → Redis
+- **Persistence:** PostgreSQL (analysis runs, artifacts)
+- **Frontend:** Next.js + TanStack Table for metrics
+- **Orchestration:** asyncio supervisor + optional Temporal/LangGraph
+- **Observability:** OpenTelemetry + Prometheus/Grafana
+
+**Key features:**
+- Single symbol and S&P 500 batch analysis
+- Options metrics table (credit quality, liquidity, theta edge, gamma risk)
+- Decision aids (research recommendations, not personalized advice)
+- Agent-level failure handling (partial degradation, not abort)
+- Data freshness timestamps (Polygon/Redis)
+
+**Setup:**
+```bash
+git clone <repo>
+cd StockRecommendationPlatform
+pip install -r requirements.txt
+export POLYGON_API_KEY=your_key
+export REDIS_URL=redis://localhost:6379
+export DATABASE_URL=postgresql://user:pass@localhost/stock_analysis
+python -m pytest                    # run tests
+uvicorn app.main:app --reload      # dev server
+```
+
+**API:**
+- `POST /v1/analysis/run` — single symbol analysis
+- `POST /v1/analysis/batch` — S&P 500 batch job
+- `GET /v1/analysis/batch/{job_id}` — job status
+
+**Phases:**
+1. Polygon + Redis ingest + MVP agents
+2. Postgres persistence + supervisor hardening
+3. FinancialsAgent + batch universe
+4. Options metrics UI + watchlists
+5. Auth + alerts + screener
+
+**Master plan:** See [`docs/MASTER_PLAN.md`](./docs/MASTER_PLAN.md) for full scope, architecture, testing, and SDLC.
+
+---
+
+## 🔌 Complete Integration Map
+
+### Data Layer (Pigsty)
+```
+Pigsty (PostgreSQL + Redis + MinIO)
+├── StockRecommendationPlatform (analysis runs, metrics)
+├── Global FinTech (ledger, user data, transactions)
+└── All other services (unified data backbone)
+```
+
+### Application Layer
+```
+FastAPI / Next.js Apps
+├── StockRecommendationPlatform (analysis API + UI)
+├── Global FinTech Admin Dashboard (via open-lovable)
+├── OpenManus Agents (custom workflows)
+└── Stitch Design System (UI components)
+```
+
+### Observability
+```
+OpenTelemetry → Prometheus/Grafana (Pigsty built-in + custom)
+├── API latency & throughput
+├── Agent execution times + failures
+├── Polygon ingest rates + errors
+├── Database query performance
+└── Infrastructure health (CPU, memory, disk)
+```
+
+### Orchestration & Automation
+```
+OpenManus + LangGraph
+├── MarketData → Analysis → Recommendations
+├── Risk scoring workflows
+├── Batch analysis jobs
+├── Scheduled data syncs
+└── Alert triggers
+```
+
+---
+
+## 📊 Ecosystem Maturity Matrix
+
+| Component | Install | Config | Test | Deploy | Monitor | Notes |
+|---|---|---|---|---|---|---|
+| Claude-Mem | ✅ | ✅ | ✅ | ✅ | ✅ | Persistent memory active |
+| PULSE | ✅ | ✅ | ✅ | ✅ | ✅ | Token efficiency rules |
+| Pigsty | 📦 | 📋 | 📋 | 📋 | 📋 | ~30 min setup |
+| StockPlatform | 📋 | 📋 | 📋 | 📋 | 📋 | Spec complete, build in progress |
+| OpenManus | 📦 | 📋 | 📋 | 📋 | 📋 | AI agent framework ready |
+| open-lovable | 📦 | 📋 | 📋 | 📋 | 📋 | Web dev agent ready |
+| Stitch | 📦 | 📋 | 📋 | 📋 | 📋 | Design tool ready |
+| Emergent | 📦 | 📋 | 📋 | 📋 | 📋 | Neural networks (if needed) |
+| Avogadro | 📦 | 📋 | 📋 | 📋 | 📋 | Molecular modeling (if needed) |
+| OpenCut | 📦 | 📋 | 📋 | 📋 | 📋 | Video editing (if needed) |
+| Bolt.new | ☁️ | ✅ | ✅ | ✅ | ✅ | Cloud-hosted, no local setup |
+| Global FinTech | 📋 | 📋 | 📋 | 📋 | 📋 | Reference architecture |
+
+**Legend:** ✅ = active | 📋 = planned/spec | 📦 = available | ☁️ = cloud-hosted
+
+---
+
+## 🚀 Quick Start (Install Everything)
+
+### Prerequisites
+```bash
+node >= 20
+python >= 3.12
+docker + docker-compose
+git
+```
+
+### Phase 1: Core (1 hour)
+```bash
+# Already installed
+# Claude-Mem ✅
+# PULSE ✅
+
+# Setup Pigsty (enterprise database)
+curl -fsSL https://repo.pigsty.io/get | bash -s v4.3.0
+cd ~/pigsty && ./configure -g && ./deploy.yml
+# WebUI: http://localhost (admin/admin)
+# Postgres: localhost:5432
+
+# Clone stock platform
+git clone <stock-platform-repo>
+cd StockRecommendationPlatform
+pip install -r requirements.txt
+export POLYGON_API_KEY=your_key
+pytest
+```
+
+### Phase 2: AI Agents (30 min)
+```bash
+# OpenManus (build AI agents)
+git clone https://github.com/FoundationAgents/OpenManus.git
+cd OpenManus && uv pip install -r requirements.txt
+
+# Stitch (design system)
+gemini extensions install https://github.com/gemini-cli-extensions/stitch --auto-update
+
+# open-lovable (web dev agent)
+git clone https://github.com/firecrawl/open-lovable.git
+cd open-lovable && pnpm install
+```
+
+### Phase 3: Creative Tools (as needed)
+```bash
+# OpenCut (video editor)
+git clone https://github.com/opencut-app/opencut-classic.git
+
+# Emergent (neural networks)
+git clone https://github.com/emer/emergent.git
+
+# Avogadro (molecular modeling)
+brew install avogadro2  # or linux equivalent
+```
+
+---
+
+## 📋 Implementation Roadmap
+
+| Week | Deliverable |
+|---|---|
+| **Now** | Pigsty deployed; StockPlatform Polygon ingest wired |
+| **+1** | Redis caching + agent framework online |
+| **+2** | Postgres persistence + supervisor hardening |
+| **+3** | Options metrics UI + first batch job |
+| **+4** | OpenManus integration + custom workflows |
+| **+5** | Observability dashboard (OTel + Grafana) |
+| **+6** | Auth + rate limits + production hardening |
+| **+8** | Watchlists, alerts, screener |
+
+---
+
 **Built with ❤️ for the Claude Ecosystem**
 
-Version: 1.0.0  
+Version: 1.1.0  
 Updated: 2026-06-14  
-Status: Production Ready
+Status: Production-Ready Blueprint
