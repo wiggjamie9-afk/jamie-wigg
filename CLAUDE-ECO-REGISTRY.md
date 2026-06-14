@@ -18,7 +18,7 @@ pnpm install
 
 ---
 
-## 🔧 TOOLS REGISTRY (18 Total)
+## 🔧 TOOLS REGISTRY (21 Total)
 
 ### 1. Claude-Mem — Persistent Memory Across Sessions
 **Status:** ✅ Installed  
@@ -1017,6 +1017,163 @@ npx impeccable detect --fast --json .   # Regex-only, JSON
 
 ---
 
+### 19. Plan Enforcer — Explicit Execution Without Deviation
+**Status:** ✅ Integrated  
+**Version:** 1.0.0  
+**Purpose:** Lock plans, execute step-by-step, prevent mid-execution deviations and scope creep
+**License:** MIT
+
+**Core feature:** Zero deviation execution
+- `/plan-enforcer lock <plan>` — Lock spec as execution contract
+- `/plan-enforcer step` — Get next task only
+- `/plan-enforcer verify <task-id>` — Verify task complete against success criteria
+- `/plan-enforcer status` — Track progress, deviations, time remaining
+- `/plan-enforcer defer <description>` — Defer off-plan work as follow-up task
+- `/plan-enforcer complete` — Sign off: all tasks done, ready to merge
+
+**Prevents:**
+- Mid-execution scope creep ("let me just add this")
+- Forgotten steps (task list is contract)
+- Forgotten context (success criteria are explicit)
+- Merge conflicts from direction changes (locked plan enforces direction)
+
+**Integration:**
+- Works with `/spec-writer` output (structured specs)
+- Works with `/spec-run` (tracks parallel agent work)
+- Works with Plan Mode (`Shift+Tab` in Claude Code)
+
+**Example:**
+```bash
+/spec-quick "OAuth integration" → specs/oauth/tasks.md
+/plan-enforcer lock specs/oauth/tasks.md
+/plan-enforcer step   # T1: Create OAuth schema
+# ... work on T1 ...
+/plan-enforcer verify T1  # ✓ Complete
+/plan-enforcer step   # T2: Implement endpoints
+# Temptation: "Let me refactor user model" (not on plan)
+/plan-enforcer defer "Refactor user model"  # Deferred as follow-up
+/plan-enforcer step   # Continue with T2
+```
+
+---
+
+### 20. Spec Writer — Structure & Clarity for Better Plans
+**Status:** ✅ Integrated  
+**Version:** 1.0.0  
+**Purpose:** Write specs that prevent ambiguity, scope creep, rework. Structured generation with clarity scoring.
+**License:** MIT
+
+**Core features:**
+- `/spec-writer init <description>` — Wizard: answer clarifying questions, generate structured spec
+- `/spec-writer ambiguity` — Find vague language, suggest fixes
+- `/spec-writer clarity` — Score clarity 0-100, suggest improvements
+- `/spec-writer dependencies` — Map task dependencies, find critical path
+- `/spec-writer cross-check <project>` — Verify against project conventions
+- `/spec-writer estimate` — Total effort + per-task breakdown
+
+**Output:** Structured spec with:
+- **Requirements:** Functional, non-functional, constraints
+- **Design:** Happy path, error paths, schema changes, API design
+- **Tasks:** T1-Tn with effort, dependencies, success criteria (testable, not subjective)
+
+**Prevents:**
+- Vague specs ("works well", "simple", "fast")
+- Scope ambiguity ("build checkout" — does it include shipping? discounts? refunds?)
+- Rework ("we should have discussed this")
+- Realistic estimates (no surprises)
+
+**Clarity scoring:**
+- <60: Many ambiguities
+- 60-80: Some ambiguities (improve)
+- 80+: Clear enough to build
+- Target: 85+
+
+**Example:**
+```bash
+/spec-writer init "checkout with payments"
+# Answers:
+# - Payment processors? (Stripe)
+# - Currencies? (USD + EUR)
+# - Shipping? (Physical goods)
+# - Success metric? (<2sec load, >99.5% success rate)
+
+# Generates: specs/checkout/{requirements,design,tasks}.md
+
+/spec-writer clarity
+# Clarity: 87/100 ✓
+
+/spec-writer dependencies
+# Critical path: T1 → T2 → T4 → T5 → T7 (13h)
+# Parallel: T3, T6 (5h)
+# Total: 15h
+
+/plan-enforcer lock specs/checkout/tasks.md
+# Ready to execute
+```
+
+---
+
+### 21. Scope Reviewer — Catch Creep Before Merge
+**Status:** ✅ Integrated  
+**Version:** 1.0.0  
+**Purpose:** Detect scope creep, flag off-plan changes, prevent mid-PR deviations
+**License:** MIT
+
+**Core features:**
+- `/scope-reviewer baseline <spec>` — Lock spec as baseline for reviews
+- `/scope-reviewer review` — Check current changes: on-plan or creep?
+- `/scope-reviewer defend <justification>` — Justify off-plan changes (must be convincing)
+- `/scope-reviewer status` — Creep impact, changes by type, risk level
+- `/scope-reviewer final-check` — Pre-merge: all criteria met?
+- `/scope-reviewer deferred-list` — Off-plan work + effort (for follow-up PR)
+
+**Creep categories:**
+- **Optimization (premature)** — "Let me cache this" (not on spec)
+- **Refactoring (unplanned)** — "User model needs cleanup" (not on spec)
+- **"While we're at it"** — Extra features (Apple Pay, when only Stripe was spec'd)
+- **Discovery (legitimate)** — "Postgres version incompatible" (blocker, not creep)
+
+**Risk assessment:**
+- **Low:** Docs, comments, non-critical code
+- **Medium:** Business logic, isolated changes
+- **High:** Auth, payment, core paths
+- **Critical:** Architectural changes
+
+**Prevents:**
+- Scope creep ("let me just add...")
+- Premature optimization
+- Unplanned refactoring
+- Project overruns
+- Mid-PR direction changes
+
+**Example:**
+```bash
+/scope-reviewer baseline specs/checkout/tasks.md
+# All future changes reviewed against this
+
+# You write code for T1 (schema)
+# But also refactor user_model (off-plan)
+
+/scope-reviewer review
+# ⚠️ OFF-PLAN: User model refactor (45 LOC, Medium risk)
+# 
+# Options:
+# 1. Defer: Add as follow-up task
+# 2. Descope: Remove, focus on T1
+# 3. Defend: "Critical for OAuth email validation"
+
+/scope-reviewer defend "User model email validation critical for OAuth"
+# ✓ JUSTIFIED (now documented)
+
+/scope-reviewer final-check
+# ✓ Original plan: 7h
+# ✓ Actual with justified change: 7.5h
+# ✓ Creep: +7% (acceptable, <30%)
+# Ready to merge
+```
+
+---
+
 ## 🔌 Complete Integration Map
 
 ### Data Layer (Pigsty)
@@ -1079,6 +1236,9 @@ OpenManus + LangGraph
 | Global FinTech | 📋 | 📋 | 📋 | 📋 | 📋 | Reference architecture |
 | Remotion | ✅ | ✅ | ✅ | ✅ | ✅ | React video framework, integrated |
 | Impeccable | ✅ | ✅ | ✅ | ✅ | ✅ | AI design skill, 41 detector rules, integrated |
+| Plan Enforcer | ✅ | ✅ | ✅ | ✅ | ✅ | Lock plans, execute step-by-step, prevent deviations |
+| Spec Writer | ✅ | ✅ | ✅ | ✅ | ✅ | Structured specs, clarity scoring, dependency mapping |
+| Scope Reviewer | ✅ | ✅ | ✅ | ✅ | ✅ | Detect creep, flag off-plan changes, deferred task tracking |
 
 **Legend:** ✅ = active | 📋 = planned/spec | 📦 = available | ☁️ = cloud-hosted
 
@@ -1159,11 +1319,12 @@ brew install avogadro2  # or linux equivalent
 
 **Built with ❤️ for the Claude Ecosystem**
 
-Version: 1.8.0  
+Version: 1.9.0  
 Updated: 2026-06-14  
-Status: Complete 18-Tool Ecosystem + System Design Reference + Video & Design Frameworks + 92+ Skills + 200+ Agents — Production-Ready
+Status: Complete 21-Tool Ecosystem + System Design Reference + Video & Design Frameworks + Planning & Execution Discipline + 92+ Skills + 200+ Agents — Production-Ready
 
 ### Changelog
+- **v1.9.0** — Plan Enforcer, Spec Writer, Scope Reviewer (execution discipline skills)
 - **v1.8.0** — Impeccable (AI design skill with 41 detector rules) integration
 - **v1.7.0** — Remotion (React-based programmatic video creation) integration
 - **v1.6.0** — System Design Primer (Donne Martin) + interview prep skill integration
