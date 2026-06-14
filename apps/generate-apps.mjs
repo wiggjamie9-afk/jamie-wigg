@@ -64,15 +64,29 @@ const BUDDY_COLORS = {
   26: '#10b981', // green
   27: '#f59e0b', // amber
   28: '#8b5cf6', // purple
+  // 10 new loneliness-focused buddies
+  29: '#ec4899', // pink (Dating & Romance)
+  30: '#f97316', // orange (New Relationship)
+  31: '#8b5cf6', // purple (Breakup Recovery)
+  32: '#3b82f6', // blue (Long-Distance)
+  33: '#06b6d4', // cyan (Social Anxiety)
+  34: '#10b981', // green (New City)
+  35: '#14b8a6', // teal (Workplace Friendship)
+  36: '#f59e0b', // amber (Meetup & Social Skills)
+  37: '#06b6d4', // cyan (Solo Traveler)
+  38: '#d946ef', // fuchsia (Self-Love & Solo Life)
 };
 
 // Buddy emoji map
 const BUDDY_EMOJIS = {
-  1: '👋', 2: '😰', 3: '😔', 4: '🧠', 5: '💼', 6: '🏳️‍🌈', 7: '🚑',
-  8: '👵', 9: '🧒', 10: '🎯', 11: '🍎', 12: '🎮', 13: '🎓', 14: '⚡',
-  15: '🎭', 16: '🏋️', 17: '💪', 18: '📚', 19: '🎤', 20: '🎸',
-  21: '💻', 22: '✈️', 23: '🌱', 24: '🔍', 25: '❤️', 26: '🌟',
-  27: '🎨', 28: '🌍',
+  1: '👋', 2: '😰', 3: '😔', 4: '🌙', 5: '💔', 6: '👵', 7: '👨‍👩‍👧‍👦',
+  8: '👦', 9: '🌱', 10: '💼', 11: '📈', 12: '📚', 13: '🎨', 14: '⚡',
+  15: '💪', 16: '🥗', 17: '✈️', 18: '💰', 19: '🎸', 20: '🎯',
+  21: '🛡️', 22: '⚡', 23: '🌈', 24: '🩹', 25: '🔥', 26: '🏳️‍🌈',
+  27: '♿', 28: '🌟',
+  // New 10: loneliness-focused
+  29: '💕', 30: '🌹', 31: '💔', 32: '📱', 33: '🤝', 34: '🏙️',
+  35: '👥', 36: '🎉', 37: '✈️', 38: '🌟',
 };
 
 // Load template
@@ -109,8 +123,9 @@ for (const [buddyId, personality] of Object.entries(buddyObject)) {
   console.log(`✓ buddy-${id}.html (${name})`);
 }
 
-console.log('\n✨ Done! All 28 apps generated.');
+console.log('\n✨ Done! All 38 apps generated (28 original + 10 loneliness-focused).');
 console.log('\nNext steps:');
 console.log('  1. Commit all buddy-*.html files');
 console.log('  2. Start the HTTP server: python3 -m http.server 8000');
-console.log('  3. Open http://localhost:8000/apps/buddy-1.html');
+console.log('  3. Open http://localhost:8000/apps/buddies.html (launcher hub)');
+console.log('  4. Or open a specific buddy: http://localhost:8000/apps/buddy-29.html (Dating & Romance Coach)');
