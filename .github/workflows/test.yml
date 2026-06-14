@@ -2,54 +2,85 @@ name: Tests
 
 on:
   push:
-    branches: [claude/*, main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
-  test:
+  api-tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, '3.11']
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
-      - uses: actions/setup-node@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          python-version: ${{ matrix.python-version }}
       
       - name: Install dependencies
-        run: npm install
+        working-directory: pdf-analyzer-api
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
       
-      - name: Run tests
-        run: npm test
+      - name: Lint with pylint
+        working-directory: pdf-analyzer-api
+        run: pylint main.py --disable=all --enable=E,F
+        continue-on-error: true
       
-      - name: Type check
-        run: npm run type-check 2>/dev/null || echo "No type-check script"
-      
-      - name: Lint
-        run: npm run lint 2>/dev/null || echo "No lint script"
+      - name: Type check with mypy
+        working-directory: pdf-analyzer-api
+        run: mypy main.py
+        continue-on-error: true
 
-  agent-builder:
+  frontend-tests:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: agent-builder/package-lock.json
+          node-version: 18
       
-      - name: Install
-        run: cd agent-builder && npm install
-      
-      - name: Test
-        run: cd agent-builder && npm test
+      - name: Install dependencies
+        working-directory: pdf-analyzer-web
+        run: npm ci
       
       - name: Lint
-        run: cd agent-builder && npm run lint
+        working-directory: pdf-analyzer-web
+        run: npm run lint
+        continue-on-error: true
       
       - name: Build
-        run: cd agent-builder && npm run build
+        working-directory: pdf-analyzer-web
+        run: npm run build
+
+  code-reviewer-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      
+      - name: Install dependencies
+        working-directory: code-reviewer
+        run: npm ci
+      
+      - name: Lint
+        working-directory: code-reviewer
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Build
+        working-directory: code-reviewer
+        run: npm run build

@@ -1,123 +1,171 @@
-# RHYTHMIX & STARLIGHTMIX
+# 🎯 Complete AI-Powered Ecosystem
 
-## 🎬 STARLIGHTMIX Studio — AI Music Videos with Free LLM Captions
+A production-ready, full-stack application ecosystem for intelligent code review and PDF analysis with Claude AI.
 
-**Generate AI music videos with zero-cost metadata.** Every video gets captions + metadata for free using aggregated free LLM tiers (Groq, Gemini, Mistral, +13 more). Intelligent fallback to Claude for complex reasoning tasks.
+## 📦 What's Included
 
-### Typical Studio usage (per video):
-✅ Caption + metadata = **$0** (free tier)  
-✅ UI shows: **"You saved $0.02!"**  
-✅ User can copy or download results
+### **1. Code Reviewer** 🔍
+Next.js web app + GitHub automation for intelligent code review.
 
-### Monthly savings (50 videos):
+- ✨ Beautiful dark UI with code highlighting
+- 🤖 Dual AI models (Claude Sonnet + DeepSeek)
+- 🔗 GitHub PR webhook automation
+- 💬 Real-time code feedback
+- 📊 Token usage tracking
+
+**Tech**: Next.js 15, TypeScript, Tailwind CSS, Octokit
+
+### **2. PDF Analyzer API** 📄
+FastAPI REST backend for PDF analysis and conversation.
+
+- 📥 PDF text extraction (PyPDF2)
+- 🤖 AI-powered analysis with Claude
+- 💬 Multi-turn chat about PDFs
+- 🎯 4 analysis types (summary, extraction, Q&A, general)
+- 📊 Token usage monitoring
+- 🐳 Docker support
+
+**Tech**: FastAPI, Python 3.11, PyPDF2, Claude API
+
+### **3. PDF Analyzer Web** 🌐
+Beautiful Next.js frontend for PDF upload and analysis.
+
+- ✨ Gradient dark theme UI
+- 📥 Drag-and-drop file upload
+- 🎯 Multiple analysis modes
+- 💬 Interactive chat interface
+- 📊 Results export to text
+- 🔗 Seamless API integration
+
+**Tech**: Next.js 15, TypeScript, Tailwind, Axios
+
+---
+
+## 🚀 Quick Start (5 minutes)
+
+### Install All
+
+```bash
+# Clone repo and enter directory
+cd your-repo
+
+# Install all dependencies
+bash scripts/install-all.sh
 ```
-$0.02 × 50 = ~$1/month vs. Claude API: ~$50-100/month
-Savings: 99.8% ✅
+
+### Run All Locally
+
+```bash
+# Start all three services
+bash scripts/dev.sh
 ```
 
-**→ [STARLIGHTMIX Studio](studio/) · [Quick Start API](QUICK-START-API.md) · [Cost Savings Analysis](COST-SAVINGS.md) · [Setup Guide](FREELLMAPI.md)**
+Visit:
+- **PDF Analyzer Web**: http://localhost:3000
+- **Code Reviewer**: http://localhost:3001  
+- **API Docs**: http://localhost:8000/docs
 
 ---
 
-## 🎵 RHYTHMIX — Promo Videos
+## 🏗️ Architecture
 
-> ⚠️ **Read this before posting:** the three "promo" cuts below contain copy from the landing-page drafts in this repo — fictional metrics ("4,800+ creators", "3.2M samples"), invented testimonials, and a `$149` lifetime offer pointing at a domain that may not exist. Do not publish them as-is unless every claim is verifiable. The **`teaser-coming-soon.mp4`** at the top is the only safe-to-publish cut today — pure brand reveal, no claims, "join the waitlist".
-
----
-
-## ✅ Safe to publish — RHYTHMIX teaser (coming soon)
-
-No metrics, no testimonials, no pricing — brand reveal + "join the waitlist for launch". Use this until the product, stats, and pricing are real.
-
-### 60-second cut · long form
-
-5-scene narrative: hook → 4 pillars → 3-step process → audience → waitlist CTA.
-
-**📝 Voiceover script: [SCRIPT.md](SCRIPT.md)** — timed scene-by-scene, ready to record in your own voice.
-
-#### 🔊 With AI voiceover — pick a voice
-
-| Voice | Style | File |
-|---|---|---|
-| **Nova** (US 🇺🇸 female) | Warm, modern | [⬇ teaser-coming-soon-60s-with-voiceover.mp4](videos/teaser-coming-soon-60s-with-voiceover.mp4) |
-| **Adam** (US 🇺🇸 male) | Confident, friendly | [⬇ teaser-coming-soon-60s-adam.mp4](videos/teaser-coming-soon-60s-adam.mp4) |
-| **Michael** (US 🇺🇸 male) | Deeper, measured | [⬇ teaser-coming-soon-60s-michael.mp4](videos/teaser-coming-soon-60s-michael.mp4) |
-| **Emma** (UK 🇬🇧 female) | Crisp British | [⬇ teaser-coming-soon-60s-emma.mp4](videos/teaser-coming-soon-60s-emma.mp4) |
-
-All four are 1080×1920 · 9:16 · 60s, each fitted to the video.
-
-Preview links (tap to play in browser):
-
-- Nova: https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-with-voiceover.mp4
-- Adam: https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-adam.mp4
-- Michael: https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-michael.mp4
-- Emma: https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s-emma.mp4
-
-#### 🔇 Silent (record your own voice over it)
-
-https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon-60s.mp4
-
-**[⬇ Download teaser-coming-soon-60s.mp4](videos/teaser-coming-soon-60s.mp4)** &nbsp;·&nbsp; 1080×1920 · 9:16 · 60s &nbsp;·&nbsp; works on TikTok, Reels, YouTube Shorts (within Shorts' 60s limit), FB Stories
-
-### 32-second cut · short form
-
-https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/teaser-coming-soon.mp4
-
-**[⬇ Download teaser-coming-soon.mp4](videos/teaser-coming-soon.mp4)** &nbsp;·&nbsp; 1080×1920 · 9:16 · 32s
+```
+Frontend (Next.js)          API (FastAPI)          AI Model (Cloud)
+┌─────────────────┐        ┌──────────────┐       ┌─────────────┐
+│ PDF Analyzer    │───────▶│ PDF Analyzer │──────▶│ Claude API  │
+│ Code Reviewer   │        │ API          │       │             │
+└─────────────────┘        └──────────────┘       └─────────────┘
+```
 
 ---
 
-## ⚠️ Promo cuts — needs review before publishing
+## 🚀 Production Deployment
 
-These three were built from the unverified landing-page copy. Use only after replacing fabricated stats and testimonials with real, substantiated content.
+### Railway + Vercel (15 minutes)
 
-### TikTok · Instagram Reels · YouTube Shorts · Facebook Stories
+```bash
+# Backend to Railway
+cd pdf-analyzer-api
+railway login
+railway up
 
-https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/tiktok-reels-shorts.mp4
+# Frontend to Vercel
+cd ../pdf-analyzer-web
+vercel --prod
+```
 
-**[⬇ Download tiktok-reels-shorts.mp4](videos/tiktok-reels-shorts.mp4)** &nbsp;·&nbsp; 1080×1920 · 9:16 · 32s
-
-### Instagram Feed · Facebook Feed
-
-https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/instagram-facebook.mp4
-
-**[⬇ Download instagram-facebook.mp4](videos/instagram-facebook.mp4)** &nbsp;·&nbsp; 1080×1080 · 1:1 · 32s
-
-### YouTube
-
-https://github.com/wiggjamie9-afk/jamie-wigg/raw/main/videos/youtube.mp4
-
-**[⬇ Download youtube.mp4](videos/youtube.mp4)** &nbsp;·&nbsp; 1920×1080 · 16:9 · 32s
+See [DEPLOYMENT_INSTRUCTIONS.md](./DEPLOYMENT_INSTRUCTIONS.md) for complete guide.
 
 ---
 
-## How to save a video to your iPhone
+## 🔑 Setup
 
-1. Tap a video above — it plays full-screen.
-2. Tap the **share** icon (square with arrow up).
-3. Tap **Save Video** — it goes to your **Photos** app.
+### 1. Get API Keys
+- Claude: https://console.anthropic.com/ (required)
+- DeepSeek: https://platform.deepseek.com/ (optional)
+- GitHub: https://github.com/settings/tokens (optional)
 
-Then open Photos and upload to TikTok / Instagram / YouTube / Facebook.
+### 2. Configure
+
+```bash
+# API configuration
+cd pdf-analyzer-api
+cp .env.example .env
+# Edit .env with your ANTHROPIC_API_KEY
+
+# Frontend (optional - defaults to localhost:8000)
+cd ../pdf-analyzer-web
+cp .env.example .env.local
+```
 
 ---
 
-## Where to post each video
+## 📊 What's Included
 
-| Video | Post to | Status |
-|---|---|---|
-| `teaser-coming-soon.mp4` | TikTok · Instagram Reels · YT Shorts · FB Stories | ✅ Safe to publish |
-| `tiktok-reels-shorts.mp4` | TikTok · Reels · Shorts · FB Stories | ⚠️ Replace fake metrics first |
-| `instagram-facebook.mp4` | Instagram Feed · Facebook Feed | ⚠️ Replace fake metrics first |
-| `youtube.mp4` | YouTube | ⚠️ Replace fake metrics first |
+✅ **3 Full Applications** with docs
+✅ **Complete Deployment Guide** (Railway + Vercel)
+✅ **GitHub Webhook Automation** for PR reviews
+✅ **API Documentation** with Swagger UI
+✅ **Docker Support** for easy deployment
+✅ **TypeScript + Python** for type safety
+✅ **Responsive Design** for all devices
+✅ **Production Ready** code
 
 ---
 
-## Source projects
+## 📚 Documentation
 
-HyperFrames HTML composition source for each cut lives at the repo root:
+- [Code Reviewer](./code-reviewer/README.md) - Code review tool
+- [PDF Analyzer API](./pdf-analyzer-api/README.md) - Backend API
+- [PDF Analyzer Web](./pdf-analyzer-web/README.md) - Frontend interface
+- [Deployment Guide](./DEPLOYMENT_INSTRUCTIONS.md) - Railway & Vercel
+- [GitHub Webhooks](./pdf-analyzer-api/GITHUB_WEBHOOK.md) - Auto PR reviews
 
-- `rhythmix-teaser/` — coming-soon teaser
-- `rhythmix-vertical/` — 9:16 promo
-- `rhythmix-square/` — 1:1 promo
-- `rhythmix-32s/` — 16:9 promo
+---
 
+## 💰 Costs
+
+| Service | Free Tier | Monthly |
+|---------|-----------|---------|
+| Railway | 512MB RAM | $5-50 |
+| Vercel | 100GB bandwidth | Free |
+| Claude API | — | $1-10 (per 100 reviews) |
+| **Total** | **Free** | **$6-60/mo** |
+
+---
+
+## 🎯 Next Steps
+
+1. **Local Testing**: Run `bash scripts/dev.sh`
+2. **Deploy Backend**: Follow Railway guide
+3. **Deploy Frontend**: Follow Vercel guide
+4. **Test Integration**: Upload PDF and analyze
+5. **GitHub Setup**: Configure webhook for PR reviews
+
+---
+
+**Made with ❤️ by Claude Code** 
+
+Start: `bash scripts/dev.sh`
+
+Deploy: [DEPLOYMENT_INSTRUCTIONS.md](./DEPLOYMENT_INSTRUCTIONS.md)
