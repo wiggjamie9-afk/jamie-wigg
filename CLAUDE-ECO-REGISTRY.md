@@ -18,7 +18,7 @@ pnpm install
 
 ---
 
-## 🔧 TOOLS REGISTRY (28 Total)
+## 🔧 TOOLS REGISTRY (29 Total)
 
 ### 1. Claude-Mem — Persistent Memory Across Sessions
 **Status:** ✅ Installed  
@@ -1684,6 +1684,69 @@ KIMI_BASE_URL=https://api.moonshot.cn/v1
 
 ---
 
+### 29. Claw Code — Open-Source Claude CLI
+**Status:** ✅ Integrated  
+**Version:** 1.0.0  
+**License:** MIT  
+**Purpose:** Community-maintained Rust implementation of Claude Code. Terminal-first CLI with multi-provider support (Anthropic, OpenAI, Ollama, llama.cpp, vLLM). Build from source, zero vendor lock-in, persistent sessions, file context (@path syntax), portable across Linux/macOS/Windows/WSL.
+
+**Key Specs:**
+- **Platforms:** macOS, Linux, Windows (PowerShell/Git Bash/WSL), any system with Rust
+- **Build:** Rust from source (GitHub: ultraworkers/claw-code)
+- **Binary:** ~100MB debug / ~25MB release
+- **Providers:** Claude (Anthropic), OpenAI, Ollama, llama.cpp, vLLM
+- **Sessions:** Persistent conversation state across commands
+- **Context:** @path syntax for files, @git for git context, @clipboard for attachments
+
+**Installation:**
+```bash
+# Install Rust
+curl https://rustup.rs | sh
+
+# Clone and build
+git clone https://github.com/ultraworkers/claw-code
+cd claw-code/rust
+cargo build --workspace
+
+# Set API key
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Verify
+./target/debug/claw doctor
+```
+
+**Quick Commands:**
+- `claw prompt "text"` — Single prompt
+- `claw session create "name"` — Create session
+- `claw prompt -s "name" "text"` — Add to session
+- `claw prompt --provider openai "text"` — Use different provider
+- `claw prompt "Review: @src/main.rs"` — File context
+
+**Best For:**
+- ✅ Terminal-native Claude workflows (no browser)
+- ✅ CI/CD integration (GitHub Actions, GitLab CI)
+- ✅ Local development (pair with Ollama for free inference)
+- ✅ Multi-provider comparison (Claude vs OpenAI vs local)
+- ✅ Persistent conversations (sessions retain context)
+- ✅ Cost optimization (switch between expensive/free models)
+- ✅ Vendor independence (don't lock into Claude subscription)
+
+**Cost Model:**
+- Build: Free (open source)
+- Local Ollama: Free (no API calls)
+- Claude API: Pay-per-token (same as web UI)
+- OpenAI API: Pay-per-token
+- Total cost: 0-$$ depending on provider choice
+
+**Ecosystem Integration:**
+- **Scope Reviewer:** Use Claw locally to review code before commit
+- **Plan Enforcer:** Session mode for step-by-step plan execution
+- **Stock Platform:** CI/CD integration for automated analysis
+- **Development:** Replace web UI with terminal, maintain all features
+- **Cost optimization:** Route simple tasks to local Ollama, complex to Claude
+
+---
+
 ## 🔌 Complete Integration Map
 
 ### Data Layer (Pigsty)
@@ -1756,6 +1819,7 @@ OpenManus + LangGraph
 | Kimi K2.7-Code | ✅ | ✅ | ✅ | ✅ | ✅ | 200k context code model, debugging expert, test generation, cost-competitive |
 | GLM-4.7 Cloud | ✅ | ✅ | ✅ | ✅ | ✅ | Multimodal vision: 100k context, Chinese excellence, 50% cost savings vs Claude |
 | Nemotron-3 33B | ✅ | ✅ | ✅ | ✅ | ✅ | Local LLM: 33B parameters, instruction-expert, free local inference, 24GB VRAM |
+| Claw Code | ✅ | ✅ | ✅ | ✅ | ✅ | Open-source CLI: MIT licensed, multi-provider, sessions, @path context, terminal-native |
 
 **Legend:** ✅ = active | 📋 = planned/spec | 📦 = available | ☁️ = cloud-hosted
 
@@ -1836,11 +1900,12 @@ brew install avogadro2  # or linux equivalent
 
 **Built with ❤️ for the Claude Ecosystem**
 
-Version: 1.14.0  
+Version: 1.15.0  
 Updated: 2026-06-14  
-Status: Complete 28-Tool Ecosystem + System Design Reference + Video & Design Frameworks + Planning & Execution Discipline + Comprehensive LLM Layer (Local/API/Edge/Multimodal) + Monetization Layer + 96+ Skills + 200+ Agents — Production-Ready
+Status: Complete 29-Tool Ecosystem + System Design Reference + Video & Design Frameworks + Planning & Execution Discipline + Comprehensive LLM Layer (Local/API/Edge/Multimodal) + Terminal-Native CLI + Monetization Layer + 97+ Skills + 200+ Agents — Production-Ready
 
 ### Changelog
+- **v1.15.0** — Claw Code (open-source Rust CLI, multi-provider, sessions, @path context, terminal-native)
 - **v1.14.0** — GLM-4.7 Cloud (multimodal vision, 100k context, Chinese excellence) + Nemotron-3 33B (local 33B, instruction-expert, free inference)
 - **v1.13.0** — Deepseek V4 Pro (MoE reasoning, 128k, 50-70% cost savings) + Kimi K2.7-Code (200k context, production code, testing)
 - **v1.12.0** — Gemma Models (Google's lightweight edge LLMs: 2B @ 4GB + 7B @ 8GB, Apache 2.0)
