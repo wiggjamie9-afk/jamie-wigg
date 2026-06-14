@@ -18,7 +18,7 @@ pnpm install
 
 ---
 
-## 🔧 TOOLS REGISTRY
+## 🔧 TOOLS REGISTRY (13 Total)
 
 ### 1. Claude-Mem — Persistent Memory Across Sessions
 **Status:** ✅ Installed  
@@ -400,7 +400,67 @@ cd ~/pigsty
 
 ---
 
-### 12. StockRecommendationPlatform — Multi-Agent Analysis
+### 12. Claude Code OpenTelemetry Monitoring
+**Status:** 📦 Available  
+**Repo:** https://github.com/your-org/claude-code-otel-monitoring  
+**Purpose:** Complete observability stack for Claude Code usage + cost tracking
+
+**Stack:**
+- **OpenTelemetry Collector** — ingest metrics + logs
+- **Prometheus** — metrics storage + PromQL queries
+- **Loki** — log aggregation + LogQL queries
+- **Grafana** — dashboards + alerts + visualization
+
+**Features:**
+- Real-time cost burn rate ($/hour)
+- Token usage breakdown (input, output, cache creation, cache read)
+- Cache hit rate % and efficiency
+- Tool execution performance (latency, success/failure)
+- User prompt logging (optional, privacy-aware)
+- 14 MCP tools for querying metrics directly from Claude Code
+
+**Setup:**
+```bash
+git clone https://github.com/your-org/claude-code-otel-monitoring.git
+cd claude-code-otel-monitoring
+docker-compose up -d
+
+# Register MCP server
+claude mcp add --transport stdio metrics -s user -- uv run --directory /path/to/mcp-server metrics-server
+
+# Access dashboards
+# Grafana: http://localhost:3000 (admin/admin)
+# Prometheus: http://localhost:9090
+# Loki: http://localhost:3100
+```
+
+**MCP Tools (14 available):**
+1. `get_current_cost` — Today's total USD cost
+2. `get_token_usage` — Token breakdown by type
+3. `get_cache_efficiency` — Cache hit rate %
+4. `get_available_metrics` — Reference all Prometheus + Loki metrics
+5. `get_recent_prompts` — Last N user prompts
+6. `get_tool_results` — Recent tool execution logs
+7. `query_prometheus` — Execute arbitrary PromQL
+8. `query_loki` — Execute arbitrary LogQL
+9. `list_dashboard_panels` — All Grafana panels (103 total)
+10. `find_panel_by_name` — Search panels by keyword
+11. `get_panel_query` — Extract panel's PromQL/LogQL
+12. `explain_panel_query` — Break down panel query logic
+13. `explain_promql_query` — Explain PromQL structure
+14. `explain_logql_query` — Explain LogQL structure
+
+**Pre-built Dashboards:**
+- Claude Code Monitoring (costs, tokens, cache, performance)
+- Tool Analysis (execution times, success rates, errors)
+- Cost Forecast (daily/monthly projections)
+- Cache Efficiency (hit rates, read patterns)
+
+**Integration:** Monitor all Claude Eco services + API costs in real-time.
+
+---
+
+### 13. StockRecommendationPlatform — Multi-Agent Analysis
 **Status:** 📋 Spec  
 **Purpose:** Research-grade stock/options analysis via multi-agent framework
 
@@ -495,6 +555,7 @@ OpenManus + LangGraph
 |---|---|---|---|---|---|---|
 | Claude-Mem | ✅ | ✅ | ✅ | ✅ | ✅ | Persistent memory active |
 | PULSE | ✅ | ✅ | ✅ | ✅ | ✅ | Token efficiency rules |
+| Claude Code OTel | 📦 | 📋 | 📋 | 📋 | 📋 | 14 MCP tools, 103 dashboard panels |
 | Pigsty | 📦 | 📋 | 📋 | 📋 | 📋 | ~30 min setup |
 | StockPlatform | 📋 | 📋 | 📋 | 📋 | 📋 | Spec complete, build in progress |
 | OpenManus | 📦 | 📋 | 📋 | 📋 | 📋 | AI agent framework ready |
