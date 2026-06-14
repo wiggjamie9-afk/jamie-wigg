@@ -18,7 +18,7 @@ pnpm install
 
 ---
 
-## 🔧 TOOLS REGISTRY (13 Total)
+## 🔧 TOOLS REGISTRY (14 Total)
 
 ### 1. Claude-Mem — Persistent Memory Across Sessions
 **Status:** ✅ Installed  
@@ -460,7 +460,42 @@ claude mcp add --transport stdio metrics -s user -- uv run --directory /path/to/
 
 ---
 
-### 13. StockRecommendationPlatform — Multi-Agent Analysis
+### 13. LunaRoute — AI Coding Assistant Proxy & Analytics
+**Status:** 📦 Available  
+**Repo:** https://github.com/erans/lunaroute  
+**Purpose:** Local proxy with complete visibility into LLM interactions
+
+**Features:**
+- Dual passthrough (OpenAI + Anthropic simultaneously)
+- Sub-millisecond overhead (0.1-0.2ms)
+- Session recording (SQLite + JSONL)
+- PII detection & redaction (emails, SSN, credit cards, phone)
+- Web UI for session browsing
+- 24 Prometheus metrics
+- Token usage breakdown
+- Tool performance analytics
+
+**One-command setup:**
+```bash
+eval $(lunaroute-server env)
+# Automatically configures:
+# - ANTHROPIC_BASE_URL=http://127.0.0.1:8081
+# - OPENAI_BASE_URL=http://127.0.0.1:8081/v1
+# - Web UI at http://localhost:8082
+```
+
+**Features:**
+- 100% API fidelity (zero-copy proxy)
+- Automatic auth from env vars or client headers
+- Session statistics on shutdown
+- Grafana-compatible metrics
+- Works with Claude Code, OpenAI Codex, OpenCode
+
+**Integration:** Monitor all AI interactions across the ecosystem in real-time.
+
+---
+
+### 14. StockRecommendationPlatform — Multi-Agent Analysis
 **Status:** 📋 Spec  
 **Purpose:** Research-grade stock/options analysis via multi-agent framework
 
@@ -556,6 +591,7 @@ OpenManus + LangGraph
 | Claude-Mem | ✅ | ✅ | ✅ | ✅ | ✅ | Persistent memory active |
 | PULSE | ✅ | ✅ | ✅ | ✅ | ✅ | Token efficiency rules |
 | Claude Code OTel | 📦 | 📋 | 📋 | 📋 | 📋 | 14 MCP tools, 103 dashboard panels |
+| LunaRoute | 📦 | 📋 | 📋 | 📋 | 📋 | AI proxy, session recording, PII redaction |
 | Pigsty | 📦 | 📋 | 📋 | 📋 | 📋 | ~30 min setup |
 | StockPlatform | 📋 | 📋 | 📋 | 📋 | 📋 | Spec complete, build in progress |
 | OpenManus | 📦 | 📋 | 📋 | 📋 | 📋 | AI agent framework ready |
