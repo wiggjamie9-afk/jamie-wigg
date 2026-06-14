@@ -18,7 +18,7 @@ pnpm install
 
 ---
 
-## 🔧 TOOLS REGISTRY (17 Total)
+## 🔧 TOOLS REGISTRY (18 Total)
 
 ### 1. Claude-Mem — Persistent Memory Across Sessions
 **Status:** ✅ Installed  
@@ -906,6 +906,117 @@ npx remotion render MyVideo output.mp4 \
 
 ---
 
+### 18. Impeccable — AI-Driven Frontend Design Skill
+**Status:** ✅ Integrated  
+**Repo:** https://github.com/pbakaus/impeccable  
+**NPM:** `impeccable`  
+**Purpose:** Eliminate generic AI design tells; build production-grade, distinct interfaces with 23 commands and 41 deterministic anti-pattern rules
+**License:** Apache 2.0
+
+**Why Impeccable:**
+
+Every LLM trained on same SaaS templates produces identical design tells:
+- Inter font everywhere
+- Purple-to-blue gradients
+- Nested card layouts
+- Gray text on colors
+- Bounce easing
+
+**Impeccable fixes this with:**
+1. **One setup** — `/impeccable init` writes PRODUCT.md + DESIGN.md context
+2. **23 commands** — Shared vocabulary: `audit`, `polish`, `critique`, `distill`, `animate`, `bolder`, `quieter`, `craft`, and more
+3. **41 detector rules** — No LLM calls, no API key; catches AI slop instantly
+4. **Live iteration** — Browser-based variant testing
+
+**Installation:**
+
+```bash
+# Project root
+npx impeccable skills install
+```
+
+Auto-detects harness (Claude Code, Cursor, Codex, OpenCode, etc.), installs to right location, and sets up optional design hook (auto-runs detector on UI file edits).
+
+**Quick Start:**
+
+```bash
+/impeccable init              # One-time setup
+/impeccable craft             # Full shape-then-build
+/impeccable audit             # Find issues (41 rules)
+/impeccable polish            # Final pass
+/impeccable live              # Browser iteration
+```
+
+**23 Commands:**
+
+| Command | Purpose |
+|---|---|
+| `init` | Setup context, write PRODUCT.md + DESIGN.md |
+| `craft` | Full shape-then-build flow |
+| `shape` | Plan UX/UI before code |
+| `document` | Extract DESIGN.md from existing code |
+| `extract` | Pull components + tokens into system |
+| `critique` | UX design review (hierarchy, clarity, resonance) |
+| `audit` | Technical QA (a11y, performance, responsive) |
+| `polish` | Final pass, design system alignment |
+| `harden` | Error handling, i18n, edge cases |
+| `onboard` | First-run flows, empty states |
+| `bolder` | Amplify boring designs |
+| `quieter` | Tone down overly bold designs |
+| `distill` | Strip to essence |
+| `animate` | Add purposeful motion |
+| `colorize` | Introduce strategic color |
+| `typeset` | Fix fonts, hierarchy, sizing |
+| `layout` | Fix layout, spacing, rhythm |
+| `delight` | Add joy and personality |
+| `overdrive` | Technically extraordinary effects (3D, WebGL) |
+| `clarify` | Improve UX copy |
+| `adapt` | Adapt for different devices |
+| `optimize` | Performance improvements |
+| `live` | Visual variant iteration in browser |
+
+**41 Detector Rules:**
+
+Catches without LLM:
+- AI slop (purple gradients, bounce easing, nested cards, icon tiles)
+- Accessibility (gray on color, missing alt text, contrast)
+- Quality (line length, padding, touch targets, skipped headings)
+- CSS/structure (hardcoded colors, missing viewports, z-index chaos)
+
+**Files Generated:**
+
+- `PRODUCT.md` — Product context (name, audience, brand lane, voice, anti-references)
+- `DESIGN.md` — Design system (colors, type, components, spacing)
+- `.impeccable/config.json` — Shared team rules
+- `.impeccable/config.local.json` — Machine-local settings (gitignored)
+
+**Platform Support:**
+
+Claude Code, Cursor (Nightly), OpenCode, Pi, Gemini CLI, Codex, VS Code Copilot, GitHub Copilot, Trae, Rovo Dev, Qoder, Kiro
+
+**Design Hook (Automatic Quality Gates):**
+
+On Claude Code, Cursor, Codex: auto-runs 41 detector rules on every UI file edit. No API key needed. Surfaces findings to agent flow instantly.
+
+**Integration with Claude Ecosystem:**
+
+- **Everything Claude Code** — Complements `frontend-design` skill; `/dream` auto-routes UI generation
+- **Site-build pipeline** — `/site-design` stage calls `/impeccable craft` for component iteration
+- **Pigsty** — Store design system versions, log audit runs
+- **LunaRoute** — Monitor design tool performance
+- **Observability** — Metrics: audit runtime, issues found, hook performance
+
+**CLI (No Harness):**
+
+```bash
+npx impeccable detect src/              # Scan directory
+npx impeccable detect index.html        # Scan file
+npx impeccable detect https://example.com  # Scan URL
+npx impeccable detect --fast --json .   # Regex-only, JSON
+```
+
+---
+
 ## 🔌 Complete Integration Map
 
 ### Data Layer (Pigsty)
@@ -967,6 +1078,7 @@ OpenManus + LangGraph
 | Bolt.new | ☁️ | ✅ | ✅ | ✅ | ✅ | Cloud-hosted, no local setup |
 | Global FinTech | 📋 | 📋 | 📋 | 📋 | 📋 | Reference architecture |
 | Remotion | ✅ | ✅ | ✅ | ✅ | ✅ | React video framework, integrated |
+| Impeccable | ✅ | ✅ | ✅ | ✅ | ✅ | AI design skill, 41 detector rules, integrated |
 
 **Legend:** ✅ = active | 📋 = planned/spec | 📦 = available | ☁️ = cloud-hosted
 
@@ -1047,11 +1159,12 @@ brew install avogadro2  # or linux equivalent
 
 **Built with ❤️ for the Claude Ecosystem**
 
-Version: 1.7.0  
+Version: 1.8.0  
 Updated: 2026-06-14  
-Status: Complete 17-Tool Ecosystem + System Design Reference + Remotion Video Framework + 92+ Skills + 200+ Agents — Production-Ready
+Status: Complete 18-Tool Ecosystem + System Design Reference + Video & Design Frameworks + 92+ Skills + 200+ Agents — Production-Ready
 
 ### Changelog
+- **v1.8.0** — Impeccable (AI design skill with 41 detector rules) integration
 - **v1.7.0** — Remotion (React-based programmatic video creation) integration
 - **v1.6.0** — System Design Primer (Donne Martin) + interview prep skill integration
 - **v1.5.0** — Marketing Skills v2.0 (40 skills) + 200+ OpenClaw agents for autonomous marketing
