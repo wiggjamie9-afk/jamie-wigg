@@ -18,7 +18,7 @@ pnpm install
 
 ---
 
-## 🔧 TOOLS REGISTRY (16 Total)
+## 🔧 TOOLS REGISTRY (17 Total)
 
 ### 1. Claude-Mem — Persistent Memory Across Sessions
 **Status:** ✅ Installed  
@@ -815,6 +815,97 @@ SYSTEM-DESIGN-PRIMER.md
 
 ---
 
+### 17. Remotion — React-Based Programmatic Video Creation
+**Status:** ✅ Integrated  
+**Repo:** https://github.com/remotion-dev/remotion  
+**NPM:** `remotion` (v4+)  
+**Purpose:** Create videos using React components, CSS, Canvas, SVG, WebGL, and algorithms
+**License:** Proprietary (requires commercial license in some cases)
+
+**Why Remotion:**
+- **React composition** — Reusable components, props, state management
+- **Web technologies** — CSS animations, Canvas, SVG, WebGL for pixel-perfect graphics
+- **Programming leverage** — Variables, functions, APIs, math for generative effects
+- **Scalability** — Generate thousands of unique videos from data
+
+**Key Concepts:**
+
+*Composition* — Container for video with duration, resolution, frame rate:
+```jsx
+<Composition
+  id="MyVideo"
+  component={VideoComponent}
+  durationInFrames={300}   // 10 seconds at 30fps
+  fps={30}
+  width={1920}
+  height={1080}
+/>
+```
+
+*Frame-based Animation* — Drive animations via frame number:
+```jsx
+const { frame } = props;
+const progress = frame / 30;  // linear 30-frame animation
+const scale = spring({ fps: 30, frame, config: { damping: 10 } });
+```
+
+*Components* — Built-in: Text, Image, Audio, Video, Sequence, AbsoluteFill
+
+*Animation Patterns*:
+- Spring animations: `spring({ fps, frame, config })`
+- Linear interpolation: `interpolate(frame, [0, 30], [0, 1])`
+- Easing functions: Bezier curves, spring dynamics
+- Conditional rendering: Show/hide scenes by frame range
+
+**Use Cases:**
+- Personalized videos (GitHub Unwrapped, birthday videos, certificates)
+- Programmatic content (stock animations, weather forecasts, analytics dashboards)
+- Dynamic templates (reusable video templates with props)
+- Generative art (fractals, noise-based animations, particle systems)
+
+**Development:**
+```bash
+npx create-video@latest
+npm start            # Remotion Studio at localhost:3000
+npm run build        # Static export for deployment
+```
+
+**Export:**
+```bash
+npx remotion render MyVideo output.mp4 \
+  --width 1920 \
+  --height 1080 \
+  --crf 18 \
+  --codec h264 \
+  --concurrency 4
+```
+
+**Performance Tips:**
+- Memoize components to prevent re-renders
+- Use Workers for heavy computation
+- Lazy load media (don't load all assets at once)
+- Optimize images before use
+- Use Canvas for heavy graphics (more efficient than DOM)
+
+**Comparison with HyperFrames (RHYTHMIX pipeline):**
+- **Choose Remotion for:** Complex logic, data-driven content, full React ecosystem needed
+- **Choose HyperFrames for:** Simple animations, quick render times, CSS/GSAP sufficient
+
+**Integration Points:**
+- **RHYTHMIX Video Pipeline** — Can coexist with HyperFrames; use for data-heavy promos
+- **Stock Platform** — Animate analysis results, generate custom investor reports
+- **Everything Claude Code** — `/dream` skill routes to Remotion for complex videos
+- **Marketing Platform** — Batch generate personalized promo videos for users
+
+**Skill Usage:**
+```bash
+/remotion-videos
+# → Comprehensive Remotion documentation and examples
+# → Covers all core patterns, components, performance tips
+```
+
+---
+
 ## 🔌 Complete Integration Map
 
 ### Data Layer (Pigsty)
@@ -875,6 +966,7 @@ OpenManus + LangGraph
 | OpenCut | 📦 | 📋 | 📋 | 📋 | 📋 | Video editing (if needed) |
 | Bolt.new | ☁️ | ✅ | ✅ | ✅ | ✅ | Cloud-hosted, no local setup |
 | Global FinTech | 📋 | 📋 | 📋 | 📋 | 📋 | Reference architecture |
+| Remotion | ✅ | ✅ | ✅ | ✅ | ✅ | React video framework, integrated |
 
 **Legend:** ✅ = active | 📋 = planned/spec | 📦 = available | ☁️ = cloud-hosted
 
@@ -955,11 +1047,12 @@ brew install avogadro2  # or linux equivalent
 
 **Built with ❤️ for the Claude Ecosystem**
 
-Version: 1.6.0  
+Version: 1.7.0  
 Updated: 2026-06-14  
-Status: Complete 16-Tool Ecosystem + System Design Reference + 92+ Skills + 200+ Agents — Production-Ready
+Status: Complete 17-Tool Ecosystem + System Design Reference + Remotion Video Framework + 92+ Skills + 200+ Agents — Production-Ready
 
 ### Changelog
+- **v1.7.0** — Remotion (React-based programmatic video creation) integration
 - **v1.6.0** — System Design Primer (Donne Martin) + interview prep skill integration
 - **v1.5.0** — Marketing Skills v2.0 (40 skills) + 200+ OpenClaw agents for autonomous marketing
 - **v1.4.0** — Everything Claude Code integration (13 agents, 50+ skills, 32 commands)
