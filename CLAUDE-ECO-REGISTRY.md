@@ -18,7 +18,7 @@ pnpm install
 
 ---
 
-## 🔧 TOOLS REGISTRY (15 Total)
+## 🔧 TOOLS REGISTRY (16 Total)
 
 ### 1. Claude-Mem — Persistent Memory Across Sessions
 **Status:** ✅ Installed  
@@ -767,6 +767,54 @@ Everything Claude Code v1.0.0
 
 ---
 
+### 16. System Design Primer — Interview & Architecture Reference
+**Status:** ✅ Integrated  
+**Source:** Donne Martin (CC BY 4.0)  
+**Repository:** https://github.com/donnemartin/system-design-primer  
+**Purpose:** Comprehensive guide for designing large-scale systems and interview preparation
+
+**Coverage:**
+- 4-step system design interview approach
+- Core concepts: scalability, latency, availability, CAP theorem
+- Database patterns: replication, sharding, federation, denormalization
+- Caching strategies: cache-aside, write-through, write-behind, refresh-ahead
+- Communication: TCP, UDP, HTTP, RPC, REST
+- Real-world architectures: Twitter, Facebook, Instagram, Netflix, Uber, WhatsApp
+
+**Key Patterns:**
+- Horizontal vs vertical scaling
+- Load balancing (Layer 4 vs Layer 7)
+- Master-slave vs master-master replication
+- SQL vs NoSQL trade-offs
+- Microservices and service discovery
+
+**Integration Points:**
+- **System Design Interview Skill** — `/system-design-interview` for prep
+- **Applied to Stock Platform** — Real-time analysis, high throughput
+- **Applied to Marketing Platform** — Event streaming, analytics
+- **Applied to Observability** — OpenTelemetry, Prometheus, Grafana patterns
+- **Applied to LunaRoute** — Session recording, analytics
+
+**Usage:**
+```bash
+/system-design-interview
+
+# Or reference directly:
+SYSTEM-DESIGN-PRIMER.md
+```
+
+**Topics Referenced:**
+1. CAP theorem → Database choices (Pigsty, Redis)
+2. Load balancing → Reverse proxy, API gateway
+3. Caching strategies → Redis configuration
+4. Replication patterns → PostgreSQL master-slave
+5. Sharding → Stock Platform data distribution
+6. Asynchronism → Message queues, task workers
+7. Microservices → Everything Claude Code agents
+8. Monitoring → OpenTelemetry collector patterns
+
+---
+
 ## 🔌 Complete Integration Map
 
 ### Data Layer (Pigsty)
@@ -907,11 +955,12 @@ brew install avogadro2  # or linux equivalent
 
 **Built with ❤️ for the Claude Ecosystem**
 
-Version: 1.5.0  
+Version: 1.6.0  
 Updated: 2026-06-14  
-Status: Complete 15-Tool Ecosystem + 40 Marketing Skills + 200+ OpenClaw Agents — Production-Ready
+Status: Complete 16-Tool Ecosystem + System Design Reference + 92+ Skills + 200+ Agents — Production-Ready
 
 ### Changelog
+- **v1.6.0** — System Design Primer (Donne Martin) + interview prep skill integration
 - **v1.5.0** — Marketing Skills v2.0 (40 skills) + 200+ OpenClaw agents for autonomous marketing
 - **v1.4.0** — Everything Claude Code integration (13 agents, 50+ skills, 32 commands)
 - **v1.3.0** — Added OpenTelemetry Monitoring + LunaRoute + StockPlatform (14 tools)
