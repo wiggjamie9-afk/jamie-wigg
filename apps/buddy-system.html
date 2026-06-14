@@ -291,6 +291,8 @@
         <div class="pagination" id="pagination"></div>
     </div>
 
+    <!-- Gold-standard personality library: per-buddy systemPrompt, affirmations, voice, crisis guidance -->
+    <script src="./buddy-personalities.js"></script>
     <script>
         // Buddy definitions with system prompts
         const BUDDY_TYPES = {
@@ -817,7 +819,9 @@
 
             const buddy = BUDDIES.find(b => b.id === buddyId);
             const buddyType = BUDDY_TYPE_MAP[buddyId];
-            const systemPrompt = BUDDY_TYPES[buddyType].prompt;
+            // Prefer the rich per-buddy personality (with crisis guidance + AI disclosure); fall back to category prompt
+            const richPersona = (window.BUDDY_PERSONALITIES && window.BUDDY_PERSONALITIES[buddyId]) || null;
+            const systemPrompt = (richPersona && richPersona.systemPrompt) || BUDDY_TYPES[buddyType].prompt;
 
             const messages = state.buddyData[buddyId].chat
                 .slice(-10) // Last 10 messages for context
@@ -1055,6 +1059,11 @@
         }
 
         function getAffirmationsForBuddy(buddyId) {
+            // Prefer the rich per-buddy affirmations library when loaded
+            const richPersona = (window.BUDDY_PERSONALITIES && window.BUDDY_PERSONALITIES[buddyId]) || null;
+            if (richPersona && Array.isArray(richPersona.affirmations) && richPersona.affirmations.length) {
+                return richPersona.affirmations;
+            }
             const defaultAffirmations = [
                 "You are worthy of love and respect.",
                 "Every day brings new opportunities.",
