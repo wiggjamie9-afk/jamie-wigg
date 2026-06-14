@@ -572,7 +572,19 @@ uvicorn app.main:app --reload      # dev server
 12. `backend-architect` — backend architecture planning
 13. `cloud-ops` — cloud infrastructure & DevOps
 
-**50+ Skills (Specialized Workflows):**
+**91+ Skills (Specialized Workflows):**
+
+*Marketing (40 Skills):*
+- **Conversion Optimization:** cro, signup, onboarding, popups, paywalls
+- **Content & Copy:** copywriting, copy-editing, cold-email, emails, social, image
+- **SEO & Discovery:** seo-audit, ai-seo, programmatic-seo, site-architecture, competitors, schema, aso
+- **Paid & Distribution:** ads, ad-creative, public-relations
+- **Measurement & Testing:** analytics, ab-testing
+- **Retention:** churn-prevention
+- **Growth Engineering:** co-marketing, free-tools, referrals
+- **Strategy & Monetization:** marketing-ideas, marketing-psychology, launch, pricing
+- **Sales & RevOps:** revops, sales-enablement, prospecting, directory-submissions, customer-research
+- **Content Strategy:** content-strategy, product-marketing, marketing-plan
 
 *Video & Creative:*
 - `hyperframes`, `hyperframes-cli`, `hyperframes-registry` — HyperFrames HTML video
@@ -895,11 +907,12 @@ brew install avogadro2  # or linux equivalent
 
 **Built with ❤️ for the Claude Ecosystem**
 
-Version: 1.4.0  
+Version: 1.5.0  
 Updated: 2026-06-14  
-Status: Complete 15-Tool Ecosystem — Production-Ready
+Status: Complete 15-Tool Ecosystem + 40 Marketing Skills + 200+ OpenClaw Agents — Production-Ready
 
 ### Changelog
+- **v1.5.0** — Marketing Skills v2.0 (40 skills) + 200+ OpenClaw agents for autonomous marketing
 - **v1.4.0** — Everything Claude Code integration (13 agents, 50+ skills, 32 commands)
 - **v1.3.0** — Added OpenTelemetry Monitoring + LunaRoute + StockPlatform (14 tools)
 - **v1.2.0** — Expanded to Pigsty + Stitch + open-lovable + Emergent + Avogadro + OpenCut
