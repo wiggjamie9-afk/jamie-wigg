@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoryStudio - Video Script Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #1f2937;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            perspective: 1000px;
+        }
+
+        .app-shell {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(236, 72, 153, 0.1);
+            box-shadow: 0 20px 60px rgba(236, 72, 153, 0.08),
+                        0 0 1px rgba(236, 72, 153, 0.1);
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 640px;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            padding: 28px 24px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(236, 72, 153, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            filter: blur(40px);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .carousel-container {
+            flex: 1;
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .carousel-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .carousel-slide {
+            flex-shrink: 0;
+            width: 100%;
+            scroll-snap-align: start;
+            padding: 24px;
+            overflow-y: auto;
+            animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(236, 72, 153, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card:hover {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(236, 72, 153, 0.3);
+            box-shadow: 0 8px 32px rgba(236, 72, 153, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #be185d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .card-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .card-meta {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        input, textarea, select {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(236, 72, 153, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            color: #1f2937;
+            transition: all 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(236, 72, 153, 0.5);
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+            flex-shrink: 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(236, 72, 153, 0.1);
+            color: #ec4899;
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(236, 72, 153, 0.2);
+        }
+
+        .nav-dots {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.4);
+            border-top: 1px solid rgba(236, 72, 153, 0.1);
+        }
+
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(236, 72, 153, 0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(236, 72, 153, 0.1);
+        }
+
+        .nav-dot.active {
+            background: #ec4899;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .script-preview {
+            background: rgba(236, 72, 153, 0.05);
+            border-left: 3px solid #ec4899;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #374151;
+        }
+
+        .script-section {
+            margin-bottom: 12px;
+        }
+
+        .script-label {
+            font-size: 11px;
+            color: #ec4899;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .voice-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+        }
+
+        .voice-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+        }
+
+        .voice-btn.listening {
+            animation: pulse 0.6s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+            }
+            50% {
+                box-shadow: 0 4px 30px rgba(236, 72, 153, 0.6);
+            }
+        }
+
+        .status-message {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            margin-top: 8px;
+            min-height: 16px;
+        }
+
+        .status-message.loading {
+            color: #ec4899;
+            font-weight: 600;
+        }
+
+        .status-message.error {
+            color: #ef4444;
+        }
+
+        .writing-tips {
+            background: rgba(236, 72, 153, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(236, 72, 153, 0.1);
+        }
+
+        .writing-tips ul {
+            list-style: none;
+        }
+
+        .writing-tips li {
+            font-size: 13px;
+            padding: 6px 0;
+            color: #374151;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .writing-tips li:before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #ec4899;
+            font-weight: bold;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(236, 72, 153, 0.1);
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 14px;
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: #e5e7eb;
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s;
+            border: none;
+            padding: 0;
+        }
+
+        .toggle.active {
+            background: #ec4899;
+        }
+
+        .toggle::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle.active::before {
+            left: 22px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-shell">
+            <div class="header">
+                <h1>🎬 StoryStudio</h1>
+                <p>AI-powered script generator</p>
+            </div>
+
+            <div class="carousel-container" id="carouselContainer">
+                <!-- Home -->
+                <div class="carousel-slide">
+                    <div class="card">
+                        <div class="card-title">Create Your Next Script</div>
+                        <div class="card-value">AI-Enhanced Storytelling</div>
+                        <div class="card-meta">Generate compelling video scripts in seconds</div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Quick Start</div>
+                        <button class="btn" style="width: 100%; margin-bottom: 8px;" onclick="goToSlide(1)">✨ Start Writing</button>
+                        <button class="btn-secondary" style="width: 100%;" onclick="goToSlide(2)">📝 View Recent</button>
+                    </div>
+
+                    <div class="writing-tips">
+                        <ul>
+                            <li>Hook viewers in 3 seconds</li>
+                            <li>Use clear, conversational tone</li>
+                            <li>Action beats between dialogue</li>
+                            <li>Short sentences, powerful imagery</li>
+                            <li>End with strong call-to-action</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Write -->
+                <div class="carousel-slide">
+                    <div class="card">
+                        <div class="card-title">Script Title</div>
+                        <div class="input-group">
+                            <input type="text" id="scriptTitle" placeholder="e.g., 'Day in the Life'">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Concept</div>
+                        <div class="input-group">
+                            <textarea id="scriptConcept" placeholder="Brief description of your story..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Duration & Tone</div>
+                        <div class="input-group">
+                            <select id="duration">
+                                <option>30 seconds</option>
+                                <option>60 seconds</option>
+                                <option>90 seconds</option>
+                                <option>2 minutes</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <select id="tone">
+                                <option>Cinematic</option>
+                                <option>Humorous</option>
+                                <option>Inspirational</option>
+                                <option>Professional</option>
+                                <option>Casual</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <button class="btn" onclick="generateScript()">Generate Script</button>
+                        <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice input">🎤</button>
+                    </div>
+                    <div class="status-message" id="statusMessage"></div>
+                </div>
+
+                <!-- Generate -->
+                <div class="carousel-slide">
+                    <div class="card">
+                        <div class="card-title">Generated Script</div>
+                        <div id="generatedScript" class="script-preview">
+                            Your generated script will appear here.
+                        </div>
+                        <button class="btn" style="width: 100%;" onclick="copyScript()">📋 Copy Script</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Narration</div>
+                        <button class="btn" style="width: 100%;" onclick="generateNarration()">🔊 Generate Audio</button>
+                        <div class="status-message" id="narrationStatus"></div>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="carousel-slide">
+                    <div class="card">
+                        <div class="card-title">Script Preview</div>
+                        <div id="previewText" style="font-size: 13px; line-height: 1.8; color: #374151; background: rgba(236, 72, 153, 0.05); padding: 16px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+                            No script loaded yet
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Export Options</div>
+                        <button class="btn" style="width: 100%; margin-bottom: 8px;" onclick="exportAsText()">📄 Export Text</button>
+                        <button class="btn-secondary" style="width: 100%;" onclick="shareScript()">🔗 Share Script</button>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="carousel-slide">
+                    <div class="card">
+                        <div class="card-title">API Settings</div>
+                        <div class="input-group">
+                            <input type="password" id="elevenLabsKey" placeholder="ElevenLabs API Key">
+                        </div>
+                        <button class="btn" onclick="saveSettings()" style="width: 100%;">Save API Key</button>
+                        <div class="status-message" id="settingsStatus"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Preferences</div>
+                        <div class="setting-row">
+                            <span class="setting-label">Voice Narration</span>
+                            <button class="toggle active" id="voiceToggle" onclick="toggleVoice()"></button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">AI Suggestions</span>
+                            <button class="toggle active" onclick="toggleSuggestions()"></button>
+                        </div>
+                        <button class="btn-secondary" style="width: 100%; margin-top: 12px;" onclick="clearScripts()">Clear Scripts</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-dots">
+                <div class="nav-dot active" onclick="goToSlide(0)"></div>
+                <div class="nav-dot" onclick="goToSlide(1)"></div>
+                <div class="nav-dot" onclick="goToSlide(2)"></div>
+                <div class="nav-dot" onclick="goToSlide(3)"></div>
+                <div class="nav-dot" onclick="goToSlide(4)"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const carousel = document.getElementById('carouselContainer');
+        let currentSlide = 0;
+        let isScrolling = false;
+        let voiceActive = false;
+        let elevenLabsKey = localStorage.getItem('elevenLabsKey') || '';
+        let scripts = JSON.parse(localStorage.getItem('storyStudioScripts')) || [];
+
+        const voiceSettings = {
+            voice_id: 'EXAVITQu4vr4xnSDxMHj',
+            model_id: 'eleven_monolingual_v1'
+        };
+
+        carousel.addEventListener('scroll', throttle(() => {
+            if (isScrolling) return;
+            const index = Math.round(carousel.scrollLeft / carousel.clientWidth);
+            if (index !== currentSlide) {
+                currentSlide = index;
+                updateNavDots();
+            }
+        }, 300));
+
+        function goToSlide(index) {
+            isScrolling = true;
+            carousel.scrollTo({
+                left: index * carousel.clientWidth,
+                behavior: 'smooth'
+            });
+            currentSlide = index;
+            setTimeout(() => { isScrolling = false; }, 500);
+            updateNavDots();
+        }
+
+        function updateNavDots() {
+            document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentSlide);
+            });
+        }
+
+        function generateScript() {
+            const title = document.getElementById('scriptTitle').value.trim();
+            const concept = document.getElementById('scriptConcept').value.trim();
+            const duration = document.getElementById('duration').value;
+            const tone = document.getElementById('tone').value;
+
+            if (!title || !concept) {
+                showStatus('statusMessage', 'Please fill in title and concept', 'error');
+                return;
+            }
+
+            showStatus('statusMessage', 'Generating...', 'loading');
+
+            setTimeout(() => {
+                const script = createScript(title, concept, duration, tone);
+                document.getElementById('generatedScript').innerHTML = script.html;
+                document.getElementById('previewText').textContent = script.text;
+
+                const scriptObj = {
+                    id: Date.now(),
+                    title,
+                    concept,
+                    duration,
+                    tone,
+                    script: script.text,
+                    timestamp: new Date().toLocaleString()
+                };
+
+                scripts.push(scriptObj);
+                localStorage.setItem('storyStudioScripts', JSON.stringify(scripts));
+
+                showStatus('statusMessage', '✓ Script generated!', 'loading');
+                setTimeout(() => showStatus('statusMessage', ''), 2000);
+
+                goToSlide(2);
+            }, 1000);
+        }
+
+        function createScript(title, concept, duration, tone) {
+            const durationSeconds = parseInt(duration);
+            const toneAdj = tone.toLowerCase();
+
+            let script = '';
+
+            if (tone === 'Cinematic') {
+                script = `[FADE IN: Wide shot of landscape]\n\n` +
+                    `${concept}\n\n` +
+                    `[Cut to dynamic action]\n` +
+                    `This story needs to be told.\n\n` +
+                    `[Slow motion emphasis]\n` +
+                    `Every moment matters.\n\n` +
+                    `[Final emotional beat]\n` +
+                    `[FADE TO BLACK]`;
+            } else if (tone === 'Humorous') {
+                script = `[QUICK CUT: Unexpected moment]\n\n` +
+                    `So here's the thing about ${concept.toLowerCase()}...\n\n` +
+                    `[Comedic pause]\n` +
+                    `Yeah, that just happened.\n\n` +
+                    `[Reaction shot]\n` +
+                    `Worth it though!\n\n` +
+                    `[Punchline delivered]`;
+            } else if (tone === 'Inspirational') {
+                script = `[Uplifting music begins]\n\n` +
+                    `Every journey starts with a single step.\n\n` +
+                    `${concept}\n\n` +
+                    `[Montage of progress]\n` +
+                    `Believe in yourself.\n\n` +
+                    `[Powerful conclusion]\n` +
+                    `You've got this.`;
+            } else {
+                script = `[Professional introduction]\n\n` +
+                    `Today we're exploring ${concept.toLowerCase()}.\n\n` +
+                    `[Key points delivered clearly]\n` +
+                    `Here's what you need to know:\n\n` +
+                    `[Summary slide]\n` +
+                    `Thank you for watching.`;
+            }
+
+            const html = script.split('\n').map(line => {
+                if (line.includes('[')) {
+                    return `<div class="script-label">${line}</div>`;
+                }
+                return `<div class="script-section">${line}</div>`;
+            }).join('');
+
+            return { text: script, html };
+        }
+
+        function copyScript() {
+            const text = document.getElementById('previewText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('statusMessage', '✓ Copied to clipboard!', 'loading');
+                setTimeout(() => showStatus('statusMessage', ''), 2000);
+            });
+        }
+
+        function generateNarration() {
+            const script = document.getElementById('previewText').textContent;
+            if (!script || script === 'No script loaded yet') {
+                showStatus('narrationStatus', 'Generate a script first', 'error');
+                return;
+            }
+
+            showStatus('narrationStatus', 'Generating audio...', 'loading');
+
+            if (elevenLabsKey) {
+                speakWithElevenLabs(script);
+            } else {
+                speakWithBrowser(script);
+            }
+        }
+
+        async function speakWithElevenLabs(text) {
+            try {
+                const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceSettings.voice_id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'xi-api-key': elevenLabsKey
+                    },
+                    body: JSON.stringify({
+                        text,
+                        model_id: voiceSettings.model_id,
+                        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+                    })
+                });
+
+                if (!response.ok) throw new Error('API error');
+
+                const audio = await response.blob();
+                const url = URL.createObjectURL(audio);
+                const audioElement = new Audio(url);
+                audioElement.play();
+
+                audioElement.onended = () => showStatus('narrationStatus', '');
+            } catch (error) {
+                console.error('Error:', error);
+                speakWithBrowser(text);
+            }
+        }
+
+        function speakWithBrowser(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.95;
+            utterance.onend = () => showStatus('narrationStatus', '');
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function toggleVoiceInput() {
+            voiceActive = !voiceActive;
+            const btn = document.getElementById('voiceBtn');
+
+            if (voiceActive && 'webkitSpeechRecognition' in window) {
+                btn.classList.add('listening');
+                const recognition = new webkitSpeechRecognition();
+                recognition.start();
+                showStatus('statusMessage', 'Listening...', 'loading');
+
+                recognition.onresult = (event) => {
+                    const transcript = Array.from(event.results)
+                        .map(r => r[0].transcript)
+                        .join('');
+
+                    document.getElementById('scriptConcept').value = transcript;
+                    showStatus('statusMessage', '✓ Got: ' + transcript);
+                };
+
+                recognition.onend = () => {
+                    btn.classList.remove('listening');
+                    voiceActive = false;
+                };
+            }
+        }
+
+        function exportAsText() {
+            const script = document.getElementById('previewText').textContent;
+            const title = document.getElementById('scriptTitle').value || 'script';
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(script));
+            element.setAttribute('download', `${title}.txt`);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        function shareScript() {
+            const script = document.getElementById('previewText').textContent;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Script',
+                    text: script
+                });
+            } else {
+                alert('Share feature not available');
+            }
+        }
+
+        function saveSettings() {
+            const key = document.getElementById('elevenLabsKey').value.trim();
+            if (key) {
+                elevenLabsKey = key;
+                localStorage.setItem('elevenLabsKey', key);
+                showStatus('settingsStatus', '✓ API key saved!', 'loading');
+                setTimeout(() => showStatus('settingsStatus', ''), 2000);
+            }
+        }
+
+        function toggleVoice() {
+            document.getElementById('voiceToggle').classList.toggle('active');
+        }
+
+        function toggleSuggestions() {
+            // Placeholder for AI suggestions feature
+        }
+
+        function clearScripts() {
+            if (confirm('Clear all scripts?')) {
+                scripts = [];
+                localStorage.setItem('storyStudioScripts', JSON.stringify(scripts));
+            }
+        }
+
+        function showStatus(elementId, message, type = '') {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'status-message';
+            if (type) el.classList.add(type);
+        }
+
+        function throttle(fn, ms) {
+            let timeout;
+            return function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(fn, ms);
+            };
+        }
+    </script>
+</body>
+</html>
