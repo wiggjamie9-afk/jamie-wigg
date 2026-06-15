@@ -15,24 +15,29 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Load the personality library (execute it to get BUDDY_PERSONALITIES)
+// Load the personality library
 const personalitiesCode = fs.readFileSync(path.join(__dirname, 'buddy-personalities.js'), 'utf-8');
-const buddyPersonalities = {};
-
-// Parse BUDDY_PERSONALITIES from the JS file manually
-// (Extract the object literal between "const BUDDY_PERSONALITIES = {" and the closing "}"
 const match = personalitiesCode.match(/const BUDDY_PERSONALITIES = ({[\s\S]*?});/);
 if (!match) {
   console.error('Could not parse BUDDY_PERSONALITIES from buddy-personalities.js');
   process.exit(1);
 }
 
-// Safely evaluate the object (it's just data)
 const buddyObject = new Function(`
   const AI_DISCLOSURE = 'You are an AI companion — a caring presence, not a doctor, therapist, or emergency service — and you say so plainly when it matters.';
   const CRISIS_RESOURCES = 'If you ever feel you might act on thoughts of harming yourself or someone else, please reach out right now: in the US, call or text 988 (Suicide & Crisis Lifeline), or text HOME to 741741 (Crisis Text Line). If there is immediate danger, call 911 or your local emergency number. If you are outside the US, contact your local emergency services or a trusted person nearby.';
   return ${match[1]};
 `)();
+
+// Load vibe library
+const vibesCode = fs.readFileSync(path.join(__dirname, 'buddy-vibes.js'), 'utf-8');
+const vibeMatch = vibesCode.match(/export const BUDDY_VIBES = ({[\s\S]*?});/);
+if (!vibeMatch) {
+  console.error('Could not parse BUDDY_VIBES from buddy-vibes.js');
+  process.exit(1);
+}
+
+const buddyVibes = new Function(`return ${vibeMatch[1]}`)();
 
 // Buddy color map (one color per buddy for the --glow variable)
 const BUDDY_COLORS = {
@@ -108,17 +113,41 @@ const BUDDY_EMOJIS = {
 // Load template
 const template = fs.readFileSync(path.join(__dirname, 'buddy-app-template.html'), 'utf-8');
 
+// Helper to generate vibe CSS variables
+function generateVibeCss(vibe) {
+  const shadowPace = vibe.animationPace === 'slow' ? '800ms' : vibe.animationPace === 'fast' ? '200ms' : '400ms';
+  const shadowBlur = vibe.shadowStyle === 'gentle' ? '8px' : vibe.shadowStyle === 'bold' ? '16px' : '12px';
+  const fontScale = vibe.fontSize === 'large' ? '1.15' : vibe.fontSize === 'small' ? '0.9' : '1';
+
+  return `
+    --vibe-primary: ${vibe.primary};
+    --vibe-secondary: ${vibe.secondary};
+    --vibe-accent: ${vibe.accent};
+    --vibe-text: ${vibe.textColor};
+    --vibe-animation-duration: ${shadowPace};
+    --vibe-shadow-blur: ${shadowBlur};
+    --vibe-shadow-color: rgba(0, 0, 0, 0.15);
+    --vibe-font-scale: ${fontScale};
+  `.trim();
+}
+
 // Generate all 50 apps
-console.log('Generating 50 Buddy Apps (28 original + 10 loneliness + 12 enterprise)...\n');
+console.log('Generating 50 Buddy Apps with Stitch Vibe Design...\n');
 
 for (const [buddyId, personality] of Object.entries(buddyObject)) {
   const id = parseInt(buddyId);
   const name = personality.name || `Buddy ${id}`;
   const emoji = BUDDY_EMOJIS[id] || '👋';
   const color = BUDDY_COLORS[id] || '#8b5cf6';
+  const vibe = buddyVibes[id];
 
-  // Slugify name for filename
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  if (!vibe) {
+    console.warn(`⚠ No vibe found for buddy ${id}, skipping...`);
+    continue;
+  }
+
+  // Generate vibe CSS
+  const vibeCss = generateVibeCss(vibe);
 
   // Build the app HTML by replacing placeholders
   let appHtml = template;
@@ -128,6 +157,7 @@ for (const [buddyId, personality] of Object.entries(buddyObject)) {
   appHtml = appHtml.replace(/{{BUDDY_NAME}}/g, name);
   appHtml = appHtml.replace(/{{BUDDY_EMOJI}}/g, emoji);
   appHtml = appHtml.replace(/{{BUDDY_COLOR}}/g, color);
+  appHtml = appHtml.replace(/{{BUDDY_VIBE_CSS}}/g, vibeCss);
   appHtml = appHtml.replace(
     /{{BUDDY_PERSONALITY_JSON}}/g,
     JSON.stringify(personality).replace(/'/g, "\\'")
@@ -136,7 +166,7 @@ for (const [buddyId, personality] of Object.entries(buddyObject)) {
   // Write file
   const outputPath = path.join(__dirname, `buddy-${id}.html`);
   fs.writeFileSync(outputPath, appHtml);
-  console.log(`✓ buddy-${id}.html (${name})`);
+  console.log(`✓ buddy-${id}.html (${name}, ${vibe.vibe})`);
 }
 
 console.log('\n✨ Done! All 50 apps generated (28 original + 10 loneliness + 12 enterprise).');
