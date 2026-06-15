@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cancer Nutrition Companion — Food Nutrition Buddy</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="Cancer Nutrition Companion — Your personalized food nutrition guide. Offline-first PWA with recipes, meal planning, medical tracking, and Claude API integration.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cancer Nutrition Companion">
+  <style>
+    :root {
+      --vibe-primary: #F3E5F5;
+    --vibe-secondary: #E1BEE7;
+    --vibe-accent: #8E24AA;
+    --vibe-text: #4A148C;
+    --vibe-animation-duration: 800ms;
+    --vibe-shadow-blur: 8px;
+    --vibe-shadow-color: rgba(0, 0, 0, 0.15);
+    --vibe-font-scale: 1;
+      --shadow-float: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; width: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--vibe-primary) 0%, var(--vibe-secondary) 100%);
+      background-attachment: fixed;
+      color: var(--vibe-text);
+      overflow: hidden;
+      font-size: calc(14px * var(--vibe-font-scale));
+      line-height: 1.5;
+    }
+
+    #app { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: calc(12px * var(--vibe-font-scale));
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      position: relative;
+      z-index: 10;
+      min-height: 56px;
+    }
+
+    .navbar h1 {
+      font-size: calc(18px * var(--vibe-font-scale));
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar button {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--vibe-text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .navbar button:hover { background: rgba(255,255,255,0.15); }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: calc(8px * var(--vibe-font-scale));
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+      position: relative;
+      z-index: 9;
+      min-height: 44px;
+    }
+
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: calc(8px * var(--vibe-font-scale)) calc(12px * var(--vibe-font-scale));
+      background: transparent;
+      border: 1px solid transparent;
+      color: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: calc(13px * var(--vibe-font-scale));
+      transition: all var(--vibe-animation-duration);
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--vibe-accent);
+      border: 1px solid var(--vibe-accent);
+      color: var(--vibe-primary);
+      box-shadow: 0 4px var(--vibe-shadow-blur) var(--vibe-shadow-color);
+    }
+
+    .screen { display: none; flex-direction: column; flex: 1; }
+    .screen.active { display: flex; }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: calc(16px * var(--vibe-font-scale));
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: calc(16px * var(--vibe-font-scale));
+      margin-bottom: 12px;
+      position: relative;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .card h3 { font-size: calc(16px * var(--vibe-font-scale)); margin-bottom: 12px; font-weight: 600; }
+    .card p { font-size: calc(13px * var(--vibe-font-scale)); line-height: 1.6; margin-bottom: 8px; }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    input, textarea, select {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--vibe-text);
+      padding: calc(10px * var(--vibe-font-scale));
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: calc(13px * var(--vibe-font-scale));
+    }
+
+    input::placeholder, textarea::placeholder { color: #999; }
+
+    button {
+      padding: calc(10px * var(--vibe-font-scale)) calc(16px * var(--vibe-font-scale));
+      background: var(--vibe-accent);
+      border: none;
+      color: var(--vibe-primary);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: calc(13px * var(--vibe-font-scale));
+      font-weight: 500;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px var(--vibe-shadow-blur) var(--vibe-shadow-color); }
+    button:active { transform: scale(0.95); }
+
+    .recipe-card, .ingredient-card, .meal-item {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .recipe-card h4, .ingredient-card h4, .meal-item h4 {
+      font-size: calc(14px * var(--vibe-font-scale));
+      margin-bottom: 6px;
+      color: var(--vibe-accent);
+    }
+
+    .recipe-card p, .ingredient-card p, .meal-item p {
+      font-size: calc(12px * var(--vibe-font-scale));
+      color: #999;
+      line-height: 1.5;
+    }
+
+    .disclaimer {
+      background: rgba(255, 100, 100, 0.1);
+      border: 1px solid rgba(255, 100, 100, 0.3);
+      border-left: 4px solid var(--vibe-accent);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(12px * var(--vibe-font-scale));
+      margin-bottom: 16px;
+    }
+
+    .premium-feature {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .premium-badge {
+      display: inline-block;
+      background: var(--vibe-accent);
+      color: var(--vibe-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 11px;
+      text-align: center;
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .calendar-day:hover { background: rgba(255,255,255,0.08); }
+    .calendar-day.selected { background: var(--vibe-accent); color: var(--vibe-primary); }
+
+    .medical-disclaimer {
+      background: rgba(255, 150, 0, 0.1);
+      border: 1px solid rgba(255, 150, 0, 0.3);
+      border-left: 4px solid var(--vibe-accent);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(11px * var(--vibe-font-scale));
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .escalation-text {
+      background: rgba(255, 100, 100, 0.08);
+      border: 1px solid rgba(255, 100, 100, 0.2);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(12px * var(--vibe-font-scale));
+      margin-top: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .navbar { padding: 12px; }
+      .content { padding: 12px; }
+      .card { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="navbar">
+      <h1>🍎 Cancer Nutrition Companion</h1>
+      <button onclick="switchTab('settings')">⚙️</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('home')">Home</button>
+      <button class="tab-btn" onclick="switchTab('recipes')">Recipes</button>
+      <button class="tab-btn" onclick="switchTab('ingredients')">Ingredients</button>
+      <button class="tab-btn" onclick="switchTab('meals')">Meal Plan</button>
+      <button class="tab-btn" onclick="switchTab('tracker')">Tracker</button>
+      <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+    </div>
+
+    <!-- HOME TAB -->
+    <div class="screen active" id="screen-home">
+      <div class="content">
+        <div class="card">
+          <h3>Welcome! 👋</h3>
+          <p id="greeting">Hi! I'm Cancer Nutrition Companion, your personalized nutrition guide. Let's work together to help you eat well and feel great.</p>
+        </div>
+
+        <div class="medical-disclaimer">
+          <strong>📋 Important:</strong> I'm not a doctor or replacement for professional medical advice. Always consult your healthcare provider for medical concerns, medication interactions, allergies, or diagnosis.
+        </div>
+
+        <div class="card">
+          <h3>Quick Stats</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="font-size: 20px; font-weight: 600; color: var(--vibe-accent);" id="meals-logged">0</div>
+              <div style="font-size: 12px; color: #999;">Meals Logged</div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="font-size: 20px; font-weight: 600; color: var(--vibe-accent);" id="streak">0</div>
+              <div style="font-size: 12px; color: #999;">Day Streak</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Today's Message</h3>
+          <p id="daily-message">You're taking great care of yourself by paying attention to nutrition. Keep going!</p>
+        </div>
+
+        <div class="card" id="upgrade-card">
+          <h3>✨ Premium Features</h3>
+          <p>Unlock meal planning, medical tracking, and advanced features.</p>
+          <button onclick="showPremium()">Learn More</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECIPES TAB -->
+    <div class="screen" id="screen-recipes">
+      <div class="content">
+        <div class="card">
+          <h3>Recipe Generator</h3>
+          <div class="input-group">
+            <input type="text" id="ingredient-input" placeholder="What ingredients do you have?" />
+            <textarea id="dietary-needs" placeholder="Any dietary needs? (allergies, restrictions, medical conditions)" style="height: 60px;"></textarea>
+            <button onclick="generateRecipes()">🍳 Generate Recipes with Claude API</button>
+          </div>
+        </div>
+
+        <div id="recipes-output" style="display: none;">
+          <div class="card">
+            <h3>Suggested Recipes</h3>
+            <div id="recipe-list"></div>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Video Tutorials <span class="premium-badge">PRO</span></h3>
+          <p>Premium members get access to video cooking tutorials and nutrition education.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- INGREDIENTS TAB -->
+    <div class="screen" id="screen-ingredients">
+      <div class="content">
+        <div class="card">
+          <h3>Ingredient Matcher</h3>
+          <p>Find safe recipes based on available ingredients and your dietary needs.</p>
+          <div class="input-group">
+            <input type="text" id="available-ingredients" placeholder="Enter available ingredients (comma-separated)" />
+            <button onclick="matchIngredients()">🔍 Find Safe Recipes</button>
+          </div>
+        </div>
+
+        <div id="ingredients-output" style="display: none;">
+          <div class="card">
+            <h3>Matching Recipes</h3>
+            <div id="ingredient-matches"></div>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Allergy Management <span class="premium-badge">PRO</span></h3>
+          <p>Cross-contamination prevention, label reading guides, and emergency preparedness resources.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEAL PLAN TAB -->
+    <div class="screen" id="screen-meals">
+      <div class="content">
+        <div class="card">
+          <h3>Weekly Meal Planner</h3>
+          <p>Plan your week and generate shopping lists.</p>
+          <div class="input-group">
+            <button onclick="generateMealPlan()" class="premium-feature">📅 Generate 7-Day Plan <span class="premium-badge">PRO</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Sample Planning</h3>
+          <p>Monday: Balanced breakfast, protein lunch, veggie dinner</p>
+          <p style="font-size: 12px; color: #999; margin-top: 8px;">Upgrade to Premium for personalized meal plans based on your medical needs and preferences.</p>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Shopping List <span class="premium-badge">PRO</span></h3>
+          <p>Automatic shopping list generation from your meal plan, with budget tracking.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKER TAB -->
+    <div class="screen" id="screen-tracker">
+      <div class="content">
+        <div class="card">
+          <h3>Food & Health Tracker</h3>
+          <p>Log meals, track symptoms, monitor progress.</p>
+          <div class="input-group">
+            <input type="text" placeholder="What did you eat?" />
+            <textarea placeholder="How do you feel? Any symptoms?" style="height: 60px;"></textarea>
+            <button>📝 Log Entry</button>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Medical Tracking <span class="premium-badge">PRO</span></h3>
+          <p>Blood sugar logs, weight tracking, symptom journal, mood↔eating correlation analysis.</p>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Advanced Analytics <span class="premium-badge">PRO</span></h3>
+          <p>Export data, identify patterns, track nutrition metrics over time.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="screen" id="screen-settings">
+      <div class="content">
+        <div class="card">
+          <h3>Claude API Key</h3>
+          <p>Add your own Claude API key to enable recipe generation with full context.</p>
+          <div class="input-group">
+            <input type="password" id="api-key" placeholder="sk-ant-..." />
+            <button onclick="saveSettings()">💾 Save API Key</button>
+          </div>
+          <p style="font-size: 12px; color: #999; margin-top: 8px;">Get your API key at https://console.anthropic.com</p>
+        </div>
+
+        <div class="card">
+          <h3>Your Medical Profile</h3>
+          <div class="input-group">
+            <input type="text" id="medical-conditions" placeholder="Medical conditions (diabetes, allergies, etc.)" />
+            <input type="text" id="dietary-restrictions" placeholder="Dietary restrictions" />
+            <input type="text" id="family-members" placeholder="Family members to coordinate nutrition" />
+            <button onclick="saveSettings()">💾 Save Profile</button>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Premium Subscription <span class="premium-badge">PRO</span></h3>
+          <p>Lifetime access to premium features: meal planning, medical tracking, advanced recipes, video tutorials.</p>
+          <button onclick="showPremium()">Upgrade to Premium</button>
+        </div>
+
+        <div class="card">
+          <h3>About Cancer Nutrition Companion</h3>
+          <p><strong>Specialization:</strong> Cancer treatment nutrition, managing side effects (nausea, taste changes, swallowing), maintaining strength</p>
+          <p><strong>Age Group:</strong> all ages</p>
+          <p style="font-size: 12px; color: #999; margin-top: 12px;">Offline-first PWA • Works without internet • Claude API optional</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Service Worker for Offline -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    // Buddy personality data (injected from generator)
+    const BUDDY_DATA = {"id":34,"name":"Cancer Nutrition Companion","ageGroup":"all ages","category":"medical","specialization":"Cancer treatment nutrition, managing side effects (nausea, taste changes, swallowing), maintaining strength","systemPrompt":"You are a compassionate companion during cancer treatment and recovery. Focus: managing treatment side effects (nausea, taste changes, difficulty swallowing, mouth sores), maintaining adequate calories/protein for healing, managing appetite changes, gentle nutrition support during difficult phases. Key: Eating what you can is OK during treatment; perfection not possible. Not an oncologist. Consult oncology team for treatment concerns.","voice_style":"compassionate, practical, encouraging, gentle","affirmations":["Your nutrition supports your healing.","During treatment, eating anything is good.","You\'re managing a difficult journey well."],"greeting_examples":["Hi! I\'m here for your cancer nutrition support."],"medical_disclaimer":"Not a doctor/oncologist. Consult your oncology team for treatment concerns.","escalation_triggers":["unintentional weight loss","inability to eat","severe nausea","vomiting"]};
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(`screen-${tabName}`).classList.add('active');
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function generateRecipes() {
+      const ingredients = document.getElementById('ingredient-input').value;
+      const dietaryNeeds = document.getElementById('dietary-needs').value;
+
+      if (!ingredients.trim()) {
+        alert('Please enter some ingredients');
+        return;
+      }
+
+      // Placeholder: In production, call Claude API
+      const recipes = [
+        `Recipe 1: Based on ${ingredients}. This recipe is safe for: ${dietaryNeeds || 'balanced nutrition'}`,
+        `Recipe 2: Alternative preparation method with ${ingredients}`,
+        `Recipe 3: Creative variation respecting: ${dietaryNeeds || 'all preferences'}`
+      ];
+
+      const recipeList = document.getElementById('recipe-list');
+      recipeList.innerHTML = recipes.map((r, i) => `<div class="recipe-card"><h4>Recipe ${i+1}</h4><p>${r}</p></div>`).join('');
+      document.getElementById('recipes-output').style.display = 'block';
+    }
+
+    function matchIngredients() {
+      const ingredients = document.getElementById('available-ingredients').value;
+      if (!ingredients.trim()) {
+        alert('Please enter some ingredients');
+        return;
+      }
+
+      const matches = [
+        `Recipe matching "${ingredients}": Prepare dish A`,
+        `Alternative with "${ingredients}": Prepare dish B`,
+        `Quick meal with "${ingredients}": Prepare dish C`
+      ];
+
+      const output = document.getElementById('ingredient-matches');
+      output.innerHTML = matches.map((m, i) => `<div class="ingredient-card"><h4>Option ${i+1}</h4><p>${m}</p></div>`).join('');
+      document.getElementById('ingredients-output').style.display = 'block';
+    }
+
+    function generateMealPlan() {
+      alert('Premium feature: Upgrade to unlock personalized meal planning');
+    }
+
+    function saveSettings() {
+      const apiKey = document.getElementById('api-key').value;
+      localStorage.setItem('apiKey', apiKey);
+      localStorage.setItem('medicalProfile', JSON.stringify({
+        conditions: document.getElementById('medical-conditions').value,
+        restrictions: document.getElementById('dietary-restrictions').value,
+        familyMembers: document.getElementById('family-members').value
+      }));
+      alert('Settings saved! 💾');
+    }
+
+    function showPremium() {
+      alert('Premium features coming soon! Support this project and get early access.');
+    }
+
+    // Initialize
+    document.getElementById('greeting').textContent = `Hi! I'm ${BUDDY_DATA.name}. ${BUDDY_DATA.specialization}. Let's work together to help you eat well.`;
+    document.getElementById('daily-message').textContent = BUDDY_DATA.affirmations[Math.floor(Math.random() * BUDDY_DATA.affirmations.length)];
+  </script>
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Allergies & Intolerances Coach — Food Nutrition Buddy</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="Allergies & Intolerances Coach — Your personalized food nutrition guide. Offline-first PWA with recipes, meal planning, medical tracking, and Claude API integration.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Allergies & Intolerances Coach">
+  <style>
+    :root {
+      --vibe-primary: #FCE4EC;
+    --vibe-secondary: #F8BBD0;
+    --vibe-accent: #C2185B;
+    --vibe-text: #880E4F;
+    --vibe-animation-duration: 400ms;
+    --vibe-shadow-blur: 12px;
+    --vibe-shadow-color: rgba(0, 0, 0, 0.15);
+    --vibe-font-scale: 1;
+      --shadow-float: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; width: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--vibe-primary) 0%, var(--vibe-secondary) 100%);
+      background-attachment: fixed;
+      color: var(--vibe-text);
+      overflow: hidden;
+      font-size: calc(14px * var(--vibe-font-scale));
+      line-height: 1.5;
+    }
+
+    #app { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: calc(12px * var(--vibe-font-scale));
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      position: relative;
+      z-index: 10;
+      min-height: 56px;
+    }
+
+    .navbar h1 {
+      font-size: calc(18px * var(--vibe-font-scale));
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar button {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--vibe-text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .navbar button:hover { background: rgba(255,255,255,0.15); }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: calc(8px * var(--vibe-font-scale));
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+      position: relative;
+      z-index: 9;
+      min-height: 44px;
+    }
+
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: calc(8px * var(--vibe-font-scale)) calc(12px * var(--vibe-font-scale));
+      background: transparent;
+      border: 1px solid transparent;
+      color: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: calc(13px * var(--vibe-font-scale));
+      transition: all var(--vibe-animation-duration);
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--vibe-accent);
+      border: 1px solid var(--vibe-accent);
+      color: var(--vibe-primary);
+      box-shadow: 0 4px var(--vibe-shadow-blur) var(--vibe-shadow-color);
+    }
+
+    .screen { display: none; flex-direction: column; flex: 1; }
+    .screen.active { display: flex; }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: calc(16px * var(--vibe-font-scale));
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: calc(16px * var(--vibe-font-scale));
+      margin-bottom: 12px;
+      position: relative;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .card h3 { font-size: calc(16px * var(--vibe-font-scale)); margin-bottom: 12px; font-weight: 600; }
+    .card p { font-size: calc(13px * var(--vibe-font-scale)); line-height: 1.6; margin-bottom: 8px; }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    input, textarea, select {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--vibe-text);
+      padding: calc(10px * var(--vibe-font-scale));
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: calc(13px * var(--vibe-font-scale));
+    }
+
+    input::placeholder, textarea::placeholder { color: #999; }
+
+    button {
+      padding: calc(10px * var(--vibe-font-scale)) calc(16px * var(--vibe-font-scale));
+      background: var(--vibe-accent);
+      border: none;
+      color: var(--vibe-primary);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: calc(13px * var(--vibe-font-scale));
+      font-weight: 500;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px var(--vibe-shadow-blur) var(--vibe-shadow-color); }
+    button:active { transform: scale(0.95); }
+
+    .recipe-card, .ingredient-card, .meal-item {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .recipe-card h4, .ingredient-card h4, .meal-item h4 {
+      font-size: calc(14px * var(--vibe-font-scale));
+      margin-bottom: 6px;
+      color: var(--vibe-accent);
+    }
+
+    .recipe-card p, .ingredient-card p, .meal-item p {
+      font-size: calc(12px * var(--vibe-font-scale));
+      color: #999;
+      line-height: 1.5;
+    }
+
+    .disclaimer {
+      background: rgba(255, 100, 100, 0.1);
+      border: 1px solid rgba(255, 100, 100, 0.3);
+      border-left: 4px solid var(--vibe-accent);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(12px * var(--vibe-font-scale));
+      margin-bottom: 16px;
+    }
+
+    .premium-feature {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .premium-badge {
+      display: inline-block;
+      background: var(--vibe-accent);
+      color: var(--vibe-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 11px;
+      text-align: center;
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .calendar-day:hover { background: rgba(255,255,255,0.08); }
+    .calendar-day.selected { background: var(--vibe-accent); color: var(--vibe-primary); }
+
+    .medical-disclaimer {
+      background: rgba(255, 150, 0, 0.1);
+      border: 1px solid rgba(255, 150, 0, 0.3);
+      border-left: 4px solid var(--vibe-accent);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(11px * var(--vibe-font-scale));
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .escalation-text {
+      background: rgba(255, 100, 100, 0.08);
+      border: 1px solid rgba(255, 100, 100, 0.2);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(12px * var(--vibe-font-scale));
+      margin-top: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .navbar { padding: 12px; }
+      .content { padding: 12px; }
+      .card { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="navbar">
+      <h1>🚫 Allergies & Intolerances Coach</h1>
+      <button onclick="switchTab('settings')">⚙️</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('home')">Home</button>
+      <button class="tab-btn" onclick="switchTab('recipes')">Recipes</button>
+      <button class="tab-btn" onclick="switchTab('ingredients')">Ingredients</button>
+      <button class="tab-btn" onclick="switchTab('meals')">Meal Plan</button>
+      <button class="tab-btn" onclick="switchTab('tracker')">Tracker</button>
+      <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+    </div>
+
+    <!-- HOME TAB -->
+    <div class="screen active" id="screen-home">
+      <div class="content">
+        <div class="card">
+          <h3>Welcome! 👋</h3>
+          <p id="greeting">Hi! I'm Allergies & Intolerances Coach, your personalized nutrition guide. Let's work together to help you eat well and feel great.</p>
+        </div>
+
+        <div class="medical-disclaimer">
+          <strong>📋 Important:</strong> I'm not a doctor or replacement for professional medical advice. Always consult your healthcare provider for medical concerns, medication interactions, allergies, or diagnosis.
+        </div>
+
+        <div class="card">
+          <h3>Quick Stats</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="font-size: 20px; font-weight: 600; color: var(--vibe-accent);" id="meals-logged">0</div>
+              <div style="font-size: 12px; color: #999;">Meals Logged</div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="font-size: 20px; font-weight: 600; color: var(--vibe-accent);" id="streak">0</div>
+              <div style="font-size: 12px; color: #999;">Day Streak</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Today's Message</h3>
+          <p id="daily-message">You're taking great care of yourself by paying attention to nutrition. Keep going!</p>
+        </div>
+
+        <div class="card" id="upgrade-card">
+          <h3>✨ Premium Features</h3>
+          <p>Unlock meal planning, medical tracking, and advanced features.</p>
+          <button onclick="showPremium()">Learn More</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECIPES TAB -->
+    <div class="screen" id="screen-recipes">
+      <div class="content">
+        <div class="card">
+          <h3>Recipe Generator</h3>
+          <div class="input-group">
+            <input type="text" id="ingredient-input" placeholder="What ingredients do you have?" />
+            <textarea id="dietary-needs" placeholder="Any dietary needs? (allergies, restrictions, medical conditions)" style="height: 60px;"></textarea>
+            <button onclick="generateRecipes()">🍳 Generate Recipes with Claude API</button>
+          </div>
+        </div>
+
+        <div id="recipes-output" style="display: none;">
+          <div class="card">
+            <h3>Suggested Recipes</h3>
+            <div id="recipe-list"></div>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Video Tutorials <span class="premium-badge">PRO</span></h3>
+          <p>Premium members get access to video cooking tutorials and nutrition education.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- INGREDIENTS TAB -->
+    <div class="screen" id="screen-ingredients">
+      <div class="content">
+        <div class="card">
+          <h3>Ingredient Matcher</h3>
+          <p>Find safe recipes based on available ingredients and your dietary needs.</p>
+          <div class="input-group">
+            <input type="text" id="available-ingredients" placeholder="Enter available ingredients (comma-separated)" />
+            <button onclick="matchIngredients()">🔍 Find Safe Recipes</button>
+          </div>
+        </div>
+
+        <div id="ingredients-output" style="display: none;">
+          <div class="card">
+            <h3>Matching Recipes</h3>
+            <div id="ingredient-matches"></div>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Allergy Management <span class="premium-badge">PRO</span></h3>
+          <p>Cross-contamination prevention, label reading guides, and emergency preparedness resources.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEAL PLAN TAB -->
+    <div class="screen" id="screen-meals">
+      <div class="content">
+        <div class="card">
+          <h3>Weekly Meal Planner</h3>
+          <p>Plan your week and generate shopping lists.</p>
+          <div class="input-group">
+            <button onclick="generateMealPlan()" class="premium-feature">📅 Generate 7-Day Plan <span class="premium-badge">PRO</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Sample Planning</h3>
+          <p>Monday: Balanced breakfast, protein lunch, veggie dinner</p>
+          <p style="font-size: 12px; color: #999; margin-top: 8px;">Upgrade to Premium for personalized meal plans based on your medical needs and preferences.</p>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Shopping List <span class="premium-badge">PRO</span></h3>
+          <p>Automatic shopping list generation from your meal plan, with budget tracking.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKER TAB -->
+    <div class="screen" id="screen-tracker">
+      <div class="content">
+        <div class="card">
+          <h3>Food & Health Tracker</h3>
+          <p>Log meals, track symptoms, monitor progress.</p>
+          <div class="input-group">
+            <input type="text" placeholder="What did you eat?" />
+            <textarea placeholder="How do you feel? Any symptoms?" style="height: 60px;"></textarea>
+            <button>📝 Log Entry</button>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Medical Tracking <span class="premium-badge">PRO</span></h3>
+          <p>Blood sugar logs, weight tracking, symptom journal, mood↔eating correlation analysis.</p>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Advanced Analytics <span class="premium-badge">PRO</span></h3>
+          <p>Export data, identify patterns, track nutrition metrics over time.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="screen" id="screen-settings">
+      <div class="content">
+        <div class="card">
+          <h3>Claude API Key</h3>
+          <p>Add your own Claude API key to enable recipe generation with full context.</p>
+          <div class="input-group">
+            <input type="password" id="api-key" placeholder="sk-ant-..." />
+            <button onclick="saveSettings()">💾 Save API Key</button>
+          </div>
+          <p style="font-size: 12px; color: #999; margin-top: 8px;">Get your API key at https://console.anthropic.com</p>
+        </div>
+
+        <div class="card">
+          <h3>Your Medical Profile</h3>
+          <div class="input-group">
+            <input type="text" id="medical-conditions" placeholder="Medical conditions (diabetes, allergies, etc.)" />
+            <input type="text" id="dietary-restrictions" placeholder="Dietary restrictions" />
+            <input type="text" id="family-members" placeholder="Family members to coordinate nutrition" />
+            <button onclick="saveSettings()">💾 Save Profile</button>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Premium Subscription <span class="premium-badge">PRO</span></h3>
+          <p>Lifetime access to premium features: meal planning, medical tracking, advanced recipes, video tutorials.</p>
+          <button onclick="showPremium()">Upgrade to Premium</button>
+        </div>
+
+        <div class="card">
+          <h3>About Allergies & Intolerances Coach</h3>
+          <p><strong>Specialization:</strong> Managing multiple allergies, safe food selection, label reading, emergency preparedness</p>
+          <p><strong>Age Group:</strong> all ages</p>
+          <p style="font-size: 12px; color: #999; margin-top: 12px;">Offline-first PWA • Works without internet • Claude API optional</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Service Worker for Offline -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    // Buddy personality data (injected from generator)
+    const BUDDY_DATA = {"id":15,"name":"Allergies & Intolerances Coach","ageGroup":"all ages","category":"disability-adaptive","specialization":"Managing multiple allergies, safe food selection, label reading, emergency preparedness","systemPrompt":"You are a knowledgeable, safety-focused nutrition guide for individuals with food allergies and intolerances. Your focus is ensuring safe food selection, understanding labels, managing cross-contamination, emergency preparedness, and maintaining adequate nutrition despite restrictions.\n\nALLERGIES vs INTOLERANCES:\nFood allergy: Immune system reaction; can be severe, life-threatening; tiny amounts dangerous\nFood intolerance: Digestion-related reaction; uncomfortable but not life-threatening; can tolerate small amounts sometimes\n\nExamples:\n- Peanut allergy: Immediate, severe reaction; epinephrine auto-injector needed\n- Lactose intolerance: Digestion difficulty; lactose-free products work\n- Shellfish allergy: Can be severe; requires complete avoidance\n- IBS, FODMAP sensitivity: Not allergies; management through trigger avoidance\n\nSEVERITY DETERMINES MANAGEMENT:\n- Life-threatening allergy (anaphylaxis): Epinephrine auto-injector, medical alert, complete avoidance\n- Severe non-anaphylactic allergy: Strict avoidance, careful reading, medical monitoring\n- Mild intolerance: May tolerate small amounts; trial-and-error with medical guidance\n\nLABEL READING FOR ALLERGIES:\nAllergen information locations:\n- \"Contains\" statements (often at bottom; boldface)\n- Ingredient list: Read carefully; names can be unfamiliar (e.g., \"soy lecithin\")\n- \"May contain\" statements: If cross-contamination risk is significant for your allergy, avoid\n- Manufacturing facility: May or may not be relevant depending on allergy severity\n\nCommon hidden allergens:\n- Peanuts: In Asian sauces, desserts, granolas\n- Tree nuts: In pestos, salads, prepared foods\n- Milk: In non-dairy products, breads, prepared foods\n- Soy: In many products as lecithin, oil\n- Wheat: In soy sauce, gravies, processed foods\n- Shellfish: In some Asian fish sauces\n- Fish: In Worcestershire, sauces, salads\n- Sesame: Increasingly common; read labels carefully\n\nCROSS-CONTAMINATION PREVENTION:\n- Kitchen: Separate cutting boards, utensils for allergen foods\n- Airborne: Some allergens (peanut, fish) can become airborne; careful preparation needed\n- Shared utensils: Don\'t dip same spoon in multiple foods\n- Microwave: Don\'t reheat allergen foods in same microwave if particles can scatter\n- Gloves/handwashing: Essential between foods\n\nDINING OUT WITH ALLERGIES:\n- Call ahead: Tell restaurant about allergy; explain severity\n- Ask detailed questions: How is food prepared? Shared equipment?\n- Inform server: Speak directly; explain it\'s an allergy, not preference\n- Bring card: Lists allergen(s); shows server/chef quickly\n- Choose simpler meals: Less processing, fewer ingredients = less risk\n- Trusted restaurants: Build relationships with places that understand severity\n- Bring backup food: If uncertain, bring safe alternative\n\nRESTAURANT RED FLAGS:\n- Staff dismissive of allergy concerns\n- Vague answers about ingredients/preparation\n- No access to allergen information\n- These = go elsewhere\n\nNUTRITION WITH MULTIPLE ALLERGIES:\nManage nutrition despite restrictions:\n- Work with registered dietitian: Especially important with multiple allergies\n- Ensure variety within safe foods: Multiple safe proteins, vegetables, grains\n- Supplementation: May be needed if avoiding multiple food groups\n- Meal planning: Plan around safe foods; build meals intentionally\n\nCommon allergen combinations & solutions:\n- Peanut + tree nuts allergy: Sunflower seed butter, tahini alternatives\n- Milk + soy allergy: Fortified coconut, oat, or rice milk\n- Wheat + gluten: Gluten-free certified products, rice, potatoes, corn\n- Multiple allergies: Intentional meal planning; whole food focus often easier than processed\n\nSCHOOL/WORK EATING:\n- Communicate clearly: School, coworkers understand allergy severity\n- 504 Plan (US): Legal protection; ensures access to safe foods\n- Pack lunch: Often safest option with allergies\n- Emergency snacks: Keep at school/work\n- Peer education: Age-appropriate teaching about allergies (not sharing food, etc.)\n\nEPINEPHRINE AUTO-INJECTORS (If life-threatening allergy):\n- Always carry (two pens if possible)\n- Train family/friends/caregivers how to use\n- Know signs of anaphylaxis (swelling, breathing difficulty, loss of consciousness, rapid heartbeat)\n- Emergency action plan: In writing, shared with school/workplace/family\n- Call 911 after using: Even if symptoms improve\n\nACCIDENTAL EXPOSURE:\n- If mild reaction: Monitor symptoms; follow doctor\'s guidance\n- If severe reaction/anaphylaxis: Use epinephrine auto-injector immediately, call 911\n- Report to doctor: Even if mild; may indicate need to carry epinephrine\n- Emotional impact: Can be significant; support important\n\nPSYCHOLOGICAL IMPACT:\n- Anxiety about food: Real and valid with allergies\n- Social eating: Challenging; support and accommodation important\n- Parental anxiety (if child): Valid; management and education help\n- Support: Friends, family, support groups help normalize\n\nEATING DISORDER RISK:\n- Unnecessary food restriction: Can develop with allergy anxiety\n- True allergy: Mandatory; no choice about restriction\n- Unnecessary restriction: Work with doctor/therapist to address\n- Balance: Manage real allergies; don\'t extend restrictions beyond necessary\n\nNATURAL VS MANUFACTURED FOODS:\n- Cross-contamination: Both natural (farmer\'s market) and manufactured foods can have contamination\n- Different risk profiles: Some prefer fresh/whole foods; others prefer controlled manufactured foods\n- Personal choice: What feels safe to you\n\nMEDICATION INTERACTIONS:\n- Some medications contain allergen(s)\n- Important: Tell doctor about allergies when prescribing\n- Inactive ingredients: Often listed; read carefully\n\nTRAVEL WITH ALLERGIES:\n- Research: Know how to say allergen in local language\n- Pack: Bring safe snacks\n- Accommodations: Hotels often provide allergy menus; call ahead\n- Medications: Carry epinephrine auto-injectors, antihistamines\n- Insurance: Medical evacuation coverage recommended\n\nMINDSET:\nFood allergies require genuine avoidance; this is medical necessity, not preference or limitation. Safety first; nutrition built around safe foods. Community, adaptation, and planning make living with allergies manageable. You deserve to eat safely and fully.\n\nIMPORTANT: Not a doctor. For allergy testing, diagnosis, emergency planning, or medication, consult your healthcare provider and allergist. For anaphylaxis, call 911 immediately.","voice_style":"safety-focused, reassuring, practical, empowering","affirmations":["Your allergies are real and worth taking seriously.","Safe eating is absolutely achievable with planning.","You deserve food that\'s both safe and enjoyable.","Your vigilance protects your health.","Family and friends can learn to support your safety.","Accidental exposures happen; you know what to do.","You\'re managing allergies responsibly.","Living with allergies is manageable with knowledge and support."],"greeting_examples":["Hi! Let\'s talk about safe, enjoyable eating with allergies.","I\'m here to help you manage multiple food restrictions.","Ready to navigate nutrition despite food allergies?","Let\'s build a nutrition plan around your safe foods.","Welcome. Let\'s discuss safe food selection and cross-contamination prevention."],"medical_disclaimer":"I\'m not a doctor. For allergy testing, diagnosis, emergency preparedness, or medication, consult your healthcare provider and allergist. For anaphylaxis, call 911 immediately.","escalation_triggers":["allergic reaction","exposure incident","anaphylaxis signs","accidental ingestion","new allergic response","emergency"]};
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(`screen-${tabName}`).classList.add('active');
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function generateRecipes() {
+      const ingredients = document.getElementById('ingredient-input').value;
+      const dietaryNeeds = document.getElementById('dietary-needs').value;
+
+      if (!ingredients.trim()) {
+        alert('Please enter some ingredients');
+        return;
+      }
+
+      // Placeholder: In production, call Claude API
+      const recipes = [
+        `Recipe 1: Based on ${ingredients}. This recipe is safe for: ${dietaryNeeds || 'balanced nutrition'}`,
+        `Recipe 2: Alternative preparation method with ${ingredients}`,
+        `Recipe 3: Creative variation respecting: ${dietaryNeeds || 'all preferences'}`
+      ];
+
+      const recipeList = document.getElementById('recipe-list');
+      recipeList.innerHTML = recipes.map((r, i) => `<div class="recipe-card"><h4>Recipe ${i+1}</h4><p>${r}</p></div>`).join('');
+      document.getElementById('recipes-output').style.display = 'block';
+    }
+
+    function matchIngredients() {
+      const ingredients = document.getElementById('available-ingredients').value;
+      if (!ingredients.trim()) {
+        alert('Please enter some ingredients');
+        return;
+      }
+
+      const matches = [
+        `Recipe matching "${ingredients}": Prepare dish A`,
+        `Alternative with "${ingredients}": Prepare dish B`,
+        `Quick meal with "${ingredients}": Prepare dish C`
+      ];
+
+      const output = document.getElementById('ingredient-matches');
+      output.innerHTML = matches.map((m, i) => `<div class="ingredient-card"><h4>Option ${i+1}</h4><p>${m}</p></div>`).join('');
+      document.getElementById('ingredients-output').style.display = 'block';
+    }
+
+    function generateMealPlan() {
+      alert('Premium feature: Upgrade to unlock personalized meal planning');
+    }
+
+    function saveSettings() {
+      const apiKey = document.getElementById('api-key').value;
+      localStorage.setItem('apiKey', apiKey);
+      localStorage.setItem('medicalProfile', JSON.stringify({
+        conditions: document.getElementById('medical-conditions').value,
+        restrictions: document.getElementById('dietary-restrictions').value,
+        familyMembers: document.getElementById('family-members').value
+      }));
+      alert('Settings saved! 💾');
+    }
+
+    function showPremium() {
+      alert('Premium features coming soon! Support this project and get early access.');
+    }
+
+    // Initialize
+    document.getElementById('greeting').textContent = `Hi! I'm ${BUDDY_DATA.name}. ${BUDDY_DATA.specialization}. Let's work together to help you eat well.`;
+    document.getElementById('daily-message').textContent = BUDDY_DATA.affirmations[Math.floor(Math.random() * BUDDY_DATA.affirmations.length)];
+  </script>
+</body>
+</html>

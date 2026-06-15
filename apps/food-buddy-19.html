@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gastric Sleeve Recovery Specialist — Food Nutrition Buddy</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="Gastric Sleeve Recovery Specialist — Your personalized food nutrition guide. Offline-first PWA with recipes, meal planning, medical tracking, and Claude API integration.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gastric Sleeve Recovery Specialist">
+  <style>
+    :root {
+      --vibe-primary: #E8F5E9;
+    --vibe-secondary: #C8E6C9;
+    --vibe-accent: #388E3C;
+    --vibe-text: #1B5E20;
+    --vibe-animation-duration: 800ms;
+    --vibe-shadow-blur: 8px;
+    --vibe-shadow-color: rgba(0, 0, 0, 0.15);
+    --vibe-font-scale: 1;
+      --shadow-float: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; width: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--vibe-primary) 0%, var(--vibe-secondary) 100%);
+      background-attachment: fixed;
+      color: var(--vibe-text);
+      overflow: hidden;
+      font-size: calc(14px * var(--vibe-font-scale));
+      line-height: 1.5;
+    }
+
+    #app { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: calc(12px * var(--vibe-font-scale));
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      position: relative;
+      z-index: 10;
+      min-height: 56px;
+    }
+
+    .navbar h1 {
+      font-size: calc(18px * var(--vibe-font-scale));
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar button {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--vibe-text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .navbar button:hover { background: rgba(255,255,255,0.15); }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: calc(8px * var(--vibe-font-scale));
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+      position: relative;
+      z-index: 9;
+      min-height: 44px;
+    }
+
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: calc(8px * var(--vibe-font-scale)) calc(12px * var(--vibe-font-scale));
+      background: transparent;
+      border: 1px solid transparent;
+      color: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: calc(13px * var(--vibe-font-scale));
+      transition: all var(--vibe-animation-duration);
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--vibe-accent);
+      border: 1px solid var(--vibe-accent);
+      color: var(--vibe-primary);
+      box-shadow: 0 4px var(--vibe-shadow-blur) var(--vibe-shadow-color);
+    }
+
+    .screen { display: none; flex-direction: column; flex: 1; }
+    .screen.active { display: flex; }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: calc(16px * var(--vibe-font-scale));
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: calc(16px * var(--vibe-font-scale));
+      margin-bottom: 12px;
+      position: relative;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .card h3 { font-size: calc(16px * var(--vibe-font-scale)); margin-bottom: 12px; font-weight: 600; }
+    .card p { font-size: calc(13px * var(--vibe-font-scale)); line-height: 1.6; margin-bottom: 8px; }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    input, textarea, select {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--vibe-text);
+      padding: calc(10px * var(--vibe-font-scale));
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: calc(13px * var(--vibe-font-scale));
+    }
+
+    input::placeholder, textarea::placeholder { color: #999; }
+
+    button {
+      padding: calc(10px * var(--vibe-font-scale)) calc(16px * var(--vibe-font-scale));
+      background: var(--vibe-accent);
+      border: none;
+      color: var(--vibe-primary);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: calc(13px * var(--vibe-font-scale));
+      font-weight: 500;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px var(--vibe-shadow-blur) var(--vibe-shadow-color); }
+    button:active { transform: scale(0.95); }
+
+    .recipe-card, .ingredient-card, .meal-item {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .recipe-card h4, .ingredient-card h4, .meal-item h4 {
+      font-size: calc(14px * var(--vibe-font-scale));
+      margin-bottom: 6px;
+      color: var(--vibe-accent);
+    }
+
+    .recipe-card p, .ingredient-card p, .meal-item p {
+      font-size: calc(12px * var(--vibe-font-scale));
+      color: #999;
+      line-height: 1.5;
+    }
+
+    .disclaimer {
+      background: rgba(255, 100, 100, 0.1);
+      border: 1px solid rgba(255, 100, 100, 0.3);
+      border-left: 4px solid var(--vibe-accent);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(12px * var(--vibe-font-scale));
+      margin-bottom: 16px;
+    }
+
+    .premium-feature {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .premium-badge {
+      display: inline-block;
+      background: var(--vibe-accent);
+      color: var(--vibe-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 11px;
+      text-align: center;
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: all var(--vibe-animation-duration);
+    }
+
+    .calendar-day:hover { background: rgba(255,255,255,0.08); }
+    .calendar-day.selected { background: var(--vibe-accent); color: var(--vibe-primary); }
+
+    .medical-disclaimer {
+      background: rgba(255, 150, 0, 0.1);
+      border: 1px solid rgba(255, 150, 0, 0.3);
+      border-left: 4px solid var(--vibe-accent);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(11px * var(--vibe-font-scale));
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .escalation-text {
+      background: rgba(255, 100, 100, 0.08);
+      border: 1px solid rgba(255, 100, 100, 0.2);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: calc(12px * var(--vibe-font-scale));
+      margin-top: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .navbar { padding: 12px; }
+      .content { padding: 12px; }
+      .card { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="navbar">
+      <h1>⚖️ Gastric Sleeve Recovery Specialist</h1>
+      <button onclick="switchTab('settings')">⚙️</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('home')">Home</button>
+      <button class="tab-btn" onclick="switchTab('recipes')">Recipes</button>
+      <button class="tab-btn" onclick="switchTab('ingredients')">Ingredients</button>
+      <button class="tab-btn" onclick="switchTab('meals')">Meal Plan</button>
+      <button class="tab-btn" onclick="switchTab('tracker')">Tracker</button>
+      <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+    </div>
+
+    <!-- HOME TAB -->
+    <div class="screen active" id="screen-home">
+      <div class="content">
+        <div class="card">
+          <h3>Welcome! 👋</h3>
+          <p id="greeting">Hi! I'm Gastric Sleeve Recovery Specialist, your personalized nutrition guide. Let's work together to help you eat well and feel great.</p>
+        </div>
+
+        <div class="medical-disclaimer">
+          <strong>📋 Important:</strong> I'm not a doctor or replacement for professional medical advice. Always consult your healthcare provider for medical concerns, medication interactions, allergies, or diagnosis.
+        </div>
+
+        <div class="card">
+          <h3>Quick Stats</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="font-size: 20px; font-weight: 600; color: var(--vibe-accent);" id="meals-logged">0</div>
+              <div style="font-size: 12px; color: #999;">Meals Logged</div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="font-size: 20px; font-weight: 600; color: var(--vibe-accent);" id="streak">0</div>
+              <div style="font-size: 12px; color: #999;">Day Streak</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Today's Message</h3>
+          <p id="daily-message">You're taking great care of yourself by paying attention to nutrition. Keep going!</p>
+        </div>
+
+        <div class="card" id="upgrade-card">
+          <h3>✨ Premium Features</h3>
+          <p>Unlock meal planning, medical tracking, and advanced features.</p>
+          <button onclick="showPremium()">Learn More</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECIPES TAB -->
+    <div class="screen" id="screen-recipes">
+      <div class="content">
+        <div class="card">
+          <h3>Recipe Generator</h3>
+          <div class="input-group">
+            <input type="text" id="ingredient-input" placeholder="What ingredients do you have?" />
+            <textarea id="dietary-needs" placeholder="Any dietary needs? (allergies, restrictions, medical conditions)" style="height: 60px;"></textarea>
+            <button onclick="generateRecipes()">🍳 Generate Recipes with Claude API</button>
+          </div>
+        </div>
+
+        <div id="recipes-output" style="display: none;">
+          <div class="card">
+            <h3>Suggested Recipes</h3>
+            <div id="recipe-list"></div>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Video Tutorials <span class="premium-badge">PRO</span></h3>
+          <p>Premium members get access to video cooking tutorials and nutrition education.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- INGREDIENTS TAB -->
+    <div class="screen" id="screen-ingredients">
+      <div class="content">
+        <div class="card">
+          <h3>Ingredient Matcher</h3>
+          <p>Find safe recipes based on available ingredients and your dietary needs.</p>
+          <div class="input-group">
+            <input type="text" id="available-ingredients" placeholder="Enter available ingredients (comma-separated)" />
+            <button onclick="matchIngredients()">🔍 Find Safe Recipes</button>
+          </div>
+        </div>
+
+        <div id="ingredients-output" style="display: none;">
+          <div class="card">
+            <h3>Matching Recipes</h3>
+            <div id="ingredient-matches"></div>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Allergy Management <span class="premium-badge">PRO</span></h3>
+          <p>Cross-contamination prevention, label reading guides, and emergency preparedness resources.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEAL PLAN TAB -->
+    <div class="screen" id="screen-meals">
+      <div class="content">
+        <div class="card">
+          <h3>Weekly Meal Planner</h3>
+          <p>Plan your week and generate shopping lists.</p>
+          <div class="input-group">
+            <button onclick="generateMealPlan()" class="premium-feature">📅 Generate 7-Day Plan <span class="premium-badge">PRO</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Sample Planning</h3>
+          <p>Monday: Balanced breakfast, protein lunch, veggie dinner</p>
+          <p style="font-size: 12px; color: #999; margin-top: 8px;">Upgrade to Premium for personalized meal plans based on your medical needs and preferences.</p>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Shopping List <span class="premium-badge">PRO</span></h3>
+          <p>Automatic shopping list generation from your meal plan, with budget tracking.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKER TAB -->
+    <div class="screen" id="screen-tracker">
+      <div class="content">
+        <div class="card">
+          <h3>Food & Health Tracker</h3>
+          <p>Log meals, track symptoms, monitor progress.</p>
+          <div class="input-group">
+            <input type="text" placeholder="What did you eat?" />
+            <textarea placeholder="How do you feel? Any symptoms?" style="height: 60px;"></textarea>
+            <button>📝 Log Entry</button>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Medical Tracking <span class="premium-badge">PRO</span></h3>
+          <p>Blood sugar logs, weight tracking, symptom journal, mood↔eating correlation analysis.</p>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Advanced Analytics <span class="premium-badge">PRO</span></h3>
+          <p>Export data, identify patterns, track nutrition metrics over time.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="screen" id="screen-settings">
+      <div class="content">
+        <div class="card">
+          <h3>Claude API Key</h3>
+          <p>Add your own Claude API key to enable recipe generation with full context.</p>
+          <div class="input-group">
+            <input type="password" id="api-key" placeholder="sk-ant-..." />
+            <button onclick="saveSettings()">💾 Save API Key</button>
+          </div>
+          <p style="font-size: 12px; color: #999; margin-top: 8px;">Get your API key at https://console.anthropic.com</p>
+        </div>
+
+        <div class="card">
+          <h3>Your Medical Profile</h3>
+          <div class="input-group">
+            <input type="text" id="medical-conditions" placeholder="Medical conditions (diabetes, allergies, etc.)" />
+            <input type="text" id="dietary-restrictions" placeholder="Dietary restrictions" />
+            <input type="text" id="family-members" placeholder="Family members to coordinate nutrition" />
+            <button onclick="saveSettings()">💾 Save Profile</button>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Premium Subscription <span class="premium-badge">PRO</span></h3>
+          <p>Lifetime access to premium features: meal planning, medical tracking, advanced recipes, video tutorials.</p>
+          <button onclick="showPremium()">Upgrade to Premium</button>
+        </div>
+
+        <div class="card">
+          <h3>About Gastric Sleeve Recovery Specialist</h3>
+          <p><strong>Specialization:</strong> Post-sleeve surgery nutrition, portion adaptation, nutrient supplementation, lifestyle transition</p>
+          <p><strong>Age Group:</strong> 18-70</p>
+          <p style="font-size: 12px; color: #999; margin-top: 12px;">Offline-first PWA • Works without internet • Claude API optional</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Service Worker for Offline -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    // Buddy personality data (injected from generator)
+    const BUDDY_DATA = {"id":19,"name":"Gastric Sleeve Recovery Specialist","ageGroup":"18-70","category":"post-surgical","specialization":"Post-sleeve surgery nutrition, portion adaptation, nutrient supplementation, lifestyle transition","systemPrompt":"You are a compassionate, specialized nutrition guide for individuals post-gastric sleeve surgery. Your focus is supporting safe eating progression, ensuring adequate nutrition despite reduced capacity, managing common post-surgical challenges, and supporting the profound lifestyle transition.\n\nGASTRIC SLEEVE BASICS:\nVertical gastrectomy; approximately 75-85% of stomach removed; small remaining \"sleeve\" (~4-5 oz capacity initially).\n\nMechanism of weight loss:\n- Reduced capacity: Eat much smaller portions\n- Reduced hormone ghrelin: Decreased hunger signals\n- Slow emptying: Prolonged satiety\n- Behavioral changes: Eating patterns shift\n\nNot magic; behavior change still required. Weight loss 50-70% excess body weight typical over 18-24 months.\n\nPHASES OF RECOVERY (4 weeks - 2+ years):\n\nPHASE 1: Immediately post-surgery (Days 1-3)\n- NPO (nothing by mouth) initially; then clear liquids only\n- Return home: Continue clear liquids\n- Pain, nausea common; resolve with time\n\nPHASE 2: Weeks 1-4 (Full Liquid Phase)\n- Thin, pourable liquids\n- Examples: Broth, diluted juice, protein shakes, sugar-free popsicles, fat-free milk\n- Amount: Sips, frequent; possibly only 1-2 oz per feeding initially\n- Goal: Hydration, minimal nutrition\n- Protein shake: Help meet protein needs during restrictive phase\n- No carbonation (can cause gas, discomfort)\n- Temperature: Room temp or warm preferred; cold may cause cramping\n\nPHASE 3: Weeks 4-8 (Puree/Soft Phase)\n- Introduce very soft, texture-modified foods\n- Examples: Yogurt, applesauce, pureed vegetables, ground meat (well-cooked, moist), eggs, soft fish, beans (pureed), cottage cheese\n- Size: Small \"bites\" (1-2 tsp or smaller)\n- Pace: Slow eating; chew thoroughly, even if pureed\n- Amount: 2-4 oz per meal\n- Protein: Essential; many surgeons recommend protein shake or supplement\n- No: High-fat, high-sugar, sticky foods\n\nPHASE 4: Weeks 8+ (Soft Foods/Regular Diet Progression)\n- Gradually introduce soft, solid foods\n- Examples: Soft-cooked vegetables, fish, chicken, ground meats, soft fruits, rice, pasta\n- Progress: Only advance if tolerating previous phase well; no rushing\n- Chewing: Crucial; small bites, thorough chewing (30+ times) essential\n- Amount: 3-6 oz per meal (varies by individual, time post-op)\n- Protein: Continue prioritizing; 40-60g/day\n- No: Bread, pasta (some find these stick; individual tolerance varies)\n\nNUTRITION PRIORITIES POST-SLEEVE:\n- Protein: 40-60g/day (prevents muscle loss, supports healing, sustains satiety)\n- Fluids: 64+ oz/day (dehydration risk high with small capacity)\n- Vitamins/minerals: Supplementation often needed\n  - Multivitamin: Daily\n  - Vitamin D: 2000-4000 IU daily\n  - Calcium: 1200-1500mg daily (citrate form absorbed better post-surgery)\n  - Iron: Especially women; may need supplementation\n  - B12: May need supplement or injections\n  - Comprehensive bloodwork: Determine supplementation needs\n\nCOMMON POST-SURGICAL CHALLENGES:\n\nNausea:\n- Very common weeks 1-6\n- Slow eating, chewing helps\n- Sipping liquids helps\n- Ginger, peppermint tea help some\n- Medications available; discuss with surgeon\n- Usually resolves; call if persists >4 weeks\n\nVomiting:\n- Not normal; indicates eating too fast, too much, or food not tolerated\n- Stop, sip fluids, retry slowly\n- Call surgeon if frequent\n\nFood intolerance/aversion:\n- Some foods cause pain, discomfort, nausea post-op\n- Individual variation; try small amounts cautiously\n- Many aversions temporary; can reintroduce later\n- Don\'t force; listen to body\n\nDumping syndrome:\n- Rare post-sleeve (more common post-bypass)\n- Symptoms: Rapid heart rate, dizziness, shakiness, sweating, nausea, diarrhea\n- Caused by: Rapid stomach emptying, high sugar intake\n- Prevention: Avoid sugar, high-fat foods; eat protein + vegetables\n\nConstipation:\n- Common; reduced food intake + dehydration\n- Prevention: Adequate fluids (64+ oz), fiber-rich foods (vegetables, fruit, beans)\n- Stool softeners: Often recommended\n- Movement: Gentle activity helps\n\nProtein deficiency:\n- Risk if inadequate intake post-op\n- Symptoms: Hair loss, weakness, poor healing, muscle loss\n- Prevention: Consistent protein intake (40-60g/day)\n- Protein sources post-sleeve: Meat, fish, eggs, dairy, legumes, protein supplements\n- Protein powder: Convenient; beneficial in early post-op phase when eating limited\n\nREFEEDING SYNDROME:\nIf severely obese pre-surgery (BMI >50):\n- Risk during rapid weight loss, aggressive eating increase\n- Symptoms: Weakness, edema, breathing difficulty\n- Prevention: Gradual refeeding, medical monitoring\n- Work with bariatric surgeon/dietitian; they manage this\n\nPORTION SIZES:\n- Initial: 1-2 oz per meal\n- Weeks: Gradual increase to 3-6 oz\n- Plateau: Most stabilize at 1.5-2 cups food daily (vs 2-3 cups pre-surgery)\n- Individual variation: Some tolerate more, others less\n- Never force; stop when satisfied\n\nEATING BEHAVIORS CHANGE:\n- Eating speed: Must slow dramatically; rushing causes pain\n- Meal timing: Cannot eat on schedule (need hunger cue)\n- Eating with others: Possible but takes longer; be patient with yourself\n- Emotional eating: Surgery controls physical capacity, not emotional eating; therapy helps if struggle\n\nALCOHOL:\n- Absorption faster on empty stomach (smaller stomach)\n- Calorie-dense; provides no nutrition\n- May cause dumping symptoms\n- Limit or avoid; discuss with surgeon\n\nEXERCISE & WEIGHT LOSS:\n- Walking: Start immediately post-op (with clearance)\n- Gradual progression: Intensity increases over time\n- Resistance training: After healing complete (surgeon approval needed)\n- Exercise supports metabolism, maintains muscle during weight loss\n\nWEIGHT LOSS PLATEAU:\nCommon at months 12-18 post-op:\n- Weight loss slows naturally (hormone adjustment, metabolic adaptation)\n- Not failure; normal physiology\n- Nutrition optimized: Adequate protein, fluids, movement help\n- Portion creep: Unconsciously increasing intake; track portions\n- High-calorie foods: Even small amounts add up\n- May require food adjustments, movement increase\n\nEMOTIONAL ASPECTS OF WEIGHT LOSS:\n- Body changes profound; relationship with body shifts\n- Identity change: \"Who am I without the weight?\"\n- Grief: Lose familiar self, food as coping\n- Mental health impact: Improved mood but also adjustment challenges\n- Therapy: Very helpful for processing changes\n- Community: Support groups normalize experience\n\nNUTRITIONAL DEFICIENCIES POST-SLEEVE:\nCommon deficiencies (esp if inadequate supplementation):\n- Iron: Anemia, fatigue, hair loss\n- B12: Fatigue, neuropathy, cognitive issues\n- Vitamin D: Bone loss, mood issues\n- Calcium: Bone loss\n- Protein: Hair loss, weakness, muscle loss\n\nPrevention:\n- Consistent supplementation (per surgeon\'s protocol)\n- Regular bloodwork: Check levels, adjust supplementation\n- Adequate protein intake\n\nRELATIONSHIP WITH FOOD:\nPost-op adjustment:\n- Eating is functional, not recreational (initially)\n- Small portions required (can\'t eat like before; this is point of surgery)\n- Food behaviors change: Slower, mindful eating become default\n- Emotional eating: Surgery controls physical capacity but not emotional drives; therapy helps\n\nLONG-TERM OUTLOOK:\n- Most maintain 50-70% excess weight loss long-term\n- Some weight regain common (up to 10-20% of lost weight)\n- Refraining from high-calorie foods, regular exercise help maintain loss\n- Nutrition management lifelong: Not a temporary diet; permanent lifestyle\n- Quality of life: Most report significant improvement\n\nSUPPORT & COMMUNITY:\n- Support groups: Bariatric surgery support (online, in-person)\n- Therapist: Especially if history of eating disorders or emotional eating\n- Family: Understanding and support important\n- Surgeon, dietitian, team: Regular follow-up (at least first year)\n\nMINDSET:\nBariatric surgery is tool, not cure. Behavior change is primary driver of success. Nutrition is lifelong commitment. Listen to your new body\'s signals. The journey is profound; patience and self-compassion essential. Success looks like: Adequate nutrition, sustained weight loss, improved health, quality of life.\n\nIMPORTANT: Not a doctor. For post-surgical complications, nutrient deficiencies, vomiting, pain, or medical concerns, consult bariatric surgeon. Work with registered dietitian experienced in bariatric surgery. Regular medical follow-up essential first year and ongoing.","voice_style":"compassionate, supportive, practical, encouraging","affirmations":["Your surgery was a brave decision — you\'re managing it well.","Small bites, slow eating are now your superpower.","Adequate protein supports your healing and success.","Your portion sizes are appropriate — honor them.","Weight loss is a marathon, not sprint — patience pays off.","Your body\'s signals are important — listen to them.","This profound change is manageable with support.","You\'re building a new, healthier relationship with food."],"greeting_examples":["Hi! I\'m here to support your post-gastric sleeve recovery.","Let\'s talk about nutrition progression and phase management.","Ready to navigate post-surgery nutrition challenges?","I\'m here to help you ensure adequate nutrition post-op.","Welcome. Let\'s discuss your bariatric surgery recovery journey."],"medical_disclaimer":"I\'m not a doctor. For post-surgical complications, nutrient deficiencies, concerns about eating or weight loss, vomiting, or pain, consult your bariatric surgeon. Work with registered dietitian experienced in bariatric surgery. Regular medical follow-up essential.","escalation_triggers":["vomiting","severe pain","fever","difficulty swallowing","rapid weight loss","signs of nutrient deficiency","inability to keep fluids down"]};
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(`screen-${tabName}`).classList.add('active');
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function generateRecipes() {
+      const ingredients = document.getElementById('ingredient-input').value;
+      const dietaryNeeds = document.getElementById('dietary-needs').value;
+
+      if (!ingredients.trim()) {
+        alert('Please enter some ingredients');
+        return;
+      }
+
+      // Placeholder: In production, call Claude API
+      const recipes = [
+        `Recipe 1: Based on ${ingredients}. This recipe is safe for: ${dietaryNeeds || 'balanced nutrition'}`,
+        `Recipe 2: Alternative preparation method with ${ingredients}`,
+        `Recipe 3: Creative variation respecting: ${dietaryNeeds || 'all preferences'}`
+      ];
+
+      const recipeList = document.getElementById('recipe-list');
+      recipeList.innerHTML = recipes.map((r, i) => `<div class="recipe-card"><h4>Recipe ${i+1}</h4><p>${r}</p></div>`).join('');
+      document.getElementById('recipes-output').style.display = 'block';
+    }
+
+    function matchIngredients() {
+      const ingredients = document.getElementById('available-ingredients').value;
+      if (!ingredients.trim()) {
+        alert('Please enter some ingredients');
+        return;
+      }
+
+      const matches = [
+        `Recipe matching "${ingredients}": Prepare dish A`,
+        `Alternative with "${ingredients}": Prepare dish B`,
+        `Quick meal with "${ingredients}": Prepare dish C`
+      ];
+
+      const output = document.getElementById('ingredient-matches');
+      output.innerHTML = matches.map((m, i) => `<div class="ingredient-card"><h4>Option ${i+1}</h4><p>${m}</p></div>`).join('');
+      document.getElementById('ingredients-output').style.display = 'block';
+    }
+
+    function generateMealPlan() {
+      alert('Premium feature: Upgrade to unlock personalized meal planning');
+    }
+
+    function saveSettings() {
+      const apiKey = document.getElementById('api-key').value;
+      localStorage.setItem('apiKey', apiKey);
+      localStorage.setItem('medicalProfile', JSON.stringify({
+        conditions: document.getElementById('medical-conditions').value,
+        restrictions: document.getElementById('dietary-restrictions').value,
+        familyMembers: document.getElementById('family-members').value
+      }));
+      alert('Settings saved! 💾');
+    }
+
+    function showPremium() {
+      alert('Premium features coming soon! Support this project and get early access.');
+    }
+
+    // Initialize
+    document.getElementById('greeting').textContent = `Hi! I'm ${BUDDY_DATA.name}. ${BUDDY_DATA.specialization}. Let's work together to help you eat well.`;
+    document.getElementById('daily-message').textContent = BUDDY_DATA.affirmations[Math.floor(Math.random() * BUDDY_DATA.affirmations.length)];
+  </script>
+</body>
+</html>
