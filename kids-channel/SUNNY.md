@@ -61,13 +61,16 @@ After each successful episode, the top entry is removed and the queue advances a
 All images now generate in **professional watercolour children's book style** (Beatrix Potter / Jill Barklem aesthetic):
 
 1. **Higgsfield Soul** — AI watercolour illustrations with professional art direction (needs `HIGGSFIELD_API_KEY`)
-2. **Replicate FLUX Dev** — Professional watercolour-style FLUX Dev (needs `REPLICATE_API_TOKEN`)
-3. **FAL.ai FLUX Schnell** — Professional watercolour via FLUX Schnell (~$0.003/image, needs `FAL_KEY`)
-4. **Pollinations FLUX** — Free professional watercolour AI images (may be rate-limited in CI)
-5. **Pexels / Pixabay stock** — Royalty-free nature photos (needs free API keys)
-6. **PIL illustration** — Fallback procedural art (always works, no external calls)
+2. **Replicate FLUX Kontext + character reference** — every scene is painted from the canonical Sonny reference image (`kids-channel/character/sonny-ref.jpg`), so the character is *identical* in every scene and every episode (needs `REPLICATE_API_TOKEN`)
+3. **Replicate FLUX Dev** — fresh-roll watercolour FLUX Dev (character may drift between scenes)
+4. **FAL.ai FLUX Schnell** — Professional watercolour via FLUX Schnell (~$0.003/image, needs `FAL_KEY`)
+5. **Pollinations FLUX** — Free professional watercolour AI images (may be rate-limited in CI)
+6. **Pexels / Pixabay stock** — Royalty-free nature photos (needs free API keys)
+7. **PIL illustration** — Fallback procedural art (always works, no external calls)
 
-**Character consistency:** Sonny the quokka has an identical appearance across all 12 scenes — same golden-brown fur colour, same eye size and warmth, same expression, same ear shape. All prompts emphasize this consistency.
+**Character consistency:** the pipeline generates one canonical Sonny portrait with a fixed seed (`7777`), saves it to `kids-channel/character/sonny-ref.jpg` (committed by the workflow on first run), then uses FLUX Kontext image-editing to place that exact character into each scene. To redesign Sonny, delete `kids-channel/character/sonny-ref.jpg` and the next run regenerates it.
+
+**Thumbnails:** built from the episode's first scene painting (cover-cropped to 1280×720) with the title on a darkened band — no more plain navy text cards.
 
 **Professional watercolour attributes:**
 - Hand-painted texture with visible brushstrokes

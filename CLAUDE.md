@@ -27,6 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Hermes Agent** → Nous Research open-source agent CLI with messaging gateways (Telegram/Discord). See `SETUP-HERMES.md`. Useful for driving renders from phone/cron; RHYTHMIX skills are not ported to it.
 - **Voicebox (local TTS)** → runs on-device Mac, clones your voice from a sample, zero API cost. See `VOICEBOX-SETUP.md`. Voice profile name: `Jamie`. Default endpoint: `http://127.0.0.1:17493`.
 - **Kokoro TTS (HyperFrames narration)** → lightweight, fast, multi-language text-to-speech. Generates `.wav` narration for RHYTHMIX promos. 30+ voices (English, French, Italian, Japanese, Chinese); voice blending supported. See `KOKORO-SETUP.md`. Install: `uv tool install kokoro-tts` or `pip install kokoro-tts`. Used by: `npx --yes hyperframes@0.4.42 tts`.
+- **OpenManus Agent Framework (autonomous browser automation)** → LLM-driven browser agent for web tasks, research, and automation. Installation: `bash scripts/setup-openmanus.sh` or `python scripts/setup-openmanus.py`. Setup guide: `SETUP-OPENMANUS.md`. Configuration examples in `config/openmanus-*.toml` (Claude, OpenAI, Ollama, Azure). MCP integration: `OPENMANUS-MCP-INTEGRATION.md`. Use cases: automated content research, web scraping, multi-step browser workflows. Supports multiple LLM backends (Claude, GPT-4, Ollama local, Azure, Bedrock). Browser automation via `playwright` + `browser-use`, search via Google/Baidu/DuckDuckGo.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
 
 ## Repository Overview
@@ -362,8 +363,9 @@ The `.claude/agents/` directory contains sub-agent definition files for FleetVie
 | `playwright` | `npx -y @playwright/mcp@latest` | Base Playwright browser automation. |
 | `claude-playwright` | `node node_modules/claude-playwright/dist/mcp/server.cjs` | Session/profile/test management on top of Playwright. Run `npm install` first. |
 | `context7` | HTTP `https://mcp.context7.com/mcp` | Current library documentation. Prefer over training knowledge. |
+| `openmanus` | `python -m app.mcp.server` (from `/tmp/OpenManus`) | LLM-driven browser automation agent. Tools: navigate, click, fill, extract, screenshot, search. Config: `.mcp.json`. Setup: `OPENMANUS-MCP-INTEGRATION.md`. |
 
-**Rule:** Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging.
+**Rule:** Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging. Use OpenManus for autonomous browser tasks, research automation, and multi-step web workflows — particularly useful for RHYTHMIX content research and market intelligence gathering.
 
 ## CI / Deployment
 

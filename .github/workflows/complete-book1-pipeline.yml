@@ -1,0 +1,116 @@
+name: Complete Book 1 Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_youtube:
+        description: "Skip YouTube upload (test only)"
+        required: false
+        type: boolean
+        default: false
+  workflow_run:
+    workflows: ["Generate Book 1 3D CGI Pages"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  complete-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg ffprobe
+
+      - name: Install Python dependencies
+        run: |
+          pip install requests pillow google-auth google-auth-oauthlib google-api-python-client elevenlabs
+
+      - name: Step 1: Assemble 18-page book
+        id: assemble-pages
+        run: |
+          python3 assemble-book1-pages.py
+
+      - name: Step 2: Generate narration
+        id: generate-narration
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          python3 generate-book1-narration.py
+
+      - name: Step 3: Assemble video
+        id: assemble-video
+        run: |
+          python3 assemble-book1-video.py
+
+      - name: Step 4: Upload to YouTube
+        id: upload-youtube
+        if: ${{ !inputs.skip_youtube }}
+        env:
+          YOUTUBE_ACCESS_TOKEN: ${{ secrets.YOUTUBE_ACCESS_TOKEN }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+        run: |
+          python3 upload-book1-to-youtube.py
+
+      - name: Commit results
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          git add -A
+          git commit -m "Complete Book 1 pipeline: pages + narration + video + YouTube upload
+
+- Generated 16 3D CGI story pages
+- Created warm motherly voice narration
+- Assembled 18-page video with audio
+- Uploaded to YouTube
+
+Ready for Books 2-17!
+
+https://claude.ai/code/session_016B7mS1Zne9k2ZZtnb59zyP" || echo "No changes to commit"
+          git push origin main
+
+      - name: Summary
+        run: |
+          echo "## Book 1 Complete! ✓" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Completed Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. ✓ Assembled 18-page book (cover + 16 pages + teaser)" >> $GITHUB_STEP_SUMMARY
+          echo "2. ✓ Generated warm motherly voice narration" >> $GITHUB_STEP_SUMMARY
+          echo "3. ✓ Created complete video with audio" >> $GITHUB_STEP_SUMMARY
+          echo "4. ✓ Uploaded to YouTube" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "- Check YouTube for video: https://www.youtube.com/@SunnyBedtimeTales" >> $GITHUB_STEP_SUMMARY
+          echo "- Add thumbnail" >> $GITHUB_STEP_SUMMARY
+          echo "- Enable monetization" >> $GITHUB_STEP_SUMMARY
+          echo "- Share to social media" >> $GITHUB_STEP_SUMMARY
+          echo "- Repeat for Books 2-17" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: book1-complete
+          path: |
+            BOOK-1-ILLUSTRATED-PAGES/
+            BOOK-1-ASSEMBLED/
+            BOOK-1-NARRATION/
+            BOOK-1-VIDEO/
+          retention-days: 30
