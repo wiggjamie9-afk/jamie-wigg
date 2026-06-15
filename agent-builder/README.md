@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Visual Agent Builder
+
+A Next.js-based visual interface for configuring and managing AI agents. Configure models, select tools, define system prompts, and export agent configurations.
+
+## Features
+
+- **Model Selection**: Choose from Claude Haiku, Sonnet, and Opus with detailed descriptions
+- **Tool Configuration**: Select from 10+ categorized tools (Search, Code, Data, Communication, Utility)
+- **Prompt Editor**: Write custom system prompts for your agent
+- **Temperature Control**: Adjust creativity vs. determinism with a slider
+- **Visual Capabilities Display**: See a real-time preview of your agent's configuration
+- **Configuration Status**: Check if your agent is ready to deploy
+- **Export**: Download agent configuration as JSON
+
+## Tech Stack
+
+- **Next.js 16** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS v4** - Utility-first styling
+- **React 19** - Modern React features
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 20+
+- npm
+
+### Installation
+
+```bash
+npm install
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the agent builder.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+agent-builder/
+├── app/
+│   ├── page.tsx          # Main page with header and layout
+│   ├── layout.tsx        # Root layout
+│   └── globals.css       # Global styles
+├── components/
+│   ├── AgentForm.tsx           # Main form component
+│   ├── ModelSelector.tsx       # Model selection component
+│   ├── ToolSelector.tsx        # Tool selection component
+│   └── CapabilitiesDisplay.tsx # Visual capabilities display
+├── package.json
+└── tsconfig.json
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Components
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### AgentForm
+Main component that orchestrates the entire agent builder interface. Manages agent configuration state and provides form inputs.
 
-## Deploy on Vercel
+### ModelSelector
+Displays available Claude models with descriptions and performance tiers. Users can select their preferred model.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### ToolSelector
+Grid of available tools organized by category (Information, Development, Analytics, Communication, Utility). Multi-select interface.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### CapabilitiesDisplay
+Real-time visual representation of the configured agent, showing:
+- Agent name and selected model
+- Current temperature setting
+- Selected tools
+- System prompt preview
+- Configuration status checklist
+
+## Agent Configuration
+
+An agent configuration includes:
+
+```typescript
+{
+  name: string;              // Agent name
+  description: string;        // Agent description
+  model: string;             // Selected Claude model ID
+  tools: string[];           // Array of selected tool IDs
+  systemPrompt: string;      // System prompt text
+  temperature: number;       // 0-2 range (0=deterministic, 2=creative)
+}
+```
+
+## Export
+
+Click "Export Agent Config" to download the configuration as a JSON file, ready to be used with Claude API or other agent frameworks.
