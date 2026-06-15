@@ -29,6 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Kokoro TTS (HyperFrames narration)** → lightweight, fast, multi-language text-to-speech. Generates `.wav` narration for RHYTHMIX promos. 30+ voices (English, French, Italian, Japanese, Chinese); voice blending supported. See `KOKORO-SETUP.md`. Install: `uv tool install kokoro-tts` or `pip install kokoro-tts`. Used by: `npx --yes hyperframes@0.4.42 tts`.
 - **OpenManus Agent Framework (autonomous browser automation)** → LLM-driven browser agent for web tasks, research, and automation. Installation: `bash scripts/setup-openmanus.sh` or `python scripts/setup-openmanus.py`. Setup guide: `SETUP-OPENMANUS.md`. Configuration examples in `config/openmanus-*.toml` (Claude, OpenAI, Ollama, Azure). MCP integration: `OPENMANUS-MCP-INTEGRATION.md`. Use cases: automated content research, web scraping, multi-step browser workflows. Supports multiple LLM backends (Claude, GPT-4, Ollama local, Azure, Bedrock). Browser automation via `playwright` + `browser-use`, search via Google/Baidu/DuckDuckGo.
 - **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
+- **Voicebox MCP server (voice I/O)** → Registered in `.mcp.json` as `voicebox`. Exposes three tools: `voicebox.speak` (agent voice output in a cloned voice), `voicebox.transcribe` (speech-to-text), `voicebox.list_captures` (recent voice captures). Per-client voice bindings managed in Voicebox Settings → MCP. Default endpoint: `http://127.0.0.1:17493/mcp`. See `VOICEBOX-SETUP.md` for installation and voice cloning workflow. One-liner: `claude mcp add voicebox --transport http --url http://127.0.0.1:17493/mcp --header "X-Voicebox-Client-Id: claude-code"`.
 
 ## Repository Overview
 
@@ -364,8 +365,12 @@ The `.claude/agents/` directory contains sub-agent definition files for FleetVie
 | `claude-playwright` | `node node_modules/claude-playwright/dist/mcp/server.cjs` | Session/profile/test management on top of Playwright. Run `npm install` first. |
 | `context7` | HTTP `https://mcp.context7.com/mcp` | Current library documentation. Prefer over training knowledge. |
 | `openmanus` | `python -m app.mcp.server` (from `/tmp/OpenManus`) | LLM-driven browser automation agent. Tools: navigate, click, fill, extract, screenshot, search. Config: `.mcp.json`. Setup: `OPENMANUS-MCP-INTEGRATION.md`. |
+| `voicebox` | HTTP `http://127.0.0.1:17493/mcp` | Voice I/O: `voicebox.speak` (agent voice output), `voicebox.transcribe` (speech-to-text), `voicebox.list_captures` (recent captures). Requires local Voicebox app running. Setup: `VOICEBOX-SETUP.md`. |
 
-**Rule:** Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging. Use OpenManus for autonomous browser tasks, research automation, and multi-step web workflows — particularly useful for RHYTHMIX content research and market intelligence gathering.
+**Rules:**
+- Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging.
+- Use OpenManus for autonomous browser tasks, research automation, and multi-step web workflows — particularly useful for RHYTHMIX content research and market intelligence gathering.
+- Use Voicebox MCP for agent voice output (deliver results in a cloned voice), transcription of local audio, or reviewing past voice captures — only when Voicebox app is running locally.
 
 ## CI / Deployment
 
@@ -437,6 +442,22 @@ When spawning subagents via the `Agent` tool, default to **Haiku** for simple me
 | Uploading artifacts, git ops | Any task needing screenshots / vision |
 
 **Never** use Haiku for tasks involving images, screenshots, or UI review — it's text-only.
+
+## Skill Requirements & Decision System
+
+Per-skill triggers. MUST load before acting on the governed task; a skill loaded in parallel with that action arrives too late.
+
+| Skill | Trigger | Task scope |
+|---|---|---|
+| `rhythmix-author` | MUST load for end-to-end promo authoring | New RHYTHMIX videos (script → TTS → HyperFrames → render) |
+| `changelog` | MUST load for CHANGELOG.md edits | Adding/reorganizing release notes or drafting releases |
+| `decisions` | MUST load for ADR/PDR creation or updates | Creating or superseding architectural/product decisions in `docs/decisions/` |
+| `voicebox-voice-clone` | MUST load for voice cloning workflows | Setting up voice profiles, re-generating narration in user voice |
+
+**ADR System** — Technical decisions live in `docs/decisions/adr/` (architecture) and `docs/decisions/pdr/` (product strategy). Before implementing a non-trivial change, check if an existing ADR covers it. If proposing a new approach, write an ADR-style brief first using the `decisions` skill to surface assumptions and trade-offs.
+
+Current ADRs:
+- `ADR-0001` — HyperFrames over Remotion for new Promos (see `docs/adr/0001-hyperframes-over-remotion-for-promos.md`)
 
 ## Agent Skills (GitHub Issues)
 
