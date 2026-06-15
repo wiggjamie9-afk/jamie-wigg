@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep — Guided Rest & Recovery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a2633;
+            --text-primary: #e8eef5;
+            --text-secondary: #a8b2bf;
+            --accent-lavender: #6b7a8f;
+            --accent-soft: #5a6b7e;
+            --breathing-highlight: #7d8fa3;
+            --success: #6fa86f;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .screen {
+            display: none;
+            flex: 1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .screen.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        #onboarding {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .onboarding-header h1 {
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .onboarding-header p {
+            color: var(--text-secondary);
+            margin-bottom: 36px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .track-selection {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 32px;
+        }
+
+        .track-btn {
+            padding: 16px 20px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--accent-soft);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .track-btn:hover {
+            background-color: var(--accent-soft);
+            border-color: var(--breathing-highlight);
+        }
+
+        .track-btn.selected {
+            background-color: var(--accent-lavender);
+            border-color: var(--breathing-highlight);
+        }
+
+        #lesson {
+            flex-direction: column;
+        }
+
+        .lesson-header {
+            margin-bottom: 24px;
+        }
+
+        .lesson-back {
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .lesson-back:hover {
+            color: var(--text-primary);
+        }
+
+        .lesson-title {
+            font-size: 24px;
+            font-weight: 400;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .lesson-meta {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .lesson-content {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 24px;
+            padding-right: 8px;
+        }
+
+        .lesson-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .lesson-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .lesson-content::-webkit-scrollbar-thumb {
+            background: var(--accent-soft);
+            border-radius: 2px;
+        }
+
+        .lesson-body {
+            color: var(--text-primary);
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 24px;
+        }
+
+        .lesson-body p {
+            margin-bottom: 16px;
+        }
+
+        .lesson-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .lesson-affirmation {
+            background-color: var(--bg-secondary);
+            border-left: 3px solid var(--breathing-highlight);
+            padding: 16px;
+            border-radius: 4px;
+            font-style: italic;
+            color: var(--text-primary);
+            font-size: 15px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .lesson-strength {
+            display: inline-block;
+            background-color: var(--accent-soft);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 12px;
+        }
+
+        .lesson-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .read-aloud-btn, .complete-btn {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--accent-soft);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .read-aloud-btn:hover, .complete-btn:hover {
+            background-color: var(--accent-soft);
+            border-color: var(--breathing-highlight);
+        }
+
+        .read-aloud-btn.playing {
+            background-color: var(--breathing-highlight);
+            border-color: var(--breathing-highlight);
+        }
+
+        .complete-btn.completed {
+            background-color: var(--success);
+            border-color: var(--success);
+        }
+
+        .breathing-guide {
+            width: 120px;
+            height: 120px;
+            margin: 24px auto;
+            position: relative;
+        }
+
+        .breathing-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: var(--bg-secondary);
+            border: 2px solid var(--accent-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            animation: breathe 15s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% {
+                transform: scale(0.8);
+                border-color: var(--accent-soft);
+            }
+            25% {
+                transform: scale(1.2);
+                border-color: var(--breathing-highlight);
+            }
+            50% {
+                transform: scale(1.4);
+                border-color: var(--breathing-highlight);
+            }
+            75% {
+                transform: scale(1);
+                border-color: var(--accent-soft);
+            }
+        }
+
+        #progress {
+            flex-direction: column;
+        }
+
+        .progress-header {
+            margin-bottom: 28px;
+        }
+
+        .progress-header h2 {
+            font-size: 28px;
+            font-weight: 300;
+            margin-bottom: 8px;
+        }
+
+        .progress-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .progress-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .progress-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .progress-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .progress-panel::-webkit-scrollbar-thumb {
+            background: var(--accent-soft);
+            border-radius: 2px;
+        }
+
+        .track-group {
+            margin-bottom: 28px;
+        }
+
+        .track-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .lesson-item {
+            padding: 12px;
+            background-color: var(--bg-secondary);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lesson-item:hover {
+            background-color: var(--accent-soft);
+        }
+
+        .lesson-item.completed {
+            border-left: 3px solid var(--success);
+        }
+
+        .lesson-item-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--accent-soft);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .lesson-item.completed .lesson-item-checkbox {
+            background-color: var(--success);
+            border-color: var(--success);
+            color: var(--bg-primary);
+        }
+
+        .lesson-item-title {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .lesson-item-count {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .streak-box {
+            background-color: var(--bg-secondary);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .streak-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .streak-number {
+            font-size: 32px;
+            font-weight: 300;
+            color: var(--breathing-highlight);
+        }
+
+        .streak-unit {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--accent-soft);
+            padding-bottom: 12px;
+        }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 0;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-tab.active {
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--breathing-highlight);
+        }
+
+        .celebration-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(15, 20, 25, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .celebration-modal.active {
+            display: flex;
+        }
+
+        .celebration-box {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--breathing-highlight);
+            border-radius: 12px;
+            padding: 32px 24px;
+            text-align: center;
+            max-width: 320px;
+            animation: popIn 0.4s ease;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .celebration-emoji {
+            font-size: 48px;
+            margin-bottom: 16px;
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .celebration-text h3 {
+            font-size: 20px;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .celebration-text p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .celebration-btn {
+            padding: 10px 24px;
+            background-color: var(--breathing-highlight);
+            border: none;
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .celebration-btn:hover {
+            background-color: #8d9fb3;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 600px;
+                padding: 40px;
+            }
+
+            .lesson-title {
+                font-size: 28px;
+            }
+
+            .lesson-body {
+                font-size: 16px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="onboarding" class="screen active">
+            <div class="onboarding-header">
+                <h1>Sleep</h1>
+                <p>Guided lessons for rest & recovery</p>
+            </div>
+            <div class="track-selection">
+                <button class="track-btn" data-track="wind-down">Wind-Down</button>
+                <button class="track-btn" data-track="breathing">Breathing</button>
+                <button class="track-btn" data-track="body-scan">Body-Scan</button>
+                <button class="track-btn" data-track="dream">Dream</button>
+            </div>
+            <button class="track-btn" style="background-color: var(--accent-lavender); border-color: var(--breathing-highlight);" id="browseBtn">Browse All Lessons</button>
+        </div>
+
+        <div id="lesson" class="screen">
+            <div class="lesson-header">
+                <div class="lesson-back" id="lessonBack">← Back</div>
+                <h2 class="lesson-title" id="lessonTitle"></h2>
+                <div class="lesson-meta" id="lessonMeta"></div>
+            </div>
+            <div class="lesson-content">
+                <div class="lesson-body" id="lessonBody"></div>
+                <div class="lesson-affirmation" id="lessonAffirmation"></div>
+                <div id="strengthContainer"></div>
+            </div>
+            <div class="lesson-controls">
+                <button class="read-aloud-btn" id="readAloudBtn">🔊 Read Aloud</button>
+                <button class="complete-btn" id="completeBtn">✓ Complete</button>
+            </div>
+        </div>
+
+        <div id="progress" class="screen">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="lessons">Lessons</button>
+                <button class="nav-tab" data-tab="stats">Stats</button>
+            </div>
+
+            <div id="lessonsTab">
+                <div class="progress-header">
+                    <h2>Your Progress</h2>
+                    <p id="progressDesc"></p>
+                </div>
+                <div class="progress-panel" id="lessonsPanel"></div>
+            </div>
+
+            <div id="statsTab" class="hidden">
+                <div class="progress-header">
+                    <h2>Statistics</h2>
+                    <p>Track your consistency</p>
+                </div>
+                <div class="progress-panel">
+                    <div class="streak-box">
+                        <div class="streak-label">Current Streak</div>
+                        <div class="streak-number" id="streakNumber">0</div>
+                        <div class="streak-unit">days</div>
+                    </div>
+                    <div class="streak-box">
+                        <div class="streak-label">Total Completed</div>
+                        <div class="streak-number" id="totalCompleted">0</div>
+                        <div class="streak-unit">lessons</div>
+                    </div>
+                    <div class="streak-box">
+                        <div class="streak-label">Total Time</div>
+                        <div class="streak-number" id="totalTime">0</div>
+                        <div class="streak-unit">hours listening</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="celebration-modal" id="celebrationModal">
+        <div class="celebration-box">
+            <div class="celebration-emoji">✨</div>
+            <div class="celebration-text">
+                <h3>Beautiful work</h3>
+                <p>You're building your capacity for rest.</p>
+            </div>
+            <button class="celebration-btn" id="celebrationBtn">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        const LESSONS = {
+            'wind-down': [
+                { id: 'wd1', title: 'Sleep begins three hours before bed', body: `<p>Sleep isn't something that switches on at bedtime. The journey toward sleep begins much earlier—typically three to four hours before you actually lie down. This is when your body's circadian rhythm, your internal 24-hour clock, begins orchestrating the transition from wake to rest.</p><p>Your circadian system responds to environmental cues called zeitgebers—the most powerful being light exposure. When evening light levels drop, your pineal gland begins secreting melatonin, the hormone that signals sleep readiness. But melatonin works best in a prepared system: one that has gradually shifted away from stimulating activity and bright blue light from screens.</p><p>Temperature also plays a critical role. Your core body temperature naturally drops in the evening, signaling sleep onset. Evening activity, caffeine intake, and even food choices all influence this temperature curve. A hot shower or bath actually accelerates cooling afterward, facilitating this transition. The wind-down period—those hours before sleep—is when you can support these biological processes rather than fight against them.</p><p>Think of these three hours as an investment, not a luxury. A deliberate wind-down amplifies sleep quality far more than trying to fall asleep quickly in a system still in high alert.</p>`, affirmation: 'My evening choices are preparing my body for the gift of sleep.', strength: 'Intention' },
+                { id: 'wd2', title: 'Transition rituals cue your body', body: `<p>Your nervous system is a pattern-recognition machine. When you repeat the same sequence of calm actions at the same time each evening, your body learns to shift gears. This is the power of transition rituals—small, repeated gestures that tell your system: "Sleep is coming."</p><p>A ritual might be: dim the lights, put on soft clothing, make tea, and sit quietly for ten minutes. Or: a warm shower, a few minutes of gentle stretching, and a specific playlist. The exact actions matter less than consistency and the feeling they create. Your body doesn't just respond to what you do—it responds to the expectation you've trained into it.</p><p>This works through a dopamine-to-melatonin transition. During the day, dopamine keeps you alert and motivated. Melatonin is suppressed. As evening arrives and you perform your ritual, dopamine naturally begins to recede, and melatonin can rise. But if you skip the ritual—if you go from intense work straight to bed—your dopamine is still elevated, and melatonin hasn't had the signal to begin its ascent.</p><p>The ritual doesn't have to be lengthy. Even five minutes of the same calming gesture, repeated nightly, trains your nervous system to anticipate rest. Your body learns the sequence and begins downregulating stress hormones before you even close your eyes.</p>`, affirmation: 'Through gentle repetition, I teach my body to recognize rest.', strength: 'Ritual' },
+                { id: 'wd3', title: 'Your nervous system needs to slow', body: `<p>Your autonomic nervous system has two primary modes: sympathetic (alert, mobilized) and parasympathetic (calm, recovering). These are complementary—you need both. But in modern life, the sympathetic nervous system often stays activated well into evening, kept on high alert by work stress, notifications, and screens.</p><p>Genuine sleep requires a shift toward parasympathetic dominance. This isn't just relaxation—it's a physiological state where your heart rate lowers, your digestion activates, your muscles release tension, and your immune system strengthens. You can't think your way into this state; you have to practice it into being.</p><p>The vagus nerve is your body's main parasympathetic channel. Practices that activate it include slow breathing (especially elongated exhales), gentle movement, humming or singing, cold water on your face, and progressive muscle relaxation. A single session creates a temporary shift. Repeated practice builds your capacity—your nervous system becomes more readily able to access calm.</p><p>The wind-down period is specifically designed to activate parasympathetic function. As you practice, you'll notice your breathing naturally slows, your jaw unclenches, and a subtle softening happens in your chest. This is your nervous system learning it's safe to rest.</p>`, affirmation: 'With each gentle breath, I shift toward safety and recovery.', strength: 'Regulation' },
+                { id: 'wd4', title: 'Wind-down is not punishment', body: `<p>In a culture obsessed with productivity and stimulation, slowing down can feel like deprivation. Like you're missing out on something. But this perspective inverts the truth: slowing down is the most nourishing thing you can do.</p><p>Consider the sensory poverty of most days. Notifications, screens, artificial light, processed food, constant ambient noise. Your nervous system is starved not for stimulation, but for genuine rest and subtle sensation. An evening wind-down offers the opposite: dim light, silence or soft sounds, warm tea, soft textures, and your own breath. These aren't restrictions—they're abundances of a different kind.</p><p>Reframe the evening. Not as "I have to put away my phone," but "I get to sit quietly." Not "I can't watch screens," but "I have time to watch the light change." This shift from deprivation to generosity is subtle but transformative. It turns the wind-down from something you endure into something you crave.</p><p>Some of the deepest joys in life are quiet ones: a warm cup in your hands, a loved one's presence, the settling sensation of your body becoming still. These pleasures aren't available during frantic activity. They're only available in the slowing down.</p>`, affirmation: 'I receive the evening as a gift, not a restriction.', strength: 'Gratitude' },
+                { id: 'wd5', title: 'Your bedroom is a sanctuary', body: `<p>Your bedroom is not a room; it's a sanctuary. The environment you sleep in shapes your sleep more profoundly than you might realize. Your nervous system absorbs cues from every sensory input: temperature, light, sound, scent, even the visual clutter in your peripheral vision.</p><p>Optimal sleep temperature is around 65–68°F (18–20°C)—cooler than most people keep their homes. Cool environments accelerate the core temperature drop that triggers deep sleep. Darkness is equally critical: even small amounts of light suppress melatonin. Blackout curtains, a sleep mask, or simply closing the door matters more than you'd expect.</p><p>Sound is subtle but powerful. Your auditory system monitors your environment even while you sleep—it's an evolutionary survival mechanism. Consistent white noise, a fan, or gentle rain sounds can mask disruptive noises. But silence is also restorative if you can achieve it.</p><p>The visual environment matters too. Before sleep, soft, muted colors and minimal clutter communicate safety and calm. Plants, natural materials, and warm lighting (before bed) create a nest-like quality. Your bedroom should look and feel like a place designed exclusively for rest.</p><p>Finally, keep your bed sacred. Use it only for sleep (and intimacy). This association strengthens your body's learned response: you enter the bed, and your nervous system knows: sleep is coming.</p>`, affirmation: 'My sanctuary supports the deepest rest.', strength: 'Environment' }
+            ],
+            'breathing': [
+                { id: 'br1', title: 'Your breath is the bridge', body: `<p>Your breath is the only involuntary bodily function you can voluntarily control. It stands at the boundary between conscious and unconscious, between thought and physiology. This unique position makes breathing your most direct access point to your nervous system.</p><p>When you're anxious, your breathing becomes shallow and rapid—and this pattern reinforces anxiety. When you breathe slowly and deeply, your physiology genuinely shifts. This isn't visualization or placebo; it's anatomy. Slow breathing activates the vagus nerve, which signals safety to your entire nervous system. Within moments of slow breathing, your heart rate settles, your blood pressure drops slightly, and stress hormones begin to decline.</p><p>This is why breathing is often the first tool offered in stress and anxiety work. It's immediately available, doesn't require external tools, and works every time if you give it genuine attention. You can't think your way out of anxiety, but you can breathe your way through it.</p><p>For sleep, breathing becomes a bridge from wakefulness into rest. When you arrive at bed with your nervous system still activated, breathing practices create the physiological conditions for sleep. They're not a substitute for good sleep hygiene—they're the embodied practice that brings that hygiene to life.</p>`, affirmation: 'My breath is my anchor to calm.', strength: 'Connection' },
+                { id: 'br2', title: 'Slow breath lengthens sleep', body: `<p>There are specific breathing patterns that create optimal conditions for sleep. Two of the most well-researched are 4-7-8 breathing and box breathing—both proven in sleep science to shift your nervous system toward parasympathetic dominance.</p><p>4-7-8 breathing works like this: inhale for a count of 4, hold for 7, exhale for 8. The extended exhale is key. When you exhale longer than you inhale, you activate the parasympathetic nervous system. This pattern creates a slight oxygen deficit that your body interprets as "be calm, we're safe." Practiced nightly for just five minutes, this pattern can measurably improve sleep onset and depth.</p><p>Box breathing is simpler: inhale for 4, hold for 4, exhale for 4, hold for 4. This creates symmetry and rhythm, which your nervous system finds deeply calming. The repetition also quiets mental chatter—you're focused on counting rather than worrying.</p><p>The physiology is straightforward. Slow breathing (6 breaths per minute or fewer) synchronizes your heart rate and blood pressure variability in ways that promote relaxation. Faster breathing (especially upper-chest breathing) maintains arousal. By deliberately slowing your breath, you're literally changing your neurology and chemistry in the direction of sleep.</p>`, affirmation: 'Each slow breath deepens my capacity for rest.', strength: 'Rhythm' },
+                { id: 'br3', title: 'Breathing anchors you in body', body: `<p>Anxiety and insomnia often involve a disconnection from your body—a sense of being lost in thoughts, spiraling in worry, untethered from the present moment. Breathing practice directly reverses this. When you focus on your breath, you're anchored in your body, in this moment, right here.</p><p>This is why breathing is such a powerful tool for anxiety. When your mind is racing with "what-if" thoughts, you can't simultaneously focus on the physical sensation of breathing. The mind can't hold both. So when you place your attention on each breath—the coolness of the inhale, the warmth of the exhale, the expansion and release in your chest—you're stepping out of the thought spiral and back into your body.</p><p>This embodied presence is also where genuine rest lives. Sleep isn't something your mind does—it's something your body does. When you spend your day disconnected from physical sensation, you've trained yourself out of sleep. Breathing practice re-establishes the connection. You begin to feel your body again, to notice tension and release, to recognize the subtle sensations that precede sleep.</p><p>Over time, this practice rewires your relationship to anxiety itself. Instead of being swept away by thoughts, you learn that you can always return to your breath. You can always come home to your body. This fundamental shift—from mind-dominated to body-aware—is transformative for sleep.</p>`, affirmation: 'In my breath, I find my body. In my body, I find peace.', strength: 'Embodiment' },
+                { id: 'br4', title: 'Breath is always available', body: `<p>When everything feels uncontrollable—when sleep won't come, when anxiety rises, when you're far from home or facing an unfamiliar situation—your breath is still yours. It's always available. You never need permission or equipment or the right conditions. Your breath is here, now, always.</p><p>This is profound for building resilience. Other tools might fail you: your gym might be closed, your therapist might be unavailable, your go-to coping strategy might not work in a particular moment. But your breath? It's non-negotiable. It's yours alone. In any circumstance, you can slow your breathing and create a physiological shift toward calm.</p><p>This availability also means you can practice anywhere. Not just on a yoga mat or in your bedroom, but in your car before a difficult meeting, on the plane before takeoff, in the moment insomnia strikes at 3 AM. The practice becomes a portable tool that builds your capacity over time and offers immediate relief in acute moments.</p><p>There's also something deeply empowering about this. In a world where so much feels beyond your control, your breath is solidly yours. You can't control other people's behavior or outcomes, but you can control your breath. This simple mastery transfers: if you can regulate your breath, you can regulate yourself. This is the foundation of all resilience.</p>`, affirmation: 'My breath is my sovereignty.', strength: 'Autonomy' },
+                { id: 'br5', title: 'Practicing breath by day helps sleep at night', body: `<p>Breathing practices aren't just for bedtime or crisis moments. Daily breathing practice builds your nervous system's baseline capacity for calm. Think of it like building a muscle: each practice session makes the next one easier and more effective. By bedtime, your nervous system is primed to respond to breathing practices.</p><p>Research on coherent breathing (slow, rhythmic breathing practiced regularly) shows that people who practice during the day have measurably better sleep at night. They also have lower resting heart rates, lower stress hormones, and greater overall resilience. The practice compounds.</p><p>A simple daytime practice: three minutes of box breathing or 4-7-8 breathing at the same time each day. Morning is excellent (sets a calm baseline for the day), but afternoon works too. The consistency matters more than the time. Over weeks, you'll notice that your nervous system becomes more readily able to access calm, both during the day and at night.</p><p>When you arrive at bedtime, if you've spent the day practicing breath awareness, your body already knows the rhythm. It's not a new or foreign practice—it's a familiar friend. Your nervous system trusts it because you've practiced it in safety. This is why consistent daytime practice amplifies nighttime results.</p>`, affirmation: 'My daily practice is my invitation to deeper sleep.', strength: 'Consistency' }
+            ],
+            'body-scan': [
+                { id: 'bs1', title: 'Your body holds the day', body: `<p>Every experience you have leaves an imprint on your body. Stress, worry, anticipation, even joy—all of these get encoded in your nervous system and musculature. When you face a difficult day, your shoulders rise slightly, your jaw clenches, your breath becomes shallow. These physical patterns persist even after the stressful event ends.</p><p>Over time, chronic stress accumulates as chronic tension. Your muscles forget what relaxation feels like. You become so adapted to a state of mild alert that you no longer recognize it as abnormal. This held tension directly interferes with sleep: your nervous system is sending a constant low-level signal of "not yet, stay ready," even when you want to rest.</p><p>This is why body awareness is essential for sleep. Before you can release tension, you have to notice it. Before your nervous system can shift toward parasympathetic rest, it has to become aware of where it's holding activation. The body-scan is a systematic way to develop this awareness: you move your attention through your body, noticing sensation without judgment, and simply observing where you're holding tension.</p><p>The scanning process itself is therapeutic. As you notice tension with compassionate attention, your nervous system often begins to release it. This isn't willpower or forcing relaxation—it's the natural response of a nervous system that feels genuinely observed and safe.</p>`, affirmation: 'I notice my body with compassion; it releases what it no longer needs.', strength: 'Awareness' },
+                { id: 'bs2', title: 'Progressive relaxation is medicine', body: `<p>Progressive muscle relaxation (PMR) is one of the most researched and effective techniques for sleep preparation. It works by systematically tensing and then releasing muscle groups throughout your body. This creates a strong somatic contrast: your nervous system experiences the difference between tension and relaxation so vividly that the relaxation response deepens.</p><p>The protocol is simple: start with your toes. Tense them for 5 seconds (curl them, squeeze), then release and notice the sensation of relaxation for 15 seconds. Move up through your feet, calves, thighs, buttocks, abdomen, chest, hands, arms, shoulders, neck, jaw, and face. The entire sequence takes about 20 minutes and can be done in bed.</p><p>What makes this work is the neuromuscular learning. When you deliberately create tension and then release it, you're teaching your muscle fibers what genuine relaxation feels like. Over time, your body becomes more readily able to access this state. People who practice PMR regularly fall asleep faster, sleep more deeply, and wake fewer times in the night.</p><p>The technique works through multiple pathways: the physical release of muscle tension, the neurological shift away from sympathetic activation, and the development of body awareness itself. By the time you reach your face and jaw—often where we hold the most tension—you're usually already halfway to sleep.</p>`, affirmation: 'As I release my muscles, I release my day.', strength: 'Release' },
+                { id: 'bs3', title: 'Sensation replaces worry', body: `<p>When your mind is racing with thoughts—worries, plans, regrets—your nervous system remains activated. Rumination is one of the primary causes of insomnia. But here's the key: you cannot simultaneously focus on physical sensation and ruminate. The mind doesn't have the bandwidth for both.</p><p>This is where body-scan becomes a tool for quiet the mind. When you place your attention on the sensation of your left shoulder, you're not thinking about tomorrow's meeting. When you notice the temperature of your hands, the texture of your sheets, the subtle pulsing in your neck, you're not anxious. You've simply exchanged the content of your consciousness.</p><p>The sensations you notice in a body-scan are neutral—neither good nor bad, just present. This neutrality is calming. When you're in rumination, your mind is generating threat narratives. But sensation is just sensation. Your foot is warm or cool, your neck is tense or relaxed, your breath is shallow or deep. These are facts, not threats.</p><p>Over time, this practice rewires your default mode. Instead of allowing your mind to spin through worry when you lie in bed, you develop the reflex to return to sensation. Instead of being at the mercy of your thoughts, you choose what you pay attention to. This shift—from thought-dominated to sensation-aware—is one of the most powerful antidotes to insomnia.</p>`, affirmation: 'I return my attention to sensation; my mind becomes still.', strength: 'Focus' },
+                { id: 'bs4', title: 'Your body wants to rest', body: `<p>There's a widespread misconception that insomnia is a battle: you have to fight your way to sleep, force your body to comply, overpower your mind. But this approach is precisely backward. The more you fight sleep, the more elusive it becomes. Fighting activates your sympathetic nervous system—the opposite of what you need.</p><p>The truth is simpler: your body naturally wants to rest. Sleep is a biological imperative, not an achievement. The problem isn't that your body is refusing sleep; it's that you've built blocks to sleep—through tension, worry, environmental factors, or habits. Sleep doesn't require forcing; it requires removing obstacles.</p><p>This is why body-scan is so effective. Instead of fighting your body, you're cooperating with it. You're noticing where you're holding blocks (tension, bracing) and gently releasing them. You're not overriding your body; you're listening to it and removing what's in the way.</p><p>When you approach sleep this way—with curiosity and cooperation rather than force—your body's natural sleep drive emerges. You'll often notice that as you progress through a body-scan, your breathing naturally deepens, your eyelids grow heavy, and a genuine drowsiness develops. This is your body's sleep system activating, not because you forced it, but because you removed the blocks and created conditions for it to emerge.</p>`, affirmation: 'I trust my body's wisdom about rest.', strength: 'Trust' },
+                { id: 'bs5', title: 'Gentle movement helps sleep', body: `<p>Ironically, gentle movement in the evening often facilitates sleep better than no movement at all. The distinction is between intense, stimulating activity (like competitive sports or intense exercise close to bedtime) and gentle, rhythmic movement that prepares your body for rest.</p><p>Evening stretching, gentle yoga, slow walking, or Tai Chi—these practices signal to your nervous system that you're safely moving through the world, not frozen in threat. They release accumulated tension, improve proprioceptive awareness (your sense of where your body is in space), and create a pleasant fatigue that supports sleep.</p><p>The key is timing and intensity. Vigorous exercise within three hours of bedtime can be stimulating (raising body temperature and heart rate). But gentle movement—a 20-minute evening walk, some light stretching, or a slow flow—completes the day's physical cycle and prepares your body for rest.</p><p>Many people find that a simple evening routine of gentle movement followed by a body-scan is profoundly effective. The movement releases tension; the scan deepens awareness and relaxation. Together, they prepare both body and mind for the transition into sleep. You're not fighting your body; you're moving with its natural rhythms.</p>`, affirmation: 'I move gently into rest.', strength: 'Flow' }
+            ],
+            'dream': [
+                { id: 'dr1', title: 'Dreams are processing, not prophecy', body: `<p>Dreams are not messages from the universe or predictions of the future. They're your brain's processing system at work. During REM (Rapid Eye Movement) sleep, when most vivid dreaming occurs, your brain is consolidating memories, processing emotions, and integrating new information with existing knowledge. Dreams are the visible manifestation of this essential cognitive work.</p><p>From a neuroscientific perspective, REM sleep is when emotional memories are being "tagged" and filed away—the emotional charge is reduced while the information is retained. This is why processing difficult experiences in dreams actually facilitates healing. When you dream about a challenging situation, you're not reliving the threat; you're metabolizing it in a way that reduces its emotional intensity.</p><p>This is why people going through grief, trauma recovery, or major life changes often dream intensely. It's not a sign something's wrong; it's evidence that your brain is doing necessary healing work. The intensity of the dreaming is actually a positive sign—it indicates that sleep is serving its therapeutic function.</p><p>Understanding this reframes dreams from something mysterious and potentially alarming into something recognized as a normal, healthy biological process. Your dreams aren't trying to tell you something cryptic; they're showing you your brain's work of integration and healing. When you accept this, dreams become less anxiety-provoking and more obviously a gift of the sleep process.</p>`, affirmation: 'My dreams are my mind healing.', strength: 'Processing' },
+                { id: 'dr2', title: 'You remember dreams when rested', body: `<p>A common misconception is that good sleepers don't dream, or that dream recall is rare or special. The truth is nearly opposite: everyone dreams multiple times per night, and you remember dreams primarily when you've had sufficient, high-quality sleep.</p><p>Dream recall happens most readily when you wake during or immediately after a REM period. If you're sleeping deeply and waking only once at the end of the night, you're less likely to remember dreams (though you're having them). But if you're sleeping well, getting sufficient sleep, and waking naturally or gently in the morning, you're more likely to have clear dream memories.</p><p>This is actually a positive indicator. If you begin remembering dreams, it often means your sleep quality has improved—you're getting deeper sleep with more intact REM cycles. In contrast, when sleep is fragmented or insufficient, REM sleep is often cut short, and dream recall disappears not because you're not dreaming, but because the memory hasn't been consolidated.</p><p>So if you suddenly start remembering vivid dreams after a period of not remembering them, celebrate it. It's evidence that your sleep system is strengthening and normalizing. The vividness and clarity of dreams are actually markers of healthy sleep, not burdens to be managed.</p>`, affirmation: 'My clear dreams are evidence of deep rest.', strength: 'Integration' },
+                { id: 'dr3', title: 'Nightmares are trauma healing', body: `<p>Nightmares are frightening, and most people wish they would stop. But neurologically, nightmares often represent healing in process. When you've experienced trauma or significant stress, your nervous system needs to process it. Sometimes that processing happens through intense, uncomfortable dreams.</p><p>The neuroscience is clear: during REM sleep, emotional memories are being reprocessed. If the original experience was charged with threat, the dream may replay that threat scenario—but in the safety of sleep, with your cortex (the thinking brain) only partially engaged. This gradual exposure in a safe context is how your brain eventually categorizes the threat as past, not present.</p><p>This is why trauma-sensitive sleep—adequate REM sleep in a safe environment—is part of natural healing. The nightmares aren't a sign that something's wrong; they're evidence that healing work is happening.</p><p>If you're experiencing nightmares, several approaches help: ensuring physical safety (you are in a secure location), maintaining good sleep hygiene (which improves overall sleep quality), and sometimes using imagery rehearsal therapy (a technique where you consciously revise the nightmare while awake, which reduces its frequency). But understanding nightmares as processing rather than prediction dramatically reduces the secondary anxiety they create.</p>`, affirmation: 'My difficult dreams are part of my healing.', strength: 'Resilience' },
+                { id: 'dr4', title: 'Sleep cycles build creativity', body: `<p>There's a deep connection between sleep and creativity that goes far beyond simply being well-rested. During sleep—particularly during REM sleep—your brain makes novel connections between disparate pieces of information. This is the neural basis of insight and innovation.</p><p>Many of history's great breakthroughs came after sleep. Scientists, artists, and innovators have long recognized that sleeping on a problem often yields a solution. This isn't mystical; it's neurological. During REM sleep, your prefrontal cortex (which enforces logical constraints) is less active, while your default mode network (which generates associations and creative leaps) is highly active. This is the brain state where novel connections emerge.</p><p>This has practical implications: if you're trying to solve a creative problem, don't sacrifice sleep trying to force the solution. Your brain will solve it more effectively after you've slept. If you want to learn a new skill, sleep is when the learning consolidates into long-term memory. If you want to write, create, or innovate, consistent, high-quality sleep is among the best investments you can make.</p><p>The cultural narrative that sleep is a luxury, that staying up late shows dedication, is actively harming your capacity for the very things you're trying to achieve. Sleep isn't the absence of productivity; it's the condition that makes genuine creativity and innovation possible.</p>`, affirmation: 'Sleep is where my creativity takes root.', strength: 'Innovation' },
+                { id: 'dr5', title: 'Morning after good sleep is medicine', body: `<p>The quality of your waking life is almost entirely downstream from sleep quality. When you sleep well—deeply, fully, for sufficient duration—the next day is fundamentally different. Your mood is lighter, your resilience is greater, your capacity to handle difficulty is expanded. This isn't metaphorical; it's biochemical.</p><p>Sleep deprivation impairs your immune system, elevates stress hormones, reduces emotional regulation, and increases inflammation throughout your body. Conversely, good sleep strengthens immunity, reduces inflammation, improves emotional resilience, and enhances cognitive function. The morning after good sleep, your brain has the neurochemical foundation for optimism, patience, and creative problem-solving.</p><p>Many people chase happiness through effort and force: more achievements, more productivity, more optimizations. But the highest-ROI intervention for wellbeing is often simply sleeping better. When you sleep well, happiness is no longer something you're chasing; it's a natural byproduct of a well-rested nervous system.</p><p>This is why building a consistent sleep practice—not just one good night, but multiple nights of quality sleep—is transformative. Your baseline mood improves, your resilience strengthens, your ability to be present deepens. You're more patient with the people you love, more creative in your work, more able to handle the unexpected. Sleep is preventive medicine and mood medicine and cognitive medicine, all at once.</p>`, affirmation: 'Good sleep is the foundation of my wellbeing.', strength: 'Health' }
+            ]
+        };
+
+        const TRACK_INFO = {
+            'wind-down': { name: 'Wind-Down', color: '#7d8fa3' },
+            'breathing': { name: 'Breathing', color: '#6b7a8f' },
+            'body-scan': { name: 'Body-Scan', color: '#5a6b7e' },
+            'dream': { name: 'Dream', color: '#6fa86f' }
+        };
+
+        let currentState = 'onboarding';
+        let selectedTrack = null;
+        let currentLesson = null;
+        let synth = null;
+        let isPlaying = false;
+
+        function loadState() {
+            const saved = localStorage.getItem('sleepAppState');
+            if (saved) return JSON.parse(saved);
+            return { completed: [], lastCompletedDate: null, totalListeningTime: 0 };
+        }
+
+        function saveState(state) {
+            localStorage.setItem('sleepAppState', JSON.stringify(state));
+        }
+
+        let appState = loadState();
+
+        function showScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenName).classList.add('active');
+            currentState = screenName;
+        }
+
+        document.querySelectorAll('.track-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const track = this.dataset.track;
+                if (track) {
+                    selectedTrack = track;
+                    showScreen('lesson');
+                    loadLesson(LESSONS[track][0]);
+                }
+            });
+        });
+
+        document.getElementById('browseBtn').addEventListener('click', function() {
+            showScreen('progress');
+            loadProgressScreen();
+        });
+
+        function loadLesson(lesson) {
+            currentLesson = lesson;
+            document.getElementById('lessonTitle').textContent = lesson.title;
+            document.getElementById('lessonMeta').textContent = `${TRACK_INFO[selectedTrack].name} • Lesson`;
+            document.getElementById('lessonBody').innerHTML = lesson.body;
+            document.getElementById('lessonAffirmation').innerHTML = `"${lesson.affirmation}"`;
+            document.getElementById('strengthContainer').innerHTML = `<div class="lesson-strength">${lesson.strength}</div>`;
+
+            const isCompleted = appState.completed.includes(lesson.id);
+            const completeBtn = document.getElementById('completeBtn');
+            if (isCompleted) {
+                completeBtn.classList.add('completed');
+                completeBtn.textContent = '✓ Completed';
+            } else {
+                completeBtn.classList.remove('completed');
+                completeBtn.textContent = '✓ Complete';
+            }
+
+            document.querySelector('.lesson-content').scrollTop = 0;
+        }
+
+        document.getElementById('lessonBack').addEventListener('click', function() {
+            showScreen('progress');
+            loadProgressScreen();
+        });
+
+        document.getElementById('readAloudBtn').addEventListener('click', function() {
+            if (!synth) synth = window.speechSynthesis;
+
+            if (isPlaying) {
+                synth.cancel();
+                isPlaying = false;
+                this.classList.remove('playing');
+                this.textContent = '🔊 Read Aloud';
+            } else {
+                const text = currentLesson.body.replace(/<\/?p>/g, ' ') + '. ' + currentLesson.affirmation;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.85;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+
+                utterance.onend = function() {
+                    isPlaying = false;
+                    document.getElementById('readAloudBtn').classList.remove('playing');
+                    document.getElementById('readAloudBtn').textContent = '🔊 Read Aloud';
+                };
+
+                synth.speak(utterance);
+                isPlaying = true;
+                this.classList.add('playing');
+                this.textContent = '⏸ Stop';
+            }
+        });
+
+        document.getElementById('completeBtn').addEventListener('click', function() {
+            if (!appState.completed.includes(currentLesson.id)) {
+                appState.completed.push(currentLesson.id);
+                appState.lastCompletedDate = new Date().toDateString();
+                saveState(appState);
+                showCelebration();
+                this.classList.add('completed');
+                this.textContent = '✓ Completed';
+            }
+        });
+
+        function loadProgressScreen() {
+            const totalCompleted = appState.completed.length;
+            document.getElementById('progressDesc').textContent = `${totalCompleted} of 20 lessons`;
+
+            const lessonsPanel = document.getElementById('lessonsPanel');
+            lessonsPanel.innerHTML = '';
+
+            for (const [trackId, lessons] of Object.entries(LESSONS)) {
+                const group = document.createElement('div');
+                group.className = 'track-group';
+
+                const title = document.createElement('div');
+                title.className = 'track-group-title';
+                title.textContent = TRACK_INFO[trackId].name;
+                group.appendChild(title);
+
+                lessons.forEach((lesson, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'lesson-item';
+                    if (appState.completed.includes(lesson.id)) item.classList.add('completed');
+
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'lesson-item-checkbox';
+                    checkbox.textContent = appState.completed.includes(lesson.id) ? '✓' : '';
+                    item.appendChild(checkbox);
+
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'lesson-item-title';
+                    titleDiv.textContent = lesson.title;
+                    item.appendChild(titleDiv);
+
+                    const count = document.createElement('div');
+                    count.className = 'lesson-item-count';
+                    count.textContent = `${idx + 1} / 5`;
+                    item.appendChild(count);
+
+                    item.addEventListener('click', function() {
+                        selectedTrack = trackId;
+                        showScreen('lesson');
+                        loadLesson(lesson);
+                    });
+
+                    group.appendChild(item);
+                });
+
+                lessonsPanel.appendChild(group);
+            }
+
+            loadStatsTab();
+        }
+
+        function loadStatsTab() {
+            const totalCompleted = appState.completed.length;
+            document.getElementById('totalCompleted').textContent = totalCompleted;
+
+            let streak = 0;
+            if (appState.lastCompletedDate) {
+                const lastDate = new Date(appState.lastCompletedDate);
+                const today = new Date();
+                const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+                if (diffDays === 0 || diffDays === 1) streak = 1;
+            }
+
+            document.getElementById('streakNumber').textContent = streak;
+            document.getElementById('totalTime').textContent = (totalCompleted * 10 / 60).toFixed(1);
+        }
+
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                document.getElementById('lessonsTab').classList.add('hidden');
+                document.getElementById('statsTab').classList.add('hidden');
+
+                if (tabName === 'lessons') {
+                    document.getElementById('lessonsTab').classList.remove('hidden');
+                } else {
+                    document.getElementById('statsTab').classList.remove('hidden');
+                }
+            });
+        });
+
+        function showCelebration() {
+            const modal = document.getElementById('celebrationModal');
+            modal.classList.add('active');
+
+            document.getElementById('celebrationBtn').onclick = function() {
+                modal.classList.remove('active');
+            };
+
+            setTimeout(() => {
+                modal.classList.remove('active');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
