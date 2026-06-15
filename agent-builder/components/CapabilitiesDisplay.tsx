@@ -98,30 +98,18 @@ export function CapabilitiesDisplay({ config }: CapabilitiesDisplayProps) {
         </div>
 
         <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <span className={config.name ? '✓' : '○'} className="font-bold text-gray-400">
-              {config.name ? '✓' : '○'}
-            </span>
-            <span className={config.name ? 'text-gray-700' : 'text-gray-500'}>
-              Agent name configured
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={config.tools.length > 0 ? '✓' : '○'} className="font-bold text-gray-400">
-              {config.tools.length > 0 ? '✓' : '○'}
-            </span>
-            <span className={config.tools.length > 0 ? 'text-gray-700' : 'text-gray-500'}>
-              At least one tool selected
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={config.systemPrompt ? '✓' : '○'} className="font-bold text-gray-400">
-              {config.systemPrompt ? '✓' : '○'}
-            </span>
-            <span className={config.systemPrompt ? 'text-gray-700' : 'text-gray-500'}>
-              System prompt defined
-            </span>
-          </div>
+          {([
+            [Boolean(config.name), 'Agent name configured'],
+            [config.tools.length > 0, 'At least one tool selected'],
+            [Boolean(config.systemPrompt), 'System prompt defined'],
+          ] as const).map(([done, label]) => (
+            <div key={label} className="flex items-center gap-2">
+              <span className={`font-bold ${done ? 'text-green-600' : 'text-gray-400'}`}>
+                {done ? '✓' : '○'}
+              </span>
+              <span className={done ? 'text-gray-700' : 'text-gray-500'}>{label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
