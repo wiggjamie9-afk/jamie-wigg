@@ -4,32 +4,23 @@ const config: CapacitorConfig = {
   appId: 'au.rhythmix.buddyapps',
   appName: '50 Buddy Apps',
   webDir: 'www',
-  server: {
-    androidScheme: 'https',
-    iosScheme: 'buddyapps'
+  plugins: {
+    Camera: {
+      permissions: ['camera', 'photos'],
+    },
+    Microphone: {
+      permissions: ['microphone'],
+    },
   },
   ios: {
-    scheme: 'buddyapps',
-    paddingBottom: 50,
-    paddingTop: 0,
-    paddingLeft: 0,
-    paddingRight: 0,
-    limitsNavigationsToAppBoundDomains: true
+    minVersion: '14.0',
+    scheme: '50BuddyApps',
   },
-  plugins: {
-    SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
-      backgroundColor: '#060912',
-      androidScaleType: 'CENTER_CROP',
-      showSpinner: false
-    },
-    StatusBar: {
-      style: 'dark',
-      backgroundColor: '#060912',
-      overlaysWebView: true
-    }
-  }
+  server: {
+    androidScheme: 'https',
+    // Leave blank for production (serves from www/)
+    // For development: url: 'http://localhost:8000'
+  },
 };
 
 export default config;

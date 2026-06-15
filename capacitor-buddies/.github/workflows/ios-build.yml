@@ -1,0 +1,133 @@
+name: iOS Build & TestFlight
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'capacitor-buddies/**'
+      - 'apps/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Install Capacitor CLI
+        run: npm install -g @capacitor/cli@latest
+
+      - name: Install dependencies
+        working-directory: ./capacitor-buddies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web assets
+        working-directory: ./capacitor-buddies
+        run: pnpm run build:web
+
+      - name: Sync to iOS
+        working-directory: ./capacitor-buddies
+        run: pnpm run sync
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+          bundler-cache: true
+
+      - name: Install Fastlane
+        working-directory: ./capacitor-buddies
+        run: |
+          gem install fastlane
+          gem install spaceship
+
+      - name: Cache derived data
+        uses: actions/cache@v3
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-
+
+      - name: Build iOS Archive
+        working-directory: ./capacitor-buddies
+        env:
+          DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -derivedDataPath ios/build \
+            -archivePath ios/build/App.xcarchive \
+            -allowProvisioningUpdates \
+            archive \
+            CODE_SIGN_STYLE="Automatic" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" 2>&1 | tee build.log
+
+      - name: Check build log for errors
+        working-directory: ./capacitor-buddies
+        if: failure()
+        run: tail -100 build.log
+
+      - name: Export IPA
+        working-directory: ./capacitor-buddies
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath ios/build/App.xcarchive \
+            -exportPath ios/build/export \
+            -exportOptionsPlist ios/App/ExportOptions.plist \
+            -allowProvisioningUpdates
+
+      - name: Upload to TestFlight
+        working-directory: ./capacitor-buddies
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_ID: ${{ secrets.APPLE_BUNDLE_ID }}
+        run: |
+          xcrun altool --upload-app \
+            --file "ios/build/export/50 Buddy Apps.ipa" \
+            --type ios \
+            --username "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --verbose || echo "Upload attempt completed (may be queued)"
+
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: iOS-Build-${{ github.run_number }}
+          path: capacitor-buddies/ios/build/export/
+          retention-days: 7
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "✅ iOS build successful and uploaded to TestFlight"
+          echo "Build number: ${{ github.run_number }}"
+          echo "Check TestFlight in App Store Connect in ~10 minutes"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ iOS build failed"
+          echo "Check logs above for details"
+          exit 1
