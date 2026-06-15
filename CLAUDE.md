@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Ecosystem Overview
+
+This repository contains the **full creative + commerce AI agent network** — specialized agents for video production, app development, marketing, and revenue generation. See `ECOSYSTEM.md` for the complete agent roster and workflows.
+
+**Core playbooks** (load via `/skill <name>`):
+- `/launch-video-series "concept"` — 4-week animated series pipeline (concept → script → animation → publish → monetize)
+- `/ship-app-to-store "idea"` — 8-week full-stack app development (design → backend → mobile → launch)
+- `/monetize-audience` — Convert viewers/subscribers into paying customers (segmentation → offer → funnel → revenue)
+
+---
+
 ## Quick Start (For Claude)
 
 - **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
@@ -449,6 +460,9 @@ Per-skill triggers. MUST load before acting on the governed task; a skill loaded
 
 | Skill | Trigger | Task scope |
 |---|---|---|
+| `launch-video-series` | MUST load for 4-week animated series production | Full pipeline: story → script → animation → publish → monetize |
+| `ship-app-to-store` | MUST load for 8-week app development | Full-stack: design → backend → mobile → launch → ads |
+| `monetize-audience` | MUST load for revenue generation workflows | Convert audience → offer → funnel → revenue |
 | `rhythmix-author` | MUST load for end-to-end promo authoring | New RHYTHMIX videos (script → TTS → HyperFrames → render) |
 | `changelog` | MUST load for CHANGELOG.md edits | Adding/reorganizing release notes or drafting releases |
 | `decisions` | MUST load for ADR/PDR creation or updates | Creating or superseding architectural/product decisions in `docs/decisions/` |
