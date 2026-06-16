@@ -479,6 +479,21 @@
                         </div>
                     </div>
 
+                    <div class="set-group">
+                        <div class="set-row" style="display:block;">
+                            <div><div class="sl">🌐 Avatar Proxy URL</div><div class="sd">Local Higgsfield bridge running on your Mac</div></div>
+                            <input type="text" id="proxy-url" placeholder="http://localhost:3001" value="http://localhost:3001" style="margin-top:10px;">
+                        </div>
+                        <div class="set-row" style="display:block;">
+                            <div><div class="sl">✨ Avatar Studio</div><div class="sd">Describe your tutor's face, then bring it to life</div></div>
+                            <textarea id="avatar-prompt" placeholder="Describe appearance..." style="width:100%;height:70px;margin-top:10px;"></textarea>
+                            <div class="btn-row" style="margin-top:12px;">
+                                <button class="btn" onclick="generateAvatarStill()">✨ Generate Face</button>
+                                <button class="btn violet" onclick="animateAvatar()">🎬 Bring to Life</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mini" style="text-align:center; padding-bottom:8px;">MathTutor Pro · built to help the whole world learn 🌍</div>
                 </section>
 
@@ -857,6 +872,34 @@ Rules:
         // warm welcome in the tutor
         addBubble('ai', store.name ? `Hi ${fmt(store.name)}! I'm your maths tutor. What's been tricky lately? 💛` : `Hi! I'm your maths tutor. Tell me what you're working on and we'll figure it out together 💛`);
     })();
+
+    /* ============================================================
+       HIGGSFIELD AVATAR STUDIO  (talks to local proxy on the Mac)
+    ============================================================ */
+    async function generateAvatarStill() {
+      const proxyUrl = (document.getElementById('proxy-url') && document.getElementById('proxy-url').value) || localStorage.getItem('proxy-url') || 'http://localhost:3001';
+      localStorage.setItem('proxy-url', proxyUrl);
+      const prompt = (document.getElementById('avatar-prompt') && document.getElementById('avatar-prompt').value) || 'A friendly, patient portrait of the MathTutor, warm and encouraging, professional headshot style.';
+      try {
+        const response = await fetch(`${proxyUrl}/api/higgsfield-generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, model: 'soul', size: '512x512' }) });
+        if (!response.ok) throw new Error('Generation failed');
+        const data = await response.json();
+        localStorage.setItem('mathtutor-avatar', data.imageUrl);
+        alert('Avatar generated! ✨');
+      } catch (err) { alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')'); }
+    }
+    async function animateAvatar() {
+      const proxyUrl = (document.getElementById('proxy-url') && document.getElementById('proxy-url').value) || localStorage.getItem('proxy-url') || 'http://localhost:3001';
+      const imageUrl = localStorage.getItem('mathtutor-avatar');
+      if (!imageUrl) { alert('Generate a face first'); return; }
+      try {
+        const response = await fetch(`${proxyUrl}/api/higgsfield-animate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUrl, model: 'dop', motion: 'talking-head' }) });
+        if (!response.ok) throw new Error('Animation failed');
+        const data = await response.json();
+        localStorage.setItem('mathtutor-avatar-video', data.videoUrl);
+        alert('Avatar brought to life! 🎬');
+      } catch (err) { alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')'); }
+    }
     </script>
 </body>
 </html>

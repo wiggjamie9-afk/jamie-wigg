@@ -557,6 +557,18 @@
                 </div>
 
                 <div class="settings-group">
+                    <div class="settings-title">🌐 Avatar Proxy URL</div>
+                    <input type="text" id="proxy-url" class="form-input" placeholder="http://localhost:3001" value="http://localhost:3001">
+                </div>
+
+                <div class="settings-group">
+                    <div class="settings-title">✨ Avatar Studio</div>
+                    <textarea id="avatar-prompt" class="form-textarea" placeholder="Describe appearance..." style="width:100%;height:70px;"></textarea>
+                    <button class="btn-primary" onclick="generateAvatarStill()" style="margin-top: 12px;">✨ Generate Face</button>
+                    <button class="btn-primary" onclick="animateAvatar()" style="margin-top: 12px;">🎬 Bring to Life</button>
+                </div>
+
+                <div class="settings-group">
                     <div class="settings-title">Data</div>
                     <button class="btn-primary" onclick="exportReviews()">Export Reviews</button>
                 </div>
@@ -822,6 +834,42 @@
             a.href = url;
             a.download = 'codementor-reviews.csv';
             a.click();
+        }
+
+        async function generateAvatarStill() {
+          const proxyUrl = (document.getElementById('proxy-url') && document.getElementById('proxy-url').value) || localStorage.getItem('proxy-url') || 'http://localhost:3001';
+          localStorage.setItem('proxy-url', proxyUrl);
+          const prompt = (document.getElementById('avatar-prompt') && document.getElementById('avatar-prompt').value) || 'A friendly portrait of the CodeMentor coach, warm and approachable, professional headshot style.';
+          try {
+            const response = await fetch(`${proxyUrl}/api/higgsfield-generate`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt, model: 'soul', size: '512x512' }),
+            });
+            if (!response.ok) throw new Error('Generation failed');
+            const data = await response.json();
+            localStorage.setItem('codementor-avatar', data.imageUrl);
+            alert('Avatar generated! ✨');
+          } catch (err) {
+            alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')');
+          }
+        }
+
+        async function animateAvatar() {
+          const proxyUrl = (document.getElementById('proxy-url') && document.getElementById('proxy-url').value) || localStorage.getItem('proxy-url') || 'http://localhost:3001';
+          const imageUrl = localStorage.getItem('codementor-avatar');
+          if (!imageUrl) { alert('Generate a face first'); return; }
+          try {
+            const response = await fetch(`${proxyUrl}/api/higgsfield-animate`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageUrl, model: 'dop', motion: 'talking-head' }),
+            });
+            if (!response.ok) throw new Error('Animation failed');
+            const data = await response.json();
+            localStorage.setItem('codementor-avatar-video', data.videoUrl);
+            alert('Avatar brought to life! 🎬');
+          } catch (err) {
+            alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')');
+          }
         }
 
         // Initialize

@@ -312,6 +312,20 @@
                             </div>
                         </div>
                     </div>
+                    <div class="set-group">
+                        <div class="set-row" style="display:block; padding-bottom:18px;">
+                            <div><div class="sl">🌐 Avatar Proxy URL</div><div class="sd">Where avatar-proxy-local.mjs is running</div></div>
+                            <input type="text" id="proxy-url" placeholder="http://localhost:3001" value="http://localhost:3001" style="margin-top:10px;">
+                        </div>
+                        <div class="set-row" style="display:block; padding-bottom:18px;">
+                            <div><div class="sl">✨ Avatar Studio</div><div class="sd">Describe your coach, then bring them to life</div></div>
+                            <textarea id="avatar-prompt" placeholder="Describe appearance..." style="width:100%;height:70px;margin-top:10px;"></textarea>
+                            <div class="btn-row" style="margin-top:10px;">
+                                <button class="btn green" onclick="generateAvatarStill()">✨ Generate Face</button>
+                                <button class="btn ghost" onclick="animateAvatar()">🎬 Bring to Life</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="mini" style="text-align:center; padding-bottom:8px;">FitCoach Pro · built to make fitness personal 🏋️</div>
                 </section>
 
@@ -456,12 +470,38 @@
 
     /* Settings */
     function saveName(v){ localStorage.setItem('fc_name', v.trim()); greet(); }
-    function saveKey(v){ localStorage.setItem('fc_key', v.trim()); const ok=v.trim().startsWith('sk-ant'); const el=document.getElementById('keyStatus'); el.className='key-status '+(ok?'ok':'no'); el.textContent=ok?'✓ Coach is ready':(v.trim()?'That doesn't look like a Claude key':'No key yet'); }
+    function saveKey(v){ localStorage.setItem('fc_key', v.trim()); const ok=v.trim().startsWith('sk-ant'); const el=document.getElementById('keyStatus'); el.className='key-status '+(ok?'ok':'no'); el.textContent=ok?'✓ Coach is ready':(v.trim()?"That doesn't look like a Claude key":'No key yet'); }
     function setLevel(l){ localStorage.setItem('fc_level',l); document.querySelectorAll('#levelSelect .pill-opt').forEach(p=>p.classList.toggle('on',p.dataset.level===l)); }
     function toggleVoice(){ const on=!store.voice; localStorage.setItem('fc_voice',on?'1':'0'); document.getElementById('tgVoice').classList.toggle('on',on); if(!on) speechSynthesis.cancel(); }
     function setSpeed(s){ localStorage.setItem('fc_speed',s); document.querySelectorAll('#speedSelect .pill-opt').forEach(p=>p.classList.toggle('on',parseFloat(p.dataset.sp)===s)); }
     function setModel(m){ localStorage.setItem('fc_model',m); document.querySelectorAll('#modelSelect .pill-opt').forEach(p=>p.classList.toggle('on',p.dataset.model===m)); }
     function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
+
+    /* Higgsfield Avatar Studio */
+    async function generateAvatarStill() {
+      const proxyUrl = (document.getElementById('proxy-url') && document.getElementById('proxy-url').value) || localStorage.getItem('proxy-url') || 'http://localhost:3001';
+      localStorage.setItem('proxy-url', proxyUrl);
+      const prompt = (document.getElementById('avatar-prompt') && document.getElementById('avatar-prompt').value) || 'A friendly, energetic portrait of the FitCoach personal trainer, professional headshot style.';
+      try {
+        const response = await fetch(`${proxyUrl}/api/higgsfield-generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, model: 'soul', size: '512x512' }) });
+        if (!response.ok) throw new Error('Generation failed');
+        const data = await response.json();
+        localStorage.setItem('fitcoach-avatar', data.imageUrl);
+        alert('Avatar generated! ✨');
+      } catch (err) { alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')'); }
+    }
+    async function animateAvatar() {
+      const proxyUrl = (document.getElementById('proxy-url') && document.getElementById('proxy-url').value) || localStorage.getItem('proxy-url') || 'http://localhost:3001';
+      const imageUrl = localStorage.getItem('fitcoach-avatar');
+      if (!imageUrl) { alert('Generate a face first'); return; }
+      try {
+        const response = await fetch(`${proxyUrl}/api/higgsfield-animate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUrl, model: 'dop', motion: 'talking-head' }) });
+        if (!response.ok) throw new Error('Animation failed');
+        const data = await response.json();
+        localStorage.setItem('fitcoach-avatar-video', data.videoUrl);
+        alert('Avatar brought to life! 🎬');
+      } catch (err) { alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')'); }
+    }
 
     /* Boot */
     (function init(){
