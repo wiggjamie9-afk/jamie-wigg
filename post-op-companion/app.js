@@ -44,7 +44,17 @@ class PostOpCompanion {
     this.refreshDashboard();
     this.loadMealPlan();
     this.loadFitnessSchedule();
-    console.log('Post-Op Companion initialized');
+
+    // Initialize new modules
+    this.sleep = new SleepCoach(this);
+    this.hydration = new HydrationTracker(this);
+    this.medications = new MedicationReminder(this);
+    this.mentalHealth = new MentalHealthCoach(this);
+    this.emergency = new EmergencyResources(this);
+    this.professional = new ProfessionalIntegration(this);
+    this.community = new CommunitySupport(this);
+
+    console.log('Post-Op Companion initialized with 7 new features');
   }
 
   loadState() {

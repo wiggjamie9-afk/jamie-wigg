@@ -221,10 +221,134 @@ Month 10-12: Full exercise, goal-dependent
 - "Weight loss stalled, but your sleep improved — body is healing"
 - "Your strength is up 5 lbs — you're building muscle!"
 
-### 10. Community (Optional)
-- Connect with others in same month (Month 3 Buddy, Month 8 Buddy)
-- Anonymous stories: "How I handled social eating in month 4"
-- Support groups: link to Reddit, Facebook groups, therapist finder
+### 10. Sleep Optimization Coach
+**Tracks:**
+- Sleep duration (target: 7-9 hours)
+- Sleep quality (deep, light, REM from wearables)
+- Sleep timing (consistent bedtime/wake time)
+- Environmental factors (dark room, cool temp, quiet)
+
+**AI Recommendations:**
+- "Your sleep is 5.5 hours — too low for post-op healing. Try melatonin 3mg at 9pm"
+- "You're going to bed at 11pm, waking 6am — body is adjusting. Try 10:30pm for better REM"
+- "Sleep improved to 8 hours last week — this supports faster recovery!"
+
+**Features:**
+- Sleep log (manual or wearable sync)
+- Bedtime routine suggestions (phase-appropriate)
+- Sleep quality graph
+- Alerts if sleep drops below 6 hours (impacts wound healing, weight loss)
+
+### 11. Water/Hydration Tracker
+**Tracks:**
+- Daily water intake (target: 64-96oz post-op)
+- Hydration status (color of urine, manual logging)
+- Electrolyte balance (sodium, potassium — from labs)
+- Fluid intake timing (spread throughout day, away from meals)
+
+**AI Recommendations:**
+- "You logged 32oz today — target is 80oz. Dehydration slows healing. Add 8oz water every hour"
+- "Your sodium is 2800mg (target <1500) — drink more plain water, less broth"
+- "Great! 90oz water today — your labs will improve next month"
+
+**Features:**
+- Hourly water log (quick-tap buttons: 8oz, 16oz, 24oz)
+- Hydration level indicator (empty → full)
+- Reminders (push notification at 10am, 2pm, 6pm)
+- Weekly hydration graph
+
+### 12. Medication & Supplement Reminder
+**Tracks:**
+- Daily vitamins (B12, iron, calcium, vitamin D — phase-specific)
+- Medications (post-op pain relief, antibiotics, GI meds)
+- Supplement timing (must be spaced from meals for post-op)
+- Adherence (% of doses taken)
+
+**AI Recommendations:**
+- "Your iron is low — increase iron supplement from 1x to 2x daily (morning + evening, 2 hours apart from calcium)"
+- "You missed 3 B12 doses this week — this affects energy. Set alarm for 8am daily"
+- "Great adherence! 98% supplements taken — your next labs should show improvement"
+
+**Features:**
+- Daily checklist (tap to mark taken)
+- Timed reminders (notification at scheduled time)
+- Supplement interaction warnings (e.g., "Don't take calcium within 2 hours of iron")
+- Monthly adherence report
+
+### 13. Emergency/Crisis Resources
+**Provides:**
+- 24/7 crisis hotlines (Suicide & Crisis Lifeline, Crisis Text Line)
+- Post-op emergency signs (when to call surgeon immediately)
+- Emergency contacts (surgeon, hospital, emergency room)
+- First aid for common post-op complications (dumping syndrome, dehydration, pain)
+
+**Emergency Escalation Triggers (auto-alert):**
+- Heart rate >120 at rest or <50
+- Blood pressure >160/100 or <90/60
+- Weight loss >3 lbs/week
+- Severe abdominal pain
+- Persistent vomiting
+- Blood in vomit/stool
+- Fever >101°F
+
+**Features:**
+- One-tap call to surgeon
+- One-tap call to 911
+- Downloadable emergency card (print or photo)
+- Offline-accessible crisis resources
+
+### 14. Professional Integration
+**Integrates with:**
+- Surgeon's patient portal (upload/view appointment notes)
+- Nutritionist appointments (calendar sync, meal plan review)
+- Therapist/counselor (if user has mental health support)
+- Cardiologist (if BP/HR issues)
+
+**Features:**
+- Appointment calendar (integrated with Google Calendar/iCal)
+- Pre-visit questionnaire (auto-populate: latest vitals, concerns, achievements)
+- Notes sharing (user can export health summary for next appointment)
+- Doctor feedback loop (if doctor provides recommendations, they're incorporated into meal plan)
+
+**Data to share:**
+- Monthly vitals summary (weight, BP, HR trend)
+- Adherence (supplements, meals, fitness)
+- Anomalies detected (weight stall, sleep drop, BP spike)
+- Patient-reported wins (non-scale victories)
+
+### 15. Stress & Mental Health Coach
+**Tracks:**
+- Daily mood (1-10 scale)
+- Stress level (1-10 scale)
+- Anxiety triggers (food-related, social, body image)
+- Mental health history (depression, ED, bipolar — optional disclosure for personalization)
+
+**AI Recommendations:**
+- "Your stress was 8/10 yesterday after eating with friends. Body image anxiety common post-op. Try grounding exercise: 5-4-3-2-1 sensory technique"
+- "Mood improving (6/10 → 8/10) — correlates with fitness wins and sleep improvement!"
+- "You've reported food anxiety 5 times this week. Would you like to connect with a therapist? [Link to therapist finder]"
+
+**Features:**
+- Mood/stress log (daily check-in, 2 minutes)
+- Emotion tracking (happy, sad, anxious, proud, frustrated)
+- Gratitude journal (optional)
+- Mindfulness exercises (guided 5-min breathing, meditation)
+- Therapist finder (if user wants to escalate)
+- Coping strategies library
+
+### 16. Community/Peer Support
+**Connects:**
+- Other patients in same month (Month 3, Month 8, etc.)
+- Anonymous peer stories ("How I handled social eating in month 4")
+- Group challenges (e.g., "Hydration Challenge: 80oz daily for 7 days")
+- Support groups (link to Reddit, Facebook, WhatsApp groups for your surgery type)
+
+**Features:**
+- Peer matching (connect with others 2-4 weeks ahead/behind)
+- Story feed (read/share anonymously)
+- Group challenges (with leaderboard)
+- Resource links (surgery-specific communities)
+- Optional: direct messaging (moderated, safety-focused)
 
 ---
 
