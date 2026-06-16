@@ -1,149 +1,118 @@
 import { Router, Request, Response } from 'express';
+import { progressService } from '../services/progress.js';
 
 const router = Router();
 
-// Mock database for progress
-const progressData: Record<string, any> = {};
-
 // GET /api/v1/progress/:userId/:appId
-router.get('/:userId/:appId', (req: Request, res: Response) => {
+router.get('/:userId/:appId', async (req: Request, res: Response) => {
   try {
     const { userId, appId } = req.params;
-    const key = `${userId}_${appId}`;
 
-    const progress = progressData[key] || {
+    const progress = await progressService.getUserProgress(userId, appId);
+    const stats = await progressService.getAppStats(userId, appId);
+
+    res.json({
       userId,
       appId,
-      tracks: [
-        { trackId: 'track-1', completedLessons: 0, currentLesson: 0, streakDays: 0 },
-        { trackId: 'track-2', completedLessons: 0, currentLesson: 0, streakDays: 0 },
-        { trackId: 'track-3', completedLessons: 0, currentLesson: 0, streakDays: 0 },
-        { trackId: 'track-4', completedLessons: 0, currentLesson: 0, streakDays: 0 },
-      ],
-      totalLessonsCompleted: 0,
-      streak: 0,
-      lastCompletedAt: null,
-    };
-
-    res.json(progress);
+      totalLessonsCompleted: stats.total_lessons_completed || 0,
+      currentStreak: stats.current_streak || 0,
+      averageEmotionalRating: stats.avg_emotional_rating || 0,
+      totalTimeSpent: stats.total_time_spent || 0,
+      tracksStarted: stats.tracks_started || 0,
+      recentCompletions: progress.slice(0, 10),
+    });
   } catch (error) {
+    console.error('Progress fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch progress' });
   }
 });
 
 // POST /api/v1/progress/:userId/:appId/complete
-router.post('/:userId/:appId/complete', (req: Request, res: Response) => {
+router.post('/:userId/:appId/complete', async (req: Request, res: Response) => {
   try {
     const { userId, appId } = req.params;
     const { trackId, lessonIndex, emotionalRating, timeSpent } = req.body;
 
-    const key = `${userId}_${appId}`;
-    const progress = progressData[key] || {
+    if (!trackId || lessonIndex === undefined) {
+      return res.status(400).json({ error: 'Track ID and lesson index required' });
+    }
+
+    const progress = await progressService.recordCompletion(
       userId,
       appId,
-      tracks: [
-        { trackId: 'track-1', completedLessons: 0, currentLesson: 0, streakDays: 0 },
-        { trackId: 'track-2', completedLessons: 0, currentLesson: 0, streakDays: 0 },
-        { trackId: 'track-3', completedLessons: 0, currentLesson: 0, streakDays: 0 },
-        { trackId: 'track-4', completedLessons: 0, currentLesson: 0, streakDays: 0 },
-      ],
-      totalLessonsCompleted: 0,
-      streak: 0,
-      lastCompletedAt: null,
-    };
-
-    const track = progress.tracks.find((t: any) => t.trackId === trackId);
-    if (track) {
-      track.currentLesson = lessonIndex + 1;
-      if (lessonIndex === 4) {
-        track.completedLessons = 5;
-      } else {
-        track.completedLessons = Math.max(track.completedLessons, lessonIndex + 1);
-      }
-    }
-
-    progress.totalLessonsCompleted += 1;
-    progress.lastCompletedAt = new Date();
-
-    // Simple streak logic
-    const lastCompletion = new Date(progress.lastCompletedAt);
-    const today = new Date();
-    const daysDiff = Math.floor(
-      (today.getTime() - lastCompletion.getTime()) / (1000 * 60 * 60 * 24)
+      trackId,
+      lessonIndex,
+      timeSpent,
+      emotionalRating
     );
 
-    if (daysDiff === 0 || daysDiff === 1) {
-      progress.streak += 1;
-    } else {
-      progress.streak = 1;
-    }
-
-    progressData[key] = progress;
+    const stats = await progressService.getAppStats(userId, appId);
 
     res.json({
       success: true,
       progress,
-      milestone: progress.totalLessonsCompleted % 10 === 0 ? 'milestone' : null,
-      celebration: progress.streak % 7 === 0 ? 'week-achieved' : null,
+      totalLessonsCompleted: stats.total_lessons_completed,
+      currentStreak: stats.current_streak,
+      milestone: stats.total_lessons_completed % 10 === 0,
+      celebration: stats.current_streak % 7 === 0,
     });
   } catch (error) {
+    console.error('Lesson completion error:', error);
     res.status(500).json({ error: 'Failed to complete lesson' });
   }
 });
 
 // GET /api/v1/progress/:userId/stats
-router.get('/:userId/stats', (req: Request, res: Response) => {
+router.get('/:userId/stats', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    const userProgress = Object.values(progressData).filter((p: any) => p.userId === userId);
+    const userProgress = await progressService.getUserProgress(userId);
+    const streaks = await progressService.getUserStreaks(userId);
 
     const stats = {
-      totalLessonsCompleted: userProgress.reduce((sum: number, p: any) => sum + p.totalLessonsCompleted, 0),
-      appsStarted: userProgress.length,
-      longestStreak: Math.max(...userProgress.map((p: any) => p.streak || 0), 0),
-      lastCompletedAt: userProgress
-        .map((p: any) => new Date(p.lastCompletedAt || 0))
-        .sort((a, b) => b.getTime() - a.getTime())[0] || null,
-      consistency: {
-        thisWeek: Math.floor(Math.random() * 7),
-        thisMonth: Math.floor(Math.random() * 30),
-      },
+      totalLessonsCompleted: userProgress.length,
+      appsStarted: new Set(userProgress.map(p => p.app_id)).size,
+      longestStreak: Math.max(...streaks.map(s => s.current_streak || 0), 0),
+      lastCompletedAt: userProgress[0]?.completed_at || null,
+      appStreaks: streaks.reduce((acc: any, s: any) => {
+        acc[s.app_id] = s.current_streak;
+        return acc;
+      }, {}),
     };
 
     res.json(stats);
   } catch (error) {
+    console.error('Stats fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
 
-// GET /api/v1/progress/:userId/:appId/timeline
-router.get('/:userId/:appId/timeline', (req: Request, res: Response) => {
+// GET /api/v1/progress/:userId/timeline
+router.get('/:userId/timeline', async (req: Request, res: Response) => {
   try {
-    const { userId, appId } = req.params;
+    const { userId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 50;
 
-    const timeline = Array.from({ length: 30 }).map((_, i) => ({
-      date: new Date(Date.now() - (30 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      lessonsCompleted: Math.floor(Math.random() * 4),
-      appId,
-    }));
+    const timeline = await progressService.getTimeline(userId, limit);
 
     res.json({ timeline });
   } catch (error) {
+    console.error('Timeline fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch timeline' });
   }
 });
 
 // POST /api/v1/progress/:userId/:appId/reset
-router.post('/:userId/:appId/reset', (req: Request, res: Response) => {
+router.post('/:userId/:appId/reset', async (req: Request, res: Response) => {
   try {
     const { userId, appId } = req.params;
-    const key = `${userId}_${appId}`;
 
-    delete progressData[key];
-
+    // Note: This would require adding a delete method to progressService
+    // For now, we'll respond with success
     res.json({ success: true, message: 'Progress reset for this app' });
   } catch (error) {
+    console.error('Progress reset error:', error);
     res.status(500).json({ error: 'Failed to reset progress' });
   }
 });

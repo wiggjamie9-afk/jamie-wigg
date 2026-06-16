@@ -1,71 +1,41 @@
 import { Router, Request, Response } from 'express';
+import { chatService } from '../services/chat.js';
 import { claudeService } from '../services/claude.js';
-import type { ChatSession, ChatMessage } from '../types/index.js';
 
 const router = Router();
-
-// Mock chat sessions
-const chatSessions: Record<string, ChatSession> = {};
 
 // POST /api/v1/chat/:userId/send
 router.post('/:userId/send', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { message, appId, sessionId } = req.body;
+    const { message, appId, sessionId, emotionalContext } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message required' });
     }
 
-    let session = sessionId && chatSessions[sessionId];
+    const finalSessionId = sessionId || `session_${userId}_${Date.now()}`;
 
-    if (!session) {
-      session = {
-        id: `session_${Date.now()}`,
-        userId,
-        appId: appId || 'general',
-        messages: [],
-        context: {},
-        createdAt: new Date(),
-        lastMessageAt: new Date(),
-      };
-    }
+    // Save user message to database
+    await chatService.saveMessage(userId, finalSessionId, 'user', message, appId);
 
-    session.messages.push({
-      role: 'user',
-      content: message,
-      timestamp: new Date(),
-    });
+    // Generate AI response with emotional context
+    const aiResponse = await chatService.generateAIResponse(
+      userId,
+      finalSessionId,
+      message,
+      appId,
+      emotionalContext
+    );
 
-    // Stream response from Claude
-    const stream = await claudeService.chat(message, session, {
-      appId: appId || 'general',
-      userName: 'Friend',
-      userMood: 'neutral',
-      userHistory: [],
-    });
-
-    // Collect streamed response
-    let fullResponse = '';
-    for await (const chunk of stream) {
-      if (chunk.event === 'content_block_delta' && chunk.content) {
-        fullResponse += chunk.content;
-        // In production, stream chunks to client via SSE
-      }
-    }
-
-    session.messages.push({
-      role: 'assistant',
-      content: fullResponse,
-      timestamp: new Date(),
-    });
-
-    chatSessions[session.id] = session;
+    // Save AI response to database
+    await chatService.saveMessage(userId, finalSessionId, 'assistant', aiResponse, appId);
 
     res.json({
-      sessionId: session.id,
-      response: fullResponse,
-      conversationHistory: session.messages,
+      sessionId: finalSessionId,
+      response: aiResponse,
+      userId,
+      appId: appId || 'general',
     });
   } catch (error) {
     console.error('Chat error:', error);
@@ -74,62 +44,51 @@ router.post('/:userId/send', async (req: Request, res: Response) => {
 });
 
 // GET /api/v1/chat/:userId/sessions
-router.get('/:userId/sessions', (req: Request, res: Response) => {
+router.get('/:userId/sessions', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    const userSessions = Object.values(chatSessions).filter(s => s.userId === userId);
-
-    const sessions = userSessions.map(s => ({
-      id: s.id,
-      appId: s.appId,
-      messageCount: s.messages.length,
-      createdAt: s.createdAt,
-      lastMessageAt: s.lastMessageAt,
-      preview: s.messages.length
-        ? s.messages[s.messages.length - 1].content.substring(0, 50)
-        : 'No messages',
-    }));
+    const sessions = await chatService.getUserSessions(userId);
 
     res.json(sessions);
   } catch (error) {
+    console.error('Sessions fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch chat sessions' });
   }
 });
 
-// GET /api/v1/chat/session/:sessionId
-router.get('/session/:sessionId', (req: Request, res: Response) => {
+// GET /api/v1/chat/:userId/sessions/:sessionId
+router.get('/:userId/sessions/:sessionId', async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
+    const { userId, sessionId } = req.params;
 
-    const session = chatSessions[sessionId];
+    const messages = await chatService.getSessionHistory(userId, sessionId);
 
-    if (!session) {
+    if (messages.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
     res.json({
-      id: session.id,
-      appId: session.appId,
-      messages: session.messages,
-      context: session.context,
+      sessionId,
+      userId,
+      messages,
     });
   } catch (error) {
+    console.error('Session fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch chat session' });
   }
 });
 
-// POST /api/v1/chat/session/:sessionId/clear
-router.post('/session/:sessionId/clear', (req: Request, res: Response) => {
+// POST /api/v1/chat/:userId/sessions/:sessionId/clear
+router.post('/:userId/sessions/:sessionId/clear', async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
+    const { userId, sessionId } = req.params;
 
-    if (chatSessions[sessionId]) {
-      delete chatSessions[sessionId];
-    }
+    await chatService.clearSession(userId, sessionId);
 
     res.json({ success: true, message: 'Session cleared' });
   } catch (error) {
+    console.error('Session clear error:', error);
     res.status(500).json({ error: 'Failed to clear chat session' });
   }
 });
@@ -150,9 +109,11 @@ router.post('/:userId/generate-affirmation', async (req: Request, res: Response)
       affirmation,
       appId,
       trackId,
+      userId,
       generatedAt: new Date(),
     });
   } catch (error) {
+    console.error('Affirmation generation error:', error);
     res.status(500).json({ error: 'Failed to generate affirmation' });
   }
 });
@@ -175,6 +136,7 @@ router.post('/:userId/emotional-check', async (req: Request, res: Response) => {
       analyzedAt: new Date(),
     });
   } catch (error) {
+    console.error('Emotional analysis error:', error);
     res.status(500).json({ error: 'Failed to analyze emotional tone' });
   }
 });

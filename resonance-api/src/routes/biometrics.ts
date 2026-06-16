@@ -1,137 +1,147 @@
 import { Router, Request, Response } from 'express';
-import type { Biometric } from '../types/index.js';
+import { biometricsService } from '../services/biometrics.js';
 
 const router = Router();
 
-// Mock biometric data
-const biometricsData: Record<string, Biometric[]> = {};
-
 // POST /api/v1/biometrics/:userId/submit
-router.post('/:userId/submit', (req: Request, res: Response) => {
+router.post('/:userId/submit', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { heartRate, hrv, breathingRate, stressLevel, emotionalState, source } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID required' });
+    if (!userId || !source) {
+      return res.status(400).json({ error: 'User ID and source required' });
     }
 
-    const biometric: Biometric = {
-      id: `bio_${Date.now()}`,
-      userId,
-      heartRate: heartRate || Math.floor(Math.random() * 100 + 60),
-      hrv: hrv || Math.floor(Math.random() * 200),
-      breathingRate: breathingRate || Math.floor(Math.random() * 10 + 12),
-      stressLevel: stressLevel || Math.floor(Math.random() * 100),
-      emotionalState: emotionalState || 'calm',
-      source: source || 'manual',
-      detectedAt: new Date(),
-    };
-
-    if (!biometricsData[userId]) {
-      biometricsData[userId] = [];
-    }
-
-    biometricsData[userId].push(biometric);
-
-    // Keep only last 100 readings
-    if (biometricsData[userId].length > 100) {
-      biometricsData[userId] = biometricsData[userId].slice(-100);
-    }
+    const biometric = await biometricsService.submitData(userId, {
+      heartRate,
+      hrv,
+      breathingRate,
+      stressLevel,
+      emotionalState,
+      source,
+    });
 
     res.status(201).json({ success: true, biometric });
   } catch (error) {
+    console.error('Biometrics submit error:', error);
     res.status(500).json({ error: 'Failed to submit biometrics' });
   }
 });
 
 // GET /api/v1/biometrics/:userId/latest
-router.get('/:userId/latest', (req: Request, res: Response) => {
+router.get('/:userId/latest', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    const readings = biometricsData[userId] || [];
-    const latest = readings[readings.length - 1] || {
-      heartRate: 72,
-      hrv: 45,
-      breathingRate: 14,
-      stressLevel: 35,
-      emotionalState: 'calm',
-    };
+    const latest = await biometricsService.getLatest(userId);
+
+    if (!latest) {
+      return res.json({
+        heartRate: 72,
+        hrv: 45,
+        breathingRate: 14,
+        stressLevel: 35,
+        emotionalState: 'calm',
+      });
+    }
 
     res.json(latest);
   } catch (error) {
+    console.error('Latest biometrics fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch latest biometrics' });
   }
 });
 
 // GET /api/v1/biometrics/:userId/trend
-router.get('/:userId/trend', (req: Request, res: Response) => {
+router.get('/:userId/trend', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { range = '7d' } = req.query;
+    const { range = '24' } = req.query;
 
-    const readings = biometricsData[userId] || [];
+    const hours = range === '7d' ? 168 : range === '30d' ? 720 : 24;
+    const readings = await biometricsService.getTrends(userId, hours);
+
+    if (readings.length === 0) {
+      return res.json({
+        range,
+        heartRate: { current: 72, average: 72, trend: 'stable' },
+        hrv: { current: 45, average: 45, trend: 'stable' },
+        stressLevel: { current: 35, average: 35, trend: 'stable' },
+      });
+    }
+
+    const avgData = await biometricsService.getAverages(userId, hours);
 
     const trend = {
       range,
       heartRate: {
-        current: readings.length ? readings[readings.length - 1].heartRate : 72,
-        average: readings.length
-          ? Math.round(readings.reduce((sum, r) => sum + r.heartRate, 0) / readings.length)
-          : 72,
-        trend: readings.length > 1 ? (readings[readings.length - 1].heartRate > readings[0].heartRate ? 'up' : 'down') : 'stable',
+        current: readings[0]?.heart_rate || 72,
+        average: avgData.avg_heart_rate || 72,
+        trend: readings.length > 1
+          ? readings[0].heart_rate > readings[readings.length - 1].heart_rate
+            ? 'up'
+            : 'down'
+          : 'stable',
       },
       hrv: {
-        current: readings.length ? readings[readings.length - 1].hrv : 45,
-        average: readings.length ? Math.round(readings.reduce((sum, r) => sum + r.hrv, 0) / readings.length) : 45,
-        trend: readings.length > 1 ? (readings[readings.length - 1].hrv > readings[0].hrv ? 'up' : 'down') : 'stable',
+        current: readings[0]?.hrv || 45,
+        average: avgData.avg_hrv || 45,
+        trend: readings.length > 1
+          ? readings[0].hrv > readings[readings.length - 1].hrv
+            ? 'up'
+            : 'down'
+          : 'stable',
       },
       stressLevel: {
-        current: readings.length ? readings[readings.length - 1].stressLevel : 35,
-        average: readings.length ? Math.round(readings.reduce((sum, r) => sum + r.stressLevel, 0) / readings.length) : 35,
-        trend: readings.length > 1 ? (readings[readings.length - 1].stressLevel < readings[0].stressLevel ? 'down' : 'up') : 'stable',
+        current: readings[0]?.stress_level || 35,
+        average: avgData.avg_stress_level || 35,
+        trend: readings.length > 1
+          ? readings[0].stress_level < readings[readings.length - 1].stress_level
+            ? 'down'
+            : 'up'
+          : 'stable',
       },
     };
 
     res.json(trend);
   } catch (error) {
+    console.error('Biometrics trend error:', error);
     res.status(500).json({ error: 'Failed to fetch biometric trends' });
   }
 });
 
 // GET /api/v1/biometrics/:userId/history
-router.get('/:userId/history', (req: Request, res: Response) => {
+router.get('/:userId/history', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { limit = 50 } = req.query;
+    const { limit = '50' } = req.query;
 
-    const readings = biometricsData[userId] || [];
     const limitNum = Math.min(parseInt(limit as string, 10) || 50, 100);
+    const readings = await biometricsService.getHistory(userId, limitNum);
 
     res.json({
       total: readings.length,
-      readings: readings.slice(-limitNum),
+      readings,
     });
   } catch (error) {
+    console.error('Biometrics history error:', error);
     res.status(500).json({ error: 'Failed to fetch biometric history' });
   }
 });
 
-// WebSocket endpoint (placeholder for real-time updates)
-// In production, implement with ws library
-router.get('/:userId/stream', (req: Request, res: Response) => {
-  res.status(501).json({ error: 'WebSocket stream not yet implemented' });
-});
-
 // POST /api/v1/biometrics/:userId/link-apple-health
-router.post('/:userId/link-apple-health', (req: Request, res: Response) => {
+router.post('/:userId/link-apple-health', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { token } = req.body;
 
-    // TODO: Exchange token for HealthKit access
-    // For now, mock response
+    if (!token) {
+      return res.status(400).json({ error: 'Token required' });
+    }
+
+    await biometricsService.linkHealthKit(userId, token);
+
     res.json({
       success: true,
       message: 'Apple HealthKit linked',
@@ -139,18 +149,23 @@ router.post('/:userId/link-apple-health', (req: Request, res: Response) => {
       lastSync: new Date(),
     });
   } catch (error) {
+    console.error('HealthKit link error:', error);
     res.status(500).json({ error: 'Failed to link Apple HealthKit' });
   }
 });
 
 // POST /api/v1/biometrics/:userId/link-google-fit
-router.post('/:userId/link-google-fit', (req: Request, res: Response) => {
+router.post('/:userId/link-google-fit', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { token } = req.body;
 
-    // TODO: Exchange token for Google Fit access
-    // For now, mock response
+    if (!token) {
+      return res.status(400).json({ error: 'Token required' });
+    }
+
+    await biometricsService.linkGoogleFit(userId, token);
+
     res.json({
       success: true,
       message: 'Google Fit linked',
@@ -158,6 +173,7 @@ router.post('/:userId/link-google-fit', (req: Request, res: Response) => {
       lastSync: new Date(),
     });
   } catch (error) {
+    console.error('Google Fit link error:', error);
     res.status(500).json({ error: 'Failed to link Google Fit' });
   }
 });
