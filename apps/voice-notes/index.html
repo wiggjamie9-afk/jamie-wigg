@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Notes — Speak Your Ideas</title>
+  <meta name="description" content="Voice-to-text idea capture with offline transcription." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#08050d" />
+  <style>
+    :root {
+      --canvas: #08050d;
+      --magenta: #ff1f5a;
+      --purple: #7c3aed;
+      --cyan: #00d8ff;
+      --green: #00e887;
+      --gold: #f5c000;
+      --pink: #ff6fc8;
+      --white: #ffffff;
+      --muted: #a0a0b0;
+      --card: #1a1325;
+      --card-2: #221a30;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--canvas);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 0 20px; }
+
+    /* Header */
+    header {
+      padding: 32px 0 24px;
+      text-align: center;
+      background: radial-gradient(60% 120% at 50% -10%, rgba(255, 31, 90, 0.2), transparent 60%);
+    }
+    .eyebrow {
+      display: inline-block;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: var(--magenta);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(120deg, var(--magenta), var(--purple));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .sub { color: var(--muted); font-size: 14px; }
+
+    /* Tab Navigation */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 24px;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .tab {
+      flex: 1;
+      min-width: 80px;
+      padding: 14px 12px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      border-bottom: 3px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tab:hover { color: var(--white); }
+    .tab.active {
+      color: var(--magenta);
+      border-bottom-color: var(--magenta);
+    }
+
+    /* Tab Content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Recording UI */
+    .recording-display {
+      text-align: center;
+      padding: 40px 20px;
+      background: linear-gradient(135deg, rgba(255, 31, 90, 0.1), rgba(124, 58, 237, 0.1));
+      border: 1px solid rgba(255, 31, 90, 0.2);
+      border-radius: 16px;
+      margin-bottom: 24px;
+    }
+    .recording-status {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    .recording-time {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--magenta);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 16px;
+      font-family: monospace;
+    }
+    .recording-pulse {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: var(--magenta);
+      border-radius: 50%;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .recording-waveform {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 16px;
+    }
+    .waveform-bar {
+      width: 4px;
+      background: linear-gradient(180deg, var(--magenta), var(--purple));
+      border-radius: 2px;
+      animation: waveform 0.6s ease-in-out infinite;
+    }
+    @keyframes waveform {
+      0%, 100% { height: 10px; }
+      50% { height: 30px; }
+    }
+    .waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+    .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+    .waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+    .waveform-bar:nth-child(5) { animation-delay: 0.4s; }
+
+    /* Note Card */
+    .voice-note-card {
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid rgba(255, 31, 90, 0.1);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      transition: 0.2s;
+    }
+    .voice-note-card:hover {
+      border-color: var(--magenta);
+      background: var(--card-2);
+    }
+    .voice-note-text {
+      font-size: 14px;
+      color: var(--white);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .voice-note-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .voice-note-time {
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .voice-note-delete {
+      background: rgba(255, 31, 90, 0.2);
+      color: var(--magenta);
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .voice-note-delete:hover {
+      background: rgba(255, 31, 90, 0.3);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 13px;
+      transition: 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .btn-primary {
+      background: linear-gradient(120deg, var(--magenta), var(--purple));
+      color: var(--white);
+    }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--muted);
+    }
+    .btn-secondary:hover {
+      color: var(--white);
+      border-color: var(--magenta);
+    }
+
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--magenta);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-state .emoji {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    /* Premium Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: var(--card-2);
+      border: 1px solid rgba(255, 31, 90, 0.2);
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 320px;
+      text-align: center;
+      animation: slide-up 0.3s ease;
+    }
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .modal h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .modal p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .modal .btn { margin-top: 12px; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="eyebrow">Voice Notes</span>
+    <h1>🎤 Speak Ideas</h1>
+    <p class="sub">Voice-to-text idea capture.</p>
+  </div>
+</header>
+
+<div class="wrap" style="margin-top: 24px;">
+  <div class="tabs">
+    <button class="tab active" data-tab="record">Record</button>
+    <button class="tab" data-tab="notes">My Notes</button>
+    <button class="tab" data-tab="stats">Stats</button>
+  </div>
+
+  <!-- Record Tab -->
+  <div id="record" class="tab-content active">
+    <div class="recording-display">
+      <div class="recording-status">Press to Record</div>
+      <div class="recording-time" id="recording-time">00:00</div>
+      <div id="recording-pulse" style="display: none;">
+        <span class="recording-pulse"></span>
+        <span style="margin-left: 8px; font-size: 13px;">Recording...</span>
+      </div>
+      <div id="waveform" class="recording-waveform" style="display: none;">
+        <div class="waveform-bar" style="height: 15px;"></div>
+        <div class="waveform-bar" style="height: 20px;"></div>
+        <div class="waveform-bar" style="height: 25px;"></div>
+        <div class="waveform-bar" style="height: 20px;"></div>
+        <div class="waveform-bar" style="height: 15px;"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="record-btn">🎙️ Start Recording</button>
+      <button class="btn btn-secondary" id="stop-btn" style="display: none;">Stop</button>
+    </div>
+
+    <div id="transcript-preview" style="margin-top: 20px; padding: 16px; background: var(--card); border-radius: 8px; display: none;">
+      <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 700;">Transcript</div>
+      <div id="transcript-text" style="font-size: 14px; line-height: 1.6; color: var(--white);"></div>
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button class="btn btn-primary" id="save-transcript-btn" style="flex: 1; padding: 10px;">Save</button>
+        <button class="btn btn-secondary" id="discard-transcript-btn" style="flex: 1; padding: 10px;">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Notes Tab -->
+  <div id="notes" class="tab-content">
+    <div id="voice-notes-list"></div>
+  </div>
+
+  <!-- Stats Tab -->
+  <div id="stats" class="tab-content">
+    <div class="stat-box" style="width: 100%; margin-bottom: 16px;">
+      <div class="stat-label">Total Voice Notes</div>
+      <div class="stat-value" id="total-voice-notes">0</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-label">Total Words</div>
+        <div class="stat-value" id="total-word-count">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Total Time</div>
+        <div class="stat-value" id="total-time">0m</div>
+      </div>
+    </div>
+
+    <div class="stat-box" style="width: 100%; margin-top: 16px;">
+      <div class="stat-label">This Week</div>
+      <div class="stat-value" id="week-notes">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- Premium Modal -->
+<div id="premium-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-icon">✨</div>
+    <h2>Unlock Premium</h2>
+    <p>Unlimited voice notes, advanced transcription, and speaker identification.</p>
+    <button class="btn btn-primary" id="unlock-btn">Unlock — $3.99</button>
+    <button class="btn btn-secondary" id="close-modal-btn" style="background: var(--card); border: 1px solid rgba(255,255,255,.12); color: var(--muted);">Maybe Later</button>
+  </div>
+</div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+
+  let state = {
+    premium: localStorage.getItem("vn_premium") === "true",
+    notes: JSON.parse(localStorage.getItem("vn_notes") || "[]"),
+  };
+
+  let recording = {
+    isRecording: false,
+    mediaRecorder: null,
+    audioChunks: [],
+    startTime: 0,
+    timerInterval: null,
+    transcript: "",
+  };
+
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = "en-US";
+
+  recognition.onstart = () => {
+    recording.isRecording = true;
+    document.getElementById("record-btn").style.display = "none";
+    document.getElementById("stop-btn").style.display = "flex";
+    document.getElementById("recording-pulse").style.display = "block";
+    document.getElementById("waveform").style.display = "flex";
+    recording.startTime = Date.now();
+    clearInterval(recording.timerInterval);
+    recording.timerInterval = setInterval(updateTime, 100);
+  };
+
+  recognition.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const transcript = e.results[i][0].transcript;
+      if (e.results[i].isFinal) {
+        recording.transcript += transcript + " ";
+      } else {
+        interim += transcript;
+      }
+    }
+    document.getElementById("transcript-text").textContent = recording.transcript + interim;
+  };
+
+  recognition.onend = () => {
+    clearInterval(recording.timerInterval);
+    if (recording.transcript.trim()) {
+      document.getElementById("transcript-preview").style.display = "block";
+    }
+    recording.isRecording = false;
+    document.getElementById("record-btn").style.display = "flex";
+    document.getElementById("stop-btn").style.display = "none";
+    document.getElementById("recording-pulse").style.display = "none";
+    document.getElementById("waveform").style.display = "none";
+  };
+
+  recognition.onerror = (e) => {
+    alert("Microphone access denied or not available. Using manual transcription.");
+    recording.isRecording = false;
+    document.getElementById("record-btn").style.display = "flex";
+    document.getElementById("stop-btn").style.display = "none";
+  };
+
+  // Tab switching
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", (e) => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      e.target.classList.add("active");
+      const tabName = e.target.dataset.tab;
+      document.getElementById(tabName).classList.add("active");
+      if (tabName === "notes") renderNotes();
+      if (tabName === "stats") renderStats();
+    });
+  });
+
+  // Recording controls
+  document.getElementById("record-btn").addEventListener("click", startRecording);
+  document.getElementById("stop-btn").addEventListener("click", stopRecording);
+  document.getElementById("save-transcript-btn").addEventListener("click", saveNote);
+  document.getElementById("discard-transcript-btn").addEventListener("click", discardTranscript);
+
+  // Premium modal
+  document.getElementById("unlock-btn").addEventListener("click", () => {
+    state.premium = true;
+    localStorage.setItem("vn_premium", "true");
+    document.getElementById("premium-modal").classList.remove("show");
+  });
+
+  document.getElementById("close-modal-btn").addEventListener("click", () => {
+    document.getElementById("premium-modal").classList.remove("show");
+  });
+
+  function showPremiumModal(msg) {
+    const modal = document.getElementById("premium-modal");
+    modal.querySelector("p").textContent = msg || "Upgrade to Premium for more features.";
+    modal.classList.add("show");
+  }
+
+  function startRecording() {
+    if (!state.premium && state.notes.length >= 20) {
+      showPremiumModal("Free tier limited to 20 voice notes. Unlock Premium for unlimited.");
+      return;
+    }
+    recording.transcript = "";
+    document.getElementById("transcript-preview").style.display = "none";
+    recognition.start();
+  }
+
+  function stopRecording() {
+    recognition.stop();
+  }
+
+  function updateTime() {
+    const elapsed = Math.floor((Date.now() - recording.startTime) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    document.getElementById("recording-time").textContent =
+      String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+  }
+
+  function saveNote() {
+    const text = recording.transcript.trim();
+    if (!text) {
+      alert("No transcript to save.");
+      return;
+    }
+
+    const note = {
+      id: Date.now(),
+      transcript: text,
+      created: new Date().toISOString(),
+      duration: Math.floor((Date.now() - recording.startTime) / 1000),
+    };
+
+    state.notes.push(note);
+    localStorage.setItem("vn_notes", JSON.stringify(state.notes));
+    discardTranscript();
+    alert("✓ Voice note saved!");
+  }
+
+  function discardTranscript() {
+    recording.transcript = "";
+    document.getElementById("transcript-text").textContent = "";
+    document.getElementById("transcript-preview").style.display = "none";
+    document.getElementById("recording-time").textContent = "00:00";
+  }
+
+  function deleteNote(id) {
+    if (confirm("Delete this voice note?")) {
+      state.notes = state.notes.filter(n => n.id !== id);
+      localStorage.setItem("vn_notes", JSON.stringify(state.notes));
+      renderNotes();
+    }
+  }
+
+  function renderNotes() {
+    const list = document.getElementById("voice-notes-list");
+    list.innerHTML = "";
+
+    if (state.notes.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="emoji">🎤</div><p>No voice notes yet. Record one!</p></div>';
+      return;
+    }
+
+    state.notes.slice().reverse().forEach(note => {
+      const date = new Date(note.created);
+      const div = document.createElement("div");
+      div.className = "voice-note-card";
+      div.innerHTML = `
+        <div class="voice-note-text">${note.transcript}</div>
+        <div class="voice-note-meta">
+          <span class="voice-note-time">${date.toLocaleDateString()}</span>
+          <button class="voice-note-delete" onclick="deleteNote(${note.id})">✕</button>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function renderStats() {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const weekNotes = state.notes.filter(n => new Date(n.created) >= weekAgo).length;
+    const totalWords = state.notes.reduce((sum, n) => sum + n.transcript.split(/\s+/).length, 0);
+    const totalTime = Math.round(state.notes.reduce((sum, n) => sum + (n.duration || 0), 0) / 60);
+
+    document.getElementById("total-voice-notes").textContent = state.notes.length;
+    document.getElementById("total-word-count").textContent = totalWords;
+    document.getElementById("total-time").textContent = totalTime + "m";
+    document.getElementById("week-notes").textContent = weekNotes;
+  }
+</script>
+</body>
+</html>
