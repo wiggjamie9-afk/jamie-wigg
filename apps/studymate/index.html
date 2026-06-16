@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyMate — AI Study Companion</title>
+  <meta name="description" content="Quiz generation, flashcards, and adaptive learning paths." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#08050d" />
+  <style>
+    :root {
+      --canvas: #08050d;
+      --magenta: #ff1f5a;
+      --purple: #7c3aed;
+      --cyan: #00d8ff;
+      --green: #00e887;
+      --gold: #f5c000;
+      --pink: #ff6fc8;
+      --white: #ffffff;
+      --muted: #a0a0b0;
+      --card: #1a1325;
+      --card-2: #221a30;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--canvas);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 0 20px; }
+
+    /* Header */
+    header {
+      padding: 32px 0 24px;
+      text-align: center;
+      background: radial-gradient(60% 120% at 50% -10%, rgba(255, 111, 200, 0.2), transparent 60%);
+    }
+    .eyebrow {
+      display: inline-block;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: var(--pink);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(120deg, var(--pink), var(--purple));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .sub { color: var(--muted); font-size: 14px; }
+
+    /* Tab Navigation */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 24px;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .tab {
+      flex: 1;
+      min-width: 80px;
+      padding: 14px 12px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      border-bottom: 3px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tab:hover { color: var(--white); }
+    .tab.active {
+      color: var(--pink);
+      border-bottom-color: var(--pink);
+    }
+
+    /* Tab Content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Quiz Card */
+    .quiz-card {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .quiz-progress {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pink), var(--purple));
+      transition: width 0.3s ease;
+    }
+    .question {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--white);
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .option {
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: var(--white);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: 0.2s;
+    }
+    .option:hover {
+      border-color: var(--pink);
+      background: rgba(255, 111, 200, 0.15);
+    }
+    .option.selected {
+      background: linear-gradient(120deg, var(--pink), var(--purple));
+      border-color: transparent;
+      color: var(--white);
+    }
+    .option.correct {
+      background: linear-gradient(120deg, var(--green), var(--cyan));
+      border-color: transparent;
+      color: var(--white);
+    }
+    .option.incorrect {
+      background: rgba(255, 31, 90, 0.3);
+      border-color: rgba(255, 31, 90, 0.5);
+    }
+
+    /* Flashcard */
+    .flashcard {
+      perspective: 1000px;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+    .flashcard.flipped .flashcard-inner {
+      transform: rotateY(180deg);
+    }
+    .flashcard-front, .flashcard-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 111, 200, 0.3);
+      padding: 24px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .flashcard-front {
+      background: linear-gradient(135deg, rgba(255, 111, 200, 0.15), rgba(124, 58, 237, 0.15));
+      color: var(--pink);
+    }
+    .flashcard-back {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(0, 216, 255, 0.15));
+      color: var(--cyan);
+      transform: rotateY(180deg);
+    }
+
+    /* Topic Grid */
+    .topics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .topic-btn {
+      padding: 16px 12px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 13px;
+      text-align: center;
+    }
+    .topic-btn:hover {
+      border-color: var(--pink);
+      color: var(--pink);
+    }
+    .topic-btn.active {
+      background: linear-gradient(120deg, var(--pink), var(--purple));
+      border-color: transparent;
+      color: var(--white);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 13px;
+      transition: 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .btn-primary {
+      background: linear-gradient(120deg, var(--pink), var(--purple));
+      color: var(--white);
+    }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--muted);
+    }
+    .btn-secondary:hover {
+      color: var(--white);
+      border-color: var(--pink);
+    }
+
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--pink);
+    }
+
+    /* Daily Limit */
+    .limit-warning {
+      padding: 12px;
+      background: rgba(255, 31, 90, 0.15);
+      border: 1px solid rgba(255, 31, 90, 0.3);
+      border-radius: 8px;
+      color: var(--magenta);
+      font-size: 12px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    /* Premium Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: var(--card-2);
+      border: 1px solid rgba(255, 111, 200, 0.3);
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 320px;
+      text-align: center;
+      animation: slide-up 0.3s ease;
+    }
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .modal h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .modal p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .modal .btn { margin-top: 12px; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="eyebrow">StudyMate</span>
+    <h1>📚 Study Companion</h1>
+    <p class="sub">Quizzes, flashcards, and adaptive learning paths.</p>
+  </div>
+</header>
+
+<div class="wrap" style="margin-top: 24px;">
+  <div class="tabs">
+    <button class="tab active" data-tab="quizzes">Quizzes</button>
+    <button class="tab" data-tab="flashcards">Flashcards</button>
+    <button class="tab" data-tab="progress">Progress</button>
+    <button class="tab" data-tab="library">Library</button>
+  </div>
+
+  <!-- Quizzes Tab -->
+  <div id="quizzes" class="tab-content active">
+    <div id="limit-warning" class="limit-warning" style="display: none;"></div>
+
+    <div class="topics-grid">
+      <button class="topic-btn active" data-topic="science">Science</button>
+      <button class="topic-btn" data-topic="history">History</button>
+      <button class="topic-btn" data-topic="math">Math</button>
+      <button class="topic-btn" data-topic="literature">Literature</button>
+      <button class="topic-btn" data-topic="geography">Geography</button>
+      <button class="topic-btn" data-topic="languages">Languages</button>
+    </div>
+
+    <div id="quiz-container" class="quiz-card">
+      <div class="quiz-progress">
+        <span>Question <span id="current-q">1</span>/<span id="total-q">5</span></span>
+        <span id="quiz-accuracy">0% Correct</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="quiz-progress" style="width: 0%;"></div>
+      </div>
+      <div class="question" id="quiz-question">Loading question...</div>
+      <div class="options" id="quiz-options"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="start-quiz-btn">Start Quiz</button>
+      <button class="btn btn-secondary" id="next-quiz-btn" style="display: none;">Next</button>
+    </div>
+  </div>
+
+  <!-- Flashcards Tab -->
+  <div id="flashcards" class="tab-content">
+    <div style="margin-bottom: 16px;">
+      <label style="font-size: 13px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Select Deck</label>
+      <div class="topics-grid" style="margin-top: 12px;">
+        <button class="topic-btn active" data-deck="vocab">Vocabulary</button>
+        <button class="topic-btn" data-deck="dates">Important Dates</button>
+        <button class="topic-btn" data-deck="formulas">Formulas</button>
+        <button class="topic-btn" data-deck="capitals">Capitals</button>
+      </div>
+    </div>
+
+    <div class="flashcard" id="flashcard">
+      <div class="flashcard-inner">
+        <div class="flashcard-front">
+          <div id="card-front">Tap to reveal answer</div>
+        </div>
+        <div class="flashcard-back">
+          <div id="card-back">Answer</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-label">Card</div>
+        <div class="stat-value" id="card-count">1/10</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Mastered</div>
+        <div class="stat-value" id="mastered-count">0</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-secondary" id="mark-wrong-btn">Mark Wrong</button>
+      <button class="btn btn-primary" id="mark-right-btn">Got It!</button>
+    </div>
+  </div>
+
+  <!-- Progress Tab -->
+  <div id="progress" class="tab-content">
+    <div class="stat-box" style="width: 100%; margin-bottom: 16px;">
+      <div class="stat-label">Study Streak</div>
+      <div class="stat-value" id="streak-days">0</div>
+      <div style="color: var(--muted); font-size: 12px; margin-top: 4px;" id="streak-label">Days in a row</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-label">Quizzes Taken</div>
+        <div class="stat-value" id="total-quizzes">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Average Score</div>
+        <div class="stat-value" id="avg-score">0%</div>
+      </div>
+    </div>
+
+    <div class="stat-box" style="width: 100%; margin-top: 16px;">
+      <div class="stat-label">Study Time This Week</div>
+      <div class="stat-value" id="weekly-time">0m</div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--pink);">Topic Performance</h3>
+      <div id="topic-perf" style="margin-top: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- Library Tab -->
+  <div id="library" class="tab-content">
+    <div style="margin-top: 12px;" id="library-list"></div>
+  </div>
+</div>
+
+<!-- Premium Modal -->
+<div id="premium-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-icon">✨</div>
+    <h2>Unlock Premium</h2>
+    <p>Create unlimited custom quizzes & flashcard decks.</p>
+    <button class="btn btn-primary" id="unlock-btn">Unlock — $4.99</button>
+    <button class="btn btn-secondary" id="close-modal-btn">Maybe Later</button>
+  </div>
+</div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+
+  const QUIZZES = {
+    science: [
+      { q: "What is the chemical formula for water?", opts: ["H2O", "CO2", "O2", "H2O2"], correct: 0 },
+      { q: "What is the speed of light?", opts: ["3×10⁸ m/s", "3×10⁶ m/s", "3×10¹⁰ m/s", "3×10⁷ m/s"], correct: 0 },
+      { q: "What is the process plants use to make food?", opts: ["Photosynthesis", "Respiration", "Fermentation", "Decomposition"], correct: 0 },
+      { q: "How many bones are in the adult human body?", opts: ["186", "206", "226", "266"], correct: 1 },
+      { q: "What is the most abundant element in the universe?", opts: ["Oxygen", "Hydrogen", "Carbon", "Nitrogen"], correct: 1 },
+    ],
+    history: [
+      { q: "In what year did World War II end?", opts: ["1943", "1944", "1945", "1946"], correct: 2 },
+      { q: "Who was the first President of the USA?", opts: ["Thomas Jefferson", "George Washington", "John Adams", "Benjamin Franklin"], correct: 1 },
+      { q: "In what century did the Renaissance occur?", opts: ["12th-13th", "14th-17th", "18th-19th", "19th-20th"], correct: 1 },
+      { q: "Which empire built the Great Wall of China?", opts: ["Mongol", "Ming", "Han", "Qin"], correct: 3 },
+      { q: "What was the main cause of the French Revolution?", opts: ["War", "Poverty & inequality", "Disease", "Foreign invasion"], correct: 1 },
+    ],
+    math: [
+      { q: "What is 7 × 8?", opts: ["54", "56", "58", "60"], correct: 1 },
+      { q: "What is the square root of 144?", opts: ["10", "11", "12", "13"], correct: 2 },
+      { q: "What is the area of a circle with radius 5?", opts: ["15.7", "31.4", "78.5", "100"], correct: 2 },
+      { q: "Solve: 2x + 3 = 11", opts: ["2", "3", "4", "5"], correct: 3 },
+      { q: "What is 25% of 200?", opts: ["25", "50", "75", "100"], correct: 1 },
+    ],
+    literature: [
+      { q: "Who wrote 'Pride and Prejudice'?", opts: ["Charlotte Brontë", "Jane Austen", "Emily Dickinson", "George Eliot"], correct: 1 },
+      { q: "What is the first word of the Bible?", opts: ["God", "In", "The", "Let"], correct: 1 },
+      { q: "Which playwright wrote 'Hamlet'?", opts: ["Christopher Marlowe", "Ben Jonson", "William Shakespeare", "John Webster"], correct: 2 },
+      { q: "How many plays did Shakespeare write?", opts: ["37", "47", "57", "67"], correct: 0 },
+      { q: "Who wrote '1984'?", opts: ["Aldous Huxley", "George Orwell", "Ray Bradbury", "Isaac Asimov"], correct: 1 },
+    ],
+    geography: [
+      { q: "What is the capital of France?", opts: ["Lyon", "Paris", "Marseille", "Nice"], correct: 1 },
+      { q: "How many continents are there?", opts: ["5", "6", "7", "8"], correct: 2 },
+      { q: "What is the longest river in the world?", opts: ["Amazon", "Yangtze", "Nile", "Mississippi"], correct: 2 },
+      { q: "Which country has the most population?", opts: ["India", "USA", "Indonesia", "Brazil"], correct: 0 },
+      { q: "What is the capital of Japan?", opts: ["Kyoto", "Tokyo", "Osaka", "Hiroshima"], correct: 1 },
+    ],
+    languages: [
+      { q: "What does 'bonjour' mean in French?", opts: ["Goodbye", "Good morning", "Good night", "Hello/Good day"], correct: 3 },
+      { q: "In Spanish, 'gracias' means?", opts: ["Please", "Sorry", "Thank you", "Welcome"], correct: 2 },
+      { q: "How many letters are in the German alphabet?", opts: ["24", "26", "28", "30"], correct: 1 },
+      { q: "What is 'hello' in German?", opts: ["Hallo", "Guten Tag", "Auf Wiedersehen", "Both A and B"], correct: 3 },
+      { q: "In Italian, 'arrivederci' means?", opts: ["Please", "Goodbye", "Hello", "Welcome"], correct: 1 },
+    ],
+  };
+
+  const FLASHCARD_DECKS = {
+    vocab: [
+      { front: "Serendipity", back: "Finding something good by chance" },
+      { front: "Ephemeral", back: "Lasting for a very short time" },
+      { front: "Ubiquitous", back: "Present everywhere; widespread" },
+      { front: "Pragmatic", back: "Dealing with things in a practical way" },
+      { front: "Eloquent", back: "Fluent and expressive in speaking or writing" },
+      { front: "Ambiguous", back: "Open to more than one interpretation" },
+      { front: "Benevolent", back: "Kindly and generous" },
+      { front: "Candid", back: "Truthful and frank" },
+      { front: "Diligent", back: "Showing careful attention to detail" },
+      { front: "Eccentric", back: "Unconventional and slightly strange" },
+    ],
+    dates: [
+      { front: "US Independence", back: "July 4, 1776" },
+      { front: "French Revolution", back: "1789" },
+      { front: "Industrial Revolution", back: "Late 1700s - 1800s" },
+      { front: "American Civil War", back: "1861-1865" },
+      { front: "World War I", back: "1914-1918" },
+      { front: "World War II", back: "1939-1945" },
+      { front: "Moon Landing", back: "July 20, 1969" },
+      { front: "Fall of Berlin Wall", back: "November 9, 1989" },
+      { front: "9/11 Attacks", back: "September 11, 2001" },
+      { front: "COVID-19 Pandemic", back: "2019-present" },
+    ],
+    formulas: [
+      { front: "Pythagorean Theorem", back: "a² + b² = c²" },
+      { front: "Area of Circle", back: "A = πr²" },
+      { front: "Quadratic Formula", back: "x = (-b ± √(b²-4ac)) / 2a" },
+      { front: "Distance Formula", back: "d = √((x₂-x₁)² + (y₂-y₁)²)" },
+      { front: "Slope", back: "m = (y₂-y₁) / (x₂-x₁)" },
+      { front: "Simple Interest", back: "I = PRT / 100" },
+      { front: "Force", back: "F = ma (Newton's 2nd Law)" },
+      { front: "Velocity", back: "v = d/t" },
+      { front: "Kinetic Energy", back: "KE = ½mv²" },
+      { front: "Density", back: "ρ = m/V" },
+    ],
+    capitals: [
+      { front: "France", back: "Paris" },
+      { front: "Japan", back: "Tokyo" },
+      { front: "Brazil", back: "Brasília" },
+      { front: "Egypt", back: "Cairo" },
+      { front: "Germany", back: "Berlin" },
+      { front: "Australia", back: "Canberra" },
+      { front: "Canada", back: "Ottawa" },
+      { front: "Mexico", back: "Mexico City" },
+      { front: "India", back: "New Delhi" },
+      { front: "South Korea", back: "Seoul" },
+    ],
+  };
+
+  let state = {
+    premium: localStorage.getItem("sm_premium") === "true",
+    name: localStorage.getItem("sm_name") || "User",
+    quizScores: JSON.parse(localStorage.getItem("sm_scores") || "[]"),
+    masteredCards: parseInt(localStorage.getItem("sm_mastered") || "0"),
+    studyTime: parseInt(localStorage.getItem("sm_time") || "0"),
+    currentTopic: "science",
+    currentDeck: "vocab",
+  };
+
+  const DAY_LIMIT = 5;
+  let quizCount = parseInt(localStorage.getItem("sm_today") || "0");
+
+  let quizState = {
+    questions: [],
+    currentIndex: 0,
+    correct: 0,
+  };
+
+  let cardState = {
+    cards: [],
+    currentIndex: 0,
+    mastered: 0,
+  };
+
+  // Tab switching
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", (e) => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      e.target.classList.add("active");
+      const tabName = e.target.dataset.tab;
+      document.getElementById(tabName).classList.add("active");
+      if (tabName === "progress") renderProgress();
+      if (tabName === "library") renderLibrary();
+    });
+  });
+
+  // Topic selection
+  document.querySelectorAll('[data-topic]').forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      document.querySelectorAll('[data-topic]').forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      state.currentTopic = e.target.dataset.topic;
+    });
+  });
+
+  // Deck selection
+  document.querySelectorAll('[data-deck]').forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      document.querySelectorAll('[data-deck]').forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      state.currentDeck = e.target.dataset.deck;
+      startFlashcards();
+    });
+  });
+
+  // Quiz controls
+  document.getElementById("start-quiz-btn").addEventListener("click", () => {
+    if (quizCount >= DAY_LIMIT && !state.premium) {
+      showPremiumModal("Daily quiz limit reached (" + DAY_LIMIT + "). Unlock Premium for unlimited.");
+      return;
+    }
+    startQuiz();
+  });
+
+  document.getElementById("next-quiz-btn").addEventListener("click", nextQuestion);
+
+  // Flashcard controls
+  document.getElementById("flashcard").addEventListener("click", function() {
+    this.classList.toggle("flipped");
+  });
+
+  document.getElementById("mark-right-btn").addEventListener("click", () => {
+    cardState.mastered++;
+    nextCard();
+  });
+
+  document.getElementById("mark-wrong-btn").addEventListener("click", nextCard);
+
+  // Premium modal
+  document.getElementById("unlock-btn").addEventListener("click", () => {
+    state.premium = true;
+    localStorage.setItem("sm_premium", "true");
+    document.getElementById("premium-modal").classList.remove("show");
+  });
+
+  document.getElementById("close-modal-btn").addEventListener("click", () => {
+    document.getElementById("premium-modal").classList.remove("show");
+  });
+
+  function showPremiumModal(msg) {
+    const modal = document.getElementById("premium-modal");
+    modal.querySelector("p").textContent = msg || "Upgrade to Premium for more features.";
+    modal.classList.add("show");
+  }
+
+  function startQuiz() {
+    quizState.questions = QUIZZES[state.currentTopic];
+    quizState.currentIndex = 0;
+    quizState.correct = 0;
+    showQuestion();
+    document.getElementById("start-quiz-btn").style.display = "none";
+    document.getElementById("next-quiz-btn").style.display = "flex";
+  }
+
+  function showQuestion() {
+    const q = quizState.questions[quizState.currentIndex];
+    document.getElementById("current-q").textContent = quizState.currentIndex + 1;
+    document.getElementById("total-q").textContent = quizState.questions.length;
+    document.getElementById("quiz-question").textContent = q.q;
+    document.getElementById("quiz-progress").style.width = ((quizState.currentIndex / quizState.questions.length) * 100) + "%";
+
+    const opts = document.getElementById("quiz-options");
+    opts.innerHTML = "";
+    q.opts.forEach((opt, i) => {
+      const div = document.createElement("div");
+      div.className = "option";
+      div.textContent = opt;
+      div.addEventListener("click", () => checkAnswer(i));
+      opts.appendChild(div);
+    });
+  }
+
+  function checkAnswer(idx) {
+    const q = quizState.questions[quizState.currentIndex];
+    const options = document.querySelectorAll(".option");
+    options.forEach(opt => opt.style.pointerEvents = "none");
+    options[idx].classList.add(idx === q.correct ? "correct" : "incorrect");
+    options[q.correct].classList.add("correct");
+    if (idx === q.correct) quizState.correct++;
+    updateAccuracy();
+  }
+
+  function updateAccuracy() {
+    const pct = Math.round((quizState.correct / (quizState.currentIndex + 1)) * 100);
+    document.getElementById("quiz-accuracy").textContent = pct + "% Correct";
+  }
+
+  function nextQuestion() {
+    quizState.currentIndex++;
+    if (quizState.currentIndex >= quizState.questions.length) {
+      endQuiz();
+    } else {
+      showQuestion();
+    }
+  }
+
+  function endQuiz() {
+    const score = Math.round((quizState.correct / quizState.questions.length) * 100);
+    state.quizScores.push({ date: new Date().toISOString(), topic: state.currentTopic, score });
+    localStorage.setItem("sm_scores", JSON.stringify(state.quizScores));
+    quizCount++;
+    localStorage.setItem("sm_today", quizCount);
+    alert("🎉 Quiz complete! Score: " + score + "%");
+    document.getElementById("start-quiz-btn").style.display = "flex";
+    document.getElementById("next-quiz-btn").style.display = "none";
+    document.getElementById("quiz-options").innerHTML = "";
+  }
+
+  function startFlashcards() {
+    cardState.cards = FLASHCARD_DECKS[state.currentDeck];
+    cardState.currentIndex = 0;
+    cardState.mastered = 0;
+    showCard();
+  }
+
+  function showCard() {
+    const card = cardState.cards[cardState.currentIndex];
+    document.getElementById("card-front").textContent = card.front;
+    document.getElementById("card-back").textContent = card.back;
+    document.getElementById("card-count").textContent = (cardState.currentIndex + 1) + "/" + cardState.cards.length;
+    document.getElementById("mastered-count").textContent = cardState.mastered;
+    document.getElementById("flashcard").classList.remove("flipped");
+  }
+
+  function nextCard() {
+    cardState.currentIndex++;
+    if (cardState.currentIndex >= cardState.cards.length) {
+      state.masteredCards += cardState.mastered;
+      localStorage.setItem("sm_mastered", state.masteredCards);
+      alert("✨ Deck complete! " + cardState.mastered + " cards mastered.");
+      cardState.currentIndex = 0;
+      cardState.mastered = 0;
+    }
+    showCard();
+  }
+
+  function renderProgress() {
+    const now = new Date();
+    const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+    const weekScores = state.quizScores.filter(s => new Date(s.date) >= weekAgo);
+    const avgScore = weekScores.length > 0 ? Math.round(weekScores.reduce((s, q) => s + q.score, 0) / weekScores.length) : 0;
+
+    let streakDays = 0;
+    let checkDate = new Date();
+    for (let i = 0; i < 365; i++) {
+      const dateStr = checkDate.toDateString();
+      const hasStudy = state.quizScores.some(s => new Date(s.date).toDateString() === dateStr);
+      if (!hasStudy && i > 0) break;
+      if (hasStudy) streakDays++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    document.getElementById("streak-days").textContent = streakDays;
+    document.getElementById("streak-label").textContent = streakDays > 1 ? "Days in a row" : "Start a streak";
+    document.getElementById("total-quizzes").textContent = state.quizScores.length;
+    document.getElementById("avg-score").textContent = avgScore + "%";
+    document.getElementById("weekly-time").textContent = Math.round(weekScores.length * 5) + "m";
+
+    const topicPerf = document.getElementById("topic-perf");
+    topicPerf.innerHTML = "";
+    Object.keys(QUIZZES).forEach(topic => {
+      const scores = state.quizScores.filter(s => s.topic === topic);
+      if (scores.length === 0) return;
+      const avg = Math.round(scores.reduce((s, q) => s + q.score, 0) / scores.length);
+      const div = document.createElement("div");
+      div.style.cssText = "padding: 12px; background: var(--card); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
+      div.innerHTML = `<span style="font-weight: 700; text-transform: capitalize;">${topic}</span><span style="color: var(--pink); font-weight: 700;">${avg}%</span>`;
+      topicPerf.appendChild(div);
+    });
+  }
+
+  function renderLibrary() {
+    const list = document.getElementById("library-list");
+    list.innerHTML = "";
+    const decks = Object.keys(FLASHCARD_DECKS).map(k => ({ name: k, cards: FLASHCARD_DECKS[k].length }));
+    decks.forEach(d => {
+      const div = document.createElement("div");
+      div.style.cssText = "padding: 14px; background: var(--card); border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;";
+      div.innerHTML = `
+        <div style="font-weight: 700; text-transform: capitalize;">${d.name}</div>
+        <div style="color: var(--muted); font-size: 12px;">${d.cards} cards</div>
+      `;
+      div.addEventListener("click", () => {
+        document.querySelectorAll('[data-deck]').forEach(b => b.classList.remove("active"));
+        document.querySelector('[data-deck="' + d.name + '"]').classList.add("active");
+        state.currentDeck = d.name;
+        startFlashcards();
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        document.querySelector('[data-tab="flashcards"]').classList.add("active");
+        document.getElementById("flashcards").classList.add("active");
+      });
+      list.appendChild(div);
+    });
+  }
+
+  startFlashcards();
+</script>
+</body>
+</html>
