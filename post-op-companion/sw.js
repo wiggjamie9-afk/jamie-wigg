@@ -1,5 +1,5 @@
-const CACHE_SHELL = 'post-op-v3-shell';
-const CACHE_API = 'post-op-v3-api';
+const CACHE_SHELL = 'post-op-v4-shell';
+const CACHE_API = 'post-op-v4-api';
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -26,6 +26,7 @@ self.addEventListener('install', event => {
         '/post-op-companion/professional-integration.js',
         '/post-op-companion/community.js',
         '/post-op-companion/coach-avatars.js',
+        '/post-op-companion/coach-chat.js',
         '/post-op-companion/settings.js',
         '/post-op-companion/manifest.webmanifest',
       ]).catch(err => {

@@ -113,8 +113,7 @@ class CoachAvatars {
     if (!coach) return;
 
     if (!this.hasToken()) {
-      alert('Add your Replicate API token in Settings to generate AI coach faces. (Until then, each coach uses a styled icon.)');
-      this.app.switchTab && this.app.switchTab('settings');
+      this._toast('Add a Replicate token in Settings to generate AI faces — your styled icon stays for now.');
       return;
     }
 
@@ -126,11 +125,11 @@ class CoachAvatars {
         localStorage.setItem('coach-avatar-cache', JSON.stringify(this.cache));
         this.applyFace(tab, url);
       } else {
-        alert('Could not generate the face right now. Your styled icon stays in place — try again later.');
+        this._toast('Could not generate the face right now — your styled icon stays in place.');
       }
     } catch (err) {
       console.error('Avatar generation failed:', err);
-      alert('Face generation failed (network or CORS). Using styled icon. A Replicate proxy may be needed in production.');
+      this._toast('Face generation needs a network connection — using your styled icon for now.');
     } finally {
       this.setGenState(tab, 'idle');
     }
@@ -141,6 +140,21 @@ class CoachAvatars {
     for (const tab of Object.keys(this.coaches)) {
       await this.generate(tab);
     }
+  }
+
+  // Non-blocking toast — replaces jarring alert() popups.
+  _toast(msg) {
+    let t = document.getElementById('coach-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'coach-toast';
+      t.className = 'coach-toast';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => t.classList.remove('show'), 3600);
   }
 
   // Call Replicate FLUX 1.1 Pro with Prefer: wait so it returns synchronously (no polling loop).

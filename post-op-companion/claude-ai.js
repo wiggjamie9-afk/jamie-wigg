@@ -25,9 +25,10 @@ class ClaudeAI {
           'Content-Type': 'application/json',
           'x-api-key': this.apiKey,
           'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-opus-4-8',
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 2048,
           system: this.buildSystemPrompt(),
           messages: [{
@@ -76,9 +77,10 @@ Provide:
           'Content-Type': 'application/json',
           'x-api-key': this.apiKey,
           'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-opus-4-8',
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 1024,
           system: 'You are a medical nutritionist specializing in post-operative weight loss surgery support. Provide evidence-based recommendations.',
           messages: [{
@@ -125,9 +127,10 @@ Provide phase-appropriate exercises with:
           'Content-Type': 'application/json',
           'x-api-key': this.apiKey,
           'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-opus-4-8',
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 1536,
           system: 'You are a post-operative exercise specialist. Prioritize safety and gradual progression.',
           messages: [{
@@ -143,6 +146,51 @@ Provide phase-appropriate exercises with:
     } catch (err) {
       console.error('Fitness program generation failed:', err);
       return null;
+    }
+  }
+
+  // Conversational coach. Takes the running message history and returns a short,
+  // warm, spoken-style reply. Used by the voice chat on the Dashboard.
+  async chat(history) {
+    this.apiKey = localStorage.getItem('claude-api-key') || this.apiKey;
+    if (!this.apiKey) {
+      return "I'd love to chat! Add your Claude API key in Settings (the ⚙️ tab) and I'll be able to talk with you.";
+    }
+
+    const system = `You are a warm, encouraging 12-month post-operative recovery coach for weight-loss surgery patients.
+Speak like a caring human friend, not a robot. Keep replies short and conversational (2–4 sentences) since they will be read aloud.
+Be supportive and practical. Cover nutrition, hydration, movement, sleep, medication adherence, and emotional wellbeing.
+Always add a brief, gentle safety note when medically relevant, and remind the user you are not a substitute for their surgeon or medical team when appropriate. Never give a diagnosis.`;
+
+    try {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 400,
+          system,
+          messages: history,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error('Claude chat error:', response.status, err);
+        if (response.status === 401) return "That Claude API key doesn't seem to be working. Please re-check it in Settings.";
+        return "I couldn't reach my brain just now — please check your connection and try again in a moment.";
+      }
+
+      const data = await response.json();
+      return data.content[0].text;
+    } catch (err) {
+      console.error('Claude chat failed:', err);
+      return "I couldn't connect just now. Please check your internet and try again.";
     }
   }
 
