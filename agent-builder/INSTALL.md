@@ -49,6 +49,28 @@ pnpm build
 # → out/ is ready for Vercel, Netlify, GitHub Pages, Cloudflare Pages, etc.
 ```
 
+### Docker (One-Command Deploy)
+
+Build and run in Docker:
+
+```bash
+# Build image
+docker build -t agent-builder .
+
+# Run container
+docker run -p 3000:3000 agent-builder
+# → http://localhost:3000
+```
+
+Or with docker-compose:
+
+```bash
+docker-compose up --build
+# → http://localhost:3000
+```
+
+The container serves the static export with auto-restart and health checks.
+
 ### Cloudflare Pages (via wrangler)
 
 ```bash
@@ -56,20 +78,6 @@ pnpm build
 wrangler pages deploy out/
 ```
 
-### Docker
-
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY pnpm-lock.yaml package.json ./
-RUN corepack enable && pnpm install --frozen-lockfile
-COPY . .
-RUN pnpm build
-FROM node:20-alpine
-COPY --from=0 /app/out /app/out
-EXPOSE 3000
-CMD ["npx", "serve", "-l", "3000", "out/"]
-```
 
 ## Environment Setup
 
