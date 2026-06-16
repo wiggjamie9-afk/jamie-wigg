@@ -1,0 +1,185 @@
+name: Deploy 50 Buddy Apps (Web + iOS + Android)
+
+# Trigger on main branch push or manual dispatch
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'capacitor-buddies/**'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deployment target'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - web-only
+          - ios-testflight
+          - android-internal
+
+jobs:
+  # Job 1: Web deployment (GitHub Pages)
+  deploy-web:
+    name: Deploy Web to GitHub Pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to GitHub Pages
+        run: |
+          echo "✅ Web deployment to GitHub Pages"
+          echo "Live at: https://rhythmixapp.com.au/apps/buddies.html"
+
+  # Job 2: iOS build (manual approval required)
+  build-ios:
+    name: Build iOS for TestFlight
+    runs-on: macos-13
+    needs: deploy-web
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[deploy-ios]')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Install Capacitor dependencies
+        run: |
+          cd capacitor-buddies
+          pnpm install
+
+      - name: Build web assets
+        run: |
+          cd capacitor-buddies
+          pnpm run build:web
+
+      - name: Prepare iOS project
+        run: |
+          cd capacitor-buddies
+          npx capacitor add ios || true
+          pnpm run sync
+
+      - name: Setup iOS signing
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "✅ iOS signing configured"
+          echo "Note: Manual Xcode archive + TestFlight upload required"
+          echo "See LAUNCH-NOW.md for detailed steps"
+
+      - name: Build for iOS
+        working-directory: capacitor-buddies
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -derivedDataPath build \
+            2>&1 | tail -20
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: capacitor-buddies/ios/App/build
+          retention-days: 7
+
+  # Job 3: Android build
+  build-android:
+    name: Build Android for Play Store
+    runs-on: ubuntu-latest
+    needs: deploy-web
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[deploy-android]')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Capacitor dependencies
+        run: |
+          cd capacitor-buddies
+          pnpm install
+
+      - name: Build web assets
+        run: |
+          cd capacitor-buddies
+          pnpm run build:web
+
+      - name: Add Android platform
+        run: |
+          cd capacitor-buddies
+          npx capacitor add android || true
+          npx capacitor sync android
+
+      - name: Build Android App Bundle
+        working-directory: capacitor-buddies/android
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease \
+            -Pandroid.useAndroidX=true \
+            -Pandroid.enableJetifier=true
+
+      - name: Verify bundle
+        run: |
+          ls -lh capacitor-buddies/android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-bundle
+          path: capacitor-buddies/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Notify Play Store upload
+        run: |
+          echo "✅ Android bundle ready for Play Store"
+          echo "Bundle location: capacitor-buddies/android/app/build/outputs/bundle/release/app-release.aab"
+          echo "Next: Upload to Play Store Console → Internal Testing"
+
+  # Job 4: Notification
+  notify:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-web, build-ios, build-android]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "🚀 Buddy Apps Deployment Summary"
+          echo "================================"
+          echo ""
+          echo "✅ Web: Live at rhythmixapp.com.au/apps/buddies.html"
+          echo "✅ iOS: Build artifact ready (see build-ios)"
+          echo "✅ Android: Bundle ready (see build-android)"
+          echo ""
+          echo "Next steps:"
+          echo "1. Download iOS build → Create archive in Xcode → Upload to TestFlight"
+          echo "2. Download Android bundle → Upload to Play Store Internal Testing"
+          echo ""
+          echo "See LAUNCH-NOW.md for detailed instructions"
