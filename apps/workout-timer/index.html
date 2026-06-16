@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workout Timer — HIIT & Interval Training</title>
+  <meta name="description" content="Interval timer for HIIT, circuit training, and tabata workouts." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#08050d" />
+  <style>
+    :root {
+      --canvas: #08050d;
+      --magenta: #ff1f5a;
+      --purple: #7c3aed;
+      --cyan: #00d8ff;
+      --green: #00e887;
+      --gold: #f5c000;
+      --pink: #ff6fc8;
+      --white: #ffffff;
+      --muted: #a0a0b0;
+      --card: #1a1325;
+      --card-2: #221a30;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--canvas);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 0 20px; }
+
+    /* Header */
+    header {
+      padding: 32px 0 24px;
+      text-align: center;
+      background: radial-gradient(60% 120% at 50% -10%, rgba(0, 216, 255, 0.2), transparent 60%);
+    }
+    .eyebrow {
+      display: inline-block;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(120deg, var(--cyan), var(--magenta));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .sub { color: var(--muted); font-size: 14px; }
+
+    /* Tab Navigation */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 24px;
+      gap: 4px;
+      padding: 0 -20px;
+      overflow-x: auto;
+    }
+    .tab {
+      flex: 1;
+      min-width: 100px;
+      padding: 14px 12px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      border-bottom: 3px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tab:hover { color: var(--white); }
+    .tab.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+    }
+
+    /* Tab Content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Timer Display */
+    .timer-display {
+      text-align: center;
+      padding: 40px 0 32px;
+      margin-bottom: 32px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(0, 216, 255, 0.1), rgba(124, 58, 237, 0.1));
+      border: 1px solid rgba(0, 216, 255, 0.2);
+    }
+    .timer-phase {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .timer-value {
+      font-size: 72px;
+      font-weight: 900;
+      color: var(--cyan);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .timer-label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* Presets Grid */
+    .presets-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .preset-btn {
+      padding: 16px 12px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      color: var(--white);
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 14px;
+      text-align: center;
+    }
+    .preset-btn:hover {
+      background: var(--card-2);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+    .preset-btn.active {
+      background: linear-gradient(120deg, var(--cyan), var(--purple));
+      border-color: transparent;
+      color: var(--white);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .btn-primary {
+      background: linear-gradient(120deg, var(--cyan), var(--purple));
+      color: var(--white);
+    }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--muted);
+    }
+    .btn-secondary:hover {
+      color: var(--white);
+      border-color: var(--cyan);
+    }
+
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--cyan);
+    }
+
+    /* Input Form */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--white);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--cyan);
+      background: var(--card-2);
+    }
+
+    /* Progress Ring */
+    .progress-ring-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 32px 0;
+      position: relative;
+    }
+    svg.progress-ring {
+      width: 200px;
+      height: 200px;
+      transform: rotate(-90deg);
+    }
+    .progress-ring-circle {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.1);
+      stroke-width: 8;
+    }
+    .progress-ring-circle.fill {
+      stroke: var(--cyan);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s ease;
+    }
+    .progress-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .progress-label {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .progress-value {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--cyan);
+    }
+
+    /* Premium Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: var(--card-2);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 320px;
+      text-align: center;
+      animation: slide-up 0.3s ease;
+    }
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .modal h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .modal p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .modal .btn { margin-top: 12px; }
+
+    /* Daily Limit */
+    .limit-warning {
+      padding: 12px;
+      background: rgba(255, 31, 90, 0.15);
+      border: 1px solid rgba(255, 31, 90, 0.3);
+      border-radius: 8px;
+      color: var(--magenta);
+      font-size: 12px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      h1 { font-size: 28px; }
+      .timer-value { font-size: 60px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="eyebrow">Workout Timer</span>
+    <h1>⏱️ Interval Timer</h1>
+    <p class="sub">HIIT, Tabata, Circuit — offline interval training.</p>
+  </div>
+</header>
+
+<div class="wrap" style="margin-top: 24px;">
+  <div class="tabs">
+    <button class="tab active" data-tab="timer">Timer</button>
+    <button class="tab" data-tab="create">Create</button>
+    <button class="tab" data-tab="history">History</button>
+    <button class="tab" data-tab="stats">Stats</button>
+  </div>
+
+  <!-- Timer Tab -->
+  <div id="timer" class="tab-content active">
+    <div id="limit-warning" class="limit-warning" style="display: none;"></div>
+
+    <div class="timer-display">
+      <div class="timer-phase" id="timer-phase">Work</div>
+      <div class="timer-value" id="timer-value">00:30</div>
+      <div class="timer-label" id="timer-label">Set 1/3</div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <label style="margin-bottom: 12px;">Select Workout</label>
+      <div class="presets-grid">
+        <button class="preset-btn active" data-preset="tabata">Tabata</button>
+        <button class="preset-btn" data-preset="hiit20">HIIT 20/10</button>
+        <button class="preset-btn" data-preset="emom">EMOM</button>
+        <button class="preset-btn" data-preset="amrap">AMRAP</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="start-btn">Start</button>
+      <button class="btn btn-secondary" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-label">Round</div>
+        <div class="stat-value" id="rounds-count">1/8</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Sets Completed</div>
+        <div class="stat-value" id="sets-count">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Tab -->
+  <div id="create" class="tab-content">
+    <div class="form-group">
+      <label>Workout Name</label>
+      <input type="text" id="custom-name" placeholder="e.g., Monday Leg Day" />
+    </div>
+    <div class="form-group">
+      <label>Work Time (seconds)</label>
+      <input type="number" id="custom-work" placeholder="30" min="5" max="120" value="30" />
+    </div>
+    <div class="form-group">
+      <label>Rest Time (seconds)</label>
+      <input type="number" id="custom-rest" placeholder="10" min="5" max="120" value="10" />
+    </div>
+    <div class="form-group">
+      <label>Rounds</label>
+      <input type="number" id="custom-rounds" placeholder="8" min="1" max="20" value="8" />
+    </div>
+    <button class="btn btn-primary" id="save-custom-btn">Save Custom Workout</button>
+
+    <div style="margin-top: 24px;">
+      <label>Your Custom Workouts</label>
+      <div id="custom-list" style="margin-top: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- History Tab -->
+  <div id="history" class="tab-content">
+    <div id="history-list" style="margin-top: 12px;"></div>
+  </div>
+
+  <!-- Stats Tab -->
+  <div id="stats" class="tab-content">
+    <div class="progress-ring-container">
+      <svg class="progress-ring" viewBox="0 0 200 200">
+        <circle class="progress-ring-circle" cx="100" cy="100" r="90" />
+        <circle class="progress-ring-circle fill" cx="100" cy="100" r="90" />
+      </svg>
+      <div class="progress-center">
+        <div class="progress-label">Workouts This Week</div>
+        <div class="progress-value" id="week-count">0</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-label">Total Workouts</div>
+        <div class="stat-value" id="total-workouts">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Total Time</div>
+        <div class="stat-value" id="total-minutes">0m</div>
+      </div>
+    </div>
+
+    <div class="stat-box" style="width: 100%; margin-top: 12px;">
+      <div class="stat-label">Current Streak</div>
+      <div class="stat-value" id="streak-days">0</div>
+      <div style="color: var(--muted); font-size: 12px; margin-top: 4px;" id="streak-label"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Premium Modal -->
+<div id="premium-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-icon">✨</div>
+    <h2>Unlock Premium</h2>
+    <p>Create unlimited custom workouts & access advanced timers.</p>
+    <button class="btn btn-primary" id="unlock-btn">Unlock — $3.99</button>
+    <button class="btn btn-secondary" id="close-modal-btn">Maybe Later</button>
+  </div>
+</div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+
+  const PRESETS = {
+    tabata: { name: "Tabata", work: 20, rest: 10, rounds: 8, sets: 1 },
+    hiit20: { name: "HIIT 20/10", work: 20, rest: 10, rounds: 8, sets: 1 },
+    emom: { name: "Every Minute on the Minute", work: 40, rest: 20, rounds: 10, sets: 1 },
+    amrap: { name: "As Many Reps As Possible", work: 300, rest: 0, rounds: 1, sets: 1 },
+  };
+
+  let state = {
+    premium: localStorage.getItem("wt_premium") === "true",
+    name: localStorage.getItem("wt_name") || "User",
+    currentPreset: "tabata",
+    customWorkouts: JSON.parse(localStorage.getItem("wt_custom") || "[]"),
+    workoutHistory: JSON.parse(localStorage.getItem("wt_history") || "[]"),
+    todayWorkouts: JSON.parse(localStorage.getItem("wt_today") || "0"),
+  };
+
+  let timer = {
+    running: false,
+    paused: false,
+    timeLeft: 30,
+    currentRound: 1,
+    totalRounds: 8,
+    isWork: true,
+    setsCompleted: 0,
+  };
+
+  const DAY_LIMIT = 3;
+
+  // Tab switching
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", (e) => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      e.target.classList.add("active");
+      const tabName = e.target.dataset.tab;
+      document.getElementById(tabName).classList.add("active");
+      if (tabName === "history") renderHistory();
+      if (tabName === "stats") renderStats();
+      if (tabName === "create") renderCustomList();
+    });
+  });
+
+  // Preset selection
+  document.querySelectorAll(".preset-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      if (timer.running) return;
+      document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      state.currentPreset = e.target.dataset.preset;
+      const preset = PRESETS[state.currentPreset];
+      timer.totalRounds = preset.rounds;
+      timer.currentRound = 1;
+      timer.isWork = true;
+      timer.setsCompleted = 0;
+      timer.timeLeft = preset.work;
+      updateDisplay();
+    });
+  });
+
+  // Timer start/reset
+  document.getElementById("start-btn").addEventListener("click", () => {
+    if (!timer.running) {
+      if (state.todayWorkouts >= DAY_LIMIT && !state.premium) {
+        showPremiumModal("You've hit your daily limit (" + DAY_LIMIT + " workouts). Unlock Premium for unlimited.");
+        return;
+      }
+      startTimer();
+    } else {
+      pauseTimer();
+    }
+  });
+
+  document.getElementById("reset-btn").addEventListener("click", resetTimer);
+
+  // Custom workout
+  document.getElementById("save-custom-btn").addEventListener("click", () => {
+    if (!state.premium && state.customWorkouts.length >= 1) {
+      showPremiumModal("Create unlimited custom workouts with Premium.");
+      return;
+    }
+    const name = document.getElementById("custom-name").value.trim();
+    const work = parseInt(document.getElementById("custom-work").value) || 30;
+    const rest = parseInt(document.getElementById("custom-rest").value) || 10;
+    const rounds = parseInt(document.getElementById("custom-rounds").value) || 8;
+    if (!name) return alert("Enter a workout name");
+    state.customWorkouts.push({ name, work, rest, rounds });
+    localStorage.setItem("wt_custom", JSON.stringify(state.customWorkouts));
+    document.getElementById("custom-name").value = "";
+    renderCustomList();
+  });
+
+  // Premium modal
+  document.getElementById("unlock-btn").addEventListener("click", () => {
+    state.premium = true;
+    localStorage.setItem("wt_premium", "true");
+    document.getElementById("premium-modal").classList.remove("show");
+  });
+
+  document.getElementById("close-modal-btn").addEventListener("click", () => {
+    document.getElementById("premium-modal").classList.remove("show");
+  });
+
+  function showPremiumModal(msg) {
+    const modal = document.getElementById("premium-modal");
+    modal.querySelector("p").textContent = msg || "Upgrade to Premium for more features.";
+    modal.classList.add("show");
+  }
+
+  function startTimer() {
+    timer.running = true;
+    document.getElementById("start-btn").textContent = "Pause";
+    document.getElementById("start-btn").classList.remove("btn-secondary");
+    document.getElementById("start-btn").classList.add("btn-primary");
+    const preset = PRESETS[state.currentPreset];
+    const interval = setInterval(() => {
+      if (!timer.running) {
+        clearInterval(interval);
+        return;
+      }
+      timer.timeLeft--;
+      updateDisplay();
+      if (timer.timeLeft === 0) {
+        playSound();
+        timer.isWork = !timer.isWork;
+        if (timer.isWork) {
+          timer.currentRound++;
+          if (timer.currentRound > timer.totalRounds) {
+            endWorkout();
+            clearInterval(interval);
+            return;
+          }
+          timer.timeLeft = preset.work;
+        } else {
+          timer.setsCompleted++;
+          timer.timeLeft = preset.rest;
+        }
+        updateDisplay();
+      }
+    }, 1000);
+  }
+
+  function pauseTimer() {
+    timer.running = false;
+    document.getElementById("start-btn").textContent = "Resume";
+  }
+
+  function resetTimer() {
+    timer.running = false;
+    const preset = PRESETS[state.currentPreset];
+    timer.timeLeft = preset.work;
+    timer.currentRound = 1;
+    timer.isWork = true;
+    timer.setsCompleted = 0;
+    document.getElementById("start-btn").textContent = "Start";
+    updateDisplay();
+  }
+
+  function endWorkout() {
+    timer.running = false;
+    const preset = PRESETS[state.currentPreset];
+    const mins = Math.round((preset.work + preset.rest) * preset.rounds / 60);
+    state.workoutHistory.push({
+      date: new Date().toISOString(),
+      preset: state.currentPreset,
+      rounds: timer.currentRound - 1,
+      minutes: mins,
+    });
+    state.todayWorkouts = (state.todayWorkouts || 0) + 1;
+    localStorage.setItem("wt_history", JSON.stringify(state.workoutHistory));
+    localStorage.setItem("wt_today", state.todayWorkouts);
+    alert("🎉 Workout complete!");
+    resetTimer();
+  }
+
+  function playSound() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 800;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.1);
+  }
+
+  function updateDisplay() {
+    const secs = timer.timeLeft % 60;
+    const mins = Math.floor(timer.timeLeft / 60);
+    document.getElementById("timer-value").textContent =
+      String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+    document.getElementById("timer-phase").textContent = timer.isWork ? "Work" : "Rest";
+    document.getElementById("timer-label").textContent = "Set " + timer.currentRound + "/" + timer.totalRounds;
+    document.getElementById("rounds-count").textContent = timer.currentRound + "/" + timer.totalRounds;
+    document.getElementById("sets-count").textContent = timer.setsCompleted;
+
+    if (state.todayWorkouts >= DAY_LIMIT && !state.premium) {
+      document.getElementById("limit-warning").style.display = "block";
+      document.getElementById("limit-warning").textContent = "📌 Daily limit reached (" + DAY_LIMIT + "). Unlock Premium for unlimited workouts.";
+    }
+  }
+
+  function renderCustomList() {
+    const list = document.getElementById("custom-list");
+    list.innerHTML = "";
+    if (state.customWorkouts.length === 0) {
+      list.innerHTML = "<p style='color: var(--muted); font-size: 13px;'>No custom workouts yet.</p>";
+      return;
+    }
+    state.customWorkouts.forEach((w, i) => {
+      const div = document.createElement("div");
+      div.style.cssText = "padding: 12px; background: var(--card); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
+      div.innerHTML = `
+        <div>
+          <div style="font-weight: 700; font-size: 14px;">${w.name}</div>
+          <div style="color: var(--muted); font-size: 12px;">${w.work}s work / ${w.rest}s rest × ${w.rounds}</div>
+        </div>
+        <button style="background: rgba(255,31,90,.2); border: none; color: var(--magenta); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700;" onclick="deleteCustom(${i})">Delete</button>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function deleteCustom(i) {
+    state.customWorkouts.splice(i, 1);
+    localStorage.setItem("wt_custom", JSON.stringify(state.customWorkouts));
+    renderCustomList();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById("history-list");
+    list.innerHTML = "";
+    if (state.workoutHistory.length === 0) {
+      list.innerHTML = "<p style='color: var(--muted); font-size: 13px;'>No workouts yet.</p>";
+      return;
+    }
+    state.workoutHistory.slice(-10).reverse().forEach((w) => {
+      const date = new Date(w.date);
+      const div = document.createElement("div");
+      div.style.cssText = "padding: 12px; background: var(--card); border-radius: 8px; margin-bottom: 8px;";
+      div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px;">
+          ${PRESETS[w.preset]?.name || "Custom"}
+          <span style="color: var(--cyan);">${w.rounds} rounds</span>
+        </div>
+        <div style="color: var(--muted); font-size: 12px; margin-top: 4px;">
+          ${date.toLocaleDateString()} · ${w.minutes}m
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function renderStats() {
+    const today = new Date().toDateString();
+    const todayStart = new Date().setHours(0, 0, 0, 0);
+    const thisWeekWorkouts = state.workoutHistory.filter(w => new Date(w.date) >= todayStart - 7 * 24 * 60 * 60 * 1000).length;
+    const totalMins = state.workoutHistory.reduce((sum, w) => sum + (w.minutes || 0), 0);
+
+    document.getElementById("week-count").textContent = thisWeekWorkouts;
+    document.getElementById("total-workouts").textContent = state.workoutHistory.length;
+    document.getElementById("total-minutes").textContent = totalMins + "m";
+
+    let streakDays = 0;
+    let checkDate = new Date();
+    for (let i = 0; i < 365; i++) {
+      const dateStr = checkDate.toDateString();
+      const hasWorkout = state.workoutHistory.some(w => new Date(w.date).toDateString() === dateStr);
+      if (!hasWorkout && i > 0) break;
+      if (hasWorkout) streakDays++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+    document.getElementById("streak-days").textContent = streakDays;
+    document.getElementById("streak-label").textContent = streakDays > 1 ? "Days in a row" : "Start a streak";
+  }
+
+  updateDisplay();
+</script>
+</body>
+</html>
