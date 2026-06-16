@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BEATMAP — tap-grid drum machine</title>
+<meta name="description" content="A tap-grid step sequencer drum machine. Set the BPM, tap the grid, hit play and loop your beat — all in the browser, fully offline. Built for beatmakers chasing quick loop ideas.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0B0E16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BEATMAP">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22BEATMAP%22%2C%22short_name%22%3A%22BEATMAP%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230B0E16%22%2C%22theme_color%22%3A%220B0E16%22%2C%22orientation%22%3A%22portrait%22%7D">
+<style>
+:root{
+  --primary:#6C5CE7;
+  --primary-2:#8E7BFF;
+  --accent:#00E0C6;
+  --accent-2:#FF6B9D;
+  --bg-dark:#0B0E16;
+  --bg-light:#161B2C;
+  --bg-card:#1C2236;
+  --bg-cell:#232B44;
+  --border:#2B3350;
+  --text-primary:#EEF1FA;
+  --text-soft:#A9B1CC;
+  --text-muted:#6B7493;
+  --kick:#FF6B9D;
+  --snare:#FFB454;
+  --hat:#00E0C6;
+  --clap:#6C5CE7;
+  --tom:#5AC8FA;
+  --perc:#A0E85B;
+  --radius:12px;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg-dark);color:var(--text-primary);font-family:var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100%}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select{font:inherit;color:inherit;background:var(--bg-cell);border:1px solid var(--border);border-radius:8px;padding:11px 12px;width:100%;font-size:16px}
+input:focus,select:focus{outline:none;border-color:var(--primary)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::selection{background:var(--primary);color:#fff}
+
+.wrap{max-width:520px;margin:0 auto;padding:0 14px 40px}
+
+/* Header */
+header{background:linear-gradient(135deg,var(--primary) 0%,var(--accent-2) 55%,var(--accent) 120%);border-radius:0 0 22px 22px;padding:26px 22px 24px;margin:0 -14px 18px;box-shadow:0 10px 30px rgba(108,92,231,.25);position:relative;overflow:hidden}
+header::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% -20%,rgba(255,255,255,.25),transparent 60%);pointer-events:none}
+.logo{display:flex;align-items:center;gap:10px;position:relative}
+.logo .bars{display:flex;gap:3px;align-items:flex-end;height:26px}
+.logo .bars i{width:4px;background:#fff;border-radius:2px;display:block;animation:eq 1.1s ease-in-out infinite}
+.logo .bars i:nth-child(1){height:40%;animation-delay:0s}
+.logo .bars i:nth-child(2){height:90%;animation-delay:.15s}
+.logo .bars i:nth-child(3){height:60%;animation-delay:.3s}
+.logo .bars i:nth-child(4){height:100%;animation-delay:.45s}
+@keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+.paused .logo .bars i{animation-play-state:paused}
+.logo h1{font-size:26px;font-weight:800;letter-spacing:.06em;color:#fff}
+.tagline{font-size:12.5px;color:rgba(255,255,255,.92);margin-top:7px;position:relative;letter-spacing:.01em}
+
+/* Transport */
+.transport{display:flex;gap:10px;align-items:stretch;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:var(--radius);font-weight:700;font-size:14px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);transition:transform .08s,background .2s,border-color .2s;min-height:50px}
+.btn:active{transform:scale(.96)}
+.btn.play{flex:1.3;background:linear-gradient(135deg,var(--primary),var(--primary-2));border-color:transparent;color:#fff;font-size:15px;letter-spacing:.03em}
+.btn.play.on{background:linear-gradient(135deg,var(--accent-2),#ff8e3c);box-shadow:0 6px 18px rgba(255,107,157,.35)}
+.btn.ghost{flex:1;color:var(--text-soft)}
+.btn.ghost:active{background:var(--bg-cell)}
+
+/* BPM + swing controls */
+.controls{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;margin-bottom:16px}
+.ctrl-row{display:flex;align-items:center;gap:14px}
+.ctrl-row+.ctrl-row{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.ctrl-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);width:62px;flex:none}
+.ctrl-val{font-family:var(--mono);font-weight:700;font-size:20px;color:var(--accent);width:74px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+.ctrl-val small{font-size:10px;color:var(--text-muted);font-weight:500;letter-spacing:.1em}
+input[type=range]{-webkit-appearance:none;appearance:none;height:6px;background:var(--bg-cell);border:none;border-radius:99px;padding:0;flex:1;width:auto}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--primary-2);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--primary-2);border:3px solid #fff;cursor:pointer}
+
+/* Step grid */
+.grid-scroll{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 10px 12px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.beatnums{display:grid;grid-template-columns:58px repeat(16,1fr);gap:5px;margin:0 0 7px 0;min-width:430px}
+.beatnums span{font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:center}
+.beatnums span:first-child{visibility:hidden}
+.beatnums span.beat1{color:var(--text-soft);font-weight:700}
+.row{display:grid;grid-template-columns:58px repeat(16,1fr);gap:5px;align-items:center;min-width:430px}
+.row+.row{margin-top:5px}
+.rowlabel{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--text-soft);overflow:hidden}
+.rowlabel .swatch{width:9px;height:9px;border-radius:50%;flex:none}
+.rowlabel button.mute{margin-left:auto;font-size:8px;font-family:var(--mono);color:var(--text-muted);border:1px solid var(--border);border-radius:5px;padding:2px 4px;letter-spacing:.05em}
+.rowlabel.muted{opacity:.4}
+.rowlabel.muted button.mute{color:var(--accent-2);border-color:var(--accent-2)}
+.cell{aspect-ratio:1/1;border-radius:6px;background:var(--bg-cell);border:1px solid transparent;transition:transform .06s,box-shadow .15s;position:relative;min-width:0}
+.cell:active{transform:scale(.88)}
+.cell.beatmark{background:#262e49}
+.cell.on{box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.cell.playhead{box-shadow:0 0 0 2px var(--accent),0 0 12px rgba(0,224,198,.6)}
+.cell.on.playhead{box-shadow:0 0 0 2px #fff,0 0 16px currentColor}
+
+/* Pattern manager */
+.panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.panel h2{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-soft);margin-bottom:13px;display:flex;align-items:center;justify-content:space-between}
+.panel h2 .count{font-family:var(--mono);font-size:10px;color:var(--text-muted);font-weight:500;letter-spacing:.1em}
+.save-row{display:flex;gap:9px}
+.save-row input{flex:1}
+.save-row .btn{flex:none;padding:11px 16px;min-height:0;background:var(--primary);border-color:transparent;color:#fff}
+.btnbar{display:flex;gap:9px;margin-top:11px}
+.btnbar .btn{flex:1;font-size:12.5px;font-weight:600;color:var(--text-soft);min-height:0;padding:11px 10px}
+.patterns{display:flex;flex-direction:column;gap:8px;margin-top:13px}
+.pat{display:flex;align-items:center;gap:10px;background:var(--bg-cell);border:1px solid var(--border);border-radius:9px;padding:10px 12px;transition:border-color .2s}
+.pat:active{border-color:var(--primary)}
+.pat .pname{flex:1;min-width:0;overflow:hidden}
+.pat .pname b{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat .pname span{font-family:var(--mono);font-size:9px;color:var(--text-muted);letter-spacing:.08em}
+.pat .pact{display:flex;gap:6px;flex:none}
+.pat .pact button{font-size:10px;font-family:var(--mono);letter-spacing:.06em;border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text-soft)}
+.pat .pact button.load{color:var(--accent);border-color:var(--accent)}
+.pat .pact button.del{color:var(--accent-2)}
+.empty{text-align:center;color:var(--text-muted);font-size:13px;padding:18px 10px;font-style:italic}
+
+/* Footer / upsell */
+.upsell{background:linear-gradient(135deg,rgba(108,92,231,.14),rgba(0,224,198,.08));border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;text-align:center;margin-bottom:18px}
+.upsell .free{font-size:12px;color:var(--text-soft);margin-bottom:6px}
+.upsell .lt{font-size:13.5px;font-weight:700;color:var(--text-primary)}
+.upsell .lt b{color:var(--accent)}
+.upsell .price{display:inline-block;margin-top:9px;background:var(--primary);color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 16px;border-radius:99px}
+footer{text-align:center;color:var(--text-muted);font-size:11px;letter-spacing:.04em;line-height:1.6}
+footer .mono{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em}
+
+/* Toast */
+#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--bg-light);border:1px solid var(--border);color:var(--text-primary);padding:13px 20px;border-radius:99px;font-size:13.5px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:200;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{border-color:var(--accent)}
+#toast.warn{border-color:var(--accent-2)}
+</style>
+</head>
+<body class="paused">
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <div class="bars"><i></i><i></i><i></i><i></i></div>
+      <h1>BEATMAP</h1>
+    </div>
+    <div class="tagline">Tap a grid. Loop a beat. Catch the idea before it's gone.</div>
+  </header>
+
+  <div class="transport">
+    <button class="btn play" id="playBtn" aria-label="Play / stop">▶ Play</button>
+    <button class="btn ghost" id="clearBtn">Clear</button>
+    <button class="btn ghost" id="exportBtn">Export</button>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-row">
+      <span class="ctrl-label">Tempo</span>
+      <input type="range" id="bpm" min="60" max="200" value="110" aria-label="BPM">
+      <span class="ctrl-val"><span id="bpmVal">110</span> <small>BPM</small></span>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Swing</span>
+      <input type="range" id="swing" min="0" max="60" value="0" aria-label="Swing amount">
+      <span class="ctrl-val"><span id="swingVal">0</span><small>%</small></span>
+    </div>
+  </div>
+
+  <div class="grid-scroll">
+    <div class="beatnums" id="beatnums"></div>
+    <div id="grid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Patterns <span class="count" id="patCount"></span></h2>
+    <div class="save-row">
+      <input type="text" id="patName" placeholder="Name this beat…" maxlength="28" autocomplete="off">
+      <button class="btn" id="saveBtn">Save</button>
+    </div>
+    <div class="btnbar">
+      <button class="btn ghost" id="randomBtn">🎲 Random</button>
+      <button class="btn ghost" id="importBtn">Import JSON</button>
+    </div>
+    <div class="patterns" id="patterns"></div>
+  </div>
+
+  <div class="upsell">
+    <div class="free">Free plan includes <b>3 saved patterns</b>.</div>
+    <div class="lt">Lifetime <b>$9.99</b> unlocks unlimited patterns + export.</div>
+    <div class="price">Upgrade — $9.99 once</div>
+  </div>
+
+  <footer>
+    <div>BEATMAP · synthesized in-browser with the Web Audio API</div>
+    <div class="mono" style="margin-top:5px">WORKS OFFLINE · NO ACCOUNT · NO UPLOAD</div>
+  </footer>
+
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ---------- Config ---------- */
+const STEPS = 16;
+const LS = "beatmap_";
+const FREE_LIMIT = 3;
+
+// row order top->bottom; each has a synth voice + color var
+const VOICES = [
+  { id:"kick",  label:"Kick",  color:"var(--kick)"  },
+  { id:"snare", label:"Snare", color:"var(--snare)" },
+  { id:"hat",   label:"Hi-Hat",color:"var(--hat)"   },
+  { id:"clap",  label:"Clap",  color:"var(--clap)"  },
+  { id:"tom",   label:"Tom",   color:"var(--tom)"   },
+  { id:"perc",  label:"Perc",  color:"var(--perc)"  }
+];
+
+/* ---------- State ---------- */
+let pattern = VOICES.map(()=>new Array(STEPS).fill(false));
+let mutes   = VOICES.map(()=>false);
+let bpm = 110;
+let swing = 0;            // 0..60 (% of half-step)
+let playing = false;
+let currentStep = 0;
+
+/* ---------- Web Audio ---------- */
+let ac = null;
+let masterGain = null;
+let noiseBuffer = null;
+
+function audio(){
+  if (ac) return ac;
+  ac = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = ac.createGain();
+  masterGain.gain.value = 0.9;
+  masterGain.connect(ac.destination);
+  // shared white-noise buffer for snare/hat/clap
+  const len = ac.sampleRate * 1.0;
+  noiseBuffer = ac.createBuffer(1, len, ac.sampleRate);
+  const d = noiseBuffer.getChannelData(0);
+  for (let i=0;i<len;i++) d[i] = Math.random()*2-1;
+  return ac;
+}
+
+function env(node, t, peak, decay, attack=0.001){
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t+attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+attack+decay);
+  node.connect(g); g.connect(masterGain);
+  return g;
+}
+function noiseSrc(){ const s = ac.createBufferSource(); s.buffer = noiseBuffer; return s; }
+
+const synths = {
+  kick(t){
+    const o = ac.createOscillator();
+    o.type="sine";
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(45, t+0.12);
+    const g = env(o, t, 1.0, 0.42, 0.002);
+    o.start(t); o.stop(t+0.5);
+  },
+  snare(t){
+    // noise body
+    const n = noiseSrc();
+    const hp = ac.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=1500;
+    n.connect(hp); env(hp, t, 0.7, 0.2);
+    n.start(t); n.stop(t+0.25);
+    // tonal snap
+    const o = ac.createOscillator(); o.type="triangle"; o.frequency.value=185;
+    env(o, t, 0.4, 0.12); o.start(t); o.stop(t+0.18);
+  },
+  hat(t){
+    const n = noiseSrc();
+    const hp = ac.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=7000;
+    n.connect(hp); env(hp, t, 0.45, 0.05);
+    n.start(t); n.stop(t+0.08);
+  },
+  clap(t){
+    const n = noiseSrc();
+    const bp = ac.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=1100; bp.Q.value=1.4;
+    const g = ac.createGain(); g.gain.value=0;
+    n.connect(bp); bp.connect(g); g.connect(masterGain);
+    // 3 quick bursts then a tail = clap feel
+    [0,0.012,0.024].forEach(o=>{
+      g.gain.setValueAtTime(0, t+o);
+      g.gain.linearRampToValueAtTime(0.55, t+o+0.001);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+o+0.02);
+    });
+    g.gain.setValueAtTime(0.5, t+0.034);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.034+0.2);
+    n.start(t); n.stop(t+0.32);
+  },
+  tom(t){
+    const o = ac.createOscillator(); o.type="sine";
+    o.frequency.setValueAtTime(220, t);
+    o.frequency.exponentialRampToValueAtTime(90, t+0.3);
+    env(o, t, 0.8, 0.3, 0.002);
+    o.start(t); o.stop(t+0.45);
+  },
+  perc(t){
+    const o = ac.createOscillator(); o.type="square";
+    o.frequency.setValueAtTime(520, t);
+    o.frequency.exponentialRampToValueAtTime(330, t+0.08);
+    env(o, t, 0.32, 0.1, 0.001);
+    o.start(t); o.stop(t+0.16);
+  }
+};
+
+function trigger(voiceId, t){ try{ synths[voiceId](t); }catch(e){} }
+
+/* ---------- Scheduler (look-ahead) ---------- */
+let nextNoteTime = 0;
+let schedStep = 0;
+let timerId = null;
+const LOOKAHEAD = 0.1;     // seconds scheduled ahead
+const TICK = 25;           // ms between scheduler runs
+const drawQueue = [];      // {step, time}
+
+function secsPerStep(){ return (60 / bpm) / 4; } // 16th notes
+
+function nextNote(){
+  const base = secsPerStep();
+  // swing: delay odd (off-beat) 16ths
+  let dur = base;
+  if (schedStep % 2 === 0){
+    dur = base * (1 + swing/100);
+  } else {
+    dur = base * (1 - swing/100);
+  }
+  nextNoteTime += dur;
+  schedStep = (schedStep + 1) % STEPS;
+}
+
+function scheduleStep(step, time){
+  for (let r=0;r<VOICES.length;r++){
+    if (pattern[r][step] && !mutes[r]) trigger(VOICES[r].id, time);
+  }
+  drawQueue.push({ step, time });
+}
+
+function scheduler(){
+  while (nextNoteTime < ac.currentTime + LOOKAHEAD){
+    scheduleStep(schedStep, nextNoteTime);
+    nextNote();
+  }
+  timerId = setTimeout(scheduler, TICK);
+}
+
+function drawLoop(){
+  if (!playing) return;
+  let step = currentStep;
+  const now = ac.currentTime;
+  while (drawQueue.length && drawQueue[0].time < now){
+    step = drawQueue.shift().step;
+  }
+  if (step !== currentStep){
+    currentStep = step;
+    paintPlayhead();
+  }
+  requestAnimationFrame(drawLoop);
+}
+
+function play(){
+  audio();
+  if (ac.state === "suspended") ac.resume();
+  playing = true;
+  schedStep = 0; currentStep = 0;
+  drawQueue.length = 0;
+  nextNoteTime = ac.currentTime + 0.06;
+  document.body.classList.remove("paused");
+  const b = document.getElementById("playBtn");
+  b.textContent = "■ Stop"; b.classList.add("on");
+  scheduler();
+  requestAnimationFrame(drawLoop);
+}
+
+function stop(){
+  playing = false;
+  clearTimeout(timerId);
+  document.body.classList.add("paused");
+  const b = document.getElementById("playBtn");
+  b.textContent = "▶ Play"; b.classList.remove("on");
+  currentStep = -1;
+  paintPlayhead();
+  persistState();
+}
+
+function togglePlay(){ playing ? stop() : play(); }
+
+/* ---------- Grid render ---------- */
+const gridEl = document.getElementById("grid");
+const beatnumsEl = document.getElementById("beatnums");
+let cellEls = []; // [row][step]
+
+function buildBeatNums(){
+  beatnumsEl.innerHTML = "";
+  const blank = document.createElement("span"); beatnumsEl.appendChild(blank);
+  for (let s=0;s<STEPS;s++){
+    const sp = document.createElement("span");
+    if (s % 4 === 0){ sp.textContent = (s/4)+1; sp.className="beat1"; }
+    else sp.textContent = "·";
+    beatnumsEl.appendChild(sp);
+  }
+}
+
+function buildGrid(){
+  gridEl.innerHTML = "";
+  cellEls = [];
+  VOICES.forEach((v, r)=>{
+    const row = document.createElement("div");
+    row.className = "row";
+    const label = document.createElement("div");
+    label.className = "rowlabel" + (mutes[r] ? " muted" : "");
+    label.innerHTML = `<span class="swatch" style="background:${v.color}"></span>${v.label}`;
+    const m = document.createElement("button");
+    m.className = "mute"; m.textContent = "M"; m.title = "Mute "+v.label;
+    m.addEventListener("click", ()=>{ mutes[r]=!mutes[r]; label.classList.toggle("muted", mutes[r]); persistState(); });
+    label.appendChild(m);
+    row.appendChild(label);
+
+    const rowCells = [];
+    for (let s=0;s<STEPS;s++){
+      const c = document.createElement("button");
+      c.className = "cell" + (s%4===0 ? " beatmark" : "") + (pattern[r][s] ? " on" : "");
+      if (pattern[r][s]) c.style.background = v.color;
+      c.setAttribute("aria-label", `${v.label} step ${s+1}`);
+      c.addEventListener("click", ()=>toggleCell(r, s));
+      row.appendChild(c);
+      rowCells.push(c);
+    }
+    cellEls.push(rowCells);
+    gridEl.appendChild(row);
+  });
+}
+
+function toggleCell(r, s){
+  pattern[r][s] = !pattern[r][s];
+  const c = cellEls[r][s];
+  c.classList.toggle("on", pattern[r][s]);
+  c.style.background = pattern[r][s] ? VOICES[r].color : "";
+  if (pattern[r][s]){
+    // audition the hit
+    audio(); if (ac.state==="suspended") ac.resume();
+    trigger(VOICES[r].id, ac.currentTime + 0.001);
+  }
+  persistState();
+}
+
+function paintPlayhead(){
+  for (let r=0;r<cellEls.length;r++){
+    for (let s=0;s<STEPS;s++){
+      cellEls[r][s].classList.toggle("playhead", s === currentStep && playing);
+    }
+  }
+}
+
+function repaintGrid(){
+  for (let r=0;r<VOICES.length;r++){
+    const lbl = gridEl.children[r].querySelector(".rowlabel");
+    if (lbl) lbl.classList.toggle("muted", mutes[r]);
+    for (let s=0;s<STEPS;s++){
+      const c = cellEls[r][s];
+      c.classList.toggle("on", pattern[r][s]);
+      c.style.background = pattern[r][s] ? VOICES[r].color : "";
+    }
+  }
+}
+
+/* ---------- Clear / random ---------- */
+function clearGrid(){
+  pattern = VOICES.map(()=>new Array(STEPS).fill(false));
+  repaintGrid(); persistState();
+  toast("Grid cleared", "warn");
+}
+
+function randomGrid(){
+  const dens = [0.5,0.28,0.55,0.18,0.12,0.2]; // per-voice density feel
+  pattern = VOICES.map((v,r)=> new Array(STEPS).fill(false).map((_,s)=>{
+    if (v.id==="kick") return s%4===0 || (Math.random()<0.15);
+    if (v.id==="hat")  return s%2===0 || Math.random()<0.25;
+    if (v.id==="snare")return s%8===4;
+    return Math.random() < (dens[r]||0.15);
+  }));
+  repaintGrid(); persistState();
+  toast("Random beat dropped 🎲", "ok");
+}
+
+/* ---------- Persistence ---------- */
+function snapshot(){
+  return { v:1, name:"", bpm, swing, mutes:[...mutes],
+           pattern: pattern.map(r=>r.map(c=>c?1:0)), voices: VOICES.map(v=>v.id) };
+}
+function applySnapshot(snap){
+  if (!snap || !Array.isArray(snap.pattern)) return false;
+  bpm = clampNum(snap.bpm, 60, 200, 110);
+  swing = clampNum(snap.swing, 0, 60, 0);
+  for (let r=0;r<VOICES.length;r++){
+    const src = snap.pattern[r] || [];
+    for (let s=0;s<STEPS;s++) pattern[r][s] = !!src[s];
+    mutes[r] = !!(snap.mutes && snap.mutes[r]);
+  }
+  document.getElementById("bpm").value = bpm;
+  document.getElementById("bpmVal").textContent = bpm;
+  document.getElementById("swing").value = swing;
+  document.getElementById("swingVal").textContent = swing;
+  repaintGrid();
+  return true;
+}
+function clampNum(n, lo, hi, def){ n = Number(n); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; }
+
+function persistState(){
+  try{ localStorage.setItem(LS+"last", JSON.stringify(snapshot())); }catch(e){}
+}
+function loadLast(){
+  try{ const s = JSON.parse(localStorage.getItem(LS+"last")); if (s) applySnapshot(s); }catch(e){}
+}
+
+function getSaved(){
+  try{ return JSON.parse(localStorage.getItem(LS+"patterns")) || []; }catch(e){ return []; }
+}
+function setSaved(arr){ try{ localStorage.setItem(LS+"patterns", JSON.stringify(arr)); }catch(e){} }
+
+function savePattern(){
+  const nameInput = document.getElementById("patName");
+  let name = nameInput.value.trim();
+  if (!name){ toast("Give your beat a name first", "warn"); nameInput.focus(); return; }
+  const arr = getSaved();
+  if (arr.length >= FREE_LIMIT && !arr.some(p=>p.name===name)){
+    toast(`Free plan saves ${FREE_LIMIT} — upgrade to Lifetime $9.99 for unlimited`, "warn");
+    // MVP: don't hard-block — keep saving so everything works
+  }
+  const snap = snapshot(); snap.name = name; snap.savedAt = Date.now();
+  const existing = arr.findIndex(p=>p.name===name);
+  if (existing >= 0) arr[existing] = snap; else arr.unshift(snap);
+  setSaved(arr);
+  nameInput.value = "";
+  renderPatterns();
+  toast(`Saved "${name}"`, "ok");
+}
+
+function loadPattern(i){
+  const arr = getSaved(); const snap = arr[i]; if (!snap) return;
+  applySnapshot(snap); persistState();
+  toast(`Loaded "${snap.name}"`, "ok");
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+function deletePattern(i){
+  const arr = getSaved(); const snap = arr[i]; if (!snap) return;
+  arr.splice(i,1); setSaved(arr); renderPatterns();
+  toast(`Deleted "${snap.name}"`, "warn");
+}
+
+function renderPatterns(){
+  const arr = getSaved();
+  const wrap = document.getElementById("patterns");
+  document.getElementById("patCount").textContent = `${arr.length}/${FREE_LIMIT} free`;
+  wrap.innerHTML = "";
+  if (!arr.length){
+    wrap.innerHTML = '<div class="empty">No saved beats yet. Tap some cells and hit Save.</div>';
+    return;
+  }
+  arr.forEach((p,i)=>{
+    const hits = (p.pattern||[]).reduce((a,r)=>a + r.reduce((x,c)=>x+(c?1:0),0), 0);
+    const el = document.createElement("div");
+    el.className = "pat";
+    el.innerHTML =
+      `<div class="pname"><b></b><span>${p.bpm||"—"} BPM · ${hits} hits</span></div>
+       <div class="pact"><button class="load">LOAD</button><button class="del">DEL</button></div>`;
+    el.querySelector("b").textContent = p.name || "(untitled)";
+    el.querySelector(".load").addEventListener("click", ()=>loadPattern(i));
+    el.querySelector(".del").addEventListener("click", ()=>deletePattern(i));
+    wrap.appendChild(el);
+  });
+}
+
+/* ---------- Export / Import JSON ---------- */
+function exportJSON(){
+  const snap = snapshot();
+  snap.name = (document.getElementById("patName").value.trim()) || "beatmap-pattern";
+  snap.app = "BEATMAP";
+  const json = JSON.stringify(snap, null, 2);
+  const blob = new Blob([json], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = (snap.name.replace(/[^\w-]+/g,"_")||"beatmap") + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  // fallback: also copy to clipboard for environments that block download
+  try{ navigator.clipboard && navigator.clipboard.writeText(json); }catch(e){}
+  toast("Pattern exported as JSON", "ok");
+}
+
+function importJSON(){
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "application/json,.json";
+  inp.addEventListener("change", ()=>{
+    const f = inp.files && inp.files[0]; if (!f) return;
+    const fr = new FileReader();
+    fr.onload = ()=>{
+      try{
+        const snap = JSON.parse(fr.result);
+        if (applySnapshot(snap)){
+          if (snap.name) document.getElementById("patName").value = snap.name;
+          persistState();
+          toast(`Imported${snap.name?` "${snap.name}"`:""}`, "ok");
+        } else toast("Couldn't read that file", "warn");
+      }catch(e){ toast("Invalid JSON file", "warn"); }
+    };
+    fr.readAsText(f);
+  });
+  inp.click();
+}
+
+/* ---------- Toast ---------- */
+let toastTimer = null;
+function toast(msg, kind){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "show" + (kind ? " "+kind : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className = ""; }, 2400);
+}
+
+/* ---------- Wire up ---------- */
+document.getElementById("playBtn").addEventListener("click", togglePlay);
+document.getElementById("clearBtn").addEventListener("click", clearGrid);
+document.getElementById("exportBtn").addEventListener("click", exportJSON);
+document.getElementById("saveBtn").addEventListener("click", savePattern);
+document.getElementById("randomBtn").addEventListener("click", randomGrid);
+document.getElementById("importBtn").addEventListener("click", importJSON);
+document.getElementById("patName").addEventListener("keydown", e=>{ if (e.key==="Enter") savePattern(); });
+
+const bpmEl = document.getElementById("bpm");
+bpmEl.addEventListener("input", ()=>{ bpm = +bpmEl.value; document.getElementById("bpmVal").textContent = bpm; });
+bpmEl.addEventListener("change", persistState);
+
+const swingEl = document.getElementById("swing");
+swingEl.addEventListener("input", ()=>{ swing = +swingEl.value; document.getElementById("swingVal").textContent = swing; });
+swingEl.addEventListener("change", persistState);
+
+// spacebar = play/stop on desktop
+document.addEventListener("keydown", e=>{
+  if (e.code==="Space" && e.target.tagName!=="INPUT"){ e.preventDefault(); togglePlay(); }
+});
+
+/* ---------- Boot ---------- */
+buildBeatNums();
+loadLast();          // pulls bpm/swing/pattern into state (before grid build)
+buildGrid();
+renderPatterns();
+</script>
+</body>
+</html>

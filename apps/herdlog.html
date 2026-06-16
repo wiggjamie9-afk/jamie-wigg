@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="HERDLOG: A livestock health & treatment diary for smallholder farmers. Track symptoms, treatments, and medicine withdrawal periods so you never sell contaminated milk or meat. Works offline.">
+    <meta name="theme-color" content="#2F855A">
+    <title>HERDLOG – Livestock Health Diary</title>
+    <style>
+        :root {
+            --primary: #2F855A;
+            --primary-dark: #276749;
+            --secondary: #B7791F;
+            --accent: #38A169;
+            --danger: #C53030;
+            --danger-bg: #FFF5F5;
+            --warn: #DD6B20;
+            --bg: #F7FAF7;
+            --surface: #FFFFFF;
+            --surface-alt: #EDF7EF;
+            --border: #DCE7DC;
+            --text-primary: #1A2E1F;
+            --text-secondary: #5A6B5C;
+            --text-muted: #8A988C;
+            --ok: #2F855A;
+            --ongoing: #B7791F;
+            --deceased: #718096;
+            --shadow: 0 1px 3px rgba(26,46,31,.08), 0 1px 2px rgba(26,46,31,.06);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 60%, var(--secondary) 140%);
+            color: #fff;
+            padding: 22px 20px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            box-shadow: 0 2px 8px rgba(26,46,31,.18);
+        }
+        .header h1 { font-size: 24px; font-weight: 800; letter-spacing: .5px; display: flex; align-items: center; gap: 8px; }
+        .header p { font-size: 12.5px; opacity: .92; margin-top: 3px; }
+        .content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: 90px; }
+
+        /* Summary stats */
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+        .stat {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+        .stat .num { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat.alert .num { color: var(--danger); }
+        .stat .lbl { font-size: 10.5px; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; letter-spacing: .4px; }
+
+        /* Withdrawal banner block */
+        .withdrawal-alerts { margin-bottom: 16px; }
+        .wd-banner {
+            background: var(--danger-bg);
+            border: 1.5px solid var(--danger);
+            border-left: 5px solid var(--danger);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .wd-banner .ico { font-size: 20px; line-height: 1; }
+        .wd-banner .body { flex: 1; }
+        .wd-banner .title { font-weight: 800; color: var(--danger); font-size: 13.5px; text-transform: uppercase; letter-spacing: .3px; }
+        .wd-banner .detail { font-size: 12.5px; color: var(--text-primary); margin-top: 3px; }
+        .wd-banner .detail b { color: var(--danger); }
+
+        /* Toolbar */
+        .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .search-wrap { flex: 1 1 100%; position: relative; }
+        .search-wrap input { padding-left: 36px; }
+        .search-wrap::before {
+            content: "🔍"; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: .55;
+        }
+        select.filter { flex: 1; min-width: 0; }
+
+        /* Form / inputs */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+        .card h2 { font-size: 15px; margin-bottom: 14px; font-weight: 800; display: flex; gap: 8px; align-items: center; }
+        .input-group { margin-bottom: 12px; }
+        .row { display: flex; gap: 10px; }
+        .row .input-group { flex: 1; }
+        label { display: block; font-size: 11.5px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+        input, select, textarea {
+            width: 100%;
+            padding: 11px 12px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 9px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+        }
+        textarea { resize: vertical; min-height: 56px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(47,133,90,.12); }
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform .05s ease, opacity .15s ease;
+        }
+        button:active { transform: scale(.98); }
+        .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-ghost { background: var(--surface-alt); color: var(--primary-dark); border: 1px solid var(--border); }
+        .btn-row { display: flex; gap: 8px; }
+
+        /* Journal / timeline */
+        .section-head { display: flex; justify-content: space-between; align-items: center; margin: 4px 2px 10px; }
+        .section-head h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); font-weight: 800; }
+        .section-head .csv { font-size: 12px; color: var(--primary); font-weight: 700; cursor: pointer; background: none; padding: 4px 8px; }
+
+        .timeline { position: relative; }
+        .entry {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
+            border-radius: 12px;
+            padding: 13px 14px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+        }
+        .entry.wd-active { border-left-color: var(--danger); }
+        .entry-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+        .entry .animal { font-weight: 800; font-size: 15px; }
+        .entry .date { font-size: 11.5px; color: var(--text-muted); }
+        .entry .cond { font-size: 13.5px; margin-top: 6px; font-weight: 600; }
+        .entry .treat { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; }
+        .entry .treat b { color: var(--text-primary); }
+        .entry .notes { font-size: 12px; color: var(--text-secondary); margin-top: 6px; font-style: italic; }
+        .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; align-items: center; }
+        .badge { font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: .3px; }
+        .badge.recovered { background: rgba(47,133,90,.12); color: var(--ok); }
+        .badge.ongoing { background: rgba(183,121,31,.14); color: var(--ongoing); }
+        .badge.deceased { background: rgba(113,128,150,.16); color: var(--deceased); }
+        .badge.wd-safe { background: rgba(47,133,90,.10); color: var(--ok); }
+        .badge.wd-active { background: var(--danger); color: #fff; }
+        .entry-actions { display: flex; gap: 14px; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border); }
+        .entry-actions button { background: none; padding: 0; font-size: 12.5px; font-weight: 700; }
+        .entry-actions .edit { color: var(--primary); }
+        .entry-actions .del { color: var(--danger); }
+
+        .wd-strip {
+            margin-top: 9px;
+            background: var(--danger-bg);
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--danger);
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .empty { text-align: center; padding: 36px 16px; color: var(--text-muted); }
+        .empty .ico { font-size: 40px; margin-bottom: 8px; }
+        .empty p { font-size: 13px; }
+
+        /* Floating add button */
+        .fab {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 448px;
+            width: calc(100% - 32px);
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(47,133,90,.4);
+            z-index: 30;
+        }
+        .fab:hover { background: var(--primary-dark); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(26,46,31,.5);
+            display: none; align-items: flex-end; justify-content: center; z-index: 50;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--bg);
+            width: 100%; max-width: 480px;
+            max-height: 92vh; overflow-y: auto;
+            border-radius: 18px 18px 0 0;
+            padding: 18px 16px 28px;
+            animation: slideUp .22s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .modal-head h2 { font-size: 18px; font-weight: 800; }
+        .modal-head .close { background: none; font-size: 22px; color: var(--text-muted); padding: 0 4px; line-height: 1; }
+
+        /* Footer / freemium */
+        .footer-note {
+            margin-top: 6px;
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            padding: 14px 10px 4px;
+            line-height: 1.6;
+        }
+        .footer-note .free { color: var(--primary-dark); font-weight: 700; }
+        .footer-note .pro { color: var(--secondary); font-weight: 800; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: var(--text-primary); color: #fff;
+            padding: 11px 18px; border-radius: 24px; font-size: 13px; font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0,0,0,.3); z-index: 100;
+            opacity: 0; pointer-events: none; transition: all .25s ease; max-width: 90%; text-align: center;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.danger { background: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🐄 HERDLOG</h1>
+            <p>Livestock health diary · withdrawal tracker · works offline</p>
+        </header>
+
+        <main class="content">
+            <!-- Summary -->
+            <div class="stats">
+                <div class="stat"><div class="num" id="statEntries">0</div><div class="lbl">Entries</div></div>
+                <div class="stat"><div class="num" id="statAnimals">0</div><div class="lbl">Animals</div></div>
+                <div class="stat alert"><div class="num" id="statWithdrawals">0</div><div class="lbl">Active WD</div></div>
+            </div>
+
+            <!-- Active withdrawal alerts -->
+            <div class="withdrawal-alerts" id="withdrawalAlerts"></div>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="search-wrap">
+                    <input type="text" id="search" placeholder="Search animal ID, symptom, treatment…" autocomplete="off">
+                </div>
+                <select class="filter" id="filterAnimal"><option value="">All animals</option></select>
+                <select class="filter" id="filterOutcome">
+                    <option value="">All outcomes</option>
+                    <option value="recovered">Recovered</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="deceased">Deceased</option>
+                </select>
+            </div>
+
+            <div class="section-head">
+                <h3>Health journal</h3>
+                <button class="csv" id="exportCsv">⬇ Export CSV</button>
+            </div>
+
+            <div class="timeline" id="timeline"></div>
+
+            <div class="footer-note">
+                <span class="free">Free journal — unlimited entries, kept private on your phone.</span><br>
+                <span class="pro">Lifetime $3.99</span> unlocks export, sharing &amp; pattern insights.<br>
+                Complements the HerdCheck screening app.
+            </div>
+        </main>
+
+        <button class="fab" id="fabAdd">+ Add health entry</button>
+    </div>
+
+    <!-- Modal form -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-head">
+                <h2 id="modalTitle">Add health entry</h2>
+                <button class="close" id="modalClose">×</button>
+            </div>
+            <form id="entryForm">
+                <input type="hidden" id="entryId">
+                <div class="row">
+                    <div class="input-group">
+                        <label for="f_animal">Animal ID</label>
+                        <input type="text" id="f_animal" placeholder="e.g. Cow #14" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="f_date">Date</label>
+                        <input type="date" id="f_date" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="f_symptom">Symptom / condition</label>
+                    <input type="text" id="f_symptom" placeholder="e.g. Mastitis, swollen udder" required>
+                </div>
+                <div class="row">
+                    <div class="input-group">
+                        <label for="f_treatment">Treatment given</label>
+                        <input type="text" id="f_treatment" placeholder="e.g. Penicillin">
+                    </div>
+                    <div class="input-group">
+                        <label for="f_dosage">Dosage</label>
+                        <input type="text" id="f_dosage" placeholder="e.g. 10ml / day">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-group">
+                        <label for="f_withdrawal">Withdrawal (days)</label>
+                        <input type="number" id="f_withdrawal" min="0" step="1" placeholder="e.g. 7" inputmode="numeric">
+                    </div>
+                    <div class="input-group">
+                        <label for="f_outcome">Outcome</label>
+                        <select id="f_outcome">
+                            <option value="ongoing">Ongoing</option>
+                            <option value="recovered">Recovered</option>
+                            <option value="deceased">Deceased</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="f_notes">Notes</label>
+                    <textarea id="f_notes" placeholder="Vet advice, response to treatment, follow-ups…"></textarea>
+                </div>
+                <button type="submit" class="btn-primary" id="saveBtn">Save entry</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    (function () {
+        "use strict";
+        var KEY = "herdlog_entries";
+
+        /* ---------- storage ---------- */
+        function load() {
+            try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+            catch (e) { return []; }
+        }
+        function save(list) {
+            try { localStorage.setItem(KEY, JSON.stringify(list)); }
+            catch (e) { toast("Could not save — storage full?", true); }
+        }
+        var entries = load();
+
+        /* ---------- helpers ---------- */
+        function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+        function todayISO() { return new Date().toISOString().slice(0, 10); }
+        function esc(s) {
+            return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+                return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+            });
+        }
+        function fmtDate(iso) {
+            if (!iso) return "";
+            var d = new Date(iso + "T00:00:00");
+            if (isNaN(d)) return iso;
+            return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+        }
+        function startOfToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+        // returns {active:bool, until:ISO, daysLeft:int} or null if no withdrawal set
+        function withdrawalInfo(e) {
+            var wd = parseInt(e.withdrawal, 10);
+            if (!wd || wd <= 0 || !e.date) return null;
+            var start = new Date(e.date + "T00:00:00");
+            if (isNaN(start)) return null;
+            var until = new Date(start);
+            until.setDate(until.getDate() + wd);
+            var today = startOfToday();
+            var msLeft = until - today;
+            var daysLeft = Math.ceil(msLeft / 86400000);
+            return {
+                active: daysLeft > 0,
+                untilISO: until.toISOString().slice(0, 10),
+                daysLeft: daysLeft
+            };
+        }
+
+        /* ---------- toast ---------- */
+        var toastEl = document.getElementById("toast"), toastTimer;
+        function toast(msg, danger) {
+            toastEl.textContent = msg;
+            toastEl.className = "toast show" + (danger ? " danger" : "");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () { toastEl.className = "toast"; }, 2600);
+        }
+
+        /* ---------- DOM refs ---------- */
+        var timeline = document.getElementById("timeline");
+        var wdAlerts = document.getElementById("withdrawalAlerts");
+        var search = document.getElementById("search");
+        var filterAnimal = document.getElementById("filterAnimal");
+        var filterOutcome = document.getElementById("filterOutcome");
+        var overlay = document.getElementById("modalOverlay");
+        var form = document.getElementById("entryForm");
+
+        /* ---------- render ---------- */
+        function render() {
+            // stats
+            document.getElementById("statEntries").textContent = entries.length;
+            var animals = {};
+            entries.forEach(function (e) { if (e.animal) animals[e.animal.trim().toLowerCase()] = true; });
+            document.getElementById("statAnimals").textContent = Object.keys(animals).length;
+
+            // active withdrawals — one alert per animal (latest binding date)
+            var activeByAnimal = {};
+            entries.forEach(function (e) {
+                var wi = withdrawalInfo(e);
+                if (wi && wi.active) {
+                    var k = (e.animal || "?").trim();
+                    if (!activeByAnimal[k] || activeByAnimal[k].untilISO < wi.untilISO) {
+                        activeByAnimal[k] = { until: wi.untilISO, daysLeft: wi.daysLeft, treat: e.treatment };
+                    }
+                }
+            });
+            var activeKeys = Object.keys(activeByAnimal);
+            document.getElementById("statWithdrawals").textContent = activeKeys.length;
+
+            wdAlerts.innerHTML = "";
+            activeKeys.sort(function (a, b) { return activeByAnimal[a].until.localeCompare(activeByAnimal[b].until); })
+                .forEach(function (animal) {
+                    var info = activeByAnimal[animal];
+                    var div = document.createElement("div");
+                    div.className = "wd-banner";
+                    div.innerHTML =
+                        '<div class="ico">⛔</div>' +
+                        '<div class="body">' +
+                        '<div class="title">Do not sell milk / meat</div>' +
+                        '<div class="detail"><b>' + esc(animal) + '</b> — safe again on <b>' + esc(fmtDate(info.until)) +
+                        '</b> (' + info.daysLeft + ' day' + (info.daysLeft === 1 ? "" : "s") + ' left' +
+                        (info.treat ? ' · ' + esc(info.treat) : "") + ')</div>' +
+                        '</div>';
+                    wdAlerts.appendChild(div);
+                });
+
+            // animal filter options
+            var prev = filterAnimal.value;
+            var uniqAnimals = [];
+            var seen = {};
+            entries.forEach(function (e) {
+                var n = (e.animal || "").trim();
+                if (n && !seen[n.toLowerCase()]) { seen[n.toLowerCase()] = true; uniqAnimals.push(n); }
+            });
+            uniqAnimals.sort(function (a, b) { return a.localeCompare(b); });
+            filterAnimal.innerHTML = '<option value="">All animals</option>' +
+                uniqAnimals.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + "</option>"; }).join("");
+            if (uniqAnimals.indexOf(prev) !== -1) filterAnimal.value = prev;
+
+            // filter + search
+            var q = search.value.trim().toLowerCase();
+            var fa = filterAnimal.value.toLowerCase();
+            var fo = filterOutcome.value;
+            var list = entries.filter(function (e) {
+                if (fa && (e.animal || "").toLowerCase() !== fa) return false;
+                if (fo && e.outcome !== fo) return false;
+                if (q) {
+                    var hay = [e.animal, e.symptom, e.treatment, e.dosage, e.notes, e.outcome].join(" ").toLowerCase();
+                    if (hay.indexOf(q) === -1) return false;
+                }
+                return true;
+            });
+            list.sort(function (a, b) {
+                if (a.date !== b.date) return (b.date || "").localeCompare(a.date || "");
+                return (b.created || 0) - (a.created || 0);
+            });
+
+            timeline.innerHTML = "";
+            if (!list.length) {
+                timeline.innerHTML =
+                    '<div class="empty"><div class="ico">📒</div><p>' +
+                    (entries.length ? "No entries match your search." : "No entries yet. Tap “Add health entry” to start your diary.") +
+                    "</p></div>";
+                return;
+            }
+
+            list.forEach(function (e) {
+                var wi = withdrawalInfo(e);
+                var card = document.createElement("div");
+                card.className = "entry" + (wi && wi.active ? " wd-active" : "");
+
+                var outcomeLbl = { recovered: "Recovered", ongoing: "Ongoing", deceased: "Deceased" }[e.outcome] || "Ongoing";
+                var html =
+                    '<div class="entry-top"><span class="animal">' + esc(e.animal || "Unknown") + '</span>' +
+                    '<span class="date">' + esc(fmtDate(e.date)) + '</span></div>' +
+                    '<div class="cond">' + esc(e.symptom || "—") + '</div>';
+
+                if (e.treatment || e.dosage) {
+                    html += '<div class="treat">💊 <b>' + esc(e.treatment || "Treatment") + '</b>' +
+                        (e.dosage ? " · " + esc(e.dosage) : "") + "</div>";
+                }
+                html += '<div class="badges">' +
+                    '<span class="badge ' + esc(e.outcome || "ongoing") + '">' + outcomeLbl + "</span>";
+                if (wi) {
+                    if (wi.active) {
+                        html += '<span class="badge wd-active">WD ' + wi.daysLeft + "d left</span>";
+                    } else {
+                        html += '<span class="badge wd-safe">Safe to sell</span>';
+                    }
+                }
+                html += "</div>";
+
+                if (wi && wi.active) {
+                    html += '<div class="wd-strip">⛔ DO NOT SELL milk/meat until ' + esc(fmtDate(wi.untilISO)) + "</div>";
+                }
+                if (e.notes) html += '<div class="notes">“' + esc(e.notes) + '”</div>';
+
+                html += '<div class="entry-actions">' +
+                    '<button class="edit" data-edit="' + e.id + '">✎ Edit</button>' +
+                    '<button class="del" data-del="' + e.id + '">🗑 Delete</button>' +
+                    "</div>";
+                card.innerHTML = html;
+                timeline.appendChild(card);
+            });
+        }
+
+        /* ---------- modal ---------- */
+        function openModal(entry) {
+            document.getElementById("modalTitle").textContent = entry ? "Edit health entry" : "Add health entry";
+            document.getElementById("saveBtn").textContent = entry ? "Update entry" : "Save entry";
+            document.getElementById("entryId").value = entry ? entry.id : "";
+            document.getElementById("f_animal").value = entry ? entry.animal : "";
+            document.getElementById("f_date").value = entry ? entry.date : todayISO();
+            document.getElementById("f_symptom").value = entry ? entry.symptom : "";
+            document.getElementById("f_treatment").value = entry ? (entry.treatment || "") : "";
+            document.getElementById("f_dosage").value = entry ? (entry.dosage || "") : "";
+            document.getElementById("f_withdrawal").value = entry && entry.withdrawal != null ? entry.withdrawal : "";
+            document.getElementById("f_outcome").value = entry ? (entry.outcome || "ongoing") : "ongoing";
+            document.getElementById("f_notes").value = entry ? (entry.notes || "") : "";
+            overlay.classList.add("open");
+        }
+        function closeModal() { overlay.classList.remove("open"); }
+
+        document.getElementById("fabAdd").addEventListener("click", function () { openModal(null); });
+        document.getElementById("modalClose").addEventListener("click", closeModal);
+        overlay.addEventListener("click", function (ev) { if (ev.target === overlay) closeModal(); });
+
+        form.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            var id = document.getElementById("entryId").value;
+            var wdVal = document.getElementById("f_withdrawal").value;
+            var data = {
+                animal: document.getElementById("f_animal").value.trim(),
+                date: document.getElementById("f_date").value,
+                symptom: document.getElementById("f_symptom").value.trim(),
+                treatment: document.getElementById("f_treatment").value.trim(),
+                dosage: document.getElementById("f_dosage").value.trim(),
+                withdrawal: wdVal === "" ? null : Math.max(0, parseInt(wdVal, 10) || 0),
+                outcome: document.getElementById("f_outcome").value,
+                notes: document.getElementById("f_notes").value.trim()
+            };
+            if (!data.animal || !data.date || !data.symptom) { toast("Animal ID, date & symptom are required", true); return; }
+
+            if (id) {
+                var idx = entries.findIndex(function (e) { return e.id === id; });
+                if (idx !== -1) { entries[idx] = Object.assign(entries[idx], data); }
+                toast("Entry updated");
+            } else {
+                data.id = uid();
+                data.created = Date.now();
+                entries.push(data);
+                toast("Health entry logged");
+            }
+            save(entries);
+            closeModal();
+            render();
+        });
+
+        /* ---------- edit / delete (event delegation) ---------- */
+        timeline.addEventListener("click", function (ev) {
+            var ed = ev.target.getAttribute("data-edit");
+            var dl = ev.target.getAttribute("data-del");
+            if (ed) {
+                var e = entries.find(function (x) { return x.id === ed; });
+                if (e) openModal(e);
+            } else if (dl) {
+                if (confirm("Delete this entry? This cannot be undone.")) {
+                    entries = entries.filter(function (x) { return x.id !== dl; });
+                    save(entries);
+                    render();
+                    toast("Entry deleted");
+                }
+            }
+        });
+
+        /* ---------- search / filter ---------- */
+        search.addEventListener("input", render);
+        filterAnimal.addEventListener("change", render);
+        filterOutcome.addEventListener("change", render);
+
+        /* ---------- CSV export ---------- */
+        document.getElementById("exportCsv").addEventListener("click", function () {
+            if (!entries.length) { toast("Nothing to export yet", true); return; }
+            var cols = ["Animal ID", "Date", "Symptom/Condition", "Treatment", "Dosage",
+                "Withdrawal (days)", "Safe From", "Outcome", "Notes"];
+            function cell(v) {
+                v = v == null ? "" : String(v);
+                return '"' + v.replace(/"/g, '""') + '"';
+            }
+            var rows = [cols.map(cell).join(",")];
+            entries.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); })
+                .forEach(function (e) {
+                    var wi = withdrawalInfo(e);
+                    rows.push([
+                        e.animal, e.date, e.symptom, e.treatment, e.dosage,
+                        (e.withdrawal == null ? "" : e.withdrawal),
+                        (wi ? wi.untilISO : ""),
+                        e.outcome, e.notes
+                    ].map(cell).join(","));
+                });
+            var csv = rows.join("\r\n");
+            var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "herdlog-" + todayISO() + ".csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+            toast("CSV exported (" + entries.length + " entries)");
+        });
+
+        /* ---------- seed sample on first run ---------- */
+        if (!localStorage.getItem("herdlog_seeded")) {
+            localStorage.setItem("herdlog_seeded", "1");
+            if (!entries.length) {
+                var recent = new Date(); recent.setDate(recent.getDate() - 2);
+                var older = new Date(); older.setDate(older.getDate() - 30);
+                entries = [
+                    {
+                        id: uid(), created: Date.now() - 2000,
+                        animal: "Cow #14", date: recent.toISOString().slice(0, 10),
+                        symptom: "Mastitis — swollen, hot left quarter",
+                        treatment: "Penicillin (intramammary)", dosage: "1 tube / day",
+                        withdrawal: 7, outcome: "ongoing",
+                        notes: "Strip out before each treatment. Recheck in 3 days."
+                    },
+                    {
+                        id: uid(), created: Date.now() - 1000,
+                        animal: "Goat #3", date: older.toISOString().slice(0, 10),
+                        symptom: "Lameness — front right hoof",
+                        treatment: "Hoof trim + topical iodine", dosage: "Once",
+                        withdrawal: 0, outcome: "recovered",
+                        notes: "Foot rot cleared. Walking normally."
+                    }
+                ];
+                save(entries);
+            }
+        }
+
+        render();
+    })();
+    </script>
+</body>
+</html>

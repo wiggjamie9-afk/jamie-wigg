@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="ACHELOG — a calm pain & symptom journal. Log pain episodes, spot triggers, and share clear trends with your physio or doctor. Works offline.">
+  <meta name="theme-color" content="#3B82C4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ACHELOG">
+  <title>ACHELOG — Pain &amp; Symptom Journal</title>
+  <style>
+    :root {
+      --bg:        #F4F7FB;
+      --surface:   #FFFFFF;
+      --surface-2: #EEF3F9;
+      --ink:       #1B2A3D;
+      --soft:      #51637A;
+      --muted:     #8A9AB0;
+      --line:      #DDE5EF;
+      --brand:     #3B82C4;
+      --brand-2:   #5AA8E0;
+      --accent:    #7C6FE0;
+      --danger:    #E2574C;
+      --ok:        #3FA66A;
+      /* intensity scale (1 low -> 10 high) */
+      --i-low:     #3FA66A;
+      --i-mid:     #E8B53D;
+      --i-high:    #E2574C;
+      --radius:    16px;
+      --shadow:    0 2px 10px rgba(27,42,61,0.06);
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, system-ui, sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html, body { background:var(--bg); color:var(--ink); font-family:var(--font); min-height:100%; -webkit-font-smoothing:antialiased; }
+    body { padding-bottom:48px; }
+
+    .wrap { max-width:480px; margin:0 auto; padding:0 16px 24px; }
+
+    /* Header */
+    header {
+      background:linear-gradient(135deg, var(--brand), var(--accent));
+      color:#fff;
+      padding:26px 20px 22px;
+      border-radius:0 0 24px 24px;
+      box-shadow:0 6px 18px rgba(59,130,196,0.25);
+      margin-bottom:18px;
+    }
+    header .bar { max-width:480px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    header h1 { font-size:24px; letter-spacing:0.5px; font-weight:800; display:flex; align-items:center; gap:9px; }
+    header h1 .dot { width:11px; height:11px; border-radius:50%; background:#fff; box-shadow:0 0 0 4px rgba(255,255,255,0.25); }
+    header p { font-size:13px; opacity:0.92; margin-top:6px; max-width:480px; margin-left:auto; margin-right:auto; }
+
+    .card {
+      background:var(--surface);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+      margin-bottom:16px;
+    }
+    .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.09em; color:var(--muted); margin-bottom:14px; font-weight:700; }
+    .field { margin-bottom:16px; }
+    .field > label { display:block; font-size:13px; font-weight:600; color:var(--soft); margin-bottom:8px; }
+
+    input[type="datetime-local"], textarea, select {
+      width:100%; padding:12px 13px; background:var(--surface-2); color:var(--ink);
+      border:1px solid var(--line); border-radius:11px; font-family:var(--font); font-size:15px;
+    }
+    input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); background:#fff; }
+    textarea { resize:vertical; min-height:64px; }
+
+    /* Chips */
+    .chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .chip {
+      padding:8px 13px; border-radius:999px; font-size:13px; font-weight:600;
+      background:var(--surface-2); color:var(--soft); border:1.5px solid var(--line);
+      cursor:pointer; transition:all .15s; user-select:none;
+    }
+    .chip:hover { border-color:var(--brand-2); }
+    .chip.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+    .chip.trigger.on { background:var(--accent); border-color:var(--accent); }
+
+    /* Intensity slider */
+    .intensity-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .intensity-val {
+      font-size:22px; font-weight:800; min-width:64px; text-align:center;
+      padding:4px 10px; border-radius:10px; color:#fff;
+    }
+    input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:8px; border-radius:8px; background:var(--surface-2); }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none; appearance:none; width:26px; height:26px; border-radius:50%;
+      background:#fff; border:3px solid var(--brand); box-shadow:0 1px 4px rgba(0,0,0,0.2); cursor:pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width:26px; height:26px; border-radius:50%; background:#fff; border:3px solid var(--brand); cursor:pointer;
+    }
+    .scale-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:6px; }
+
+    .btn {
+      width:100%; padding:14px; border:none; border-radius:12px; font-size:15px; font-weight:700;
+      cursor:pointer; transition:opacity .15s, transform .05s; color:#fff;
+      background:linear-gradient(135deg, var(--brand), var(--brand-2));
+    }
+    .btn:hover { opacity:0.93; }
+    .btn:active { transform:scale(0.99); }
+    .btn.ghost { background:var(--surface-2); color:var(--soft); border:1px solid var(--line); }
+    .btn.row-actions { width:auto; padding:8px 14px; font-size:13px; }
+
+    .btn-row { display:flex; gap:10px; }
+    .btn-row .btn { flex:1; }
+
+    /* Trends */
+    .trend-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .trend-cell { background:var(--surface-2); border-radius:12px; padding:13px 10px; text-align:center; }
+    .trend-num { font-size:22px; font-weight:800; color:var(--brand); line-height:1.1; }
+    .trend-num.small { font-size:14px; }
+    .trend-cap { font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); margin-top:5px; font-weight:600; }
+
+    canvas { width:100%; height:170px; display:block; }
+    .chart-empty { text-align:center; color:var(--muted); font-size:13px; padding:40px 10px; }
+
+    /* Journal list */
+    .entry {
+      background:var(--surface); border:1px solid var(--line); border-left-width:5px;
+      border-radius:12px; padding:14px; margin-bottom:11px; box-shadow:var(--shadow);
+    }
+    .entry-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .entry-badge {
+      font-size:17px; font-weight:800; color:#fff; width:42px; height:42px; flex:none;
+      border-radius:11px; display:flex; align-items:center; justify-content:center;
+    }
+    .entry-main { flex:1; min-width:0; }
+    .entry-loc { font-size:15px; font-weight:700; }
+    .entry-meta { font-size:12px; color:var(--muted); margin-top:2px; }
+    .entry-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+    .tag { font-size:11px; padding:3px 9px; border-radius:999px; background:var(--surface-2); color:var(--soft); font-weight:600; }
+    .tag.type { background:rgba(59,130,196,0.12); color:var(--brand); }
+    .tag.trig { background:rgba(124,111,224,0.12); color:var(--accent); }
+    .entry-relief { font-size:13px; color:var(--soft); margin-top:9px; line-height:1.45; }
+    .entry-relief b { color:var(--ok); font-weight:700; }
+    .entry-actions { display:flex; gap:8px; margin-top:11px; }
+    .mini { font-size:12px; font-weight:600; padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface-2); color:var(--soft); cursor:pointer; }
+    .mini.del { color:var(--danger); }
+    .mini:hover { border-color:var(--brand-2); }
+
+    .empty-state { text-align:center; padding:34px 16px; color:var(--muted); font-size:14px; }
+    .empty-state .big { font-size:30px; margin-bottom:8px; }
+
+    .list-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+    .list-head h2 { margin-bottom:0; }
+    .count-pill { font-size:11px; font-weight:700; color:var(--brand); background:rgba(59,130,196,0.1); padding:3px 10px; border-radius:999px; }
+
+    /* Footer / freemium */
+    .upsell {
+      background:linear-gradient(135deg, rgba(124,111,224,0.10), rgba(59,130,196,0.10));
+      border:1px dashed var(--accent); border-radius:14px; padding:16px; text-align:center; margin-top:4px;
+    }
+    .upsell .pro { font-weight:800; color:var(--accent); }
+    .upsell p { font-size:12.5px; color:var(--soft); line-height:1.5; margin-top:5px; }
+    footer { text-align:center; font-size:11px; color:var(--muted); margin-top:20px; line-height:1.5; }
+    footer .med { display:block; margin-top:6px; }
+
+    /* Toast */
+    #toast {
+      position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+      background:var(--ink); color:#fff; padding:12px 20px; border-radius:12px; font-size:14px; font-weight:600;
+      box-shadow:0 8px 24px rgba(0,0,0,0.25); opacity:0; pointer-events:none; transition:all .25s; z-index:999; max-width:90vw;
+    }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    #toast.ok { background:var(--ok); }
+    #toast.err { background:var(--danger); }
+
+    .editing-banner { background:rgba(124,111,224,0.12); color:var(--accent); font-size:12px; font-weight:700; padding:8px 12px; border-radius:10px; margin-bottom:14px; display:none; }
+    .editing-banner.show { display:block; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <h1><span class="dot"></span>ACHELOG</h1>
+    </div>
+    <p>Track pain episodes, surface your triggers, and bring clear data to your clinician.</p>
+  </header>
+
+  <div class="wrap">
+
+    <!-- LOG ENTRY -->
+    <div class="card" id="logCard">
+      <h2 id="logTitle">Log a pain episode</h2>
+      <div class="editing-banner" id="editBanner">Editing existing entry — save to update.</div>
+
+      <div class="field">
+        <label for="when">When</label>
+        <input type="datetime-local" id="when">
+      </div>
+
+      <div class="field">
+        <label>Where does it hurt?</label>
+        <div class="chips" id="locChips"></div>
+      </div>
+
+      <div class="field">
+        <div class="intensity-head">
+          <label style="margin:0;">Intensity</label>
+          <span class="intensity-val" id="intVal">5</span>
+        </div>
+        <input type="range" id="intensity" min="1" max="10" value="5" step="1">
+        <div class="scale-labels"><span>1 · barely there</span><span>10 · worst ever</span></div>
+      </div>
+
+      <div class="field">
+        <label>Type of pain</label>
+        <div class="chips" id="typeChips"></div>
+      </div>
+
+      <div class="field">
+        <label>Suspected triggers</label>
+        <div class="chips" id="trigChips"></div>
+      </div>
+
+      <div class="field">
+        <label for="relief">What helped? / Notes</label>
+        <textarea id="relief" placeholder="e.g. heat pack, rest, stretching, ibuprofen…"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="saveBtn">Save entry</button>
+        <button class="btn ghost" id="cancelBtn" style="display:none; flex:0 0 auto; width:auto; padding:14px 18px;">Cancel</button>
+      </div>
+    </div>
+
+    <!-- TRENDS -->
+    <div class="card">
+      <h2>Trends</h2>
+      <div class="trend-grid">
+        <div class="trend-cell"><div class="trend-num" id="tAvg">–</div><div class="trend-cap">Avg intensity</div></div>
+        <div class="trend-cell"><div class="trend-num small" id="tLoc">–</div><div class="trend-cap">Worst area</div></div>
+        <div class="trend-cell"><div class="trend-num small" id="tTrig">–</div><div class="trend-cap">Top trigger</div></div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="card">
+      <h2>Intensity · last 30 days</h2>
+      <canvas id="chart" width="900" height="340"></canvas>
+      <div class="chart-empty" id="chartEmpty" style="display:none;">Log a few entries to see your trend line.</div>
+    </div>
+
+    <!-- JOURNAL -->
+    <div class="card">
+      <div class="list-head">
+        <h2>Journal</h2>
+        <span class="count-pill" id="countPill">0 entries</span>
+      </div>
+      <div id="entries"></div>
+      <div class="empty-state" id="emptyState">
+        <div class="big">🩹</div>
+        <div>No episodes logged yet.<br>Your first entry starts your pain story.</div>
+      </div>
+      <button class="btn ghost" id="exportBtn" style="margin-top:8px;">⬇︎ Export CSV for my clinician</button>
+    </div>
+
+    <!-- FREEMIUM -->
+    <div class="upsell">
+      <span class="pro">ACHELOG Pro · Lifetime $4.99</span>
+      <p>The journal &amp; basic trends are free, forever. Pro unlocks <b>correlation analysis</b>, a <b>printable PDF report</b> for appointments, and <b>reminders</b>.</p>
+      <button class="btn" id="pdfBtn" style="margin-top:12px;">📄 Generate PDF report</button>
+    </div>
+
+    <footer>
+      All data stays on this device (localStorage). Nothing is uploaded.
+      <span class="med">ACHELOG is a self-tracking tool, not medical advice. For diagnosis or treatment, consult a qualified clinician.</span>
+    </footer>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+  (function(){
+    "use strict";
+
+    var KEY = "achelog_entries";
+    var PRO_KEY = "achelog_pro";
+
+    var LOCATIONS = ["Head","Neck","Jaw","Shoulder","Upper back","Lower back","Chest","Abdomen","Hip","Knee","Ankle","Foot","Hand","Wrist","Elbow","Whole body"];
+    var TYPES = ["Sharp","Dull","Burning","Throbbing","Aching","Stabbing","Tingling","Cramping"];
+    var TRIGGERS = ["Activity / exertion","Sitting too long","Poor sleep","Stress","Food / diet","Weather change","Standing","Screen time","Lifting","Unknown"];
+
+    // ---- state ----
+    var entries = load();
+    var sel = { locations:[], type:null, triggers:[] };
+    var editingId = null;
+
+    var $ = function(id){ return document.getElementById(id); };
+
+    function load(){
+      try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+      catch(e){ return []; }
+    }
+    function save(){
+      localStorage.setItem(KEY, JSON.stringify(entries));
+    }
+
+    // ---- toast ----
+    var toastTimer;
+    function toast(msg, kind){
+      var t = $("toast");
+      t.textContent = msg;
+      t.className = "show" + (kind ? " " + kind : "");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function(){ t.className = ""; }, 2600);
+    }
+
+    // ---- intensity color ----
+    function intColor(v){
+      v = Number(v);
+      // 1-3 green, 4-6 amber, 7-10 red, with smooth-ish steps
+      if (v <= 3) return "#3FA66A";
+      if (v <= 5) return "#7FB23A";
+      if (v <= 6) return "#E8B53D";
+      if (v <= 8) return "#E8893D";
+      return "#E2574C";
+    }
+
+    // ---- build chips ----
+    function buildChips(containerId, items, kind){
+      var c = $(containerId);
+      c.innerHTML = "";
+      items.forEach(function(label){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip" + (kind === "trigger" ? " trigger" : "");
+        b.textContent = label;
+        b.setAttribute("data-val", label);
+        b.addEventListener("click", function(){ onChip(kind, label, b); });
+        c.appendChild(b);
+      });
+    }
+
+    function onChip(kind, label, el){
+      if (kind === "location"){
+        toggleInArr(sel.locations, label);
+      } else if (kind === "type"){
+        sel.type = (sel.type === label) ? null : label;
+        $("typeChips").querySelectorAll(".chip").forEach(function(c){
+          c.classList.toggle("on", c.getAttribute("data-val") === sel.type);
+        });
+        return;
+      } else if (kind === "trigger"){
+        toggleInArr(sel.triggers, label);
+      }
+      el.classList.toggle("on");
+    }
+
+    function toggleInArr(arr, v){
+      var i = arr.indexOf(v);
+      if (i === -1) arr.push(v); else arr.splice(i,1);
+    }
+
+    function syncChipUI(){
+      $("locChips").querySelectorAll(".chip").forEach(function(c){
+        c.classList.toggle("on", sel.locations.indexOf(c.getAttribute("data-val")) !== -1);
+      });
+      $("typeChips").querySelectorAll(".chip").forEach(function(c){
+        c.classList.toggle("on", c.getAttribute("data-val") === sel.type);
+      });
+      $("trigChips").querySelectorAll(".chip").forEach(function(c){
+        c.classList.toggle("on", sel.triggers.indexOf(c.getAttribute("data-val")) !== -1);
+      });
+    }
+
+    // ---- datetime helpers ----
+    function nowLocalValue(){
+      var d = new Date();
+      var off = d.getTimezoneOffset();
+      var local = new Date(d.getTime() - off*60000);
+      return local.toISOString().slice(0,16);
+    }
+    function fmtDate(iso){
+      var d = new Date(iso);
+      if (isNaN(d)) return iso;
+      return d.toLocaleString(undefined, { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
+    }
+
+    // ---- form reset / load ----
+    function resetForm(){
+      editingId = null;
+      sel = { locations:[], type:null, triggers:[] };
+      $("when").value = nowLocalValue();
+      $("intensity").value = 5;
+      updateIntVal();
+      $("relief").value = "";
+      syncChipUI();
+      $("logTitle").textContent = "Log a pain episode";
+      $("saveBtn").textContent = "Save entry";
+      $("editBanner").classList.remove("show");
+      $("cancelBtn").style.display = "none";
+    }
+
+    function loadIntoForm(e){
+      editingId = e.id;
+      sel.locations = (e.locations || []).slice();
+      sel.type = e.type || null;
+      sel.triggers = (e.triggers || []).slice();
+      $("when").value = e.when ? e.when.slice(0,16) : nowLocalValue();
+      $("intensity").value = e.intensity;
+      updateIntVal();
+      $("relief").value = e.relief || "";
+      syncChipUI();
+      $("logTitle").textContent = "Edit episode";
+      $("saveBtn").textContent = "Update entry";
+      $("editBanner").classList.add("show");
+      $("cancelBtn").style.display = "block";
+      $("logCard").scrollIntoView({ behavior:"smooth", block:"start" });
+    }
+
+    function updateIntVal(){
+      var v = $("intensity").value;
+      var el = $("intVal");
+      el.textContent = v;
+      el.style.background = intColor(v);
+    }
+
+    // ---- save handler ----
+    function onSave(){
+      if (sel.locations.length === 0){ toast("Pick at least one body area", "err"); return; }
+      var rec = {
+        id: editingId || (Date.now() + "-" + Math.random().toString(36).slice(2,7)),
+        when: new Date($("when").value || nowLocalValue()).toISOString(),
+        locations: sel.locations.slice(),
+        intensity: Number($("intensity").value),
+        type: sel.type,
+        triggers: sel.triggers.slice(),
+        relief: $("relief").value.trim()
+      };
+      if (editingId){
+        var idx = entries.findIndex(function(x){ return x.id === editingId; });
+        if (idx !== -1) entries[idx] = rec;
+        toast("Entry updated", "ok");
+      } else {
+        entries.push(rec);
+        toast("Episode logged", "ok");
+      }
+      save();
+      resetForm();
+      render();
+    }
+
+    function delEntry(id){
+      if (!confirm("Delete this entry? This cannot be undone.")) return;
+      entries = entries.filter(function(x){ return x.id !== id; });
+      if (editingId === id) resetForm();
+      save();
+      render();
+      toast("Entry deleted");
+    }
+
+    // ---- trends ----
+    function computeTrends(){
+      if (!entries.length) return null;
+      var sum = 0, locCount = {}, locInt = {}, trigCount = {};
+      entries.forEach(function(e){
+        sum += e.intensity;
+        (e.locations||[]).forEach(function(l){
+          locCount[l] = (locCount[l]||0) + 1;
+          locInt[l] = (locInt[l]||0) + e.intensity;
+        });
+        (e.triggers||[]).forEach(function(t){ trigCount[t] = (trigCount[t]||0) + 1; });
+      });
+      var avg = sum / entries.length;
+      // "worst area" = highest average intensity among areas logged >=1
+      var worstLoc = "–", worstScore = -1;
+      Object.keys(locInt).forEach(function(l){
+        var a = locInt[l]/locCount[l];
+        if (a > worstScore){ worstScore = a; worstLoc = l; }
+      });
+      var topTrig = "–", topN = 0;
+      Object.keys(trigCount).forEach(function(t){
+        if (trigCount[t] > topN){ topN = trigCount[t]; topTrig = t; }
+      });
+      return { avg:avg, worstLoc:worstLoc, topTrig:topTrig };
+    }
+
+    function renderTrends(){
+      var t = computeTrends();
+      if (!t){
+        $("tAvg").textContent = "–";
+        $("tLoc").textContent = "–";
+        $("tTrig").textContent = "–";
+        return;
+      }
+      $("tAvg").textContent = t.avg.toFixed(1);
+      $("tAvg").style.color = intColor(Math.round(t.avg));
+      $("tLoc").textContent = t.worstLoc;
+      $("tTrig").textContent = t.topTrig;
+    }
+
+    // ---- chart (last 30 days, daily avg intensity) ----
+    function renderChart(){
+      var cv = $("chart");
+      var empty = $("chartEmpty");
+      var ctx = cv.getContext("2d");
+      var W = cv.width, H = cv.height;
+      ctx.clearRect(0,0,W,H);
+
+      // build 30-day daily averages
+      var days = 30;
+      var today = new Date(); today.setHours(0,0,0,0);
+      var buckets = []; // {date, vals:[]}
+      for (var i = days-1; i >= 0; i--){
+        var d = new Date(today.getTime() - i*86400000);
+        buckets.push({ date:d, vals:[] });
+      }
+      entries.forEach(function(e){
+        var d = new Date(e.when); d.setHours(0,0,0,0);
+        var diff = Math.round((today - d) / 86400000);
+        if (diff >= 0 && diff < days){
+          buckets[days-1-diff].vals.push(e.intensity);
+        }
+      });
+      var hasData = buckets.some(function(b){ return b.vals.length; });
+      if (!hasData){ cv.style.display = "none"; empty.style.display = "block"; return; }
+      cv.style.display = "block"; empty.style.display = "none";
+
+      var padL = 34, padR = 14, padT = 16, padB = 28;
+      var plotW = W - padL - padR, plotH = H - padT - padB;
+      function x(idx){ return padL + (plotW * idx / (days-1)); }
+      function y(val){ return padT + plotH * (1 - (val-0)/10); }
+
+      // gridlines + y labels (0,5,10)
+      ctx.strokeStyle = "#DDE5EF"; ctx.lineWidth = 1;
+      ctx.fillStyle = "#8A9AB0"; ctx.font = "16px -apple-system, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      [0,5,10].forEach(function(v){
+        var yy = y(v);
+        ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W-padR, yy); ctx.stroke();
+        ctx.fillText(String(v), padL-8, yy);
+      });
+
+      // x labels (start / mid / end)
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      function dlabel(d){ return (d.getMonth()+1) + "/" + d.getDate(); }
+      ctx.fillText(dlabel(buckets[0].date), x(0)+6, H-padB+6);
+      ctx.fillText(dlabel(buckets[Math.floor(days/2)].date), x(Math.floor(days/2)), H-padB+6);
+      ctx.fillText(dlabel(buckets[days-1].date), x(days-1)-6, H-padB+6);
+
+      // gradient area under line
+      var pts = [];
+      buckets.forEach(function(b, idx){
+        if (b.vals.length){
+          var avg = b.vals.reduce(function(a,c){return a+c;},0)/b.vals.length;
+          pts.push({ idx:idx, val:avg });
+        }
+      });
+
+      // area fill
+      var grad = ctx.createLinearGradient(0, padT, 0, padT+plotH);
+      grad.addColorStop(0, "rgba(59,130,196,0.28)");
+      grad.addColorStop(1, "rgba(59,130,196,0.02)");
+      ctx.beginPath();
+      ctx.moveTo(x(pts[0].idx), y(pts[0].val));
+      for (var p=1; p<pts.length; p++){ ctx.lineTo(x(pts[p].idx), y(pts[p].val)); }
+      ctx.lineTo(x(pts[pts.length-1].idx), padT+plotH);
+      ctx.lineTo(x(pts[0].idx), padT+plotH);
+      ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+
+      // line
+      ctx.beginPath();
+      ctx.moveTo(x(pts[0].idx), y(pts[0].val));
+      for (var q=1; q<pts.length; q++){ ctx.lineTo(x(pts[q].idx), y(pts[q].val)); }
+      ctx.strokeStyle = "#3B82C4"; ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.stroke();
+
+      // points, colored by intensity
+      pts.forEach(function(pt){
+        ctx.beginPath();
+        ctx.arc(x(pt.idx), y(pt.val), 5, 0, Math.PI*2);
+        ctx.fillStyle = intColor(Math.round(pt.val)); ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = "#fff"; ctx.stroke();
+      });
+    }
+
+    // ---- journal list ----
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, function(c){
+        return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" })[c];
+      });
+    }
+
+    function renderList(){
+      var box = $("entries");
+      var empty = $("emptyState");
+      var pill = $("countPill");
+      pill.textContent = entries.length + (entries.length === 1 ? " entry" : " entries");
+
+      if (!entries.length){ box.innerHTML = ""; empty.style.display = "block"; return; }
+      empty.style.display = "none";
+
+      var sorted = entries.slice().sort(function(a,b){ return new Date(b.when) - new Date(a.when); });
+      box.innerHTML = sorted.map(function(e){
+        var col = intColor(e.intensity);
+        var locs = (e.locations||[]).map(function(l){ return '<span class="tag">'+escapeHtml(l)+'</span>'; }).join("");
+        var typeTag = e.type ? '<span class="tag type">'+escapeHtml(e.type)+'</span>' : "";
+        var trigs = (e.triggers||[]).map(function(t){ return '<span class="tag trig">'+escapeHtml(t)+'</span>'; }).join("");
+        var relief = e.relief ? '<div class="entry-relief"><b>Helped:</b> '+escapeHtml(e.relief)+'</div>' : "";
+        return ''+
+          '<div class="entry" style="border-left-color:'+col+'">'+
+            '<div class="entry-top">'+
+              '<div class="entry-badge" style="background:'+col+'">'+e.intensity+'</div>'+
+              '<div class="entry-main">'+
+                '<div class="entry-loc">'+ ((e.locations&&e.locations.length)?escapeHtml(e.locations.join(", ")):"—") +'</div>'+
+                '<div class="entry-meta">'+fmtDate(e.when)+'</div>'+
+                '<div class="entry-tags">'+typeTag+trigs+'</div>'+
+                relief+
+                '<div class="entry-actions">'+
+                  '<button class="mini" data-edit="'+e.id+'">Edit</button>'+
+                  '<button class="mini del" data-del="'+e.id+'">Delete</button>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+          '</div>';
+      }).join("");
+
+      box.querySelectorAll("[data-edit]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var e = entries.find(function(x){ return x.id === b.getAttribute("data-edit"); });
+          if (e) loadIntoForm(e);
+        });
+      });
+      box.querySelectorAll("[data-del]").forEach(function(b){
+        b.addEventListener("click", function(){ delEntry(b.getAttribute("data-del")); });
+      });
+    }
+
+    function render(){
+      renderTrends();
+      renderChart();
+      renderList();
+    }
+
+    // ---- CSV export ----
+    function csvCell(v){
+      v = (v == null) ? "" : String(v);
+      if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
+      return v;
+    }
+    function exportCSV(){
+      if (!entries.length){ toast("Nothing to export yet", "err"); return; }
+      var head = ["Date/Time","Locations","Intensity (1-10)","Type","Triggers","What helped / notes"];
+      var rows = entries.slice().sort(function(a,b){ return new Date(a.when) - new Date(b.when); }).map(function(e){
+        return [
+          new Date(e.when).toLocaleString(),
+          (e.locations||[]).join("; "),
+          e.intensity,
+          e.type || "",
+          (e.triggers||[]).join("; "),
+          e.relief || ""
+        ].map(csvCell).join(",");
+      });
+      var csv = head.map(csvCell).join(",") + "\n" + rows.join("\n");
+      var blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "achelog-export-" + new Date().toISOString().slice(0,10) + ".csv";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      toast("CSV exported", "ok");
+    }
+
+    // ---- PDF report (upsell — gated) ----
+    function pdfReport(){
+      var isPro = localStorage.getItem(PRO_KEY) === "1";
+      if (!isPro){
+        var go = confirm("📄 PDF report is an ACHELOG Pro feature (Lifetime $4.99).\n\nIt builds a clinician-ready summary with your trend chart and correlations.\n\nUnlock Pro now? (demo — no payment taken)");
+        if (!go) return;
+        localStorage.setItem(PRO_KEY, "1");
+        toast("Pro unlocked — generating report", "ok");
+      }
+      // simple printable report via a new window
+      var t = computeTrends();
+      var win = window.open("", "_blank");
+      if (!win){ toast("Allow pop-ups to print the report", "err"); return; }
+      var rowsHtml = entries.slice().sort(function(a,b){ return new Date(a.when)-new Date(b.when); }).map(function(e){
+        return "<tr><td>"+new Date(e.when).toLocaleString()+"</td><td>"+(e.locations||[]).join(", ")+
+               "</td><td style='text-align:center'>"+e.intensity+"</td><td>"+(e.type||"")+
+               "</td><td>"+(e.triggers||[]).join(", ")+"</td><td>"+(e.relief||"")+"</td></tr>";
+      }).join("");
+      win.document.write(
+        "<html><head><title>ACHELOG Report</title><style>"+
+        "body{font-family:-apple-system,Arial,sans-serif;color:#1B2A3D;padding:28px;max-width:760px;margin:0 auto}"+
+        "h1{color:#3B82C4}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px}"+
+        "th,td{border:1px solid #DDE5EF;padding:6px 8px;text-align:left}th{background:#EEF3F9}"+
+        ".sum{display:flex;gap:20px;margin:14px 0}.sum div{background:#EEF3F9;padding:12px 16px;border-radius:10px}"+
+        ".sum b{display:block;font-size:20px;color:#3B82C4}small{color:#8A9AB0}"+
+        "</style></head><body>"+
+        "<h1>ACHELOG — Pain &amp; Symptom Report</h1>"+
+        "<small>Generated "+new Date().toLocaleString()+" · "+entries.length+" episodes · self-reported, not a medical record.</small>"+
+        "<div class='sum'>"+
+          "<div><b>"+(t?t.avg.toFixed(1):"–")+"</b>Avg intensity</div>"+
+          "<div><b>"+(t?t.worstLoc:"–")+"</b>Worst area</div>"+
+          "<div><b>"+(t?t.topTrig:"–")+"</b>Top trigger</div>"+
+        "</div>"+
+        "<table><thead><tr><th>Date/Time</th><th>Location(s)</th><th>Intensity</th><th>Type</th><th>Triggers</th><th>What helped / notes</th></tr></thead>"+
+        "<tbody>"+rowsHtml+"</tbody></table>"+
+        "<p style='margin-top:18px'><small>Tip: use your browser's Print dialog and choose \"Save as PDF\".</small></p>"+
+        "</body></html>"
+      );
+      win.document.close();
+      setTimeout(function(){ try { win.print(); } catch(e){} }, 400);
+    }
+
+    // ---- wire up ----
+    buildChips("locChips", LOCATIONS, "location");
+    buildChips("typeChips", TYPES, "type");
+    buildChips("trigChips", TRIGGERS, "trigger");
+
+    $("intensity").addEventListener("input", updateIntVal);
+    $("saveBtn").addEventListener("click", onSave);
+    $("cancelBtn").addEventListener("click", resetForm);
+    $("exportBtn").addEventListener("click", exportCSV);
+    $("pdfBtn").addEventListener("click", pdfReport);
+
+    resetForm();
+    render();
+
+    window.addEventListener("resize", function(){ renderChart(); });
+  })();
+  </script>
+</body>
+</html>

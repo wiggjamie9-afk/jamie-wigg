@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>METRO — a precise musician's metronome</title>
+<meta name="description" content="A rock-solid metronome with sample-accurate Web Audio timing, visual flash, haptic feedback, adjustable time signatures, accented downbeats and tap tempo. Works fully offline.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0A0F1F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="METRO">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22METRO%22%2C%22short_name%22%3A%22METRO%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230A0F1F%22%2C%22theme_color%22%3A%220A0F1F%22%2C%22orientation%22%3A%22portrait%22%7D">
+<style>
+:root{
+  --bg:#0A0F1F; --bg-2:#101830; --bg-3:#1a2546;
+  --ink:#EDEEF4; --soft:#bcc2d6; --muted:#7d8499;
+  --accent:#5B8CFF; --accent-2:#8B6CFF; --hot:#FF6B6B; --cream:#F4E4BC;
+  --ok:#3ED598;
+  --card:rgba(255,255,255,0.04);
+  --line:rgba(255,255,255,0.08);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  --r:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{padding:max(16px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom));display:flex;justify-content:center}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;background:transparent}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+
+.wrap{width:100%;max-width:520px}
+
+/* Header */
+.head{border-radius:var(--r);padding:22px 22px 24px;background:linear-gradient(135deg,#1a2546 0%,#221a46 55%,#2a1f3a 100%);position:relative;overflow:hidden;border:1px solid var(--line)}
+.head::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 90% -10%,rgba(91,140,255,0.35),transparent 60%);pointer-events:none}
+.head .row{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent)}
+.logo .name{font-weight:700;letter-spacing:0.22em;font-size:15px}
+.logo .name span{color:var(--accent)}
+.tagline{font-family:var(--mono);font-size:9.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);opacity:0.8}
+
+/* Beat row */
+.beats{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:20px;position:relative;z-index:1;min-height:18px}
+.beat{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.16);transition:transform 0.06s ease,background 0.18s ease,box-shadow 0.18s ease}
+.beat.down{background:rgba(255,255,255,0.28)}
+.beat.lit{background:var(--accent);box-shadow:0 0 16px var(--accent);transform:scale(1.5)}
+.beat.lit.acc{background:var(--hot);box-shadow:0 0 22px var(--hot);transform:scale(1.75)}
+
+/* Cards */
+.card{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+
+/* BPM display */
+.bpm-stage{display:flex;flex-direction:column;align-items:center;gap:6px}
+.bpm-num{font-family:var(--mono);font-weight:600;font-size:clamp(72px,24vw,116px);line-height:0.9;letter-spacing:-0.04em;font-variant-numeric:tabular-nums;background:linear-gradient(180deg,#fff,#aab4d8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.bpm-flash{transition:filter 0.05s}
+.bpm-flash.on{filter:drop-shadow(0 0 26px rgba(91,140,255,0.6))}
+.bpm-unit{font-family:var(--mono);font-size:10px;letter-spacing:0.32em;text-transform:uppercase;color:var(--muted);margin-top:-2px}
+.tempo-name{font-size:15px;font-weight:600;color:var(--cream);letter-spacing:0.04em;margin-top:2px}
+
+/* Stepper */
+.stepper{display:flex;align-items:center;gap:14px;margin-top:14px;width:100%;justify-content:center}
+.step{width:62px;height:62px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,0.05);font-size:30px;font-weight:300;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:background 0.15s,transform 0.06s}
+.step:active{transform:scale(0.93);background:rgba(91,140,255,0.18)}
+.step.big{width:74px;height:74px;font-size:36px}
+.slider-row{margin-top:18px;width:100%}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+input[type=range]::-moz-range-track{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;margin-top:-10px;box-shadow:0 2px 10px rgba(0,0,0,0.4);border:none}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 10px rgba(0,0,0,0.4)}
+.range-ends{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--muted);margin-top:8px}
+
+/* Transport */
+.play{width:100%;margin-top:16px;height:66px;border-radius:50px;font-family:var(--mono);font-size:14px;letter-spacing:0.28em;text-transform:uppercase;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 8px 30px rgba(91,140,255,0.32);transition:transform 0.07s,filter 0.2s}
+.play:active{transform:scale(0.985)}
+.play.on{background:linear-gradient(135deg,var(--hot),#c0392b);box-shadow:0 8px 30px rgba(255,107,107,0.3)}
+
+/* Presets */
+.sec-title{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.preset{flex:1 1 auto;min-width:0;padding:11px 10px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,0.03);text-align:center;transition:all 0.15s}
+.preset:active,.preset.on{border-color:var(--accent);background:rgba(91,140,255,0.14)}
+.preset .nm{font-size:13px;font-weight:600}
+.preset .bp{font-family:var(--mono);font-size:9.5px;color:var(--muted);letter-spacing:0.08em;margin-top:2px}
+
+/* Pills (time sig + sound) */
+.pillrow{display:flex;flex-wrap:wrap;gap:8px}
+.pill{padding:10px 16px;border-radius:50px;border:1px solid var(--line);background:rgba(255,255,255,0.03);font-family:var(--mono);font-size:13px;letter-spacing:0.04em;transition:all 0.15s}
+.pill:active,.pill.on{border-color:var(--accent);background:rgba(91,140,255,0.16);color:#fff}
+
+/* Toggle rows */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 2px}
+.toggle-row+.toggle-row{border-top:1px solid var(--line)}
+.toggle-row .lbl{font-size:14px;font-weight:500}
+.toggle-row .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.sw{width:50px;height:30px;border-radius:50px;background:rgba(255,255,255,0.12);position:relative;transition:background 0.2s;flex:0 0 auto}
+.sw.on{background:var(--ok)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform 0.2s}
+.sw.on::after{transform:translateX(20px)}
+
+/* Tap tempo */
+.tap{width:100%;height:64px;border-radius:16px;border:1px dashed rgba(255,255,255,0.22);background:rgba(255,255,255,0.03);font-family:var(--mono);font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:var(--soft);transition:transform 0.06s,background 0.1s}
+.tap:active{transform:scale(0.985);background:rgba(91,140,255,0.16);color:#fff}
+.tap b{color:var(--ink)}
+
+/* Footer / freemium */
+.foot{margin-top:18px;text-align:center}
+.foot .free{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted)}
+.unlock{margin-top:10px;border:1px solid rgba(212,175,55,0.4);background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(212,175,55,0.04));border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
+.unlock .u-t{font-size:13px;font-weight:600;color:var(--cream)}
+.unlock .u-s{font-size:11px;color:var(--soft);margin-top:3px;line-height:1.4}
+.unlock .u-b{flex:0 0 auto;padding:10px 16px;border-radius:50px;background:var(--cream);color:#1a1405;font-weight:700;font-size:12px;letter-spacing:0.04em}
+.copyright{margin-top:16px;font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.05em}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#fff;color:#0A0F1F;font-weight:600;font-size:13px;padding:12px 20px;border-radius:50px;box-shadow:0 10px 40px rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s;z-index:300;max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header + beat indicator -->
+  <header class="head">
+    <div class="row">
+      <div class="logo">
+        <div class="dot" id="logoDot"></div>
+        <div class="name">MET<span>RO</span></div>
+      </div>
+      <div class="tagline">Precise · Offline</div>
+    </div>
+    <div class="beats" id="beats"></div>
+  </header>
+
+  <!-- BPM display + controls -->
+  <section class="card bpm-stage">
+    <div class="bpm-num bpm-flash" id="bpmNum">120</div>
+    <div class="bpm-unit">Beats Per Minute</div>
+    <div class="tempo-name" id="tempoName">Allegro</div>
+
+    <div class="stepper">
+      <button class="step" id="minus10" aria-label="minus 10">−</button>
+      <button class="step big" id="minus1" aria-label="minus 1">‹</button>
+      <button class="step big" id="plus1" aria-label="plus 1">›</button>
+      <button class="step" id="plus10" aria-label="plus 10">+</button>
+    </div>
+
+    <div class="slider-row">
+      <input type="range" id="bpmSlider" min="40" max="240" step="1" value="120" aria-label="tempo">
+      <div class="range-ends"><span>40</span><span>240</span></div>
+    </div>
+
+    <button class="play" id="play">Start</button>
+  </section>
+
+  <!-- Tap tempo -->
+  <section class="card">
+    <div class="sec-title">Practice</div>
+    <button class="tap" id="tap">Tap Tempo — <b id="tapHint">tap 4×</b></button>
+  </section>
+
+  <!-- Tempo presets -->
+  <section class="card">
+    <div class="sec-title">Tempo presets</div>
+    <div class="presets" id="presets"></div>
+  </section>
+
+  <!-- Time signature -->
+  <section class="card">
+    <div class="sec-title">Time signature</div>
+    <div class="pillrow" id="sigs"></div>
+  </section>
+
+  <!-- Sound -->
+  <section class="card">
+    <div class="sec-title">Click sound</div>
+    <div class="pillrow" id="sounds"></div>
+  </section>
+
+  <!-- Feedback toggles -->
+  <section class="card">
+    <div class="sec-title">Feedback</div>
+    <div class="toggle-row">
+      <div><div class="lbl">Accent beat 1</div><div class="sub">Stronger click on the downbeat</div></div>
+      <div class="sw on" id="swAccent" role="switch" aria-checked="true" tabindex="0"></div>
+    </div>
+    <div class="toggle-row">
+      <div><div class="lbl">Visual flash</div><div class="sub">Pulse the display on each beat</div></div>
+      <div class="sw on" id="swFlash" role="switch" aria-checked="true" tabindex="0"></div>
+    </div>
+    <div class="toggle-row">
+      <div><div class="lbl">Haptic</div><div class="sub">Vibrate on supported devices</div></div>
+      <div class="sw" id="swHaptic" role="switch" aria-checked="false" tabindex="0"></div>
+    </div>
+  </section>
+
+  <!-- Footer / freemium -->
+  <footer class="foot">
+    <div class="free">Free · core metronome, no limits</div>
+    <div class="unlock">
+      <div>
+        <div class="u-t">METRO Lifetime — $2.99</div>
+        <div class="u-s">Unlocks setlists, polyrhythms &amp; sound packs.</div>
+      </div>
+      <button class="u-b" id="unlockBtn">Unlock</button>
+    </div>
+    <div class="copyright">METRO · part of the RHYTHMIX family · built for the stage</div>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- persistence ---------- */
+  var PFX = "metro_";
+  function load(k, d){ try{ var v = localStorage.getItem(PFX+k); return v===null?d:JSON.parse(v); }catch(e){ return d; } }
+  function save(k, v){ try{ localStorage.setItem(PFX+k, JSON.stringify(v)); }catch(e){} }
+
+  /* ---------- toast ---------- */
+  var toastEl = document.getElementById("toast"), toastT;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastT);
+    toastT = setTimeout(function(){ toastEl.classList.remove("show"); }, 1700);
+  }
+
+  /* ---------- state ---------- */
+  var state = {
+    bpm:      clampBpm(load("bpm", 120)),
+    sigIndex: load("sigIndex", 2),    // default 4/4
+    sound:    load("sound", "tick"),
+    preset:   load("preset", null),
+    accent:   load("accent", true),
+    flash:    load("flash", true),
+    haptic:   load("haptic", false)
+  };
+
+  var SIGS = [
+    {label:"2/4", beats:2, note:4},
+    {label:"3/4", beats:3, note:4},
+    {label:"4/4", beats:4, note:4},
+    {label:"5/4", beats:5, note:4},
+    {label:"6/8", beats:6, note:8},
+    {label:"7/8", beats:7, note:8},
+    {label:"12/8", beats:12, note:8}
+  ];
+  if(state.sigIndex<0||state.sigIndex>=SIGS.length) state.sigIndex = 2;
+
+  var PRESETS = [
+    {nm:"Largo",   bpm:50},
+    {nm:"Adagio",  bpm:70},
+    {nm:"Andante", bpm:92},
+    {nm:"Moderato",bpm:110},
+    {nm:"Allegro", bpm:130},
+    {nm:"Vivace",  bpm:166},
+    {nm:"Presto",  bpm:190}
+  ];
+
+  // tempo-name ranges (Italian markings)
+  function tempoName(bpm){
+    if(bpm<45) return "Grave";
+    if(bpm<55) return "Largo";
+    if(bpm<66) return "Larghetto";
+    if(bpm<76) return "Adagio";
+    if(bpm<92) return "Andante";
+    if(bpm<108) return "Moderato";
+    if(bpm<120) return "Allegretto";
+    if(bpm<140) return "Allegro";
+    if(bpm<160) return "Vivace";
+    if(bpm<178) return "Presto";
+    return "Prestissimo";
+  }
+
+  function clampBpm(v){ v = Math.round(+v||120); return Math.max(40, Math.min(240, v)); }
+
+  var SOUNDS = [
+    {id:"tick",  label:"Tick"},
+    {id:"woodblock", label:"Wood"},
+    {id:"beep",  label:"Beep"},
+    {id:"rim",   label:"Rimshot"}
+  ];
+
+  /* ---------- Web Audio: lookahead scheduler ---------- */
+  var audioCtx = null;
+  var running = false;
+  var currentBeat = 0;        // 0-based beat within bar at next scheduled note
+  var nextNoteTime = 0;       // AudioContext time for the next note
+  var lookahead = 25;         // ms — how often the scheduler runs
+  var scheduleAhead = 0.12;   // sec — how far ahead we schedule
+  var timerID = null;
+  var beatQueue = [];         // {beat, time} pending visual events
+
+  function ensureCtx(){
+    if(!audioCtx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+    }
+    if(audioCtx.state === "suspended"){ audioCtx.resume(); }
+    return audioCtx;
+  }
+
+  function secondsPerBeat(){
+    // 8-note signatures use the eighth as the pulse
+    var sig = SIGS[state.sigIndex];
+    var base = 60.0 / state.bpm;
+    return sig.note === 8 ? base * 0.5 : base;
+  }
+
+  function scheduleClick(beatIndex, time){
+    var sig = SIGS[state.sigIndex];
+    var isDown = (beatIndex === 0);
+    var accented = isDown && state.accent;
+    playSound(state.sound, time, accented, isDown);
+    beatQueue.push({beat: beatIndex, time: time, acc: accented});
+  }
+
+  function advanceNote(){
+    nextNoteTime += secondsPerBeat();
+    var sig = SIGS[state.sigIndex];
+    currentBeat = (currentBeat + 1) % sig.beats;
+  }
+
+  function scheduler(){
+    while(nextNoteTime < audioCtx.currentTime + scheduleAhead){
+      scheduleClick(currentBeat, nextNoteTime);
+      advanceNote();
+    }
+  }
+
+  /* ---------- synthesized timbres ---------- */
+  function playSound(kind, time, accent, isDown){
+    var ctx = audioCtx;
+    var gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    var vol = accent ? 1.0 : (isDown ? 0.78 : 0.6);
+
+    if(kind === "beep"){
+      var o = ctx.createOscillator();
+      o.type = "square";
+      o.frequency.value = accent ? 1320 : 880;
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(0.4*vol, time+0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time+0.06);
+      o.connect(gain); o.start(time); o.stop(time+0.08);
+
+    } else if(kind === "woodblock"){
+      var o2 = ctx.createOscillator();
+      o2.type = "triangle";
+      o2.frequency.setValueAtTime(accent ? 1500 : 1100, time);
+      o2.frequency.exponentialRampToValueAtTime(accent ? 760 : 560, time+0.03);
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(0.55*vol, time+0.001);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time+0.05);
+      o2.connect(gain); o2.start(time); o2.stop(time+0.07);
+
+    } else if(kind === "rim"){
+      // short filtered noise burst
+      var dur = 0.04;
+      var buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate*dur), ctx.sampleRate);
+      var d = buf.getChannelData(0);
+      for(var i=0;i<d.length;i++){ d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2); }
+      var src = ctx.createBufferSource(); src.buffer = buf;
+      var bp = ctx.createBiquadFilter(); bp.type="bandpass";
+      bp.frequency.value = accent ? 2600 : 1900; bp.Q.value = 6;
+      gain.gain.setValueAtTime(0.7*vol, time);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time+dur);
+      src.connect(bp); bp.connect(gain); src.start(time); src.stop(time+dur);
+
+    } else { // "tick" — clean sine pip, classic metronome
+      var o3 = ctx.createOscillator();
+      o3.type = "sine";
+      o3.frequency.value = accent ? 2000 : 1000;
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(0.6*vol, time+0.001);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time+0.04);
+      o3.connect(gain); o3.start(time); o3.stop(time+0.06);
+    }
+  }
+
+  /* ---------- visual draw loop (synced to scheduled events) ---------- */
+  var beatEls = [];
+  function rebuildBeatDots(){
+    var c = document.getElementById("beats");
+    c.innerHTML = "";
+    beatEls = [];
+    var sig = SIGS[state.sigIndex];
+    for(var i=0;i<sig.beats;i++){
+      var b = document.createElement("div");
+      b.className = "beat" + (i===0 ? " down" : "");
+      c.appendChild(b);
+      beatEls.push(b);
+    }
+  }
+
+  var bpmNumEl = document.getElementById("bpmNum");
+  var logoDot = document.getElementById("logoDot");
+
+  function flashBeat(beat, acc){
+    // clear all
+    for(var i=0;i<beatEls.length;i++){ beatEls[i].classList.remove("lit","acc"); }
+    if(beatEls[beat]){
+      beatEls[beat].classList.add("lit");
+      if(acc) beatEls[beat].classList.add("acc");
+      setTimeout((function(el){ return function(){ el.classList.remove("lit","acc"); }; })(beatEls[beat]), 110);
+    }
+    if(state.flash){
+      bpmNumEl.classList.add("on");
+      setTimeout(function(){ bpmNumEl.classList.remove("on"); }, 70);
+    }
+    logoDot.style.boxShadow = acc ? "0 0 22px var(--hot)" : "0 0 18px var(--accent)";
+    logoDot.style.background = acc ? "var(--hot)" : "var(--accent)";
+    if(state.haptic && navigator.vibrate){
+      try{ navigator.vibrate(acc ? 22 : 10); }catch(e){}
+    }
+  }
+
+  function drawLoop(){
+    if(!running) return;
+    var now = audioCtx.currentTime;
+    while(beatQueue.length && beatQueue[0].time <= now + 0.012){
+      var ev = beatQueue.shift();
+      flashBeat(ev.beat, ev.acc);
+    }
+    requestAnimationFrame(drawLoop);
+  }
+
+  /* ---------- transport ---------- */
+  var playBtn = document.getElementById("play");
+  function start(){
+    ensureCtx();
+    running = true;
+    currentBeat = 0;
+    nextNoteTime = audioCtx.currentTime + 0.06;
+    beatQueue = [];
+    timerID = setInterval(scheduler, lookahead);
+    requestAnimationFrame(drawLoop);
+    playBtn.textContent = "Stop";
+    playBtn.classList.add("on");
+  }
+  function stop(){
+    running = false;
+    clearInterval(timerID);
+    timerID = null;
+    beatQueue = [];
+    for(var i=0;i<beatEls.length;i++){ beatEls[i].classList.remove("lit","acc"); }
+    bpmNumEl.classList.remove("on");
+    logoDot.style.boxShadow = "0 0 14px var(--accent)";
+    logoDot.style.background = "var(--accent)";
+    playBtn.textContent = "Start";
+    playBtn.classList.remove("on");
+  }
+  function toggleTransport(){ running ? stop() : start(); }
+
+  /* ---------- BPM control ---------- */
+  var slider = document.getElementById("bpmSlider");
+  var tempoNameEl = document.getElementById("tempoName");
+
+  function setBpm(v, fromPreset){
+    state.bpm = clampBpm(v);
+    bpmNumEl.textContent = state.bpm;
+    slider.value = state.bpm;
+    tempoNameEl.textContent = tempoName(state.bpm);
+    if(!fromPreset){ state.preset = null; markPresets(); }
+    save("bpm", state.bpm);
+    save("preset", state.preset);
+    // scheduler reads state.bpm live — no restart needed
+  }
+
+  document.getElementById("minus10").onclick = function(){ setBpm(state.bpm-10); };
+  document.getElementById("plus10").onclick  = function(){ setBpm(state.bpm+10); };
+  document.getElementById("minus1").onclick   = function(){ setBpm(state.bpm-1); };
+  document.getElementById("plus1").onclick    = function(){ setBpm(state.bpm+1); };
+  slider.addEventListener("input", function(){ setBpm(slider.value); });
+
+  /* ---------- presets ---------- */
+  var presetWrap = document.getElementById("presets");
+  function markPresets(){
+    var kids = presetWrap.children;
+    for(var i=0;i<kids.length;i++){
+      kids[i].classList.toggle("on", PRESETS[i].nm === state.preset);
+    }
+  }
+  PRESETS.forEach(function(p){
+    var b = document.createElement("button");
+    b.className = "preset";
+    b.innerHTML = '<div class="nm">'+p.nm+'</div><div class="bp">'+p.bpm+'</div>';
+    b.onclick = function(){
+      state.preset = p.nm;
+      setBpm(p.bpm, true);
+      markPresets();
+      toast(p.nm + " · " + p.bpm + " BPM");
+    };
+    presetWrap.appendChild(b);
+  });
+
+  /* ---------- time signatures ---------- */
+  var sigWrap = document.getElementById("sigs");
+  function markSigs(){
+    var kids = sigWrap.children;
+    for(var i=0;i<kids.length;i++){ kids[i].classList.toggle("on", i===state.sigIndex); }
+  }
+  SIGS.forEach(function(s, idx){
+    var b = document.createElement("button");
+    b.className = "pill";
+    b.textContent = s.label;
+    b.onclick = function(){
+      state.sigIndex = idx;
+      save("sigIndex", idx);
+      markSigs();
+      rebuildBeatDots();
+      // restart bar so the downbeat lands cleanly on a new bar
+      if(running){ currentBeat = 0; nextNoteTime = audioCtx.currentTime + 0.06; beatQueue = []; }
+    };
+    sigWrap.appendChild(b);
+  });
+
+  /* ---------- sounds ---------- */
+  var soundWrap = document.getElementById("sounds");
+  function markSounds(){
+    var kids = soundWrap.children;
+    for(var i=0;i<kids.length;i++){ kids[i].classList.toggle("on", SOUNDS[i].id===state.sound); }
+  }
+  SOUNDS.forEach(function(s){
+    var b = document.createElement("button");
+    b.className = "pill";
+    b.textContent = s.label;
+    b.onclick = function(){
+      state.sound = s.id;
+      save("sound", s.id);
+      markSounds();
+      // preview the sound
+      ensureCtx();
+      playSound(s.id, audioCtx.currentTime + 0.02, state.accent, true);
+    };
+    soundWrap.appendChild(b);
+  });
+
+  /* ---------- toggles ---------- */
+  function bindSwitch(elId, key, after){
+    var el = document.getElementById(elId);
+    function render(){ el.classList.toggle("on", !!state[key]); el.setAttribute("aria-checked", state[key]?"true":"false"); }
+    function toggle(){
+      state[key] = !state[key];
+      save(key, state[key]);
+      render();
+      if(after) after(state[key]);
+    }
+    el.addEventListener("click", toggle);
+    el.addEventListener("keydown", function(e){ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggle(); } });
+    render();
+  }
+  bindSwitch("swAccent", "accent");
+  bindSwitch("swFlash", "flash");
+  bindSwitch("swHaptic", "haptic", function(on){
+    if(on){
+      if(navigator.vibrate){ try{ navigator.vibrate(15); }catch(e){} toast("Haptic on"); }
+      else { toast("Haptics not supported here"); }
+    }
+  });
+
+  /* ---------- tap tempo ---------- */
+  var tapTimes = [];
+  var tapHint = document.getElementById("tapHint");
+  var tapResetT;
+  document.getElementById("tap").addEventListener("click", function(){
+    var now = performance.now();
+    // reset if last tap was a long time ago (>2s)
+    if(tapTimes.length && now - tapTimes[tapTimes.length-1] > 2000){ tapTimes = []; }
+    tapTimes.push(now);
+    if(tapTimes.length > 8) tapTimes.shift();
+
+    if(state.haptic && navigator.vibrate){ try{ navigator.vibrate(8); }catch(e){} }
+
+    if(tapTimes.length >= 2){
+      var intervals = [];
+      for(var i=1;i<tapTimes.length;i++){ intervals.push(tapTimes[i]-tapTimes[i-1]); }
+      var avg = intervals.reduce(function(a,b){return a+b;},0) / intervals.length;
+      var bpm = clampBpm(60000 / avg);
+      setBpm(bpm);
+      tapHint.textContent = bpm + " BPM";
+    } else {
+      tapHint.textContent = "keep tapping…";
+    }
+    clearTimeout(tapResetT);
+    tapResetT = setTimeout(function(){ tapTimes = []; tapHint.textContent = "tap 4×"; }, 2400);
+  });
+
+  /* ---------- freemium (no hard block) ---------- */
+  document.getElementById("unlockBtn").addEventListener("click", function(){
+    toast("Lifetime unlock coming soon — core stays free");
+  });
+
+  /* ---------- keyboard: space = start/stop, arrows = bpm ---------- */
+  document.addEventListener("keydown", function(e){
+    if(e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) {
+      if(e.code === "Space") return; // let range handle
+    }
+    if(e.code === "Space"){ e.preventDefault(); toggleTransport(); }
+    else if(e.code === "ArrowUp"){ e.preventDefault(); setBpm(state.bpm+1); }
+    else if(e.code === "ArrowDown"){ e.preventDefault(); setBpm(state.bpm-1); }
+  });
+
+  /* ---------- init ---------- */
+  playBtn.addEventListener("click", toggleTransport);
+  rebuildBeatDots();
+  markSigs();
+  markSounds();
+  markPresets();
+  setBpm(state.bpm, true);
+  if(state.preset){ /* keep highlighted */ markPresets(); }
+
+})();
+</script>
+</body>
+</html>

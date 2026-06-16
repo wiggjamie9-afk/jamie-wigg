@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="BREATHE — guided breathwork timer with a calming animated orb. Box breathing, 4-7-8, coherent and custom patterns. Works fully offline.">
+<meta name="theme-color" content="#0F172A">
+<title>BREATHE — Guided breathwork timer</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+  --primary:#38BDF8;
+  --secondary:#8B5CF6;
+  --teal:#2DD4BF;
+  --accent:#10B981;
+  --bg-dark:#0B1120;
+  --bg-mid:#0F172A;
+  --bg-card:#172033;
+  --bg-card-2:#1E293B;
+  --border:#27344B;
+  --text:#F1F5F9;
+  --text-dim:#94A3B8;
+  --text-faint:#64748B;
+  --radius:18px;
+  --shadow:0 10px 40px rgba(0,0,0,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(56,189,248,.10), transparent 60%),
+    radial-gradient(900px 500px at 90% 110%, rgba(139,92,246,.10), transparent 60%),
+    var(--bg-dark);
+  color:var(--text);
+  min-height:100vh;
+  min-height:100dvh;
+}
+.wrap{
+  max-width:480px;
+  margin:0 auto;
+  padding:20px 16px calc(28px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  min-height:100vh;
+  min-height:100dvh;
+}
+
+/* Header */
+header{text-align:center;padding-top:6px;}
+.logo{
+  font-size:30px;font-weight:800;letter-spacing:.32em;
+  background:linear-gradient(90deg,var(--primary),var(--teal),var(--secondary));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  padding-left:.32em;
+}
+.tag{font-size:12.5px;color:var(--text-dim);margin-top:4px;letter-spacing:.02em;}
+
+/* Stats */
+.stats{display:flex;gap:10px;}
+.stat{
+  flex:1;background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 10px;text-align:center;
+}
+.stat .num{font-size:22px;font-weight:800;color:var(--teal);}
+.stat .lbl{font-size:11px;color:var(--text-dim);margin-top:2px;letter-spacing:.05em;text-transform:uppercase;}
+
+/* Orb stage */
+.stage{
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  height:300px;margin:4px 0;
+}
+.orb-glow{
+  position:absolute;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle, rgba(56,189,248,.45), rgba(139,92,246,.18) 55%, transparent 72%);
+  filter:blur(14px);
+  transform:scale(var(--orb-scale,1));
+  transition:transform var(--phase-dur,4s) cubic-bezier(.37,0,.63,1);
+  pointer-events:none;
+}
+.orb{
+  position:relative;
+  width:200px;height:200px;border-radius:50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), rgba(255,255,255,0) 45%),
+    linear-gradient(145deg, var(--primary), var(--secondary));
+  box-shadow:0 0 60px rgba(56,189,248,.35), inset 0 0 40px rgba(255,255,255,.10);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transform:scale(var(--orb-scale,1));
+  transition:transform var(--phase-dur,4s) cubic-bezier(.37,0,.63,1);
+  will-change:transform;
+}
+.orb .phase{font-size:24px;font-weight:700;letter-spacing:.04em;text-shadow:0 2px 10px rgba(0,0,0,.35);}
+.orb .count{font-size:48px;font-weight:800;line-height:1;margin-top:4px;font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.4);}
+.orb .sub{font-size:11.5px;color:rgba(255,255,255,.82);margin-top:8px;letter-spacing:.06em;}
+
+/* When idle, gentle ambient pulse via class */
+.orb.idle, .orb-glow.idle{transition:transform 4s ease-in-out;}
+
+/* Controls */
+.controls{display:flex;gap:10px;}
+button{
+  flex:1;padding:15px 14px;border:none;border-radius:14px;
+  font-size:15px;font-weight:700;cursor:pointer;color:#fff;
+  transition:transform .12s ease, opacity .2s, filter .2s;
+  font-family:inherit;
+}
+button:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--secondary));box-shadow:0 6px 20px rgba(56,189,248,.30);}
+.btn-ghost{background:var(--bg-card-2);border:1px solid var(--border);color:var(--text);}
+.btn-ghost:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Patterns */
+.section-label{font-size:12px;color:var(--text-faint);letter-spacing:.12em;text-transform:uppercase;margin:4px 2px -4px;}
+.patterns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pat{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:14px;
+  padding:13px 14px;cursor:pointer;text-align:left;transition:border-color .2s, background .2s, transform .12s;
+}
+.pat:active{transform:scale(.98);}
+.pat.active{border-color:var(--primary);background:linear-gradient(145deg, rgba(56,189,248,.12), rgba(139,92,246,.10));}
+.pat .pname{font-size:14.5px;font-weight:700;}
+.pat .pdesc{font-size:11.5px;color:var(--text-dim);margin-top:3px;}
+
+/* Custom builder */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.builder{display:none;}
+.builder.open{display:block;}
+.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;color:var(--text-dim);text-align:center;letter-spacing:.04em;text-transform:uppercase;}
+.field input{
+  width:100%;padding:10px 4px;text-align:center;border-radius:10px;
+  background:var(--bg-mid);border:1px solid var(--border);color:var(--text);
+  font-size:16px;font-weight:700;font-family:inherit;
+}
+.field input:focus{outline:none;border-color:var(--primary);}
+.cycle-row{display:flex;align-items:center;gap:10px;margin-top:12px;}
+.cycle-row label{font-size:13px;color:var(--text-dim);flex:1;}
+.cycle-row input{width:80px;padding:10px;text-align:center;border-radius:10px;background:var(--bg-mid);border:1px solid var(--border);color:var(--text);font-size:15px;font-weight:700;font-family:inherit;}
+
+/* Toggles */
+.toggles{display:flex;flex-direction:column;gap:2px;}
+.toggle{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;}
+.toggle + .toggle{border-top:1px solid var(--border);}
+.toggle .t-label{font-size:14px;}
+.toggle .t-sub{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+.switch{position:relative;width:48px;height:28px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:var(--bg-card-2);border:1px solid var(--border);border-radius:28px;transition:.25s;cursor:pointer;}
+.slider:before{content:"";position:absolute;height:20px;width:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.25s;}
+.switch input:checked + .slider{background:linear-gradient(135deg,var(--primary),var(--teal));border-color:transparent;}
+.switch input:checked + .slider:before{transform:translateX(20px);}
+
+/* Footer */
+.foot{
+  text-align:center;font-size:12px;color:var(--text-dim);
+  background:linear-gradient(145deg, rgba(139,92,246,.10), rgba(56,189,248,.08));
+  border:1px solid var(--border);border-radius:14px;padding:14px;line-height:1.5;
+}
+.foot b{color:var(--teal);}
+.foot .free{color:var(--text-faint);font-size:11px;display:block;margin-top:4px;}
+
+/* Toast */
+#toast{
+  position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:var(--bg-card-2);border:1px solid var(--border);color:var(--text);
+  padding:12px 18px;border-radius:12px;font-size:13.5px;font-weight:600;
+  box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:50;max-width:90%;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">BREATHE</div>
+    <div class="tag">Paced breathwork · find your rhythm</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="statSessions">0</div><div class="lbl">Sessions</div></div>
+    <div class="stat"><div class="num" id="statStreak">0</div><div class="lbl">Day streak</div></div>
+    <div class="stat"><div class="num" id="statCycles">0</div><div class="lbl">This run</div></div>
+  </div>
+
+  <div class="stage">
+    <div class="orb-glow idle" id="orbGlow"></div>
+    <div class="orb idle" id="orb">
+      <div class="phase" id="orbPhase">Ready</div>
+      <div class="count" id="orbCount">—</div>
+      <div class="sub" id="orbSub">Tap Start</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" id="btnStart">Start</button>
+    <button class="btn-ghost" id="btnStop" disabled>Stop</button>
+  </div>
+
+  <div class="section-label">Patterns</div>
+  <div class="patterns" id="patterns"></div>
+
+  <button class="btn-ghost" id="btnCustomToggle" style="margin-top:2px;">⚙︎ Custom pattern builder</button>
+  <div class="builder card" id="builder">
+    <div class="fields">
+      <div class="field"><label>Inhale</label><input type="number" id="cInhale" min="0" max="60" value="4"></div>
+      <div class="field"><label>Hold</label><input type="number" id="cHold1" min="0" max="60" value="4"></div>
+      <div class="field"><label>Exhale</label><input type="number" id="cExhale" min="0" max="60" value="4"></div>
+      <div class="field"><label>Hold</label><input type="number" id="cHold2" min="0" max="60" value="4"></div>
+    </div>
+    <div class="cycle-row">
+      <label>Number of cycles</label>
+      <input type="number" id="cCycles" min="1" max="99" value="6">
+    </div>
+    <button class="btn-primary" id="btnSaveCustom" style="margin-top:14px;width:100%;flex:none;">Use this pattern</button>
+  </div>
+
+  <div class="section-label">Options</div>
+  <div class="card toggles">
+    <div class="toggle">
+      <div><div class="t-label">Soft audio cue</div><div class="t-sub">Gentle tone at each phase</div></div>
+      <label class="switch"><input type="checkbox" id="optSound"><span class="slider"></span></label>
+    </div>
+    <div class="toggle">
+      <div><div class="t-label">Haptic pulse</div><div class="t-sub">Vibrate on transitions</div></div>
+      <label class="switch"><input type="checkbox" id="optHaptic"><span class="slider"></span></label>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>RHYTHMIX BREATHE</b> — free forever core patterns.<br>
+    <span class="free">Lifetime $3.99 unlocks all programs, themes &amp; background sounds.</span>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var PFX = "breathe_";
+  var LS = {
+    get:function(k,d){try{var v=localStorage.getItem(PFX+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},
+    set:function(k,v){try{localStorage.setItem(PFX+k,JSON.stringify(v));}catch(e){}}
+  };
+
+  /* ---------- Toast ---------- */
+  var toastEl = document.getElementById("toast"), toastT;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastT);
+    toastT = setTimeout(function(){toastEl.classList.remove("show");}, 2200);
+  }
+
+  /* ---------- Patterns ----------
+     Each phase: {name, dur} where name in Inhale/Hold/Exhale, dur seconds (0 = skip) */
+  var PRESETS = [
+    {id:"box",     name:"Box",        desc:"4-4-4-4 · focus & calm",
+      phases:[{n:"Inhale",d:4},{n:"Hold",d:4},{n:"Exhale",d:4},{n:"Hold",d:4}], cycles:6},
+    {id:"478",     name:"4-7-8",      desc:"Relaxation · wind down",
+      phases:[{n:"Inhale",d:4},{n:"Hold",d:7},{n:"Exhale",d:8}], cycles:4},
+    {id:"coherent",name:"Coherent",   desc:"5-5 · heart coherence",
+      phases:[{n:"Inhale",d:5},{n:"Exhale",d:5}], cycles:10},
+    {id:"wimhof",  name:"Wim Hof",    desc:"Energising rounds",
+      phases:[{n:"Inhale",d:2},{n:"Exhale",d:2}], cycles:30}
+  ];
+
+  function customPattern(){
+    var c = LS.get("custom", {inhale:4,hold1:4,exhale:4,hold2:4,cycles:6});
+    var ph = [];
+    if(c.inhale>0) ph.push({n:"Inhale",d:c.inhale});
+    if(c.hold1>0)  ph.push({n:"Hold",d:c.hold1});
+    if(c.exhale>0) ph.push({n:"Exhale",d:c.exhale});
+    if(c.hold2>0)  ph.push({n:"Hold",d:c.hold2});
+    return {id:"custom", name:"Custom", desc:c.inhale+"-"+c.hold1+"-"+c.exhale+"-"+c.hold2+" · your pace",
+            phases:ph, cycles:Math.max(1,c.cycles)};
+  }
+
+  function getPattern(id){
+    if(id==="custom") return customPattern();
+    for(var i=0;i<PRESETS.length;i++) if(PRESETS[i].id===id) return PRESETS[i];
+    return PRESETS[0];
+  }
+
+  /* ---------- State ---------- */
+  var selectedId = LS.get("pattern", "box");
+  var optSoundEl = document.getElementById("optSound");
+  var optHapticEl = document.getElementById("optHaptic");
+  optSoundEl.checked  = LS.get("sound", true);
+  optHapticEl.checked = LS.get("haptic", true);
+
+  optSoundEl.addEventListener("change", function(){
+    LS.set("sound", optSoundEl.checked);
+    if(optSoundEl.checked) ensureAudio();
+  });
+  optHapticEl.addEventListener("change", function(){ LS.set("haptic", optHapticEl.checked); });
+
+  /* ---------- Audio (Web Audio API) ---------- */
+  var actx=null;
+  function ensureAudio(){
+    if(!actx){
+      try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; }
+    }
+    if(actx && actx.state==="suspended") actx.resume();
+    return actx;
+  }
+  // Soft sine "ding" — frequency varies by phase for subtle distinction
+  function tone(freq){
+    if(!optSoundEl.checked) return;
+    var ctx = ensureAudio(); if(!ctx) return;
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type="sine"; osc.frequency.value=freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18, t+0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.9);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(t); osc.stop(t+0.95);
+  }
+  function phaseFreq(name){
+    if(name==="Inhale") return 528;   // rising calm
+    if(name==="Exhale") return 396;   // lower release
+    return 440;                        // hold
+  }
+  function haptic(ms){
+    if(!optHapticEl.checked) return;
+    if(navigator.vibrate) navigator.vibrate(ms);
+  }
+
+  /* ---------- Orb ---------- */
+  var orb = document.getElementById("orb");
+  var orbGlow = document.getElementById("orbGlow");
+  var orbPhase = document.getElementById("orbPhase");
+  var orbCount = document.getElementById("orbCount");
+  var orbSub = document.getElementById("orbSub");
+
+  function setOrb(scale, durSec){
+    orb.style.setProperty("--phase-dur", durSec+"s");
+    orb.style.setProperty("--orb-scale", scale);
+    orbGlow.style.setProperty("--phase-dur", durSec+"s");
+    orbGlow.style.setProperty("--orb-scale", scale);
+  }
+  function targetScaleFor(name){
+    if(name==="Inhale") return 1.32;
+    if(name==="Exhale") return 0.78;
+    return null; // hold keeps current scale
+  }
+
+  /* ---------- Session engine ---------- */
+  var running=false, paused=false;
+  var pat=null, phaseIdx=0, cycleNum=0, phaseEndsAt=0, rafId=null, lastShown=-1, holdScale=1;
+
+  var btnStart=document.getElementById("btnStart");
+  var btnStop=document.getElementById("btnStop");
+  var statCycles=document.getElementById("statCycles");
+
+  function startSession(){
+    pat = getPattern(selectedId);
+    if(!pat.phases.length){ toast("Add at least one phase"); return; }
+    if(optSoundEl.checked) ensureAudio();
+    running=true; paused=false;
+    phaseIdx=0; cycleNum=0; holdScale=1;
+    orb.classList.remove("idle"); orbGlow.classList.remove("idle");
+    btnStart.textContent="Pause";
+    btnStop.disabled=false;
+    statCycles.textContent="0";
+    beginPhase();
+    loop();
+  }
+
+  function beginPhase(){
+    var ph = pat.phases[phaseIdx];
+    orbPhase.textContent = ph.n;
+    var ts = targetScaleFor(ph.n);
+    if(ts!==null){ holdScale = ts; setOrb(ts, ph.d); }
+    else { setOrb(holdScale, 0.25); } // hold: stay put, snap transition
+    orbSub.textContent = "Cycle " + (cycleNum+1) + " / " + pat.cycles;
+    phaseEndsAt = performance.now() + ph.d*1000;
+    lastShown=-1;
+    tone(phaseFreq(ph.n));
+    haptic(ph.n==="Exhale"?[18,40,18]:35);
+  }
+
+  function nextPhase(){
+    phaseIdx++;
+    if(phaseIdx >= pat.phases.length){
+      phaseIdx=0; cycleNum++;
+      statCycles.textContent = String(cycleNum);
+      if(cycleNum >= pat.cycles){ finishSession(); return; }
+    }
+    beginPhase();
+  }
+
+  function loop(){
+    if(!running){ return; }
+    if(!paused){
+      var remMs = phaseEndsAt - performance.now();
+      var rem = Math.max(0, Math.ceil(remMs/1000));
+      if(rem !== lastShown){ orbCount.textContent = rem; lastShown=rem; }
+      if(remMs <= 0){ nextPhase(); }
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function pauseSession(){
+    paused=true;
+    btnStart.textContent="Resume";
+    // freeze orb at current visual scale
+    var cs = getComputedStyle(orb).transform;
+    orbSub.textContent="Paused";
+  }
+  function resumeSession(){
+    paused=false;
+    btnStart.textContent="Pause";
+    // recompute end time from remaining shown seconds
+    var rem = parseInt(orbCount.textContent,10); if(isNaN(rem)) rem=0;
+    phaseEndsAt = performance.now() + rem*1000;
+    orbSub.textContent = "Cycle " + (cycleNum+1) + " / " + pat.cycles;
+  }
+
+  function stopSession(silent){
+    running=false; paused=false;
+    if(rafId) cancelAnimationFrame(rafId);
+    btnStart.textContent="Start";
+    btnStop.disabled=true;
+    orb.classList.add("idle"); orbGlow.classList.add("idle");
+    setOrb(1, 4);
+    orbPhase.textContent="Ready"; orbCount.textContent="—"; orbSub.textContent="Tap Start";
+    if(!silent) toast("Session ended");
+  }
+
+  function finishSession(){
+    running=false;
+    if(rafId) cancelAnimationFrame(rafId);
+    btnStart.textContent="Start";
+    btnStop.disabled=true;
+    orb.classList.add("idle"); orbGlow.classList.add("idle");
+    setOrb(1, 3);
+    orbPhase.textContent="Done"; orbCount.textContent="✓"; orbSub.textContent="Well done";
+    haptic([40,60,40,60,80]);
+    tone(528); setTimeout(function(){tone(660);},220);
+    recordCompletion();
+  }
+
+  /* ---------- Stats / streak ---------- */
+  function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+  function dayDiff(a,b){
+    var pa=a.split("-"), pb=b.split("-");
+    var da=new Date(pa[0],pa[1]-1,pa[2]), db=new Date(pb[0],pb[1]-1,pb[2]);
+    return Math.round((db-da)/86400000);
+  }
+  function recordCompletion(){
+    var sessions = LS.get("sessions",0)+1;
+    LS.set("sessions", sessions);
+    var streak = LS.get("streak",0);
+    var last = LS.get("lastDate", null);
+    var today = todayStr();
+    if(last===null){ streak=1; }
+    else if(last!==today){
+      var diff = dayDiff(last, today);
+      if(diff===1) streak=streak+1;
+      else if(diff>1) streak=1;
+      // diff<=0 (same day handled above / clock drift) keep streak
+    } // same day: streak unchanged
+    LS.set("streak", streak);
+    LS.set("lastDate", today);
+    renderStats();
+    toast("Session complete · streak "+streak+" 🔥");
+  }
+  function renderStats(){
+    document.getElementById("statSessions").textContent = LS.get("sessions",0);
+    // streak resets visually if a day was skipped
+    var streak = LS.get("streak",0), last=LS.get("lastDate",null);
+    if(last!==null){
+      var d = dayDiff(last, todayStr());
+      if(d>1) streak=0;
+    }
+    document.getElementById("statStreak").textContent = streak;
+  }
+
+  /* ---------- Controls ---------- */
+  btnStart.addEventListener("click", function(){
+    if(!running) startSession();
+    else if(paused) resumeSession();
+    else pauseSession();
+  });
+  btnStop.addEventListener("click", function(){ stopSession(false); });
+
+  /* ---------- Pattern UI ---------- */
+  var patternsEl = document.getElementById("patterns");
+  function renderPatterns(){
+    patternsEl.innerHTML="";
+    var list = PRESETS.concat([customPattern()]);
+    list.forEach(function(p){
+      var el=document.createElement("button");
+      el.className="pat"+(p.id===selectedId?" active":"");
+      el.innerHTML='<div class="pname">'+p.name+'</div><div class="pdesc">'+p.desc+'</div>';
+      el.addEventListener("click", function(){
+        selectedId=p.id; LS.set("pattern", selectedId);
+        renderPatterns();
+        if(running) stopSession(true);
+        toast(p.name+" selected");
+      });
+      patternsEl.appendChild(el);
+    });
+  }
+
+  /* ---------- Custom builder ---------- */
+  var builder=document.getElementById("builder");
+  document.getElementById("btnCustomToggle").addEventListener("click", function(){
+    builder.classList.toggle("open");
+    if(builder.classList.contains("open")){
+      var c=LS.get("custom",{inhale:4,hold1:4,exhale:4,hold2:4,cycles:6});
+      document.getElementById("cInhale").value=c.inhale;
+      document.getElementById("cHold1").value=c.hold1;
+      document.getElementById("cExhale").value=c.exhale;
+      document.getElementById("cHold2").value=c.hold2;
+      document.getElementById("cCycles").value=c.cycles;
+    }
+  });
+  document.getElementById("btnSaveCustom").addEventListener("click", function(){
+    function v(id,max){ var n=parseInt(document.getElementById(id).value,10); if(isNaN(n)||n<0)n=0; if(n>max)n=max; return n; }
+    var c={
+      inhale:v("cInhale",60), hold1:v("cHold1",60),
+      exhale:v("cExhale",60), hold2:v("cHold2",60),
+      cycles:Math.max(1,v("cCycles",99))
+    };
+    if(c.inhale+c.hold1+c.exhale+c.hold2===0){ toast("Set at least one phase > 0"); return; }
+    LS.set("custom", c);
+    selectedId="custom"; LS.set("pattern","custom");
+    renderPatterns();
+    builder.classList.remove("open");
+    toast("Custom pattern saved");
+  });
+
+  /* ---------- Pause/visibility safety ---------- */
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden && running && !paused) pauseSession();
+  });
+
+  /* ---------- Init ---------- */
+  renderPatterns();
+  renderStats();
+  setOrb(1,4);
+})();
+</script>
+</body>
+</html>
