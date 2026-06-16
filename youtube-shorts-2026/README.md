@@ -15,8 +15,8 @@
 |---|---|---|---|---|
 | 1 | Why Netflix Killed Blockbuster | Business Economics | Ready | `business-economics/netflix-blockbuster.html` |
 | 2 | Why Starbucks Doesn't Sell Coffee | Business Economics | Ready | `business-economics/starbucks-coffee.html` |
-| 3 | Fart Man: The Office Meeting | Comedy/Physical | Ready | `comedy/fart-man-office.html` |
-| 4 | Why Adults See Obstacles But Kids Don't | AHAD/Insight | Ready | `ahad-insights/adults-vs-kids.html` |
+| 3 | Mr. Fart Man: The Next-Door Neighbourhood | Comedy/Physical | Ready | `comedy/fart-man-neighbourhood.html` |
+| 4 | Why Adults See Obstacles But Kids Don't `[AHAD-26]` | AHAD/Insight | Ready | `ahad-insights/adults-vs-kids.html` |
 
 **All compositions tested, locked, and production-ready.**
 
@@ -111,9 +111,9 @@ youtube-shorts-2026/
 │       └── starbucks-coffee.mp4       ← (output after render)
 │
 ├── comedy/
-│   ├── fart-man-office.html           ← Composition (ready)
+│   ├── fart-man-neighbourhood.html    ← Composition (ready)
 │   └── renders/
-│       └── fart-man-office.mp4        ← (output after render)
+│       └── fart-man-neighbourhood.mp4 ← (output after render)
 │
 └── ahad-insights/
     ├── adults-vs-kids.html            ← Composition (ready)

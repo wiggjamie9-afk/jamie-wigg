@@ -23,15 +23,16 @@
 - **VoiceOver:** Required (narrator script in `scripts.md`)
 - **Status:** Composition locked ✅
 
-### 3️⃣ **"Fart Man: The Office Meeting"**
-- **File:** `comedy/fart-man-office.html`
+### 3️⃣ **"Mr. Fart Man: The Next-Door Neighbourhood"**
+- **File:** `comedy/fart-man-neighbourhood.html`
 - **Duration:** 60s
 - **Type:** Physical Comedy (Sound Effects Only)
 - **VoiceOver:** NOT NEEDED (pure comedy)
 - **SFX Needed:** Fart sounds (provided by Replicate/Pollinations)
+- **Scenes:** Street move-in → BBQ invite → borrowing sugar → fence chat → CTA
 - **Status:** Composition locked ✅
 
-### 4️⃣ **"Why Adults See Obstacles But Kids Don't"**
+### 4️⃣ **"Why Adults See Obstacles But Kids Don't"** — ID: `AHAD-26`
 - **File:** `ahad-insights/adults-vs-kids.html`
 - **Duration:** 60s
 - **Type:** Life Insight (Narrated)
@@ -59,8 +60,8 @@ npx --yes hyperframes@0.4.42 render \
 
 # Video 3: Fart Man
 npx --yes hyperframes@0.4.42 render \
-  comedy/fart-man-office.html \
-  --output comedy/fart-man-office.mp4
+  comedy/fart-man-neighbourhood.html \
+  --output comedy/fart-man-neighbourhood.mp4
 
 # Video 4: AHAD Insights
 npx --yes hyperframes@0.4.42 render \
@@ -147,7 +148,7 @@ Subscribe for daily business economics breakdowns.
 
 **Video 3:**
 ```
-Don't go to the office meeting 💨
+New neighbour... who dis? 💨
 
 Subscribe for chaotic comedy shorts.
 
@@ -200,8 +201,8 @@ youtube-shorts-2026/
 │   ├── starbucks-coffee.html           # Composition
 │   └── starbucks-coffee.mp4            # (output after render)
 ├── comedy/
-│   ├── fart-man-office.html            # Composition
-│   └── fart-man-office.mp4             # (output after render)
+│   ├── fart-man-neighbourhood.html     # Composition
+│   └── fart-man-neighbourhood.mp4      # (output after render)
 └── ahad-insights/
     ├── adults-vs-kids.html             # Composition
     └── adults-vs-kids.mp4              # (output after render)

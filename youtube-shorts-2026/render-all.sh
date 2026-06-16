@@ -66,9 +66,9 @@ render_video \
 
 # Render Video 3: Fart Man
 render_video \
-    "comedy/fart-man-office.html" \
-    "comedy/renders/fart-man-office.mp4" \
-    "Video 3: Fart Man - The Office Meeting"
+    "comedy/fart-man-neighbourhood.html" \
+    "comedy/renders/fart-man-neighbourhood.mp4" \
+    "Video 3: Mr. Fart Man - The Next-Door Neighbourhood"
 
 # Render Video 4: AHAD Insights
 render_video \
@@ -84,7 +84,7 @@ echo ""
 echo "📁 Output locations:"
 echo "   • business-economics/renders/netflix-blockbuster.mp4"
 echo "   • business-economics/renders/starbucks-coffee.mp4"
-echo "   • comedy/renders/fart-man-office.mp4"
+echo "   • comedy/renders/fart-man-neighbourhood.mp4"
 echo "   • ahad-insights/renders/adults-vs-kids.mp4"
 echo ""
 echo "📝 Next steps:"

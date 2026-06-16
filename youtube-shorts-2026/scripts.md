@@ -66,43 +66,42 @@ Subscribe for why."
 
 ---
 
-## VIDEO 3: "Fart Man: The Office Meeting"
+## VIDEO 3: "Mr. Fart Man: The Next-Door Neighbourhood"
 **Duration:** 60s | **Type:** Comedy | **Sound:** SFX Only + Reactions
 
 ### Script (Physical Comedy - No Dialogue)
 ```
 [0-10s] SETUP
-Fart Man enters a professional boardroom. 
-Executives around a table. Dead serious.
-He sits down. Adjusts his chair.
+Mr. Fart Man moves into a sunny suburban street.
+Picket fences, three colourful houses, a friendly cul-de-sac.
+He waves hello to the neighbourhood. Innocent. Hopeful.
 
-[10-25s] FIRST FART
+[10-24s] THE BBQ INVITE
+The neighbour fires up the grill and waves him over.
 PPPPFFFFFTTTTT (loud, unmistakable)
-Everyone freezes.
-Fart Man's face: completely blank/dead inside.
-CEO's eye twitches.
+The burgers flip themselves. The chef freezes.
+Mr. Fart Man's face: completely blank/dead inside.
 
-[25-40s] ESCALATION
-He shifts. Another one.
-Slightly quieter but more... wet sounding.
-Woman across table puts hand over mouth.
-Man to his left slowly stands up.
+[24-37s] BORROWING SUGAR
+He knocks next door. "Can I borrow some sugar?"
+The neighbour opens the door, smiling...
+BRRRP. 😳 The smile vanishes. The door creeps shut.
 
-[40-55s] FINALE
-One more for good measure - the grand finale.
-Everyone just... leaves. 
-One guy stays, points at him, shakes head.
-Fart Man: 🤷
+[37-50s] THE FENCE CHAT
+Leaning on the garden fence for a friendly chat with the old-timer.
+BRRRRAAAAPPPPP — the grand finale over the fence.
+The old-timer: 💀. Birds scatter. Grass wilts.
 
-[55-60s] TEXT OVERLAY
-"Don't go to the office meeting"
-Subscribe.
+[50-60s] TEXT OVERLAY
+"New neighbour... who dis? 💨"
+Subscribe for Mr. Fart Man's next disaster.
+@mr.fartman
 ```
 
 ---
 
 ## VIDEO 4: "Why Adults See Obstacles But Kids Don't"
-**Duration:** 60s | **Type:** AHAD/Life Insight | **Voiceover:** Calm, Wise Narrator
+**ID:** AHAD-26 | **Duration:** 60s | **Type:** AHAD/Life Insight | **Voiceover:** Calm, Wise Narrator
 
 ### Script (VoiceOver)
 ```
