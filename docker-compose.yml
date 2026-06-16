@@ -6,34 +6,40 @@ services:
     image: postgres:16-alpine
     container_name: resonance-postgres
     environment:
+      POSTGRES_USER: resonance
+      POSTGRES_PASSWORD: resonance-dev-password
       POSTGRES_DB: resonance
-      POSTGRES_USER: resonance_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev-password}
+      POSTGRES_INITDB_ARGS: -c timezone=UTC
+    ports:
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - ./resonance-api/src/db/migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U resonance_user"]
-      interval: 10s
+      test: ['CMD-SHELL', 'pg_isready -U resonance']
+      interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - resonance
 
   # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: resonance-redis
+    ports:
+      - '6379:6379'
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - resonance
 
-  # RESONANCE API
+  # RESONANCE API Server
   api:
     build:
       context: ./resonance-api
@@ -42,13 +48,17 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
-      DATABASE_URL: postgresql://resonance_user:${DB_PASSWORD:-dev-password}@postgres:5432/resonance
+      DATABASE_URL: postgresql://resonance:resonance-dev-password@postgres:5432/resonance
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
+      JWT_SECRET: dev-secret-change-in-production
+      REFRESH_SECRET: dev-refresh-secret-change-in-production
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      CORS_ORIGIN: http://localhost:3001,http://localhost:3000
+      VOICEBOX_URL: http://host.docker.internal:17493
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,27 +66,29 @@ services:
         condition: service_healthy
     volumes:
       - ./resonance-api/src:/app/src
+    networks:
+      - resonance
     command: npm run dev
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-  # RESONANCE Web (Next.js)
+  # RESONANCE Web App (Next.js)
   web:
     build:
       context: ./resonance-web
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: resonance-web
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
+      NEXT_PUBLIC_WS_URL: ws://localhost:3000/ws
     ports:
-      - "3001:3000"
+      - '3001:3000'
     depends_on:
       - api
     volumes:
       - ./resonance-web/src:/app/src
+      - ./resonance-web/public:/app/public
+    networks:
+      - resonance
     command: npm run dev
 
 volumes:
@@ -84,5 +96,5 @@ volumes:
   redis_data:
 
 networks:
-  default:
-    name: resonance-network
+  resonance:
+    driver: bridge
