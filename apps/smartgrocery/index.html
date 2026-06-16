@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartGrocery — AI Meal Planner & Shopping List</title>
+  <meta name="description" content="Meal plans, smart grocery lists, pantry tracking." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#08050d" />
+  <style>
+    :root {
+      --canvas: #08050d;
+      --magenta: #ff1f5a;
+      --purple: #7c3aed;
+      --cyan: #00d8ff;
+      --green: #00e887;
+      --gold: #f5c000;
+      --pink: #ff6fc8;
+      --white: #ffffff;
+      --muted: #a0a0b0;
+      --card: #1a1325;
+      --card-2: #221a30;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--canvas);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 0 20px; }
+
+    /* Header */
+    header {
+      padding: 32px 0 24px;
+      text-align: center;
+      background: radial-gradient(60% 120% at 50% -10%, rgba(0, 232, 135, 0.2), transparent 60%);
+    }
+    .eyebrow {
+      display: inline-block;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: var(--green);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(120deg, var(--green), var(--cyan));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .sub { color: var(--muted); font-size: 14px; }
+
+    /* Tab Navigation */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 24px;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .tab {
+      flex: 1;
+      min-width: 80px;
+      padding: 14px 12px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      border-bottom: 3px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tab:hover { color: var(--white); }
+    .tab.active {
+      color: var(--green);
+      border-bottom-color: var(--green);
+    }
+
+    /* Tab Content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* List Items */
+    .list-item {
+      padding: 14px;
+      background: var(--card);
+      border: 1px solid rgba(0, 232, 135, 0.15);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: 0.2s;
+    }
+    .list-item:hover {
+      border-color: var(--green);
+      background: var(--card-2);
+    }
+    .list-item.checked {
+      opacity: 0.6;
+    }
+    .list-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: var(--green);
+    }
+    .item-name {
+      flex: 1;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .item-qty {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 4px 8px;
+      background: rgba(0, 232, 135, 0.1);
+      border-radius: 4px;
+    }
+    .item-remove {
+      background: rgba(255, 31, 90, 0.2);
+      color: var(--magenta);
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      transition: 0.2s;
+    }
+    .item-remove:hover {
+      background: rgba(255, 31, 90, 0.3);
+    }
+
+    /* Meal Card */
+    .meal-card {
+      background: var(--card);
+      border: 1px solid rgba(0, 232, 135, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .meal-day {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .meal-name {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    .meal-ingredients {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 13px;
+      transition: 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .btn-primary {
+      background: linear-gradient(120deg, var(--green), var(--cyan));
+      color: var(--white);
+    }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--muted);
+    }
+    .btn-secondary:hover {
+      color: var(--white);
+      border-color: var(--green);
+    }
+
+    /* Form */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--white);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--green);
+      background: var(--card-2);
+    }
+
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--green);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state .emoji {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    /* Premium Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: var(--card-2);
+      border: 1px solid rgba(0, 232, 135, 0.2);
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 320px;
+      text-align: center;
+      animation: slide-up 0.3s ease;
+    }
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .modal h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .modal p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .modal .btn { margin-top: 12px; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="eyebrow">SmartGrocery</span>
+    <h1>🛒 Smart Shopping</h1>
+    <p class="sub">Meal plans, smart lists, and pantry tracking.</p>
+  </div>
+</header>
+
+<div class="wrap" style="margin-top: 24px;">
+  <div class="tabs">
+    <button class="tab active" data-tab="list">Shopping List</button>
+    <button class="tab" data-tab="meals">Meal Plans</button>
+    <button class="tab" data-tab="pantry">Pantry</button>
+    <button class="tab" data-tab="stats">Stats</button>
+  </div>
+
+  <!-- Shopping List Tab -->
+  <div id="list" class="tab-content active">
+    <div class="form-group">
+      <input type="text" id="item-input" placeholder="Add item..." />
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <input type="number" id="item-qty" placeholder="Qty" min="1" max="100" value="1" style="flex: 0.4;" />
+        <button class="btn btn-primary" id="add-item-btn" style="flex: 0.6;">Add</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <button class="btn btn-secondary" id="clear-checked-btn">Clear Checked</button>
+    </div>
+
+    <div id="shopping-list"></div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-label">Items</div>
+        <div class="stat-value" id="list-count">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Est. Cost</div>
+        <div class="stat-value" id="est-cost">$0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meal Plans Tab -->
+  <div id="meals" class="tab-content">
+    <div style="margin-bottom: 20px;">
+      <label>People to Feed</label>
+      <input type="number" id="servings" placeholder="2" min="1" max="10" value="2" />
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <label>Days to Plan</label>
+      <select id="days-select">
+        <option value="3">3 Days</option>
+        <option value="5">5 Days</option>
+        <option value="7">1 Week</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" id="generate-meal-plan-btn" style="width: 100%; margin-bottom: 20px;">Generate Meal Plan</button>
+
+    <div id="meal-plan-container"></div>
+  </div>
+
+  <!-- Pantry Tab -->
+  <div id="pantry" class="tab-content">
+    <div class="form-group">
+      <input type="text" id="pantry-item-input" placeholder="Add pantry item..." />
+      <button class="btn btn-primary" id="add-pantry-btn" style="width: 100%;">Add</button>
+    </div>
+
+    <div style="margin-top: 16px;">
+      <h3 style="font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">Your Pantry</h3>
+      <div id="pantry-list"></div>
+    </div>
+  </div>
+
+  <!-- Stats Tab -->
+  <div id="stats" class="tab-content">
+    <div class="stat-box" style="width: 100%; margin-bottom: 16px;">
+      <div class="stat-label">Meals This Week</div>
+      <div class="stat-value" id="meals-this-week">0</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-label">Total Recipes</div>
+        <div class="stat-value" id="total-recipes">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Lists Created</div>
+        <div class="stat-value" id="lists-count">0</div>
+      </div>
+    </div>
+
+    <div class="stat-box" style="width: 100%; margin-top: 16px;">
+      <div class="stat-label">Average Cost per Meal</div>
+      <div class="stat-value" id="avg-cost">$0</div>
+    </div>
+  </div>
+</div>
+
+<!-- Premium Modal -->
+<div id="premium-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-icon">✨</div>
+    <h2>Unlock Premium</h2>
+    <p>AI meal planning, custom recipes, and budget optimization.</p>
+    <button class="btn btn-primary" id="unlock-btn">Unlock — $4.99</button>
+    <button class="btn btn-secondary" id="close-modal-btn">Maybe Later</button>
+  </div>
+</div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+
+  const MEAL_DATABASE = {
+    breakfast: [
+      { name: "Scrambled Eggs & Toast", ingredients: "Eggs, Bread, Butter, Salt" },
+      { name: "Oatmeal with Berries", ingredients: "Oats, Milk, Blueberries, Honey" },
+      { name: "Pancakes", ingredients: "Flour, Eggs, Milk, Sugar, Butter" },
+      { name: "Greek Yogurt Parfait", ingredients: "Greek Yogurt, Granola, Berries" },
+      { name: "Avocado Toast", ingredients: "Bread, Avocado, Tomato, Lemon" },
+    ],
+    lunch: [
+      { name: "Grilled Chicken Salad", ingredients: "Chicken, Lettuce, Tomato, Olive Oil" },
+      { name: "Turkey Sandwich", ingredients: "Turkey, Bread, Lettuce, Tomato" },
+      { name: "Pasta Marinara", ingredients: "Pasta, Tomato Sauce, Garlic, Parmesan" },
+      { name: "Tuna Wrap", ingredients: "Tortilla, Tuna, Mayo, Lettuce" },
+      { name: "Buddha Bowl", ingredients: "Quinoa, Chickpeas, Vegetables, Dressing" },
+    ],
+    dinner: [
+      { name: "Salmon with Vegetables", ingredients: "Salmon, Broccoli, Carrot, Olive Oil" },
+      { name: "Beef Tacos", ingredients: "Beef, Tortillas, Lettuce, Tomato, Cheese" },
+      { name: "Pasta Carbonara", ingredients: "Pasta, Bacon, Eggs, Parmesan" },
+      { name: "Stir-fry Chicken", ingredients: "Chicken, Bell Peppers, Soy Sauce, Rice" },
+      { name: "Veggie Stir-fry", ingredients: "Broccoli, Carrots, Mushrooms, Soy Sauce" },
+    ],
+  };
+
+  let state = {
+    premium: localStorage.getItem("sg_premium") === "true",
+    shoppingList: JSON.parse(localStorage.getItem("sg_list") || "[]"),
+    pantry: JSON.parse(localStorage.getItem("sg_pantry") || "[]"),
+    mealHistory: JSON.parse(localStorage.getItem("sg_meals") || "[]"),
+    listHistory: JSON.parse(localStorage.getItem("sg_list_history") || "[]"),
+  };
+
+  // Tab switching
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", (e) => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      e.target.classList.add("active");
+      const tabName = e.target.dataset.tab;
+      document.getElementById(tabName).classList.add("active");
+      if (tabName === "stats") renderStats();
+      if (tabName === "pantry") renderPantry();
+    });
+  });
+
+  // Shopping list
+  document.getElementById("add-item-btn").addEventListener("click", addItem);
+  document.getElementById("item-input").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") addItem();
+  });
+  document.getElementById("clear-checked-btn").addEventListener("click", () => {
+    state.shoppingList = state.shoppingList.filter(i => !i.checked);
+    localStorage.setItem("sg_list", JSON.stringify(state.shoppingList));
+    renderList();
+  });
+
+  // Meal planning
+  document.getElementById("generate-meal-plan-btn").addEventListener("click", () => {
+    if (!state.premium) {
+      showPremiumModal("AI meal planning is a Premium feature.");
+      return;
+    }
+    generateMealPlan();
+  });
+
+  // Pantry
+  document.getElementById("add-pantry-btn").addEventListener("click", addPantryItem);
+  document.getElementById("pantry-item-input").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") addPantryItem();
+  });
+
+  // Premium modal
+  document.getElementById("unlock-btn").addEventListener("click", () => {
+    state.premium = true;
+    localStorage.setItem("sg_premium", "true");
+    document.getElementById("premium-modal").classList.remove("show");
+  });
+
+  document.getElementById("close-modal-btn").addEventListener("click", () => {
+    document.getElementById("premium-modal").classList.remove("show");
+  });
+
+  function showPremiumModal(msg) {
+    const modal = document.getElementById("premium-modal");
+    modal.querySelector("p").textContent = msg || "Upgrade to Premium for more features.";
+    modal.classList.add("show");
+  }
+
+  function addItem() {
+    const input = document.getElementById("item-input");
+    const qty = document.getElementById("item-qty");
+    const name = input.value.trim();
+    if (!name) return;
+    state.shoppingList.push({ id: Date.now(), name, qty: parseInt(qty.value) || 1, checked: false });
+    localStorage.setItem("sg_list", JSON.stringify(state.shoppingList));
+    input.value = "";
+    qty.value = "1";
+    renderList();
+  }
+
+  function renderList() {
+    const list = document.getElementById("shopping-list");
+    list.innerHTML = "";
+    if (state.shoppingList.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="emoji">📋</div><p>No items yet. Add some!</p></div>';
+      document.getElementById("list-count").textContent = "0";
+      document.getElementById("est-cost").textContent = "$0";
+      return;
+    }
+    state.shoppingList.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "list-item" + (item.checked ? " checked" : "");
+      div.innerHTML = `
+        <input type="checkbox" ${item.checked ? "checked" : ""} onchange="toggleItem(${item.id})">
+        <div class="item-name">${item.name}</div>
+        <div class="item-qty">${item.qty}×</div>
+        <button class="item-remove" onclick="removeItem(${item.id})">✕</button>
+      `;
+      list.appendChild(div);
+    });
+    document.getElementById("list-count").textContent = state.shoppingList.length;
+    const estCost = state.shoppingList.length * 2.5;
+    document.getElementById("est-cost").textContent = "$" + estCost.toFixed(0);
+  }
+
+  function toggleItem(id) {
+    const item = state.shoppingList.find(i => i.id === id);
+    if (item) {
+      item.checked = !item.checked;
+      localStorage.setItem("sg_list", JSON.stringify(state.shoppingList));
+      renderList();
+    }
+  }
+
+  function removeItem(id) {
+    state.shoppingList = state.shoppingList.filter(i => i.id !== id);
+    localStorage.setItem("sg_list", JSON.stringify(state.shoppingList));
+    renderList();
+  }
+
+  function generateMealPlan() {
+    const days = parseInt(document.getElementById("days-select").value);
+    const servings = parseInt(document.getElementById("servings").value) || 2;
+    const container = document.getElementById("meal-plan-container");
+    const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+    container.innerHTML = "";
+    const meals = [];
+    for (let d = 0; d < days; d++) {
+      const day = dayNames[d % 7];
+      const breakfast = MEAL_DATABASE.breakfast[Math.floor(Math.random() * MEAL_DATABASE.breakfast.length)];
+      const lunch = MEAL_DATABASE.lunch[Math.floor(Math.random() * MEAL_DATABASE.lunch.length)];
+      const dinner = MEAL_DATABASE.dinner[Math.floor(Math.random() * MEAL_DATABASE.dinner.length)];
+
+      [breakfast, lunch, dinner].forEach((meal, idx) => {
+        const mealType = idx === 0 ? "Breakfast" : idx === 1 ? "Lunch" : "Dinner";
+        const div = document.createElement("div");
+        div.className = "meal-card";
+        div.innerHTML = `
+          <div class="meal-day">${day} — ${mealType}</div>
+          <div class="meal-name">${meal.name}</div>
+          <div class="meal-ingredients">${meal.ingredients}</div>
+        `;
+        container.appendChild(div);
+        meals.push({ day, mealType, ...meal });
+      });
+    }
+
+    state.mealHistory.push({ date: new Date().toISOString(), meals, servings });
+    localStorage.setItem("sg_meals", JSON.stringify(state.mealHistory));
+
+    // Extract ingredients and add to shopping list
+    const ingredients = new Set();
+    meals.forEach(m => {
+      m.ingredients.split(", ").forEach(ing => {
+        ingredients.add(ing.trim());
+      });
+    });
+
+    ingredients.forEach(ing => {
+      if (!state.shoppingList.find(i => i.name.toLowerCase() === ing.toLowerCase())) {
+        state.shoppingList.push({ id: Date.now() + Math.random(), name: ing, qty: 1, checked: false });
+      }
+    });
+    localStorage.setItem("sg_list", JSON.stringify(state.shoppingList));
+  }
+
+  function addPantryItem() {
+    const input = document.getElementById("pantry-item-input");
+    const name = input.value.trim();
+    if (!name) return;
+    state.pantry.push({ id: Date.now(), name });
+    localStorage.setItem("sg_pantry", JSON.stringify(state.pantry));
+    input.value = "";
+    renderPantry();
+  }
+
+  function renderPantry() {
+    const list = document.getElementById("pantry-list");
+    list.innerHTML = "";
+    if (state.pantry.length === 0) {
+      list.innerHTML = '<p style="color: var(--muted); font-size: 13px; text-align: center;">No pantry items yet.</p>';
+      return;
+    }
+    state.pantry.forEach(item => {
+      const div = document.createElement("div");
+      div.style.cssText = "padding: 12px; background: var(--card); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
+      div.innerHTML = `
+        <div style="font-weight: 600; font-size: 14px;">${item.name}</div>
+        <button style="background: rgba(255,31,90,.2); border: none; color: var(--magenta); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;" onclick="removePantry(${item.id})">Remove</button>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function removePantry(id) {
+    state.pantry = state.pantry.filter(i => i.id !== id);
+    localStorage.setItem("sg_pantry", JSON.stringify(state.pantry));
+    renderPantry();
+  }
+
+  function renderStats() {
+    const thisWeek = state.mealHistory.filter(m => new Date(m.date) >= new Date() - 7 * 24 * 60 * 60 * 1000).length;
+    document.getElementById("meals-this-week").textContent = thisWeek;
+    document.getElementById("total-recipes").textContent = state.mealHistory.length;
+    document.getElementById("lists-count").textContent = state.listHistory.length;
+    const avgCost = state.listHistory.length > 0 ? 25 : 0;
+    document.getElementById("avg-cost").textContent = "$" + avgCost;
+  }
+
+  renderList();
+</script>
+</body>
+</html>
