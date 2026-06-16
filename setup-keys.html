@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Up Your Keys — One Time</title>
+  <style>
+    :root { --accent:#E8467C; --accent2:#B65CCB; --text:#2A2230; --muted:#837890; }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; padding:24px 18px calc(env(safe-area-inset-bottom) + 32px);
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      color:var(--text); min-height:100vh;
+      background:
+        radial-gradient(circle at 15% 12%,#FFD9E6 0%,transparent 46%),
+        radial-gradient(circle at 85% 10%,#FFE4D0 0%,transparent 42%),
+        radial-gradient(circle at 50% 110%,#EAD7FB 0%,transparent 58%),
+        linear-gradient(160deg,#FFF5F8,#FFF0F6);
+    }
+    .card {
+      max-width:480px; margin:0 auto; background:rgba(255,255,255,0.74);
+      backdrop-filter:blur(18px) saturate(160%); -webkit-backdrop-filter:blur(18px) saturate(160%);
+      border:1px solid rgba(255,255,255,0.7); border-radius:24px; padding:24px;
+      box-shadow:0 20px 48px rgba(210,90,150,0.22);
+    }
+    h1 { font-size:24px; font-weight:800; letter-spacing:-0.5px; margin:0 0 4px;
+      background:linear-gradient(120deg,var(--accent),var(--accent2));
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    p.sub { color:var(--muted); font-size:14px; margin:0 0 22px; line-height:1.5; }
+    label { display:block; font-weight:700; font-size:14px; margin:16px 0 6px; }
+    label small { font-weight:500; color:var(--muted); }
+    input {
+      width:100%; padding:13px 15px; border:1.5px solid rgba(232,70,124,0.18);
+      border-radius:14px; font-size:16px; background:#fff; color:var(--text);
+    }
+    input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 4px rgba(232,70,124,0.14); }
+    button.save {
+      width:100%; margin-top:24px; padding:16px; border:none; border-radius:16px;
+      font-size:17px; font-weight:800; color:#fff; cursor:pointer;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      box-shadow:0 12px 26px rgba(232,70,124,0.4);
+    }
+    button.save:active { transform:scale(0.97); }
+    #status { margin-top:18px; padding:14px; border-radius:14px; font-size:14px; display:none; }
+    #status.ok { display:block; background:rgba(46,158,91,0.12); color:#1f7a45; border:1px solid rgba(46,158,91,0.3); }
+    .links { margin-top:22px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .links a { display:block; text-align:center; padding:14px; border-radius:14px; text-decoration:none;
+      font-weight:700; color:var(--accent); background:rgba(255,255,255,0.8); border:1.5px solid rgba(232,70,124,0.25); }
+    .note { margin-top:20px; font-size:12px; color:var(--muted); line-height:1.5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>💛 Set up your keys</h1>
+    <p class="sub">Paste each key once and tap Save. They're stored only in this browser, on this device, and shared across all your apps. Nothing is sent to us.</p>
+
+    <label>Claude API Key <small>(sk-ant-…)</small></label>
+    <input type="password" id="claude" placeholder="sk-ant-…" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+    <label>ElevenLabs API Key <small>(sk_… — natural voice)</small></label>
+    <input type="password" id="eleven" placeholder="sk_…" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+    <label>Replicate Token <small>(r8_… — AI coach faces)</small></label>
+    <input type="password" id="replicate" placeholder="r8_…" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+    <label>Avatar Proxy URL <small>(only for talking-head; optional)</small></label>
+    <input type="text" id="proxy" placeholder="http://192.168.86.122:3001" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+    <button class="save" id="saveBtn">Save to all my apps</button>
+    <div id="status"></div>
+
+    <div class="links">
+      <a href="/post-op-companion/">Post-Op App</a>
+      <a href="/apps/food-buddy-1.html">Food App</a>
+    </div>
+
+    <p class="note">Tip: leave a box empty to keep what's already saved. After testing, rotate these keys in their dashboards for safety.</p>
+  </div>
+
+  <script>
+    // Pre-fill (masked) with whatever is already saved so you can see what's set.
+    function mask(v){ return v ? '••••••••' + v.slice(-4) : ''; }
+    document.getElementById('claude').value = mask(localStorage.getItem('claude-api-key') || localStorage.getItem('apiKey') || '');
+    document.getElementById('eleven').value = mask(localStorage.getItem('elevenlabs-api-key') || localStorage.getItem('elevenlabs-key') || '');
+    document.getElementById('replicate').value = mask(localStorage.getItem('replicate-api-token') || '');
+    document.getElementById('proxy').value = localStorage.getItem('proxy-url') || 'http://192.168.86.122:3001';
+
+    // Every localStorage name used across the ecosystem.
+    var CLAUDE_NAMES = ['claude-api-key','claude-key','apiKey','br_key','mt_key','fc_key'];
+    var ELEVEN_NAMES = ['elevenlabs-api-key','elevenlabs-key','elevenLabsKey'];
+
+    document.getElementById('saveBtn').addEventListener('click', function () {
+      var saved = [];
+      var c = document.getElementById('claude').value.trim();
+      var e = document.getElementById('eleven').value.trim();
+      var r = document.getElementById('replicate').value.trim();
+      var p = document.getElementById('proxy').value.trim();
+
+      if (c && c.indexOf('••') !== 0) { CLAUDE_NAMES.forEach(function(k){ localStorage.setItem(k, c); }); saved.push('Claude'); }
+      if (e && e.indexOf('••') !== 0) { ELEVEN_NAMES.forEach(function(k){ localStorage.setItem(k, e); }); saved.push('ElevenLabs voice'); }
+      if (r && r.indexOf('••') !== 0) { localStorage.setItem('replicate-api-token', r); saved.push('Replicate faces'); }
+      if (p) { localStorage.setItem('proxy-url', p); }
+
+      var s = document.getElementById('status');
+      s.className = 'ok';
+      s.innerHTML = saved.length
+        ? '✓ Saved: ' + saved.join(', ') + '. Open an app below and it will use them.'
+        : '✓ Kept your existing keys. Open an app below.';
+    });
+  </script>
+</body>
+</html>
