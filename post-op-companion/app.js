@@ -53,6 +53,7 @@ class PostOpCompanion {
     this.emergency = new EmergencyResources(this);
     this.professional = new ProfessionalIntegration(this);
     this.community = new CommunitySupport(this);
+    this.coachAvatars = new CoachAvatars(this);
 
     console.log('Post-Op Companion initialized with 7 new features');
   }

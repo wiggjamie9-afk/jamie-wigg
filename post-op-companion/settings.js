@@ -228,4 +228,41 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   refreshVoiceHint();
+
+  // --- Replicate (AI coach faces) wiring ---
+  const replicateInput = document.getElementById('replicate-api-token');
+  const saveReplicateBtn = document.getElementById('save-replicate-token-btn');
+  const generateFacesBtn = document.getElementById('generate-faces-btn');
+
+  if (replicateInput) {
+    const savedToken = localStorage.getItem('replicate-api-token');
+    if (savedToken) {
+      replicateInput.value = '••••••••••••' + savedToken.slice(-4);
+    }
+  }
+
+  if (saveReplicateBtn && replicateInput) {
+    saveReplicateBtn.addEventListener('click', () => {
+      const val = replicateInput.value.trim();
+      if (val && !val.startsWith('••••')) {
+        localStorage.setItem('replicate-api-token', val);
+        if (window.app && window.app.coachAvatars) {
+          window.app.coachAvatars.setToken(val);
+        }
+        replicateInput.value = '••••••••••••' + val.slice(-4);
+        alert('✓ Replicate token saved — tap "Generate All Coach Faces" to create them.');
+      }
+    });
+  }
+
+  if (generateFacesBtn) {
+    generateFacesBtn.addEventListener('click', async () => {
+      if (!window.app || !window.app.coachAvatars) return;
+      generateFacesBtn.disabled = true;
+      generateFacesBtn.textContent = '⏳ Generating faces…';
+      await window.app.coachAvatars.generateAll();
+      generateFacesBtn.disabled = false;
+      generateFacesBtn.textContent = '✨ Generate All Coach Faces';
+    });
+  }
 });
