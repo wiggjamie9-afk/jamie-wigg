@@ -437,6 +437,32 @@
           </div>
         </div>
 
+        <div class="card">
+          <h3>🎤 ElevenLabs API Key (Optional)</h3>
+          <p>Add an ElevenLabs key for a natural human voice. Without it, your device's built-in voice is used.</p>
+          <div class="input-group">
+            <input type="password" id="elevenlabs-key" placeholder="(Optional for voice)" />
+            <button onclick="saveSettings()">💾 Save</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🌐 Avatar Proxy URL</h3>
+          <p>Runs on your Mac to keep your Higgsfield secret safe and fix CORS.</p>
+          <div class="input-group">
+            <input type="text" id="proxy-url" placeholder="http://localhost:3001" value="http://localhost:3001" />
+            <button onclick="saveSettings()">💾 Save</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>✨ Avatar Studio</h3>
+          <p>Generate a talking-head face for Teen Nutrition Coach.</p>
+          <textarea id="avatar-prompt" placeholder="Describe appearance..." style="width:100%;height:70px;"></textarea>
+          <button onclick="generateAvatarStill()" style="width:100%;margin-top:8px;">✨ Generate Face</button>
+          <button onclick="animateAvatar()" style="width:100%;margin-top:8px;">🎬 Bring to Life</button>
+        </div>
+
         <div class="card premium-feature">
           <h3>💎 Premium Subscription <span class="premium-badge">PRO</span></h3>
           <p>Lifetime access to premium features: meal planning, medical tracking, advanced recipes, video tutorials.</p>
@@ -470,7 +496,7 @@
       event.target.classList.add('active');
     }
 
-    function generateRecipes() {
+    async function generateRecipes() {
       const ingredients = document.getElementById('ingredient-input').value;
       const dietaryNeeds = document.getElementById('dietary-needs').value;
 
@@ -479,16 +505,114 @@
         return;
       }
 
-      // Placeholder: In production, call Claude API
-      const recipes = [
-        `Recipe 1: Based on ${ingredients}. This recipe is safe for: ${dietaryNeeds || 'balanced nutrition'}`,
-        `Recipe 2: Alternative preparation method with ${ingredients}`,
-        `Recipe 3: Creative variation respecting: ${dietaryNeeds || 'all preferences'}`
-      ];
-
+      const apiKey = localStorage.getItem('apiKey');
       const recipeList = document.getElementById('recipe-list');
-      recipeList.innerHTML = recipes.map((r, i) => `<div class="recipe-card"><h4>Recipe ${i+1}</h4><p>${r}</p></div>`).join('');
       document.getElementById('recipes-output').style.display = 'block';
+
+      // No key — graceful local suggestion (offline-friendly).
+      if (!apiKey) {
+        recipeList.innerHTML = `<div class="recipe-card"><p>Add your Claude API key in Settings to get personalized recipes for "${ingredients}". For now: combine ${ingredients} into a balanced plate respecting ${dietaryNeeds || 'your goals'}.</p></div>`;
+        return;
+      }
+
+      recipeList.innerHTML = '<div class="recipe-card"><p>👩‍🍳 Generating recipes…</p></div>';
+
+      const profile = JSON.parse(localStorage.getItem('medicalProfile') || '{}');
+      const systemPrompt = `${BUDDY_DATA.systemPrompt || 'You are a warm, knowledgeable nutrition coach.'} You are ${BUDDY_DATA.name}, specializing in ${BUDDY_DATA.specialization || 'nutrition'}.`;
+      const userPrompt = `Suggest 3 healthy recipes using: ${ingredients}.\nDietary needs: ${dietaryNeeds || 'none specified'}.\nMedical conditions: ${profile.conditions || 'none'}. Restrictions: ${profile.restrictions || 'none'}.\nFor each recipe give a title, short ingredient list, and 3-4 quick steps. Keep it encouraging and safe.`;
+
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userPrompt }],
+          }),
+        });
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        const data = await response.json();
+        const text = data.content[0].text;
+        recipeList.innerHTML = `<div class="recipe-card"><div style="white-space:pre-wrap;">${text.replace(/</g, '&lt;')}</div></div>`;
+        speakText(`Here are some recipe ideas using ${ingredients}.`);
+      } catch (err) {
+        recipeList.innerHTML = `<div class="recipe-card"><p>Couldn't reach Claude (${err.message}). Check your API key in Settings.</p></div>`;
+      }
+    }
+
+    // ---- Voice (ElevenLabs with device fallback) ----
+    function speakText(text) {
+      const key = localStorage.getItem('elevenlabs-key');
+      if (key) { speakWithElevenLabs(text, key); }
+      else { speakWithWebSpeech(text); }
+    }
+
+    async function speakWithElevenLabs(text, key) {
+      const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel — warm female
+      try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+          method: 'POST',
+          headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, model_id: 'eleven_monolingual_v1' }),
+        });
+        if (!response.ok) throw new Error('TTS failed');
+        const audio = new Audio(URL.createObjectURL(await response.blob()));
+        audio.play();
+      } catch (e) {
+        speakWithWebSpeech(text);
+      }
+    }
+
+    function speakWithWebSpeech(text) {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      speechSynthesis.speak(u);
+    }
+
+    // ---- Avatar Studio (Higgsfield via local proxy) ----
+    async function generateAvatarStill() {
+      const proxyUrl = localStorage.getItem('proxy-url') || 'http://localhost:3001';
+      const prompt = document.getElementById('avatar-prompt').value
+        || `A friendly portrait of ${BUDDY_DATA.name}, warm and approachable nutrition coach, professional headshot style.`;
+      try {
+        const response = await fetch(`${proxyUrl}/api/higgsfield-generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, model: 'soul', size: '512x512' }),
+        });
+        if (!response.ok) throw new Error('Generation failed');
+        const data = await response.json();
+        localStorage.setItem(`avatar-${BUDDY_DATA.name}`, data.imageUrl);
+        alert('Avatar generated! ✨');
+      } catch (err) {
+        alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')');
+      }
+    }
+
+    async function animateAvatar() {
+      const proxyUrl = localStorage.getItem('proxy-url') || 'http://localhost:3001';
+      const imageUrl = localStorage.getItem(`avatar-${BUDDY_DATA.name}`);
+      if (!imageUrl) { alert('Generate a face first'); return; }
+      try {
+        const response = await fetch(`${proxyUrl}/api/higgsfield-animate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl, model: 'dop', motion: 'talking-head' }),
+        });
+        if (!response.ok) throw new Error('Animation failed');
+        const data = await response.json();
+        localStorage.setItem(`avatar-video-${BUDDY_DATA.name}`, data.videoUrl);
+        alert('Avatar brought to life! 🎬');
+      } catch (err) {
+        alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')');
+      }
     }
 
     function matchIngredients() {
@@ -515,7 +639,14 @@
 
     function saveSettings() {
       const apiKey = document.getElementById('api-key').value;
-      localStorage.setItem('apiKey', apiKey);
+      if (apiKey && !apiKey.startsWith('••')) localStorage.setItem('apiKey', apiKey);
+
+      const elKey = document.getElementById('elevenlabs-key');
+      if (elKey && elKey.value && !elKey.value.startsWith('••')) localStorage.setItem('elevenlabs-key', elKey.value);
+
+      const proxy = document.getElementById('proxy-url');
+      if (proxy && proxy.value) localStorage.setItem('proxy-url', proxy.value);
+
       localStorage.setItem('medicalProfile', JSON.stringify({
         conditions: document.getElementById('medical-conditions').value,
         restrictions: document.getElementById('dietary-restrictions').value,
@@ -524,11 +655,25 @@
       alert('Settings saved! 💾');
     }
 
+    function loadSettings() {
+      const apiKey = localStorage.getItem('apiKey');
+      const elKey = localStorage.getItem('elevenlabs-key');
+      const proxy = localStorage.getItem('proxy-url');
+      if (apiKey) document.getElementById('api-key').value = '••••••••' + apiKey.slice(-4);
+      if (elKey) document.getElementById('elevenlabs-key').value = '••••••••' + elKey.slice(-4);
+      if (proxy) document.getElementById('proxy-url').value = proxy;
+      const profile = JSON.parse(localStorage.getItem('medicalProfile') || '{}');
+      if (profile.conditions) document.getElementById('medical-conditions').value = profile.conditions;
+      if (profile.restrictions) document.getElementById('dietary-restrictions').value = profile.restrictions;
+      if (profile.familyMembers) document.getElementById('family-members').value = profile.familyMembers;
+    }
+
     function showPremium() {
       alert('Premium features coming soon! Support this project and get early access.');
     }
 
     // Initialize
+    loadSettings();
     document.getElementById('greeting').textContent = `Hi! I'm ${BUDDY_DATA.name}. ${BUDDY_DATA.specialization}. Let's work together to help you eat well.`;
     document.getElementById('daily-message').textContent = BUDDY_DATA.affirmations[Math.floor(Math.random() * BUDDY_DATA.affirmations.length)];
   </script>
