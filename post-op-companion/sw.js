@@ -1,5 +1,5 @@
-const CACHE_SHELL = 'post-op-v1-shell';
-const CACHE_API = 'post-op-v1-api';
+const CACHE_SHELL = 'post-op-v2-shell';
+const CACHE_API = 'post-op-v2-api';
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -9,9 +9,23 @@ self.addEventListener('install', event => {
         '/post-op-companion/',
         '/post-op-companion/index.html',
         '/post-op-companion/styles.css',
+        '/post-op-companion/voice.js',
         '/post-op-companion/app.js',
         '/post-op-companion/wearable-sync.js',
         '/post-op-companion/claude-ai.js',
+        '/post-op-companion/document-scanner.js',
+        '/post-op-companion/dashboard.js',
+        '/post-op-companion/meal-planner.js',
+        '/post-op-companion/fitness-planner.js',
+        '/post-op-companion/medical-tracker.js',
+        '/post-op-companion/sleep-coach.js',
+        '/post-op-companion/hydration-tracker.js',
+        '/post-op-companion/medications.js',
+        '/post-op-companion/mental-health.js',
+        '/post-op-companion/emergency.js',
+        '/post-op-companion/professional-integration.js',
+        '/post-op-companion/community.js',
+        '/post-op-companion/settings.js',
         '/post-op-companion/manifest.webmanifest',
       ]).catch(err => {
         console.log('Cache install error:', err);
@@ -36,6 +50,12 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+
+  // Never cache voice/TTS audio — always go to network (or fail silently)
+  if (event.request.url.includes('api.elevenlabs.io')) {
+    event.respondWith(fetch(event.request).catch(() => new Response('', { status: 503 })));
+    return;
+  }
 
   // API calls: network-first with fallback
   if (event.request.url.includes('api.anthropic.com') || event.request.url.includes('/api/')) {

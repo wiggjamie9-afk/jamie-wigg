@@ -113,6 +113,9 @@ class MedicationReminder {
               body: med.dosage ? `${med.dosage}mg at ${med.time}` : `Take at ${med.time}`,
               icon: '💊',
             });
+            if (window.voice) {
+              window.voice.speak(`It's time for your ${med.name}${med.dosage ? `, ${med.dosage} milligrams` : ''}. Staying on top of this keeps you feeling your best.`);
+            }
           }, msUntil);
         }
       });

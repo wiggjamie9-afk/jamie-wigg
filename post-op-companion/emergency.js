@@ -125,6 +125,11 @@ class EmergencyResources {
       emergencyFlags.push('Blood pressure dangerously low — call 911');
     }
 
+    // Speak a calm, clear instruction if something looks wrong
+    if (emergencyFlags.length && window.voice) {
+      window.voice.speak("Some of your readings look off. Try to stay calm and take a slow breath. Please call your surgeon now, and if you feel unwell, call emergency services.");
+    }
+
     return emergencyFlags;
   }
 }

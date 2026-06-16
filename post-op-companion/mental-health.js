@@ -53,10 +53,31 @@ class MentalHealthCoach {
     this.refreshUI();
 
     const moodLabels = ['Very sad', 'Sad', 'Down', 'Okay', 'Neutral', 'Content', 'Happy', 'Very happy', 'Joyful', 'Euphoric'];
+
+    // Spoken, human encouragement tuned to how they're feeling
+    let spoken;
+    if (mood <= 3) {
+      spoken = "I hear you, and it's okay to have hard days. Be gentle with yourself today — you're still healing, and that takes real strength.";
+    } else if (mood <= 6) {
+      spoken = "Thanks for checking in. You're doing the work, and that matters. Let's keep showing up, one small step at a time.";
+    } else {
+      spoken = "I love to hear that. You've earned this good feeling — keep doing what's working for you.";
+    }
+    if (window.voice) window.voice.speak(spoken);
+
     alert(`✓ Logged mood: ${moodLabels[mood - 1]} (${mood}/10), Stress: ${stress}/10`);
   }
 
   showStrategy(strategy) {
+    // Spoken guidance to lead the user through each strategy, human and calm
+    const spokenGuides = {
+      breathing: "Let's breathe together. Breathe in slowly through your nose... and out through your mouth. Follow the steps on screen, and let your shoulders soften.",
+      grounding: "Let's come back to right now. Look around and notice five things you can see. We'll go through your senses, one at a time.",
+      journal: "Let's find three things to be grateful for. They can be small. Take your time.",
+      walk: "A gentle walk can really help. Step outside if you can, and just notice the world around you for a few minutes.",
+    };
+    if (window.voice && spokenGuides[strategy]) window.voice.speak(spokenGuides[strategy]);
+
     let content = '';
     switch (strategy) {
       case 'breathing':

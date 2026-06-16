@@ -80,6 +80,9 @@ class CommunitySupport {
 
     this.state.community.stories.push(story);
     this.app.saveState();
+    if (window.voice) {
+      window.voice.speak("Thank you for sharing. Your story could be exactly what someone else needs to hear today. You're not alone in this.");
+    }
     alert('✓ Story shared anonymously! Thank you for helping others.');
     this.loadCommunityData();
   }

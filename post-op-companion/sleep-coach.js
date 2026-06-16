@@ -54,6 +54,17 @@ class SleepCoach {
     // Refresh UI
     this.refreshUI();
 
+    // Spoken, human feedback on their sleep
+    let spoken;
+    if (hours >= 7) {
+      spoken = `Nice work — ${hours} hours is right where your body wants to be. Good sleep is when most of your healing happens.`;
+    } else if (hours >= 6) {
+      spoken = `${hours} hours is close. Try winding down half an hour earlier tonight — your recovery will thank you.`;
+    } else {
+      spoken = `Only ${hours} hours — that's tough on a healing body. Let's protect your rest tonight: dim the lights early, and no screens before bed.`;
+    }
+    if (window.voice) window.voice.speak(spoken);
+
     // Show confirmation
     alert(`✓ Logged ${hours} hours of ${quality || 'unmeasured'} sleep`);
   }

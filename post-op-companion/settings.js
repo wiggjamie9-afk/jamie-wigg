@@ -172,4 +172,60 @@ document.addEventListener('DOMContentLoaded', () => {
       claudeKeyInput.value = '••••••••••••' + savedKey.slice(-4);
     }
   }
+
+  // --- Voice settings wiring ---
+  const voiceKeyInput = document.getElementById('elevenlabs-api-key');
+  const voiceSelect = document.getElementById('elevenlabs-voice-select');
+  const voiceToggle = document.getElementById('voice-enabled-toggle');
+  const saveVoiceKeyBtn = document.getElementById('save-voice-key-btn');
+  const testVoiceBtn = document.getElementById('test-voice-btn');
+  const voiceStatusHint = document.getElementById('voice-status-hint');
+
+  function refreshVoiceHint() {
+    if (!voiceStatusHint || !window.voice) return;
+    voiceStatusHint.textContent = window.voice.hasNaturalVoice()
+      ? '✓ Natural human voice active (ElevenLabs).'
+      : "No key set — uses your device's built-in voice. Add an ElevenLabs key for a lifelike human voice.";
+  }
+
+  if (voiceKeyInput) {
+    const savedVoiceKey = localStorage.getItem('elevenlabs-api-key');
+    if (savedVoiceKey) {
+      voiceKeyInput.value = '••••••••••••' + savedVoiceKey.slice(-4);
+    }
+  }
+
+  if (voiceSelect && window.voice) {
+    voiceSelect.value = window.voice.voiceId;
+    voiceSelect.addEventListener('change', () => {
+      window.voice.setVoiceId(voiceSelect.value);
+    });
+  }
+
+  if (voiceToggle && window.voice) {
+    voiceToggle.checked = window.voice.enabled;
+    voiceToggle.addEventListener('change', () => {
+      window.voice.setEnabled(voiceToggle.checked);
+    });
+  }
+
+  if (saveVoiceKeyBtn && voiceKeyInput && window.voice) {
+    saveVoiceKeyBtn.addEventListener('click', () => {
+      const val = voiceKeyInput.value.trim();
+      if (val && !val.startsWith('••••')) {
+        window.voice.setApiKey(val);
+        voiceKeyInput.value = '••••••••••••' + val.slice(-4);
+        refreshVoiceHint();
+        alert('✓ Natural voice enabled');
+      }
+    });
+  }
+
+  if (testVoiceBtn && window.voice) {
+    testVoiceBtn.addEventListener('click', () => {
+      window.voice.speak("Hi, I'm your recovery coach. You're doing really well — let's take this one day at a time.");
+    });
+  }
+
+  refreshVoiceHint();
 });
