@@ -271,6 +271,18 @@ Requires: VPS with public IP, domain A-record pointing at it, Caddy config in `i
 
 ## Skills
 
+**External marketplace** → `buildwithclaude` (davepoon/buildwithclaude): 117 agents, 175 commands, 28 hooks, 26 skills. Install globally in your own Claude Code client (general dev tools, not committed to this repo):
+```
+/plugin marketplace add davepoon/buildwithclaude
+/plugin install all-agents@buildwithclaude
+/plugin install all-commands@buildwithclaude
+/plugin install all-hooks@buildwithclaude
+```
+
+**Code-minimalism ruleset** → `ponytail` (DietrichGebert/ponytail), tracked in `skills-lock.json` + `AGENTS.md`. Lazy-senior-dev mode: YAGNI, stdlib-first, deletion over addition. Commands: `/ponytail [lite|full|ultra|off]`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt`. Active by default. Current branch audit: `PONYTAIL-AUDIT.md`.
+
+**Cost routing** → `model-hierarchy` (`.agents/skills/model-hierarchy/`): route 80% routine → Tier 1 (Haiku/DeepSeek/Gemini Flash), 15% moderate → Tier 2 (Sonnet/GPT-4o), 5% complex → Tier 3 (Opus). ~10x cheaper than pure-premium. Never route vision tasks to text-only models.
+
 Skills live in two shapes:
 
 - **Synced / hand-written** — source in `.agents/skills/<name>/`, symlinked into `.claude/skills/<name>`. Do not hand-edit synced skills; update upstream and re-record the hash in `skills-lock.json`.
