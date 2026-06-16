@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Quick Recipes — Offline recipe discovery, meal planning, and cooking.">
+  <title>Quick Recipes</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#08050d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Quick Recipes">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --canvas: #08050d;
+      --fg: #ffffff;
+      --magenta: #ff1f5a;
+      --purple: #7c3aed;
+      --cyan: #00d8ff;
+      --green: #00e887;
+      --gold: #f5c000;
+      --pink: #ff6fc8;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--canvas);
+      color: var(--fg);
+      overflow-x: hidden;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #0f0815 0%, #1a0f25 100%);
+    }
+    .header {
+      background: linear-gradient(90deg, rgba(245, 192, 0, 0.1) 0%, rgba(255, 31, 90, 0.1) 100%);
+      border-bottom: 1px solid rgba(245, 192, 0, 0.2);
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      background: linear-gradient(90deg, var(--gold), var(--magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(245, 192, 0, 0.2);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: 0.3s;
+    }
+    .header-btn:hover { background: rgba(245, 192, 0, 0.3); transform: scale(1.05); }
+    .nav-tabs {
+      display: flex;
+      gap: 0;
+      padding: 12px;
+      border-bottom: 1px solid rgba(245, 192, 0, 0.1);
+      overflow-x: auto;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .nav-tab {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border: 1px solid rgba(245, 192, 0, 0.2);
+      border-radius: 20px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+    .nav-tab.active { background: var(--gold); color: var(--canvas); border-color: var(--gold); }
+    .nav-tab:hover { border-color: var(--gold); }
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .content::-webkit-scrollbar { width: 6px; }
+    .content::-webkit-scrollbar-thumb { background: rgba(245, 192, 0, 0.3); border-radius: 3px; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .onboard-screen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100%;
+      text-align: center;
+      gap: 30px;
+    }
+    .recipe-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, rgba(245, 192, 0, 0.8), rgba(255, 31, 90, 0.4));
+      animation: pulse-recipe 3s ease-in-out infinite;
+      box-shadow: 0 0 40px rgba(245, 192, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    @keyframes pulse-recipe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .onboard-screen h2 {
+      font-size: 28px;
+      background: linear-gradient(90deg, var(--gold), var(--magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 600;
+    }
+    .onboard-screen p { font-size: 14px; color: rgba(255, 255, 255, 0.7); max-width: 280px; }
+    .input-group {
+      width: 100%;
+      max-width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .input-group input {
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(245, 192, 0, 0.3);
+      color: var(--fg);
+      font-size: 14px;
+      font-family: inherit;
+      transition: 0.3s;
+    }
+    .input-group input:focus { outline: none; background: rgba(255, 255, 255, 0.08); border-color: var(--gold); }
+    .input-group input::placeholder { color: rgba(255, 255, 255, 0.4); }
+    .cta-btn {
+      padding: 14px 28px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--gold), var(--magenta));
+      border: none;
+      color: var(--canvas);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245, 192, 0, 0.4); }
+    .diet-filter {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .diet-chip {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(245, 192, 0, 0.1);
+      border: 1px solid rgba(245, 192, 0, 0.3);
+      color: var(--fg);
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .diet-chip.active { background: var(--gold); color: var(--canvas); border-color: var(--gold); }
+    .diet-chip:hover { border-color: var(--gold); }
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .recipe-card {
+      background: linear-gradient(135deg, rgba(245, 192, 0, 0.1) 0%, rgba(255, 31, 90, 0.05) 100%);
+      border: 1px solid rgba(245, 192, 0, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .recipe-card:hover {
+      background: linear-gradient(135deg, rgba(245, 192, 0, 0.15) 0%, rgba(255, 31, 90, 0.1) 100%);
+      border-color: var(--gold);
+      transform: translateY(-2px);
+    }
+    .recipe-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .recipe-name { font-size: 16px; font-weight: 600; color: var(--gold); }
+    .recipe-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 8px;
+    }
+    .recipe-desc { font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+    .recipe-detail {
+      padding: 24px;
+      text-align: center;
+    }
+    .recipe-detail h2 {
+      font-size: 24px;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .recipe-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .recipe-info {
+      background: rgba(245, 192, 0, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .recipe-info-value { font-size: 18px; font-weight: 700; color: var(--gold); }
+    .recipe-info-label { font-size: 11px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; }
+    .ingredients-section, .instructions-section {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--magenta);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .ingredient-list { display: flex; flex-direction: column; gap: 8px; }
+    .ingredient-item {
+      padding: 8px;
+      background: rgba(245, 192, 0, 0.05);
+      border-left: 3px solid var(--gold);
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .instruction-list { display: flex; flex-direction: column; gap: 12px; }
+    .instruction-step {
+      padding: 12px;
+      background: rgba(245, 192, 0, 0.05);
+      border-left: 3px solid var(--magenta);
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .back-btn {
+      padding: 10px 16px;
+      background: rgba(245, 192, 0, 0.2);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+    .back-btn:hover { background: rgba(245, 192, 0, 0.3); }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, rgba(245, 192, 0, 0.15) 0%, rgba(255, 31, 90, 0.1) 100%);
+      border: 1px solid rgba(245, 192, 0, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--gold); }
+    .stat-label { font-size: 12px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; }
+    .premium-lock {
+      background: linear-gradient(135deg, rgba(245, 192, 0, 0.15) 0%, rgba(255, 31, 90, 0.1) 100%);
+      border: 1px solid rgba(245, 192, 0, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .premium-lock h3 { color: var(--gold); font-size: 18px; margin-bottom: 12px; }
+    .unlock-btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--gold), var(--magenta));
+      border: none;
+      color: var(--canvas);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .unlock-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245, 192, 0, 0.3); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Quick Recipes</h1>
+      <button class="header-btn" id="settingsBtn">❤️</button>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="browse">Browse</button>
+      <button class="nav-tab" data-tab="favorites">Favorites</button>
+      <button class="nav-tab" data-tab="settings">Settings</button>
+    </div>
+
+    <div class="content">
+      <!-- Onboarding -->
+      <div class="screen onboard-screen active" id="onboard">
+        <div class="recipe-icon">🍳</div>
+        <div>
+          <h2>Welcome to Quick Recipes</h2>
+          <p>Discover, cook, and enjoy delicious meals</p>
+        </div>
+        <div class="input-group">
+          <input type="text" id="nameInput" placeholder="Your name">
+        </div>
+        <button class="cta-btn" id="startBtn">Start Cooking</button>
+      </div>
+
+      <!-- Browse -->
+      <div class="screen" id="browse">
+        <div class="diet-filter">
+          <div class="diet-chip active" data-diet="all">All</div>
+          <div class="diet-chip" data-diet="vegan">🌱 Vegan</div>
+          <div class="diet-chip" data-diet="gluten">🌾 Gluten-Free</div>
+          <div class="diet-chip" data-diet="keto">🥑 Keto</div>
+          <div class="diet-chip" data-diet="quick">⚡ Under 30min</div>
+        </div>
+        <div class="recipe-grid" id="recipeList"></div>
+      </div>
+
+      <!-- Recipe Detail -->
+      <div class="screen recipe-detail" id="recipeDetail"></div>
+
+      <!-- Favorites -->
+      <div class="screen" id="favorites">
+        <h2 style="margin-bottom: 20px; color: var(--gold);">❤️ Saved Recipes</h2>
+        <div class="recipe-grid" id="favoritesList"></div>
+      </div>
+
+      <!-- Settings -->
+      <div class="screen" id="settings">
+        <h2 style="margin-bottom: 20px; color: var(--gold);">Settings</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: rgba(245,192,0,0.1); border-radius: 8px; padding: 12px;">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 8px;">Name</p>
+            <p style="font-size: 16px; color: var(--gold); font-weight: 600;" id="settingsName">—</p>
+          </div>
+          <div style="background: rgba(245,192,0,0.1); border-radius: 8px; padding: 12px;">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 8px;">Recipes Cooked</p>
+            <p style="font-size: 16px; color: var(--gold); font-weight: 600;" id="settingsCooked">0</p>
+          </div>
+          <div style="background: rgba(245,192,0,0.1); border-radius: 8px; padding: 12px;">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 8px;">Favorites</p>
+            <p style="font-size: 16px; color: var(--gold); font-weight: 600;" id="settingsFavorites">0</p>
+          </div>
+          <button class="cta-btn" id="resetBtn" style="margin-top: 12px;">Reset Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+
+    const S = {
+      name: localStorage.getItem('qr_name') || '',
+      favorites: JSON.parse(localStorage.getItem('qr_favorites')) || [],
+      cooked: parseInt(localStorage.getItem('qr_cooked')) || 0,
+      premium: localStorage.getItem('qr_premium') === 'true',
+      currentDiet: 'all',
+    };
+
+    const RECIPES = {
+      1: { name: 'Pasta Carbonara', time: '20min', difficulty: 'Easy', servings: 4, diet: 'all', ingredients: ['400g pasta', '200g bacon', '4 eggs', 'Parmesan cheese', 'Black pepper'], steps: ['Cook pasta until al dente', 'Fry bacon until crispy', 'Mix eggs with cheese', 'Combine pasta and bacon', 'Toss with egg mixture off heat', 'Serve immediately'] },
+      2: { name: 'Buddha Bowl', time: '15min', difficulty: 'Easy', servings: 2, diet: 'vegan', ingredients: ['Quinoa', 'Chickpeas', 'Kale', 'Avocado', 'Sweet potato', 'Tahini dressing'], steps: ['Cook quinoa', 'Roast chickpeas & sweet potato', 'Massage kale with oil', 'Arrange in bowl', 'Drizzle with tahini', 'Enjoy!'] },
+      3: { name: 'Grilled Salmon', time: '25min', difficulty: 'Medium', servings: 2, diet: 'keto', ingredients: ['2 salmon fillets', 'Olive oil', 'Lemon', 'Garlic', 'Dill', 'Salt & pepper'], steps: ['Preheat grill to high', 'Brush salmon with oil', 'Season with garlic & dill', 'Grill 4-5 min per side', 'Finish with lemon', 'Serve hot'] },
+      4: { name: 'Veggie Stir-Fry', time: '20min', difficulty: 'Easy', servings: 3, diet: 'vegan', ingredients: ['Mixed vegetables', 'Soy sauce', 'Garlic', 'Ginger', 'Sesame oil', 'Rice noodles'], steps: ['Heat wok with sesame oil', 'Add garlic & ginger', 'Toss in vegetables', 'Season with soy sauce', 'Cook 5-7 minutes', 'Serve over noodles'] },
+      5: { name: 'Egg White Omelet', time: '10min', difficulty: 'Easy', servings: 1, diet: 'keto', ingredients: ['4 egg whites', 'Mushrooms', 'Spinach', 'Low-fat cheese', 'Olive oil spray'], steps: ['Spray pan with oil', 'Whisk egg whites', 'Add mushrooms & spinach', 'Pour in eggs', 'Fold in cheese', 'Plate and serve'] },
+    };
+
+    function save() {
+      localStorage.setItem('qr_name', S.name);
+      localStorage.setItem('qr_favorites', JSON.stringify(S.favorites));
+      localStorage.setItem('qr_cooked', S.cooked);
+      localStorage.setItem('qr_premium', S.premium);
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function renderRecipes() {
+      const list = document.getElementById('recipeList');
+      const recipes = Object.entries(RECIPES).filter(([, r]) => S.currentDiet === 'all' || r.diet === S.currentDiet);
+
+      if (!S.premium && recipes.length > 2) {
+        recipes.length = 2;
+      }
+
+      list.innerHTML = recipes.map(([id, r]) => `
+        <div class="recipe-card" onclick="viewRecipe(${id})">
+          <div class="recipe-header">
+            <div class="recipe-name">${r.name}</div>
+          </div>
+          <div class="recipe-meta">
+            <span>⏱️ ${r.time}</span>
+            <span>📊 ${r.difficulty}</span>
+            <span>👥 ${r.servings} servings</span>
+          </div>
+          <div class="recipe-desc">${r.ingredients.slice(0, 3).join(', ')}...</div>
+        </div>
+      `).join('');
+
+      if (!S.premium && Object.keys(RECIPES).length > 2) {
+        list.innerHTML += `
+          <div class="premium-lock">
+            <h3>🔓 Full Recipe Library</h3>
+            <p>Access 100+ recipes with meal planning</p>
+            <button class="unlock-btn" onclick="unlock()">Unlock Pro — $3.99</button>
+          </div>
+        `;
+      }
+    }
+
+    function viewRecipe(id) {
+      const r = RECIPES[id];
+      let html = `
+        <button class="back-btn" onclick="backToBrowse()">← Back</button>
+        <h2>${r.name}</h2>
+        <div class="recipe-info-grid">
+          <div class="recipe-info"><div class="recipe-info-value">⏱️</div><div class="recipe-info-label">${r.time}</div></div>
+          <div class="recipe-info"><div class="recipe-info-value">📊</div><div class="recipe-info-label">${r.difficulty}</div></div>
+          <div class="recipe-info"><div class="recipe-info-value">👥</div><div class="recipe-info-label">${r.servings}</div></div>
+        </div>
+        <div class="ingredients-section">
+          <div class="section-title">Ingredients</div>
+          <div class="ingredient-list">
+            ${r.ingredients.map(i => `<div class="ingredient-item">✓ ${i}</div>`).join('')}
+          </div>
+        </div>
+        <div class="instructions-section">
+          <div class="section-title">Instructions</div>
+          <div class="instruction-list">
+            ${r.steps.map((s, i) => `<div class="instruction-step"><strong>Step ${i+1}:</strong> ${s}</div>`).join('')}
+          </div>
+        </div>
+        <button class="cta-btn" style="width: 100%; margin-top: 20px;" onclick="markCooked(${id})">✅ Mark as Cooked</button>
+        <button class="cta-btn" style="width: 100%; margin-top: 8px; background: linear-gradient(90deg, var(--magenta), var(--pink)); ${S.favorites.includes(id) ? '' : ''}" onclick="toggleFavorite(${id})">
+          ${S.favorites.includes(id) ? '❤️ Saved' : '🤍 Save Recipe'}
+        </button>
+      `;
+      document.getElementById('recipeDetail').innerHTML = html;
+      showScreen('recipeDetail');
+    }
+
+    function backToBrowse() {
+      renderRecipes();
+      showScreen('browse');
+    }
+
+    function markCooked(id) {
+      S.cooked++;
+      save();
+      alert('Recipe marked! Keep cooking! 🍳');
+      backToBrowse();
+    }
+
+    function toggleFavorite(id) {
+      const idx = S.favorites.indexOf(id);
+      if (idx === -1) {
+        S.favorites.push(id);
+      } else {
+        S.favorites.splice(idx, 1);
+      }
+      save();
+      viewRecipe(id);
+    }
+
+    function renderFavorites() {
+      const list = document.getElementById('favoritesList');
+      if (S.favorites.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.6); padding: 40px 0;">No saved recipes yet.</p>';
+      } else {
+        list.innerHTML = S.favorites.map(id => {
+          const r = RECIPES[id];
+          return `
+            <div class="recipe-card" onclick="viewRecipe(${id})">
+              <div class="recipe-header">
+                <div class="recipe-name">${r.name}</div>
+              </div>
+              <div class="recipe-meta">
+                <span>⏱️ ${r.time}</span>
+                <span>📊 ${r.difficulty}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function unlock() {
+      S.premium = true;
+      save();
+      renderRecipes();
+    }
+
+    // Tab switching
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const target = tab.dataset.tab;
+        if (target === 'browse') {
+          renderRecipes();
+          showScreen('browse');
+        } else if (target === 'favorites') {
+          renderFavorites();
+          showScreen('favorites');
+        } else if (target === 'settings') {
+          document.getElementById('settingsName').textContent = S.name || '—';
+          document.getElementById('settingsCooked').textContent = S.cooked;
+          document.getElementById('settingsFavorites').textContent = S.favorites.length;
+          showScreen('settings');
+        }
+      });
+    });
+
+    // Diet filter
+    document.querySelectorAll('.diet-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.diet-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        S.currentDiet = chip.dataset.diet;
+        renderRecipes();
+      });
+    });
+
+    // Onboarding
+    document.getElementById('startBtn').addEventListener('click', () => {
+      const name = document.getElementById('nameInput').value.trim();
+      if (!name) {
+        alert('Please enter your name');
+        return;
+      }
+      S.name = name;
+      save();
+      renderRecipes();
+      showScreen('browse');
+    });
+
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+      alert('Unlock Pro ($3.99) for full recipe library');
+      unlock();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (confirm('Reset all data?')) {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('qr_')) localStorage.removeItem(k);
+        });
+        S.favorites = [];
+        S.cooked = 0;
+        showScreen('onboard');
+      }
+    });
+
+    // Initialize
+    if (S.name) {
+      renderRecipes();
+      showScreen('browse');
+    }
+  </script>
+</body>
+</html>
