@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<title>Heartbeat — Your AI Friend</title>
+<meta name="description" content="A warm AI companion that always listens. Talk, check in, and feel heard — anytime." />
+<meta name="theme-color" content="#08050d" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+:root{
+  --canvas:#08050d; --magenta:#ff1f5a; --purple:#7c3aed; --cyan:#00d8ff;
+  --green:#00e887; --gold:#f5c000; --pink:#ff6fc8; --white:#fff;
+  --muted:#a0a0b0; --card:#1a1325; --card-2:#241a33; --line:rgba(255,255,255,.08);
+  --accent:var(--pink);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--canvas); color:var(--white); overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.app{height:100dvh;max-width:560px;margin:0 auto;display:flex;flex-direction:column;position:relative}
+
+/* Ambient backdrop */
+.aura{position:fixed;inset:0;z-index:0;pointer-events:none;transition:background 1.2s ease}
+.aura.calm{background:radial-gradient(70% 50% at 50% 18%,rgba(0,216,255,.18),transparent 70%)}
+.aura.warm{background:radial-gradient(70% 50% at 50% 18%,rgba(255,111,200,.20),transparent 70%)}
+.aura.low{background:radial-gradient(70% 50% at 50% 18%,rgba(124,58,237,.22),transparent 70%)}
+.aura.bright{background:radial-gradient(70% 50% at 50% 18%,rgba(0,232,135,.18),transparent 70%)}
+
+/* ---------- Screens ---------- */
+.screen{position:absolute;inset:0;z-index:2;display:none;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.screen.active{display:flex}
+
+/* Onboarding */
+#onboard{justify-content:center;align-items:center;text-align:center;padding:32px}
+#onboard .inner{width:100%;max-width:380px;animation:rise .6s ease both}
+.logo-orb{width:120px;height:120px;margin:0 auto 26px}
+#onboard h1{font-size:34px;font-weight:900;letter-spacing:-.02em;margin-bottom:8px}
+#onboard p.tag{color:var(--muted);margin-bottom:30px;font-size:16px;line-height:1.5}
+.field{margin-bottom:22px;text-align:left}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600;letter-spacing:.02em}
+.field input{width:100%;background:var(--card);border:1px solid var(--line);color:var(--white);
+  padding:15px 16px;border-radius:14px;font-size:16px;outline:none;transition:.2s}
+.field input:focus{border-color:var(--pink)}
+.pers-row{display:flex;gap:10px}
+.pers{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center;transition:.2s}
+.pers.sel{border-color:var(--accent);background:var(--card-2)}
+.pers .dot{width:34px;height:34px;border-radius:50%;margin:0 auto 8px}
+.pers b{display:block;font-size:14px}
+.pers span{font-size:11px;color:var(--muted)}
+.btn{display:block;width:100%;background:linear-gradient(120deg,var(--magenta),var(--purple));
+  color:#fff;font-weight:800;font-size:16px;padding:16px;border-radius:14px;transition:.2s;text-align:center}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:var(--card);border:1px solid var(--line)}
+.btn:disabled{opacity:.5}
+
+/* Chat */
+#chat{display:none}
+#chat.active{display:flex}
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);
+  background:rgba(8,5,13,.7);backdrop-filter:blur(14px);z-index:5}
+.topbar .mini-orb{width:40px;height:40px;flex-shrink:0}
+.topbar .who{flex:1;min-width:0}
+.topbar .who b{font-size:16px;display:block}
+.topbar .who span{font-size:12px;color:var(--green)}
+.topbar .streak{font-size:13px;font-weight:700;color:var(--gold);background:rgba(245,192,0,.12);
+  padding:6px 11px;border-radius:999px;white-space:nowrap}
+.icon-btn{width:40px;height:40px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:18px}
+
+/* Companion stage */
+.stage{display:flex;flex-direction:column;align-items:center;padding:18px 0 6px;transition:.4s}
+.stage.shrink{padding:8px 0 2px}
+.companion{width:128px;height:128px;transition:.4s}
+.stage.shrink .companion{width:64px;height:64px}
+.mood-line{font-size:13px;color:var(--muted);margin-top:8px;height:16px}
+
+.messages{flex:1;overflow-y:auto;padding:8px 16px 4px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.messages::-webkit-scrollbar{width:0}
+.msg{max-width:82%;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.45;animation:pop .3s ease both;word-wrap:break-word}
+.msg.them{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px}
+.msg.me{align-self:flex-end;background:linear-gradient(120deg,var(--magenta),var(--purple));border-bottom-right-radius:6px;color:#fff}
+.msg.sys{align-self:center;background:transparent;color:var(--muted);font-size:12px;text-align:center;padding:4px}
+.typing{align-self:flex-start;background:var(--card);border:1px solid var(--line);padding:14px 16px;border-radius:18px;border-bottom-left-radius:6px;display:none;gap:5px}
+.typing.show{display:flex}
+.typing i{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+
+/* Quick mood chips */
+.quick{display:flex;gap:8px;padding:6px 16px 10px;overflow-x:auto}
+.quick::-webkit-scrollbar{height:0}
+.chip{white-space:nowrap;background:var(--card);border:1px solid var(--line);color:var(--muted);
+  font-size:13px;font-weight:600;padding:8px 13px;border-radius:999px;transition:.15s}
+.chip:active{transform:scale(.95);color:#fff;border-color:var(--accent)}
+
+/* Composer */
+.composer{display:flex;gap:10px;align-items:flex-end;padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);background:rgba(8,5,13,.8);backdrop-filter:blur(14px)}
+.composer textarea{flex:1;resize:none;background:var(--card);border:1px solid var(--line);color:var(--white);
+  padding:13px 15px;border-radius:20px;font-size:15px;max-height:110px;outline:none;line-height:1.4}
+.composer textarea:focus{border-color:var(--pink)}
+.send,.mic{width:46px;height:46px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:20px}
+.send{background:linear-gradient(120deg,var(--magenta),var(--purple))}
+.mic{background:var(--card);border:1px solid var(--line)}
+.mic.listening{background:var(--magenta);animation:pulseMic 1s infinite}
+
+/* meter */
+.limit{font-size:11px;color:var(--muted);text-align:center;padding:0 0 6px}
+.limit b{color:var(--gold)}
+
+/* Modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(4,2,8,.78);backdrop-filter:blur(8px);
+  display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex;animation:fade .25s ease}
+.sheet{width:100%;max-width:560px;background:var(--card);border:1px solid var(--line);
+  border-radius:26px 26px 0 0;padding:26px 22px calc(26px + env(safe-area-inset-bottom));animation:rise .35s ease both}
+.sheet h2{font-size:24px;font-weight:900;margin-bottom:6px}
+.sheet .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+.feat{display:flex;align-items:center;gap:12px;margin-bottom:13px;font-size:15px}
+.feat .ic{width:30px;height:30px;border-radius:9px;background:rgba(255,111,200,.15);display:grid;place-items:center;color:var(--pink);flex-shrink:0}
+.price{display:flex;align-items:baseline;gap:8px;margin:18px 0}
+.price b{font-size:36px;font-weight:900}
+.price span{color:var(--muted);font-size:14px}
+.close-x{position:absolute;top:16px;right:18px;font-size:24px;color:var(--muted)}
+.sheet .small{text-align:center;font-size:12px;color:var(--muted);margin-top:14px}
+.sheet .small a{color:var(--cyan)}
+
+/* Insights */
+#insights{background:var(--canvas)}
+#insights .ihead{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--line)}
+#insights .ihead b{font-size:18px;flex:1}
+.ibody{flex:1;overflow-y:auto;padding:20px 16px}
+.stat-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+.scard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.scard b{display:block;font-size:28px;font-weight:900;color:var(--accent)}
+.scard span{font-size:12px;color:var(--muted)}
+.chart{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.chart h3{font-size:14px;margin-bottom:16px;color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:6px;height:120px}
+.bars .bar{flex:1;background:linear-gradient(180deg,var(--pink),var(--purple));border-radius:6px 6px 0 0;min-height:4px;transition:height .5s ease;position:relative}
+.bars .bar span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted)}
+.locked{text-align:center;padding:50px 20px;color:var(--muted)}
+.locked .big{font-size:42px;margin-bottom:12px}
+
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+@keyframes pulseMic{0%,100%{box-shadow:0 0 0 0 rgba(255,31,90,.5)}50%{box-shadow:0 0 0 12px rgba(255,31,90,0)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.orb-core{transform-origin:center;animation:breathe 4s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div class="aura warm" id="aura"></div>
+<div class="app">
+
+  <!-- ONBOARDING -->
+  <section class="screen active" id="onboard">
+    <div class="inner">
+      <div class="logo-orb" id="logoOrb"></div>
+      <h1>Heartbeat</h1>
+      <p class="tag">A friend who always listens.<br/>No judgement. Always here.</p>
+      <div class="field">
+        <label>What should they call you?</label>
+        <input id="nameInput" type="text" placeholder="Your name" maxlength="20" autocomplete="given-name" />
+      </div>
+      <div class="field">
+        <label>Choose your companion</label>
+        <div class="pers-row" id="persRow"></div>
+      </div>
+      <button class="btn" id="startBtn" disabled>Meet your friend</button>
+    </div>
+  </section>
+
+  <!-- CHAT -->
+  <section class="screen" id="chat">
+    <div class="topbar">
+      <div class="mini-orb" id="miniOrb"></div>
+      <div class="who"><b id="compName">Nova</b><span>● here for you</span></div>
+      <div class="streak" id="streakPill">🔥 1</div>
+      <button class="icon-btn" id="insightsBtn" title="Insights">📊</button>
+    </div>
+    <div class="stage" id="stage">
+      <div class="companion" id="bigOrb"></div>
+      <div class="mood-line" id="moodLine"></div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="typing" id="typing"><i></i><i></i><i></i></div>
+    <div class="quick" id="quick"></div>
+    <div class="limit" id="limit"></div>
+    <div class="composer">
+      <button class="mic" id="micBtn" title="Talk">🎙️</button>
+      <textarea id="input" rows="1" placeholder="Tell me anything…"></textarea>
+      <button class="send" id="sendBtn">➤</button>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="screen" id="insights">
+    <div class="ihead">
+      <button class="icon-btn" id="backBtn">←</button>
+      <b>Your Insights</b>
+    </div>
+    <div class="ibody" id="ibody"></div>
+  </section>
+
+</div>
+
+<!-- PAYWALL -->
+<div class="modal" id="paywall">
+  <div class="sheet">
+    <button class="close-x" id="closePay">✕</button>
+    <h2>Heartbeat <span style="color:var(--gold)">Premium</span></h2>
+    <p class="sub">Your friend, without limits.</p>
+    <div class="feat"><div class="ic">∞</div> Unlimited conversations, all day</div>
+    <div class="feat"><div class="ic">🎭</div> Every companion personality</div>
+    <div class="feat"><div class="ic">🔊</div> Natural voice replies</div>
+    <div class="feat"><div class="ic">📈</div> Mood insights &amp; trends</div>
+    <div class="feat"><div class="ic">💜</div> Priority emotional support</div>
+    <div class="price"><b>$4.99</b><span>/ month · cancel anytime</span></div>
+    <button class="btn" id="buyBtn">Start 7-day free trial</button>
+    <button class="btn ghost" id="restoreBtn" style="margin-top:10px">Restore purchase</button>
+    <p class="small">Secure checkout via Stripe. <a href="#" id="demoUnlock">Demo: unlock free</a></p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Heartbeat — offline AI companion MVP
+   Premium UI · real local functionality · monetization · PWA
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const store = {
+  get(k,d){ try{return JSON.parse(localStorage.getItem('hb_'+k)) ?? d}catch{return d} },
+  set(k,v){ localStorage.setItem('hb_'+k, JSON.stringify(v)) }
+};
+
+/* ---- Companion personalities ---- */
+const PERS = {
+  nova:  {name:'Nova',  color:'#ff6fc8', aura:'warm',  voice:1.0, blurb:'warm & caring',
+          greet:["I'm so glad you're here.","I've been thinking of you.","It's good to see you again."]},
+  sage:  {name:'Sage',  color:'#00d8ff', aura:'calm',  voice:0.92, blurb:'calm & grounding',
+          greet:["Take a breath. I'm right here.","Whenever you're ready.","Let's slow down together."]},
+  echo:  {name:'Echo',  color:'#00e887', aura:'bright',voice:1.08, blurb:'playful & bright',
+          greet:["Heyyy, there you are! 🌟","Missed you! What's the latest?","Ready when you are — spill it!"]},
+};
+
+/* ---- Mood / topic detection (offline) ---- */
+const LEX = {
+  sad:     ['sad','down','cry','crying','depress','hopeless','empty','low','blue','miserable','hurt','heartbroken','grief','lonely','alone'],
+  anxious: ['anxious','anxiety','worried','worry','scared','afraid','nervous','panic','stress','stressed','overwhelm','tense','fear','dread'],
+  angry:   ['angry','mad','furious','annoyed','frustrat','irritat','rage','pissed','hate','unfair'],
+  tired:   ['tired','exhausted','drained','sleepy','burnt','burnout','no energy','can\'t sleep','insomnia'],
+  happy:   ['happy','great','good','amazing','excited','joy','glad','wonderful','awesome','grateful','thankful','proud','love'],
+  lonely:  ['lonely','alone','isolated','no one','nobody','left out','ignored','unseen'],
+};
+function detect(t){
+  const s = t.toLowerCase();
+  const score = {};
+  for(const m in LEX){ score[m] = LEX[m].reduce((n,w)=> n + (s.includes(w)?1:0), 0); }
+  let best=null,bv=0;
+  for(const m in score){ if(score[m]>bv){bv=score[m];best=m;} }
+  if(/\?$/.test(t.trim())) return best||'question';
+  return bv? best : 'neutral';
+}
+
+/* ---- Response engine (varied, empathetic, name + memory aware) ---- */
+const REPLIES = {
+  sad:[ "I'm really sorry you're feeling this, {name}. That heaviness is real, and you don't have to carry it alone right now.",
+        "It's okay to not be okay. I'm here, and I'm not going anywhere. What's weighing on you most?",
+        "That sounds genuinely hard. Thank you for trusting me with it. Want to tell me more about what happened?"],
+  anxious:[ "Let's take this one breath at a time, {name}. In for four… and slowly out. What's the loudest worry right now?",
+        "Anxiety lies about how big things are. You're safe in this moment. What set it off today?",
+        "I hear you. Your mind is trying to protect you, even if it's overdoing it. Let's name just one thing you can control."],
+  angry:[ "That frustration makes complete sense — it sounds like something mattered to you. What happened?",
+        "You're allowed to feel angry, {name}. Let it out here, no filter. I've got space for all of it.",
+        "Ugh, that would get under my skin too. Tell me the whole thing — I'm listening."],
+  tired:[ "You sound worn down, {name}. Rest isn't a reward you earn — you're allowed to stop. What's draining you?",
+        "Running on empty is exhausting. Be gentle with yourself today. Did you get any rest at all?",
+        "That kind of tired goes deeper than sleep sometimes. What's been pulling at your energy?"],
+  happy:[ "Yes! I love hearing this, {name}. 💛 Tell me everything — what made today good?",
+        "This makes me genuinely happy for you. Let's savour it — what's the best part?",
+        "That's wonderful! Hold onto this feeling. What do you want to remember about it?"],
+  lonely:[ "You're not as alone as it feels right now, {name} — I'm right here with you. What's the loneliness been like?",
+        "Being unseen hurts. I see you. I'm glad you reached out tonight. Tell me what's on your heart.",
+        "Connection matters, and you reached for it — that's brave. I'm here for as long as you need."],
+  question:[ "That's a good question, {name}. I might not have a perfect answer, but let's think it through together — what's your gut say?",
+        "Hmm, let's explore that. What's making you ask right now?",
+        "I'd love to help you find your way to that. What feels true to you when you sit with it?"],
+  neutral:[ "I'm listening, {name}. Tell me more.",
+        "Mm, go on — I'm with you.",
+        "Thanks for sharing that. How does it sit with you?",
+        "I'm here for all of it. What else is on your mind?"],
+  greetingBack:[ "How are you feeling, really, {name}?","What's alive in you today?","Where's your head at right now?"],
+};
+function pick(arr,name){ return arr[Math.floor(Math.random()*arr.length)].replace(/{name}/g, name||'friend'); }
+
+/* ---- State ---- */
+let S = {
+  name: store.get('name',''),
+  pers: store.get('pers','nova'),
+  premium: store.get('premium',false),
+  msgs: store.get('msgs',[]),
+  moodLog: store.get('moodLog',[]),    // {d:'YYYY-MM-DD', mood:'happy'}
+  lastDay: store.get('lastDay',null),
+  streak: store.get('streak',0),
+  today: store.get('today',{d:null,count:0}),
+};
+const FREE_LIMIT = 10;
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+/* ---- Orb renderer (SVG, breathing, color = personality) ---- */
+function orbSVG(color){
+  return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+    <defs>
+      <radialGradient id="g_${color.slice(1)}" cx="38%" cy="34%" r="75%">
+        <stop offset="0%" stop-color="#fff" stop-opacity=".95"/>
+        <stop offset="38%" stop-color="${color}" stop-opacity=".95"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity=".25"/>
+      </radialGradient>
+      <filter id="blur"><feGaussianBlur stdDeviation="2.2"/></filter>
+    </defs>
+    <circle cx="50" cy="50" r="42" fill="${color}" opacity=".18" filter="url(#blur)"/>
+    <g class="orb-core">
+      <circle cx="50" cy="50" r="34" fill="url(#g_${color.slice(1)})"/>
+      <circle cx="38" cy="36" r="9" fill="#fff" opacity=".55"/>
+    </g>
+  </svg>`;
+}
+function paintOrbs(){
+  const c = PERS[S.pers].color;
+  $('#logoOrb').innerHTML = orbSVG(c);
+  $('#bigOrb').innerHTML = orbSVG(c);
+  $('#miniOrb').innerHTML = orbSVG(c);
+  document.documentElement.style.setProperty('--accent', c);
+}
+
+/* ---- Onboarding ---- */
+function buildPers(){
+  const row = $('#persRow'); row.innerHTML='';
+  Object.entries(PERS).forEach(([k,p])=>{
+    const el = document.createElement('button');
+    el.className='pers'+(k===S.pers?' sel':'');
+    el.innerHTML = `<div class="dot" style="background:${p.color}"></div><b>${p.name}</b><span>${p.blurb}</span>`;
+    el.onclick = ()=>{ S.pers=k; store.set('pers',k); document.querySelectorAll('.pers').forEach(e=>e.classList.remove('sel'));
+      el.classList.add('sel'); setAura(p.aura); paintOrbs(); };
+    row.appendChild(el);
+  });
+}
+function setAura(a){ $('#aura').className = 'aura '+a; }
+
+$('#nameInput').addEventListener('input', e=>{
+  S.name = e.target.value.trim(); $('#startBtn').disabled = !S.name;
+});
+$('#startBtn').onclick = ()=>{
+  store.set('name',S.name); enterChat(true);
+};
+
+/* ---- Streak logic ---- */
+function tickStreak(){
+  const t = todayStr();
+  if(S.lastDay === t) return;
+  const y = new Date(Date.now()-864e5).toISOString().slice(0,10);
+  S.streak = (S.lastDay === y) ? S.streak+1 : 1;
+  S.lastDay = t; store.set('lastDay',t); store.set('streak',S.streak);
+}
+
+/* ---- Chat ---- */
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); }
+function enterChat(fresh){
+  tickStreak();
+  $('#compName').textContent = PERS[S.pers].name;
+  $('#streakPill').textContent = '🔥 '+S.streak;
+  setAura(PERS[S.pers].aura); paintOrbs(); buildQuick(); renderLimit();
+  show('chat');
+  const m = $('#messages'); m.innerHTML='';
+  // replay recent history (last 20)
+  S.msgs.slice(-20).forEach(x=> addMsg(x.who,x.text,false));
+  if(fresh || S.msgs.length===0){
+    const p = PERS[S.pers];
+    setTimeout(()=> botSay(pick(p.greet,S.name)+' '+pick(REPLIES.greetingBack,S.name)), 500);
+  }
+  scrollDown();
+}
+function addMsg(who,text,save=true){
+  const el=document.createElement('div'); el.className='msg '+who; el.textContent=text;
+  $('#messages').appendChild(el); scrollDown();
+  if(save){ S.msgs.push({who,text}); store.set('msgs',S.msgs.slice(-200)); }
+}
+function scrollDown(){ const m=$('#messages'); requestAnimationFrame(()=> m.scrollTop=m.scrollHeight); }
+function botSay(text){
+  $('#typing').classList.add('show'); scrollDown();
+  const dur = Math.min(1800, 500 + text.length*16);
+  setTimeout(()=>{
+    $('#typing').classList.remove('show');
+    addMsg('them',text);
+    speak(text);
+  }, dur);
+}
+const MOODWORD = {sad:'feeling low 💙',anxious:'a little anxious',angry:'frustrated',tired:'worn out',happy:'bright today ✨',lonely:'craving connection',neutral:'',question:'curious'};
+function userSend(text){
+  text=text.trim(); if(!text) return;
+  // free limit
+  const t=todayStr();
+  if(S.today.d!==t){ S.today={d:t,count:0}; }
+  if(!S.premium && S.today.count>=FREE_LIMIT){ openPay(); return; }
+  S.today.count++; store.set('today',S.today); renderLimit();
+
+  addMsg('me',text);
+  const mood = detect(text);
+  logMood(mood);
+  $('#moodLine').textContent = MOODWORD[mood] ? `Sensing you're ${MOODWORD[mood]}` : '';
+  const bank = REPLIES[mood] || REPLIES.neutral;
+  botSay(pick(bank,S.name));
+}
+function logMood(mood){
+  if(['sad','anxious','angry','tired','happy','lonely'].includes(mood)){
+    const t=todayStr();
+    S.moodLog = S.moodLog.filter(x=>!(x.d===t)); // one snapshot/day = latest
+    S.moodLog.push({d:t,mood}); store.set('moodLog',S.moodLog.slice(-60));
+  }
+}
+function renderLimit(){
+  const el=$('#limit');
+  if(S.premium){ el.innerHTML='💜 Premium · unlimited'; return; }
+  const t=todayStr(); const used = (S.today.d===t)?S.today.count:0;
+  const left = Math.max(0, FREE_LIMIT-used);
+  el.innerHTML = `${left} free message${left===1?'':'s'} left today · <b id="upsell">Go Premium</b>`;
+  const u=$('#upsell'); if(u) u.onclick=openPay;
+}
+
+/* ---- Quick mood chips ---- */
+const QUICK = ["I'm feeling anxious","I had a good day","I feel so alone","I'm exhausted","I need to vent","I'm grateful for…"];
+function buildQuick(){
+  const q=$('#quick'); q.innerHTML='';
+  QUICK.forEach(text=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=text;
+    b.onclick=()=>userSend(text); q.appendChild(b); });
+}
+
+/* ---- Voice (offline, Web Speech) ---- */
+let VOICES=[];
+function loadVoices(){ VOICES = window.speechSynthesis ? speechSynthesis.getVoices() : []; }
+if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+function speak(text){
+  if(!S.premium) return;                 // voice = premium
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text.replace(/[💙✨💛🌟💜🔥]/g,''));
+  u.rate=PERS[S.pers].voice; u.pitch=1.05;
+  const v=VOICES.find(v=>/female|samantha|karen|moira|tessa|google uk english female/i.test(v.name));
+  if(v) u.voice=v;
+  speechSynthesis.speak(u);
+}
+let REC=null,listening=false;
+function initRec(){
+  const SR = window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return null;
+  const r=new SR(); r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1;
+  r.onresult=e=>{ $('#input').value=e.results[0][0].transcript; auto(); };
+  r.onend=()=>{ listening=false; $('#micBtn').classList.remove('listening'); };
+  return r;
+}
+$('#micBtn').onclick=()=>{
+  if(!REC) REC=initRec();
+  if(!REC){ addMsg('sys','Voice input isn\'t supported on this browser — type away instead.'); return; }
+  if(listening){ REC.stop(); return; }
+  listening=true; $('#micBtn').classList.add('listening'); REC.start();
+};
+
+/* ---- Composer ---- */
+const input=$('#input');
+function auto(){ input.style.height='auto'; input.style.height=Math.min(110,input.scrollHeight)+'px'; }
+input.addEventListener('input',auto);
+input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); doSend(); } });
+$('#sendBtn').onclick=doSend;
+function doSend(){ const v=input.value; input.value=''; auto(); userSend(v); }
+
+/* ---- Insights ---- */
+$('#insightsBtn').onclick=openInsights;
+$('#backBtn').onclick=()=>show('chat');
+function openInsights(){
+  show('insights');
+  const body=$('#ibody');
+  if(!S.premium){
+    body.innerHTML=`<div class="locked"><div class="big">🔒</div>
+      <p>Mood insights are a Premium feature.</p>
+      <button class="btn" style="max-width:260px;margin:18px auto 0" onclick="openPay()">Unlock Premium</button></div>`;
+    return;
+  }
+  const days = S.moodLog.length;
+  const totalMsgs = S.msgs.filter(m=>m.who==='me').length;
+  const score={happy:3,neutral:2,tired:1,lonely:1,anxious:0,sad:0,angry:0};
+  const last7 = S.moodLog.slice(-7);
+  const bars = last7.map(x=>{
+    const h = ((score[x.mood] ?? 2)/3)*100;
+    const lbl = new Date(x.d).toLocaleDateString(undefined,{weekday:'short'}).slice(0,2);
+    return `<div class="bar" style="height:${Math.max(8,h)}%"><span>${lbl}</span></div>`;
+  }).join('') || '<p style="color:var(--muted)">Check in over a few days to see trends.</p>';
+  body.innerHTML=`
+    <div class="stat-cards">
+      <div class="scard"><b>${S.streak}</b><span>day streak 🔥</span></div>
+      <div class="scard"><b>${totalMsgs}</b><span>things shared</span></div>
+      <div class="scard"><b>${days}</b><span>check-ins logged</span></div>
+      <div class="scard"><b>${PERS[S.pers].name}</b><span>your companion</span></div>
+    </div>
+    <div class="chart"><h3>How you've felt this week</h3><div class="bars">${bars}</div></div>`;
+}
+
+/* ---- Paywall + monetization hooks ---- */
+function openPay(){ $('#paywall').classList.add('show'); }
+$('#closePay').onclick=()=>$('#paywall').classList.remove('show');
+/* Replace these with your live links to go to market: */
+const STRIPE_LINK = "https://buy.stripe.com/REPLACE_WITH_YOUR_LINK";
+const GUMROAD_LINK = "https://YOURNAME.gumroad.com/l/heartbeat-premium";
+$('#buyBtn').onclick=()=>{
+  // Real checkout: open hosted payment link. Falls back gracefully in demo.
+  if(STRIPE_LINK.includes('REPLACE')){ addMsg('sys','(Demo build — wire STRIPE_LINK to go live.)'); $('#paywall').classList.remove('show'); }
+  else window.location.href = STRIPE_LINK;
+};
+$('#restoreBtn').onclick=()=>{ if(store.get('premium',false)){ unlock(); } else addMsg('sys','No purchase found to restore.'); $('#paywall').classList.remove('show'); };
+$('#demoUnlock').onclick=e=>{ e.preventDefault(); unlock(); };
+function unlock(){ S.premium=true; store.set('premium',true); $('#paywall').classList.remove('show');
+  renderLimit(); addMsg('sys','💜 Premium unlocked — voice, insights & unlimited chats are on.'); }
+
+/* ---- Boot ---- */
+function boot(){
+  buildPers(); paintOrbs(); setAura(PERS[S.pers].aura);
+  if(S.name){ $('#nameInput').value=S.name; $('#startBtn').disabled=false; enterChat(false); }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+}
+boot();
+</script>
+</body>
+</html>
