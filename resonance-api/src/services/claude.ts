@@ -157,6 +157,54 @@ CRITICAL: This user is in recovery. Always:
 
     return response.content[0].type === 'text' ? response.content[0].text : 'You are resilient and capable.';
   }
+
+  async generateContextualResponse(
+    userMessage: string,
+    history: Array<{ role: 'user' | 'assistant'; content: string }>,
+    appId?: string,
+    emotionalContext?: {
+      heartRate?: number;
+      stressLevel?: number;
+      lastEmotionalRating?: number;
+    }
+  ): Promise<string> {
+    const appProfiles: Record<string, string> = {
+      'bright-brains': 'You are a supportive guide for children and teens with learning differences.',
+      'steady': 'You are a compassionate companion for mental health challenges.',
+      'mum-brain': 'You are a nurturing guide for mothers and caregivers.',
+      'sobriety': 'You are a recovery-focused companion celebrating identity shifts.',
+      'relationships': 'You are a guide for relationship communication.',
+      'money': 'You are a non-judgmental guide to money psychology.',
+      'sleep': 'You are a calming presence for sleep and rest.',
+    };
+
+    const systemPrompt = `You are JARVIS, an empathetic AI companion for the RESONANCE brain-building ecosystem.
+${appProfiles[appId || 'general'] || 'You are a supportive AI guide for personal growth.'}
+
+Key guidelines:
+- Keep responses concise and warm (1-3 sentences typically)
+- Ground advice in neuroscience and psychology when relevant
+- Be specific to the user's situation, not generic
+- Celebrate progress and acknowledge struggles without toxic positivity
+- If mental health crisis signals are detected, provide resources
+
+${emotionalContext ? `User's current state: Heart rate ${emotionalContext.heartRate || 'normal'} bpm, Stress level ${emotionalContext.stressLevel || 'moderate'}/100` : ''}`;
+
+    const response = await client.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 300,
+      system: systemPrompt,
+      messages: [
+        ...history,
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ],
+    });
+
+    return response.content[0].type === 'text' ? response.content[0].text : 'I hear you. How can I support you today?';
+  }
 }
 
 export const claudeService = new ClaudeService();

@@ -1,6 +1,8 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { pool } from './db/index.js';
+import { authService } from './services/auth.js';
 import authRoutes from './routes/auth.js';
 import appRoutes from './routes/apps.js';
 import progressRoutes from './routes/progress.js';
@@ -29,9 +31,35 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Authentication middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const decoded = authService.verifyAccessToken(token);
+    if (decoded) {
+      (req as any).user = decoded;
+    }
+  }
+  next();
+});
+
 // Health check
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+    });
+  }
 });
 
 // API Routes v1
@@ -55,8 +83,16 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ error: 'Internal server error', message: err.message });
 });
 
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  await pool.end();
+  process.exit(0);
+});
+
 app.listen(PORT, () => {
   console.log(`RESONANCE API running on http://localhost:${PORT}`);
   console.log(`API Documentation: http://localhost:${PORT}/api/v1`);
   console.log(`Health Check: http://localhost:${PORT}/health`);
+  console.log(`Database: ${process.env.DATABASE_URL || 'localhost'}`);
 });
