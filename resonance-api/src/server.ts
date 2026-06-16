@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { pool } from './db/index.js';
 import { authService } from './services/auth.js';
+import { errorHandler } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import appRoutes from './routes/apps.js';
 import progressRoutes from './routes/progress.js';
@@ -78,10 +79,7 @@ app.use((req: Request, res: Response) => {
 });
 
 // Error handling middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error', message: err.message });
-});
+app.use(errorHandler);
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
