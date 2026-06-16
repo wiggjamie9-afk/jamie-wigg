@@ -1,5 +1,5 @@
-const CACHE_SHELL = 'post-op-v4-shell';
-const CACHE_API = 'post-op-v4-api';
+const CACHE_SHELL = 'post-op-v5-shell';
+const CACHE_API = 'post-op-v5-api';
 
 self.addEventListener('install', event => {
   event.waitUntil(
