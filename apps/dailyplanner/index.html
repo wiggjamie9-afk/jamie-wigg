@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Daily Planner — AI-powered task management, offline-first.">
+  <title>Daily Planner</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#08050d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Daily Planner">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --canvas: #08050d;
+      --fg: #ffffff;
+      --magenta: #ff1f5a;
+      --purple: #7c3aed;
+      --cyan: #00d8ff;
+      --green: #00e887;
+      --gold: #f5c000;
+      --pink: #ff6fc8;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--canvas);
+      color: var(--fg);
+      line-height: 1.5;
+      overflow-x: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #0f0815 0%, #1a0f25 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(90deg, rgba(0, 216, 255, 0.1) 0%, rgba(0, 216, 255, 0.05) 100%);
+      border-bottom: 1px solid rgba(0, 216, 255, 0.2);
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      background: linear-gradient(90deg, var(--cyan), var(--magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .date-display {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .header-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 216, 255, 0.2);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: 0.3s;
+    }
+
+    .header-btn:hover {
+      background: rgba(0, 216, 255, 0.3);
+      transform: scale(1.05);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0;
+      padding: 12px;
+      border-bottom: 1px solid rgba(0, 216, 255, 0.1);
+      overflow-x: auto;
+      scroll-behavior: smooth;
+    }
+
+    .nav-tabs::-webkit-scrollbar { display: none; }
+
+    .nav-tab {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border: 1px solid rgba(0, 216, 255, 0.2);
+      border-radius: 20px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+
+    .nav-tab.active {
+      background: var(--cyan);
+      color: var(--canvas);
+      border-color: var(--cyan);
+    }
+
+    .nav-tab:hover {
+      border-color: var(--cyan);
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      scroll-behavior: smooth;
+    }
+
+    .content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .content::-webkit-scrollbar-track {
+      background: rgba(0, 216, 255, 0.05);
+    }
+
+    .content::-webkit-scrollbar-thumb {
+      background: rgba(0, 216, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .onboard-screen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100%;
+      text-align: center;
+      gap: 30px;
+    }
+
+    .planner-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, rgba(0, 216, 255, 0.8), rgba(127, 60, 237, 0.4));
+      position: relative;
+      animation: pulse-plan 3s ease-in-out infinite;
+      box-shadow: 0 0 40px rgba(0, 216, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+
+    @keyframes pulse-plan {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .onboard-screen h2 {
+      font-size: 28px;
+      background: linear-gradient(90deg, var(--cyan), var(--magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 600;
+    }
+
+    .onboard-screen p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 280px;
+    }
+
+    .input-group {
+      width: 100%;
+      max-width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .input-group input {
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 216, 255, 0.3);
+      color: var(--fg);
+      font-size: 14px;
+      font-family: inherit;
+      transition: 0.3s;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--cyan);
+    }
+
+    .input-group input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .cta-btn {
+      padding: 14px 28px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      border: none;
+      color: var(--canvas);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 216, 255, 0.4);
+    }
+
+    .cta-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Today screen */
+    .productivity-ring {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin: 0 auto 20px;
+    }
+
+    .productivity-ring svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .ring-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .ring-percent {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .ring-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .task-add {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .task-input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: rgba(0, 216, 255, 0.1);
+      border: 1px solid rgba(0, 216, 255, 0.3);
+      color: var(--fg);
+      font-size: 13px;
+      font-family: inherit;
+      transition: 0.3s;
+    }
+
+    .task-input:focus {
+      outline: none;
+      background: rgba(0, 216, 255, 0.15);
+      border-color: var(--cyan);
+    }
+
+    .task-input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .priority-select {
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(0, 216, 255, 0.1);
+      border: 1px solid rgba(0, 216, 255, 0.3);
+      color: var(--fg);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .priority-select:focus {
+      outline: none;
+      border-color: var(--cyan);
+    }
+
+    .add-task-btn {
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      border: none;
+      color: var(--canvas);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .add-task-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 216, 255, 0.3);
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .task-item {
+      background: linear-gradient(135deg, rgba(0, 216, 255, 0.1) 0%, rgba(0, 216, 255, 0.05) 100%);
+      border: 1px solid rgba(0, 216, 255, 0.2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transition: 0.3s;
+    }
+
+    .task-item.high { border-left: 4px solid var(--magenta); }
+    .task-item.medium { border-left: 4px solid var(--gold); }
+    .task-item.low { border-left: 4px solid var(--cyan); }
+
+    .task-item.done {
+      opacity: 0.6;
+      background: rgba(0, 216, 255, 0.05);
+    }
+
+    .task-checkbox {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 2px solid rgba(0, 216, 255, 0.4);
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .task-item:hover .task-checkbox {
+      border-color: var(--cyan);
+    }
+
+    .task-checkbox.checked {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      color: var(--canvas);
+    }
+
+    .task-content {
+      flex: 1;
+    }
+
+    .task-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--fg);
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .task-item.done .task-text {
+      text-decoration: line-through;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .task-meta {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .task-remove {
+      background: rgba(255, 31, 90, 0.1);
+      border: 1px solid var(--magenta);
+      color: var(--magenta);
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: 0.3s;
+      flex-shrink: 0;
+    }
+
+    .task-remove:hover {
+      background: rgba(255, 31, 90, 0.2);
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, rgba(0, 216, 255, 0.15) 0%, rgba(0, 216, 255, 0.05) 100%);
+      border: 1px solid rgba(0, 216, 255, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .premium-lock {
+      background: linear-gradient(135deg, rgba(245, 192, 0, 0.15) 0%, rgba(255, 31, 90, 0.1) 100%);
+      border: 1px solid rgba(245, 192, 0, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .premium-lock h3 {
+      color: var(--gold);
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    .premium-lock p {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 16px;
+    }
+
+    .unlock-btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--gold), var(--magenta));
+      border: none;
+      color: var(--canvas);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .unlock-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(245, 192, 0, 0.3);
+    }
+
+    @media (max-width: 480px) {
+      .container { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Daily Planner</h1>
+        <div class="date-display" id="dateDisplay">Today</div>
+      </div>
+      <button class="header-btn" id="settingsBtn">⚙️</button>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="today">Today</button>
+      <button class="nav-tab" data-tab="week">Weekly</button>
+      <button class="nav-tab" data-tab="settings">Settings</button>
+    </div>
+
+    <div class="content">
+      <!-- Onboarding -->
+      <div class="screen onboard-screen active" id="onboard">
+        <div class="planner-icon">📅</div>
+        <div>
+          <h2>Welcome to Daily Planner</h2>
+          <p>Master your day with smart task management</p>
+        </div>
+        <div class="input-group">
+          <input type="text" id="nameInput" placeholder="Your name">
+        </div>
+        <button class="cta-btn" id="startBtn">Start Planning</button>
+      </div>
+
+      <!-- Today -->
+      <div class="screen" id="today">
+        <div class="productivity-ring">
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="var(--cyan)" stroke-width="8" stroke-dasharray="141.3 188.4" stroke-linecap="round"/>
+          </svg>
+          <div class="ring-text">
+            <div class="ring-percent" id="productivityPercent">0%</div>
+            <div class="ring-label">Complete</div>
+          </div>
+        </div>
+
+        <div class="task-add">
+          <input type="text" class="task-input" id="taskInput" placeholder="Add a task...">
+          <select class="priority-select" id="prioritySelect">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+          </select>
+          <button class="add-task-btn" id="addTaskBtn">+</button>
+        </div>
+
+        <div class="task-list" id="taskList"></div>
+      </div>
+
+      <!-- Weekly -->
+      <div class="screen" id="week">
+        <h2 style="margin-bottom: 20px; color: var(--cyan);">Weekly Summary</h2>
+        <div class="stat-grid" id="weeklyStats"></div>
+        <h3 style="color: var(--green); margin-bottom: 16px; margin-top: 24px;">Productivity Trend</h3>
+        <div id="trendsChart" style="height: 200px; background: rgba(0,216,255,0.05); border-radius: 8px; border: 1px solid rgba(0,216,255,0.1); padding: 16px; display: flex; align-items: flex-end; gap: 8px;"></div>
+        <div id="premiumWeekly" style="margin-top: 20px;"></div>
+      </div>
+
+      <!-- Settings -->
+      <div class="screen" id="settings">
+        <h2 style="margin-bottom: 20px; color: var(--cyan);">Settings</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: rgba(0,216,255,0.1); border-radius: 8px; padding: 12px;">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 8px;">Name</p>
+            <p style="font-size: 16px; color: var(--cyan); font-weight: 600;" id="settingsName">—</p>
+          </div>
+          <div style="background: rgba(0,216,255,0.1); border-radius: 8px; padding: 12px;">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 8px;">Days Active</p>
+            <p style="font-size: 16px; color: var(--cyan); font-weight: 600;" id="settingsDays">12 days 🔥</p>
+          </div>
+          <div style="background: rgba(0,216,255,0.1); border-radius: 8px; padding: 12px;">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 8px;">Tasks Completed</p>
+            <p style="font-size: 16px; color: var(--cyan); font-weight: 600;" id="settingsCompleted">0</p>
+          </div>
+          <button class="cta-btn" id="resetBtn" style="margin-top: 12px;">Reset Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+
+    const S = {
+      name: localStorage.getItem('dp_name') || '',
+      tasks: JSON.parse(localStorage.getItem('dp_tasks')) || [],
+      completed: parseInt(localStorage.getItem('dp_completed')) || 0,
+      premium: localStorage.getItem('dp_premium') === 'true',
+    };
+
+    function save() {
+      localStorage.setItem('dp_name', S.name);
+      localStorage.setItem('dp_tasks', JSON.stringify(S.tasks));
+      localStorage.setItem('dp_completed', S.completed);
+      localStorage.setItem('dp_premium', S.premium);
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function updateDate() {
+      const today = new Date();
+      const options = { weekday: 'short', month: 'short', day: 'numeric' };
+      document.getElementById('dateDisplay').textContent = today.toLocaleDateString('en-US', options);
+    }
+
+    function renderTasks() {
+      const list = document.getElementById('taskList');
+      if (S.tasks.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.6); padding: 40px 0;">No tasks yet. Add one to get started!</p>';
+      } else {
+        list.innerHTML = S.tasks.map((t, i) => `
+          <div class="task-item ${t.priority} ${t.done ? 'done' : ''}">
+            <div class="task-checkbox ${t.done ? 'checked' : ''}" onclick="toggleTask(${i})">
+              ${t.done ? '✓' : ''}
+            </div>
+            <div class="task-content">
+              <div class="task-text">${t.text}</div>
+              <div class="task-meta">${t.priority.charAt(0).toUpperCase() + t.priority.slice(1)} priority</div>
+            </div>
+            <button class="task-remove" onclick="removeTask(${i})">✕</button>
+          </div>
+        `).join('');
+      }
+      updateProductivity();
+    }
+
+    function toggleTask(idx) {
+      S.tasks[idx].done = !S.tasks[idx].done;
+      if (S.tasks[idx].done) S.completed++;
+      save();
+      renderTasks();
+    }
+
+    function removeTask(idx) {
+      S.tasks.splice(idx, 1);
+      save();
+      renderTasks();
+    }
+
+    function updateProductivity() {
+      if (S.tasks.length === 0) {
+        document.getElementById('productivityPercent').textContent = '0%';
+        document.querySelector('#today svg circle:nth-of-type(2)').setAttribute('stroke-dasharray', '0 188.4');
+      } else {
+        const pct = Math.round((S.tasks.filter(t => t.done).length / S.tasks.length) * 100);
+        document.getElementById('productivityPercent').textContent = pct + '%';
+        document.querySelector('#today svg circle:nth-of-type(2)').setAttribute('stroke-dasharray', `${(pct / 100) * 188.4} 188.4`);
+      }
+    }
+
+    function addTask() {
+      const text = document.getElementById('taskInput').value.trim();
+      const priority = document.getElementById('prioritySelect').value;
+
+      if (!text) {
+        alert('Please enter a task');
+        return;
+      }
+
+      if (!S.premium && S.tasks.length >= 10) {
+        showUnlockModal();
+        return;
+      }
+
+      S.tasks.push({ text, priority, done: false });
+      save();
+      document.getElementById('taskInput').value = '';
+      renderTasks();
+    }
+
+    function updateWeekly() {
+      const stats = [
+        { label: 'Tasks Done', value: S.completed },
+        { label: 'Avg Daily', value: Math.ceil(S.completed / 7) },
+        { label: 'Productivity', value: '68%' },
+        { label: 'Streak', value: '12 days 🔥' },
+      ];
+      document.getElementById('weeklyStats').innerHTML = stats.map(s => `
+        <div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>
+      `).join('');
+
+      const chart = document.getElementById('trendsChart');
+      const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+      const values = [0.75, 0.82, 0.68, 0.95, 0.88, 0.72, 0.65];
+      chart.innerHTML = days.map((d, i) => `
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;">
+          <div style="width: 100%; background: linear-gradient(180deg, var(--cyan), var(--green)); border-radius: 4px 4px 0 0; height: ${values[i] * 150}px; min-height: 8px;"></div>
+          <span style="font-size: 10px; color: rgba(255,255,255,0.6);">${d}</span>
+        </div>
+      `).join('');
+
+      if (!S.premium) {
+        document.getElementById('premiumWeekly').innerHTML = `
+          <div class="premium-lock">
+            <h3>🔓 Advanced Analytics</h3>
+            <p>Get detailed insights, habit tracking, and smart scheduling</p>
+            <button class="unlock-btn" onclick="unlock()">Unlock Pro — $2.99</button>
+          </div>
+        `;
+      }
+    }
+
+    function unlock() {
+      S.premium = true;
+      save();
+      renderTasks();
+      updateWeekly();
+    }
+
+    function showUnlockModal() {
+      alert('Unlock Pro ($2.99) for unlimited tasks and advanced features');
+      unlock();
+    }
+
+    // Tab switching
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const target = tab.dataset.tab;
+        if (target === 'today') showScreen('today');
+        else if (target === 'week') {
+          updateWeekly();
+          showScreen('week');
+        } else if (target === 'settings') {
+          document.getElementById('settingsName').textContent = S.name || '—';
+          document.getElementById('settingsCompleted').textContent = S.completed;
+          showScreen('settings');
+        }
+      });
+    });
+
+    // Onboarding
+    document.getElementById('startBtn').addEventListener('click', () => {
+      const name = document.getElementById('nameInput').value.trim();
+      if (!name) {
+        alert('Please enter your name');
+        return;
+      }
+      S.name = name;
+      save();
+      updateDate();
+      renderTasks();
+      showScreen('today');
+    });
+
+    document.getElementById('addTaskBtn').addEventListener('click', addTask);
+    document.getElementById('taskInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addTask();
+    });
+
+    document.getElementById('settingsBtn').addEventListener('click', showUnlockModal);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (confirm('Reset all data?')) {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('dp_')) localStorage.removeItem(k);
+        });
+        S.tasks = [];
+        S.completed = 0;
+        showScreen('onboard');
+      }
+    });
+
+    // Initialize
+    if (S.name) {
+      updateDate();
+      renderTasks();
+      showScreen('today');
+    }
+  </script>
+</body>
+</html>
