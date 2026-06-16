@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Last updated**: June 2026. This document reflects the current state of a multi-project creative platform spanning RHYTHMIX marketing, STARLIGHTMIX Studio, consumer apps, and portfolio projects.
+
 ## Quick Start (For Claude)
 
 - **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
@@ -38,45 +40,134 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 
 | Path | What it is |
 |---|---|
-| `studio/` | **STARLIGHTMIX Studio** web app — Next.js 15 static export → Cloudflare Pages. Primary software project. |
-| `rhythmix-<name>-<length>/` | HyperFrames video Promo/Cut folders (50+ folders). `rhythmix-overview-60s/` is the canonical example. |
-| `rhythmix-teaser-60s/DESIGN.md` | Brand design system (palette, type, motion). Lock all styleguides to this. |
+| **CORE SOFTWARE PROJECTS** | |
+| `studio/` | **STARLIGHTMIX Studio** web app — Next.js 15.1.6 static export → Cloudflare Pages. Primary SaaS: AI music video generator. User pastes Replicate token, uploads track, picks theme, gets MP4. |
+| `agent-builder/` | **Agent Builder** — Next.js full-stack app for configuring and testing Claude agents. Auth setup, migrations, components. See `agent-builder/README.md`. |
+| **VIDEO ASSETS & MARKETING** | |
+| `rhythmix-<name>-<length>/` | HyperFrames video Promo/Cut folders (52 folders). `rhythmix-overview-60s/` is the canonical 60s landscape example. Organized by series: S-series (5-scene landscape), F-series (portrait variants), V-series (alternates), venue-series (brand sub-categories). |
+| `rhythmix-teaser-60s/DESIGN.md` | Brand design system (palette, typography, motion eases, color tokens). Lock all site styleguides to this unless creating a sub-brand. |
+| **CONSUMER & PORTFOLIO APPS** | |
 | `apps/` | Small standalone HTML apps: `dreams.html`, `hum.html`, `live.html`, `resonate.html`, plus `roomtone/` (PWA) and `untapped/` (portfolio of 10 app concepts with landing pages). |
-| `livestock/` | **HerdCheck** — livestock screening PWA (lameness, mastitis, calving predictor for smallholders). Full offline PWA with service worker, `scoring.js`, `vision.js`, `i18n.js`. |
-| `recovery/` | **Reset** — recovery app prototype for team sport (iOS-style, full PWA). |
-| `recovery-ios/` | Capacitor iOS wrapper for the Reset recovery app. Used by Codemagic iOS build (`codemagic.yaml`). |
-| `capacitor/` | Capacitor iOS wrapper for STARLIGHTMIX Studio. Wraps `studio/out/` via `www/` sync. |
-| `sites/<slug>/` | Site-build pipeline output (sitemap → wireframe → styleguide → HTML pages). |
-| `infra/` | Self-hosted wiki setup: Wiki.js + Postgres + Caddy via Docker Compose (`infra/wiki/`). |
-| `specs/<slug>/` | Spec-driven feature folders (`requirements.md` + `design.md` + `tasks.md`). Current specs: `rhythmix-app/`, `roomtone/`, `codex-app/`. |
-| `launch-kit/` | Launch kit assets for `codex/`, `hum/`, `rhythmix/`. |
-| `video/` | Dormant Remotion 4 + React 19 starter. `MyComposition` returns `null`. Not used for Promos (see ADR-0001). |
-| `text.txt`, `text 2.txt`, `text 3.txt` | Legacy RHYTHMIX landing-page HTML/CSS fragments (pre-pipeline). Reference only. |
-| `*.html` at root | Live marketing site pages served at `rhythmixapp.com.au` (see full list below). |
-| `thumbnails/` | Rendered thumbnail PNGs for the frequency/story video series. |
-| `videos/` | Rendered MP4s linked from `README.md`. |
-| `.agents/skills/` | Source-of-truth skill bundles (hand-edited / synced from upstreams). |
-| `.claude/skills/` | Mostly symlinks into `.agents/skills/` plus local-only skills. |
-| `.claude/agents/` | FleetView sub-agent definition files (one `.md` per agent type). |
-| `docs/` | ADRs (`docs/adr/`), agent docs (`docs/agents/`), security notes (`docs/security/shannon.md`), reference copy (`docs/refs/`). |
-| `scripts/` | Repo-level scripts: `openclaw-install.sh`, `render-thumbnails.mjs`, `build-announcement.mjs`, `build-manifesto.mjs`. |
+| `livestock/` | **HerdCheck** — livestock screening PWA for smallholder farmers (lameness, mastitis, calving predictor). Offline-first: `index.html`, `app.js`, `scoring.js`, `vision.js`, `i18n.js`, `sw.js`, `manifest.webmanifest`. Species: cattle, buffalo, sheep, goat. |
+| `recovery/` | **Reset** — recovery/wellness tracking PWA for team sport athletes (iOS-style UI). Full PWA with offline support. Served at `/recovery/` from repo root. |
+| `capacitor-buddies/` | **Buddies** — Capacitor iOS wrapper + web app for a companion/buddy system (emerging project). See `capacitor-buddies/README.md` for status. |
+| **DEPLOYMENT WRAPPERS** | |
+| `recovery-ios/` | Capacitor iOS wrapper for Reset app. Unsigned debug build via Codemagic (`codemagic.yaml`). |
+| `capacitor/` | Capacitor iOS wrapper for STARLIGHTMIX Studio. Syncs `studio/out/` via `www/`. Commands: `pnpm build:web`, `pnpm sync:web`, `pnpm open:ios`. |
+| **SITE GENERATION & CONTENT** | |
+| `sites/<slug>/` | Site-build pipeline output (sitemap → wireframe → styleguide → HTML pages). Self-contained with inline styles and CSS `--token` vars. Current: `codex-of-reality/` (production PWA), `rhythmix/`, `hum/`, `codex/` (earlier outputs). |
+| `specs/<slug>/` | Spec-driven feature folders. Each: `requirements.md` (R1, R2, …), `design.md`, `tasks.md` (T1, T2, …). Current: `rhythmix-app/`, `roomtone/`, `codex-app/`. |
+| `launch-kit/` | Launch kit assets for `codex/`, `hum/`, `rhythmix/` (cover art, metadata, promo copy). |
+| `email-templates/` | HTML email templates for transactional and campaign messaging. |
+| **INFRASTRUCTURE & REFERENCE** | |
+| `infra/` | Self-hosted wiki: Wiki.js + Postgres + Caddy via Docker Compose at `infra/wiki/`. Requires VPS with public IP and CNAME. |
+| `config/` | Configuration files: `openmanus-*.toml` (browser agent configs), other env-based config. |
+| `video/` | **Dormant** — Remotion 4 + React 19 starter. `MyComposition` returns `null`. Do NOT use for new Promos (see ADR-0001); use HyperFrames instead. |
+| `thumbnails/` | Rendered thumbnail PNGs for video series. |
+| `videos/` | Rendered MP4s (Promo outputs, tutorials). Linked from `README.md`. |
+| `content/` | Miscellaneous content assets, reference material. |
 | `graphify-out/` | Generated knowledge-graph snapshot. Do not hand-edit. |
-| `content/` | Additional content assets. |
+| `.agents/skills/` | Source-of-truth skill bundles (upstream-synced or hand-edited). Tracked in `skills-lock.json`. |
+| `.claude/skills/` | Skill definitions: symlinks into `.agents/skills/` (synced) + local-only skills (direct). |
+| `.claude/agents/` | FleetView sub-agent definition files (managed by platform; do not hand-edit). |
+| `.claude/mcp/` | Custom MCP servers: `stepfun/` (Step 3.7 Flash), `creative-stack/` (Replicate + ElevenLabs). |
+| `.superpowers/` | Superpowers project workspace (if using). |
+| `docs/` | Guides and policy: `adr/` (ADRs), `agents/` (operating procedures), `security/shannon.md` (pentesting ref), `refs/` (copy, scripts). |
+| `scripts/` | Repo-level utilities: `openclaw-install.sh`, `render-thumbnails.mjs`, `build-announcement.mjs`, build automation. |
+| `*.html` at root | Live marketing site pages served at **`rhythmixapp.com.au`** (GitHub Pages). ~25 pages covering RHYTHMIX, Studio, apps, policies, downloads. |
+| `text.txt`, `text 2.txt`, `text 3.txt` | **Legacy** — pre-pipeline RHYTHMIX landing-page HTML/CSS fragments. Reference only. |
+| `builds/` | Occasional build artifacts or cached renders. Gitignored. |
 
-**Reference docs at root:**
-- `CONTEXT.md` — domain language (Promo, Cut, Narration, Hook)
-- `CREATIVE-AI-STACK.md` — iPhone-oriented creative AI toolchain
-- `KOKORO-SETUP.md` — Kokoro TTS installation & usage for HyperFrames narration
-- `SETUP-AGENT-TARS.md` — Agent TARS / UI-TARS desktop setup
-- `SETUP-HERMES.md` — Hermes Agent CLI setup
-- `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
-- `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
-- `AWESOME-AI-HARDWARE.md` — AI hardware reference
-- `SCRIPT.md`, `VIDEOS.md` — script and video asset references
+**Reference docs at root** (100+ files; key ones listed here):
 
-## STARLIGHTMIX Studio Web App (`studio/`)
+*Core guidance:*
+- `CLAUDE.md` — this file. Updated periodically as projects evolve.
+- `CONTEXT.md` — domain language (Promo, Cut, Narration, Hook). Read before designing new video terminology.
+- `START-HERE.md` — entry point for recent major projects (e.g., avatar enhancements).
 
-A mobile-first web wrapper around the STARLIGHTMIX Studio Node CLI. Lifetime buyers paste their own Replicate token, upload a track, pick a theme, and get a generated AI music video — no installs, no server-side audio storage.
+*Setup & Environment:*
+- `CREATIVE-AI-STACK.md` — iPhone-oriented creative AI toolchain (user workflow reference).
+- `KOKORO-SETUP.md` — Kokoro TTS installation & usage for HyperFrames narration.
+- `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox (Mac-only, zero API cost).
+- `SYSTEM-SETUP.md` — Development environment setup.
+- `SUPABASE-SETUP.md` — Backend database configuration (if using).
+- `ANDROID-BUILD-SETUP.md` — Android APK build infrastructure.
+- `CAPACITOR-IOS-SETUP.md` — iOS Capacitor build setup.
+
+*Extended Guides:*
+- `SETUP-AGENT-TARS.md` — Agent TARS / UI-TARS desktop agent setup (ByteDance).
+- `SETUP-HERMES.md` — Hermes Agent CLI setup (Nous Research, Telegram/Discord gateways).
+- `OPENMANUS-MCP-INTEGRATION.md` — Browser automation agent configuration.
+
+*Content & Assets:*
+- `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief (voice profiles, copy).
+- `SCRIPT.md`, `VIDEOS.md` — video asset references and script library.
+- `AWESOME-AI-HARDWARE.md` — AI hardware reference (cameras, lighting, recording gear).
+
+*App & Feature Documentation* (projects in active development; see `START-HERE.md` for status):
+- `AVATAR-*` — Avatar integration guides (StoryStudio, VoiceJournal, SmartGrocery).
+- `100_APPS_MISSION.md`, `100_APP_BUILD_TEMPLATE.md` — 100 app strategy and scaffolding.
+- `BEDTIME_STORIES_*.md` — Bedtime Stories monetization & launch strategy.
+- `BUDDY-*.md` — Buddy system (freemium model, integration, testing).
+- `APK_BUILD_*.md`, `APP_STORE_METADATA.md` — Android/iOS app distribution.
+- `STARLIGHTMIX-STUDIO.md` — Studio product overview and roadmap.
+- `YOUTUBE_*.md` — YouTube strategy (content calendar, monetization, Shorts audit).
+
+*Quality & Audits:*
+- `TESTING-GUIDE.md`, `USER-GUIDE.md` — QA and user onboarding.
+- `SUNNY_*.md` — Project-specific validation (test runs, artwork fixes, next steps).
+- `WORLD_CLASS_FEATURES_SPEC.md` — Product completeness checklist.
+
+(Full list of root .md files is 100+; use `ls *.md | sort` to browse or `grep "^# " *.md | head -20` to scan headings.)
+
+## Major Software Projects
+
+### Agent Builder (`agent-builder/`)
+
+A full-stack Next.js app for designing, configuring, and deploying Claude agents with a visual interface.
+
+**Stack:**
+- Next.js 15 with App Router
+- React 19, TypeScript, Tailwind v4
+- Database: PostgreSQL (via Supabase or local)
+- Auth: integrated (see `AUTH-SETUP.md`)
+
+**Key features:**
+- Agent configuration UI
+- Testing/simulation interface
+- Deployment management
+- Migration system (`migrations/` directory)
+- Lighthouse performance audits
+
+**Commands** (run from `agent-builder/`):
+```bash
+pnpm install
+pnpm dev          # http://localhost:3000
+pnpm build
+pnpm lint
+```
+
+See `agent-builder/BRIEF.md` and `agent-builder/README.md` for detailed status and roadmap.
+
+### STARLIGHTMIX Studio Web App (`studio/`)
+
+A mobile-first web app for non-technical music creators. Lifetime buyers:
+1. Paste their own Replicate API token
+2. Upload a track (stored in IndexedDB, never on our servers)
+3. Pick a theme/style
+4. Get a generated AI music video (MP4)
+
+**This is the primary revenue product.**
+
+#### Stack
+
+- **Next.js 15.1.6** (App Router), `output: "export"` (static HTML/JS, no server runtime)
+- **React 19.2.3**, **TypeScript 5.9.3**, **Tailwind v4**
+- **Vitest** + jsdom for testing
+- **FFmpeg.js** + **IDB** for client-side video processing
+- Build output → `studio/out/` → deployed to Cloudflare Pages
+
+**Version freeze:** Lock Next.js at 15.1.6, React at 19.2.3 until major feature work requires upgrading.
 
 ### Stack
 
@@ -152,31 +243,113 @@ Standalone web apps (separate from the main marketing site):
 - `apps/roomtone/` — Roomtone PWA (full service worker, manifest, icons)
 - `apps/untapped/` — Portfolio of 10 app concepts: TYMPAN, HERD, AXLE, DOCKET, LULL, PLUMB, RACK, SOLE, SPOT, STACK. Each has a `*.html` prototype, `*-landing.html`, and `*.md` brief.
 
-## Standalone Projects
+## Standalone Projects & Portfolio Apps
+
+The portfolio encompasses multiple emerging and mature apps, each with its own PWA implementation and deployment strategy.
 
 ### HerdCheck (`livestock/`)
 
-Phone-camera screening app for smallholder dairy and small-ruminant farmers. Targets ~500M smallholders globally with no existing tooling. Built as an offline-first PWA.
+**Pitch**: Phone-camera screening app for smallholder dairy and small-ruminant farmers. Targets ~500M smallholders globally with minimal or no existing tooling.
 
-**Checks**: lameness (Sprecher 5-point locomotion scale), mastitis (Canvas image heuristics + visual signs), calving predictor (gestation day + behavioural signs).
+**Health checks**:
+- **Lameness** — Sprecher 5-point locomotion scale + video analysis
+- **Mastitis** — Canvas image heuristics + visual signs (swelling, discoloration)
+- **Calving predictor** — gestation day + behavioral indicators
 
-**Key files**: `index.html`, `app.js`, `app.css`, `db.js`, `i18n.js`, `scoring.js`, `vision.js`, `sw.js`, `manifest.webmanifest`.
+**Tech**:
+- Offline-first PWA: `index.html`, `app.js`, `app.css`, `db.js`
+- Image analysis: `vision.js` (Canvas heuristics)
+- Scoring: `scoring.js` (multi-species gestation/locomotion scoring)
+- i18n: `i18n.js` (multi-language support)
+- Service worker: `sw.js`, `manifest.webmanifest`
 
 **Species supported**: cattle (283d), buffalo (310d), sheep (147d), goat (150d).
 
+**Status**: Production-ready for pilot deployments.
+
 ### Reset — Recovery App (`recovery/`)
 
-iOS-style recovery tracking prototype for team sport. Full PWA with `index.html` and offline capability. Served at `/recovery/` from repo root.
+**Pitch**: Wellness & recovery tracking for team sport athletes. iOS-style UI, full offline PWA.
+
+**Features**:
+- Session logging (training, recovery, nutrition)
+- Athlete wellness dashboard
+- Team coach view (if implemented)
+
+**Tech**: Full PWA with `index.html`, offline state, localStorage persistence.
+
+**Status**: Prototype → iOS Capacitor wrapper in `recovery-ios/` (Codemagic build pipeline).
+
+**Deployment**: Served at `/recovery/` from repo root (GitHub Pages); iOS via Codemagic.
+
+### Buddies System (`capacitor-buddies/`)
+
+**Pitch**: Companion app for user engagement and onboarding (emerging).
+
+**What it does**:
+- Personalized buddy/tutor avatars
+- Freemium engagement model
+- Progressive disclosure of features
+
+**Tech**: Capacitor iOS wrapper + web app.
+
+**Status**: In active development. See `capacitor-buddies/README.md` and `BUDDY-*.md` files for feature roadmap.
+
+**Related docs**: `BUDDY-FREEMIUM-IMPLEMENTATION.md`, `BUDDY-SYSTEM-INTEGRATION.md`, `BUDDY-SYSTEM-LAUNCH.md`, `BUDDY-FREEMIUM-TEST-PLAN.md`.
+
+### Avatar-Enhanced Consumer Apps (Emerging Portfolio)
+
+Three mobile-first web apps with professional AI tutor avatars (as of June 2026):
+
+| App | Tutor Persona | Theme | Status |
+|-----|---|---|---|
+| **StoryStudio** | Creative Producer | Pink + Rose | ✅ Avatar ready |
+| **VoiceJournal** | Wellness Coach | Lavender + Violet | ✅ Avatar ready |
+| **SmartGrocery** | Shopping Assistant | Green + Emerald | ✅ Avatar ready |
+
+**Entry point**: See `START-HERE.md` for quick links. Each app is in `apps/<name>.html` or its own folder. Avatars hosted at `/avatars/index.html` (showcase).
+
+**Related docs**: `AVATAR-ENHANCEMENT-SUMMARY.md`, `AVATAR-INTEGRATION-GUIDE.md`, `AVATAR-QUICK-START.md`, `AVATAR-LAYOUT-GUIDE.txt`.
+
+**Status**: Proof-of-concept complete. Ready for user testing or product iteration.
 
 ### Codex of Reality (`sites/codex-of-reality/`)
 
-Full site and PWA built via the site-build pipeline. Includes:
-- `home.html` — 9-section landing page with embedded Coherence Engine demo
-- `app.html` — full app
-- `launch/` — launch video assets and voice generation scripts
-- `sw.js`, `PRIVACY.md`, `TERMS.md`, `sitemap.md`, `styleguide.md`, `wireframes/`
+**Pitch**: AI-powered morning briefing & coherence engine for mindfulness.
 
-See `MORNING.md` for a quickstart guide to running it locally.
+**Architecture**:
+- **`home.html`** — 9-section landing page with embedded Coherence Engine demo
+- **`app.html`** — full Coherence Engine (daily affirmations, journal prompts, guided meditations)
+- **`launch/`** — launch video assets and TTS scripts
+- **PWA**: `sw.js`, `manifest.webmanifest`, full offline support
+- **Compliance**: `PRIVACY.md`, `TERMS.md`, `sitemap.md`, `styleguide.md`, `wireframes/`
+
+**Pipeline**: Built via the site-build pipeline (`sitemap → wireframe → styleguide → HTML`).
+
+**Status**: Production-ready. Production deployment at `sites/codex-of-reality/`; preview via `python3 -m http.server 8000 --bind 127.0.0.1 --directory sites/codex-of-reality`.
+
+**Entry point**: `MORNING.md` for full quickstart, feature roadmap, voice profiles.
+
+### Portfolio of 10 App Concepts (`apps/untapped/`)
+
+The `untapped/` portfolio showcases 10 emerging app ideas, each with a prototype + landing page + brief:
+
+| # | App Name | Domain | Status |
+|---|---|---|---|
+| 1 | TYMPAN | Audio wellness | Concept |
+| 2 | HERD | Community | Concept |
+| 3 | AXLE | Logistics | Concept |
+| 4 | DOCKET | Productivity | Concept |
+| 5 | LULL | Sleep/wellness | Concept |
+| 6 | PLUMB | Maintenance | Concept |
+| 7 | RACK | Organization | Concept |
+| 8 | SOLE | Fitness | Concept |
+| 9 | SPOT | Parking/wayfinding | Concept |
+| 10 | STACK | Knowledge mgmt | Concept |
+
+**Files**: Each has `<name>.html` (prototype), `<name>-landing.html` (marketing page), `<name>.md` (brief).
+
+**See**: `APPS_PORTFOLIO_SUMMARY.md`, `100_APPS_MISSION.md`, `100_APP_BUILD_TEMPLATE.md`.
 
 ## HyperFrames Video Pipeline
 
@@ -355,17 +528,33 @@ The `.claude/agents/` directory contains sub-agent definition files for FleetVie
 
 ## MCP Servers (`.mcp.json`)
 
-| Key | Command | Purpose |
-|---|---|---|
-| `creative-stack` | `node .claude/mcp/creative-stack/server.mjs` | Replicate + ElevenLabs tools (image, video, music, TTS). Enabled in `settings.json`. |
-| `higgsfield` | `higgsfield-mcp` | Higgsfield Soul (text-to-image) + DOP (image-to-video). Needs `.env`: `HIGGSFIELD_API_KEY`, `HIGGSFIELD_SECRET`. |
-| `pollinations` | `npx -y @pollinations/model-context-protocol` | Free tier: FLUX, Sana, Nova Reel, Suno v5, Qwen3-TTS. Egress-gated in sandbox. |
-| `playwright` | `npx -y @playwright/mcp@latest` | Base Playwright browser automation. |
-| `claude-playwright` | `node node_modules/claude-playwright/dist/mcp/server.cjs` | Session/profile/test management on top of Playwright. Run `npm install` first. |
-| `context7` | HTTP `https://mcp.context7.com/mcp` | Current library documentation. Prefer over training knowledge. |
-| `openmanus` | `python -m app.mcp.server` (from `/tmp/OpenManus`) | LLM-driven browser automation agent. Tools: navigate, click, fill, extract, screenshot, search. Config: `.mcp.json`. Setup: `OPENMANUS-MCP-INTEGRATION.md`. |
+Local and remote MCP servers configured for creative asset generation, browser automation, and documentation lookup. **Enabled servers** are registered in `.mcp.json` at repo root.
 
-**Rule:** Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging. Use OpenManus for autonomous browser tasks, research automation, and multi-step web workflows — particularly useful for RHYTHMIX content research and market intelligence gathering.
+| Key | Command | Purpose | Status |
+|---|---|---|---|
+| `stepfun` | `node .claude/mcp/stepfun/server.mjs` | **Step 3.7 Flash** — script & story generation, pitch-deck copy. Tools: `flash_script` (narration/dialogue/shot-list), `flash_chat` (long-context story dev), `flash_episode_brief` (structured episodes). Needs `.env`: `STEP_API_KEY`, `STEP_BASE_URL`. | ✅ Configured |
+| `creative-stack` | `node .claude/mcp/creative-stack/server.mjs` | **Replicate + ElevenLabs** — image, video, music, voice generation. Tools: image (FLUX 1.1 Pro, Sana), video (HunyuanVideo, Nova Reel), music (MusicGen), TTS (ElevenLabs multi-lang). Enabled in `settings.json`. | ✅ Configured |
+| `higgsfield` | `higgsfield-mcp` | **Higgsfield Soul** (text-to-image) + **DOP** (image-to-video) + character refs. Needs `.env`: `HIGGSFIELD_API_KEY`, `HIGGSFIELD_SECRET`. | ✅ Configured |
+| `pollinations` | `npx -y @pollinations/model-context-protocol` | **Free anonymous tier** — image (FLUX, Sana), video (Nova Reel), text, audio, TTS (Qwen3-TTS), music (Suno v5). No API key. ⚠️ Sandbox egress: `*.pollinations.ai` blocked; tools available, runtime gated. | ✅ Configured |
+| `playwright` | `npx -y @playwright/mcp@latest` | **Base Playwright** — browser automation (click, fill, navigate, screenshot, wait-for). Default BASE_URL: `http://localhost:8000`. | ✅ Configured |
+| `claude-playwright` | `node node_modules/claude-playwright/dist/mcp/server.cjs` | **Session-aware Playwright** — extended with session/profile/test management. Requires `npm install` at repo root first. | ✅ Configured |
+| `context7` | HTTP `https://mcp.context7.com/mcp` | **Library documentation lookup** — Current docs for npm, Python, Rust, Go, cloud SDKs. Free API key: put `CONTEXT7_API_KEY` in `.env`. | ✅ Configured |
+
+### MCP Usage Rules
+
+- **Context7**: Always use for library/API docs, setup instructions, version-specific code gen — *without the user asking*. Not for business logic or debugging; training knowledge is often stale.
+- **Creative stack (Replicate + ElevenLabs)**: Use `/dream` skill for one-shot assets; `/rhythmix-author` for end-to-end promos with TTS → HyperFrames → render.
+- **Higgsfield**: Text-to-image (Soul) → image-to-video (DOP) + character refs. Pair with `higgsfield-to-hyperframes` skill to wire outputs into HyperFrames compositions.
+- **Step 3.7 Flash**: Use `flash_episode_brief` (reasoning='high') for multi-act episode structure, then feed into `/site-build` or `/rhythmix-site` for animated promo sites.
+- **Playwright**: Low-level browser control. Prefer `claude-playwright` for structured testing; reach for `openmanus` (browser agent, not listed above but available via cloud MCP) for autonomous web research and multi-step workflows.
+
+### MCP Server Troubleshooting
+
+If a server fails to start:
+1. Check `.env` and `.env.example` — ensure all required API keys are set (REPLICATE_API_TOKEN, ELEVENLABS_API_KEY, etc.).
+2. Verify `.mcp.json` syntax: `jq . .mcp.json` (must be valid JSON).
+3. For custom servers (stepfun, creative-stack), ensure `.claude/mcp/*/server.mjs` exists and dependencies are installed.
+4. Check the Claude Code harness logs for server connection errors.
 
 ## CI / Deployment
 
@@ -413,33 +602,293 @@ See `sites/README.md`.
 - `docs/security/shannon.md` — Shannon AI pentester (Keygraph) reference. Relevant for auditing the Studio Workers or license endpoint, **not** for static marketing pages.
 - `docs/refs/` — Reference copy and voiceover scripts.
 
-## Conventions
+## Growing Project Portfolio & Strategies
 
-- **New Promos** → HyperFrames folder at repo root (`rhythmix-<name>-<length>/`). Do not use Remotion.
-- **New site pages** → `sites/<slug>/` via pipeline, then promote to root `.html` files when ready for production.
-- **New app concepts** → `apps/<name>/` or `apps/<name>.html`. Standalone non-RHYTHMIX apps (livestock, recovery) go in their own root directory.
-- **Skill edits** → edit in `.agents/skills/<name>/` (the symlink target), never directly in `.claude/skills/` symlinks. Local-only skills are edited directly in `.claude/skills/<name>/`.
-- **Lockfile** → keep `video/package-lock.json` in sync with `video/package.json`. Keep root `package-lock.json` in sync too.
-- **Gitignore** → `node_modules/`, `.remotion/`, `graphify-out/cache/`, `.claude-playwright/` are excluded.
-- **Content warnings** → `README.md` flags that `tiktok-reels-shorts.mp4`, `instagram-facebook.mp4`, `youtube.mp4` contain unverified metrics/testimonials. Only `teaser-coming-soon*.mp4` is safe to publish as-is.
+As of June 2026, this workspace encompasses multiple emerging lines of business and strategic initiatives:
 
-## Subagent Model Routing
+### 100 Apps Initiative
 
-When spawning subagents via the `Agent` tool, default to **Haiku** for simple mechanical tasks and **Sonnet** (or omit for default) for tasks requiring judgment or creativity. This keeps parallel-task costs low.
+**Goal**: Launch a portfolio of 100+ consumer apps targeting different use cases and user segments.
 
-| Use Haiku (`model: "haiku"`) | Use Sonnet (default) |
+**Current state**:
+- 10 app concepts in `apps/untapped/` (TYMPAN, HERD, AXLE, DOCKET, etc.)
+- 3 avatar-enhanced apps in production testing (StoryStudio, VoiceJournal, SmartGrocery)
+- HerdCheck (livestock) and Reset (recovery) mature and deployable
+
+**Key docs**:
+- `100_APPS_MISSION.md` — strategy and TAM analysis
+- `100_APP_BUILD_TEMPLATE.md` — scaffolding and feature templates
+- `100_APP_MISSION_LAUNCH_STRATEGY.md` — go-to-market for each cohort
+
+**When building a new app**:
+1. Use `100_APP_BUILD_TEMPLATE.md` as scaffolding (copy structure, adapt branding).
+2. Create `app/<name>.html` or folder if PWA needed.
+3. Add to `apps/` portfolio with `<name>.md` brief.
+4. Consider avatar/tutor overlay (see AVATAR docs).
+5. Plan for Android APK + iOS distribution (see APK_BUILD_*, CAPACITOR-* docs).
+
+### YouTube Monetization & Content Strategy
+
+**Strategic focus**: Short-form (Shorts, Reels) + long-form tutorials + livestreams across 100 app portfolio.
+
+**Key docs**:
+- `YOUTUBE_CONTENT_CALENDAR.md` — production schedule
+- `YOUTUBE_MONETIZATION_ROADMAP.md` — revenue model (AdSense, sponsorships, affiliate)
+- `YOUTUBE_SHORTS_APPS_AUDIT.md` — viral content analysis
+- `YOUTUBE_GOLDMINES_2025.md` — trending niches and opportunity gaps
+- `YOUTUBE_PRODUCTION_GUIDE.md` — production workflow and editing
+
+**When creating YouTube content**:
+1. Check `YOUTUBE_CONTENT_CALENDAR.md` for scheduled topics.
+2. Use HyperFrames promos (`rhythmix-*`) for short-form assets.
+3. Script generation: use Step 3.7 Flash (`flash_script`) for narration or pitch-deck copy.
+4. Distribution: upload to YouTube Shorts, TikTok, Reels (multi-platform syndication).
+
+### Android/iOS Distribution
+
+**Status**: Infrastructure exists for APK builds and iOS Capacitor wrappers.
+
+**For Android**:
+- `ANDROID-BUILD-SETUP.md` — APK toolchain config
+- `APK_BUILD_*.md` — step-by-step build & signing guides
+- `APK_BUILD_INDEX.md` — manifest of build artifacts and outputs
+- `APP_STORE_METADATA.md` — listing copy, images, compliance
+
+**For iOS**:
+- `CAPACITOR-IOS-SETUP.md` — Capacitor + Xcode setup
+- `recovery-ios/` — example Capacitor wrapper (CMS build via Codemagic)
+- `capacitor/` — example wrapper for STARLIGHTMIX Studio
+- Deployment: Code signing, provisioning profiles, TestFlight beta distribution
+
+**When building for mobile**:
+1. Web app must be responsive PWA (manifest.json, service worker).
+2. Create Capacitor wrapper: `pnpm create @capacitor/app` or copy existing template.
+3. Configure `capacitor.config.ts`: app name, package, version, plugins.
+4. For iOS: `pnpm open:ios` → configure signing in Xcode.
+5. For Android: Use `gradle` build tools (see APK_BUILD docs).
+6. Test on device: USB debugging (Android) or simulator (iOS).
+
+### Monetization & Freemium Models
+
+**Buddy System** (`capacitor-buddies/`):
+- Progressive feature unlock (freemium)
+- Tutor avatar engagement
+- Docs: `BUDDY-FREEMIUM-IMPLEMENTATION.md`, `BUDDY-SYSTEM-INTEGRATION.md`
+
+**Bedtime Stories** (emerging content franchise):
+- Serialized storytelling for kids
+- Audio narration (TTS or voice talent)
+- Docs: `BEDTIME_STORIES_MONETIZATION.md`, `BEDTIME_STORIES_WEEK1_EXECUTION.md`
+
+## Conventions & Standards
+
+### Naming & File Organization
+
+- **New Promos** → HyperFrames folder at repo root: `rhythmix-<name>-<length>/` (e.g., `rhythmix-teaser-60s/`, `rhythmix-s1-overview-60s/`). Do NOT use Remotion (see ADR-0001).
+- **New site pages** → `sites/<slug>/` via pipeline (sitemap → wireframe → styleguide → HTML), then promote to root `.html` when production-ready.
+- **New app concepts** → `apps/<name>/` (folder for PWA) or `apps/<name>.html` (single file). Standalone, non-RHYTHMIX apps (livestock, recovery) use their own root directory.
+- **Specs** → `specs/<slug>/{requirements.md, design.md, tasks.md}`. Use stable IDs: R1, R2 (requirements); T1, T2 (tasks).
+- **Skills** → Edit upstream source in `.agents/skills/<name>/` (symlink target), never direct symlinks in `.claude/skills/`. Local-only skills edit directly in `.claude/skills/<name>/`. Track synced skill versions in `skills-lock.json`.
+
+### Code & Dependencies
+
+- **Lockfiles** → Keep `package-lock.json` (root) and `video/package-lock.json`, `studio/pnpm-lock.yaml` in sync with `package.json` and `pnpm-lock.yaml` respectively.
+- **Version freezes**:
+  - **studio**: Next.js 15.1.6, React 19.2.3 (stable; major upgrades require feature planning).
+  - **video**: Remotion 4 (dormant; do not upgrade).
+  - **agent-builder**: Latest Next.js 15 (can adopt patches; major bumps require testing).
+- **Gitignore** → `node_modules/`, `.remotion/`, `graphify-out/cache/`, `.claude-playwright/` excluded. Large build artifacts, env files, `.env*` secrets in ``.gitignore.env-template`.
+
+### Content & Publishing
+
+- **Content warnings** → Check `README.md` for flagged videos. Videos with unverified metrics/testimonials (`tiktok-reels-shorts.mp4`, `instagram-facebook.mp4`, `youtube.mp4`) are not safe to publish as-is. Only `teaser-coming-soon*.mp4` is production-ready.
+- **Brand system** → All sites, promos, and consumer apps lock design to `rhythmix-teaser-60s/DESIGN.md` unless creating a sub-brand (venue series, app-specific theme). Document theme deviations in local `DESIGN.md`.
+- **Asset sourcing** → Use Replicate (FLUX, HunyuanVideo) for generated images/videos; Higgsfield (Soul, DOP) for character refs; ElevenLabs or Kokoro for TTS. Always respect API quotas and costs.
+
+### Deployment & CI/CD
+
+- **GitHub Pages** (repo root .html) → Automatic on push to `main` via `.github/workflows/deploy-pages.yml`. CNAME: `rhythmixapp.com.au`.
+- **Cloudflare Pages** (studio) → Preview branches auto-deploy; production requires manual approval on `production` GitHub Environment. Deployer: `.github/workflows/studio-deploy.yml`.
+- **Codemagic** (iOS) → Triggered manually or via dashboard. Builds `recovery-ios/`, outputs unsigned debug APK emailed to `wiggjamie9@gmail.com`.
+- **Capacitor Sync** → Before iOS/Android builds, run `pnpm sync:web` to copy web app output (e.g., `studio/out/`) into Capacitor `www/` directory.
+
+## Subagent Model Routing & Task Parallelization
+
+This workspace spans multiple independent domains (video, apps, marketing, infrastructure). To keep latency low and context efficient, route subagent tasks by complexity and parallelization strategy.
+
+### Model Selection
+
+When spawning subagents via the `Agent` tool:
+
+| Task | Use Model | Rationale |
+|---|---|---|
+| File reads, grep, scans, tree navigation | **Haiku** | Fast, cheap, sufficient for pattern-matching |
+| Config edits, README / sitemap generation | **Haiku** | Deterministic templating; no ambiguity |
+| Dependency / lockfile updates, version checks | **Haiku** | Rule-based (SemVer, compatibility); fast |
+| Formatting, lint fixes, comment cleanup | **Haiku** | Mechanical transformations |
+| Code writing (components, API, features) | **Sonnet** (default) | Judgment, architecture, edge cases |
+| Spec generation, requirements analysis | **Sonnet** | Ambiguity resolution, multi-stakeholder synthesis |
+| Video script, copy writing, promo narration | **Sonnet** | Creative voice, tone, persuasion |
+| Design decisions, UX/UI justification | **Sonnet** | Aesthetic judgment + accessibility |
+| Debugging complex issues, performance tuning | **Sonnet** | Systems thinking, root-cause analysis |
+| **Any task involving images, screenshots, UI review** | **Sonnet** (Haiku is text-only) | Vision required; Haiku cannot read images |
+
+### Parallelization Patterns
+
+For large, multi-workstream tasks (e.g., launching 10 apps, generating 50 promos, auditing 5 codebases):
+
+**Single-threaded approach** (if dependencies exist):
+```
+research → spec → design → code → test → deploy
+```
+
+**Fan-out pattern** (independent parallel work, common in this workspace):
+```
+Agent 1: App 1 (scaffold, build, test)
+Agent 2: App 2 (scaffold, build, test)
+Agent 3: YouTube content calendar
+Agent 4: iOS/Android APK config
+Agent 5: UI audit & design system review
+```
+
+Each agent is isolated; combine results post-completion. Use `/dispatching-parallel-agents` skill to orchestrate 2–5 independent tasks.
+
+### Context Window Management
+
+This repo is large (100+ .md files, 50+ HyperFrames promos, multiple SaaS apps). When delegating to agents:
+
+- **Specify search scope** — "find HyperFrames promos matching `rhythmix-s*-*-f`" (portrait variants) vs. "scan entire repo for avatar references."
+- **Use Explore agent** for broad searches — it reads excerpts efficiently, preventing context bloat.
+- **Summarize findings** before handing off to write agents — don't repeat 200-line file contents.
+- **Reuse Agent results** in follow-up queries — cite findings by file path, not by re-reading.
+
+## Starting New Work
+
+Given the workspace's size and complexity, use this checklist before diving into a task:
+
+### 1. Understand the Context
+- **Is this part of an existing initiative?** Check:
+  - `START-HERE.md` — recent major projects (avatar enhancements, etc.)
+  - `100_APPS_MISSION.md` — if launching a new app, use the template strategy
+  - `YOUTUBE_CONTENT_CALENDAR.md` — if creating video content, check the schedule
+  - `CONTEXT.md` — domain language specific to RHYTHMIX, HyperFrames, Promos
+- **Read the relevant spec** if one exists: `specs/<slug>/` folder has requirements, design, and task breakdowns.
+- **Scan the top-level docs**: Some decisions (brand, video pipeline, deployment) are documented in root `.md` files.
+
+### 2. Scope the Task
+- **Is this a one-off or part of a series?** (E.g., one promo vs. a 5-promo campaign?)
+- **Does it touch multiple projects?** (E.g., web app + iOS + YouTube content?)
+- **Dependencies**: Does it require an existing asset, decision, or approval first?
+
+### 3. Identify Tools & Skills
+- **Video/creative**: `/dream`, `/rhythmix-new`, `/rhythmix-author`, `/rhythmix-site`, `/site-build`
+- **Planning**: `/spec-quick`, `/spec-analyze`, `/spec-run`
+- **Engineering**: `/tdd`, `/diagnose`, `/improve-codebase-architecture`
+- **Content**: Step 3.7 Flash (`flash_script`, `flash_episode_brief`), Replicate (image/video), ElevenLabs (TTS)
+- **Research**: Explore agent for codebase scan, Context7 for library docs, Playwright for web automation
+
+### 4. Check for Existing Parallels
+Before writing new code:
+- Does a similar app, component, or feature already exist in the portfolio?
+- Is there a template or scaffold? (E.g., `100_APP_BUILD_TEMPLATE.md`, `rhythmix-overview-60s/` for promos)
+- Can you adapt instead of building from scratch?
+
+### 5. Plan Parallel Work
+If your task can be split:
+- Use `/dispatching-parallel-agents` to fan out independent work
+- Example: Audit 5 apps in parallel; each agent reviews UX, performance, compliance
+- Combine results after parallel phases complete
+
+### 6. Document Decisions
+- New terminology? Add to `CONTEXT.md` with ADR-style justification
+- New process or convention? Update relevant section in `CLAUDE.md` or create `docs/adr/*.md`
+- New project or major refactor? Create `specs/<slug>/` with requirements + design + task breakdown
+
+## Agent Skills (GitHub Issues & Issue Tracker)
+
+The workspace uses GitHub Issues for planning, tracking, and coordination. All work should flow through the issue tracker when possible.
+
+**Workflow**:
+- **`needs-triage`** — new issues waiting for categorization
+- **`needs-info`** — awaiting details (scope, acceptance criteria, blockers)
+- **`ready-for-agent`** — structured, unambiguous; agents can pick up immediately
+- **`ready-for-human`** — requires human judgment, design feedback, or approval before agent work
+- **`wontfix`** — descoped, rejected, or obsoleted
+
+**Resources**:
+- **Issue tracker guide**: `docs/agents/issue-tracker.md`
+- **Triage labels**: `docs/agents/triage-labels.md`
+- **Domain terminology**: `docs/agents/domain.md` + `CONTEXT.md` + `docs/adr/`
+
+**Repository**: `wiggjamie9-afk/jamie-wigg` on GitHub. Check GitHub Issues before proposing new work; link related issues in PRs.
+
+---
+
+## Quick Reference: Critical Files by Role
+
+### For Video/Creative Work
+| Task | Start Here |
 |---|---|
-| File reads, grep, directory scans | Writing code or components |
-| Sitemap / README / config edits | Spec generation and analysis |
-| Simple search queries | Video script / copy writing |
-| Dependency / lockfile checks | Design decisions |
-| Formatting, lint fixes | Debugging complex issues |
-| Uploading artifacts, git ops | Any task needing screenshots / vision |
+| Make a RHYTHMIX promo | `/rhythmix-new` skill or `rhythmix-overview-60s/` (copy + edit) |
+| Generate script + TTS | Step 3.7 Flash MCP: `flash_script` |
+| Understand brand | `rhythmix-teaser-60s/DESIGN.md` |
+| Video pipeline decision | `docs/adr/0001-hyperframes-over-remotion-for-promos.md` |
+| YouTube strategy | `YOUTUBE_CONTENT_CALENDAR.md`, `YOUTUBE_MONETIZATION_ROADMAP.md` |
 
-**Never** use Haiku for tasks involving images, screenshots, or UI review — it's text-only.
+### For Web App Development
+| Task | Start Here |
+|---|---|
+| STARLIGHTMIX Studio | `studio/` + `STARLIGHTMIX-STUDIO.md` |
+| Agent Builder | `agent-builder/` + `agent-builder/BRIEF.md` |
+| New consumer app | `100_APP_BUILD_TEMPLATE.md`, then `apps/` or new folder |
+| Avatar integration | `AVATAR-ENHANCEMENT-SUMMARY.md` |
+| Site generation | `/site-build` skill, then `sites/<slug>/` output |
 
-## Agent Skills (GitHub Issues)
+### For Mobile / Distribution
+| Task | Start Here |
+|---|---|
+| iOS build | `capacitor/` folder + `CAPACITOR-IOS-SETUP.md` |
+| Android APK | `APK_BUILD_SETUP.md`, `APK_BUILD_QUICKSTART.md` |
+| App store metadata | `APP_STORE_METADATA.md` |
+| Codemagic iOS config | `codemagic.yaml` + `recovery-ios/` example |
 
-- **Issue tracker** → GitHub Issues on `wiggjamie9-afk/jamie-wigg`. See `docs/agents/issue-tracker.md`.
-- **Triage labels** → `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
-- **Domain docs** → `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`. Read before introducing new terms.
+### For Planning & Specs
+| Task | Start Here |
+|---|---|
+| Write a spec | `/spec-quick`, outputs to `specs/<slug>/` |
+| Plan a feature | `/spec-run` for parallel task execution |
+| Understand requirements | `specs/rhythmix-app/requirements.md` (production spec) |
+
+### For Infrastructure & DevOps
+| Task | Start Here |
+|---|---|
+| GitHub Pages deployment | `.github/workflows/deploy-pages.yml` |
+| Cloudflare studio deploy | `.github/workflows/studio-deploy.yml` |
+| MCP servers | `.mcp.json` + `.env.example` |
+| Dev container | `.devcontainer/post-create.sh` |
+| Self-hosted wiki | `infra/wiki/docker-compose.yml` |
+
+---
+
+## Workspace Health Checklist
+
+When starting a session:
+
+- [ ] **.env file exists** — copy `.env.example` → `.env`, fill in `REPLICATE_API_TOKEN`, `ELEVENLABS_API_KEY`, etc.
+- [ ] **MCP servers connect** — check `.mcp.json` validity, verify API keys in `.env`
+- [ ] **No stale branches** — `git branch -vv | grep '\[.*gone\]'` to find deleted-upstream branches
+- [ ] **Node toolchain** — `node -v` (20+), `pnpm -v` (9+), `npm install` at root for claude-playwright
+- [ ] **Key scripts pass** — `studio/pnpm lint`, `studio/pnpm test`, basic HyperFrames preview in a promo folder
+- [ ] **Docs are current** — skim `CLAUDE.md`, `CONTEXT.md`, relevant `docs/adr/` before proposing architectural changes
+
+---
+
+## Support & Feedback
+
+- **Questions about Claude Code?** → `/help` or refer to [claude.ai/code docs](https://claude.com/claude-code)
+- **Found a bug or documentation gap?** → File an issue on GitHub or update `CLAUDE.md` directly
+- **Claude Code feedback?** → [github.com/anthropics/claude-code/issues](https://github.com/anthropics/claude-code/issues)
+
+---
+
+**This CLAUDE.md is a living document.** As projects evolve, processes change, or new tools are adopted, update it to keep the guidance current. Stale guidance is worse than no guidance.
