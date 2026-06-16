@@ -222,8 +222,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (testVoiceBtn && window.voice) {
-    testVoiceBtn.addEventListener('click', () => {
-      window.voice.speak("Hi, I'm your recovery coach. You're doing really well — let's take this one day at a time.");
+    testVoiceBtn.addEventListener('click', async () => {
+      window.voice.lastError = null;
+      const usingNatural = window.voice.hasNaturalVoice();
+      await window.voice.speak("Hi, I'm your recovery coach. You're doing really well — let's take this one day at a time.");
+      setTimeout(() => {
+        if (!voiceStatusHint) return;
+        if (!usingNatural) {
+          voiceStatusHint.textContent = "No ElevenLabs key saved — using your device voice. Paste a key above and tap Save for a lifelike human voice.";
+        } else if (window.voice.lastError) {
+          voiceStatusHint.textContent = "⚠️ Natural voice failed — " + window.voice.lastError;
+        } else {
+          voiceStatusHint.textContent = "✓ Natural human voice is working (ElevenLabs).";
+        }
+      }, 1500);
     });
   }
 

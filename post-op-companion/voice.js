@@ -15,7 +15,9 @@ class VoiceCoach {
     // Default voice: "Rachel" — a warm, natural female narration voice.
     // Users can override via Settings.
     this.voiceId = localStorage.getItem('elevenlabs-voice-id') || '21m00Tcm4TlvDq8ikWAM';
-    this.modelId = 'eleven_turbo_v2_5'; // low latency, natural prosody
+    this.modelId = 'eleven_multilingual_v2'; // broadly available, natural prosody
+    this.lastError = null;
+    this.onError = null; // settings UI hooks this to surface failures
     this.enabled = localStorage.getItem('voice-enabled') !== 'false'; // on by default
     this.baseUrl = 'https://api.elevenlabs.io/v1/text-to-speech';
     this.cache = new Map(); // text -> object URL
@@ -58,9 +60,12 @@ class VoiceCoach {
     if (this.apiKey) {
       try {
         await this._speakElevenLabs(text, opts);
+        this.lastError = null;
         return;
       } catch (err) {
-        console.warn('ElevenLabs voice failed, falling back to system voice:', err);
+        this.lastError = err.message || String(err);
+        console.warn('ElevenLabs voice failed, falling back to system voice:', this.lastError);
+        if (typeof this.onError === 'function') this.onError(this.lastError);
         // fall through to system voice
       }
     }
@@ -104,7 +109,9 @@ class VoiceCoach {
       });
 
       if (!response.ok) {
-        throw new Error(`ElevenLabs API error: ${response.status}`);
+        let detail = '';
+        try { detail = (await response.text()).slice(0, 200); } catch (_) {}
+        throw new Error(`ElevenLabs ${response.status}: ${detail || 'request rejected'}`);
       }
 
       const blob = await response.blob();
