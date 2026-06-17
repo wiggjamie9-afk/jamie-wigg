@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#2d5a3d" />
+<meta name="description" content="HERDGENE — offline livestock breeding planner, pedigree tree & Wright's inbreeding coefficient tool for smallholders and breeders. Complements HerdCheck." />
+<meta name="author" content="RHYTHMIX / HerdCheck" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="HERDGENE" />
+<meta property="og:title" content="HERDGENE — Breeding Planner & Pedigree Tool" />
+<meta property="og:description" content="Register animals, build pedigrees, compute inbreeding coefficients, and plan safer matings — fully offline." />
+<meta property="og:type" content="website" />
+<title>HERDGENE — Breeding Planner & Pedigree Tool</title>
+<style>
+  :root {
+    --green-900: #1c3d29;
+    --green-800: #234d33;
+    --green-700: #2d5a3d;
+    --green-600: #3a7350;
+    --green-500: #4f9268;
+    --green-100: #e4f0e8;
+    --brown-700: #6b4f37;
+    --brown-500: #8a6c4d;
+    --brown-100: #f0e7dc;
+    --bg: #f4f1ea;
+    --card: #ffffff;
+    --ink: #20271f;
+    --ink-soft: #5a6357;
+    --line: #dcd8cd;
+    --green: #2e9c5f;
+    --amber: #e0911b;
+    --red: #d24a3c;
+    --shadow: 0 2px 10px rgba(28, 61, 41, 0.08);
+    --shadow-lg: 0 8px 28px rgba(28, 61, 41, 0.16);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+    font-size: 16px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .app { max-width: 520px; margin: 0 auto; min-height: 100vh; background: var(--bg); }
+
+  header.hero {
+    background: linear-gradient(135deg, var(--green-800) 0%, var(--green-600) 55%, var(--brown-500) 130%);
+    color: #fff;
+    padding: 22px 18px 18px;
+    padding-top: calc(22px + env(safe-area-inset-top));
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  header.hero::after {
+    content: "";
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(255,255,255,0.14), transparent 70%);
+    border-radius: 50%;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: rgba(255,255,255,0.16);
+    display: grid; place-items: center;
+    font-size: 21px;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .brand h1 { font-size: 1.35rem; margin: 0; letter-spacing: 1px; font-weight: 800; }
+  .brand .tag { font-size: 0.72rem; opacity: 0.9; margin: 0; letter-spacing: 0.5px; }
+  .stat-row { display: flex; gap: 8px; margin-top: 14px; position: relative; z-index: 1; }
+  .stat {
+    flex: 1; background: rgba(255,255,255,0.13); border-radius: var(--radius-sm);
+    padding: 8px 10px; text-align: center; border: 1px solid rgba(255,255,255,0.15);
+  }
+  .stat b { display: block; font-size: 1.15rem; }
+  .stat span { font-size: 0.66rem; opacity: 0.88; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  nav.tabs {
+    display: flex; background: var(--card); position: sticky; top: 0; z-index: 20;
+    border-bottom: 1px solid var(--line); box-shadow: var(--shadow);
+  }
+  nav.tabs button {
+    flex: 1; border: 0; background: none; padding: 11px 4px 9px; cursor: pointer;
+    font-size: 0.64rem; color: var(--ink-soft); font-family: var(--font);
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;
+    border-bottom: 3px solid transparent;
+  }
+  nav.tabs button .ico { font-size: 1.15rem; }
+  nav.tabs button.active { color: var(--green-700); border-bottom-color: var(--green-600); }
+
+  main { padding: 16px 14px 90px; }
+  .view { display: none; animation: fade 0.25s ease; }
+  .view.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+  .card {
+    background: var(--card); border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow); margin-bottom: 14px; border: 1px solid var(--line);
+  }
+  .card h2 { margin: 0 0 4px; font-size: 1.02rem; }
+  .card .sub { color: var(--ink-soft); font-size: 0.8rem; margin: 0 0 12px; }
+  .section-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-soft); font-weight: 700; margin: 18px 4px 8px; }
+
+  label { display: block; font-size: 0.74rem; font-weight: 600; color: var(--ink-soft); margin: 10px 0 4px; letter-spacing: 0.2px; }
+  input, select, textarea {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 0.95rem; background: #fbfaf6; color: var(--ink);
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--green-500); outline-offset: 0; border-color: var(--green-500); }
+  textarea { resize: vertical; min-height: 56px; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+
+  button.btn {
+    border: 0; border-radius: var(--radius-sm); padding: 12px 16px; font-size: 0.92rem; font-weight: 700;
+    cursor: pointer; font-family: var(--font); letter-spacing: 0.3px; transition: transform 0.06s, filter 0.15s;
+  }
+  button.btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--green-700); color: #fff; width: 100%; }
+  .btn-primary:hover { filter: brightness(1.07); }
+  .btn-ghost { background: var(--green-100); color: var(--green-800); }
+  .btn-sm { padding: 7px 11px; font-size: 0.76rem; }
+  .btn-danger { background: #fbe6e3; color: var(--red); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .animal {
+    display: flex; align-items: center; gap: 11px; padding: 11px 12px; border: 1px solid var(--line);
+    border-radius: var(--radius-sm); margin-bottom: 9px; background: #fbfaf6;
+  }
+  .animal .avatar {
+    width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-size: 1.2rem; flex: 0 0 auto;
+  }
+  .av-f { background: #fbe5ee; }
+  .av-m { background: #e2edfa; }
+  .av-u { background: var(--brown-100); }
+  .animal .meta { flex: 1; min-width: 0; }
+  .animal .meta .name { font-weight: 700; font-size: 0.95rem; }
+  .animal .meta .id { font-size: 0.7rem; color: var(--ink-soft); }
+  .animal .meta .par { font-size: 0.7rem; color: var(--ink-soft); margin-top: 2px; }
+  .animal .acts { display: flex; gap: 6px; flex: 0 0 auto; }
+  .icon-btn { border: 0; background: var(--green-100); color: var(--green-800); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 0.85rem; }
+  .icon-btn.del { background: #fbe6e3; color: var(--red); }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.3px; }
+  .pill-f { background: #fbe5ee; color: #b03a6e; }
+  .pill-m { background: #e2edfa; color: #2f6bb0; }
+
+  .empty { text-align: center; color: var(--ink-soft); padding: 26px 12px; font-size: 0.88rem; }
+  .empty .big { font-size: 2rem; display: block; margin-bottom: 6px; opacity: 0.7; }
+
+  /* Pedigree tree (SVG) */
+  .ped-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 0 8px; }
+  .ped-node {
+    fill: #fbfaf6; stroke: var(--line); stroke-width: 1.5;
+  }
+  .ped-node.sex-F { fill: #fbe5ee; stroke: #e9b6cd; }
+  .ped-node.sex-M { fill: #e2edfa; stroke: #b6cce9; }
+  .ped-node.root { stroke: var(--green-600); stroke-width: 2.5; }
+  .ped-line { stroke: var(--brown-500); stroke-width: 1.6; fill: none; opacity: 0.7; }
+  .ped-txt { font-family: var(--font); font-size: 11px; fill: var(--ink); }
+  .ped-txt.id { font-size: 9px; fill: var(--ink-soft); }
+  .ped-empty-node { fill: #f0eee7; stroke: var(--line); stroke-dasharray: 3 3; }
+
+  /* Risk meter */
+  .risk-result { text-align: center; padding: 6px 0 2px; }
+  .coef { font-size: 3rem; font-weight: 800; line-height: 1; }
+  .risk-band { display: inline-block; padding: 5px 14px; border-radius: 999px; font-weight: 700; font-size: 0.82rem; margin-top: 8px; letter-spacing: 0.3px; }
+  .band-green { background: #def0e4; color: #1f7a45; }
+  .band-amber { background: #fbeccd; color: #9a5d00; }
+  .band-red { background: #fbdcd7; color: #b02b1d; }
+  .meter { height: 12px; border-radius: 999px; margin: 14px 0 4px; background: linear-gradient(90deg, var(--green) 0%, var(--green) 28%, var(--amber) 28%, var(--amber) 56%, var(--red) 56%, var(--red) 100%); position: relative; }
+  .meter .needle { position: absolute; top: -4px; width: 4px; height: 20px; background: var(--ink); border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 0 2px #fff; transition: left 0.4s ease; }
+  .meter-labels { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--ink-soft); margin-top: 4px; }
+  .ancestor-list { margin-top: 10px; }
+  .anc-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: #fbfaf6; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; font-size: 0.8rem; }
+  .anc-item .contrib { font-weight: 700; color: var(--brown-700); }
+
+  .reco { padding: 9px 11px; border-radius: var(--radius-sm); margin-bottom: 7px; border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #fbfaf6; }
+  .reco .info { min-width: 0; }
+  .reco .info b { font-size: 0.88rem; }
+  .reco .info small { display: block; color: var(--ink-soft); font-size: 0.72rem; }
+  .reco .fval { font-weight: 800; font-size: 0.92rem; flex: 0 0 auto; }
+
+  /* breeding plans */
+  .plan {
+    border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px; background: #fbfaf6;
+  }
+  .plan .ptop { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .plan .pair { font-weight: 700; font-size: 0.92rem; }
+  .plan .dates { font-size: 0.74rem; color: var(--ink-soft); margin-top: 3px; }
+  .plan .due { font-weight: 700; color: var(--green-700); }
+  .plan .status { font-size: 0.66rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.4px; flex: 0 0 auto; }
+  .st-expecting { background: #fbeccd; color: #9a5d00; }
+  .st-overdue { background: #fbdcd7; color: #b02b1d; }
+  .st-recorded { background: #def0e4; color: #1f7a45; }
+  .plan .pacts { display: flex; gap: 7px; margin-top: 10px; }
+  .countdown { font-size: 0.72rem; color: var(--ink-soft); margin-top: 4px; }
+
+  /* freemium footer */
+  .freemium {
+    margin: 6px 14px 18px; background: linear-gradient(135deg, var(--brown-700), var(--brown-500));
+    color: #fff; border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow);
+  }
+  .freemium .pf { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; }
+  .freemium b { font-size: 0.96rem; }
+  .freemium p { margin: 4px 0 0; font-size: 0.78rem; opacity: 0.93; line-height: 1.4; }
+  .freemium .price { display: inline-block; margin-top: 9px; background: rgba(255,255,255,0.18); padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: 0.82rem; border: 1px solid rgba(255,255,255,0.22); }
+  .credit { text-align: center; font-size: 0.66rem; color: var(--ink-soft); padding: 0 14px 24px; }
+  .credit a { color: var(--green-700); }
+
+  /* modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(20,32,24,0.55); display: none; align-items: flex-end; justify-content: center; z-index: 100; }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--card); width: 100%; max-width: 520px; border-radius: 20px 20px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    max-height: 92vh; overflow-y: auto; box-shadow: var(--shadow-lg); animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(40px); opacity: 0;} to { transform: none; opacity: 1;} }
+  .modal h3 { margin: 0 0 2px; }
+  .modal .close { float: right; border: 0; background: var(--green-100); width: 30px; height: 30px; border-radius: 8px; font-size: 1rem; cursor: pointer; color: var(--green-800); }
+
+  /* toast */
+  #toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(120px);
+    background: var(--green-900); color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+    box-shadow: var(--shadow-lg); z-index: 200; transition: transform 0.3s ease; max-width: 90%; text-align: center;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.warn { background: var(--amber); }
+  #toast.err { background: var(--red); }
+
+  .hint { font-size: 0.72rem; color: var(--ink-soft); margin-top: 6px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.7rem; color: var(--ink-soft); margin-top: 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">&#129516;</div>
+      <div>
+        <h1>HERDGENE</h1>
+        <p class="tag">Breeding planner &middot; pedigree &middot; inbreeding</p>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><b id="statAnimals">0</b><span>Animals</span></div>
+      <div class="stat"><b id="statPlans">0</b><span>Plans</span></div>
+      <div class="stat"><b id="statExpect">0</b><span>Expecting</span></div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="herd" class="active"><span class="ico">&#128002;</span>Herd</button>
+    <button data-tab="pedigree"><span class="ico">&#127795;</span>Pedigree</button>
+    <button data-tab="mate"><span class="ico">&#129516;</span>Mate</button>
+    <button data-tab="plan"><span class="ico">&#128197;</span>Plan</button>
+  </nav>
+
+  <main>
+    <!-- HERD -->
+    <section id="view-herd" class="view active">
+      <div class="card">
+        <h2>Your herd</h2>
+        <p class="sub">Register each animal with its parents to build the family tree.</p>
+        <button class="btn btn-primary" id="addAnimalBtn">+ Add animal</button>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="btn btn-ghost btn-sm" id="exportBtn">&#11015; Export CSV</button>
+          <button class="btn btn-ghost btn-sm" id="seedBtn">Load sample herd</button>
+        </div>
+      </div>
+      <div class="section-title">Animals</div>
+      <div id="animalList"></div>
+    </section>
+
+    <!-- PEDIGREE -->
+    <section id="view-pedigree" class="view">
+      <div class="card">
+        <h2>Pedigree tree</h2>
+        <p class="sub">Up to 4 generations of ancestors.</p>
+        <label for="pedSelect">Select animal</label>
+        <select id="pedSelect"></select>
+        <div class="legend">
+          <span><i class="sw" style="background:#e2edfa;border-color:#b6cce9"></i>Sire (male)</span>
+          <span><i class="sw" style="background:#fbe5ee;border-color:#e9b6cd"></i>Dam (female)</span>
+          <span><i class="sw" style="background:#f0eee7"></i>Unknown</span>
+        </div>
+      </div>
+      <div class="card" id="pedCard">
+        <div class="ped-wrap" id="pedWrap"></div>
+      </div>
+    </section>
+
+    <!-- MATE PLANNER -->
+    <section id="view-mate" class="view">
+      <div class="card">
+        <h2>Plan a mating</h2>
+        <p class="sub">Wright's inbreeding coefficient for the offspring of a proposed pair.</p>
+        <label for="mateDam">Dam (female)</label>
+        <select id="mateDam"></select>
+        <label for="mateSire">Sire (male)</label>
+        <select id="mateSire"></select>
+        <button class="btn btn-primary" id="calcMateBtn" style="margin-top:14px;">Calculate inbreeding</button>
+      </div>
+      <div class="card" id="mateResultCard" style="display:none;"></div>
+      <div class="card" id="recoCard" style="display:none;">
+        <h2>Safer matches</h2>
+        <p class="sub">Lowest-inbreeding sires for the selected dam.</p>
+        <div id="recoList"></div>
+      </div>
+    </section>
+
+    <!-- BREEDING PLAN -->
+    <section id="view-plan" class="view">
+      <div class="card">
+        <h2>Breeding planner</h2>
+        <p class="sub">Service date &rarr; auto due date by species gestation. Record the outcome when calves/lambs arrive.</p>
+        <button class="btn btn-primary" id="addPlanBtn">+ New breeding plan</button>
+      </div>
+      <div class="section-title">Plans</div>
+      <div id="planList"></div>
+    </section>
+  </main>
+
+  <div class="freemium">
+    <div class="pf">Free forever</div>
+    <b>HERDGENE is free.</b>
+    <p>Lifetime <b>$8.99</b> unlocks deep pedigrees, EBV tracking &amp; breed-society sharing (B2B).</p>
+    <span class="price">&#11088; Lifetime $8.99</span>
+  </div>
+  <div class="credit">Offline-first &middot; data stays on your device &middot; complements <b>HerdCheck</b>.</div>
+</div>
+
+<!-- Animal modal -->
+<div class="modal-bg" id="animalModal">
+  <div class="modal">
+    <button class="close" data-close>&times;</button>
+    <h3 id="animalModalTitle">Add animal</h3>
+    <p class="sub" style="color:var(--ink-soft);font-size:.8rem;margin:2px 0 4px;">Parents are optional — leave blank if unknown.</p>
+    <input type="hidden" id="aEditId" />
+    <div class="row">
+      <div><label for="aId">Tag / ID *</label><input id="aId" placeholder="e.g. C-104" /></div>
+      <div><label for="aName">Name</label><input id="aName" placeholder="e.g. Daisy" /></div>
+    </div>
+    <div class="row">
+      <div><label for="aSex">Sex *</label>
+        <select id="aSex"><option value="F">Female</option><option value="M">Male</option><option value="U">Unknown</option></select>
+      </div>
+      <div><label for="aSpecies">Species</label>
+        <select id="aSpecies"></select>
+      </div>
+    </div>
+    <div class="row">
+      <div><label for="aSire">Sire (father)</label><select id="aSire"></select></div>
+      <div><label for="aDam">Dam (mother)</label><select id="aDam"></select></div>
+    </div>
+    <label for="aDob">Date of birth</label>
+    <input type="date" id="aDob" />
+    <label for="aNotes">Notes</label>
+    <textarea id="aNotes" placeholder="Breed, colour, health, lineage notes…"></textarea>
+    <button class="btn btn-primary" id="saveAnimalBtn" style="margin-top:14px;">Save animal</button>
+  </div>
+</div>
+
+<!-- Plan modal -->
+<div class="modal-bg" id="planModal">
+  <div class="modal">
+    <button class="close" data-close>&times;</button>
+    <h3 id="planModalTitle">New breeding plan</h3>
+    <input type="hidden" id="pEditId" />
+    <label for="pDam">Dam (female)</label>
+    <select id="pDam"></select>
+    <label for="pSire">Sire (male)</label>
+    <select id="pSire"></select>
+    <div class="row">
+      <div><label for="pSpecies">Species (gestation)</label>
+        <select id="pSpecies"></select>
+      </div>
+      <div><label for="pService">Service date</label>
+        <input type="date" id="pService" />
+      </div>
+    </div>
+    <div id="pDuePreview" class="hint"></div>
+    <label for="pNotes">Notes</label>
+    <textarea id="pNotes" placeholder="AI / natural service, batch, vet…"></textarea>
+    <button class="btn btn-primary" id="savePlanBtn" style="margin-top:14px;">Save plan</button>
+  </div>
+</div>
+
+<!-- Outcome modal -->
+<div class="modal-bg" id="outcomeModal">
+  <div class="modal">
+    <button class="close" data-close>&times;</button>
+    <h3>Record offspring</h3>
+    <p class="sub" style="color:var(--ink-soft);font-size:.8rem;margin:2px 0 8px;">Each offspring is added to your herd with the plan's parents wired in.</p>
+    <input type="hidden" id="oPlanId" />
+    <label for="oBirth">Actual birth date</label>
+    <input type="date" id="oBirth" />
+    <div id="offspringFields"></div>
+    <button class="btn btn-ghost btn-sm" id="addOffspringRow" style="margin-top:8px;">+ Another offspring</button>
+    <button class="btn btn-primary" id="saveOutcomeBtn" style="margin-top:14px;">Save &amp; add to herd</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+(function () {
+  /* ---------------- Constants ---------------- */
+  var PREFIX = "herdgene_";
+  var GESTATION = { cattle: 283, buffalo: 310, sheep: 147, goat: 150, pig: 114, horse: 340 };
+  var SPECIES_LABEL = { cattle: "Cattle (283d)", buffalo: "Buffalo (310d)", sheep: "Sheep (147d)", goat: "Goat (150d)", pig: "Pig (114d)", horse: "Horse (340d)" };
+  var MAX_DEPTH = 12; // recursion depth cap for path tracing
+
+  /* ---------------- State ---------------- */
+  var animals = [];   // {id, name, sex, species, sire, dam, dob, notes}
+  var plans = [];     // {id, dam, sire, species, service, due, notes, status, birth, offspring:[]}
+
+  /* ---------------- Persistence ---------------- */
+  function save() {
+    try {
+      localStorage.setItem(PREFIX + "animals", JSON.stringify(animals));
+      localStorage.setItem(PREFIX + "plans", JSON.stringify(plans));
+    } catch (e) { toast("Storage full — could not save", "err"); }
+  }
+  function load() {
+    try {
+      animals = JSON.parse(localStorage.getItem(PREFIX + "animals") || "[]") || [];
+      plans = JSON.parse(localStorage.getItem(PREFIX + "plans") || "[]") || [];
+    } catch (e) { animals = []; plans = []; }
+  }
+
+  /* ---------------- Helpers ---------------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function byId(id) { for (var i = 0; i < animals.length; i++) if (animals[i].id === id) return animals[i]; return null; }
+  function uid(p) { return (p || "x") + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function fmtDate(d) { if (!d) return "—"; var dt = new Date(d + "T00:00:00"); if (isNaN(dt)) return d; return dt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); }
+  function addDays(dateStr, n) { var dt = new Date(dateStr + "T00:00:00"); dt.setDate(dt.getDate() + n); return dt.toISOString().slice(0, 10); }
+  function daysBetween(a, b) { return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000); }
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+  var toastTimer;
+  function toast(msg, kind) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.className = "show" + (kind ? " " + kind : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = ""; }, 2600);
+  }
+
+  function sexEmoji(s) { return s === "F" ? "&#9792;" : s === "M" ? "&#9794;" : "?"; }
+  function avatarFor(a) {
+    var cls = a.sex === "F" ? "av-f" : a.sex === "M" ? "av-m" : "av-u";
+    var ico = a.sex === "F" ? "&#128004;" : a.sex === "M" ? "&#128002;" : "&#129516;";
+    return '<div class="avatar ' + cls + '">' + ico + "</div>";
+  }
+  function nameOf(id) { var a = byId(id); return a ? (a.name ? a.name + " (" + a.id + ")" : a.id) : (id || "—"); }
+
+  /* ============================================================
+     WRIGHT'S INBREEDING COEFFICIENT
+     F = Σ over each common-ancestor path  (0.5)^(n1+n2+1) * (1 + F_A)
+     where n1 = #generations from sire up to common ancestor A,
+           n2 = #generations from dam up to common ancestor A,
+     summed over every distinct pair of non-overlapping ancestral
+     paths (sire→A and dam→A) such that A appears in both, with the
+     two paths sharing no individual other than A.
+     F_A is the ancestor's own inbreeding coefficient (recursive).
+     ============================================================ */
+
+  // Enumerate all ancestral paths from a start animal upward.
+  // Returns array of paths; each path is an array of ids [start, parent, ..., ancestor].
+  function ancestorPaths(startId, depthCap) {
+    var out = [];
+    function walk(id, path, depth) {
+      if (!id) return;
+      var a = byId(id);
+      if (!a) { return; } // missing ancestor: stop gracefully
+      var newPath = path.concat([id]);
+      out.push(newPath);
+      if (depth >= depthCap) return;
+      if (path.indexOf(id) !== -1) return; // loop guard (shouldn't happen, but safe)
+      if (a.sire) walk(a.sire, newPath, depth + 1);
+      if (a.dam) walk(a.dam, newPath, depth + 1);
+    }
+    var s = byId(startId);
+    if (!s) return out;
+    if (s.sire) walk(s.sire, [], 0);
+    if (s.dam) walk(s.dam, [], 0);
+    return out;
+  }
+
+  // F of an individual = inbreeding coefficient = relationship/2 contribution between its parents.
+  // We compute via co-ancestry of sire & dam. Memoized to cap recursion blow-up.
+  var fCache = {};
+  function inbreedingOf(id, stack) {
+    if (id == null) return 0;
+    if (fCache.hasOwnProperty(id)) return fCache[id];
+    var a = byId(id);
+    if (!a || !a.sire || !a.dam) { fCache[id] = 0; return 0; }
+    stack = stack || {};
+    if (stack[id]) return 0; // cycle protection
+    stack[id] = true;
+    var res = matingF(a.sire, a.dam, stack);
+    delete stack[id];
+    fCache[id] = res.F;
+    return res.F;
+  }
+
+  // Core: compute F of hypothetical offspring of (sireId, damId) plus shared-ancestor breakdown.
+  function matingF(sireId, damId, stack) {
+    stack = stack || {};
+    var sirePaths = ancestorPaths(sireId, MAX_DEPTH); // includes the parents themselves as ancestors
+    // Also treat the sire/dam themselves as gen-0 ancestors of the offspring:
+    // offspring's ancestors via sire = [sireId, ...] paths; we need sire as ancestor too.
+    var damPaths = ancestorPaths(damId, MAX_DEPTH);
+
+    // Build: for offspring, a path on the sire side is [sireId] + ancestorPath (or just [sireId]).
+    // ancestorPaths(sireId) returns paths starting at sire's parents. Prepend sireId so that
+    // the common ancestor could be the sire itself (e.g. sire is also dam's ancestor).
+    var sSide = [[sireId]];
+    var p, i, j;
+    for (i = 0; i < sirePaths.length; i++) sSide.push([sireId].concat(sirePaths[i]));
+    var dSide = [[damId]];
+    for (i = 0; i < damPaths.length; i++) dSide.push([damId].concat(damPaths[i]));
+
+    // For each ancestor A, find sire-side path ending at A and dam-side path ending at A,
+    // that share no individual except A. Each such (path1,path2) pair contributes
+    // (0.5)^(n1+n2+1)*(1+F_A). n1 = length(path1)-1, n2 = length(path2)-1 (edges to A).
+    var contribByAnc = {};
+    var totalF = 0;
+
+    // group paths by their terminal ancestor
+    var sByAnc = {}, dByAnc = {};
+    for (i = 0; i < sSide.length; i++) { var t = sSide[i][sSide[i].length - 1]; (sByAnc[t] = sByAnc[t] || []).push(sSide[i]); }
+    for (i = 0; i < dSide.length; i++) { var t2 = dSide[i][dSide[i].length - 1]; (dByAnc[t2] = dByAnc[t2] || []).push(dSide[i]); }
+
+    for (var anc in sByAnc) {
+      if (!dByAnc[anc]) continue;
+      var sp = sByAnc[anc], dp = dByAnc[anc];
+      var fA = inbreedingOf(anc, stack);
+      var ancContrib = 0;
+      var pairsCounted = 0;
+      for (i = 0; i < sp.length; i++) {
+        for (j = 0; j < dp.length; j++) {
+          // paths must share ONLY the common ancestor (anc) — no other individual overlap
+          if (!nonOverlapping(sp[i], dp[j], anc)) continue;
+          var n1 = sp[i].length - 1; // edges from offspring's sire-line start... actually count nodes minus 1
+          var n2 = dp[j].length - 1;
+          // sp[i] = [sireId,...,anc]; offspring -> sireId is one more edge, captured by the +1 exponent.
+          var c = Math.pow(0.5, n1 + n2 + 1) * (1 + fA);
+          ancContrib += c;
+          pairsCounted++;
+        }
+      }
+      if (ancContrib > 0) {
+        contribByAnc[anc] = { contrib: ancContrib, fA: fA, pairs: pairsCounted };
+        totalF += ancContrib;
+      }
+    }
+
+    // Build ancestor list (only "true" common ancestors — those that contributed),
+    // and only keep the *most senior* contributors for display clarity by summing.
+    var ancList = [];
+    for (var k in contribByAnc) ancList.push({ id: k, contrib: contribByAnc[k].contrib, fA: contribByAnc[k].fA, pairs: contribByAnc[k].pairs });
+    ancList.sort(function (a, b) { return b.contrib - a.contrib; });
+
+    return { F: totalF, ancestors: ancList };
+  }
+
+  // Two paths share only the ancestor `anc` (both end at anc) — no other common id.
+  function nonOverlapping(p1, p2, anc) {
+    var set = {};
+    var i;
+    for (i = 0; i < p1.length; i++) { if (p1[i] !== anc) set[p1[i]] = true; }
+    for (i = 0; i < p2.length; i++) { if (p2[i] !== anc && set[p2[i]]) return false; }
+    return true;
+  }
+
+  function computeMating(sireId, damId) {
+    fCache = {}; // reset memo per top-level computation
+    if (!sireId || !damId) return null;
+    if (sireId === damId) return { F: 1, ancestors: [{ id: sireId, contrib: 1, fA: 0, pairs: 1 }], selfMate: true };
+    return matingF(sireId, damId, {});
+  }
+
+  function band(F) {
+    var pct = F * 100;
+    if (pct < 6.25) return { cls: "green", label: "Low risk", color: "var(--green)" };
+    if (pct <= 12.5) return { cls: "amber", label: "Caution", color: "var(--amber)" };
+    return { cls: "red", label: "High risk", color: "var(--red)" };
+  }
+
+  /* ---------------- Rendering: stats ---------------- */
+  function renderStats() {
+    $("statAnimals").textContent = animals.length;
+    $("statPlans").textContent = plans.length;
+    var exp = plans.filter(function (p) { return p.status !== "recorded"; }).length;
+    $("statExpect").textContent = exp;
+  }
+
+  /* ---------------- Rendering: herd list ---------------- */
+  function renderHerd() {
+    var el = $("animalList");
+    if (!animals.length) {
+      el.innerHTML = '<div class="card empty"><span class="big">&#128002;</span>No animals yet.<br>Add your first animal or load a sample herd.</div>';
+      return;
+    }
+    var sorted = animals.slice().sort(function (a, b) { return (a.id || "").localeCompare(b.id || ""); });
+    var html = "";
+    sorted.forEach(function (a) {
+      var par = [];
+      if (a.sire) par.push("Sire: " + esc(nameOf(a.sire)));
+      if (a.dam) par.push("Dam: " + esc(nameOf(a.dam)));
+      var pillCls = a.sex === "F" ? "pill-f" : a.sex === "M" ? "pill-m" : "";
+      var pillTxt = a.sex === "F" ? "Female" : a.sex === "M" ? "Male" : "Unknown";
+      html += '<div class="animal">' + avatarFor(a) +
+        '<div class="meta"><div class="name">' + esc(a.name || a.id) +
+        ' <span class="pill ' + pillCls + '">' + pillTxt + '</span></div>' +
+        '<div class="id">ID: ' + esc(a.id) + (a.species ? " · " + esc(a.species) : "") + (a.dob ? " · b. " + fmtDate(a.dob) : "") + '</div>' +
+        (par.length ? '<div class="par">' + par.join(" · ") + '</div>' : '') +
+        '</div>' +
+        '<div class="acts">' +
+        '<button class="icon-btn" data-edit="' + esc(a.id) + '" title="Edit">&#9998;</button>' +
+        '<button class="icon-btn del" data-del="' + esc(a.id) + '" title="Delete">&#128465;</button>' +
+        '</div></div>';
+    });
+    el.innerHTML = html;
+    el.querySelectorAll("[data-edit]").forEach(function (b) { b.onclick = function () { openAnimalModal(b.getAttribute("data-edit")); }; });
+    el.querySelectorAll("[data-del]").forEach(function (b) { b.onclick = function () { deleteAnimal(b.getAttribute("data-del")); }; });
+  }
+
+  /* ---------------- Animal CRUD ---------------- */
+  function fillSpeciesSelect(sel, current) {
+    sel.innerHTML = "";
+    for (var k in GESTATION) {
+      var o = document.createElement("option");
+      o.value = k; o.textContent = SPECIES_LABEL[k];
+      if (k === current) o.selected = true;
+      sel.appendChild(o);
+    }
+  }
+  function fillParentSelect(sel, sex, excludeId, current) {
+    sel.innerHTML = '<option value="">— Unknown —</option>';
+    var list = animals.filter(function (a) { return a.id !== excludeId && (sex ? a.sex === sex || a.sex === "U" : true); });
+    list.sort(function (a, b) { return (a.id || "").localeCompare(b.id || ""); });
+    list.forEach(function (a) {
+      var o = document.createElement("option");
+      o.value = a.id; o.textContent = (a.name ? a.name + " " : "") + "(" + a.id + ")";
+      if (a.id === current) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function openAnimalModal(editId) {
+    var a = editId ? byId(editId) : null;
+    $("animalModalTitle").textContent = a ? "Edit animal" : "Add animal";
+    $("aEditId").value = a ? a.id : "";
+    $("aId").value = a ? a.id : "";
+    $("aId").disabled = !!a; // ID is the key; keep stable on edit
+    $("aName").value = a ? (a.name || "") : "";
+    $("aSex").value = a ? a.sex : "F";
+    fillSpeciesSelect($("aSpecies"), a ? a.species : "cattle");
+    fillParentSelect($("aSire"), "M", a ? a.id : null, a ? a.sire : "");
+    fillParentSelect($("aDam"), "F", a ? a.id : null, a ? a.dam : "");
+    $("aDob").value = a ? (a.dob || "") : "";
+    $("aNotes").value = a ? (a.notes || "") : "";
+    showModal("animalModal");
+  }
+
+  function saveAnimal() {
+    var editId = $("aEditId").value;
+    var id = $("aId").value.trim();
+    if (!id) { toast("Tag / ID is required", "warn"); return; }
+    if (!editId && byId(id)) { toast("That ID already exists", "warn"); return; }
+    var sire = $("aSire").value || "";
+    var dam = $("aDam").value || "";
+    if (sire && sire === id) { toast("Animal can't be its own sire", "warn"); return; }
+    if (dam && dam === id) { toast("Animal can't be its own dam", "warn"); return; }
+    // cycle check: parent must not be a descendant
+    if ((sire && isDescendant(sire, id)) || (dam && isDescendant(dam, id))) {
+      toast("That parent is a descendant — would create a loop", "err"); return;
+    }
+    var rec = {
+      id: id,
+      name: $("aName").value.trim(),
+      sex: $("aSex").value,
+      species: $("aSpecies").value,
+      sire: sire,
+      dam: dam,
+      dob: $("aDob").value,
+      notes: $("aNotes").value.trim()
+    };
+    if (editId) {
+      for (var i = 0; i < animals.length; i++) if (animals[i].id === editId) { animals[i] = rec; break; }
+      toast("Animal updated");
+    } else {
+      animals.push(rec);
+      toast("Animal added");
+    }
+    save();
+    hideModal("animalModal");
+    refreshAll();
+  }
+
+  // is `candidate` a descendant of `ancestorId`? (so we don't set a descendant as parent)
+  function isDescendant(candidate, ancestorId) {
+    // walk up from candidate; if we reach ancestorId, candidate is a descendant of it
+    var seen = {};
+    function up(id, depth) {
+      if (!id || depth > MAX_DEPTH || seen[id]) return false;
+      seen[id] = true;
+      if (id === ancestorId) return true;
+      var a = byId(id);
+      if (!a) return false;
+      return up(a.sire, depth + 1) || up(a.dam, depth + 1);
+    }
+    var c = byId(candidate);
+    if (!c) return false;
+    return up(c.sire, 0) || up(c.dam, 0);
+  }
+
+  function deleteAnimal(id) {
+    var a = byId(id);
+    if (!a) return;
+    if (!confirm("Delete " + (a.name || a.id) + "? Any animals listing it as a parent will have that link cleared.")) return;
+    animals = animals.filter(function (x) { return x.id !== id; });
+    animals.forEach(function (x) { if (x.sire === id) x.sire = ""; if (x.dam === id) x.dam = ""; });
+    save();
+    refreshAll();
+    toast("Deleted");
+  }
+
+  /* ---------------- Pedigree tree (SVG, up to 4 gens) ---------------- */
+  function buildPedTree(rootId, maxGen) {
+    function node(id, gen) {
+      var a = byId(id);
+      var n = { id: id, animal: a, gen: gen, sire: null, dam: null };
+      if (a && gen < maxGen) {
+        n.sire = node(a.sire, gen + 1); // may be null id -> handled
+        n.dam = node(a.dam, gen + 1);
+      }
+      return n;
+    }
+    return node(rootId, 0);
+  }
+
+  function renderPedigree() {
+    var sel = $("pedSelect");
+    var rootId = sel.value;
+    var wrap = $("pedWrap");
+    if (!rootId || !byId(rootId)) {
+      wrap.innerHTML = '<div class="empty"><span class="big">&#127795;</span>Select an animal to view its pedigree.</div>';
+      return;
+    }
+    var maxGen = 4; // root + 4 generations of ancestors
+    var tree = buildPedTree(rootId, maxGen);
+
+    // layout: columns = generation (0..maxGen). rows assigned by recursion (leaf order).
+    var colW = 132, boxW = 116, boxH = 42, vGap = 10;
+    var leaves = [];
+    // assign y by in-order over the "ancestor binary tree"
+    var yCursor = { v: 0 };
+    function layout(n) {
+      if (!n) return null;
+      var hasKids = n.sire || n.dam;
+      if (!hasKids) {
+        n.y = yCursor.v * (boxH + vGap) + boxH / 2;
+        yCursor.v++;
+        return n.y;
+      }
+      var ys = [];
+      if (n.sire) ys.push(layout(n.sire));
+      if (n.dam) ys.push(layout(n.dam));
+      // also account for missing slots so spacing stays even
+      if (!n.sire) { yCursor.v++; }
+      if (!n.dam) { yCursor.v++; }
+      n.y = ys.length ? (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2 : (yCursor.v++ * (boxH + vGap) + boxH / 2);
+      return n.y;
+    }
+    layout(tree);
+
+    var totalRows = Math.max(yCursor.v, 1);
+    var svgH = totalRows * (boxH + vGap) + 10;
+    var svgW = (maxGen + 1) * colW + 6;
+    var parts = [];
+
+    function draw(n) {
+      if (!n) return;
+      var x = n.gen * colW + 4;
+      var y = (n.y || boxH / 2) - boxH / 2 + 4;
+      var a = n.animal;
+      // connector to children (toward root = previous column) handled by parent
+      if (a) {
+        var sexCls = a.sex === "F" ? "sex-F" : a.sex === "M" ? "sex-M" : "";
+        var rootCls = n.gen === 0 ? " root" : "";
+        parts.push('<rect class="ped-node ' + sexCls + rootCls + '" x="' + x + '" y="' + y + '" width="' + boxW + '" height="' + boxH + '" rx="8"/>');
+        var nm = a.name || a.id;
+        if (nm.length > 16) nm = nm.slice(0, 15) + "…";
+        parts.push('<text class="ped-txt" x="' + (x + 8) + '" y="' + (y + 17) + '" font-weight="700">' + esc(nm) + '</text>');
+        parts.push('<text class="ped-txt id" x="' + (x + 8) + '" y="' + (y + 31) + '">' + esc(a.id) + ' · ' + (a.sex === "F" ? "♀" : a.sex === "M" ? "♂" : "?") + '</text>');
+      } else {
+        parts.push('<rect class="ped-empty-node" x="' + x + '" y="' + y + '" width="' + boxW + '" height="' + boxH + '" rx="8"/>');
+        parts.push('<text class="ped-txt id" x="' + (x + 8) + '" y="' + (y + 25) + '">unknown</text>');
+      }
+      // lines to parents
+      [n.sire, n.dam].forEach(function (c) {
+        if (!c) return;
+        var px1 = x + boxW;
+        var py1 = (n.y);
+        var px2 = c.gen * colW + 4;
+        var py2 = (c.y);
+        var midX = (px1 + px2) / 2;
+        parts.push('<path class="ped-line" d="M' + px1 + ' ' + py1 + ' H' + midX + ' V' + py2 + ' H' + px2 + '"/>');
+        draw(c);
+      });
+    }
+    draw(tree);
+
+    wrap.innerHTML = '<svg width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pedigree tree">' + parts.join("") + '</svg>';
+
+    // show animal's own inbreeding coefficient
+    fCache = {};
+    var selfF = inbreedingOf(rootId, {});
+    var b = band(selfF);
+    var card = $("pedCard");
+    var existing = card.querySelector(".selfF");
+    var html = '<div class="selfF" style="text-align:center;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);">' +
+      '<span style="font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.6px;">Own inbreeding (F)</span><br>' +
+      '<b style="font-size:1.6rem;color:' + b.color + '">' + (selfF * 100).toFixed(2) + '%</b> ' +
+      '<span class="risk-band band-' + b.cls + '">' + b.label + '</span></div>';
+    if (existing) existing.outerHTML = html; else card.insertAdjacentHTML("beforeend", html);
+  }
+
+  /* ---------------- Mate planner ---------------- */
+  function fillMateSelects() {
+    var dam = $("mateDam"), sire = $("mateSire");
+    var females = animals.filter(function (a) { return a.sex === "F" || a.sex === "U"; });
+    var males = animals.filter(function (a) { return a.sex === "M" || a.sex === "U"; });
+    fillSelect(dam, females, "— Choose dam —");
+    fillSelect(sire, males, "— Choose sire —");
+  }
+  function fillSelect(sel, list, placeholder) {
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">' + placeholder + "</option>";
+    list.slice().sort(function (a, b) { return (a.id || "").localeCompare(b.id || ""); }).forEach(function (a) {
+      var o = document.createElement("option");
+      o.value = a.id; o.textContent = (a.name ? a.name + " " : "") + "(" + a.id + ")";
+      sel.appendChild(o);
+    });
+    if (cur) sel.value = cur;
+  }
+
+  function calcMating() {
+    var damId = $("mateDam").value, sireId = $("mateSire").value;
+    if (!damId || !sireId) { toast("Pick both a dam and a sire", "warn"); return; }
+    var res = computeMating(sireId, damId);
+    var b = band(res.F);
+    var pct = (res.F * 100);
+    var card = $("mateResultCard");
+    card.style.display = "block";
+    var ancHtml = "";
+    if (res.selfMate) {
+      ancHtml = '<div class="anc-item"><span>Same animal selected for both sides</span><span class="contrib">F = 100%</span></div>';
+    } else if (res.ancestors.length) {
+      res.ancestors.slice(0, 8).forEach(function (an) {
+        ancHtml += '<div class="anc-item"><span>' + esc(nameOf(an.id)) +
+          (an.fA > 0 ? ' <small style="color:var(--ink-soft)">(F<sub>A</sub> ' + (an.fA * 100).toFixed(1) + '%)</small>' : '') +
+          '</span><span class="contrib">+' + (an.contrib * 100).toFixed(2) + '%</span></div>';
+      });
+    } else {
+      ancHtml = '<div class="anc-item"><span>No common ancestors found in known pedigree</span><span class="contrib">0%</span></div>';
+    }
+    // needle position clamped 0..18.75% range visually (meter spans to >12.5 red zone; map 0-25% -> 0-100)
+    var needlePct = Math.min(100, (pct / 25) * 100);
+    card.innerHTML =
+      '<div class="risk-result">' +
+      '<div class="coef" style="color:' + b.color + '">' + pct.toFixed(2) + '<span style="font-size:1.2rem">%</span></div>' +
+      '<div style="font-size:.74rem;color:var(--ink-soft)">offspring inbreeding coefficient (F)</div>' +
+      '<span class="risk-band band-' + b.cls + '">' + b.label + '</span>' +
+      '</div>' +
+      '<div class="meter"><div class="needle" style="left:' + needlePct + '%"></div></div>' +
+      '<div class="meter-labels"><span>0%</span><span>6.25%</span><span>12.5%</span><span>25%+</span></div>' +
+      adviceFor(res.F) +
+      '<div class="section-title" style="margin-left:0">Shared ancestors</div>' +
+      '<div class="ancestor-list">' + ancHtml + '</div>' +
+      '<div class="btn-row" style="margin-top:6px"><button class="btn btn-ghost btn-sm" id="planFromMate">Create breeding plan from this pair</button></div>';
+
+    $("planFromMate").onclick = function () { openPlanModal(null, { dam: damId, sire: sireId }); };
+
+    // recommendations
+    renderRecommendations(damId);
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function adviceFor(F) {
+    var pct = F * 100;
+    var msg, cls;
+    if (pct < 6.25) { msg = "Genetically diverse pairing — proceed with confidence."; cls = "band-green"; }
+    else if (pct <= 12.5) { msg = "Moderate relatedness. Acceptable occasionally, but vary sires across seasons."; cls = "band-amber"; }
+    else { msg = "Closely related. Higher risk of inbreeding depression & recessive defects — choose an unrelated sire."; cls = "band-red"; }
+    return '<div class="risk-band ' + cls + '" style="display:block;text-align:center;margin:12px 0 2px;border-radius:10px;padding:9px;">' + msg + "</div>";
+  }
+
+  function renderRecommendations(damId) {
+    var recoCard = $("recoCard"), recoList = $("recoList");
+    var dam = byId(damId);
+    var sires = animals.filter(function (a) { return (a.sex === "M" || a.sex === "U") && a.id !== damId; });
+    if (!sires.length) { recoCard.style.display = "none"; return; }
+    var scored = sires.map(function (s) {
+      var r = computeMating(s.id, damId);
+      return { sire: s, F: r.F };
+    }).sort(function (a, b) { return a.F - b.F; }).slice(0, 5);
+    var html = "";
+    scored.forEach(function (it) {
+      var b = band(it.F);
+      html += '<div class="reco"><div class="info"><b>' + esc(it.sire.name || it.sire.id) + '</b>' +
+        '<small>ID ' + esc(it.sire.id) + (it.sire.species ? ' · ' + esc(it.sire.species) : '') + '</small></div>' +
+        '<span class="fval" style="color:' + b.color + '">' + (it.F * 100).toFixed(2) + '%</span></div>';
+    });
+    recoList.innerHTML = html;
+    recoCard.style.display = "block";
+  }
+
+  /* ---------------- Breeding plans ---------------- */
+  function planStatus(p) {
+    if (p.status === "recorded") return "recorded";
+    if (p.due && daysBetween(todayStr(), p.due) < 0) return "overdue";
+    return "expecting";
+  }
+
+  function renderPlans() {
+    var el = $("planList");
+    if (!plans.length) {
+      el.innerHTML = '<div class="card empty"><span class="big">&#128197;</span>No breeding plans yet.<br>Create one to track gestation and due dates.</div>';
+      return;
+    }
+    var sorted = plans.slice().sort(function (a, b) { return (b.service || "").localeCompare(a.service || ""); });
+    var html = "";
+    sorted.forEach(function (p) {
+      var st = planStatus(p);
+      var stCls = st === "recorded" ? "st-recorded" : st === "overdue" ? "st-overdue" : "st-expecting";
+      var stLabel = st === "recorded" ? "Recorded" : st === "overdue" ? "Overdue" : "Expecting";
+      var cd = "";
+      if (st !== "recorded" && p.due) {
+        var d = daysBetween(todayStr(), p.due);
+        cd = d >= 0 ? "Due in " + d + " day" + (d === 1 ? "" : "s") : Math.abs(d) + " day" + (Math.abs(d) === 1 ? "" : "s") + " overdue";
+      } else if (st === "recorded") {
+        cd = "Born " + fmtDate(p.birth) + " · " + (p.offspring ? p.offspring.length : 0) + " offspring";
+      }
+      html += '<div class="plan"><div class="ptop"><div>' +
+        '<div class="pair">' + esc(nameOf(p.dam)) + ' &times; ' + esc(nameOf(p.sire)) + '</div>' +
+        '<div class="dates">' + (SPECIES_LABEL[p.species] || p.species) + ' · served ' + fmtDate(p.service) + '</div>' +
+        '<div class="dates">Due: <span class="due">' + fmtDate(p.due) + '</span></div>' +
+        '<div class="countdown">' + cd + '</div>' +
+        (p.notes ? '<div class="dates">' + esc(p.notes) + '</div>' : '') +
+        '</div><span class="status ' + stCls + '">' + stLabel + '</span></div>' +
+        '<div class="pacts">' +
+        (st !== "recorded" ? '<button class="btn btn-ghost btn-sm" data-outcome="' + p.id + '">Record offspring</button>' : '') +
+        '<button class="btn btn-ghost btn-sm" data-editplan="' + p.id + '">Edit</button>' +
+        '<button class="btn btn-danger btn-sm" data-delplan="' + p.id + '">Delete</button>' +
+        '</div></div>';
+    });
+    el.innerHTML = html;
+    el.querySelectorAll("[data-outcome]").forEach(function (b) { b.onclick = function () { openOutcomeModal(b.getAttribute("data-outcome")); }; });
+    el.querySelectorAll("[data-editplan]").forEach(function (b) { b.onclick = function () { openPlanModal(b.getAttribute("data-editplan")); }; });
+    el.querySelectorAll("[data-delplan]").forEach(function (b) { b.onclick = function () { deletePlan(b.getAttribute("data-delplan")); }; });
+  }
+
+  function openPlanModal(editId, preset) {
+    var p = editId ? plans.filter(function (x) { return x.id === editId; })[0] : null;
+    $("planModalTitle").textContent = p ? "Edit breeding plan" : "New breeding plan";
+    $("pEditId").value = p ? p.id : "";
+    var females = animals.filter(function (a) { return a.sex === "F" || a.sex === "U"; });
+    var males = animals.filter(function (a) { return a.sex === "M" || a.sex === "U"; });
+    fillSelect($("pDam"), females, "— Choose dam —");
+    fillSelect($("pSire"), males, "— Choose sire —");
+    fillSpeciesSelect($("pSpecies"), p ? p.species : "cattle");
+    $("pDam").value = p ? p.dam : (preset ? preset.dam : "");
+    $("pSire").value = p ? p.sire : (preset ? preset.sire : "");
+    // default species to dam's species
+    if (!p) {
+      var damA = byId($("pDam").value);
+      if (damA && damA.species) $("pSpecies").value = damA.species;
+    }
+    $("pService").value = p ? p.service : todayStr();
+    $("pNotes").value = p ? (p.notes || "") : "";
+    updateDuePreview();
+    showModal("planModal");
+  }
+
+  function updateDuePreview() {
+    var sp = $("pSpecies").value, sv = $("pService").value;
+    if (sp && sv) {
+      var due = addDays(sv, GESTATION[sp]);
+      $("pDuePreview").innerHTML = "Gestation " + GESTATION[sp] + " days &rarr; <b>due " + fmtDate(due) + "</b>";
+    } else { $("pDuePreview").textContent = ""; }
+  }
+
+  function savePlan() {
+    var editId = $("pEditId").value;
+    var dam = $("pDam").value, sire = $("pSire").value, sp = $("pSpecies").value, sv = $("pService").value;
+    if (!dam || !sire) { toast("Pick a dam and a sire", "warn"); return; }
+    if (!sv) { toast("Service date required", "warn"); return; }
+    var due = addDays(sv, GESTATION[sp]);
+    if (editId) {
+      for (var i = 0; i < plans.length; i++) if (plans[i].id === editId) {
+        plans[i].dam = dam; plans[i].sire = sire; plans[i].species = sp; plans[i].service = sv; plans[i].due = due; plans[i].notes = $("pNotes").value.trim();
+        break;
+      }
+      toast("Plan updated");
+    } else {
+      plans.push({ id: uid("plan"), dam: dam, sire: sire, species: sp, service: sv, due: due, notes: $("pNotes").value.trim(), status: "expecting", birth: "", offspring: [] });
+      toast("Plan created · due " + fmtDate(due));
+    }
+    save();
+    hideModal("planModal");
+    refreshAll();
+  }
+
+  function deletePlan(id) {
+    if (!confirm("Delete this breeding plan? Offspring already added to the herd are kept.")) return;
+    plans = plans.filter(function (p) { return p.id !== id; });
+    save(); refreshAll(); toast("Plan deleted");
+  }
+
+  /* ---------------- Outcome / offspring ---------------- */
+  function offspringRow(idx, plan) {
+    var sp = plan ? plan.species : "cattle";
+    return '<div class="row off-row" style="margin-top:8px;align-items:flex-end;">' +
+      '<div><label>Offspring ID *</label><input class="off-id" placeholder="' + (plan ? esc(plan.dam) : "calf") + '-' + (idx + 1) + '" /></div>' +
+      '<div><label>Sex</label><select class="off-sex"><option value="F">Female</option><option value="M">Male</option><option value="U">Unknown</option></select></div>' +
+      '</div>';
+  }
+
+  function openOutcomeModal(planId) {
+    var p = plans.filter(function (x) { return x.id === planId; })[0];
+    if (!p) return;
+    $("oPlanId").value = planId;
+    $("oBirth").value = p.due || todayStr();
+    var f = $("offspringFields");
+    f.innerHTML = "";
+    f.insertAdjacentHTML("beforeend", offspringRow(0, p));
+    $("addOffspringRow").onclick = function () {
+      var n = f.querySelectorAll(".off-row").length;
+      f.insertAdjacentHTML("beforeend", offspringRow(n, p));
+    };
+    showModal("outcomeModal");
+  }
+
+  function saveOutcome() {
+    var planId = $("oPlanId").value;
+    var p = plans.filter(function (x) { return x.id === planId; })[0];
+    if (!p) return;
+    var birth = $("oBirth").value || todayStr();
+    var rows = document.querySelectorAll("#offspringFields .off-row");
+    var added = [];
+    var errored = false;
+    rows.forEach(function (r) {
+      if (errored) return;
+      var id = r.querySelector(".off-id").value.trim();
+      if (!id) return; // skip blank rows
+      if (byId(id)) { toast("ID '" + id + "' already exists — pick another", "err"); errored = true; return; }
+      var sex = r.querySelector(".off-sex").value;
+      var damA = byId(p.dam);
+      animals.push({
+        id: id, name: "", sex: sex,
+        species: p.species,
+        sire: p.sire, dam: p.dam,
+        dob: birth,
+        notes: "Born from breeding plan (" + nameOf(p.dam) + " × " + nameOf(p.sire) + ")"
+      });
+      added.push(id);
+    });
+    if (errored) return;
+    if (!added.length) { toast("Enter at least one offspring ID", "warn"); return; }
+    p.status = "recorded"; p.birth = birth; p.offspring = added;
+    save();
+    hideModal("outcomeModal");
+    refreshAll();
+    toast(added.length + " offspring added to herd");
+  }
+
+  /* ---------------- CSV export ---------------- */
+  function csvCell(v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function exportCSV() {
+    if (!animals.length && !plans.length) { toast("Nothing to export yet", "warn"); return; }
+    fCache = {};
+    var lines = [];
+    lines.push("# HERDGENE export — Animals");
+    lines.push(["ID", "Name", "Sex", "Species", "Sire", "Dam", "DOB", "OwnInbreedingF%", "Notes"].map(csvCell).join(","));
+    animals.forEach(function (a) {
+      var f = inbreedingOf(a.id, {});
+      lines.push([a.id, a.name, a.sex, a.species || "", a.sire || "", a.dam || "", a.dob || "", (f * 100).toFixed(2), a.notes || ""].map(csvCell).join(","));
+    });
+    lines.push("");
+    lines.push("# HERDGENE export — Breeding plans");
+    lines.push(["Dam", "Sire", "Species", "GestationDays", "ServiceDate", "DueDate", "Status", "BirthDate", "Offspring", "Notes"].map(csvCell).join(","));
+    plans.forEach(function (p) {
+      lines.push([nameOf(p.dam), nameOf(p.sire), p.species, GESTATION[p.species] || "", p.service, p.due, planStatus(p), p.birth || "", (p.offspring || []).join(" "), p.notes || ""].map(csvCell).join(","));
+    });
+    var blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "herdgene-" + todayStr() + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast("CSV exported");
+  }
+
+  /* ---------------- Sample herd ---------------- */
+  function seedSample() {
+    if (animals.length && !confirm("Load the sample herd? This adds demo animals alongside your existing data.")) return;
+    var sample = [
+      { id: "B-001", name: "Brutus", sex: "M", species: "cattle", sire: "", dam: "", dob: "2018-03-10", notes: "Foundation bull" },
+      { id: "C-001", name: "Rosie", sex: "F", species: "cattle", sire: "", dam: "", dob: "2018-05-22", notes: "Foundation cow" },
+      { id: "C-002", name: "Bluebell", sex: "F", species: "cattle", sire: "", dam: "", dob: "2018-07-01", notes: "Unrelated foundation cow" },
+      { id: "B-010", name: "Titan", sex: "M", species: "cattle", sire: "B-001", dam: "C-001", dob: "2020-04-15", notes: "" },
+      { id: "C-010", name: "Daisy", sex: "F", species: "cattle", sire: "B-001", dam: "C-001", dob: "2020-04-15", notes: "Full sib to Titan" },
+      { id: "C-011", name: "Clover", sex: "F", species: "cattle", sire: "B-001", dam: "C-002", dob: "2020-06-02", notes: "Half-sib to Daisy" },
+      { id: "C-020", name: "Buttercup", sex: "F", species: "cattle", sire: "B-010", dam: "C-011", dob: "2022-05-19", notes: "" },
+      { id: "G-001", name: "Billy", sex: "M", species: "goat", sire: "", dam: "", dob: "2021-02-11", notes: "Buck" },
+      { id: "G-002", name: "Nan", sex: "F", species: "goat", sire: "", dam: "", dob: "2021-03-03", notes: "Doe" }
+    ];
+    var addedN = 0;
+    sample.forEach(function (s) { if (!byId(s.id)) { animals.push(s); addedN++; } });
+    save(); refreshAll();
+    toast(addedN ? "Sample herd loaded (" + addedN + " animals)" : "Sample already present");
+  }
+
+  /* ---------------- Modal plumbing ---------------- */
+  function showModal(id) { $(id).classList.add("show"); document.body.style.overflow = "hidden"; }
+  function hideModal(id) { $(id).classList.remove("show"); document.body.style.overflow = ""; }
+  document.querySelectorAll("[data-close]").forEach(function (b) { b.onclick = function () { hideModal(b.closest(".modal-bg").id); }; });
+  document.querySelectorAll(".modal-bg").forEach(function (m) { m.addEventListener("click", function (e) { if (e.target === m) hideModal(m.id); }); });
+
+  /* ---------------- Tabs ---------------- */
+  function setTab(name) {
+    document.querySelectorAll("nav.tabs button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === name); });
+    document.querySelectorAll(".view").forEach(function (v) { v.classList.toggle("active", v.id === "view-" + name); });
+    if (name === "pedigree") renderPedigree();
+    if (name === "mate") fillMateSelects();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  document.querySelectorAll("nav.tabs button").forEach(function (b) { b.onclick = function () { setTab(b.getAttribute("data-tab")); }; });
+
+  /* ---------------- Pedigree select population ---------------- */
+  function fillPedSelect() {
+    var sel = $("pedSelect");
+    var cur = sel.value;
+    sel.innerHTML = animals.length ? "" : '<option value="">No animals yet</option>';
+    animals.slice().sort(function (a, b) { return (a.id || "").localeCompare(b.id || ""); }).forEach(function (a) {
+      var o = document.createElement("option");
+      o.value = a.id; o.textContent = (a.name ? a.name + " " : "") + "(" + a.id + ")";
+      sel.appendChild(o);
+    });
+    if (cur && byId(cur)) sel.value = cur;
+  }
+
+  /* ---------------- Refresh ---------------- */
+  function refreshAll() {
+    renderStats();
+    renderHerd();
+    fillPedSelect();
+    fillMateSelects();
+    renderPlans();
+    var pedView = $("view-pedigree");
+    if (pedView.classList.contains("active")) renderPedigree();
+  }
+
+  /* ---------------- Wire events ---------------- */
+  $("addAnimalBtn").onclick = function () { openAnimalModal(null); };
+  $("saveAnimalBtn").onclick = saveAnimal;
+  $("exportBtn").onclick = exportCSV;
+  $("seedBtn").onclick = seedSample;
+  $("aSex").onchange = function () {
+    // refilter parent lists not needed; keep simple
+  };
+  $("pedSelect").onchange = renderPedigree;
+  $("calcMateBtn").onclick = calcMating;
+  $("mateDam").onchange = function () { var c = $("mateResultCard"); if (c.style.display === "block") calcMating(); };
+  $("addPlanBtn").onclick = function () { openPlanModal(null); };
+  $("savePlanBtn").onclick = savePlan;
+  $("pSpecies").onchange = updateDuePreview;
+  $("pService").onchange = updateDuePreview;
+  $("pDam").onchange = function () { var d = byId($("pDam").value); if (d && d.species) { $("pSpecies").value = d.species; updateDuePreview(); } };
+  $("saveOutcomeBtn").onclick = saveOutcome;
+
+  /* ---------------- Init ---------------- */
+  load();
+  refreshAll();
+})();
+</script>
+</body>
+</html>
