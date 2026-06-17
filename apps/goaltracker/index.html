@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08050d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Goal Tracker — Goals with milestones and progress tracking">
+  <title>Goal Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --canvas:#08050d;--magenta:#ff1f5a;--purple:#7c3aed;--cyan:#00d8ff;
+      --green:#00e887;--gold:#f5c000;--pink:#ff6fc8;
+      --bg:#0f0d18;--glass:rgba(255,255,255,.06);--muted:#a0a0b0;--text:#f5f0e8;
+    }
+    html,body{width:100%;height:100%;background:var(--canvas);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;-webkit-font-smoothing:antialiased;
+      overflow:hidden;user-select:none;-webkit-user-select:none}
+    #app{height:100dvh;display:flex;flex-direction:column;position:relative;z-index:1}
+    .header{padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top, 0px));
+      display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.07)}
+    .logo{font-weight:700;font-size:20px;background:linear-gradient(120deg,var(--cyan),var(--purple));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .pro-badge{background:linear-gradient(120deg,var(--magenta),var(--pink));color:#fff;
+      font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;cursor:pointer}
+    .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 20px;padding-bottom:calc(72px + env(safe-area-inset-bottom, 16px))}
+    .goal-card{background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:14px;
+      padding:16px;margin-bottom:12px;transition:.2s;cursor:pointer}
+    .goal-card:active{transform:scale(.98);opacity:.8}
+    .goal-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:8px}
+    .goal-title{font-weight:600;font-size:16px;flex:1}
+    .goal-progress{font-size:12px;color:var(--muted);font-weight:700}
+    .progress-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin:8px 0}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));transition:width .3s}
+    .goal-meta{font-size:12px;color:var(--muted);margin-top:8px}
+    .milestone-list{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05)}
+    .milestone{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin:6px 0}
+    .milestone.done{color:var(--green);text-decoration:line-through}
+    .goal-actions{display:flex;gap:8px;margin-top:10px}
+    .goal-btn{flex:1;padding:8px;background:rgba(255,255,255,.1);border:none;border-radius:8px;
+      color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+    .goal-btn:active{background:rgba(255,255,255,.15)}
+    .empty{text-align:center;color:var(--muted);padding:40px 20px}
+    .tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(8,5,13,.95);backdrop-filter:blur(10px);
+      border-top:1px solid rgba(255,255,255,.07);display:flex;height:72px;
+      padding-bottom:env(safe-area-inset-bottom, 0px)}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;
+      gap:4px;transition:.2s}
+    .tab.active{color:var(--cyan)}
+    .fab{position:absolute;bottom:calc(72px + env(safe-area-inset-bottom, 16px) + 16px);
+      right:20px;width:56px;height:56px;border-radius:999px;border:none;
+      background:linear-gradient(120deg,var(--cyan),var(--green));color:#fff;
+      font-size:24px;cursor:pointer;transition:.2s;box-shadow:0 4px 16px rgba(0,216,255,.3)}
+    .fab:active{transform:scale(.92)}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;
+      z-index:100;animation:slideUp .3s ease}
+    .modal.active{display:flex}
+    .modal-content{background:var(--canvas);width:100%;border-radius:20px 20px 0 0;padding:24px;
+      padding-top:12px;padding-bottom:calc(24px + env(safe-area-inset-bottom, 16px));max-height:90dvh;
+      overflow-y:auto}
+    .modal-header{font-size:18px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between}
+    .modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-size:13px;font-weight:600;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+    .form-input{width:100%;padding:12px 14px;background:var(--bg);border:1px solid rgba(255,255,255,.08);
+      border-radius:10px;color:var(--text);font-family:inherit;font-size:15px;outline:none}
+    .form-input:focus{border-color:var(--cyan)}
+    .btn-primary{width:100%;padding:14px;background:linear-gradient(120deg,var(--cyan),var(--green));
+      color:#fff;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;
+      transition:.2s;margin-top:16px}
+    .btn-primary:active{transform:scale(.98)}
+    @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">🎯 Goal Tracker</div>
+    <div class="pro-badge" id="proBadge">FREE</div>
+  </div>
+  <div class="content" id="content">
+    <div id="goalsContainer"></div>
+    <div class="empty" id="emptyState" style="display:none">No goals yet. Tap + to set one!</div>
+  </div>
+  <button class="fab" id="fabBtn">+</button>
+  <div class="tabs">
+    <button class="tab active" data-view="active">🔥 Active</button>
+    <button class="tab" data-view="completed">✅ Done</button>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>New Goal</span>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Goal Title</label>
+      <input class="form-input" id="formTitle" placeholder="e.g., Run a 5K">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Target Value</label>
+      <input class="form-input" id="formTarget" type="number" placeholder="e.g., 100">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Unit</label>
+      <input class="form-input" id="formUnit" placeholder="e.g., km, books, days">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Milestones (comma-separated)</label>
+      <input class="form-input" id="formMilestones" placeholder="e.g., 25km, 50km, 75km">
+    </div>
+    <button class="btn-primary" id="formSubmit">Create Goal</button>
+  </div>
+</div>
+
+<script>
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+  const MAX_FREE=3;
+  let goals=[], proStatus=false, currentView='active', editingId=null;
+
+  function load(){
+    const saved=localStorage.getItem('goals');
+    goals=saved?JSON.parse(saved):[];
+    proStatus=localStorage.getItem('goals-pro')==='1';
+    updateUI();
+  }
+
+  function save(){
+    localStorage.setItem('goals', JSON.stringify(goals));
+  }
+
+  function checkProStatus(){
+    const active=goals.filter(g=>!g.completed).length;
+    if(!proStatus && active>=MAX_FREE && !editingId){
+      alert('Free tier limited to '+MAX_FREE+' active goals');
+      return false;
+    }
+    return true;
+  }
+
+  function addGoal(){
+    const title=document.getElementById('formTitle').value.trim();
+    const target=parseFloat(document.getElementById('formTarget').value);
+    const unit=document.getElementById('formUnit').value.trim();
+    const milestones=(document.getElementById('formMilestones').value||'').split(',').map(m=>({text:m.trim(),progress:0,done:false})).filter(m=>m.text);
+
+    if(!title || !target || !unit){
+      alert('Title, target value, and unit required');
+      return;
+    }
+
+    if(!checkProStatus()) return;
+
+    const goal={
+      id:editingId||Date.now(),
+      title, target, unit, milestones,
+      progress:0, completed:false,
+      createdAt:new Date().toISOString()
+    };
+
+    if(editingId){
+      goals=goals.map(g=>g.id===editingId?{...g,...goal}:g);
+      editingId=null;
+    } else {
+      goals.push(goal);
+    }
+
+    save();
+    closeModal();
+    updateUI();
+  }
+
+  function updateProgress(id, delta){
+    const goal=goals.find(g=>g.id===id);
+    if(goal){
+      goal.progress=Math.min(goal.target, Math.max(0, goal.progress+delta));
+      if(goal.progress===goal.target) goal.completed=true;
+      save();
+      updateUI();
+    }
+  }
+
+  function deleteGoal(id){
+    if(confirm('Delete this goal?')){
+      goals=goals.filter(g=>g.id!==id);
+      save();
+      updateUI();
+    }
+  }
+
+  function openModal(id=null){
+    editingId=id;
+    if(id){
+      const g=goals.find(x=>x.id===id);
+      document.getElementById('formTitle').value=g.title;
+      document.getElementById('formTarget').value=g.target;
+      document.getElementById('formUnit').value=g.unit;
+      document.getElementById('formMilestones').value=g.milestones.map(m=>m.text).join(', ');
+    } else {
+      document.getElementById('formTitle').value='';
+      document.getElementById('formTarget').value='';
+      document.getElementById('formUnit').value='';
+      document.getElementById('formMilestones').value='';
+    }
+    document.getElementById('modal').classList.add('active');
+  }
+
+  function closeModal(){
+    document.getElementById('modal').classList.remove('active');
+    editingId=null;
+  }
+
+  function getFilteredGoals(){
+    if(currentView==='completed') return goals.filter(g=>g.completed);
+    return goals.filter(g=>!g.completed);
+  }
+
+  function updateUI(){
+    const container=document.getElementById('goalsContainer');
+    const filtered=getFilteredGoals();
+
+    container.innerHTML=filtered.map(g=>{
+      const pct=Math.round((g.progress/g.target)*100);
+      return `
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-title">${g.title}</div>
+          <div class="goal-progress">${pct}%</div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="goal-meta">${g.progress.toFixed(1)} / ${g.target} ${g.unit}</div>
+        ${g.milestones.length?`
+        <div class="milestone-list">
+          ${g.milestones.map((m,i)=>`<div class="milestone ${m.done?'done':''}">📍 ${m.text}</div>`).join('')}
+        </div>
+        `:''}
+        <div class="goal-actions">
+          <button class="goal-btn" onclick="updateProgress(${g.id}, 1)">+1</button>
+          <button class="goal-btn" onclick="updateProgress(${g.id}, 5)">+5</button>
+          <button class="goal-btn" onclick="updateProgress(${g.id}, 10)">+10</button>
+          <button class="goal-btn" style="background:rgba(255,31,90,.2);color:var(--magenta)" onclick="deleteGoal(${g.id})">✕</button>
+        </div>
+      </div>
+      `;
+    }).join('');
+
+    document.getElementById('emptyState').style.display=filtered.length?'none':'block';
+  }
+
+  document.getElementById('fabBtn').addEventListener('click', ()=>openModal());
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('formSubmit').addEventListener('click', addGoal);
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click', e=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    e.target.classList.add('active');
+    currentView=e.target.dataset.view;
+    updateUI();
+  }));
+
+  load();
+</script>
+</body>
+</html>
