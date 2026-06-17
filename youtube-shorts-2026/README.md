@@ -17,6 +17,7 @@
 | 2 | Why Starbucks Doesn't Sell Coffee | Business Economics | Ready | `business-economics/starbucks-coffee.html` |
 | 3 | Mr. Fart Man: The Next-Door Neighbourhood | Comedy/Physical | Ready | `comedy/fart-man-neighbourhood.html` |
 | 4 | Why Adults See Obstacles But Kids Don't `[AHAD-26]` | AHAD/Insight | Ready | `ahad-insights/adults-vs-kids.html` |
+| 5 | The Science of Humming — Generational Healing `[RES-01]` | Frequency/Wellness (standalone test) | Ready | `resonance/humming-healing.html` |
 
 **All compositions tested, locked, and production-ready.**
 

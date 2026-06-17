@@ -139,6 +139,54 @@ Subscribe for insights that matter."
 
 ---
 
+## VIDEO 5: "The Science of Humming (Generational Healing)"
+**ID:** RES-01 | **Duration:** 60s | **Type:** Frequency/Wellness Explainer | **Status:** Standalone test | **Voiceover:** Calm, warm authority
+
+### Script (VoiceOver)
+```
+[0-6s] HOOK
+"Your grandmother's humming wasn't just a habit.
+It was medicine.
+And science finally explains why."
+
+[6-26s] THE MECHANISM
+"When you hum, you stimulate the vagus nerve —
+your body's calm switch.
+
+You release up to 15 times more nitric oxide,
+opening your airways and blood vessels.
+
+Your breath slows. Your heart rate steadies.
+Cortisol drops."
+
+[26-44s] THE RESONANCE
+"Because a hum is literally vibration —
+a low-frequency wave moving through your chest,
+your skull, your bones.
+
+That vibration tells your nervous system one thing:
+you are safe.
+
+It's the same reason a cat's purr calms you.
+Resonance regulates us."
+
+[44-54s] THE GENERATIONAL THREAD
+"Lullabies. Kitchen hums. Church tones.
+
+We inherited a nervous-system tool —
+and passed it down for generations
+without ever knowing the science."
+
+[54-60s] CTA
+"Hum for five minutes today.
+Your ancestors already knew.
+Follow @resonance."
+```
+
+**Sound design:** soft 110-130Hz drone bed under VO; gentle bowl/hum swells on transitions. No music spikes — keep it regulating, not energetic.
+
+---
+
 ## PRODUCTION NOTES
 
 **VO Talent:** Male narrator, calm/authoritative for Economics & AHAD, dramatic for hooks
