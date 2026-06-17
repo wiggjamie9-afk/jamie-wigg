@@ -42,6 +42,9 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 #### Agent Tools & Extensions
 - **pi-perplexity** (`pi-perplexity.md`) — Perplexity Search plugin for oh-my-pi agents; reverse-engineered OAuth (desktop JWT extraction + email OTP auth); SSE streaming with incremental event merging; formatted LLM output with sources + age. Lightweight web search tool for Nucleus fact-checking and competitive intelligence
 
+#### Generative & Creative
+- **p5.js Generative Art** (`p5js-generative-art.md`) — Structured approach to parameterized, reproducible generative art using p5.js. Nine principles: parameter organization, seeded randomness, lifecycle patterns (static/animated/interactive), class structure, performance optimization, utilities (color, mapping, easing), UI integration, common patterns (trails, noise-driven movement, grids), export. Seeded random standard from Art Blocks. Batch-generate unique frames for RHYTHMIX videos or procedural textures for design systems
+
 #### LLM Gateways & Provider Access
 - **CC Switch** (`cc-switch.md`) — Desktop config manager (Tauri 2) for 7 AI coding tools (Claude Code/Desktop, Codex, Gemini CLI, OpenCode, OpenClaw, Hermes); unified MCP/Skills/prompt sync, provider switching, cost dashboard, atomic SQLite writes. ⚠️ sponsor wall of discount API-relays = same reverse-eng/credential-routing risk as kimi-free-api — use with official channels only. Desktop, not sandbox
 - **GPT4Free (g4f)** (`gpt4free.md`) — Multi-provider LLM aggregator; OpenAI-compatible Python/JS client + FastAPI + MCP server; web search + image gen; local inference (Ollama/vLLM). GPLv3
