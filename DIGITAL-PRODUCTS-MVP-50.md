@@ -5,35 +5,59 @@ Based on your portfolio: STARLIGHTMIX Studio, HerdCheck, Codex of Reality, Roomt
 
 ---
 
-## ✅ Build Status (live)
+## ✅ Build Status — 41 apps SHIPPED
 
-Shipped as self-contained, fully-offline single-file PWAs in `apps/` (no build step, no runtime deps, `localStorage` persistence, freemium upsell baked in). Built client-side first — backend integration notes are left inline where a future cloud layer would slot in.
+All built as self-contained single-file PWAs in `apps/` (no build step, `localStorage`/IndexedDB persistence, freemium upsells baked in) and made **installable + offline-capable** via a shared service worker (`apps/pwa-sw.js`, injected by `apps/make-installable.mjs`). Browse them all at **`apps/mvp-gallery.html`**.
 
-| App file | Concept | Vertical |
-|---|---|---|
-| `apps/beatmap.html` | Step-sequencer drum machine | Music |
-| `apps/tuner.html` | Chromatic mic tuner (autocorrelation) | Music |
-| `apps/stemmix.html` | Private multi-track stem mixer | Music |
-| `apps/metro.html` | Lookahead-scheduler metronome | Music |
-| `apps/tabplayer.html` | ASCII guitar-tab player (Web Audio) | Music |
-| `apps/setlist.html` | Gig setlist builder | Music |
-| `apps/lrcsync.html` | Synced-lyrics (.lrc) maker | Music |
-| `apps/calving.html` | Calving predictor + readiness checklist | Livestock |
-| `apps/herdlog.html` | Health diary w/ withdrawal alerts | Livestock |
-| `apps/feedcost.html` | Feed cost calculator | Livestock |
-| `apps/vaxtrack.html` | Vaccination scheduler | Livestock |
-| `apps/breathe.html` | Guided breathwork timer | Wellness |
-| `apps/achelog.html` | Pain & symptom journal | Wellness/Recovery |
-| `apps/stretch.html` | Stretching atlas + routine timer | Wellness/Recovery |
-| `apps/statline.html` | Personal sports stats tracker | Sport |
-| `apps/wordstreak.html` | Daily writing tracker | Productivity |
-| `apps/prompter.html` | Video script teleprompter | Creator |
-| `apps/harmony.html` | Chord & vocal-harmony helper | Music *(building)* |
-| `apps/thumbforge.html` | Thumbnail concept generator | Creator *(building)* |
-| `apps/brandkit.html` | Personal brand asset generator | Creator *(building)* |
-| `apps/askform.html` | Lightweight survey/poll builder | Productivity *(building)* |
+Most are 100% client-side (truly offline). The **BYOK** apps call real APIs with the user's own key (the STARLIGHTMIX Studio model) and ship with a demo mode. The two **pose-AI** apps load an on-device model from CDN on first use.
 
-Concepts already covered by pre-existing apps (skipped to avoid duplication): water tracker, weight tracker, habit streak, pomodoro/task timer, voice memo organizer, meditation guide, calorie/nutrition logger.
+| App file | Concept | Vertical | Backend |
+|---|---|---|---|
+| `beatmap.html` | Step-sequencer drum machine | Music | Client-only |
+| `tuner.html` | Chromatic mic tuner (autocorrelation) | Music | Client-only |
+| `stemmix.html` | Private multi-track stem mixer | Music | Client-only |
+| `metro.html` | Lookahead-scheduler metronome | Music | Client-only |
+| `tabplayer.html` | ASCII guitar-tab player (Web Audio) | Music | Client-only |
+| `setlist.html` | Gig setlist builder | Music | Client-only |
+| `lrcsync.html` | Synced-lyrics (.lrc) maker | Music | Client-only |
+| `harmony.html` | Chord & vocal-harmony helper | Music | Client-only |
+| `waveedit.html` | Audio trimmer/editor (WAV export) | Music | Client-only |
+| `samplevault.html` | Sample library (IndexedDB) | Music | Client-only |
+| `moodatlas.html` | Music mood tagger + atlas | Music | Client-only |
+| `stemsplit.html` | AI stem separator | Music | **BYOK** (Replicate + proxy) |
+| `mvtemplates.html` | Music-video brief generator | Music | Client-only |
+| `calving.html` | Calving predictor + checklist | Livestock | Client-only |
+| `herdlog.html` | Health diary w/ withdrawal alerts | Livestock | Client-only |
+| `feedcost.html` | Feed cost calculator | Livestock | Client-only |
+| `vaxtrack.html` | Vaccination scheduler | Livestock | Client-only |
+| `herdgene.html` | Breeding planner + inbreeding calc | Livestock | Client-only |
+| `graze.html` | Rotational grazing planner | Livestock | Client-only |
+| `pasturescan.html` | Pasture quality from a photo | Livestock | Client-only (Canvas CV) |
+| `aerialmap.html` | Aerial vegetation heatmap | Livestock | Client-only (Canvas CV) |
+| `earlywarn.html` | Disease early-warning risk model | Livestock | Client-only |
+| `breathe.html` | Guided breathwork timer | Wellness | Client-only |
+| `achelog.html` | Pain & symptom journal | Wellness | Client-only |
+| `stretch.html` | Stretching atlas + routine timer | Wellness | Client-only |
+| `rehab.html` | Injury rehab tracker | Wellness | Client-only |
+| `yoga.html` | Pose guide + camera coaching | Wellness | Pose-AI (CDN model) |
+| `protocol.html` | Coach/physio protocol builder | Wellness | Client-only (B2B-ready) |
+| `statline.html` | Personal sports stats tracker | Sport | Client-only |
+| `hrzones.html` | HR training-zone analyzer | Sport | Client-only |
+| `formcheck.html` | Running form analyzer | Sport | Pose-AI (CDN model) |
+| `prompter.html` | Video script teleprompter | Creator | Client-only |
+| `thumbforge.html` | Thumbnail concept generator | Creator | Client-only |
+| `brandkit.html` | Brand asset generator | Creator | Client-only |
+| `newsletter.html` | Email newsletter builder | Creator | Client-only |
+| `podclip.html` | Podcast quote/clip card maker | Creator | Client-only |
+| `transcribe.html` | AI transcription + show notes | Creator | **BYOK** (OpenAI) |
+| `wordstreak.html` | Daily writing tracker | Productivity | Client-only |
+| `askform.html` | Survey/poll builder | Productivity | Client-only (URL-share) |
+| `contentcal.html` | Social content calendar | Productivity | Client-only |
+| `timeblock.html` | Day time-blocking planner | Productivity | Client-only |
+
+**To make the BYOK apps fully live:** `transcribe` needs the user's OpenAI key (pasted in-app, stored locally). `stemsplit` needs a Replicate token **and** the repo's `studio/workers/replicate-proxy` Worker deployed (Replicate blocks direct browser calls). Both run in a clearly-labelled demo mode until then.
+
+Concepts already covered by pre-existing apps (skipped to avoid duplication): water tracker, weight tracker, habit streak, pomodoro/task timer, voice memo organizer, meditation guide, calorie/nutrition logger, sleep log (`dreams.html`).
 
 ---
 
