@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08050d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Water Tracker — daily hydration tracking with goals">
+  <title>Water Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--canvas:#08050d;--bg:#0f0d18;--muted:#a0a0b0;--text:#f5f0e8;--cyan:#00d8ff;--blue:#4f46e5}
+    html,body{width:100%;height:100%;background:var(--canvas);color:var(--text);font-family:-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+    #app{height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;padding:20px}
+    .header{position:absolute;top:16px;left:20px;right:20px;display:flex;justify-content:space-between;padding-top:env(safe-area-inset-top,0px)}
+    .logo{font-weight:700;font-size:18px;background:linear-gradient(120deg,var(--cyan),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .cup-display{width:200px;height:300px;background:var(--bg);border:2px solid var(--cyan);border-radius:20px;margin-bottom:30px;position:relative;overflow:hidden;display:flex;align-items:flex-end}
+    .cup-fill{width:100%;background:linear-gradient(180deg,var(--cyan),var(--blue));transition:height .3s;display:flex;align-items:center;justify-content:center;position:relative}
+    .cup-fill::before{content:'';position:absolute;inset:0;background:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Cline x1=%220%22 y1=%220%22 x2=%22100%22 y2=%22100%22 stroke=%22rgba(255,255,255,.1)%22 stroke-width=%221%22/%3E%3C/svg%3E');animation:flow 2s linear infinite}
+    @keyframes flow{0%{transform:translateY(0)}to{transform:translateY(20px)}}
+    .cup-text{color:#fff;font-weight:700;font-size:28px;z-index:1;text-shadow:0 2px 8px rgba(0,0,0,.3)}
+    .cup-goal{font-size:12px;color:var(--muted);margin-top:16px;text-align:center}
+    .controls{display:flex;gap:10px;width:100%;max-width:300px;margin-top:30px}
+    .btn{flex:1;padding:14px;background:linear-gradient(120deg,var(--cyan),var(--blue));border:none;border-radius:12px;color:#fff;font-weight:700;cursor:pointer;font-size:14px;transition:.2s}
+    .btn:active{transform:scale(.96)}
+    .btn-reset{background:rgba(255,255,255,.1);color:var(--text)}
+    .presets{display:flex;gap:8px;width:100%;max-width:300px;margin-top:20px;flex-wrap:wrap;justify-content:center}
+    .preset{padding:8px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;color:var(--muted);font-size:12px;cursor:pointer;font-weight:600;transition:.15s}
+    .preset:active{background:rgba(255,255,255,.15);color:var(--text)}
+    .tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(8,5,13,.95);border-top:1px solid rgba(255,255,255,.07);display:flex;height:72px;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;gap:4px;font-weight:600}
+    .tab.active{color:var(--cyan)}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">💧 Water Tracker</div>
+    <div style="font-size:12px;color:var(--muted)">FREE</div>
+  </div>
+
+  <div class="cup-display">
+    <div class="cup-fill" id="fill">
+      <div class="cup-text" id="cupText">0%</div>
+    </div>
+  </div>
+
+  <div class="cup-goal">
+    <div id="progress">0 / 8 cups</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">Daily goal</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="addWater(250)">+250ml</button>
+    <button class="btn btn-reset" onclick="resetDay()">↺ Reset</button>
+  </div>
+
+  <div class="presets">
+    <button class="preset" onclick="addWater(250)">250ml</button>
+    <button class="preset" onclick="addWater(500)">500ml</button>
+    <button class="preset" onclick="addWater(750)">750ml</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active">💧 Today</button>
+    <button class="tab">📊 History</button>
+  </div>
+</div>
+
+<script>
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+  const GOAL=2000;
+  let intake=0;
+
+  function getTodayKey(){
+    const d=new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function load(){
+    const data=JSON.parse(localStorage.getItem('water')||'{}');
+    intake=data[getTodayKey()]||0;
+    updateUI();
+  }
+
+  function save(){
+    const data=JSON.parse(localStorage.getItem('water')||'{}');
+    data[getTodayKey()]=intake;
+    localStorage.setItem('water', JSON.stringify(data));
+  }
+
+  function addWater(ml){
+    intake=Math.min(GOAL*1.5, intake+ml);
+    save();
+    updateUI();
+  }
+
+  function resetDay(){
+    intake=0;
+    save();
+    updateUI();
+  }
+
+  function updateUI(){
+    const pct=Math.round((intake/GOAL)*100);
+    const h=Math.min(100, pct);
+    document.getElementById('fill').style.height=`${h}%`;
+    document.getElementById('cupText').textContent=`${pct}%`;
+    const cups=Math.round(intake/250);
+    document.getElementById('progress').textContent=`${cups} / 8 cups`;
+  }
+
+  load();
+</script>
+</body>
+</html>
