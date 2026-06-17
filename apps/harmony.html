@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HARMONY — chord & vocal-harmony helper</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A0F1F">
+<meta name="description" content="HARMONY — a chord and vocal-harmony helper for musicians. Build a progression, see the notes and intervals, get vocal harmony suggestions, hear it played with Web Audio, and find the likely key. Free, offline, no installs.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HARMONY">
+<style>
+:root{
+  --bg:#0A0F1F; --bg-2:#101830; --bg-3:#1a2546;
+  --ink:#EDE9DB; --soft:#c7c1ad; --muted:#8a8576;
+  --gold:#D4AF37; --gold-soft:#b8962b; --cream:#F4E4BC;
+  --accent:#7aa2ff; --accent-soft:#3f5aa6;
+  --line:rgba(212,175,55,0.18);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100%}
+body{padding:0 0 40px;line-height:1.5}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+::selection{background:var(--gold);color:var(--bg)}
+
+.wrap{max-width:520px;margin:0 auto;padding:0 16px}
+
+/* Header */
+header{background:linear-gradient(135deg,#1a2546 0%,#101830 55%,#0A0F1F 100%);border-bottom:1px solid var(--line);padding:34px 0 26px;position:relative;overflow:hidden}
+header::after{content:"";position:absolute;top:-40%;right:-20%;width:70%;height:160%;background:radial-gradient(circle,rgba(212,175,55,0.20),transparent 65%);filter:blur(40px);pointer-events:none}
+.brand{display:flex;align-items:baseline;gap:10px;position:relative;z-index:1}
+.brand h1{font-size:30px;letter-spacing:0.32em;font-weight:700;background:linear-gradient(90deg,var(--gold),var(--cream));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand .tag{font-family:var(--mono);font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--cream)}
+header p{position:relative;z-index:1;color:var(--soft);font-size:14px;margin-top:8px;max-width:440px}
+
+/* Builder card */
+.card{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:18px}
+.card h2{font-size:11px;font-family:var(--mono);letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.field{flex:1 1 120px;min-width:0}
+.field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+select{width:100%;background:var(--bg-3);border:1px solid var(--line);border-radius:10px;padding:13px 12px;font-size:16px;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23D4AF37' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+select:focus{outline:none;border-color:var(--gold)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:0.5em;padding:14px 18px;border-radius:50px;font-family:var(--mono);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;min-height:46px;transition:transform .12s,background .2s,color .2s;border:1px solid var(--gold);color:var(--gold)}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--cream));color:#0A0F1F;border-color:transparent;font-weight:600}
+.btn-ghost{border-color:rgba(244,228,188,0.28);color:var(--soft)}
+.btn-block{width:100%}
+.controls{display:flex;gap:10px;margin-top:12px}
+.controls .btn{flex:1}
+
+/* Transport */
+.transport{display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap}
+.transport .btn{flex:0 0 auto}
+.tempo{flex:1 1 160px;min-width:140px}
+.tempo label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.tempo label b{color:var(--cream);font-weight:600}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:4px;background:var(--bg-3);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 0 8px rgba(212,175,55,.5)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--gold);cursor:pointer}
+
+/* Key panel */
+.keyline{margin-top:16px;background:linear-gradient(135deg,rgba(122,162,255,0.10),rgba(212,175,55,0.06));border:1px solid rgba(122,162,255,0.25);border-radius:12px;padding:14px 16px}
+.keyline .lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.keyline .val{font-size:18px;color:var(--ink)}
+.keyline .scale{font-family:var(--mono);font-size:12px;color:var(--soft);margin-top:6px;letter-spacing:0.06em}
+
+/* Chord cards */
+.chords{margin-top:18px;display:flex;flex-direction:column;gap:14px}
+.chord{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:16px;position:relative;animation:pop .25s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.chord.playing{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 24px rgba(212,175,55,0.18)}
+.chord-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.chord-name{font-size:24px;font-weight:600;letter-spacing:-0.01em}
+.chord-name small{font-size:12px;color:var(--muted);font-weight:400;margin-left:6px;letter-spacing:0.06em}
+.chord-actions{display:flex;gap:8px;flex-shrink:0}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:15px;transition:transform .12s,background .2s}
+.icon-btn:active{transform:scale(0.92)}
+.icon-btn.del{color:var(--muted);border-color:rgba(138,133,118,0.3)}
+
+.notes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.note{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--bg-3);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-width:46px}
+.note .nm{font-size:17px;font-weight:600;color:var(--ink)}
+.note .deg{font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold)}
+.note.root{background:rgba(212,175,55,0.14);border-color:var(--gold)}
+
+.harm{margin-top:14px;background:rgba(122,162,255,0.08);border:1px solid rgba(122,162,255,0.22);border-radius:10px;padding:11px 13px}
+.harm .hl{font-family:var(--mono);font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.harm p{font-size:13.5px;color:var(--soft);margin:2px 0}
+.harm p b{color:var(--cream);font-weight:600}
+
+.intervals{margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.04em;line-height:1.7}
+.intervals b{color:var(--soft)}
+
+.empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 10px;border:1px dashed var(--line);border-radius:var(--radius);margin-top:18px}
+
+/* Freemium footer */
+.freemium{margin-top:24px;background:linear-gradient(135deg,rgba(212,175,55,0.10),rgba(122,162,255,0.05));border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.freemium .free{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);border-radius:50px;padding:4px 11px;margin-bottom:10px}
+.freemium p{font-size:13.5px;color:var(--soft)}
+.freemium p b{color:var(--cream);font-weight:600}
+.fineprint{text-align:center;color:var(--muted);font-size:11px;font-family:var(--mono);letter-spacing:0.08em;margin-top:18px}
+
+/* Toast */
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--bg-3);border:1px solid var(--gold);color:var(--ink);padding:12px 20px;border-radius:50px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:200;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand"><h1>HARMONY</h1><span class="tag">chord & vocal helper</span></div>
+    <p>Build a progression, see each chord's notes and intervals, get vocal-harmony lines, and hear it played. Fully offline.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>Add a chord</h2>
+    <div class="row">
+      <div class="field">
+        <label for="root">Root</label>
+        <select id="root"></select>
+      </div>
+      <div class="field">
+        <label for="quality">Quality</label>
+        <select id="quality"></select>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-primary" id="add">+ Add chord</button>
+      <button class="btn btn-ghost" id="preview">▶ Preview</button>
+    </div>
+
+    <div class="transport">
+      <button class="btn" id="playAll">▶ Play progression</button>
+      <button class="btn btn-ghost" id="clear">Clear</button>
+      <div class="tempo">
+        <label for="tempo">Tempo <b id="tempoVal">90 BPM</b></label>
+        <input type="range" id="tempo" min="40" max="180" value="90" step="1">
+      </div>
+    </div>
+
+    <div class="keyline" id="keyline" hidden>
+      <div class="lbl">Likely key / scale</div>
+      <div class="val" id="keyName">—</div>
+      <div class="scale" id="keyScale"></div>
+    </div>
+  </section>
+
+  <section class="chords" id="chords"></section>
+  <div class="empty" id="empty">No chords yet. Pick a root + quality and tap <b>Add chord</b>.</div>
+
+  <section class="freemium">
+    <span class="free">Free</span>
+    <p>Everything here is free and runs on your device. <b>Lifetime $5.99</b> unlocks 4-part harmony, MIDI export &amp; more voicings.</p>
+  </section>
+
+  <p class="fineprint">HARMONY · A4 = 440 Hz · plays with native Web Audio · works offline</p>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Music theory ---------- */
+// Sharps + flats; we choose a spelling per-chord from the root.
+var SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+var FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+// Roots that conventionally spell with flats.
+var FLAT_ROOTS = {"F":1,"Bb":1,"Eb":1,"Ab":1,"Db":1,"Gb":1,"Cb":1,"D#":0};
+var ROOTS = ["C","C#","Db","D","D#","Eb","E","F","F#","Gb","G","G#","Ab","A","A#","Bb","B"];
+
+// Chord formulas: semitone offsets from root.
+var QUALITIES = {
+  "maj":   {label:"major",      sym:"",      iv:[0,4,7],        names:["root","major 3rd","perfect 5th"]},
+  "min":   {label:"minor",      sym:"m",     iv:[0,3,7],        names:["root","minor 3rd","perfect 5th"]},
+  "dim":   {label:"diminished", sym:"dim",   iv:[0,3,6],        names:["root","minor 3rd","dim 5th"]},
+  "aug":   {label:"augmented",  sym:"aug",   iv:[0,4,8],        names:["root","major 3rd","aug 5th"]},
+  "maj7":  {label:"major 7th",  sym:"maj7",  iv:[0,4,7,11],     names:["root","major 3rd","perfect 5th","major 7th"]},
+  "min7":  {label:"minor 7th",  sym:"m7",    iv:[0,3,7,10],     names:["root","minor 3rd","perfect 5th","minor 7th"]},
+  "dom7":  {label:"dominant 7th",sym:"7",    iv:[0,4,7,10],     names:["root","major 3rd","perfect 5th","minor 7th"]},
+  "sus2":  {label:"suspended 2",sym:"sus2",  iv:[0,2,7],        names:["root","major 2nd","perfect 5th"]},
+  "sus4":  {label:"suspended 4",sym:"sus4",  iv:[0,5,7],        names:["root","perfect 4th","perfect 5th"]},
+  "add9":  {label:"add 9",      sym:"add9",  iv:[0,4,7,14],     names:["root","major 3rd","perfect 5th","major 9th"]}
+};
+var QUALITY_ORDER = ["maj","min","dim","aug","maj7","min7","dom7","sus2","sus4","add9"];
+
+// Interval names by semitone count (within an octave-ish).
+var INTERVAL_NAMES = {0:"unison",1:"minor 2nd",2:"major 2nd",3:"minor 3rd",4:"major 3rd",5:"perfect 4th",6:"tritone",7:"perfect 5th",8:"minor 6th",9:"major 6th",10:"minor 7th",11:"major 7th",12:"octave",14:"major 9th"};
+var DEGREE_SHORT = {0:"R",2:"2",3:"♭3",4:"3",5:"4",6:"♭5",7:"5",8:"♯5",10:"♭7",11:"7",14:"9"};
+
+function rootPc(root){ // pitch class 0-11
+  var i = SHARP.indexOf(root); if(i>=0) return i;
+  i = FLAT.indexOf(root); return i;
+}
+function useFlats(root){
+  if(root.indexOf("b")>0) return true;
+  if(root.indexOf("#")>0) return false;
+  return !!FLAT_ROOTS[root];
+}
+function noteName(pc, flats){
+  pc = ((pc%12)+12)%12;
+  return flats ? FLAT[pc] : SHARP[pc];
+}
+// MIDI -> frequency, A4(69)=440
+function midiToFreq(m){ return 440 * Math.pow(2,(m-69)/12); }
+
+function chordData(root, qual){
+  var q = QUALITIES[qual];
+  var base = rootPc(root);
+  var flats = useFlats(root);
+  var notes = q.iv.map(function(iv){
+    return {
+      pc: ((base+iv)%12+12)%12,
+      semi: iv,
+      name: noteName(base+iv, flats),
+      degree: DEGREE_SHORT[iv]||("+"+iv),
+      role: q.names[q.iv.indexOf(iv)]
+    };
+  });
+  return {root:root, qual:qual, q:q, flats:flats, notes:notes, label:root+q.sym};
+}
+
+// Frequencies for a chord starting around octave 4 (root MIDI = 60 + rootPc).
+function chordFreqs(cd, baseMidi){
+  baseMidi = baseMidi==null ? 60 : baseMidi; // C4
+  var rootMidi = baseMidi + cd.notes[0].pc; // keep root in octave
+  return cd.q.iv.map(function(iv){ return midiToFreq(rootMidi+iv); });
+}
+
+// Suggested vocal harmonies relative to the melody = chord root.
+function harmonies(cd){
+  var third = cd.notes[1]; // 2nd chord tone (the 3rd / sus tone)
+  var fifth = cd.notes.find(function(n){return n.semi===7;}) || cd.notes[2];
+  var out = [];
+  out.push({line:"a 3rd above", note: noteName(cd.notes[0].pc + cd.q.iv[1], cd.flats), why:"chord tone "+third.role});
+  if(fifth) out.push({line:"a 5th above", note: noteName(cd.notes[0].pc + 7, cd.flats), why:"perfect 5th — stable"});
+  out.push({line:"an octave above", note: noteName(cd.notes[0].pc, cd.flats), why:"doubles the root"});
+  out.push({line:"a 3rd below", note: noteName(cd.notes[0].pc - (cd.q.iv[1]===3?4:3), cd.flats), why:"low harmony / counter-melody"});
+  return out;
+}
+
+// Interval breakdown between successive notes + each note from root.
+function intervalText(cd){
+  var fromRoot = cd.notes.slice(1).map(function(n){
+    return n.name+" = "+(INTERVAL_NAMES[n.semi]||(n.semi+" st"))+" from "+cd.root;
+  });
+  return fromRoot;
+}
+
+/* ---------- Key detection ---------- */
+// Major scale pitch-class sets for all 12 keys; score by how many chord-tones fit.
+var MAJOR_STEPS = [0,2,4,5,7,9,11];
+function keyGuess(prog){
+  if(!prog.length) return null;
+  var allPcs = {};
+  prog.forEach(function(p){
+    chordData(p.root,p.qual).notes.forEach(function(n){ allPcs[n.pc]=(allPcs[n.pc]||0)+1; });
+  });
+  var best=null;
+  for(var tonic=0;tonic<12;tonic++){
+    var set={}; MAJOR_STEPS.forEach(function(s){set[(tonic+s)%12]=1;});
+    var score=0, total=0;
+    for(var pc in allPcs){ total+=allPcs[pc]; if(set[pc]) score+=allPcs[pc]; }
+    // small bonus if first chord's root is the tonic or the dominant (V)
+    var firstRoot = rootPc(prog[0].root);
+    if(firstRoot===tonic) score+=0.6;
+    if((tonic+7)%12===firstRoot) score+=0.2;
+    var frac = total? score/total : 0;
+    if(!best || frac>best.frac+0.0001) best={tonic:tonic,frac:frac};
+  }
+  if(!best) return null;
+  var flats = !!FLAT_ROOTS[noteName(best.tonic,true)] || best.tonic===5; // F major etc
+  var tonicName = noteName(best.tonic, flats);
+  // relative minor
+  var relMinor = noteName((best.tonic+9)%12, flats);
+  var scaleNotes = MAJOR_STEPS.map(function(s){return noteName(best.tonic+s, flats);});
+  return {
+    name: tonicName+" major  /  "+relMinor+" minor",
+    scale: scaleNotes.join("  "),
+    fit: Math.round(best.frac*100)
+  };
+}
+
+/* ---------- Audio ---------- */
+var AC=null;
+function ctx(){
+  if(!AC){ var C = window.AudioContext||window.webkitAudioContext; if(!C) return null; AC=new C(); }
+  if(AC.state==="suspended") AC.resume();
+  return AC;
+}
+function playFreqs(freqs, when, dur){
+  var ac=ctx(); if(!ac) { toast("Web Audio not available"); return; }
+  when = when==null ? ac.currentTime : when;
+  dur = dur || 0.9;
+  var master=ac.createGain();
+  master.gain.value = 0.9/Math.max(1,freqs.length); // headroom
+  master.connect(ac.destination);
+  freqs.forEach(function(f,i){
+    var o=ac.createOscillator();
+    var g=ac.createGain();
+    o.type = i===0 ? "triangle" : "sine";
+    o.frequency.value=f;
+    // gentle ADSR
+    var t=when, a=0.02, r=Math.min(0.35,dur*0.4);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.9,t+a);
+    g.gain.setValueAtTime(0.9,t+dur-r);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t+dur+0.05);
+  });
+}
+var playTimers=[];
+function stopScheduled(){ playTimers.forEach(clearTimeout); playTimers=[]; }
+
+/* ---------- State + persistence ---------- */
+var KEY="harmony_progression";
+var prog = load();
+function load(){
+  try{ var raw=localStorage.getItem(KEY); if(raw){ var a=JSON.parse(raw); if(Array.isArray(a)) return a.filter(function(c){return c&&c.root&&QUALITIES[c.qual];}); } }catch(e){}
+  return [];
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(prog)); }catch(e){} }
+
+/* ---------- DOM ---------- */
+var $=function(s){return document.querySelector(s);};
+var rootSel=$("#root"), qualSel=$("#quality"), chordsEl=$("#chords"), emptyEl=$("#empty");
+var tempoEl=$("#tempo"), tempoVal=$("#tempoVal");
+var keylineEl=$("#keyline"), keyNameEl=$("#keyName"), keyScaleEl=$("#keyScale");
+
+ROOTS.forEach(function(r){ var o=document.createElement("option"); o.value=r; o.textContent=r; rootSel.appendChild(o); });
+rootSel.value="C";
+QUALITY_ORDER.forEach(function(k){ var o=document.createElement("option"); o.value=k; o.textContent=QUALITIES[k].label+(QUALITIES[k].sym?(" ("+QUALITIES[k].sym+")"):""); qualSel.appendChild(o); });
+qualSel.value="maj";
+
+function toast(msg){
+  var t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove("show");},1900);
+}
+
+function render(){
+  chordsEl.innerHTML="";
+  emptyEl.hidden = prog.length>0;
+  prog.forEach(function(p,idx){ chordsEl.appendChild(chordCard(p,idx)); });
+  // key
+  var k=keyGuess(prog);
+  if(k){
+    keylineEl.hidden=false;
+    keyNameEl.textContent=k.name;
+    keyScaleEl.textContent="Scale: "+k.scale+"   ·   "+k.fit+"% of notes fit";
+  } else { keylineEl.hidden=true; }
+}
+
+function chordCard(p,idx){
+  var cd=chordData(p.root,p.qual);
+  var el=document.createElement("div");
+  el.className="chord"; el.dataset.idx=idx;
+
+  var top=document.createElement("div"); top.className="chord-top";
+  var nm=document.createElement("div"); nm.className="chord-name";
+  nm.innerHTML = esc(cd.label)+" <small>"+esc(cd.q.label)+"</small>";
+  var acts=document.createElement("div"); acts.className="chord-actions";
+  var play=document.createElement("button"); play.className="icon-btn"; play.textContent="▶"; play.title="Play chord"; play.setAttribute("aria-label","Play "+cd.label);
+  var del=document.createElement("button"); del.className="icon-btn del"; del.textContent="✕"; del.title="Remove"; del.setAttribute("aria-label","Remove "+cd.label);
+  acts.appendChild(play); acts.appendChild(del);
+  top.appendChild(nm); top.appendChild(acts);
+
+  var notes=document.createElement("div"); notes.className="notes";
+  cd.notes.forEach(function(n){
+    var d=document.createElement("div"); d.className="note"+(n.semi===0?" root":"");
+    d.innerHTML="<span class='nm'>"+esc(n.name)+"</span><span class='deg'>"+esc(n.degree)+"</span>";
+    notes.appendChild(d);
+  });
+
+  var harm=document.createElement("div"); harm.className="harm";
+  var hs=harmonies(cd);
+  var html="<div class='hl'>Vocal harmony lines (melody = "+esc(cd.root)+")</div>";
+  hs.forEach(function(h){ html+="<p>Sing <b>"+esc(h.line)+": "+esc(h.note)+"</b> — "+esc(h.why)+"</p>"; });
+  harm.innerHTML=html;
+
+  var iv=document.createElement("div"); iv.className="intervals";
+  iv.innerHTML="<b>Intervals from "+esc(cd.root)+":</b><br>"+intervalText(cd).map(esc).join("<br>");
+
+  el.appendChild(top); el.appendChild(notes); el.appendChild(harm); el.appendChild(iv);
+
+  play.addEventListener("click",function(){
+    flashPlaying(el);
+    playFreqs(chordFreqs(cd), null, 1.1);
+  });
+  del.addEventListener("click",function(){
+    prog.splice(idx,1); save(); render(); toast("Chord removed");
+  });
+  return el;
+}
+
+function flashPlaying(el){
+  document.querySelectorAll(".chord.playing").forEach(function(c){c.classList.remove("playing");});
+  el.classList.add("playing");
+  clearTimeout(el._pt); el._pt=setTimeout(function(){el.classList.remove("playing");}, 1100);
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+/* ---------- Events ---------- */
+$("#add").addEventListener("click",function(){
+  prog.push({root:rootSel.value, qual:qualSel.value});
+  save(); render();
+  toast("Added "+chordData(rootSel.value,qualSel.value).label);
+});
+
+$("#preview").addEventListener("click",function(){
+  var cd=chordData(rootSel.value,qualSel.value);
+  playFreqs(chordFreqs(cd), null, 1.1);
+});
+
+$("#clear").addEventListener("click",function(){
+  if(!prog.length){ toast("Nothing to clear"); return; }
+  stopScheduled(); prog=[]; save(); render(); toast("Cleared");
+});
+
+tempoEl.addEventListener("input",function(){ tempoVal.textContent=tempoEl.value+" BPM"; });
+
+$("#playAll").addEventListener("click",function(){
+  if(!prog.length){ toast("Add some chords first"); return; }
+  stopScheduled();
+  var ac=ctx(); if(!ac){ toast("Web Audio not available"); return; }
+  var bpm=parseInt(tempoEl.value,10)||90;
+  var beat=60/bpm;
+  var step=beat*2;             // 2 beats per chord
+  var dur=step*0.92;
+  var t0=ac.currentTime+0.05;
+  var cards=chordsEl.querySelectorAll(".chord");
+  prog.forEach(function(p,i){
+    var cd=chordData(p.root,p.qual);
+    playFreqs(chordFreqs(cd), t0+i*step, dur);
+    // visual highlight via setTimeout aligned to schedule
+    (function(idx){
+      var tm=setTimeout(function(){ if(cards[idx]) flashPlaying(cards[idx]); }, (i*step)*1000);
+      playTimers.push(tm);
+    })(i);
+  });
+  toast("Playing "+prog.length+" chord"+(prog.length>1?"s":"")+" @ "+bpm+" BPM");
+});
+
+render();
+})();
+</script>
+</body>
+</html>
