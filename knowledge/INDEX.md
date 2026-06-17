@@ -66,6 +66,9 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 - **Kimi-Audio** (`kimi-audio.md`) — Audio foundation model (ASR, audio Q&A, emotion recognition, generation); 13M+ hrs pretraining; 1.28 WER LibriSpeech. Audio understanding + TTS for Nucleus
 - **Kimi Agent Internals** (`kimi-agent-internals.md`) — Production Kimi agent architecture (6 agent types, runtime, 38 tools, episodic/semantic/procedural memory, security model). Design reference for Nucleus
 
+#### Long-Context & Multimodal Foundation Models
+- **MiniMax-01** (`minimax-01.md`) — MiniMax-Text-01 (456B MoE, **4M-token inference context**, Lightning+Softmax hybrid attention; SOTA Ruler @512K–1M) + MiniMax-VL-01 (vision, OCRBench/DocVQA leader). Two hooks: hosted long-context reasoning for Nucleus, and the **MiniMax MCP server** (video/image/speech/voice-cloning) for the creative stack. ~8-GPU to self-host → use hosted API
+
 #### SkyReels Video Models (Skywork AI)
 - **SkyReels V1** (`skyreels-v1.md`) — Human-centric video foundation model (HunyuanVideo fine-tune); 33 expressions, cinematic aesthetics; open-source SOTA VBench 82.43. Short cinematic human clips
 - **SkyReels V2** (`skyreels-v2.md`) — Infinite-length film model (AutoRegressive Diffusion Forcing); T2V/I2V/extension/start-end control; VBench 83.9%. Long-form cinematic promos
