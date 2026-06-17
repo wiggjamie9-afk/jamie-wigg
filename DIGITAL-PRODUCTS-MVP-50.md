@@ -5,6 +5,38 @@ Based on your portfolio: STARLIGHTMIX Studio, HerdCheck, Codex of Reality, Roomt
 
 ---
 
+## ✅ Build Status (live)
+
+Shipped as self-contained, fully-offline single-file PWAs in `apps/` (no build step, no runtime deps, `localStorage` persistence, freemium upsell baked in). Built client-side first — backend integration notes are left inline where a future cloud layer would slot in.
+
+| App file | Concept | Vertical |
+|---|---|---|
+| `apps/beatmap.html` | Step-sequencer drum machine | Music |
+| `apps/tuner.html` | Chromatic mic tuner (autocorrelation) | Music |
+| `apps/stemmix.html` | Private multi-track stem mixer | Music |
+| `apps/metro.html` | Lookahead-scheduler metronome | Music |
+| `apps/tabplayer.html` | ASCII guitar-tab player (Web Audio) | Music |
+| `apps/setlist.html` | Gig setlist builder | Music |
+| `apps/lrcsync.html` | Synced-lyrics (.lrc) maker | Music |
+| `apps/calving.html` | Calving predictor + readiness checklist | Livestock |
+| `apps/herdlog.html` | Health diary w/ withdrawal alerts | Livestock |
+| `apps/feedcost.html` | Feed cost calculator | Livestock |
+| `apps/vaxtrack.html` | Vaccination scheduler | Livestock |
+| `apps/breathe.html` | Guided breathwork timer | Wellness |
+| `apps/achelog.html` | Pain & symptom journal | Wellness/Recovery |
+| `apps/stretch.html` | Stretching atlas + routine timer | Wellness/Recovery |
+| `apps/statline.html` | Personal sports stats tracker | Sport |
+| `apps/wordstreak.html` | Daily writing tracker | Productivity |
+| `apps/prompter.html` | Video script teleprompter | Creator |
+| `apps/harmony.html` | Chord & vocal-harmony helper | Music *(building)* |
+| `apps/thumbforge.html` | Thumbnail concept generator | Creator *(building)* |
+| `apps/brandkit.html` | Personal brand asset generator | Creator *(building)* |
+| `apps/askform.html` | Lightweight survey/poll builder | Productivity *(building)* |
+
+Concepts already covered by pre-existing apps (skipped to avoid duplication): water tracker, weight tracker, habit streak, pomodoro/task timer, voice memo organizer, meditation guide, calorie/nutrition logger.
+
+---
+
 ## WEEK 1-2 MVPs (15 concepts)
 *Bare minimum feature set. Static PWA + localStorage. Can launch this week.*
 
