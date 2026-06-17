@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08050d">
+    <title>AXLE - Trucker Safety</title>
+    <style>
+        :root { --canvas:#08050d; --green:#00e887; --red:#ff1f5a; --cyan:#00d8ff; --purple:#7c3aed; --text:#fff; --text-muted:#aaa; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--canvas); color:var(--text); min-height:100vh; padding-bottom:80px; }
+        .header { padding:20px; border-bottom:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-between; }
+        h1 { font-size:20px; font-weight:700; }
+        .badge { background:var(--green); color:var(--canvas); padding:4px 12px; border-radius:20px; font-size:11px; }
+        .content { padding:20px; }
+        .checklist { background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:8px; padding:15px; margin:12px 0; }
+        .check-item { display:flex; gap:10px; margin:10px 0; align-items:center; }
+        .check-item input { width:24px; height:24px; cursor:pointer; }
+        .check-item label { flex:1; cursor:pointer; }
+        .condition-rating { display:flex; gap:8px; margin:10px 0; }
+        .rating-btn { background:rgba(0,232,135,0.1); border:1px solid rgba(0,232,135,0.2); color:var(--text); padding:8px 12px; border-radius:6px; cursor:pointer; font-size:12px; }
+        .rating-btn.ok { background:rgba(0,232,135,0.3); border-color:var(--green); }
+        .rating-btn.warn { background:rgba(255,31,90,0.2); border-color:var(--red); }
+        .incident { background:rgba(255,31,90,0.1); border-left:3px solid var(--red); border:1px solid rgba(255,31,90,0.2); border-radius:8px; padding:12px; margin:8px 0; }
+        button { background:var(--green); color:var(--canvas); border:0; padding:10px 16px; border-radius:6px; cursor:pointer; font-weight:600; width:100%; margin-top:10px; }
+        .panel { display:none; }
+        .panel.on { display:block; }
+        .tabs { position:fixed; bottom:0; left:0; right:0; background:var(--canvas); border-top:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-around; height:70px; z-index:100; }
+        .tab { flex:1; background:0; border:0; color:var(--text-muted); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; }
+        .tab.on { color:var(--green); }
+        .premium { background:rgba(124,58,237,0.1); border-left:3px solid var(--purple); padding:12px; margin-top:20px; border-radius:4px; font-size:12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚛 AXLE</h1>
+        <div class="badge">FREE</div>
+    </div>
+    <div class="content">
+        <div id="pretrip" class="panel on">
+            <div class="checklist">
+                <div style="font-weight:600;margin-bottom:12px">Pre-Trip Inspection</div>
+                <div class="check-item">
+                    <input type="checkbox" id="c1"><label for="c1">Tires & Wheels</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="c2"><label for="c2">Brakes</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="c3"><label for="c3">Lights & Signals</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="c4"><label for="c4">Mirrors & Windows</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="c5"><label for="c5">Engine & Fluid Levels</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="c6"><label for="c6">Cargo Secured</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="c7"><label for="c7">Fire Extinguisher Present</label>
+                </div>
+            </div>
+            
+            <div class="checklist">
+                <div style="font-weight:600;margin-bottom:12px">Vehicle Condition</div>
+                <div style="font-size:12px;margin-bottom:10px">Overall:</div>
+                <div class="condition-rating">
+                    <button class="rating-btn ok" onclick="this.classList.toggle('ok')">✓ Good</button>
+                    <button class="rating-btn" onclick="this.classList.toggle('warn')">⚠ Fair</button>
+                    <button class="rating-btn warn" onclick="this.classList.toggle('warn')">✗ Bad</button>
+                </div>
+            </div>
+            
+            <button onclick="saveInspection()">Save Inspection</button>
+            <div class="premium">💎 Premium: DOT compliance reports</div>
+        </div>
+        
+        <div id="incidents" class="panel">
+            <textarea id="incident-desc" placeholder="Describe incident..." style="width:100%;background:rgba(0,232,135,0.05);border:1px solid rgba(0,232,135,0.2);border-radius:6px;color:var(--text);padding:10px;min-height:100px"></textarea>
+            <input type="date" style="width:100%;background:rgba(0,232,135,0.05);border:1px solid rgba(0,232,135,0.2);border-radius:6px;color:var(--text);padding:10px;margin:8px 0">
+            <button onclick="logIncident()">Log Incident</button>
+            <div id="incident-log" style="margin-top:15px"></div>
+        </div>
+    </div>
+    <div class="tabs">
+        <button class="tab on" data-p="pretrip">✓ Pre-Trip</button>
+        <button class="tab" data-p="incidents">⚠️ Incidents</button>
+    </div>
+    <script>
+        let inspections = [];
+        let incidents = [];
+        
+        function load() {
+            let d = localStorage.getItem('axle');
+            if (d) { let p = JSON.parse(d); inspections = p.inspections || []; incidents = p.incidents || []; }
+            drawIncidents();
+        }
+        
+        function save() {
+            localStorage.setItem('axle', JSON.stringify({inspections, incidents}));
+        }
+        
+        function saveInspection() {
+            let checks = [];
+            for (let i = 1; i <= 7; i++) {
+                if (document.getElementById('c'+i).checked) checks.push(i);
+            }
+            inspections.unshift({checks, date: new Date().toLocaleDateString()});
+            if (inspections.length > 20) inspections.pop();
+            save();
+            alert('Inspection saved');
+        }
+        
+        function logIncident() {
+            let desc = document.getElementById('incident-desc').value;
+            if (!desc) return;
+            incidents.unshift({desc, date: new Date().toLocaleDateString()});
+            document.getElementById('incident-desc').value = '';
+            save();
+            drawIncidents();
+        }
+        
+        function drawIncidents() {
+            document.getElementById('incident-log').innerHTML = incidents.length ?
+                incidents.map(i => `<div class="incident"><div style="font-weight:600">${i.date}</div><div>${i.desc}</div></div>`).join('') :
+                '<p style="color:var(--text-muted)">No incidents logged</p>';
+        }
+        
+        document.querySelectorAll('.tab').forEach(t => {
+            t.onclick = () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+                document.querySelectorAll('.panel').forEach(x => x.classList.remove('on'));
+                t.classList.add('on');
+                document.getElementById(t.dataset.p).classList.add('on');
+            };
+        });
+        
+        load();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('data:application/javascript,self.addEventListener("install",e=>self.skipWaiting());');
+    </script>
+</body>
+</html>

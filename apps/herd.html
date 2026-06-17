@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08050d">
+    <title>HERD - Livestock Health</title>
+    <style>
+        :root { --canvas:#08050d; --green:#00e887; --red:#ff1f5a; --cyan:#00d8ff; --purple:#7c3aed; --text:#fff; --text-muted:#aaa; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--canvas); color:var(--text); min-height:100vh; padding-bottom:80px; }
+        .header { padding:20px; border-bottom:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-between; }
+        h1 { font-size:20px; font-weight:700; }
+        .badge { background:var(--green); color:var(--canvas); padding:4px 12px; border-radius:20px; font-size:11px; }
+        .content { padding:20px; }
+        select { width:100%; background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:6px; color:var(--text); padding:10px; margin:8px 0; }
+        input { width:100%; background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:6px; color:var(--text); padding:10px; margin:8px 0; }
+        button { background:var(--green); color:var(--canvas); border:0; padding:10px 16px; border-radius:6px; cursor:pointer; font-weight:600; width:100%; margin-top:10px; }
+        .animal-card { background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:8px; padding:15px; margin:12px 0; }
+        .animal-id { font-weight:600; color:var(--cyan); }
+        .status-good { color:var(--green); }
+        .status-warn { color:#ffa500; }
+        .status-bad { color:var(--red); }
+        .check-item { display:flex; gap:10px; margin:8px 0; align-items:center; }
+        .check-item input { width:24px; height:24px; cursor:pointer; }
+        .panel { display:none; }
+        .panel.on { display:block; }
+        .tabs { position:fixed; bottom:0; left:0; right:0; background:var(--canvas); border-top:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-around; height:70px; z-index:100; }
+        .tab { flex:1; background:0; border:0; color:var(--text-muted); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; }
+        .tab.on { color:var(--green); }
+        .premium { background:rgba(124,58,237,0.1); border-left:3px solid var(--purple); padding:12px; margin-top:20px; border-radius:4px; font-size:12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🐄 HERD</h1>
+        <div class="badge">FREE</div>
+    </div>
+    <div class="content">
+        <div id="tracking" class="panel on">
+            <select id="species">
+                <option value="cattle">Cattle (283d gestation)</option>
+                <option value="buffalo">Buffalo (310d gestation)</option>
+                <option value="sheep">Sheep (147d gestation)</option>
+                <option value="goat">Goat (150d gestation)</option>
+            </select>
+            
+            <input type="text" id="animal-id" placeholder="Animal ID...">
+            <input type="date" id="birth-date">
+            <button onclick="addAnimal()">+ Add Animal</button>
+            
+            <div id="animals" style="margin-top:15px"></div>
+            <div class="premium">💎 Premium: Vet consultation scheduling</div>
+        </div>
+        
+        <div id="health" class="panel">
+            <select id="check-type" style="width:100%;background:rgba(0,232,135,0.05);border:1px solid rgba(0,232,135,0.2);border-radius:6px;color:var(--text);padding:10px;margin:8px 0">
+                <option value="lameness">Lameness Check</option>
+                <option value="mastitis">Mastitis Check</option>
+                <option value="behavior">Behavior Observation</option>
+            </select>
+            
+            <div id="health-form"></div>
+            <button onclick="recordHealth()">Record Observation</button>
+        </div>
+    </div>
+    <div class="tabs">
+        <button class="tab on" data-p="tracking">📊 Tracking</button>
+        <button class="tab" data-p="health">🏥 Health</button>
+    </div>
+    <script>
+        const species = {cattle:283, buffalo:310, sheep:147, goat:150};
+        let animals = [];
+        
+        function load() {
+            let d = localStorage.getItem('herd');
+            if (d) animals = JSON.parse(d);
+            draw();
+        }
+        
+        function save() {
+            localStorage.setItem('herd', JSON.stringify(animals));
+            draw();
+        }
+        
+        function addAnimal() {
+            let id = document.getElementById('animal-id').value;
+            let sp = document.getElementById('species').value;
+            let bd = document.getElementById('birth-date').value;
+            if (!id || !bd) return;
+            
+            animals.push({id, sp, bd, checks:[]});
+            document.getElementById('animal-id').value = '';
+            save();
+        }
+        
+        function draw() {
+            let sp = document.getElementById('species').value;
+            document.getElementById('animals').innerHTML = animals.filter(a => a.sp === sp).length ?
+                animals.filter(a => a.sp === sp).map((a,i) => {
+                    let age = Math.floor((new Date() - new Date(a.bd)) / (1000*60*60*24));
+                    let status = age > species[a.sp] ? '✓ Ready to calve' : age > species[a.sp]*0.8 ? '⚠ Late pregnancy' : '● Tracking';
+                    let statusClass = age > species[a.sp] ? 'status-good' : age > species[a.sp]*0.8 ? 'status-warn' : 'status-good';
+                    return `<div class="animal-card">
+                        <div class="animal-id">${a.id} (${a.sp})</div>
+                        <div style="font-size:12px;color:var(--text-muted)">Born: ${a.bd}</div>
+                        <div class="${statusClass}">${status}</div>
+                    </div>`;
+                }).join('') :
+                '<p style="color:var(--text-muted)">No animals</p>';
+            
+            let checkType = document.getElementById('check-type').value;
+            let form = '';
+            if (checkType === 'lameness') {
+                form = `<div class="check-item"><label>Sprecher Score (1-5):</label></div>
+                    <input type="number" id="lameness-score" min="1" max="5" placeholder="1-5">`;
+            } else if (checkType === 'mastitis') {
+                form = `<div class="check-item"><input type="checkbox" id="swelling"><label for="swelling">Udder swelling?</label></div>
+                    <div class="check-item"><input type="checkbox" id="discolored"><label for="discolored">Milk discolored?</label></div>
+                    <div class="check-item"><input type="checkbox" id="heat"><label for="heat">Heat/pain?</label></div>`;
+            } else {
+                form = `<div class="check-item"><input type="checkbox" id="appetite"><label for="appetite">Normal appetite</label></div>
+                    <div class="check-item"><input type="checkbox" id="stance"><label for="stance">Normal stance</label></div>`;
+            }
+            document.getElementById('health-form').innerHTML = form;
+        }
+        
+        function recordHealth() {
+            alert('Health observation recorded');
+        }
+        
+        document.getElementById('species').onchange = draw;
+        document.getElementById('check-type').onchange = draw;
+        
+        document.querySelectorAll('.tab').forEach(t => {
+            t.onclick = () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+                document.querySelectorAll('.panel').forEach(x => x.classList.remove('on'));
+                t.classList.add('on');
+                document.getElementById(t.dataset.p).classList.add('on');
+            };
+        });
+        
+        load();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('data:application/javascript,self.addEventListener("install",e=>self.skipWaiting());');
+    </script>
+</body>
+</html>

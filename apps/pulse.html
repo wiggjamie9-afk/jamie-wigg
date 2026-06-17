@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08050d">
+    <title>Pulse - Daily Actions</title>
+    <style>
+        :root { --canvas:#08050d; --green:#00e887; --red:#ff1f5a; --cyan:#00d8ff; --purple:#7c3aed; --text:#fff; --text-muted:#aaa; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--canvas); color:var(--text); min-height:100vh; padding-bottom:80px; }
+        .header { padding:20px; border-bottom:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-between; }
+        h1 { font-size:24px; font-weight:700; }
+        .badge { background:var(--green); color:var(--canvas); padding:4px 12px; border-radius:20px; font-size:11px; }
+        .content { padding:20px; }
+        .action-card { background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:8px; padding:15px; margin:12px 0; display:flex; align-items:center; gap:12px; }
+        .action-check { width:32px; height:32px; border-radius:50%; border:2px solid rgba(0,232,135,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .action-check.done { background:var(--green); border-color:var(--green); color:var(--canvas); }
+        .action-info { flex:1; }
+        .action-text { font-weight:500; }
+        .action-streak { font-size:12px; color:var(--text-muted); }
+        .affirmation { background:rgba(0,232,135,0.1); border-left:3px solid var(--cyan); padding:15px; border-radius:8px; margin:20px 0; text-align:center; line-height:1.8; }
+        .affirmation-text { font-size:18px; font-style:italic; color:var(--cyan); }
+        button { background:var(--green); color:var(--canvas); border:0; padding:10px 16px; border-radius:6px; cursor:pointer; font-weight:600; width:100%; margin-top:10px; }
+        .panel { display:none; }
+        .panel.on { display:block; }
+        .tabs { position:fixed; bottom:0; left:0; right:0; background:var(--canvas); border-top:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-around; height:70px; z-index:100; }
+        .tab { flex:1; background:0; border:0; color:var(--text-muted); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; }
+        .tab.on { color:var(--green); }
+        .premium { background:rgba(124,58,237,0.1); border-left:3px solid var(--purple); padding:12px; margin-top:20px; border-radius:4px; font-size:13px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💚 Pulse</h1>
+        <div class="badge">FREE</div>
+    </div>
+    <div class="content">
+        <div id="actions" class="panel on">
+            <div class="affirmation">
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Today's Affirmation</div>
+                <div class="affirmation-text" id="affirmation-text">"You are stronger than yesterday"</div>
+            </div>
+            
+            <div id="actions-list"></div>
+            <div class="premium">💎 Premium: Custom actions & smart reminders</div>
+        </div>
+        
+        <div id="stats" class="panel">
+            <div style="font-weight:600;margin:15px 0">Streak Tracker</div>
+            <div id="streak-list"></div>
+        </div>
+    </div>
+    <div class="tabs">
+        <button class="tab on" data-p="actions">⚡ Actions</button>
+        <button class="tab" data-p="stats">🔥 Streaks</button>
+    </div>
+    <script>
+        const defaultActions = [
+            {text:'Drink 8 glasses of water',emoji:'💧'},
+            {text:'5 minute walk',emoji:'🚶'},
+            {text:'Stretch or yoga',emoji:'🧘'},
+            {text:'Read 10 pages',emoji:'📖'},
+            {text:'Meditate',emoji:'🧠'}
+        ];
+        
+        const affirmations = [
+            'You are stronger than yesterday',
+            'Today is full of possibilities',
+            'You deserve all the good things',
+            'Progress over perfection',
+            'Be kind to yourself'
+        ];
+        
+        let state = {actions: defaultActions.map(a => ({...a, done: false, streak: 0})), affir: 0};
+        
+        function load() {
+            let d = localStorage.getItem('pulse');
+            if (d) state = JSON.parse(d);
+            else state.actions = defaultActions.map(a => ({...a, done: false, streak: 0}));
+            draw();
+        }
+        
+        function save() {
+            localStorage.setItem('pulse', JSON.stringify(state));
+            draw();
+        }
+        
+        function toggleAction(i) {
+            state.actions[i].done = !state.actions[i].done;
+            if (state.actions[i].done) state.actions[i].streak++;
+            save();
+        }
+        
+        function draw() {
+            state.affir = Math.floor(Math.random() * affirmations.length);
+            document.getElementById('affirmation-text').textContent = `"${affirmations[state.affir]}"`;
+            
+            document.getElementById('actions-list').innerHTML = state.actions.map((a, i) => `
+                <div class="action-card">
+                    <div class="action-check ${a.done?'done':''}" onclick="toggleAction(${i})">${a.done?'✓':''}</div>
+                    <div class="action-info">
+                        <div class="action-text">${a.emoji} ${a.text}</div>
+                        <div class="action-streak">Streak: ${a.streak} days</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('streak-list').innerHTML = state.actions.filter(a => a.streak > 0).map(a => `
+                <div style="background:rgba(0,232,135,0.05);border:1px solid rgba(0,232,135,0.2);border-radius:8px;padding:12px;margin:8px 0;display:flex;justify-content:space-between">
+                    <span>${a.emoji} ${a.text}</span>
+                    <span style="color:var(--green);font-weight:600">🔥 ${a.streak}</span>
+                </div>
+            `).join('');
+        }
+        
+        document.querySelectorAll('.tab').forEach(t => {
+            t.onclick = () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+                document.querySelectorAll('.panel').forEach(x => x.classList.remove('on'));
+                t.classList.add('on');
+                document.getElementById(t.dataset.p).classList.add('on');
+            };
+        });
+        
+        load();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('data:application/javascript,self.addEventListener("install",e=>self.skipWaiting());');
+    </script>
+</body>
+</html>

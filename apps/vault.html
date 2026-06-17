@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08050d">
+    <title>Vault - Private Notes</title>
+    <style>
+        :root { --canvas:#08050d; --green:#00e887; --red:#ff1f5a; --cyan:#00d8ff; --purple:#7c3aed; --text:#fff; --text-muted:#aaa; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--canvas); color:var(--text); min-height:100vh; padding-bottom:80px; }
+        .header { padding:20px; border-bottom:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-between; }
+        h1 { font-size:24px; font-weight:700; }
+        .badge { background:var(--green); color:var(--canvas); padding:4px 12px; border-radius:20px; font-size:11px; }
+        .content { padding:20px; }
+        input, textarea { background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:6px; color:var(--text); padding:10px; margin:8px 0; width:100%; }
+        textarea { min-height:120px; }
+        button { background:var(--green); color:var(--canvas); border:0; padding:10px 16px; border-radius:6px; cursor:pointer; font-weight:600; width:100%; }
+        .note-card { background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:8px; padding:15px; margin:12px 0; }
+        .note-title { font-weight:600; color:var(--cyan); }
+        .note-meta { font-size:12px; color:var(--text-muted); margin:8px 0; }
+        .tag { display:inline-block; background:rgba(0,232,135,0.2); padding:4px 8px; border-radius:4px; font-size:11px; margin:4px 4px 4px 0; }
+        .search-box { width:100%; background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:6px; color:var(--text); padding:10px; margin:8px 0; }
+        .panel { display:none; }
+        .panel.on { display:block; }
+        .tabs { position:fixed; bottom:0; left:0; right:0; background:var(--canvas); border-top:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-around; height:70px; z-index:100; }
+        .tab { flex:1; background:0; border:0; color:var(--text-muted); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; }
+        .tab.on { color:var(--green); }
+        .premium { background:rgba(124,58,237,0.1); border-left:3px solid var(--purple); padding:12px; margin-top:20px; border-radius:4px; font-size:13px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 Vault</h1>
+        <div class="badge">FREE</div>
+    </div>
+    <div class="content">
+        <div id="add" class="panel on">
+            <input type="text" id="title" placeholder="Note title...">
+            <textarea id="content" placeholder="Your private thoughts..."></textarea>
+            <input type="text" id="tags" placeholder="Tags (comma separated)">
+            <button onclick="addNote()">+ Add Note</button>
+            <div id="notes-list" style="margin-top:20px"></div>
+            <div class="premium">💎 Premium: Cloud sync & encryption</div>
+        </div>
+        
+        <div id="search" class="panel">
+            <input type="text" id="search-box" class="search-box" placeholder="Search notes..." oninput="searchNotes()">
+            <div id="search-results" style="margin-top:15px"></div>
+        </div>
+    </div>
+    <div class="tabs">
+        <button class="tab on" data-p="add">✏️ Add</button>
+        <button class="tab" data-p="search">🔍 Search</button>
+    </div>
+    <script>
+        let notes = [];
+        
+        function load() {
+            let d = localStorage.getItem('vault');
+            if (d) notes = JSON.parse(d);
+            draw();
+        }
+        
+        function save() {
+            localStorage.setItem('vault', JSON.stringify(notes));
+            draw();
+        }
+        
+        function addNote() {
+            let t = document.getElementById('title').value;
+            let c = document.getElementById('content').value;
+            let tgs = document.getElementById('tags').value.split(',').map(x => x.trim()).filter(x => x);
+            
+            if (!t || !c) return;
+            notes.unshift({t, c, tgs, date: new Date().toLocaleDateString()});
+            document.getElementById('title').value = '';
+            document.getElementById('content').value = '';
+            document.getElementById('tags').value = '';
+            save();
+        }
+        
+        function draw() {
+            document.getElementById('notes-list').innerHTML = notes.length ?
+                notes.map((n, i) => `
+                    <div class="note-card">
+                        <div class="note-title">${n.t}</div>
+                        <div class="note-meta">${n.date}</div>
+                        <div style="margin:8px 0">${n.c.substring(0,60)}...</div>
+                        <div>${n.tgs.map(tg => `<span class="tag">#${tg}</span>`).join('')}</div>
+                    </div>
+                `).join('') :
+                '<p style="color:var(--text-muted)">No notes</p>';
+        }
+        
+        function searchNotes() {
+            let q = document.getElementById('search-box').value.toLowerCase();
+            let results = notes.filter(n => 
+                n.t.toLowerCase().includes(q) || 
+                n.c.toLowerCase().includes(q) || 
+                n.tgs.some(t => t.toLowerCase().includes(q))
+            );
+            
+            document.getElementById('search-results').innerHTML = results.length ?
+                results.map(n => `
+                    <div class="note-card">
+                        <div class="note-title">${n.t}</div>
+                        <div style="font-size:13px;color:var(--text-muted);margin:8px 0">${n.c.substring(0,80)}...</div>
+                    </div>
+                `).join('') :
+                '<p style="color:var(--text-muted)">No matches</p>';
+        }
+        
+        document.querySelectorAll('.tab').forEach(t => {
+            t.onclick = () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+                document.querySelectorAll('.panel').forEach(x => x.classList.remove('on'));
+                t.classList.add('on');
+                document.getElementById(t.dataset.p).classList.add('on');
+            };
+        });
+        
+        load();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('data:application/javascript,self.addEventListener("install",e=>self.skipWaiting());');
+    </script>
+</body>
+</html>
