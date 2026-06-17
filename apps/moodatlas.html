@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0d0b1a" />
+<meta name="color-scheme" content="dark" />
+<meta name="description" content="MOODATLAS — a fully-local music mood tagger & playlist builder. Catalog songs, tag them by mood, energy and context, build filtered playlists, and explore your library on an energy×mood atlas. No accounts, no streaming API, your data stays on your device." />
+<meta name="author" content="RHYTHMIX" />
+<meta property="og:title" content="MOODATLAS — Music Mood Tagger & Playlist Builder" />
+<meta property="og:description" content="Catalog songs, tag by mood/energy/context, build & export filtered playlists, and explore a visual energy×mood atlas. 100% local." />
+<meta property="og:type" content="website" />
+<title>MOODATLAS — Music Mood Tagger & Playlist Builder</title>
+<!--
+  MOODATLAS — single-file, fully-offline music mood tagger.
+  No build step, no CDN, no external dependencies, no streaming API.
+  Persistence: localStorage under the "moodatlas_" prefix.
+
+  ── OPTIONAL SPOTIFY IMPORT (BYOK) PLUG-IN POINT ──────────────────────────
+  This MVP stores plain URLs only. A premium build could import a user's
+  Spotify library using their OWN credentials (Bring Your Own Key). The
+  integration would live in importFromSpotify() below:
+    1. PKCE OAuth against accounts.spotify.com (user pastes Client ID).
+    2. GET https://api.spotify.com/v1/me/tracks  (saved songs, paginated).
+    3. Optional: GET .../audio-features to seed `energy` (0-1 → 1-5) and
+       `valence` (0-1 → mood axis) automatically.
+    4. Map each track → song record {title, artist, url, mood, energy, ctx}.
+  Everything stays client-side; tokens never leave the device.
+  Smart playlists (premium) would extend buildPlaylist() with weighted
+  energy/valence similarity ranking instead of plain filtering.
+  ──────────────────────────────────────────────────────────────────────────
+-->
+<style>
+  :root {
+    --bg: #0d0b1a;
+    --bg2: #141127;
+    --card: #1b1733;
+    --card2: #241f42;
+    --line: #322c52;
+    --txt: #ece9ff;
+    --muted: #9b94c4;
+    --faint: #6f689a;
+    --accent: #a855f7;
+    --accent2: #6366f1;
+    --good: #34d399;
+    --warn: #fbbf24;
+    --danger: #fb7185;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 30px rgba(0,0,0,.45);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+
+    /* mood palette */
+    --m-calm: #38bdf8;
+    --m-hype: #f43f5e;
+    --m-focus: #818cf8;
+    --m-melancholy: #64748b;
+    --m-romantic: #f472b6;
+    --m-workout: #fb923c;
+    --m-sleep: #a78bfa;
+    --m-happy: #facc15;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #241a45 0%, transparent 60%),
+      var(--bg);
+    color: var(--txt);
+    font-family: var(--font);
+    line-height: 1.45;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 0 14px calc(96px + env(safe-area-inset-bottom)) 14px;
+  }
+
+  /* header */
+  header.app {
+    padding: calc(22px + env(safe-area-inset-top)) 18px 20px;
+    border-radius: 0 0 24px 24px;
+    background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #ec4899 120%);
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  header.app::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(400px 200px at 85% -20%, rgba(255,255,255,.25), transparent 60%);
+    pointer-events: none;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: rgba(255,255,255,.14);
+    display: grid; place-items: center;
+    font-size: 20px; backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,.25);
+  }
+  .brand h1 { font-size: 21px; margin: 0; letter-spacing: .5px; font-weight: 800; }
+  .brand p { margin: 2px 0 0; font-size: 12.5px; color: rgba(255,255,255,.85); }
+  .stats { display: flex; gap: 14px; margin-top: 16px; }
+  .stat { background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 12px; padding: 8px 12px; flex: 1; backdrop-filter: blur(4px); }
+  .stat b { font-size: 19px; display: block; }
+  .stat span { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: rgba(255,255,255,.8); }
+
+  /* tabs */
+  nav.tabs {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; gap: 6px; margin: 14px 0 4px;
+    background: var(--bg); padding: 8px 0;
+  }
+  nav.tabs button {
+    flex: 1; border: 1px solid var(--line); background: var(--card);
+    color: var(--muted); padding: 9px 4px; border-radius: 12px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font);
+    transition: .15s;
+  }
+  nav.tabs button.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; border-color: transparent;
+  }
+
+  section.tab { display: none; animation: fade .25s ease; }
+  section.tab.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px; margin: 12px 0;
+    box-shadow: var(--shadow);
+  }
+  .card h2 { margin: 0 0 12px; font-size: 15px; letter-spacing: .3px; }
+  .card h2 small { color: var(--faint); font-weight: 500; font-size: 12px; }
+
+  label.f { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 5px; font-weight: 600; }
+  input[type=text], input[type=url], select, textarea {
+    width: 100%; background: var(--bg2); border: 1px solid var(--line);
+    color: var(--txt); border-radius: var(--radius-sm); padding: 11px 12px;
+    font-size: 14px; font-family: var(--font); outline: none; transition: .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(168,85,247,.18); }
+  textarea { resize: vertical; min-height: 64px; }
+  ::placeholder { color: var(--faint); }
+
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+
+  /* energy selector */
+  .energy { display: flex; gap: 6px; margin-top: 5px; }
+  .energy button {
+    flex: 1; background: var(--bg2); border: 1px solid var(--line); color: var(--muted);
+    border-radius: var(--radius-sm); padding: 9px 0; font-weight: 700; cursor: pointer;
+    font-family: var(--font); font-size: 14px; transition: .12s;
+  }
+  .energy button[aria-pressed="true"] {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: #fff; border-color: transparent;
+  }
+
+  /* mood + context chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--card2); color: var(--muted);
+    border-radius: 999px; padding: 6px 12px; font-size: 12.5px; cursor: pointer;
+    font-weight: 600; transition: .12s; user-select: none; font-family: var(--font);
+  }
+  .chip.sel { color: #08060f; border-color: transparent; }
+  .chip.mood::before, .moodtag::before {
+    content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--c, var(--accent)); margin-right: 7px; vertical-align: middle;
+  }
+  .chip.mood.sel { background: var(--c); }
+  .chip.ctx.sel { background: var(--accent2); color: #fff; }
+
+  .btn {
+    width: 100%; border: none; cursor: pointer; font-family: var(--font);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; font-weight: 700; font-size: 14.5px; padding: 13px; border-radius: 12px;
+    margin-top: 16px; transition: .15s; letter-spacing: .3px;
+  }
+  .btn:active { transform: scale(.985); }
+  .btn.ghost { background: var(--card2); border: 1px solid var(--line); color: var(--txt); }
+  .btn.sm { width: auto; padding: 8px 14px; margin: 0; font-size: 12.5px; }
+  .btn.danger { background: linear-gradient(135deg, #ef4444, #f43f5e); }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* song list */
+  .song {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 12px 13px; margin: 9px 0; position: relative; overflow: hidden;
+  }
+  .song::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c, var(--accent));
+  }
+  .song .t { font-weight: 700; font-size: 14.5px; padding-right: 60px; }
+  .song .a { color: var(--muted); font-size: 12.5px; }
+  .song .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+  .moodtag {
+    font-size: 11px; font-weight: 700; padding: 3px 9px 3px 8px; border-radius: 999px;
+    background: var(--card2); color: var(--txt); text-transform: capitalize;
+  }
+  .pill {
+    font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+    background: var(--bg2); color: var(--faint); border: 1px solid var(--line);
+  }
+  .pill.e { color: var(--warn); }
+  .song .acts { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+  .iconbtn {
+    width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--card2); color: var(--muted); cursor: pointer; font-size: 13px;
+    display: grid; place-items: center; font-family: var(--font);
+  }
+  .iconbtn:active { background: var(--line); }
+  .song a.link { color: var(--accent); font-size: 11.5px; text-decoration: none; font-weight: 600; }
+  .song a.link:hover { text-decoration: underline; }
+
+  .empty { text-align: center; color: var(--faint); padding: 34px 16px; font-size: 13.5px; }
+  .empty .big { font-size: 34px; margin-bottom: 8px; }
+
+  /* atlas */
+  .atlas-wrap { position: relative; }
+  #atlas { width: 100%; height: 340px; display: block; border-radius: 12px; background: var(--bg2);
+    border: 1px solid var(--line); touch-action: manipulation; }
+  .axis-x { text-align: center; color: var(--faint); font-size: 11px; margin-top: 6px; letter-spacing: .5px; }
+  .axis-y { position: absolute; left: -6px; top: 50%; transform: rotate(-90deg) translateX(50%);
+    transform-origin: left; color: var(--faint); font-size: 11px; letter-spacing: .5px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .legend span { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  /* distribution */
+  .dist .bar { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  .dist .bar .name { width: 92px; font-size: 12.5px; text-transform: capitalize; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dist .bar .name i { width: 9px; height: 9px; border-radius: 50%; }
+  .dist .track { flex: 1; height: 9px; background: var(--bg2); border-radius: 999px; overflow: hidden; }
+  .dist .fill { height: 100%; border-radius: 999px; transition: width .4s; }
+  .dist .num { width: 26px; text-align: right; font-size: 12px; color: var(--faint); font-weight: 700; }
+
+  /* playlist output */
+  .plitem { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .plitem:last-child { border-bottom: none; }
+  .plitem .n { color: var(--faint); width: 22px; flex: none; }
+  .plitem .info { flex: 1; }
+  .plitem .info a { color: var(--accent); text-decoration: none; }
+  .plitem .info a:hover { text-decoration: underline; }
+  textarea.export { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; min-height: 110px; }
+
+  /* freemium footer */
+  footer.free {
+    margin: 22px 0 8px; padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(168,85,247,.14), rgba(99,102,241,.12));
+    border: 1px solid var(--line); border-radius: var(--radius); text-align: center;
+  }
+  footer.free b { color: var(--accent); }
+  footer.free .price { font-size: 13px; }
+  footer.free small { color: var(--faint); font-size: 11px; display: block; margin-top: 6px; }
+  footer.free .mini { margin-top: 10px; font-size: 11px; color: var(--faint); }
+
+  /* toast */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none;
+    background: #08060f; color: #fff; border: 1px solid var(--accent);
+    padding: 11px 18px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    box-shadow: var(--shadow); z-index: 100; transition: .25s; max-width: 88vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .filterbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .filterbar select { flex: 1; min-width: 100px; }
+  .hint { font-size: 11.5px; color: var(--faint); margin-top: 4px; }
+  .count { font-size: 12px; color: var(--muted); margin: 8px 2px; font-weight: 600; }
+  a.reset { color: var(--accent); font-size: 12px; cursor: pointer; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="brand">
+    <div class="logo">🗺️</div>
+    <div>
+      <h1>MOODATLAS</h1>
+      <p>Map your music by mood &amp; energy</p>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="st-songs">0</b><span>Songs</span></div>
+    <div class="stat"><b id="st-moods">0</b><span>Moods</span></div>
+    <div class="stat"><b id="st-avg">–</b><span>Avg energy</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="tabs">
+    <button data-tab="library" class="active">Library</button>
+    <button data-tab="add">Add</button>
+    <button data-tab="build">Build</button>
+    <button data-tab="atlas">Atlas</button>
+  </nav>
+
+  <!-- ───────────── LIBRARY ───────────── -->
+  <section class="tab active" id="tab-library">
+    <div class="card">
+      <h2>Filter &amp; search <small id="lib-count"></small></h2>
+      <input type="text" id="search" placeholder="Search title or artist…" autocomplete="off" />
+      <div class="filterbar" style="margin-top:10px;">
+        <select id="f-mood"><option value="">All moods</option></select>
+        <select id="f-energy">
+          <option value="">All energy</option>
+          <option value="1">Energy 1</option>
+          <option value="2">Energy 2</option>
+          <option value="3">Energy 3</option>
+          <option value="4">Energy 4</option>
+          <option value="5">Energy 5</option>
+        </select>
+        <select id="f-ctx"><option value="">All contexts</option></select>
+      </div>
+      <div style="text-align:right;margin-top:8px;"><a class="reset" id="lib-reset">Reset filters</a></div>
+    </div>
+    <div id="lib-list"></div>
+  </section>
+
+  <!-- ───────────── ADD / EDIT ───────────── -->
+  <section class="tab" id="tab-add">
+    <div class="card">
+      <h2 id="form-title">Add a song</h2>
+      <input type="hidden" id="edit-id" />
+      <label class="f">Title *</label>
+      <input type="text" id="i-title" placeholder="e.g. Midnight City" autocomplete="off" />
+      <label class="f">Artist *</label>
+      <input type="text" id="i-artist" placeholder="e.g. M83" autocomplete="off" />
+      <label class="f">Link / URL <span style="color:var(--faint)">(optional)</span></label>
+      <input type="url" id="i-url" placeholder="https://… (any link you can open)" autocomplete="off" />
+
+      <label class="f">Mood *</label>
+      <div class="chips" id="mood-chips"></div>
+
+      <label class="f">Energy</label>
+      <div class="energy" id="energy-pick">
+        <button type="button" data-e="1">1</button>
+        <button type="button" data-e="2">2</button>
+        <button type="button" data-e="3" aria-pressed="true">3</button>
+        <button type="button" data-e="4">4</button>
+        <button type="button" data-e="5">5</button>
+      </div>
+      <div class="hint">1 = mellow / quiet · 5 = intense / driving</div>
+
+      <label class="f">Context tags <span style="color:var(--faint)">(any)</span></label>
+      <div class="chips" id="ctx-chips"></div>
+
+      <button class="btn" id="save-btn">Save song</button>
+      <button class="btn ghost" id="cancel-btn" style="display:none;">Cancel edit</button>
+    </div>
+  </section>
+
+  <!-- ───────────── BUILD PLAYLIST ───────────── -->
+  <section class="tab" id="tab-build">
+    <div class="card">
+      <h2>Build a playlist <small>filter, then export</small></h2>
+      <label class="f">Mood</label>
+      <select id="b-mood"><option value="">Any mood</option></select>
+      <label class="f">Minimum energy</label>
+      <select id="b-energy">
+        <option value="0">Any energy</option>
+        <option value="2">≥ 2</option>
+        <option value="3">≥ 3</option>
+        <option value="4">≥ 4 (high)</option>
+        <option value="5">= 5 (max)</option>
+      </select>
+      <label class="f">Context</label>
+      <select id="b-ctx"><option value="">Any context</option></select>
+      <button class="btn" id="b-build">Build playlist</button>
+    </div>
+
+    <div class="card" id="pl-result" style="display:none;">
+      <h2>Your playlist <small id="pl-meta"></small></h2>
+      <div id="pl-list"></div>
+      <div class="toolbar" style="margin-top:14px;">
+        <button class="btn sm ghost" id="copy-text">Copy list</button>
+        <button class="btn sm ghost" id="copy-csv">Copy CSV</button>
+        <button class="btn sm ghost" id="dl-csv">Download CSV</button>
+      </div>
+      <label class="f">Copyable text</label>
+      <textarea class="export" id="export-box" readonly></textarea>
+    </div>
+  </section>
+
+  <!-- ───────────── ATLAS ───────────── -->
+  <section class="tab" id="tab-atlas">
+    <div class="card">
+      <h2>Mood atlas <small>energy × mood</small></h2>
+      <div class="atlas-wrap">
+        <span class="axis-y">CALM → INTENSE (mood)</span>
+        <canvas id="atlas" width="800" height="680"></canvas>
+        <div class="axis-x">LOW ENERGY ◄———————► HIGH ENERGY</div>
+      </div>
+      <div class="legend" id="atlas-legend"></div>
+      <div id="atlas-pick" class="hint" style="margin-top:10px;">Tap a point to see the song.</div>
+    </div>
+
+    <div class="card dist">
+      <h2>Mood distribution <small id="dist-total"></small></h2>
+      <div id="dist-list"></div>
+    </div>
+  </section>
+
+  <footer class="free">
+    <div class="price"><b>MOODATLAS is free.</b> Everything stays on your device.</div>
+    <div class="price" style="margin-top:6px;">Lifetime <b>$3.99</b> unlocks <b>Spotify import + smart playlists (BYOK)</b>.</div>
+    <small>Bring your own key — import your saved tracks &amp; auto-seed energy from audio features.</small>
+    <div class="mini">No accounts · No tracking · Export your data anytime</div>
+  </footer>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ─────────────── constants ─────────────── */
+  var PREFIX = "moodatlas_";
+  var KEY_SONGS = PREFIX + "songs";
+
+  // mood → {color, valence 0..1 (low=calm/down, high=intense/up)} for atlas Y axis
+  var MOODS = [
+    { id: "calm",       label: "calm",       color: "var(--m-calm)",       hex: "#38bdf8", valence: 0.20 },
+    { id: "sleep",      label: "sleep",      color: "var(--m-sleep)",      hex: "#a78bfa", valence: 0.08 },
+    { id: "melancholy", label: "melancholy", color: "var(--m-melancholy)", hex: "#64748b", valence: 0.32 },
+    { id: "focus",      label: "focus",      color: "var(--m-focus)",      hex: "#818cf8", valence: 0.45 },
+    { id: "romantic",   label: "romantic",   color: "var(--m-romantic)",   hex: "#f472b6", valence: 0.55 },
+    { id: "happy",      label: "happy",      color: "var(--m-happy)",      hex: "#facc15", valence: 0.72 },
+    { id: "workout",    label: "workout",    color: "var(--m-workout)",    hex: "#fb923c", valence: 0.85 },
+    { id: "hype",       label: "hype",       color: "var(--m-hype)",       hex: "#f43f5e", valence: 0.95 }
+  ];
+  var CONTEXTS = ["study", "gym", "drive", "party", "sleep", "work", "chill", "commute"];
+
+  function moodMeta(id) {
+    for (var i = 0; i < MOODS.length; i++) if (MOODS[i].id === id) return MOODS[i];
+    return MOODS[0];
+  }
+
+  /* ─────────────── state ─────────────── */
+  var songs = load();
+  var form = { mood: "", energy: 3, ctx: [] };
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY_SONGS);
+      var arr = raw ? JSON.parse(raw) : null;
+      if (!arr || !arr.length) return seed();
+      return arr;
+    } catch (e) { return seed(); }
+  }
+  function save() {
+    try { localStorage.setItem(KEY_SONGS, JSON.stringify(songs)); }
+    catch (e) { toast("Storage full — couldn't save"); }
+  }
+  function seed() {
+    // small starter set so the atlas/distribution aren't empty on first run
+    return [
+      { id: uid(), title: "Weightless", artist: "Marconi Union", url: "", mood: "calm", energy: 1, ctx: ["chill", "sleep"] },
+      { id: uid(), title: "Strobe", artist: "deadmau5", url: "", mood: "focus", energy: 3, ctx: ["work", "study"] },
+      { id: uid(), title: "Till I Collapse", artist: "Eminem", url: "", mood: "workout", energy: 5, ctx: ["gym"] },
+      { id: uid(), title: "Nuvole Bianche", artist: "Ludovico Einaudi", url: "", mood: "melancholy", energy: 2, ctx: ["study", "chill"] },
+      { id: uid(), title: "Levels", artist: "Avicii", url: "", mood: "hype", energy: 5, ctx: ["party", "drive"] },
+      { id: uid(), title: "Lover", artist: "Taylor Swift", url: "", mood: "romantic", energy: 2, ctx: ["chill"] }
+    ];
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  /* ─────────────── DOM helpers ─────────────── */
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $all(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  var toastTimer;
+  function toast(msg) {
+    var t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+
+  /* ─────────────── tabs ─────────────── */
+  $all("nav.tabs button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      $all("nav.tabs button").forEach(function (x) { x.classList.remove("active"); });
+      $all("section.tab").forEach(function (x) { x.classList.remove("active"); });
+      b.classList.add("active");
+      $("#tab-" + b.dataset.tab).classList.add("active");
+      if (b.dataset.tab === "atlas") { drawAtlas(); renderDist(); }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  /* ─────────────── build chip/select UIs ─────────────── */
+  function buildMoodChips() {
+    var box = $("#mood-chips"); box.innerHTML = "";
+    MOODS.forEach(function (m) {
+      var c = el("span", "chip mood", m.label);
+      c.style.setProperty("--c", m.hex);
+      c.dataset.mood = m.id;
+      c.addEventListener("click", function () {
+        form.mood = (form.mood === m.id) ? "" : m.id;
+        syncMoodChips();
+      });
+      box.appendChild(c);
+    });
+  }
+  function syncMoodChips() {
+    $all("#mood-chips .chip").forEach(function (c) {
+      c.classList.toggle("sel", c.dataset.mood === form.mood);
+    });
+  }
+  function buildCtxChips() {
+    var box = $("#ctx-chips"); box.innerHTML = "";
+    CONTEXTS.forEach(function (ctx) {
+      var c = el("span", "chip ctx", esc(ctx));
+      c.dataset.ctx = ctx;
+      c.addEventListener("click", function () {
+        var i = form.ctx.indexOf(ctx);
+        if (i >= 0) form.ctx.splice(i, 1); else form.ctx.push(ctx);
+        syncCtxChips();
+      });
+      box.appendChild(c);
+    });
+  }
+  function syncCtxChips() {
+    $all("#ctx-chips .chip").forEach(function (c) {
+      c.classList.toggle("sel", form.ctx.indexOf(c.dataset.ctx) >= 0);
+    });
+  }
+  $all("#energy-pick button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      form.energy = parseInt(b.dataset.e, 10);
+      $all("#energy-pick button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    });
+  });
+
+  function fillMoodSelect(sel, allLabel) {
+    sel.innerHTML = "";
+    var o0 = el("option"); o0.value = ""; o0.textContent = allLabel; sel.appendChild(o0);
+    MOODS.forEach(function (m) { var o = el("option"); o.value = m.id; o.textContent = m.label; sel.appendChild(o); });
+  }
+  function fillCtxSelect(sel, allLabel) {
+    sel.innerHTML = "";
+    var o0 = el("option"); o0.value = ""; o0.textContent = allLabel; sel.appendChild(o0);
+    CONTEXTS.forEach(function (c) { var o = el("option"); o.value = c; o.textContent = c; sel.appendChild(o); });
+  }
+
+  /* ─────────────── ADD / EDIT form ─────────────── */
+  function resetForm() {
+    $("#edit-id").value = ""; $("#i-title").value = ""; $("#i-artist").value = ""; $("#i-url").value = "";
+    form = { mood: "", energy: 3, ctx: [] };
+    syncMoodChips(); syncCtxChips();
+    $all("#energy-pick button").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.e === "3" ? "true" : "false"); });
+    $("#form-title").textContent = "Add a song";
+    $("#save-btn").textContent = "Save song";
+    $("#cancel-btn").style.display = "none";
+  }
+
+  $("#save-btn").addEventListener("click", function () {
+    var title = $("#i-title").value.trim();
+    var artist = $("#i-artist").value.trim();
+    var url = $("#i-url").value.trim();
+    if (!title || !artist) { toast("Title and artist are required"); return; }
+    if (!form.mood) { toast("Pick a mood"); return; }
+    if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
+
+    var editId = $("#edit-id").value;
+    if (editId) {
+      var s = songs.filter(function (x) { return x.id === editId; })[0];
+      if (s) { s.title = title; s.artist = artist; s.url = url; s.mood = form.mood; s.energy = form.energy; s.ctx = form.ctx.slice(); }
+      toast("Song updated");
+    } else {
+      songs.unshift({ id: uid(), title: title, artist: artist, url: url, mood: form.mood, energy: form.energy, ctx: form.ctx.slice() });
+      toast("Added to library");
+    }
+    save(); resetForm(); refreshAll();
+    // jump to library
+    document.querySelector('nav.tabs button[data-tab="library"]').click();
+  });
+
+  $("#cancel-btn").addEventListener("click", function () { resetForm(); });
+
+  function editSong(id) {
+    var s = songs.filter(function (x) { return x.id === id; })[0];
+    if (!s) return;
+    $("#edit-id").value = s.id;
+    $("#i-title").value = s.title; $("#i-artist").value = s.artist; $("#i-url").value = s.url || "";
+    form = { mood: s.mood, energy: s.energy, ctx: (s.ctx || []).slice() };
+    syncMoodChips(); syncCtxChips();
+    $all("#energy-pick button").forEach(function (x) { x.setAttribute("aria-pressed", parseInt(x.dataset.e, 10) === s.energy ? "true" : "false"); });
+    $("#form-title").textContent = "Edit song";
+    $("#save-btn").textContent = "Update song";
+    $("#cancel-btn").style.display = "block";
+    document.querySelector('nav.tabs button[data-tab="add"]').click();
+  }
+
+  function deleteSong(id) {
+    var s = songs.filter(function (x) { return x.id === id; })[0];
+    if (!s) return;
+    if (!confirm('Delete "' + s.title + '" by ' + s.artist + "?")) return;
+    songs = songs.filter(function (x) { return x.id !== id; });
+    save(); refreshAll(); toast("Deleted");
+  }
+
+  /* ─────────────── LIBRARY render ─────────────── */
+  function currentLibFilter() {
+    return {
+      q: $("#search").value.trim().toLowerCase(),
+      mood: $("#f-mood").value,
+      energy: $("#f-energy").value,
+      ctx: $("#f-ctx").value
+    };
+  }
+  function applyFilter(f) {
+    return songs.filter(function (s) {
+      if (f.mood && s.mood !== f.mood) return false;
+      if (f.energy && String(s.energy) !== f.energy) return false;
+      if (f.ctx && (s.ctx || []).indexOf(f.ctx) < 0) return false;
+      if (f.q) {
+        var hay = (s.title + " " + s.artist).toLowerCase();
+        if (hay.indexOf(f.q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  function songCard(s) {
+    var m = moodMeta(s.mood);
+    var c = el("div", "song");
+    c.style.setProperty("--c", m.hex);
+    var ctxPills = (s.ctx || []).map(function (x) { return '<span class="pill">' + esc(x) + "</span>"; }).join("");
+    var linkHtml = s.url ? '<a class="link" href="' + esc(s.url) + '" target="_blank" rel="noopener">↗ open</a>' : "";
+    c.innerHTML =
+      '<div class="acts">' +
+        '<button class="iconbtn" data-act="edit" title="Edit">✎</button>' +
+        '<button class="iconbtn" data-act="del" title="Delete">🗑</button>' +
+      "</div>" +
+      '<div class="t">' + esc(s.title) + "</div>" +
+      '<div class="a">' + esc(s.artist) + "</div>" +
+      '<div class="meta">' +
+        '<span class="moodtag" style="--c:' + m.hex + '">' + esc(m.label) + "</span>" +
+        '<span class="pill e">⚡ ' + s.energy + "</span>" +
+        ctxPills + linkHtml +
+      "</div>";
+    c.querySelector('[data-act="edit"]').addEventListener("click", function () { editSong(s.id); });
+    c.querySelector('[data-act="del"]').addEventListener("click", function () { deleteSong(s.id); });
+    return c;
+  }
+
+  function renderLibrary() {
+    var f = currentLibFilter();
+    var list = applyFilter(f);
+    var box = $("#lib-list"); box.innerHTML = "";
+    $("#lib-count").textContent = list.length + " / " + songs.length;
+    if (!songs.length) {
+      box.appendChild(el("div", "empty", '<div class="big">🎵</div>Your library is empty.<br>Add your first song from the <b>Add</b> tab.'));
+      return;
+    }
+    if (!list.length) {
+      box.appendChild(el("div", "empty", '<div class="big">🔍</div>No songs match these filters.'));
+      return;
+    }
+    list.forEach(function (s) { box.appendChild(songCard(s)); });
+  }
+
+  ["#search", "#f-mood", "#f-energy", "#f-ctx"].forEach(function (sel) {
+    $(sel).addEventListener("input", renderLibrary);
+    $(sel).addEventListener("change", renderLibrary);
+  });
+  $("#lib-reset").addEventListener("click", function () {
+    $("#search").value = ""; $("#f-mood").value = ""; $("#f-energy").value = ""; $("#f-ctx").value = "";
+    renderLibrary();
+  });
+
+  /* ─────────────── BUILD playlist ─────────────── */
+  var lastPlaylist = [];
+  $("#b-build").addEventListener("click", function () {
+    var mood = $("#b-mood").value;
+    var minE = parseInt($("#b-energy").value, 10) || 0;
+    var ctx = $("#b-ctx").value;
+    lastPlaylist = buildPlaylist({ mood: mood, minEnergy: minE, ctx: ctx });
+    renderPlaylist(lastPlaylist, { mood: mood, minE: minE, ctx: ctx });
+  });
+
+  function buildPlaylist(opts) {
+    // (Premium: smart playlists would rank by energy/valence similarity here.)
+    return songs.filter(function (s) {
+      if (opts.mood && s.mood !== opts.mood) return false;
+      if (opts.minEnergy && s.energy < opts.minEnergy) return false;
+      if (opts.ctx && (s.ctx || []).indexOf(opts.ctx) < 0) return false;
+      return true;
+    }).sort(function (a, b) { return b.energy - a.energy; });
+  }
+
+  function renderPlaylist(list, meta) {
+    var wrap = $("#pl-result");
+    wrap.style.display = "block";
+    var parts = [];
+    if (meta.mood) parts.push(moodMeta(meta.mood).label);
+    if (meta.minE) parts.push("energy ≥ " + meta.minE);
+    if (meta.ctx) parts.push(meta.ctx);
+    $("#pl-meta").textContent = (parts.length ? parts.join(" · ") + " · " : "") + list.length + " tracks";
+
+    var box = $("#pl-list"); box.innerHTML = "";
+    if (!list.length) {
+      box.appendChild(el("div", "empty", '<div class="big">🪹</div>No tracks match. Loosen the filters.'));
+      $("#export-box").value = "";
+      return;
+    }
+    list.forEach(function (s, i) {
+      var row = el("div", "plitem");
+      var titleHtml = s.url
+        ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.title) + "</a>"
+        : esc(s.title);
+      row.innerHTML = '<span class="n">' + (i + 1) + ".</span>" +
+        '<div class="info"><b>' + titleHtml + "</b> — " + esc(s.artist) +
+        ' <span class="pill e" style="margin-left:4px;">⚡' + s.energy + "</span></div>";
+      box.appendChild(row);
+    });
+    $("#export-box").value = toText(list);
+    wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function toText(list) {
+    return list.map(function (s, i) {
+      var line = (i + 1) + ". " + s.title + " — " + s.artist + " [" + s.mood + " · ⚡" + s.energy + "]";
+      if (s.url) line += "\n   " + s.url;
+      return line;
+    }).join("\n");
+  }
+  function toCSV(list) {
+    var head = "title,artist,mood,energy,context,url";
+    var rows = list.map(function (s) {
+      return [s.title, s.artist, s.mood, s.energy, (s.ctx || []).join("|"), s.url || ""].map(csvCell).join(",");
+    });
+    return [head].concat(rows).join("\n");
+  }
+  function csvCell(v) {
+    v = String(v == null ? "" : v);
+    if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  }
+
+  function copy(text, label) {
+    if (!text) { toast("Nothing to copy"); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast(label + " copied"); }, fallbackCopy);
+    } else { fallbackCopy(); }
+    function fallbackCopy() {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); toast(label + " copied"); } catch (e) { toast("Copy failed"); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  $("#copy-text").addEventListener("click", function () { copy(toText(lastPlaylist), "List"); });
+  $("#copy-csv").addEventListener("click", function () { copy(toCSV(lastPlaylist), "CSV"); });
+  $("#dl-csv").addEventListener("click", function () {
+    if (!lastPlaylist.length) { toast("Build a playlist first"); return; }
+    var blob = new Blob([toCSV(lastPlaylist)], { type: "text/csv;charset=utf-8" });
+    var a = el("a"); a.href = URL.createObjectURL(blob);
+    a.download = "moodatlas-playlist.csv"; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 100);
+    toast("CSV downloaded");
+  });
+
+  /* ─────────────── ATLAS (canvas scatter) ─────────────── */
+  var atlasPoints = [];
+  function drawAtlas() {
+    var cv = $("#atlas"); var ctx = cv.getContext("2d");
+    // hi-dpi sizing based on CSS box
+    var rect = cv.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    var W = Math.max(280, rect.width), H = 340;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    var padL = 16, padR = 16, padT = 16, padB = 16;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+
+    // grid
+    ctx.strokeStyle = "rgba(255,255,255,.06)"; ctx.lineWidth = 1;
+    for (var gx = 0; gx <= 4; gx++) {
+      var x = padL + (plotW * gx / 4);
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
+    }
+    for (var gy = 0; gy <= 4; gy++) {
+      var y = padT + (plotH * gy / 4);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+    }
+    // center crosshair
+    ctx.strokeStyle = "rgba(255,255,255,.12)";
+    ctx.beginPath(); ctx.moveTo(padL + plotW / 2, padT); ctx.lineTo(padL + plotW / 2, padT + plotH); ctx.stroke();
+
+    // plot points; jitter overlapping ones a touch
+    atlasPoints = [];
+    var seen = {};
+    songs.forEach(function (s) {
+      var m = moodMeta(s.mood);
+      var nx = (s.energy - 1) / 4;        // 0..1 energy
+      var ny = 1 - m.valence;             // invert: low valence (calm) at bottom
+      var key = Math.round(nx * 8) + "_" + Math.round(ny * 8);
+      var n = seen[key] = (seen[key] || 0) + 1;
+      var jitter = (n - 1) * 9;
+      var px = padL + nx * plotW + ((n % 2 === 0) ? jitter : -jitter) * 0.5;
+      var py = padT + ny * plotH + ((n % 3) - 1) * 6;
+      px = Math.max(padL + 6, Math.min(padL + plotW - 6, px));
+      py = Math.max(padT + 6, Math.min(padT + plotH - 6, py));
+
+      // glow
+      ctx.beginPath();
+      ctx.fillStyle = m.hex + "33";
+      ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill();
+      // dot
+      ctx.beginPath();
+      ctx.fillStyle = m.hex;
+      ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.stroke();
+
+      atlasPoints.push({ x: px, y: py, r: 14, song: s });
+    });
+
+    if (!songs.length) {
+      ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.font = "13px " + getComputedStyle(document.body).fontFamily;
+      ctx.textAlign = "center";
+      ctx.fillText("Add songs to populate the atlas", W / 2, H / 2);
+    }
+
+    // legend
+    var leg = $("#atlas-legend"); leg.innerHTML = "";
+    MOODS.forEach(function (m) {
+      var s = el("span", null, '<i style="background:' + m.hex + '"></i>' + m.label);
+      leg.appendChild(s);
+    });
+  }
+
+  function atlasHit(evt) {
+    var cv = $("#atlas"); var rect = cv.getBoundingClientRect();
+    var pt = evt.touches ? evt.touches[0] : evt;
+    var x = pt.clientX - rect.left, y = pt.clientY - rect.top;
+    var best = null, bd = 1e9;
+    atlasPoints.forEach(function (p) {
+      var d = Math.hypot(p.x - x, p.y - y);
+      if (d < p.r && d < bd) { bd = d; best = p; }
+    });
+    if (best) {
+      var s = best.song; var m = moodMeta(s.mood);
+      $("#atlas-pick").innerHTML = '<b>' + esc(s.title) + "</b> — " + esc(s.artist) +
+        ' · <span style="color:' + m.hex + '">' + esc(m.label) + "</span> · ⚡" + s.energy +
+        (s.url ? ' · <a class="link" style="color:var(--accent)" href="' + esc(s.url) + '" target="_blank" rel="noopener">open ↗</a>' : "");
+    }
+  }
+  $("#atlas").addEventListener("click", atlasHit);
+  $("#atlas").addEventListener("touchstart", function (e) { atlasHit(e); }, { passive: true });
+  window.addEventListener("resize", function () { if ($("#tab-atlas").classList.contains("active")) drawAtlas(); });
+
+  /* ─────────────── distribution ─────────────── */
+  function renderDist() {
+    var counts = {}; MOODS.forEach(function (m) { counts[m.id] = 0; });
+    songs.forEach(function (s) { if (counts[s.mood] != null) counts[s.mood]++; });
+    var max = Math.max(1, Math.max.apply(null, MOODS.map(function (m) { return counts[m.id]; })));
+    var box = $("#dist-list"); box.innerHTML = "";
+    $("#dist-total").textContent = songs.length + " songs";
+    MOODS.forEach(function (m) {
+      var n = counts[m.id];
+      var bar = el("div", "bar");
+      bar.innerHTML =
+        '<div class="name"><i style="background:' + m.hex + '"></i>' + m.label + "</div>" +
+        '<div class="track"><div class="fill" style="width:' + (n / max * 100) + '%;background:' + m.hex + '"></div></div>' +
+        '<div class="num">' + n + "</div>";
+      box.appendChild(bar);
+    });
+  }
+
+  /* ─────────────── header stats ─────────────── */
+  function renderStats() {
+    $("#st-songs").textContent = songs.length;
+    var moodSet = {}; songs.forEach(function (s) { moodSet[s.mood] = 1; });
+    $("#st-moods").textContent = Object.keys(moodSet).length;
+    if (songs.length) {
+      var avg = songs.reduce(function (a, s) { return a + s.energy; }, 0) / songs.length;
+      $("#st-avg").textContent = avg.toFixed(1);
+    } else { $("#st-avg").textContent = "–"; }
+  }
+
+  /* ─────────────── refresh ─────────────── */
+  function refreshAll() {
+    renderStats();
+    renderLibrary();
+    if ($("#tab-atlas").classList.contains("active")) { drawAtlas(); renderDist(); }
+  }
+
+  /*
+    importFromSpotify(clientId) — PREMIUM (BYOK) STUB.
+    Wired to nothing in the free build. See the comment block in <head> for the
+    full integration outline. Kept here so the plug-in point is obvious in code.
+  */
+  function importFromSpotify(/* clientId */) {
+    toast("Spotify import is a Lifetime ($3.99) feature");
+  }
+  window.MOODATLAS = { importFromSpotify: importFromSpotify }; // expose for premium build
+
+  /* ─────────────── init ─────────────── */
+  buildMoodChips();
+  buildCtxChips();
+  fillMoodSelect($("#f-mood"), "All moods");
+  fillMoodSelect($("#b-mood"), "Any mood");
+  fillCtxSelect($("#f-ctx"), "All contexts");
+  fillCtxSelect($("#b-ctx"), "Any context");
+  resetForm();
+  refreshAll();
+})();
+</script>
+</body>
+</html>
