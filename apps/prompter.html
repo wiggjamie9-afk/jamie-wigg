@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="PROMPTER: A smooth, mirror-capable video script teleprompter for creators. Paste a script, read to camera. Free forever, works offline.">
+    <meta name="theme-color" content="#0F172A">
+    <title>PROMPTER – Video Script Teleprompter</title>
+    <style>
+        :root {
+            --primary: #6366F1;
+            --secondary: #EC4899;
+            --accent: #FBBF24;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --bg-card: #1E293B;
+            --border: #334155;
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --prompter-text: #FFFFFF;
+            --reading-line: rgba(251, 191, 36, 0.5);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overscroll-behavior: none;
+        }
+
+        /* ---------- Editor screen ---------- */
+        .container { max-width: 600px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 24px 20px 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 26px; letter-spacing: 1px; font-weight: 800; }
+        .header p { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+        .content { flex: 1; padding: 16px; overflow-y: auto; }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+        }
+        .card h2 { font-size: 14px; margin-bottom: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 14px;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 16px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+        }
+        textarea:focus { outline: none; border-color: var(--primary); }
+
+        .stats { display: flex; gap: 10px; margin-top: 12px; }
+        .stat {
+            flex: 1; background: var(--bg-dark); border-radius: 10px; padding: 10px; text-align: center;
+        }
+        .stat .num { font-size: 20px; font-weight: 800; color: var(--accent); }
+        .stat .lbl { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+        .setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; }
+        .setting-row:last-child { margin-bottom: 0; }
+        .setting-row label { font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+        .setting-row .val { font-size: 13px; font-weight: 700; color: var(--text-primary); min-width: 64px; text-align: right; }
+        input[type="range"] { flex: 1; accent-color: var(--primary); }
+        input[type="number"] {
+            width: 70px; padding: 8px; background: var(--bg-dark); border: 2px solid var(--border);
+            border-radius: 8px; color: var(--text-primary); font-size: 14px; text-align: center;
+        }
+        input[type="number"]:focus { outline: none; border-color: var(--primary); }
+
+        .toggle { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle .slider {
+            position: absolute; inset: 0; background: var(--border); border-radius: 28px; transition: 0.2s; cursor: pointer;
+        }
+        .toggle .slider::before {
+            content: ""; position: absolute; height: 22px; width: 22px; left: 3px; top: 3px;
+            background: #fff; border-radius: 50%; transition: 0.2s;
+        }
+        .toggle input:checked + .slider { background: var(--primary); }
+        .toggle input:checked + .slider::before { transform: translateX(20px); }
+
+        button {
+            padding: 14px 16px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+            cursor: pointer; background: var(--primary); color: white; width: 100%; transition: 0.15s;
+        }
+        button:hover { background: #4F46E5; }
+        button:active { transform: scale(0.98); }
+        .btn-big { font-size: 17px; padding: 18px; background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+        .btn-ghost { background: var(--bg-dark); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: var(--border); }
+        .btn-row { display: flex; gap: 10px; }
+        .btn-row button { width: auto; flex: 1; }
+
+        .script-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            background: var(--bg-dark); border-radius: 10px; padding: 12px; margin-bottom: 8px;
+        }
+        .script-item .info { flex: 1; min-width: 0; cursor: pointer; }
+        .script-item .name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .script-item .meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+        .script-item .del {
+            width: 34px; height: 34px; flex-shrink: 0; padding: 0; background: transparent;
+            color: var(--text-secondary); font-size: 18px; border-radius: 8px;
+        }
+        .script-item .del:hover { background: #7F1D1D; color: #fff; }
+        .empty { font-size: 13px; color: var(--text-secondary); text-align: center; padding: 8px; }
+
+        .footer-note {
+            text-align: center; font-size: 12px; color: var(--text-secondary); padding: 18px 16px 28px; line-height: 1.6;
+        }
+        .footer-note .pro { color: var(--accent); font-weight: 700; }
+
+        /* ---------- Prompter (full screen) screen ---------- */
+        .prompter {
+            position: fixed; inset: 0; background: #000; z-index: 1000; display: none; flex-direction: column;
+        }
+        .prompter.active { display: flex; }
+        .prompter-viewport {
+            flex: 1; overflow: hidden; position: relative;
+        }
+        .reading-line {
+            position: absolute; left: 0; right: 0; top: 38%; height: 0;
+            border-top: 2px solid var(--reading-line); z-index: 5; pointer-events: none; display: none;
+        }
+        .reading-line.show { display: block; }
+        .reading-line::before, .reading-line::after {
+            content: ""; position: absolute; top: -8px; border-style: solid;
+        }
+        .reading-line::before { left: 8px; border-width: 8px 0 8px 12px; border-color: transparent transparent transparent var(--reading-line); }
+        .reading-line::after { right: 8px; border-width: 8px 12px 8px 0; border-color: transparent var(--reading-line) transparent transparent; }
+
+        #scrollText {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 0 6vw; will-change: transform;
+            font-weight: 700; line-height: 1.5; color: var(--prompter-text);
+            white-space: pre-wrap; word-wrap: break-word; text-align: center;
+        }
+        .prompter.mirror #scrollText { transform-origin: center; }
+
+        .prompter-controls {
+            background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(8px);
+            border-top: 1px solid var(--border); padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .ctrl-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+        .ctrl-btn {
+            background: var(--bg-light); border: 1px solid var(--border); color: var(--text-primary);
+            border-radius: 10px; padding: 10px 4px; font-size: 11px; font-weight: 700; width: auto;
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .ctrl-btn .ico { font-size: 18px; }
+        .ctrl-btn:hover { background: var(--border); }
+        .ctrl-btn.on { background: var(--primary); border-color: var(--primary); }
+        .ctrl-btn.play { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
+        .ctrl-readout { display: flex; justify-content: center; gap: 20px; font-size: 12px; color: var(--text-secondary); }
+        .ctrl-readout b { color: var(--accent); }
+
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: var(--bg-light); padding: 12px 18px; border-radius: 10px;
+            border-left: 4px solid var(--accent); z-index: 2000; font-size: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4); animation: slideUp 0.25s ease;
+            max-width: 90vw;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        @media (min-width: 700px) {
+            .ctrl-btn .ico { font-size: 22px; }
+            .ctrl-btn { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== Editor ===== -->
+    <div class="container" id="editor">
+        <div class="header">
+            <h1>🎬 PROMPTER</h1>
+            <p>Smooth teleprompter for reading to camera</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>📝 Your Script</h2>
+                <textarea id="script" placeholder="Paste or type your script here. The prompter will scroll it smoothly while you read to camera…"></textarea>
+                <div class="stats">
+                    <div class="stat"><div class="num" id="statWords">0</div><div class="lbl">words</div></div>
+                    <div class="stat"><div class="num" id="statTime">0:00</div><div class="lbl">read time</div></div>
+                    <div class="stat"><div class="num" id="statChars">0</div><div class="lbl">characters</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>⚙️ Settings</h2>
+                <div class="setting-row">
+                    <label>Scroll speed</label>
+                    <input type="range" id="speed" min="10" max="300" step="5" value="60">
+                    <span class="val" id="speedVal">60 px/s</span>
+                </div>
+                <div class="setting-row">
+                    <label>Font size</label>
+                    <input type="range" id="font" min="24" max="120" step="2" value="48">
+                    <span class="val" id="fontVal">48 px</span>
+                </div>
+                <div class="setting-row">
+                    <label>Words / minute</label>
+                    <input type="number" id="wpm" min="60" max="250" step="5" value="130">
+                </div>
+                <div class="setting-row">
+                    <label>Mirror mode (beam-splitter rigs)</label>
+                    <span class="toggle"><input type="checkbox" id="mirror"><span class="slider"></span></span>
+                </div>
+                <div class="setting-row">
+                    <label>Center reading-line marker</label>
+                    <span class="toggle"><input type="checkbox" id="readingLine" checked><span class="slider"></span></span>
+                </div>
+            </div>
+
+            <button class="btn-big" id="startBtn">▶ Start Prompting</button>
+
+            <div class="card" style="margin-top:14px;">
+                <h2>💾 Saved Scripts</h2>
+                <div class="btn-row" style="margin-bottom:12px;">
+                    <button class="btn-ghost" id="saveBtn">Save Current</button>
+                    <button class="btn-ghost" id="clearBtn">Clear</button>
+                </div>
+                <div id="savedList"></div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            PROMPTER is <b>free forever</b>. Works fully offline — your scripts stay on your device.<br>
+            <span class="pro">Lifetime $3.99</span> unlocks remote control, cue marks &amp; countdown.
+        </div>
+    </div>
+
+    <!-- ===== Prompter overlay ===== -->
+    <div class="prompter" id="prompter">
+        <div class="prompter-viewport" id="viewport">
+            <div class="reading-line" id="lineMarker"></div>
+            <div id="scrollText"></div>
+        </div>
+        <div class="prompter-controls">
+            <div class="ctrl-readout">
+                <span>Speed <b id="rSpeed">60</b> px/s</span>
+                <span>Font <b id="rFont">48</b> px</span>
+            </div>
+            <div class="ctrl-grid">
+                <button class="ctrl-btn play" id="pPlay"><span class="ico">⏸</span><span id="pPlayLbl">Pause</span></button>
+                <button class="ctrl-btn" id="pRestart"><span class="ico">⟲</span><span>Restart</span></button>
+                <button class="ctrl-btn" id="pSpeedDown"><span class="ico">🐢</span><span>Slower</span></button>
+                <button class="ctrl-btn" id="pSpeedUp"><span class="ico">🐇</span><span>Faster</span></button>
+                <button class="ctrl-btn" id="pFontDown"><span class="ico">A−</span><span>Smaller</span></button>
+                <button class="ctrl-btn" id="pFontUp"><span class="ico">A+</span><span>Bigger</span></button>
+            </div>
+            <div class="ctrl-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <button class="ctrl-btn" id="pMirror"><span class="ico">🪞</span><span>Mirror</span></button>
+                <button class="ctrl-btn" id="pLine"><span class="ico">━</span><span>Marker</span></button>
+                <button class="ctrl-btn" id="pFull"><span class="ico">⛶</span><span>Fullscreen</span></button>
+                <button class="ctrl-btn" id="pExit"><span class="ico">✕</span><span>Exit</span></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        "use strict";
+        var PREFIX = "prompter_";
+        var $ = function (id) { return document.getElementById(id); };
+
+        // ---- Elements ----
+        var scriptEl = $("script"), speedEl = $("speed"), fontEl = $("font"), wpmEl = $("wpm"),
+            mirrorEl = $("mirror"), readingLineEl = $("readingLine"),
+            speedVal = $("speedVal"), fontVal = $("fontVal"),
+            statWords = $("statWords"), statTime = $("statTime"), statChars = $("statChars"),
+            savedList = $("savedList");
+
+        var prompterEl = $("prompter"), editorEl = $("editor"), viewportEl = $("viewport"),
+            scrollText = $("scrollText"), lineMarker = $("lineMarker");
+
+        var rSpeed = $("rSpeed"), rFont = $("rFont"),
+            pPlay = $("pPlay"), pPlayLbl = $("pPlayLbl");
+
+        // ---- State ----
+        var settings = {
+            speed: 60,      // px per second
+            font: 48,       // px
+            wpm: 130,
+            mirror: false,
+            readingLine: true
+        };
+        var anim = { running: false, paused: false, offset: 0, last: 0, rafId: null, maxOffset: 0 };
+
+        // ---- Persistence ----
+        function loadSettings() {
+            try {
+                var raw = localStorage.getItem(PREFIX + "settings");
+                if (raw) { var s = JSON.parse(raw); for (var k in settings) if (k in s) settings[k] = s[k]; }
+            } catch (e) {}
+        }
+        function saveSettings() {
+            try { localStorage.setItem(PREFIX + "settings", JSON.stringify(settings)); } catch (e) {}
+        }
+        function loadScripts() {
+            try { return JSON.parse(localStorage.getItem(PREFIX + "scripts") || "[]"); } catch (e) { return []; }
+        }
+        function persistScripts(arr) {
+            try { localStorage.setItem(PREFIX + "scripts", JSON.stringify(arr)); } catch (e) {}
+        }
+        function loadDraft() {
+            try { return localStorage.getItem(PREFIX + "draft") || ""; } catch (e) { return ""; }
+        }
+        function saveDraft() {
+            try { localStorage.setItem(PREFIX + "draft", scriptEl.value); } catch (e) {}
+        }
+
+        // ---- Toast ----
+        var toastTimer = null;
+        function toast(msg) {
+            var existing = document.querySelector(".toast");
+            if (existing) existing.remove();
+            var t = document.createElement("div");
+            t.className = "toast"; t.textContent = msg;
+            document.body.appendChild(t);
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () { if (t.parentNode) t.remove(); }, 2200);
+        }
+
+        // ---- Stats ----
+        function countWords(text) {
+            var m = text.trim().match(/\S+/g);
+            return m ? m.length : 0;
+        }
+        function fmtTime(sec) {
+            sec = Math.max(0, Math.round(sec));
+            var m = Math.floor(sec / 60), s = sec % 60;
+            return m + ":" + (s < 10 ? "0" : "") + s;
+        }
+        function updateStats() {
+            var text = scriptEl.value;
+            var words = countWords(text);
+            statWords.textContent = words;
+            statChars.textContent = text.length;
+            var wpm = settings.wpm > 0 ? settings.wpm : 130;
+            statTime.textContent = fmtTime((words / wpm) * 60);
+        }
+
+        // ---- UI sync ----
+        function syncControlsUI() {
+            speedEl.value = settings.speed;
+            fontEl.value = settings.font;
+            wpmEl.value = settings.wpm;
+            mirrorEl.checked = settings.mirror;
+            readingLineEl.checked = settings.readingLine;
+            speedVal.textContent = settings.speed + " px/s";
+            fontVal.textContent = settings.font + " px";
+        }
+        function syncPrompterUI() {
+            rSpeed.textContent = settings.speed;
+            rFont.textContent = settings.font;
+            scrollText.style.fontSize = settings.font + "px";
+            prompterEl.classList.toggle("mirror", settings.mirror);
+            scrollText.style.transform = "translateY(" + (-anim.offset) + "px)" + (settings.mirror ? " scaleX(-1)" : "");
+            lineMarker.classList.toggle("show", settings.readingLine);
+            $("pMirror").classList.toggle("on", settings.mirror);
+            $("pLine").classList.toggle("on", settings.readingLine);
+        }
+
+        // ---- Animation ----
+        function recomputeMax() {
+            // allow scrolling until last line clears past the top, plus a tail of viewport height
+            anim.maxOffset = Math.max(0, scrollText.scrollHeight - 0) + viewportEl.clientHeight * 0.5;
+        }
+        function applyTransform() {
+            scrollText.style.transform = "translateY(" + (-anim.offset) + "px)" + (settings.mirror ? " scaleX(-1)" : "");
+        }
+        function frame(ts) {
+            if (!anim.running) return;
+            if (!anim.last) anim.last = ts;
+            var dt = (ts - anim.last) / 1000;
+            anim.last = ts;
+            if (!anim.paused) {
+                anim.offset += settings.speed * dt;
+                if (anim.offset >= anim.maxOffset) {
+                    anim.offset = anim.maxOffset;
+                    applyTransform();
+                    setPaused(true);
+                    toast("End of script");
+                    return;
+                }
+                applyTransform();
+            }
+            anim.rafId = requestAnimationFrame(frame);
+        }
+        function startLoop() {
+            anim.last = 0;
+            cancelAnimationFrame(anim.rafId);
+            anim.rafId = requestAnimationFrame(frame);
+        }
+        function setPaused(p) {
+            anim.paused = p;
+            pPlayLbl.textContent = p ? "Play" : "Pause";
+            pPlay.querySelector(".ico").textContent = p ? "▶" : "⏸";
+        }
+
+        // ---- Prompter open/close ----
+        function openPrompter() {
+            var text = scriptEl.value.trim();
+            if (!text) { toast("Add a script first"); scriptEl.focus(); return; }
+            scrollText.textContent = scriptEl.value;
+            prompterEl.classList.add("active");
+            anim.running = true;
+            // start text below the reading line / near top of viewport
+            anim.offset = -viewportEl.clientHeight * 0.35;
+            syncPrompterUI();
+            // measure after layout
+            requestAnimationFrame(function () {
+                recomputeMax();
+                applyTransform();
+                setPaused(false);
+                startLoop();
+            });
+        }
+        function closePrompter() {
+            anim.running = false;
+            cancelAnimationFrame(anim.rafId);
+            prompterEl.classList.remove("active");
+            if (document.fullscreenElement) { document.exitFullscreen().catch(function(){}); }
+        }
+        function restart() {
+            anim.offset = -viewportEl.clientHeight * 0.35;
+            applyTransform();
+            setPaused(false);
+            anim.last = 0;
+            startLoop();
+        }
+
+        // ---- Speed / font live adjust ----
+        function changeSpeed(delta) {
+            settings.speed = Math.min(300, Math.max(10, settings.speed + delta));
+            saveSettings(); syncControlsUI(); syncPrompterUI();
+        }
+        function changeFont(delta) {
+            settings.font = Math.min(120, Math.max(24, settings.font + delta));
+            saveSettings(); syncControlsUI();
+            scrollText.style.fontSize = settings.font + "px";
+            rFont.textContent = settings.font;
+            recomputeMax();
+        }
+
+        // ---- Fullscreen ----
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                (prompterEl.requestFullscreen ? prompterEl.requestFullscreen() : Promise.reject())
+                    .catch(function () { toast("Fullscreen not available"); });
+            } else {
+                document.exitFullscreen().catch(function(){});
+            }
+        }
+
+        // ---- Saved scripts ----
+        function renderSaved() {
+            var arr = loadScripts();
+            savedList.innerHTML = "";
+            if (!arr.length) {
+                savedList.innerHTML = '<div class="empty">No saved scripts yet.</div>';
+                return;
+            }
+            arr.forEach(function (item, i) {
+                var row = document.createElement("div");
+                row.className = "script-item";
+                var words = countWords(item.text);
+                var info = document.createElement("div");
+                info.className = "info";
+                info.innerHTML = '<div class="name"></div><div class="meta">' + words + ' words · ' +
+                    fmtTime((words / (settings.wpm || 130)) * 60) + '</div>';
+                info.querySelector(".name").textContent = item.name;
+                info.addEventListener("click", function () {
+                    scriptEl.value = item.text;
+                    saveDraft(); updateStats();
+                    toast('Loaded "' + item.name + '"');
+                    scriptEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+                var del = document.createElement("button");
+                del.className = "del"; del.textContent = "🗑"; del.title = "Delete";
+                del.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    if (confirm('Delete "' + item.name + '"?')) {
+                        var a = loadScripts(); a.splice(i, 1); persistScripts(a); renderSaved();
+                        toast("Deleted");
+                    }
+                });
+                row.appendChild(info); row.appendChild(del);
+                savedList.appendChild(row);
+            });
+        }
+        function saveCurrent() {
+            var text = scriptEl.value.trim();
+            if (!text) { toast("Nothing to save"); return; }
+            var name = prompt("Name this script:", "Script " + (loadScripts().length + 1));
+            if (name === null) return;
+            name = name.trim() || ("Script " + (loadScripts().length + 1));
+            var arr = loadScripts();
+            arr.unshift({ name: name, text: scriptEl.value, ts: Date.now() });
+            persistScripts(arr); renderSaved();
+            toast('Saved "' + name + '"');
+        }
+
+        // ---- Wire up ----
+        loadSettings();
+        scriptEl.value = loadDraft();
+        syncControlsUI();
+        updateStats();
+        renderSaved();
+
+        scriptEl.addEventListener("input", function () { saveDraft(); updateStats(); });
+
+        speedEl.addEventListener("input", function () {
+            settings.speed = parseInt(speedEl.value, 10);
+            speedVal.textContent = settings.speed + " px/s";
+            saveSettings(); if (prompterEl.classList.contains("active")) { rSpeed.textContent = settings.speed; }
+        });
+        fontEl.addEventListener("input", function () {
+            settings.font = parseInt(fontEl.value, 10);
+            fontVal.textContent = settings.font + " px";
+            saveSettings();
+            if (prompterEl.classList.contains("active")) { scrollText.style.fontSize = settings.font + "px"; rFont.textContent = settings.font; recomputeMax(); }
+        });
+        wpmEl.addEventListener("input", function () {
+            var v = parseInt(wpmEl.value, 10);
+            settings.wpm = isNaN(v) ? 130 : Math.min(250, Math.max(60, v));
+            saveSettings(); updateStats();
+        });
+        wpmEl.addEventListener("blur", function () { wpmEl.value = settings.wpm; });
+        mirrorEl.addEventListener("change", function () {
+            settings.mirror = mirrorEl.checked; saveSettings();
+            if (prompterEl.classList.contains("active")) syncPrompterUI();
+        });
+        readingLineEl.addEventListener("change", function () {
+            settings.readingLine = readingLineEl.checked; saveSettings();
+            if (prompterEl.classList.contains("active")) syncPrompterUI();
+        });
+
+        $("startBtn").addEventListener("click", openPrompter);
+        $("saveBtn").addEventListener("click", saveCurrent);
+        $("clearBtn").addEventListener("click", function () {
+            if (scriptEl.value && !confirm("Clear the current script text?")) return;
+            scriptEl.value = ""; saveDraft(); updateStats(); scriptEl.focus();
+        });
+
+        // Prompter controls
+        pPlay.addEventListener("click", function () { setPaused(!anim.paused); if (!anim.paused) { anim.last = 0; startLoop(); } });
+        $("pRestart").addEventListener("click", restart);
+        $("pSpeedDown").addEventListener("click", function () { changeSpeed(-10); });
+        $("pSpeedUp").addEventListener("click", function () { changeSpeed(10); });
+        $("pFontDown").addEventListener("click", function () { changeFont(-4); });
+        $("pFontUp").addEventListener("click", function () { changeFont(4); });
+        $("pMirror").addEventListener("click", function () { settings.mirror = !settings.mirror; saveSettings(); syncControlsUI(); syncPrompterUI(); });
+        $("pLine").addEventListener("click", function () { settings.readingLine = !settings.readingLine; saveSettings(); syncControlsUI(); syncPrompterUI(); });
+        $("pFull").addEventListener("click", toggleFullscreen);
+        $("pExit").addEventListener("click", closePrompter);
+
+        // Tap the text area to pause/resume quickly
+        viewportEl.addEventListener("click", function () { setPaused(!anim.paused); if (!anim.paused) { anim.last = 0; startLoop(); } });
+
+        // Keyboard shortcuts (active while prompting)
+        document.addEventListener("keydown", function (e) {
+            if (!prompterEl.classList.contains("active")) return;
+            switch (e.key) {
+                case " ": e.preventDefault(); setPaused(!anim.paused); if (!anim.paused) { anim.last = 0; startLoop(); } break;
+                case "ArrowUp": e.preventDefault(); changeSpeed(10); break;
+                case "ArrowDown": e.preventDefault(); changeSpeed(-10); break;
+                case "ArrowRight": e.preventDefault(); changeFont(4); break;
+                case "ArrowLeft": e.preventDefault(); changeFont(-4); break;
+                case "r": case "R": restart(); break;
+                case "m": case "M": settings.mirror = !settings.mirror; saveSettings(); syncControlsUI(); syncPrompterUI(); break;
+                case "f": case "F": toggleFullscreen(); break;
+                case "Escape": if (!document.fullscreenElement) closePrompter(); break;
+            }
+        });
+
+        window.addEventListener("resize", function () {
+            if (prompterEl.classList.contains("active")) recomputeMax();
+        });
+    })();
+    </script>
+</body>
+</html>
