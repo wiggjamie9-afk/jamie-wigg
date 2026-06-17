@@ -379,6 +379,69 @@ Note: `@claude-flow/cli`'s `@claude-flow/memory` dep pinned to `^3.0.0-alpha.20`
 
 ---
 
+## v3.10.6
+
+**Subject:** Silent write loss on Node 24/26, pattern store/search mismatch, route feedback, statusline version, flashAttention state
+
+### Fixes
+
+**🔴 #2219 — Silent write loss on Node 24/26**
+
+`agentdb` declares `better-sqlite3` as an optional dependency at `^11.8.1`, which has no prebuilt binary for Node 24/25/26. On those runtimes the optional native build fails silently (optional deps never error), and AgentDB drops to a non-persistent backend — stores appear to succeed but never land on disk.
+
+**Fix:** Override `better-sqlite3` → `>=12.8.0` (ships Node 20–26 prebuilds) in both the root umbrella and the ruflo wrapper (root overrides don't propagate to the published wrapper — the #2112 lesson). A new CI guard (`audit-better-sqlite3-override.mjs`) keeps the override pinned so this can't regress.
+
+**Action for existing installs:** If you installed globally on Node 24/26 before this release: `npm i -g ruflo@latest` restores the native backend.
+
+Credits: @pacphi (first reporter, verified against source).
+
+**🔴 #2226 — agentdb_pattern-store / agentdb_pattern-search never agreed**
+
+The store and search MCP tools hit disjoint backends, so a stored pattern was never returned by search. Two paths fixed:
+
+1. **Controller present:** `bridgeSearchPatterns` now reads `LocalReasoningBank.findSimilar/getAll` — the same backend the store writes to.
+2. **Controller absent** (the common case): the memory-store-fallback search now hydrates each entry's content via `getEntry` before matching — `listEntries` returns metadata only (see #2014), so the substring scan previously matched nothing.
+
+Credits: @casparml (detailed store→search roundtrip analysis).
+
+**🟠 #2222 — route feedback was a no-op**
+
+Feedback applied the Q-learner update in memory, but the CLI process exits before the `autoSaveInterval` flush fires, so route-learning never persisted across invocations.
+
+**Fix:** Explicit awaited `router.saveModel()` after feedback.
+
+**🟡 #2221 — Statusline showed RuFlo V3.6 on global installs**
+
+`getPkgVersion()` never probed the global npm root, so `npm i -g ruflo` fell back to the hard-coded default version.
+
+**Fix:** Derive the global `node_modules` dir from `process.execPath` (no npm spawn — statusline renders often); covers nvm/mise and Windows layouts.
+
+**🟡 #2215 — flashAttention reported contradictory state**
+
+`system_info` emitted a hard-coded `flashAttention: false` while `hooks_intelligence` reported the live probe.
+
+**Fix:** `system_info` now runs the same `getFlashAttention()` probe as the authoritative path, so the two tools can't disagree.
+
+Credits: @HF-teamdev (identified the contradiction in parallel tool outputs).
+
+### Tests
+
+- New regression suite `bug-cluster-2219-2226.test.ts` — 5/5 (incl. end-to-end store→search roundtrip)
+- Statusline drift guard — 8/8 (regenerated `.cjs` byte-identical to generator)
+- `tsc` clean; CI 29/29 green including the new `better-sqlite3` override guard
+
+### Packages
+
+| Package | Old | New |
+|---------|-----|-----|
+| @claude-flow/cli | 3.10.38+ | 3.10.6 |
+| claude-flow | 3.10.38+ | 3.10.6 |
+| ruflo | 3.10.38+ | 3.10.6 |
+
+All three packages published at **3.10.6** with `latest`/`alpha`/`v3alpha` in lockstep.
+
+---
+
 ## Installation / Upgrade
 
 ```bash
