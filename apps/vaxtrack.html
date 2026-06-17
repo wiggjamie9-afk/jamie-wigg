@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#15402c" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="VaxTrack" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="description" content="Offline livestock vaccination scheduler for smallholder farmers. Register animals, auto-generate age-based vaccine schedules, track overdue and upcoming shots, and record boosters. Complements HerdCheck." />
+<title>VaxTrack — livestock vaccination scheduler</title>
+<style>
+  :root {
+    --bg: #0f1f17;
+    --surface: #16291f;
+    --surface-2: #1e352a;
+    --line: #2c4537;
+    --accent: #4caf72;
+    --accent-2: #7fd99e;
+    --accent-soft: rgba(76, 175, 114, 0.16);
+    --text: #e9f1eb;
+    --text-dim: #97aaa0;
+    --danger: #f0584d;
+    --danger-soft: rgba(240, 88, 77, 0.15);
+    --warn: #f4a942;
+    --warn-soft: rgba(244, 169, 66, 0.16);
+    --ok: #43c46e;
+    --ok-soft: rgba(67, 196, 110, 0.16);
+    --neutral-soft: rgba(151, 170, 160, 0.14);
+    --shadow: 0 12px 34px rgba(0, 0, 0, 0.42);
+    --radius: 18px;
+    --radius-sm: 12px;
+  }
+  @media (prefers-contrast: more) {
+    :root { --text-dim: #c5d1ca; --line: #46604f; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background:
+      radial-gradient(70vw 60vw at 50% -12%, rgba(76,175,114,0.10), transparent 60%),
+      var(--bg);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  main { max-width: 480px; margin: 0 auto; padding: 0 16px 120px; }
+
+  /* Header */
+  header.app-header {
+    max-width: 480px; margin: 0 auto;
+    padding: 22px 16px 18px;
+    background: linear-gradient(135deg, #15402c 0%, #1c5a3b 55%, #2c7a52 100%);
+    border-radius: 0 0 24px 24px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  header.app-header::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(40vw 40vw at 90% -20%, rgba(127,217,158,0.25), transparent 60%);
+    pointer-events: none;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; position: relative; }
+  .brand-mark {
+    width: 40px; height: 40px; flex: none;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 12px; font-size: 22px;
+  }
+  .brand-name { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+  .brand-sub { font-size: 12.5px; color: rgba(255,255,255,0.8); margin: 3px 0 0; position: relative; }
+
+  /* Dashboard summary */
+  .dash { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin: -28px 0 4px; position: relative; }
+  .dash-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius-sm); padding: 12px 10px; text-align: center;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+  .dash-num { font-size: 26px; font-weight: 800; line-height: 1; }
+  .dash-label { font-size: 11px; color: var(--text-dim); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .dash-card.overdue .dash-num { color: var(--danger); }
+  .dash-card.soon .dash-num { color: var(--warn); }
+  .dash-card.animals .dash-num { color: var(--accent-2); }
+
+  /* Section + toolbar */
+  .toolbar { display: flex; gap: 8px; align-items: center; margin: 18px 0 12px; }
+  .toolbar h2 { font-size: 15px; margin: 0; flex: 1; letter-spacing: -0.2px; }
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: var(--surface-2);
+    color: var(--text); font: inherit; font-weight: 600; font-size: 14px;
+    padding: 10px 14px; border-radius: var(--radius-sm); cursor: pointer;
+    transition: transform .06s ease, background .15s ease; line-height: 1;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #07200f; }
+  .btn-ghost { background: transparent; }
+  .btn-sm { padding: 8px 11px; font-size: 13px; }
+  .btn-block { width: 100%; }
+  .btn-danger { background: var(--danger-soft); border-color: rgba(240,88,77,0.4); color: var(--danger); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Disclaimer */
+  .disclaimer {
+    background: var(--warn-soft); border: 1px solid rgba(244,169,66,0.35);
+    color: var(--text); border-radius: var(--radius-sm); padding: 11px 13px;
+    font-size: 12.5px; margin: 14px 0 2px; display: flex; gap: 9px;
+  }
+  .disclaimer b { color: var(--warn); }
+
+  /* Animal cards */
+  .animal-list { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+  .animal {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,0.22);
+  }
+  .animal-head {
+    display: flex; align-items: center; gap: 12px; padding: 14px 15px; cursor: pointer;
+  }
+  .animal-avatar {
+    width: 42px; height: 42px; flex: none; border-radius: 12px; display: grid; place-items: center;
+    font-size: 22px; background: var(--accent-soft); border: 1px solid var(--line);
+  }
+  .animal-meta { flex: 1; min-width: 0; }
+  .animal-id { font-weight: 800; font-size: 16px; letter-spacing: -0.2px; }
+  .animal-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+  .pill {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px;
+    border-radius: 999px; margin-left: 6px; vertical-align: middle;
+  }
+  .pill.overdue { background: var(--danger-soft); color: var(--danger); }
+  .pill.soon { background: var(--warn-soft); color: var(--warn); }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .chev { color: var(--text-dim); font-size: 18px; transition: transform .2s ease; flex: none; }
+  .animal.open .chev { transform: rotate(90deg); }
+
+  .animal-body { display: none; padding: 0 15px 15px; border-top: 1px solid var(--line); }
+  .animal.open .animal-body { display: block; }
+
+  /* Vaccine timeline */
+  .timeline { display: flex; flex-direction: column; gap: 9px; margin: 13px 0; }
+  .vax {
+    border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 11px 12px;
+    background: var(--surface-2); display: flex; gap: 11px; align-items: flex-start;
+  }
+  .vax-dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 4px; flex: none; background: var(--text-dim); }
+  .vax.overdue { border-color: rgba(240,88,77,0.4); }
+  .vax.overdue .vax-dot { background: var(--danger); }
+  .vax.soon { border-color: rgba(244,169,66,0.4); }
+  .vax.soon .vax-dot { background: var(--warn); }
+  .vax.done { opacity: 0.78; }
+  .vax.done .vax-dot { background: var(--ok); }
+  .vax-main { flex: 1; min-width: 0; }
+  .vax-name { font-weight: 700; font-size: 14.5px; }
+  .vax-when { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
+  .vax-status { font-size: 12px; font-weight: 700; margin-top: 4px; }
+  .vax.overdue .vax-status { color: var(--danger); }
+  .vax.soon .vax-status { color: var(--warn); }
+  .vax.done .vax-status { color: var(--ok); }
+  .vax-note { font-size: 11.5px; color: var(--text-dim); margin-top: 5px; font-style: italic; }
+  .vax-action { margin-top: 8px; }
+
+  .empty-state {
+    text-align: center; color: var(--text-dim); padding: 40px 18px; font-size: 14.5px;
+    border: 1px dashed var(--line); border-radius: var(--radius); margin-top: 12px;
+  }
+
+  /* Modal */
+  .modal-back {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    display: none; align-items: flex-end; justify-content: center; z-index: 50; padding: 0;
+  }
+  .modal-back.open { display: flex; }
+  .modal {
+    background: var(--surface); width: 100%; max-width: 480px;
+    border-radius: 22px 22px 0 0; border: 1px solid var(--line); border-bottom: none;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); box-shadow: var(--shadow);
+    animation: slideUp .22s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal h3 { margin: 0 0 4px; font-size: 19px; }
+  .modal p.hint { margin: 0 0 16px; font-size: 13px; color: var(--text-dim); }
+  label.field { display: block; margin-bottom: 14px; }
+  label.field span { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dim); }
+  input, select {
+    width: 100%; font: inherit; font-size: 16px; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: var(--radius-sm); padding: 12px 13px; appearance: none;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+  /* Toast */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
+    padding: 12px 18px; border-radius: 999px; font-size: 14px; font-weight: 600;
+    box-shadow: var(--shadow); z-index: 100; transition: opacity .25s ease, transform .25s ease;
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Footer / freemium */
+  .footer {
+    margin-top: 26px; padding: 16px; border-radius: var(--radius);
+    background: var(--surface); border: 1px solid var(--line); font-size: 13px;
+  }
+  .footer .free-tag { display: inline-block; background: var(--ok-soft); color: var(--ok);
+    font-weight: 700; font-size: 11px; padding: 3px 9px; border-radius: 999px; }
+  .footer .upsell { color: var(--text-dim); margin-top: 9px; line-height: 1.5; }
+  .footer .upsell b { color: var(--accent-2); }
+  .complement { text-align: center; font-size: 11.5px; color: var(--text-dim); margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">💉</span>
+    <div>
+      <div class="brand-name">VaxTrack</div>
+      <p class="brand-sub">Livestock vaccination scheduler · works offline</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="dash">
+    <div class="dash-card overdue"><div class="dash-num" id="d-overdue">0</div><div class="dash-label">Overdue</div></div>
+    <div class="dash-card soon"><div class="dash-num" id="d-soon">0</div><div class="dash-label">Due ≤14d</div></div>
+    <div class="dash-card animals"><div class="dash-num" id="d-animals">0</div><div class="dash-label">Animals</div></div>
+  </div>
+
+  <div class="disclaimer">
+    <span aria-hidden="true">⚠️</span>
+    <span><b>General guidance only.</b> Built-in schedules are generic examples. Vaccines, ages and local regulations vary by region — always confirm timing and products with your local veterinarian and animal-health authority.</span>
+  </div>
+
+  <div class="toolbar">
+    <h2>Your herd</h2>
+    <button class="btn btn-ghost btn-sm" id="export-btn">Export CSV</button>
+    <button class="btn btn-primary btn-sm" id="add-btn">+ Add</button>
+  </div>
+
+  <div id="animal-list" class="animal-list"></div>
+  <div id="empty" class="empty-state">No animals yet. Tap <strong>+ Add</strong> to register your first animal and auto-generate its vaccine schedule.</div>
+
+  <div class="footer">
+    <span class="free-tag">FREE</span>
+    <div class="upsell"><b>Lifetime $5.99</b> unlocks automatic reminders &amp; vet-clinic herd management (B2B) — sync whole-herd schedules across staff.</div>
+  </div>
+
+  <p class="complement">Complements <b>HerdCheck</b> — phone-camera livestock screening.</p>
+</main>
+
+<!-- Add / edit animal modal -->
+<div class="modal-back" id="modal-back">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title">Add animal</h3>
+    <p class="hint">Schedule is generated automatically from species + date of birth.</p>
+    <form id="animal-form">
+      <input type="hidden" id="f-id" />
+      <label class="field">
+        <span>Animal ID / tag</span>
+        <input id="f-tag" type="text" inputmode="text" placeholder="e.g. COW-014" required maxlength="40" />
+      </label>
+      <label class="field">
+        <span>Species</span>
+        <select id="f-species" required></select>
+      </label>
+      <label class="field">
+        <span>Date of birth</span>
+        <input id="f-dob" type="date" required />
+      </label>
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary btn-block" style="flex:2">Save</button>
+        <button type="button" class="btn btn-ghost" id="cancel-btn" style="flex:1">Cancel</button>
+      </div>
+      <button type="button" class="btn btn-danger btn-block" id="delete-btn" style="margin-top:10px; display:none">Delete animal</button>
+    </form>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============================================================================
+   VaxTrack — offline livestock vaccination scheduler
+   Single-file app. No dependencies. Data in localStorage under "vaxtrack_".
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   GENERIC built-in vaccine schedules.  *** EDIT ME ***
+   These are GENERAL, illustrative examples — not veterinary advice.
+   Vaccines, ages and legal requirements differ by country/region.
+
+   Each schedule entry:
+     name      : vaccine / disease name
+     primary   : { ageWeeks }            — first dose, computed from DOB
+     boosters  : [ { afterWeeks } ... ]  — fixed-age follow-up doses (offset from DOB)
+     repeat    : { everyMonths }         — recurring booster after the LAST given dose
+                                           (typically annual). Optional.
+     note      : short guidance string shown in the UI
+   --------------------------------------------------------------------------- */
+const VACCINE_SCHEDULES = {
+  cattle: {
+    label: "Cattle", icon: "🐄",
+    vaccines: [
+      { name: "Clostridial (5-in-1 / 7-in-1)", primary: { ageWeeks: 8 },
+        boosters: [{ afterWeeks: 12 }], repeat: { everyMonths: 12 },
+        note: "First dose ~8 wks, booster ~4 wks later, then annual." },
+      { name: "Brucellosis (where required/legal)", primary: { ageWeeks: 16 },
+        repeat: { everyMonths: 0 },
+        note: "Heifer calves only; often single dose. Strictly regulated — confirm with authority." },
+      { name: "BVD / Respiratory complex", primary: { ageWeeks: 12 },
+        boosters: [{ afterWeeks: 16 }], repeat: { everyMonths: 12 },
+        note: "Primary course then annual booster." },
+      { name: "Lepto", primary: { ageWeeks: 12 },
+        boosters: [{ afterWeeks: 16 }], repeat: { everyMonths: 12 },
+        note: "Two-dose primary, then annual." }
+    ]
+  },
+  sheep: {
+    label: "Sheep", icon: "🐑",
+    vaccines: [
+      { name: "CDT (Clostridial + Tetanus)", primary: { ageWeeks: 6 },
+        boosters: [{ afterWeeks: 10 }], repeat: { everyMonths: 12 },
+        note: "First dose 6–8 wks, booster ~4 wks later, then annual." },
+      { name: "Pasteurella / Pneumonia", primary: { ageWeeks: 12 },
+        boosters: [{ afterWeeks: 16 }], repeat: { everyMonths: 12 },
+        note: "Often combined with clostridial; annual booster." }
+    ]
+  },
+  goat: {
+    label: "Goat", icon: "🐐",
+    vaccines: [
+      { name: "CDT (Clostridial + Tetanus)", primary: { ageWeeks: 6 },
+        boosters: [{ afterWeeks: 10 }], repeat: { everyMonths: 12 },
+        note: "First dose 6–8 wks, booster ~4 wks later, then annual." },
+      { name: "PPR (Peste des Petits Ruminants, where endemic)", primary: { ageWeeks: 16 },
+        repeat: { everyMonths: 12 },
+        note: "Regional; follow local control programme." }
+    ]
+  },
+  poultry: {
+    label: "Poultry", icon: "🐔",
+    vaccines: [
+      { name: "Marek's disease", primary: { ageWeeks: 0 },
+        note: "Given at day-old in the hatchery; single dose." },
+      { name: "Newcastle disease (ND)", primary: { ageWeeks: 1 },
+        boosters: [{ afterWeeks: 4 }], repeat: { everyMonths: 3 },
+        note: "Early dose, booster ~3 wks later, then repeat per local programme." },
+      { name: "Infectious Bronchitis (IB)", primary: { ageWeeks: 1 },
+        boosters: [{ afterWeeks: 4 }], repeat: { everyMonths: 3 },
+        note: "Often combined with ND." },
+      { name: "Gumboro (IBD)", primary: { ageWeeks: 2 },
+        boosters: [{ afterWeeks: 4 }],
+        note: "Two doses in early weeks." },
+      { name: "Fowl Pox", primary: { ageWeeks: 6 },
+        repeat: { everyMonths: 12 },
+        note: "Wing-web stab; single dose, repeat per programme." }
+    ]
+  }
+};
+
+/* --------------------------------------------------------------------------- */
+const STORE_KEY = "vaxtrack_animals";
+const DAY = 86400000;
+const SOON_DAYS = 14;
+
+let animals = [];
+let openIds = new Set();
+
+/* ---- storage ---- */
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    animals = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(animals)) animals = [];
+  } catch (e) { animals = []; }
+}
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(animals)); }
+  catch (e) { toast("Could not save — storage full?"); }
+}
+
+/* ---- helpers ---- */
+function uid() { return "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function todayMid() { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+function fmtDate(ms) {
+  if (ms == null) return "—";
+  const d = new Date(ms);
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+function daysBetween(a, b) { return Math.round((a - b) / DAY); }
+function addWeeks(ms, w) { return ms + w * 7 * DAY; }
+function addMonths(ms, m) {
+  if (!m) return null;
+  const d = new Date(ms); d.setMonth(d.getMonth() + m); return d.getTime();
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+/* ---- schedule computation ----
+   For each vaccine in the species schedule, produce a list of dose "events":
+   primary, fixed boosters, and recurring repeats. Match given records by
+   vaccine name + occurrence index. The next undone dose carries the status. */
+function computeSchedule(animal) {
+  const sched = VACCINE_SCHEDULES[animal.species];
+  if (!sched) return [];
+  const dob = new Date(animal.dob + "T00:00:00").getTime();
+  const today = todayMid();
+  const given = animal.given || {}; // { vaccineName: [ {date, doseIndex} ] }
+  const rows = [];
+
+  sched.vaccines.forEach(v => {
+    const givenDoses = (given[v.name] || []).slice().sort((a,b)=>a.date-b.date);
+    const doses = []; // planned doses, in order
+
+    // dose 0: primary (age-based from DOB)
+    doses.push({ label: "Primary dose", due: addWeeks(dob, v.primary.ageWeeks || 0) });
+    // fixed boosters (age-based offsets from DOB)
+    (v.boosters || []).forEach((b, i) => {
+      doses.push({ label: "Booster " + (i + 1), due: addWeeks(dob, b.afterWeeks || 0) });
+    });
+
+    // recurring repeats: scheduled relative to the last GIVEN dose (or last planned due)
+    if (v.repeat && v.repeat.everyMonths > 0) {
+      // anchor = date of last given dose if we've given everything planned so far,
+      // else the last planned due date.
+      let anchorDate;
+      if (givenDoses.length >= doses.length) {
+        anchorDate = givenDoses[givenDoses.length - 1].date;
+      } else {
+        anchorDate = doses[doses.length - 1].due;
+      }
+      // project repeats forward until we're a bit past today
+      let next = addMonths(anchorDate, v.repeat.everyMonths);
+      let guard = 0;
+      while (next != null && guard < 40) {
+        doses.push({ label: "Annual / repeat booster", due: next, repeat: true });
+        if (next > today + 30 * DAY) break; // one in the future is enough to show
+        next = addMonths(next, v.repeat.everyMonths);
+        guard++;
+      }
+    }
+
+    // attach given records to doses by index
+    doses.forEach((dose, idx) => {
+      const g = givenDoses[idx];
+      let status, cls, sortKey;
+      if (g) {
+        status = "Given " + fmtDate(g.date);
+        cls = "done";
+        sortKey = -1; // done sink to natural order but not flagged
+      } else {
+        const dd = daysBetween(dose.due, today);
+        if (dd < 0) { status = Math.abs(dd) + "d overdue"; cls = "overdue"; sortKey = dd; }
+        else if (dd <= SOON_DAYS) { status = (dd === 0 ? "Due today" : "Due in " + dd + "d"); cls = "soon"; sortKey = dd; }
+        else { status = "Due " + fmtDate(dose.due); cls = "upcoming"; sortKey = dd; }
+      }
+      rows.push({
+        vaccine: v.name, note: v.note, label: dose.label,
+        due: dose.due, doseIndex: idx, given: g ? g.date : null,
+        status, cls, sortKey
+      });
+    });
+  });
+
+  return rows;
+}
+
+function animalFlags(rows) {
+  let overdue = 0, soon = 0;
+  rows.forEach(r => { if (r.cls === "overdue") overdue++; else if (r.cls === "soon") soon++; });
+  return { overdue, soon };
+}
+
+/* ---- rendering ---- */
+function render() {
+  const list = document.getElementById("animal-list");
+  const empty = document.getElementById("empty");
+  let herdOverdue = 0, herdSoon = 0;
+
+  empty.style.display = animals.length ? "none" : "block";
+  list.innerHTML = "";
+
+  animals.slice().sort((a,b)=> (a.tag||"").localeCompare(b.tag||"")).forEach(animal => {
+    const sched = VACCINE_SCHEDULES[animal.species] || { icon: "🐾", label: animal.species };
+    const rows = computeSchedule(animal);
+    const flags = animalFlags(rows);
+    herdOverdue += flags.overdue; herdSoon += flags.soon;
+
+    const ageDays = daysBetween(todayMid(), new Date(animal.dob + "T00:00:00").getTime());
+    const ageStr = ageDays < 0 ? "future DOB"
+      : ageDays < 14 ? ageDays + " days"
+      : ageDays < 120 ? Math.round(ageDays / 7) + " wks"
+      : (ageDays / 30.44 < 24 ? Math.round(ageDays / 30.44) + " mo" : (ageDays / 365.25).toFixed(1) + " yr");
+
+    let pills = "";
+    if (flags.overdue) pills += `<span class="pill overdue">${flags.overdue} overdue</span>`;
+    else if (flags.soon) pills += `<span class="pill soon">${flags.soon} due soon</span>`;
+    else pills += `<span class="pill ok">up to date</span>`;
+
+    const isOpen = openIds.has(animal.id);
+
+    // sort rows: actionable (overdue/soon) first, then upcoming, then done
+    const order = { overdue: 0, soon: 1, upcoming: 2, done: 3 };
+    const sorted = rows.slice().sort((a,b)=>{
+      if (order[a.cls] !== order[b.cls]) return order[a.cls] - order[b.cls];
+      return (a.due||0) - (b.due||0);
+    });
+
+    const timeline = sorted.map(r => {
+      const showAction = r.cls === "overdue" || r.cls === "soon" || r.cls === "upcoming";
+      const undoBtn = r.given
+        ? `<button class="btn btn-ghost btn-sm" data-undo="${animal.id}" data-vax="${esc(r.vaccine)}" data-dose="${r.doseIndex}">Undo</button>`
+        : "";
+      const giveBtn = showAction
+        ? `<button class="btn btn-primary btn-sm" data-give="${animal.id}" data-vax="${esc(r.vaccine)}" data-dose="${r.doseIndex}">Mark given</button>`
+        : "";
+      return `<div class="vax ${r.cls}">
+        <span class="vax-dot"></span>
+        <div class="vax-main">
+          <div class="vax-name">${esc(r.vaccine)} <span style="color:var(--text-dim);font-weight:500">· ${esc(r.label)}</span></div>
+          <div class="vax-when">${r.given ? "Recorded" : "Scheduled " + fmtDate(r.due)}</div>
+          <div class="vax-status">${esc(r.status)}</div>
+          ${r.note ? `<div class="vax-note">${esc(r.note)}</div>` : ""}
+          <div class="vax-action">${giveBtn}${undoBtn}</div>
+        </div>
+      </div>`;
+    }).join("");
+
+    const el = document.createElement("div");
+    el.className = "animal" + (isOpen ? " open" : "");
+    el.innerHTML = `
+      <div class="animal-head" data-toggle="${animal.id}">
+        <span class="animal-avatar">${sched.icon}</span>
+        <div class="animal-meta">
+          <div class="animal-id">${esc(animal.tag)} ${pills}</div>
+          <div class="animal-sub">${esc(sched.label)} · ${ageStr} · born ${fmtDate(new Date(animal.dob + "T00:00:00").getTime())}</div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+      <div class="animal-body">
+        <div class="timeline">${timeline || '<div class="vax-note">No schedule for this species.</div>'}</div>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-sm" data-edit="${animal.id}">Edit details</button>
+        </div>
+      </div>`;
+    list.appendChild(el);
+  });
+
+  document.getElementById("d-overdue").textContent = herdOverdue;
+  document.getElementById("d-soon").textContent = herdSoon;
+  document.getElementById("d-animals").textContent = animals.length;
+}
+
+/* ---- actions ---- */
+function markGiven(animalId, vaccine, doseIndex) {
+  const animal = animals.find(a => a.id === animalId);
+  if (!animal) return;
+  animal.given = animal.given || {};
+  animal.given[vaccine] = animal.given[vaccine] || [];
+  // ensure array long enough; record given for this dose index with today's date
+  animal.given[vaccine][doseIndex] = { date: todayMid() };
+  // compact (remove holes) and re-index by sorting on date
+  animal.given[vaccine] = animal.given[vaccine].filter(Boolean).sort((a,b)=>a.date-b.date);
+  save(); render();
+  toast(vaccine + " recorded ✓");
+}
+function undoGiven(animalId, vaccine, doseIndex) {
+  const animal = animals.find(a => a.id === animalId);
+  if (!animal || !animal.given || !animal.given[vaccine]) return;
+  animal.given[vaccine].splice(doseIndex, 1);
+  if (!animal.given[vaccine].length) delete animal.given[vaccine];
+  save(); render();
+  toast("Record removed");
+}
+
+/* ---- modal ---- */
+function openModal(animal) {
+  const back = document.getElementById("modal-back");
+  document.getElementById("modal-title").textContent = animal ? "Edit animal" : "Add animal";
+  document.getElementById("f-id").value = animal ? animal.id : "";
+  document.getElementById("f-tag").value = animal ? animal.tag : "";
+  document.getElementById("f-species").value = animal ? animal.species : "cattle";
+  document.getElementById("f-dob").value = animal ? animal.dob : "";
+  document.getElementById("delete-btn").style.display = animal ? "block" : "none";
+  back.classList.add("open");
+  if (!animal) setTimeout(() => document.getElementById("f-tag").focus(), 120);
+}
+function closeModal() { document.getElementById("modal-back").classList.remove("open"); }
+
+/* ---- CSV export ---- */
+function exportCSV() {
+  if (!animals.length) { toast("No animals to export"); return; }
+  const header = ["Animal ID","Species","DOB","Vaccine","Dose","Status","Scheduled","Given Date"];
+  const lines = [header.join(",")];
+  animals.forEach(a => {
+    const rows = computeSchedule(a);
+    rows.forEach(r => {
+      const cells = [
+        a.tag, (VACCINE_SCHEDULES[a.species]?.label || a.species), a.dob,
+        r.vaccine, r.label, r.status,
+        r.due ? new Date(r.due).toISOString().slice(0,10) : "",
+        r.given ? new Date(r.given).toISOString().slice(0,10) : ""
+      ];
+      lines.push(cells.map(c => {
+        const s = String(c == null ? "" : c);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+      }).join(","));
+    });
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "vaxtrack-" + new Date().toISOString().slice(0,10) + ".csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  toast("CSV exported");
+}
+
+/* ---- toast ---- */
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ---- init / events ---- */
+function populateSpecies() {
+  const sel = document.getElementById("f-species");
+  sel.innerHTML = Object.entries(VACCINE_SCHEDULES)
+    .map(([k, v]) => `<option value="${k}">${v.icon} ${esc(v.label)}</option>`).join("");
+}
+
+function init() {
+  load();
+  populateSpecies();
+  render();
+
+  document.getElementById("add-btn").addEventListener("click", () => openModal(null));
+  document.getElementById("cancel-btn").addEventListener("click", closeModal);
+  document.getElementById("export-btn").addEventListener("click", exportCSV);
+  document.getElementById("modal-back").addEventListener("click", e => {
+    if (e.target.id === "modal-back") closeModal();
+  });
+
+  document.getElementById("delete-btn").addEventListener("click", () => {
+    const id = document.getElementById("f-id").value;
+    if (!id) return;
+    if (confirm("Delete this animal and all its vaccination records?")) {
+      animals = animals.filter(a => a.id !== id);
+      openIds.delete(id);
+      save(); render(); closeModal();
+      toast("Animal deleted");
+    }
+  });
+
+  document.getElementById("animal-form").addEventListener("submit", e => {
+    e.preventDefault();
+    const id = document.getElementById("f-id").value;
+    const tag = document.getElementById("f-tag").value.trim();
+    const species = document.getElementById("f-species").value;
+    const dob = document.getElementById("f-dob").value;
+    if (!tag || !dob) { toast("Fill in all fields"); return; }
+    if (id) {
+      const a = animals.find(x => x.id === id);
+      if (a) { a.tag = tag; a.species = species; a.dob = dob; }
+    } else {
+      animals.push({ id: uid(), tag, species, dob, given: {} });
+    }
+    save(); render(); closeModal();
+    toast(id ? "Animal updated" : "Animal added ✓");
+  });
+
+  // delegated clicks on the list
+  document.getElementById("animal-list").addEventListener("click", e => {
+    const toggle = e.target.closest("[data-toggle]");
+    if (toggle && !e.target.closest("[data-give],[data-undo],[data-edit]")) {
+      const id = toggle.getAttribute("data-toggle");
+      if (openIds.has(id)) openIds.delete(id); else openIds.add(id);
+      render(); return;
+    }
+    const give = e.target.closest("[data-give]");
+    if (give) { markGiven(give.dataset.give, give.dataset.vax, +give.dataset.dose); return; }
+    const undo = e.target.closest("[data-undo]");
+    if (undo) { undoGiven(undo.dataset.undo, undo.dataset.vax, +undo.dataset.dose); return; }
+    const edit = e.target.closest("[data-edit]");
+    if (edit) { openModal(animals.find(a => a.id === edit.dataset.edit)); return; }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#6366F1">
+    <meta name="description" content="WORDSTREAK — a distraction-free daily writing tracker. Set a word-count goal, write in a clean pad, and build an unbroken streak.">
+    <title>WORDSTREAK – Daily Writing Tracker</title>
+    <style>
+        :root {
+            --primary: #6366F1;
+            --primary-dark: #4F46E5;
+            --accent: #F59E0B;
+            --bg: #0F1222;
+            --surface: #1A1E33;
+            --surface-2: #242943;
+            --border: #2E3454;
+            --text: #F3F4F8;
+            --muted: #A0A6C4;
+            --good: #34D399;
+            --radius: 16px;
+            --shadow: 0 8px 24px rgba(0,0,0,0.35);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { background: var(--bg); }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text);
+            line-height: 1.45;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .container { max-width: 520px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #8B5CF6 55%, #EC4899 110%);
+            padding: 26px 20px 22px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::after {
+            content: ""; position: absolute; inset: 0;
+            background: radial-gradient(120% 90% at 80% -10%, rgba(255,255,255,.18), transparent 60%);
+            pointer-events: none;
+        }
+        .header h1 { font-size: 26px; letter-spacing: 1.5px; font-weight: 800; }
+        .header p { font-size: 12.5px; opacity: .92; margin-top: 3px; }
+
+        .content { flex: 1; padding: 18px 16px 12px; }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+        .card h2 { font-size: 14px; margin-bottom: 14px; font-weight: 700; letter-spacing: .3px; display: flex; align-items: center; gap: 8px; }
+        .muted { color: var(--muted); }
+
+        /* Dashboard */
+        .dash-top { display: flex; gap: 16px; align-items: center; }
+        .ring-wrap { flex: 0 0 auto; position: relative; width: 104px; height: 104px; }
+        .ring-wrap svg { transform: rotate(-90deg); }
+        .ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .ring-num { font-size: 21px; font-weight: 800; line-height: 1; }
+        .ring-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+        .dash-right { flex: 1; min-width: 0; }
+        .goal-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+        .goal-row .big { font-size: 19px; font-weight: 800; }
+        .progress-bar { height: 9px; border-radius: 6px; background: var(--surface-2); margin-top: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--primary), #8B5CF6); transition: width .5s ease; }
+        .progress-fill.met { background: linear-gradient(90deg, var(--good), #10B981); }
+        .encourage { font-size: 12px; color: var(--muted); margin-top: 9px; }
+
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+        .stat { background: var(--surface-2); border-radius: 12px; padding: 12px 8px; text-align: center; }
+        .stat .v { font-size: 19px; font-weight: 800; }
+        .stat .l { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+        .stat .v.flame { color: var(--accent); }
+
+        /* Goal control */
+        .goal-edit { display: flex; gap: 8px; align-items: center; }
+        .goal-edit input { flex: 1; }
+        .stepper { display: flex; gap: 6px; }
+        .stepper button { width: 42px; }
+
+        label.lbl { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 6px; font-weight: 600; letter-spacing: .2px; }
+        input[type="number"], textarea {
+            width: 100%;
+            padding: 11px 12px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+        }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
+
+        button {
+            padding: 12px 14px;
+            background: var(--primary);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background .15s, transform .05s;
+        }
+        button:hover { background: var(--primary-dark); }
+        button:active { transform: scale(.98); }
+        button.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+        button.ghost:hover { background: var(--border); }
+        button.full { width: 100%; }
+
+        /* Writing pad */
+        .pad textarea {
+            min-height: 220px;
+            resize: vertical;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+        .pad-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; gap: 10px; }
+        .wordcount { font-size: 13px; }
+        .wordcount b { font-size: 20px; font-weight: 800; color: var(--primary); }
+        .pad-actions { display: flex; gap: 8px; }
+        .pad-actions button { padding: 11px 14px; }
+
+        /* Chart */
+        canvas { display: block; width: 100%; }
+        .chart-wrap { position: relative; }
+
+        /* Heatmap */
+        .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+        .hm-cell {
+            width: 14px; height: 14px; border-radius: 3px;
+            background: var(--surface-2);
+            cursor: pointer;
+        }
+        .hm-cell.l1 { background: rgba(99,102,241,.35); }
+        .hm-cell.l2 { background: rgba(99,102,241,.6); }
+        .hm-cell.l3 { background: rgba(99,102,241,.82); }
+        .hm-cell.l4 { background: #818CF8; }
+        .hm-cell.met { box-shadow: 0 0 0 1.5px var(--good) inset; }
+        .hm-legend { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--muted); margin-top: 10px; justify-content: flex-end; }
+        .hm-legend .hm-cell { cursor: default; }
+
+        /* Day editor / recent list */
+        .day-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+        .day-row:last-child { border-bottom: none; }
+        .day-row .d { font-size: 13px; }
+        .day-row .w { font-size: 13px; font-weight: 700; }
+        .day-row .w.met { color: var(--good); }
+        .day-row .acts { display: flex; gap: 6px; }
+        .day-row .acts button { padding: 6px 9px; font-size: 12px; }
+
+        /* Footer / freemium */
+        .footer { padding: 4px 16px 26px; text-align: center; }
+        .freemium {
+            background: linear-gradient(135deg, rgba(245,158,11,.12), rgba(99,102,241,.12));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .freemium b { color: var(--accent); }
+        .freemium .tag { display: inline-block; background: var(--accent); color: #1a1300; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-bottom: 6px; }
+        .tiny { font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+        /* Toast */
+        #toast {
+            position: fixed; left: 50%; bottom: 26px;
+            transform: translateX(-50%) translateY(80px);
+            background: #11152b; color: var(--text);
+            border: 1px solid var(--border);
+            padding: 12px 18px; border-radius: 12px;
+            font-size: 13.5px; font-weight: 600;
+            box-shadow: var(--shadow);
+            opacity: 0; pointer-events: none;
+            transition: opacity .25s, transform .25s;
+            z-index: 50; max-width: 90vw; text-align: center;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #toast.good { border-color: var(--good); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>✍️ WORDSTREAK</h1>
+            <p>Write a little, every day. Watch the streak grow.</p>
+        </header>
+
+        <main class="content">
+            <!-- Dashboard -->
+            <section class="card">
+                <div class="dash-top">
+                    <div class="ring-wrap">
+                        <svg width="104" height="104" viewBox="0 0 104 104">
+                            <circle cx="52" cy="52" r="46" fill="none" stroke="var(--surface-2)" stroke-width="10"></circle>
+                            <circle id="ringFg" cx="52" cy="52" r="46" fill="none" stroke="url(#rg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289"></circle>
+                            <defs>
+                                <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#6366F1"></stop>
+                                    <stop offset="100%" stop-color="#EC4899"></stop>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="ring-label">
+                            <div class="ring-num" id="ringPct">0%</div>
+                            <div class="ring-sub">of goal</div>
+                        </div>
+                    </div>
+                    <div class="dash-right">
+                        <div class="goal-row">
+                            <span class="big" id="todayWords">0</span>
+                            <span class="muted">/ <span id="goalView">500</span> words today</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+                        <div class="encourage" id="encourage">Set your goal and start writing.</div>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat"><div class="v flame" id="curStreak">🔥 0</div><div class="l">Current streak</div></div>
+                    <div class="stat"><div class="v" id="bestStreak">0</div><div class="l">Longest streak</div></div>
+                    <div class="stat"><div class="v" id="allTime">0</div><div class="l">Words all-time</div></div>
+                </div>
+            </section>
+
+            <!-- Goal -->
+            <section class="card">
+                <h2>🎯 Daily goal</h2>
+                <div class="goal-edit">
+                    <input type="number" id="goalInput" min="1" step="25" inputmode="numeric">
+                    <div class="stepper">
+                        <button class="ghost" onclick="bumpGoal(-50)">−50</button>
+                        <button class="ghost" onclick="bumpGoal(50)">+50</button>
+                    </div>
+                </div>
+                <button class="full" style="margin-top:10px" onclick="saveGoal()">Save goal</button>
+            </section>
+
+            <!-- Writing pad -->
+            <section class="card pad">
+                <h2>📝 Writing pad <span class="muted" style="font-weight:500;font-size:11px">— distraction-free</span></h2>
+                <textarea id="pad" placeholder="Just start. The counter is keeping score, not judging. Your draft auto-saves here until you log it."></textarea>
+                <div class="pad-bar">
+                    <div class="wordcount"><b id="liveCount">0</b> words this session</div>
+                    <div class="pad-actions">
+                        <button class="ghost" onclick="clearPad()">Clear</button>
+                        <button onclick="logSession()">Log session</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 14-day bar chart -->
+            <section class="card">
+                <h2>📊 Last 14 days</h2>
+                <div class="chart-wrap"><canvas id="barChart" height="320"></canvas></div>
+            </section>
+
+            <!-- 12-week heatmap -->
+            <section class="card">
+                <h2>🟪 12-week activity</h2>
+                <div class="heatmap" id="heatmap"></div>
+                <div class="hm-legend">
+                    Less
+                    <span class="hm-cell"></span>
+                    <span class="hm-cell l1"></span>
+                    <span class="hm-cell l2"></span>
+                    <span class="hm-cell l3"></span>
+                    <span class="hm-cell l4"></span>
+                    More
+                </div>
+            </section>
+
+            <!-- Recent days editor -->
+            <section class="card">
+                <h2>🗓️ Recent days</h2>
+                <div id="recentList"><p class="muted" style="font-size:12px">No entries yet. Log your first session above.</p></div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="freemium">
+                <span class="tag">FREE FOREVER</span>
+                <div>Everything here is free. <b>Lifetime $2.99</b> unlocks per-project goals + group writing challenges.</div>
+            </div>
+            <p class="tiny">All data stays on this device (localStorage). Nothing is uploaded.</p>
+        </footer>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+    (function () {
+        "use strict";
+        const PREFIX = "wordstreak_";
+        const K = {
+            logs: PREFIX + "logs",      // { "YYYY-MM-DD": totalWords }
+            goal: PREFIX + "goal",
+            draft: PREFIX + "draft"
+        };
+        const DEFAULT_GOAL = 500;
+
+        /* ---------- storage helpers ---------- */
+        function loadLogs() {
+            try { return JSON.parse(localStorage.getItem(K.logs)) || {}; }
+            catch (e) { return {}; }
+        }
+        function saveLogs(logs) { localStorage.setItem(K.logs, JSON.stringify(logs)); }
+        function getGoal() {
+            const g = parseInt(localStorage.getItem(K.goal), 10);
+            return (g && g > 0) ? g : DEFAULT_GOAL;
+        }
+        function setGoal(g) { localStorage.setItem(K.goal, String(g)); }
+
+        /* ---------- date helpers ---------- */
+        function dayKey(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            return `${y}-${m}-${dd}`;
+        }
+        function todayKey() { return dayKey(new Date()); }
+        function addDays(date, n) { const d = new Date(date); d.setDate(d.getDate() + n); return d; }
+        function parseKey(k) { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); }
+        function fmtShort(d) {
+            return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+        }
+
+        /* ---------- word counting ---------- */
+        function countWords(text) {
+            const t = (text || "").trim();
+            if (!t) return 0;
+            return t.split(/\s+/).filter(Boolean).length;
+        }
+
+        /* ---------- streak logic ---------- */
+        // A day counts toward the streak if total words that day >= goal.
+        // Current streak = consecutive met-days ending today (or yesterday if today not yet met).
+        function computeStreaks(logs, goal) {
+            const met = {};
+            Object.keys(logs).forEach(k => { if (logs[k] >= goal && goal > 0) met[k] = true; });
+
+            // longest streak across all met days
+            const keys = Object.keys(met).sort();
+            let longest = 0, run = 0, prev = null;
+            keys.forEach(k => {
+                if (prev && dayKey(addDays(parseKey(prev), 1)) === k) run += 1;
+                else run = 1;
+                if (run > longest) longest = run;
+                prev = k;
+            });
+
+            // current streak: walk backwards from today
+            let current = 0;
+            let cursor = new Date();
+            // If today not met yet but yesterday was, streak is still alive (counts from yesterday).
+            if (!met[todayKey()]) {
+                cursor = addDays(cursor, -1);
+            }
+            while (met[dayKey(cursor)]) {
+                current += 1;
+                cursor = addDays(cursor, -1);
+            }
+            return { current, longest };
+        }
+
+        /* ---------- toast ---------- */
+        let toastTimer = null;
+        function toast(msg, good) {
+            const el = document.getElementById("toast");
+            el.textContent = msg;
+            el.classList.toggle("good", !!good);
+            el.classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+        }
+
+        /* ---------- encouragement (motivational, not nagging) ---------- */
+        function encourageText(today, goal, streak) {
+            if (today === 0) {
+                return streak > 0
+                    ? `${streak}-day streak going — a few words keeps it alive.`
+                    : "A blank page is just the start. Write one line.";
+            }
+            if (today >= goal) {
+                const over = today - goal;
+                return over > 0
+                    ? `Goal smashed — ${over} words past target. 🎉`
+                    : "Goal met for today. Nicely done. 🎉";
+            }
+            const pct = Math.round((today / goal) * 100);
+            const left = goal - today;
+            if (pct >= 75) return `So close — ${left} words to hit today's goal.`;
+            if (pct >= 40) return `Good momentum — ${left} to go.`;
+            return `${today} down. Keep the pen moving.`;
+        }
+
+        /* ---------- dashboard render ---------- */
+        function renderDashboard() {
+            const logs = loadLogs();
+            const goal = getGoal();
+            const today = logs[todayKey()] || 0;
+            const pct = goal > 0 ? Math.min(100, Math.round((today / goal) * 100)) : 0;
+
+            document.getElementById("todayWords").textContent = today.toLocaleString();
+            document.getElementById("goalView").textContent = goal.toLocaleString();
+            document.getElementById("ringPct").textContent = pct + "%";
+
+            const C = 2 * Math.PI * 46; // ~289
+            const ring = document.getElementById("ringFg");
+            ring.setAttribute("stroke-dasharray", C.toFixed(1));
+            ring.setAttribute("stroke-dashoffset", (C * (1 - pct / 100)).toFixed(1));
+
+            const fill = document.getElementById("progFill");
+            fill.style.width = pct + "%";
+            fill.classList.toggle("met", today >= goal && goal > 0);
+
+            const { current, longest } = computeStreaks(logs, goal);
+            document.getElementById("curStreak").textContent = "🔥 " + current;
+            document.getElementById("bestStreak").textContent = longest;
+            const allTime = Object.values(logs).reduce((a, b) => a + b, 0);
+            document.getElementById("allTime").textContent = allTime.toLocaleString();
+
+            document.getElementById("encourage").textContent = encourageText(today, goal, current);
+        }
+
+        /* ---------- 14-day bar chart (Canvas) ---------- */
+        function renderBarChart() {
+            const canvas = document.getElementById("barChart");
+            const logs = loadLogs();
+            const goal = getGoal();
+
+            const days = [];
+            for (let i = 13; i >= 0; i--) {
+                const d = addDays(new Date(), -i);
+                const k = dayKey(d);
+                days.push({ key: k, date: d, words: logs[k] || 0 });
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+            const cssW = canvas.clientWidth || 480;
+            const cssH = 160;
+            canvas.style.height = cssH + "px";
+            canvas.width = cssW * dpr;
+            canvas.height = cssH * dpr;
+            const ctx = canvas.getContext("2d");
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, cssW, cssH);
+
+            const padL = 6, padR = 6, padT = 14, padB = 26;
+            const plotW = cssW - padL - padR;
+            const plotH = cssH - padT - padB;
+            const maxVal = Math.max(goal, ...days.map(d => d.words), 1);
+
+            // goal line
+            const gy = padT + plotH * (1 - goal / maxVal);
+            ctx.strokeStyle = "rgba(245,158,11,.55)";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + plotW, gy); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "rgba(245,158,11,.9)";
+            ctx.font = "10px -apple-system, sans-serif";
+            ctx.textAlign = "left";
+            ctx.fillText("goal", padL + 2, Math.max(10, gy - 3));
+
+            const n = days.length;
+            const slot = plotW / n;
+            const bw = Math.min(20, slot * 0.62);
+            days.forEach((d, i) => {
+                const x = padL + slot * i + (slot - bw) / 2;
+                const h = (d.words / maxVal) * plotH;
+                const y = padT + plotH - h;
+                const met = d.words >= goal && goal > 0;
+                if (h > 0) {
+                    const grad = ctx.createLinearGradient(0, y, 0, y + h);
+                    if (met) { grad.addColorStop(0, "#34D399"); grad.addColorStop(1, "#10B981"); }
+                    else { grad.addColorStop(0, "#8B5CF6"); grad.addColorStop(1, "#6366F1"); }
+                    ctx.fillStyle = grad;
+                } else {
+                    ctx.fillStyle = "rgba(255,255,255,.05)";
+                }
+                const drawH = Math.max(h, 2);
+                roundRect(ctx, x, padT + plotH - drawH, bw, drawH, 3);
+                ctx.fill();
+
+                // x label every other day
+                if (i % 2 === 1 || i === n - 1) {
+                    ctx.fillStyle = "rgba(160,166,196,.85)";
+                    ctx.font = "9px -apple-system, sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(String(d.date.getDate()), x + bw / 2, cssH - 9);
+                }
+            });
+        }
+        function roundRect(ctx, x, y, w, h, r) {
+            r = Math.min(r, w / 2, h / 2);
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        /* ---------- 12-week heatmap ---------- */
+        function renderHeatmap() {
+            const logs = loadLogs();
+            const goal = getGoal();
+            const wrap = document.getElementById("heatmap");
+            wrap.innerHTML = "";
+
+            const weeks = 12;
+            // End on the Saturday of the current week so columns align to weeks.
+            const today = new Date();
+            const end = addDays(today, 6 - today.getDay()); // upcoming Saturday
+            const start = addDays(end, -(weeks * 7 - 1));
+
+            const maxVal = Math.max(goal, ...Object.values(logs), 1);
+            for (let i = 0; i < weeks * 7; i++) {
+                const d = addDays(start, i);
+                const k = dayKey(d);
+                const words = logs[k] || 0;
+                const future = d > today;
+                const cell = document.createElement("div");
+                cell.className = "hm-cell";
+                if (!future && words > 0) {
+                    const ratio = words / maxVal;
+                    let lvl = 1;
+                    if (ratio >= 0.75) lvl = 4;
+                    else if (ratio >= 0.5) lvl = 3;
+                    else if (ratio >= 0.25) lvl = 2;
+                    cell.classList.add("l" + lvl);
+                    if (goal > 0 && words >= goal) cell.classList.add("met");
+                }
+                if (future) cell.style.visibility = "hidden";
+                cell.title = future ? "" : `${fmtShort(d)}: ${words.toLocaleString()} words`;
+                if (!future) cell.addEventListener("click", () => editDay(k));
+                wrap.appendChild(cell);
+            }
+        }
+
+        /* ---------- recent days list ---------- */
+        function renderRecent() {
+            const logs = loadLogs();
+            const goal = getGoal();
+            const el = document.getElementById("recentList");
+            const keys = Object.keys(logs).filter(k => logs[k] > 0).sort().reverse().slice(0, 10);
+            if (keys.length === 0) {
+                el.innerHTML = '<p class="muted" style="font-size:12px">No entries yet. Log your first session above.</p>';
+                return;
+            }
+            el.innerHTML = keys.map(k => {
+                const w = logs[k];
+                const met = goal > 0 && w >= goal;
+                const lbl = k === todayKey() ? "Today" : fmtShort(parseKey(k));
+                return `<div class="day-row">
+                    <div class="d">${lbl}</div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <div class="w ${met ? "met" : ""}">${w.toLocaleString()}${met ? " ✓" : ""}</div>
+                        <div class="acts">
+                            <button class="ghost" data-edit="${k}">Edit</button>
+                            <button class="ghost" data-clear="${k}">Clear</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join("");
+            el.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => editDay(b.getAttribute("data-edit"))));
+            el.querySelectorAll("[data-clear]").forEach(b => b.addEventListener("click", () => clearDay(b.getAttribute("data-clear"))));
+        }
+
+        function renderAll() {
+            renderDashboard();
+            renderBarChart();
+            renderHeatmap();
+            renderRecent();
+        }
+
+        /* ---------- actions ---------- */
+        window.bumpGoal = function (delta) {
+            const inp = document.getElementById("goalInput");
+            let v = parseInt(inp.value, 10) || getGoal();
+            v = Math.max(1, v + delta);
+            inp.value = v;
+        };
+        window.saveGoal = function () {
+            const inp = document.getElementById("goalInput");
+            const v = parseInt(inp.value, 10);
+            if (!v || v < 1) { toast("Enter a goal of at least 1 word."); return; }
+            setGoal(v);
+            renderAll();
+            toast("Daily goal set to " + v.toLocaleString() + " words.", true);
+        };
+
+        const pad = document.getElementById("pad");
+        const liveCount = document.getElementById("liveCount");
+        let saveDraftTimer = null;
+        function updateLive() {
+            liveCount.textContent = countWords(pad.value).toLocaleString();
+        }
+        pad.addEventListener("input", function () {
+            updateLive();
+            clearTimeout(saveDraftTimer);
+            saveDraftTimer = setTimeout(() => localStorage.setItem(K.draft, pad.value), 400);
+        });
+
+        window.clearPad = function () {
+            if (!pad.value.trim()) { localStorage.removeItem(K.draft); return; }
+            if (!confirm("Clear the writing pad? Unlogged words will be lost.")) return;
+            pad.value = "";
+            localStorage.removeItem(K.draft);
+            updateLive();
+            toast("Pad cleared.");
+        };
+
+        window.logSession = function () {
+            const words = countWords(pad.value);
+            if (words === 0) { toast("Nothing to log yet — write some words first."); return; }
+            const logs = loadLogs();
+            const k = todayKey();
+            const before = logs[k] || 0;
+            logs[k] = before + words;
+            saveLogs(logs);
+
+            // reset pad
+            pad.value = "";
+            localStorage.removeItem(K.draft);
+            updateLive();
+
+            const goal = getGoal();
+            renderAll();
+
+            const total = logs[k];
+            if (before < goal && total >= goal) {
+                const { current } = computeStreaks(logs, goal);
+                toast(`+${words.toLocaleString()} words — goal hit! 🔥 ${current}-day streak.`, true);
+            } else {
+                toast(`Logged ${words.toLocaleString()} words. ${total.toLocaleString()} today.`, true);
+            }
+        };
+
+        window.editDay = function (k) {
+            const logs = loadLogs();
+            const cur = logs[k] || 0;
+            const lbl = k === todayKey() ? "today" : fmtShort(parseKey(k));
+            const input = prompt(`Set total words for ${lbl}:`, String(cur));
+            if (input === null) return;
+            const v = parseInt(input, 10);
+            if (isNaN(v) || v < 0) { toast("Enter a number of 0 or more."); return; }
+            if (v === 0) delete logs[k]; else logs[k] = v;
+            saveLogs(logs);
+            renderAll();
+            toast("Day updated.", true);
+        };
+
+        window.clearDay = function (k) {
+            const lbl = k === todayKey() ? "today" : fmtShort(parseKey(k));
+            if (!confirm(`Clear all words logged for ${lbl}?`)) return;
+            const logs = loadLogs();
+            delete logs[k];
+            saveLogs(logs);
+            renderAll();
+            toast("Day cleared.");
+        };
+
+        /* ---------- init ---------- */
+        document.getElementById("goalInput").value = getGoal();
+        const draft = localStorage.getItem(K.draft);
+        if (draft) pad.value = draft;
+        updateLive();
+        renderAll();
+
+        // redraw chart on resize/orientation change
+        let resizeTimer = null;
+        window.addEventListener("resize", function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(renderBarChart, 150);
+        });
+    })();
+    </script>
+</body>
+</html>
