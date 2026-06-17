@@ -25,6 +25,7 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 #### Content Generation & Automation
 - **Reddit Video Maker Bot** — One-command YouTube/TikTok creation from Reddit posts; Python 3.10 + Playwright
 - **SEO Machine** — Claude Code workspace with `/research` `/write` `/optimize` commands; 10+ agents + 26 marketing skills; GA4+GSC integration
+- **Carousel Generator** — Text-to-carousel skill: 12 slide types, 6 platforms, 880 style combos (5 fonts × 8 surfaces × 11 accents × 2 purposes); PNG + PDF export; live preview toolbar
 - **Prefab** — Generative UI framework for Python; 100+ shadcn components; MCP-native
 
 #### Agent Development Frameworks

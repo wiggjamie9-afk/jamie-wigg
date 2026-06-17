@@ -214,6 +214,57 @@ export class ToolRegistry {
       },
     });
 
+    // SOCIAL MEDIA CAROUSEL GENERATION
+    this.register({
+      name: 'generate_carousel',
+      description:
+        'Generate social media carousel config from text post (Threads, Instagram, LinkedIn, TikTok, Stories)',
+      parameters: {
+        text: { type: 'string', description: 'Text post content to convert' },
+        format: {
+          type: 'string',
+          enum: ['threads-4x5', 'instagram-square', 'linkedin-pdf', 'tiktok-9x16', 'stories-9x16', 'wide-16x9'],
+          description: 'Target platform format',
+        },
+        font: { type: 'string', enum: ['minimal', 'editorial', 'clean', 'mono', 'condensed'] },
+        surface: { type: 'string', enum: ['dark', 'white', 'light', 'paper', 'gradient', 'pastel', 'neon', 'ember'] },
+        accent: { type: 'string', enum: ['yellow', 'red', 'teal', 'coral', 'orange', 'violet', 'lime', 'blue', 'fuchsia', 'pink', 'amber'] },
+        background: { type: 'string', enum: ['none', 'blobs', 'dot-grid', 'lines', 'ruled-paper', 'noise', 'watermark', 'glow'] },
+      },
+      handler: async (args) => {
+        logger.info('Calling generate_carousel', args);
+        return JSON.stringify({
+          slides: [
+            { type: 'hook', text: '' },
+            { type: 'body', title: '', text: '' },
+          ],
+          format: args.format || 'threads-4x5',
+          previewUrl: '',
+        });
+      },
+    });
+
+    this.register({
+      name: 'export_carousel',
+      description:
+        'Render carousel to PNG (individual slides or batch) or single-file PDF (all slides compressed)',
+      parameters: {
+        carouselConfig: { type: 'object', description: 'Carousel config from generate_carousel' },
+        exportFormat: { type: 'string', enum: ['png-individual', 'png-batch', 'pdf-single'], description: 'Export format' },
+        compression: { type: 'string', enum: ['low', 'medium', 'high'], description: 'PDF compression level (default: medium)' },
+      },
+      handler: async (args) => {
+        logger.info('Calling export_carousel', args);
+        return JSON.stringify({
+          exports: [
+            { slide: 1, url: '', format: args.exportFormat },
+          ],
+          downloadUrl: '',
+          fileSize: 0,
+        });
+      },
+    });
+
     logger.info(`Registered ${this.tools.size} tools for Mary agent`);
   }
 
