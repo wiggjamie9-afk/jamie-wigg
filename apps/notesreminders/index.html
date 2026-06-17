@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08050d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Notes Reminders — note-based reminders with urgency levels">
+  <title>Notes Reminders</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--canvas:#08050d;--bg:#0f0d18;--muted:#a0a0b0;--text:#f5f0e8;--yellow:#f5c000;--orange:#ff9500}
+    html,body{width:100%;height:100%;background:var(--canvas);color:var(--text);font-family:-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+    #app{height:100dvh;display:flex;flex-direction:column;z-index:1}
+    .header{padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between}
+    .logo{font-weight:700;font-size:18px;background:linear-gradient(120deg,var(--yellow),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .content{flex:1;overflow-y:auto;padding:16px 20px;padding-bottom:calc(72px + env(safe-area-inset-bottom,16px))}
+    .note-card{background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;margin-bottom:10px;border-left:4px solid var(--yellow)}
+    .note-card.high{border-left-color:#ff1f5a}
+    .note-card.medium{border-left-color:var(--orange)}
+    .note-card.low{border-left-color:var(--yellow)}
+    .note-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:6px}
+    .note-title{font-weight:600;font-size:15px}
+    .note-urgency{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      padding:2px 8px;border-radius:4px;background:rgba(255,255,255,.1)}
+    .note-text{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
+    .note-time{font-size:11px;color:var(--muted);margin-top:8px}
+    .form-group{margin-bottom:12px}
+    .form-label{font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block;font-weight:700;letter-spacing:.08em}
+    .form-input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--text);font-size:14px;outline:none}
+    .form-textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--text);font-size:14px;outline:none;resize:none;height:80px;font-family:inherit}
+    .form-select{width:100%;padding:10px 12px;background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--text);font-size:14px;outline:none;cursor:pointer}
+    .btn{width:100%;padding:12px;background:linear-gradient(120deg,var(--yellow),var(--orange));border:none;border-radius:10px;color:#000;font-weight:700;cursor:pointer;font-size:14px;margin-top:8px}
+    .tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(8,5,13,.95);border-top:1px solid rgba(255,255,255,.07);display:flex;height:72px;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;gap:4px;font-weight:600}
+    .tab.active{color:var(--yellow)}
+    .fab{position:absolute;bottom:calc(72px + env(safe-area-inset-bottom,16px) + 16px);right:20px;width:56px;height:56px;border-radius:999px;border:none;background:linear-gradient(120deg,var(--yellow),var(--orange));color:#000;font-size:24px;cursor:pointer}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">📝 Notes</div>
+    <div style="font-size:12px;color:var(--muted)">FREE</div>
+  </div>
+  <div class="content" id="content">
+    <div id="notesContainer"></div>
+  </div>
+  <button class="fab" id="fab" onclick="openForm()">+</button>
+  <div class="tabs">
+    <button class="tab active" data-sort="recent">⏱️ Recent</button>
+    <button class="tab" data-sort="urgency">🔔 Urgent</button>
+  </div>
+</div>
+
+<div id="form" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;overflow:hidden">
+  <div style="background:var(--canvas);width:100%;border-radius:20px 20px 0 0;padding:24px;max-height:90dvh;overflow-y:auto;padding-bottom:calc(24px + env(safe-area-inset-bottom,16px))">
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+      <span>New Note</span>
+      <button style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer" onclick="closeForm()">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note</label>
+      <input class="form-input" id="title" placeholder="Title or quick note">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Details</label>
+      <textarea class="form-textarea" id="text" placeholder="Add more context..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Urgency</label>
+      <select class="form-select" id="urgency">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <button class="btn" onclick="saveNote()">Add Note</button>
+  </div>
+</div>
+
+<script>
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+  let notes=[],sortBy='recent';
+
+  function load(){
+    const s=localStorage.getItem('notes');
+    notes=s?JSON.parse(s):[];
+    updateUI();
+  }
+
+  function save(){
+    localStorage.setItem('notes', JSON.stringify(notes));
+  }
+
+  function openForm(){
+    document.getElementById('form').style.display='flex';
+  }
+
+  function closeForm(){
+    document.getElementById('form').style.display='none';
+    document.getElementById('title').value='';
+    document.getElementById('text').value='';
+  }
+
+  function saveNote(){
+    const title=document.getElementById('title').value.trim();
+    const text=document.getElementById('text').value.trim();
+    const urgency=document.getElementById('urgency').value;
+    if(!title){alert('Title required');return;}
+    notes.push({id:Date.now(),title,text,urgency,createdAt:new Date().toISOString()});
+    save();
+    closeForm();
+    updateUI();
+  }
+
+  function deleteNote(id){
+    if(confirm('Delete?')){
+      notes=notes.filter(n=>n.id!==id);
+      save();
+      updateUI();
+    }
+  }
+
+  function updateUI(){
+    let sorted=sortBy==='urgency'?
+      notes.sort((a,b)=>({high:0,medium:1,low:2}[a.urgency]-{high:0,medium:1,low:2}[b.urgency])):
+      notes.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+
+    document.getElementById('notesContainer').innerHTML=sorted.map(n=>`
+      <div class="note-card ${n.urgency}">
+        <div class="note-header">
+          <div class="note-title">${n.title}</div>
+          <div class="note-urgency">${n.urgency}</div>
+        </div>
+        ${n.text?`<div class="note-text">${n.text}</div>`:''}
+        <div class="note-time">${new Date(n.createdAt).toLocaleString()}</div>
+        <button style="width:100%;padding:8px;margin-top:8px;background:rgba(255,31,90,.2);border:none;border-radius:8px;color:#ff1f5a;font-size:12px;font-weight:600;cursor:pointer" onclick="deleteNote(${n.id})">Delete</button>
+      </div>
+    `).join('');
+  }
+
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',e=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    e.target.classList.add('active');
+    sortBy=e.target.dataset.sort;
+    updateUI();
+  }));
+
+  load();
+</script>
+</body>
+</html>
