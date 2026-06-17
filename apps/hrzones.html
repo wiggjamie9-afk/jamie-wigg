@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0e14" />
+<meta name="description" content="HRZONES — heart-rate training zone analyzer for endurance athletes. Compute your 5 zones, log workouts via manual entry or HR sample import, track intensity load and trends. Fully offline." />
+<meta name="author" content="HRZONES" />
+<meta name="color-scheme" content="dark" />
+<meta property="og:title" content="HRZONES — Heart-Rate Training Zone Analyzer" />
+<meta property="og:description" content="Analyze your workouts by heart-rate zone. Manual or HR-sample import, zone distribution, intensity load, and history trends. Offline, no account." />
+<meta property="og:type" content="website" />
+<title>HRZONES — Heart-Rate Training Zone Analyzer</title>
+<!--
+  HRZONES — single-file offline HR training-zone analyzer.
+  No build step, no external/CDN dependencies. Pure HTML/CSS/JS + Canvas.
+  Persistence: localStorage, prefix "hrzones_".
+
+  =====================================================================
+  FUTURE DEVICE-SYNC INTEGRATION POINT (Lifetime tier)
+  ---------------------------------------------------------------------
+  A Garmin Connect / Apple Health / Strava OAuth import would slot in
+  at the function `importFromDevice()` near the bottom of <script>.
+  The flow would be:
+    1. OAuth 2.0 authorize -> redirect/PKCE -> access token (server or
+       native bridge required; not possible in a pure static file).
+    2. Fetch activity HR time-series (FIT/GPX/TCX or REST JSON).
+    3. Normalize to the same {samples:[bpm...], sampleRate} shape used
+       by parseSamples(), then call bucketSamples() + saveWorkout().
+  Everything downstream (zoning, charts, load, history) already accepts
+  that shape, so only the fetch+normalize layer is new.
+  =====================================================================
+-->
+<style>
+  :root{
+    --bg:#0b0e14;
+    --bg-2:#121723;
+    --card:#161c2b;
+    --card-2:#1b2233;
+    --line:#27304a;
+    --text:#e8edf7;
+    --muted:#8a96b3;
+    --accent:#ff5a3c;
+    --accent-2:#ff8a4c;
+    --good:#36d399;
+    --radius:16px;
+    --radius-sm:11px;
+    /* zone colors */
+    --z1:#7f8aa3; /* grey  - recovery */
+    --z2:#3b82f6; /* blue  - endurance */
+    --z3:#22c55e; /* green - tempo */
+    --z4:#f59e0b; /* orange- threshold */
+    --z5:#ef4444; /* red   - max */
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 50% -200px, #1a2138 0%, transparent 70%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font);
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 56px;
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:0 16px;}
+  header.app{
+    max-width:480px;margin:0 auto;padding:22px 16px 18px;
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 48%,#ffb05a 100%);
+    border-radius:0 0 22px 22px;
+    box-shadow:0 12px 30px -14px rgba(255,90,60,.5);
+    position:relative;overflow:hidden;
+  }
+  header.app::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 40%);
+    pointer-events:none;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .logo{
+    width:38px;height:38px;border-radius:11px;
+    background:rgba(0,0,0,.22);display:grid;place-items:center;
+    font-size:20px;flex:none;
+  }
+  .brand h1{font-size:21px;margin:0;letter-spacing:.06em;color:#fff;font-weight:800;}
+  .brand .sub{margin:0;font-size:11.5px;color:rgba(255,255,255,.88);letter-spacing:.02em;}
+  .hdr-stats{display:flex;gap:8px;margin-top:14px;}
+  .hdr-stat{
+    flex:1;background:rgba(0,0,0,.2);border-radius:12px;padding:8px 10px;
+    color:#fff;
+  }
+  .hdr-stat .n{font-size:18px;font-weight:800;line-height:1;}
+  .hdr-stat .l{font-size:10px;opacity:.85;text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
+
+  .tabs{
+    display:flex;gap:6px;margin:16px 0 4px;background:var(--bg-2);
+    padding:5px;border-radius:14px;border:1px solid var(--line);
+  }
+  .tabs button{
+    flex:1;background:transparent;border:0;color:var(--muted);
+    font-family:inherit;font-size:13px;font-weight:600;padding:9px 4px;
+    border-radius:10px;cursor:pointer;transition:.15s;
+  }
+  .tabs button.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px -4px rgba(255,90,60,.6);}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-top:14px;box-shadow:0 8px 24px -18px rgba(0,0,0,.8);
+  }
+  .card h2{font-size:14px;margin:0 0 4px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
+  .card .hint{font-size:12px;color:var(--muted);margin:0 0 12px;}
+
+  label.field{display:block;margin:0 0 10px;}
+  label.field .lab{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:600;}
+  input,select,textarea,button{font-family:inherit;}
+  input[type=number],input[type=text],input[type=date],select,textarea{
+    width:100%;background:var(--bg-2);border:1px solid var(--line);color:var(--text);
+    border-radius:var(--radius-sm);padding:11px 12px;font-size:15px;outline:none;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  textarea{resize:vertical;min-height:90px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.5;}
+  .row{display:flex;gap:10px;}
+  .row > *{flex:1;}
+
+  .btn{
+    width:100%;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:700;
+    cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 8px 20px -10px rgba(255,90,60,.7);transition:.12s;letter-spacing:.02em;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn.sec{background:var(--card-2);color:var(--text);border:1px solid var(--line);box-shadow:none;}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);box-shadow:none;font-weight:600;}
+  .btn-row{display:flex;gap:8px;margin-top:8px;}
+  .btn-row .btn{padding:11px;font-size:13.5px;}
+
+  .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:12px;}
+  .seg button{
+    flex:1;background:var(--bg-2);border:0;color:var(--muted);padding:10px;font-size:13px;font-weight:600;
+    cursor:pointer;font-family:inherit;
+  }
+  .seg button.active{background:var(--card-2);color:var(--text);}
+  .seg button + button{border-left:1px solid var(--line);}
+
+  /* zone table */
+  .zones{margin-top:4px;}
+  .zrow{
+    display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:11px;
+    background:var(--bg-2);margin-bottom:7px;border:1px solid var(--line);
+  }
+  .zswatch{width:11px;height:34px;border-radius:5px;flex:none;}
+  .zinfo{flex:1;min-width:0;}
+  .zinfo .zn{font-size:13.5px;font-weight:700;}
+  .zinfo .zd{font-size:11px;color:var(--muted);}
+  .zrange{font-size:13px;font-weight:700;text-align:right;white-space:nowrap;}
+  .zrange small{display:block;color:var(--muted);font-weight:500;font-size:10.5px;}
+
+  /* minutes-per-zone inputs */
+  .minrow{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .minrow .zdot{width:12px;height:12px;border-radius:4px;flex:none;}
+  .minrow .zlbl{flex:1;font-size:13px;font-weight:600;}
+  .minrow input{width:84px;flex:none;text-align:center;}
+
+  /* distribution / bar chart */
+  canvas{width:100%;display:block;border-radius:12px;}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;}
+  .legend span{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  .metricgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+  .metric{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;}
+  .metric .n{font-size:22px;font-weight:800;line-height:1;}
+  .metric .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:4px;}
+
+  /* history list */
+  .hist{margin-top:6px;}
+  .hitem{
+    background:var(--bg-2);border:1px solid var(--line);border-radius:12px;
+    padding:11px 12px;margin-bottom:9px;
+  }
+  .hitem .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .hitem .nm{font-size:14px;font-weight:700;}
+  .hitem .dt{font-size:11px;color:var(--muted);}
+  .hitem .meta{font-size:12px;color:var(--muted);margin-top:3px;}
+  .hbar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin-top:9px;background:var(--bg);}
+  .hbar i{display:block;height:100%;}
+  .hitem .acts{display:flex;gap:8px;margin-top:9px;}
+  .hitem .acts button{
+    flex:1;background:transparent;border:1px solid var(--line);color:var(--muted);
+    border-radius:9px;padding:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;
+  }
+  .hitem .acts button.danger{color:#ff8a7a;border-color:#5a2c2c;}
+
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:26px 10px;}
+  .empty .big{font-size:30px;margin-bottom:6px;}
+
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;
+    background:var(--card-2);border:1px solid var(--line);color:var(--muted);}
+
+  /* toast */
+  #toast{
+    position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(20px);
+    background:#0e1320;border:1px solid var(--line);color:var(--text);
+    padding:11px 16px;border-radius:12px;font-size:13.5px;font-weight:600;
+    box-shadow:0 16px 40px -12px rgba(0,0,0,.7);opacity:0;pointer-events:none;
+    transition:.25s;z-index:50;max-width:90vw;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #toast.good{border-color:#1f6e52;}
+  #toast.err{border-color:#7a2c2c;}
+
+  footer.freemium{
+    max-width:480px;margin:22px auto 0;padding:14px 16px;
+    background:linear-gradient(135deg,#171d2c,#1d2435);
+    border:1px solid var(--line);border-radius:16px;text-align:center;
+  }
+  footer.freemium .t{font-size:13px;font-weight:700;}
+  footer.freemium .s{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  footer.freemium .s b{color:var(--accent-2);}
+  footer.freemium .price{display:inline-block;margin-top:9px;font-size:11px;color:var(--muted);
+    border:1px dashed var(--line);border-radius:999px;padding:5px 12px;}
+
+  .hide{display:none !important;}
+  .sectionhead{display:flex;align-items:center;justify-content:space-between;margin:18px 4px 2px;}
+  .sectionhead h3{font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0;}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="brand">
+    <div class="logo">&#10084;&#65039;</div>
+    <div>
+      <h1>HRZONES</h1>
+      <p class="sub">Heart-rate training zone analyzer</p>
+    </div>
+  </div>
+  <div class="hdr-stats">
+    <div class="hdr-stat"><div class="n" id="hsWorkouts">0</div><div class="l">Workouts</div></div>
+    <div class="hdr-stat"><div class="n" id="hsMinutes">0</div><div class="l">Total min</div></div>
+    <div class="hdr-stat"><div class="n" id="hsLoad">0</div><div class="l">Load (7d)</div></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button data-tab="log" class="active">Log</button>
+    <button data-tab="zones">Zones</button>
+    <button data-tab="history">History</button>
+  </div>
+
+  <!-- ================= LOG TAB ================= -->
+  <section id="tab-log">
+    <div class="card">
+      <h2>New workout</h2>
+      <p class="hint">Pick how you'll record time in each zone. Your zone model and HR settings come from the Zones tab.</p>
+
+      <label class="field">
+        <span class="lab">Workout name</span>
+        <input type="text" id="wName" placeholder="e.g. Tempo run, Z2 ride…" />
+      </label>
+      <label class="field">
+        <span class="lab">Date</span>
+        <input type="date" id="wDate" />
+      </label>
+
+      <div class="seg" id="inputModeSeg">
+        <button data-mode="manual" class="active">Minutes per zone</button>
+        <button data-mode="samples">Paste / import HR</button>
+      </div>
+
+      <!-- manual mode -->
+      <div id="modeManual">
+        <div class="minrow" data-z="1"><span class="zdot" style="background:var(--z1)"></span><span class="zlbl">Z1 Recovery</span><input type="number" min="0" step="0.5" value="0" data-zmin="1"></div>
+        <div class="minrow" data-z="2"><span class="zdot" style="background:var(--z2)"></span><span class="zlbl">Z2 Endurance</span><input type="number" min="0" step="0.5" value="0" data-zmin="2"></div>
+        <div class="minrow" data-z="3"><span class="zdot" style="background:var(--z3)"></span><span class="zlbl">Z3 Tempo</span><input type="number" min="0" step="0.5" value="0" data-zmin="3"></div>
+        <div class="minrow" data-z="4"><span class="zdot" style="background:var(--z4)"></span><span class="zlbl">Z4 Threshold</span><input type="number" min="0" step="0.5" value="0" data-zmin="4"></div>
+        <div class="minrow" data-z="5"><span class="zdot" style="background:var(--z5)"></span><span class="zlbl">Z5 Max</span><input type="number" min="0" step="0.5" value="0" data-zmin="5"></div>
+      </div>
+
+      <!-- samples mode -->
+      <div id="modeSamples" class="hide">
+        <label class="field">
+          <span class="lab">Paste HR samples or CSV</span>
+          <textarea id="sampleText" placeholder="Comma- or line-separated bpm, e.g.&#10;132,138,141,150,162,171...&#10;&#10;or CSV with optional timestamp column:&#10;time,hr&#10;0,132&#10;1,138&#10;2,141"></textarea>
+        </label>
+        <div class="btn-row">
+          <label class="btn sec" style="text-align:center;cursor:pointer;margin:0;">
+            Import file&hellip;
+            <input type="file" id="fileInput" accept=".csv,.txt,text/csv,text/plain" class="hide">
+          </label>
+          <button class="btn ghost" id="loadDemo">Demo data</button>
+        </div>
+        <label class="field" style="margin-top:12px;">
+          <span class="lab">Sample rate (seconds per reading, if no timestamps)</span>
+          <input type="number" id="sampleRate" min="0.1" step="0.1" value="1" />
+        </label>
+        <p class="hint" id="parseInfo" style="margin:0;">No samples parsed yet.</p>
+      </div>
+
+      <button class="btn" id="analyzeBtn" style="margin-top:14px;">Analyze workout</button>
+    </div>
+
+    <!-- result -->
+    <div class="card hide" id="resultCard">
+      <h2>Zone distribution</h2>
+      <p class="hint" id="resultSub">—</p>
+      <canvas id="distCanvas" width="448" height="200"></canvas>
+      <div class="legend" id="distLegend"></div>
+
+      <div class="metricgrid">
+        <div class="metric"><div class="n" id="mDur">0</div><div class="l">Duration (min)</div></div>
+        <div class="metric"><div class="n" id="mLoad">0</div><div class="l">Training load</div></div>
+        <div class="metric"><div class="n" id="mInt">0%</div><div class="l">Avg intensity</div></div>
+        <div class="metric"><div class="n" id="mAvgHr">—</div><div class="l">Avg HR (est)</div></div>
+      </div>
+
+      <button class="btn" id="saveBtn" style="margin-top:14px;">Save to history</button>
+    </div>
+  </section>
+
+  <!-- ================= ZONES TAB ================= -->
+  <section id="tab-zones" class="hide">
+    <div class="card">
+      <h2>Your numbers</h2>
+      <p class="hint">Set max &amp; resting HR. Use the age helper to estimate max HR (220&minus;age).</p>
+      <div class="row">
+        <label class="field">
+          <span class="lab">Max HR (bpm)</span>
+          <input type="number" id="maxHr" min="100" max="240" value="190" />
+        </label>
+        <label class="field">
+          <span class="lab">Resting HR (bpm)</span>
+          <input type="number" id="restHr" min="30" max="120" value="60" />
+        </label>
+      </div>
+      <div class="row" style="align-items:flex-end;">
+        <label class="field" style="margin-bottom:0;">
+          <span class="lab">Age (helper)</span>
+          <input type="number" id="age" min="10" max="100" value="30" />
+        </label>
+        <button class="btn sec" id="ageBtn" style="flex:none;width:auto;padding:11px 14px;">Set 220&minus;age</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Zone model</h2>
+      <p class="hint">%HRmax uses max HR only. Karvonen (%HRR) factors in resting HR for a personalized reserve.</p>
+      <div class="seg" id="modelSeg">
+        <button data-model="hrmax" class="active">%HRmax</button>
+        <button data-model="karvonen">Karvonen %HRR</button>
+      </div>
+      <div class="zones" id="zoneTable"></div>
+      <p class="hint" style="margin:10px 0 0;">Zone % boundaries (of <span id="modelLabel">HRmax</span>): Z1 50&ndash;60 &middot; Z2 60&ndash;70 &middot; Z3 70&ndash;80 &middot; Z4 80&ndash;90 &middot; Z5 90&ndash;100</p>
+    </div>
+  </section>
+
+  <!-- ================= HISTORY TAB ================= -->
+  <section id="tab-history" class="hide">
+    <div class="card">
+      <h2>Trend &mdash; zone minutes</h2>
+      <p class="hint">Stacked zone minutes across your last sessions (oldest &rarr; newest).</p>
+      <canvas id="trendCanvas" width="448" height="190"></canvas>
+      <div class="legend" id="trendLegend"></div>
+    </div>
+
+    <div class="sectionhead">
+      <h3>Sessions</h3>
+      <span class="pill" id="histCount">0</span>
+    </div>
+    <div class="hist" id="histList"></div>
+
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn sec" id="exportBtn">Export CSV</button>
+      <button class="btn ghost" id="clearBtn">Clear all</button>
+    </div>
+  </section>
+
+  <footer class="freemium">
+    <div class="t">HRZONES is free &mdash; forever.</div>
+    <div class="s">Manual + file/paste import, zones, load &amp; history all unlocked.</div>
+    <div class="price"><b>Lifetime $5.99</b> unlocks device sync + training plans</div>
+  </footer>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================ storage ============================ */
+const PREFIX = "hrzones_";
+const K_SETTINGS = PREFIX + "settings";
+const K_WORKOUTS = PREFIX + "workouts";
+
+function load(key, fallback){
+  try{ const v = localStorage.getItem(key); return v==null ? fallback : JSON.parse(v); }
+  catch(e){ return fallback; }
+}
+function save(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); }
+  catch(e){ toast("Storage unavailable","err"); }
+}
+
+let settings = load(K_SETTINGS, { maxHr:190, restHr:60, age:30, model:"hrmax" });
+let workouts = load(K_WORKOUTS, []);   // [{id,name,date,minutes:[z1..z5],duration,load,avgInt,avgHr,source}]
+
+/* zone definitions: % boundaries (low,high) of the model scale */
+const ZONE_DEFS = [
+  { z:1, name:"Z1 Recovery",  lo:50, hi:60, color:"--z1" },
+  { z:2, name:"Z2 Endurance", lo:60, hi:70, color:"--z2" },
+  { z:3, name:"Z3 Tempo",     lo:70, hi:80, color:"--z3" },
+  { z:4, name:"Z4 Threshold", lo:80, hi:90, color:"--z4" },
+  { z:5, name:"Z5 Max",       lo:90, hi:100,color:"--z5" },
+];
+/* relative intensity weight per zone for training-load scoring (TRIMP-like) */
+const ZONE_LOAD_WEIGHT = [1, 2, 3, 4, 5];
+
+function css(varName){ return getComputedStyle(document.documentElement).getPropertyValue(varName).trim(); }
+function zoneColor(z){ return css(ZONE_DEFS[z-1].color); }
+
+/* ============================ toast ============================ */
+let toastTimer=null;
+function toast(msg, kind){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "show" + (kind ? " "+kind : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.className = el.className.replace("show","").trim(); }, 2400);
+}
+
+/* ============================ HR / zone math ============================ */
+// Returns absolute bpm boundary for a given percentage, for current model.
+function pctToBpm(pct){
+  const max = +settings.maxHr, rest = +settings.restHr;
+  if(settings.model === "karvonen"){
+    return rest + (pct/100) * (max - rest);   // Karvonen: rest + %HRR * reserve
+  }
+  return (pct/100) * max;                      // %HRmax
+}
+// computed zone bpm ranges for current settings
+function computeZoneRanges(){
+  return ZONE_DEFS.map(d => ({
+    z:d.z, name:d.name, color:d.color,
+    loPct:d.lo, hiPct:d.hi,
+    loBpm: Math.round(pctToBpm(d.lo)),
+    hiBpm: Math.round(pctToBpm(d.hi)),
+  }));
+}
+// which zone (1..5) a bpm reading falls into; below Z1 -> 1, above Z5 -> 5
+function bpmToZone(bpm){
+  const ranges = computeZoneRanges();
+  if(bpm < ranges[0].loBpm) return 1;
+  for(let i=0;i<ranges.length;i++){
+    if(bpm >= ranges[i].loBpm && bpm < ranges[i].hiBpm) return ranges[i].z;
+  }
+  return 5;
+}
+
+/* ============================ sample parsing ============================ */
+// Parse pasted/CSV text into {samples:[bpm...], times:[sec...]|null}
+// Accepts: comma/space/newline separated bpm; OR CSV with header + hr column,
+// optional time/timestamp column. Robust to stray text.
+function parseSamples(text){
+  text = (text||"").trim();
+  if(!text) return { samples:[], times:null };
+
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+  // Detect CSV-with-columns: more than one line and lines contain a delimiter
+  const delimLine = lines.find(l => /[,;\t]/.test(l));
+  const multiCol = lines.length > 1 && delimLine &&
+                   lines.filter(l=>/[,;\t]/.test(l)).length >= Math.max(2, lines.length-1);
+
+  if(multiCol){
+    const rows = lines.map(l => l.split(/[,;\t]/).map(c=>c.trim()));
+    // find header
+    let header = rows[0].map(c=>c.toLowerCase());
+    let hasHeader = header.some(c=>/[a-z]/i.test(c) && !/^[-+]?\d/.test(c));
+    let dataRows = hasHeader ? rows.slice(1) : rows;
+
+    // locate hr column + time column
+    let hrCol = -1, timeCol = -1;
+    if(hasHeader){
+      header.forEach((c,i)=>{
+        if(hrCol<0 && /(hr|heart|bpm|pulse)/.test(c)) hrCol = i;
+        if(timeCol<0 && /(time|timestamp|elapsed|sec|seconds|t)\b|^t$|date/.test(c)) timeCol = i;
+      });
+    }
+    // fallback: if a header but no hr column matched, use last numeric column
+    if(hrCol < 0){
+      const numericCols = (dataRows[0]||[]).map((_,i)=> dataRows.every(r=>r[i]!==undefined && r[i]!=="" && !isNaN(+r[i])) );
+      // prefer a column that looks like bpm (values 30..240)
+      for(let i=(dataRows[0]||[]).length-1;i>=0;i--){
+        if(numericCols[i]){
+          const vals = dataRows.map(r=>+r[i]).filter(v=>!isNaN(v));
+          const inHr = vals.filter(v=>v>=30 && v<=240).length;
+          if(inHr >= vals.length*0.6){ hrCol = i; break; }
+        }
+      }
+      if(hrCol < 0){ // last numeric column
+        for(let i=(dataRows[0]||[]).length-1;i>=0;i--){ if(numericCols[i]){ hrCol = i; break; } }
+      }
+      // time col guess: first numeric column that isn't hrCol and is monotonic-ish
+      if(timeCol < 0){
+        for(let i=0;i<(dataRows[0]||[]).length;i++){
+          if(i!==hrCol && numericCols[i]){ timeCol = i; break; }
+        }
+      }
+    }
+    if(hrCol < 0) return { samples:[], times:null };
+
+    const samples=[], times=[];
+    for(const r of dataRows){
+      const hv = parseFloat(r[hrCol]);
+      if(isNaN(hv)) continue;
+      samples.push(hv);
+      if(timeCol>=0){ const tv=parseFloat(r[timeCol]); times.push(isNaN(tv)?null:tv); }
+    }
+    const validTimes = timeCol>=0 && times.length===samples.length && times.every(t=>t!=null);
+    return { samples, times: validTimes ? times : null };
+  }
+
+  // simple list: split on any non-numeric (keep . and -)
+  const nums = text.split(/[^0-9.+-]+/).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+  return { samples: nums, times: null };
+}
+
+// Bucket samples into per-zone seconds, return summary.
+function bucketSamples(samples, times, sampleRate){
+  const zoneSec = [0,0,0,0,0];
+  let sumHr = 0, n = 0;
+  if(!samples.length) return { zoneSec, totalSec:0, avgHr:null };
+
+  for(let i=0;i<samples.length;i++){
+    const bpm = samples[i];
+    if(bpm < 20 || bpm > 260) continue; // ignore garbage
+    let dt;
+    if(times){
+      // duration represented by this sample = gap to next (or prev for last)
+      if(i < samples.length-1) dt = Math.max(0, times[i+1]-times[i]);
+      else dt = i>0 ? Math.max(0, times[i]-times[i-1]) : sampleRate;
+      if(!isFinite(dt) || dt<=0) dt = sampleRate;
+    } else {
+      dt = sampleRate;
+    }
+    zoneSec[bpmToZone(bpm)-1] += dt;
+    sumHr += bpm; n++;
+  }
+  const totalSec = zoneSec.reduce((a,b)=>a+b,0);
+  return { zoneSec, totalSec, avgHr: n ? Math.round(sumHr/n) : null };
+}
+
+/* training load + intensity from per-zone minutes */
+function computeLoad(minutes){
+  // weighted minutes (TRIMP-style); intensity = load / total minutes normalized
+  let load=0, total=0;
+  for(let i=0;i<5;i++){ load += minutes[i]*ZONE_LOAD_WEIGHT[i]; total += minutes[i]; }
+  load = Math.round(load);
+  // avg intensity as % of zone scale midpoint, weighted by minutes
+  let intSum=0;
+  for(let i=0;i<5;i++){ const mid=(ZONE_DEFS[i].lo+ZONE_DEFS[i].hi)/2; intSum += minutes[i]*mid; }
+  const avgInt = total>0 ? Math.round(intSum/total) : 0;
+  return { load, total:+total.toFixed(1), avgInt };
+}
+
+/* ============================ current analysis state ============================ */
+let inputMode = "manual";
+let lastParsed = { samples:[], times:null };
+let currentResult = null; // {minutes,duration,load,avgInt,avgHr,source,name,date}
+
+/* ============================ Zones tab render ============================ */
+function renderZoneTable(){
+  const ranges = computeZoneRanges();
+  const wrap = document.getElementById("zoneTable");
+  wrap.innerHTML = "";
+  ranges.forEach(r=>{
+    const def = ZONE_DEFS[r.z-1];
+    const desc = ["Easy / active recovery","Aerobic base / fat burn","Aerobic tempo / stamina","Lactate threshold","VO2max / anaerobic"][r.z-1];
+    const row = document.createElement("div");
+    row.className="zrow";
+    row.innerHTML =
+      '<div class="zswatch" style="background:'+css(def.color)+'"></div>'+
+      '<div class="zinfo"><div class="zn">'+r.name+'</div><div class="zd">'+desc+'</div></div>'+
+      '<div class="zrange">'+r.loBpm+'&ndash;'+r.hiBpm+' <small>'+r.loPct+'&ndash;'+r.hiPct+'%</small></div>';
+    wrap.appendChild(row);
+  });
+  document.getElementById("modelLabel").textContent = settings.model==="karvonen" ? "HRR" : "HRmax";
+}
+
+/* ============================ distribution chart ============================ */
+function setupCanvas(canvas, cssH){
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 448;
+  canvas.width = Math.round(cssW*dpr);
+  canvas.height = Math.round(cssH*dpr);
+  canvas.style.height = cssH+"px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return { ctx, w:cssW, h:cssH };
+}
+
+function drawDistribution(minutes){
+  const canvas = document.getElementById("distCanvas");
+  const { ctx, w, h } = setupCanvas(canvas, 200);
+  ctx.clearRect(0,0,w,h);
+  const total = minutes.reduce((a,b)=>a+b,0);
+  const padL=8, padR=8, padT=14, padB=30;
+  const plotW = w-padL-padR, plotH = h-padT-padB;
+  const maxM = Math.max(0.01, Math.max.apply(null, minutes));
+  const barW = plotW/5;
+
+  // gridlines
+  ctx.strokeStyle = css("--line"); ctx.lineWidth=1;
+  for(let g=0; g<=2; g++){
+    const y = padT + plotH*(g/2);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+  }
+
+  for(let i=0;i<5;i++){
+    const bh = (minutes[i]/maxM)*plotH;
+    const x = padL + i*barW + barW*0.16;
+    const bw = barW*0.68;
+    const y = padT + plotH - bh;
+    ctx.fillStyle = zoneColor(i+1);
+    roundRect(ctx, x, y, bw, Math.max(bh,2), 5); ctx.fill();
+    // value
+    ctx.fillStyle = css("--text");
+    ctx.font = "600 11px "+css("--font");
+    ctx.textAlign="center";
+    const pct = total>0 ? Math.round(minutes[i]/total*100) : 0;
+    if(minutes[i]>0) ctx.fillText(pct+"%", x+bw/2, y-4);
+    // label
+    ctx.fillStyle = css("--muted");
+    ctx.font = "600 11px "+css("--font");
+    ctx.fillText("Z"+(i+1), x+bw/2, h-12);
+  }
+  // legend
+  const lg = document.getElementById("distLegend");
+  lg.innerHTML="";
+  ZONE_DEFS.forEach((d,i)=>{
+    const m = minutes[i];
+    const s=document.createElement("span");
+    s.innerHTML='<i style="background:'+css(d.color)+'"></i>'+d.name.replace(/^Z\d\s/,"Z"+(i+1)+" ")+' &middot; '+fmtMin(m)+'m';
+    lg.appendChild(s);
+  });
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ============================ trend chart ============================ */
+function drawTrend(){
+  const canvas = document.getElementById("trendCanvas");
+  const { ctx, w, h } = setupCanvas(canvas, 190);
+  ctx.clearRect(0,0,w,h);
+  const data = workouts.slice(-14); // oldest->newest in storage order
+  const lg = document.getElementById("trendLegend");
+  lg.innerHTML="";
+  ZONE_DEFS.forEach((d,i)=>{
+    const s=document.createElement("span");
+    s.innerHTML='<i style="background:'+css(d.color)+'"></i>Z'+(i+1);
+    lg.appendChild(s);
+  });
+
+  if(!data.length){
+    ctx.fillStyle=css("--muted"); ctx.font="13px "+css("--font"); ctx.textAlign="center";
+    ctx.fillText("No sessions yet — log a workout to see trends.", w/2, h/2);
+    return;
+  }
+  const padL=8,padR=8,padT=12,padB=22;
+  const plotW=w-padL-padR, plotH=h-padT-padB;
+  const maxTotal = Math.max(1, Math.max.apply(null, data.map(d=>d.minutes.reduce((a,b)=>a+b,0))));
+  const slot = plotW/data.length;
+  const bw = Math.min(slot*0.66, 34);
+
+  // baseline
+  ctx.strokeStyle=css("--line"); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL, padT+plotH); ctx.lineTo(w-padR, padT+plotH); ctx.stroke();
+
+  data.forEach((wk,idx)=>{
+    const cx = padL + slot*idx + slot/2;
+    const x = cx - bw/2;
+    let yTop = padT+plotH;
+    const total = wk.minutes.reduce((a,b)=>a+b,0);
+    for(let z=0; z<5; z++){
+      const seg = (wk.minutes[z]/maxTotal)*plotH;
+      if(seg>0){
+        ctx.fillStyle = zoneColor(z+1);
+        ctx.fillRect(x, yTop-seg, bw, seg);
+        yTop -= seg;
+      }
+    }
+    // date label (short)
+    ctx.fillStyle=css("--muted"); ctx.font="9px "+css("--font"); ctx.textAlign="center";
+    const dlabel = shortDate(wk.date);
+    if(data.length<=10 || idx%2===0) ctx.fillText(dlabel, cx, h-8);
+  });
+}
+
+/* ============================ history list ============================ */
+function renderHistory(){
+  const list = document.getElementById("histList");
+  document.getElementById("histCount").textContent = workouts.length;
+  if(!workouts.length){
+    list.innerHTML = '<div class="empty"><div class="big">&#127939;</div>No workouts yet.<br>Log one from the Log tab.</div>';
+    drawTrend();
+    return;
+  }
+  list.innerHTML="";
+  // newest first for the list
+  [...workouts].reverse().forEach(wk=>{
+    const total = wk.minutes.reduce((a,b)=>a+b,0);
+    const item = document.createElement("div");
+    item.className="hitem";
+    let bars="";
+    for(let i=0;i<5;i++){
+      const pct = total>0 ? (wk.minutes[i]/total*100) : 0;
+      bars += '<i style="width:'+pct+'%;background:'+zoneColor(i+1)+'"></i>';
+    }
+    item.innerHTML =
+      '<div class="top"><span class="nm">'+escapeHtml(wk.name||"Workout")+'</span><span class="dt">'+fmtDate(wk.date)+'</span></div>'+
+      '<div class="meta">'+fmtMin(total)+' min &middot; load '+wk.load+' &middot; '+wk.avgInt+'% avg'+
+        (wk.avgHr?(' &middot; ~'+wk.avgHr+' bpm'):'')+' &middot; <span class="pill">'+(wk.source==="samples"?"imported":"manual")+'</span></div>'+
+      '<div class="hbar">'+bars+'</div>'+
+      '<div class="acts"><button data-load="'+wk.id+'">View</button><button class="danger" data-del="'+wk.id+'">Delete</button></div>';
+    list.appendChild(item);
+  });
+  drawTrend();
+  updateHeaderStats();
+}
+
+/* ============================ header stats ============================ */
+function updateHeaderStats(){
+  document.getElementById("hsWorkouts").textContent = workouts.length;
+  const totalMin = workouts.reduce((a,w)=>a + w.minutes.reduce((x,y)=>x+y,0), 0);
+  document.getElementById("hsMinutes").textContent = Math.round(totalMin);
+  // 7-day load
+  const now = Date.now(), wk7 = 7*864e5;
+  const load7 = workouts.filter(w=>{
+    const t = Date.parse(w.date); return !isNaN(t) && (now - t) <= wk7;
+  }).reduce((a,w)=>a+(w.load||0),0);
+  document.getElementById("hsLoad").textContent = load7;
+}
+
+/* ============================ analyze ============================ */
+function gatherManualMinutes(){
+  const arr=[0,0,0,0,0];
+  document.querySelectorAll("[data-zmin]").forEach(inp=>{
+    const z = +inp.getAttribute("data-zmin");
+    arr[z-1] = Math.max(0, parseFloat(inp.value)||0);
+  });
+  return arr;
+}
+
+function analyze(){
+  let minutes, avgHr=null, source;
+  if(inputMode==="manual"){
+    minutes = gatherManualMinutes();
+    if(minutes.reduce((a,b)=>a+b,0) <= 0){ toast("Enter minutes in at least one zone","err"); return; }
+    source="manual";
+  } else {
+    const rate = Math.max(0.1, parseFloat(document.getElementById("sampleRate").value)||1);
+    lastParsed = parseSamples(document.getElementById("sampleText").value);
+    if(!lastParsed.samples.length){ toast("No valid HR samples found","err"); return; }
+    const b = bucketSamples(lastParsed.samples, lastParsed.times, rate);
+    minutes = b.zoneSec.map(s=>+(s/60).toFixed(2));
+    avgHr = b.avgHr;
+    source="samples";
+    updateParseInfo();
+  }
+  const { load, total, avgInt } = computeLoad(minutes);
+  const name = document.getElementById("wName").value.trim();
+  const date = document.getElementById("wDate").value || todayStr();
+  currentResult = { name, date, minutes, duration:total, load, avgInt, avgHr, source };
+
+  // render result card
+  document.getElementById("resultCard").classList.remove("hide");
+  document.getElementById("resultSub").innerHTML =
+    fmtMin(total)+' min total &middot; '+(source==="samples" ? lastParsed.samples.length+' samples' : 'manual entry')+
+    ' &middot; '+(settings.model==="karvonen"?"Karvonen %HRR":"%HRmax");
+  document.getElementById("mDur").textContent = fmtMin(total);
+  document.getElementById("mLoad").textContent = load;
+  document.getElementById("mInt").textContent = avgInt+"%";
+  document.getElementById("mAvgHr").textContent = avgHr ? avgHr : "—";
+  drawDistribution(minutes);
+  document.getElementById("resultCard").scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+function saveWorkout(){
+  if(!currentResult){ toast("Analyze a workout first","err"); return; }
+  const wk = Object.assign({ id: "w"+Date.now()+Math.floor(Math.random()*1000) }, currentResult);
+  if(!wk.name) wk.name = "Workout";
+  workouts.push(wk);
+  // keep sorted by date ascending so trend reads oldest->newest
+  workouts.sort((a,b)=> (Date.parse(a.date)||0) - (Date.parse(b.date)||0));
+  save(K_WORKOUTS, workouts);
+  toast("Saved to history","good");
+  renderHistory();
+  // reset form lightly
+  document.getElementById("resultCard").classList.add("hide");
+  currentResult=null;
+  document.querySelectorAll("[data-zmin]").forEach(i=>i.value=0);
+  document.getElementById("sampleText").value="";
+  document.getElementById("wName").value="";
+  updateParseInfo();
+  switchTab("history");
+}
+
+function updateParseInfo(){
+  const info = document.getElementById("parseInfo");
+  const txt = document.getElementById("sampleText").value;
+  if(!txt.trim()){ info.textContent="No samples parsed yet."; return; }
+  const p = parseSamples(txt);
+  if(!p.samples.length){ info.textContent="No valid numbers detected."; return; }
+  const lo = Math.min.apply(null,p.samples), hi=Math.max.apply(null,p.samples);
+  info.innerHTML = p.samples.length+" samples parsed &middot; "+(p.times?"timestamps detected":"using fixed rate")+" &middot; range "+Math.round(lo)+"&ndash;"+Math.round(hi)+" bpm";
+}
+
+/* ============================ device sync (future) ============================ */
+// Placeholder for the Lifetime-tier OAuth import. See header comment.
+function importFromDevice(){
+  // 1) OAuth -> token  2) fetch HR time-series  3) normalize to {samples,times}
+  // 4) bucketSamples() -> minutes -> saveWorkout()
+  toast("Device sync is a Lifetime feature ($5.99)","");
+}
+
+/* ============================ CSV export ============================ */
+function exportCSV(){
+  if(!workouts.length){ toast("Nothing to export","err"); return; }
+  const head = ["date","name","source","z1_min","z2_min","z3_min","z4_min","z5_min","total_min","load","avg_intensity_pct","avg_hr"];
+  const rows = [head.join(",")];
+  workouts.forEach(w=>{
+    const total = w.minutes.reduce((a,b)=>a+b,0);
+    const cells = [
+      w.date, csvEsc(w.name||"Workout"), w.source,
+      w.minutes[0],w.minutes[1],w.minutes[2],w.minutes[3],w.minutes[4],
+      +total.toFixed(2), w.load, w.avgInt, (w.avgHr??"")
+    ];
+    rows.push(cells.join(","));
+  });
+  const blob = new Blob([rows.join("\n")], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download="hrzones-export-"+todayStr()+".csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  toast("CSV exported","good");
+}
+function csvEsc(s){ s=String(s); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+
+/* ============================ helpers ============================ */
+function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function fmtMin(m){ return (Math.round(m*10)/10).toString().replace(/\.0$/,""); }
+function fmtDate(s){
+  const d=new Date(s); if(isNaN(d)) return s;
+  return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+}
+function shortDate(s){ const d=new Date(s); if(isNaN(d)) return ""; return (d.getMonth()+1)+"/"+d.getDate(); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ============================ tabs ============================ */
+function switchTab(name){
+  document.querySelectorAll(".tabs button").forEach(b=> b.classList.toggle("active", b.dataset.tab===name));
+  ["log","zones","history"].forEach(t=>{
+    document.getElementById("tab-"+t).classList.toggle("hide", t!==name);
+  });
+  if(name==="history") renderHistory();
+  if(name==="zones") renderZoneTable();
+}
+
+/* ============================ wire up ============================ */
+function init(){
+  // settings into inputs
+  document.getElementById("maxHr").value = settings.maxHr;
+  document.getElementById("restHr").value = settings.restHr;
+  document.getElementById("age").value = settings.age;
+  document.getElementById("wDate").value = todayStr();
+  setModelSeg(settings.model);
+
+  // tabs
+  document.querySelectorAll(".tabs button").forEach(b=>{
+    b.addEventListener("click", ()=>switchTab(b.dataset.tab));
+  });
+
+  // input mode segment
+  document.getElementById("inputModeSeg").addEventListener("click", e=>{
+    const btn = e.target.closest("button"); if(!btn) return;
+    inputMode = btn.dataset.mode;
+    document.querySelectorAll("#inputModeSeg button").forEach(b=>b.classList.toggle("active", b===btn));
+    document.getElementById("modeManual").classList.toggle("hide", inputMode!=="manual");
+    document.getElementById("modeSamples").classList.toggle("hide", inputMode!=="samples");
+  });
+
+  // model segment
+  document.getElementById("modelSeg").addEventListener("click", e=>{
+    const btn=e.target.closest("button"); if(!btn) return;
+    settings.model = btn.dataset.model;
+    setModelSeg(settings.model);
+    persistSettings();
+    renderZoneTable();
+  });
+
+  // settings inputs
+  ["maxHr","restHr","age"].forEach(id=>{
+    document.getElementById(id).addEventListener("input", ()=>{
+      settings.maxHr = clampNum("maxHr",100,240,190);
+      settings.restHr = clampNum("restHr",30,120,60);
+      settings.age = clampNum("age",10,100,30);
+      persistSettings();
+      renderZoneTable();
+    });
+  });
+  document.getElementById("ageBtn").addEventListener("click", ()=>{
+    const age = clampNum("age",10,100,30);
+    const est = 220 - age;
+    settings.maxHr = est;
+    document.getElementById("maxHr").value = est;
+    persistSettings(); renderZoneTable();
+    toast("Max HR set to "+est+" (220−"+age+")","good");
+  });
+
+  // analyze / save
+  document.getElementById("analyzeBtn").addEventListener("click", analyze);
+  document.getElementById("saveBtn").addEventListener("click", saveWorkout);
+
+  // sample text + file
+  document.getElementById("sampleText").addEventListener("input", updateParseInfo);
+  document.getElementById("fileInput").addEventListener("change", e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      document.getElementById("sampleText").value = reader.result;
+      updateParseInfo();
+      toast("Loaded "+f.name,"good");
+    };
+    reader.onerror = ()=> toast("Could not read file","err");
+    reader.readAsText(f);
+    e.target.value="";
+  });
+  document.getElementById("loadDemo").addEventListener("click", ()=>{
+    document.getElementById("sampleText").value = makeDemo();
+    updateParseInfo();
+    toast("Demo HR data loaded","good");
+  });
+
+  // history actions (delegated)
+  document.getElementById("histList").addEventListener("click", e=>{
+    const del = e.target.closest("[data-del]");
+    const view = e.target.closest("[data-load]");
+    if(del){
+      const id = del.getAttribute("data-del");
+      workouts = workouts.filter(w=>w.id!==id);
+      save(K_WORKOUTS, workouts);
+      renderHistory();
+      toast("Deleted","");
+    } else if(view){
+      const id = view.getAttribute("data-load");
+      const wk = workouts.find(w=>w.id===id);
+      if(wk){
+        currentResult = Object.assign({}, wk);
+        switchTab("log");
+        document.getElementById("wName").value = wk.name||"";
+        document.getElementById("wDate").value = wk.date;
+        document.getElementById("resultCard").classList.remove("hide");
+        document.getElementById("resultSub").innerHTML = fmtMin(wk.minutes.reduce((a,b)=>a+b,0))+' min &middot; saved session';
+        document.getElementById("mDur").textContent = fmtMin(wk.minutes.reduce((a,b)=>a+b,0));
+        document.getElementById("mLoad").textContent = wk.load;
+        document.getElementById("mInt").textContent = wk.avgInt+"%";
+        document.getElementById("mAvgHr").textContent = wk.avgHr || "—";
+        drawDistribution(wk.minutes);
+        document.getElementById("resultCard").scrollIntoView({behavior:"smooth",block:"nearest"});
+      }
+    }
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", exportCSV);
+  document.getElementById("clearBtn").addEventListener("click", ()=>{
+    if(!workouts.length){ toast("Already empty",""); return; }
+    if(confirm("Delete all "+workouts.length+" saved workouts? This cannot be undone.")){
+      workouts=[]; save(K_WORKOUTS, workouts); renderHistory(); toast("History cleared","");
+    }
+  });
+
+  window.addEventListener("resize", ()=>{
+    if(currentResult) drawDistribution(currentResult.minutes);
+    if(!document.getElementById("tab-history").classList.contains("hide")) drawTrend();
+  });
+
+  renderZoneTable();
+  updateHeaderStats();
+}
+
+function clampNum(id,lo,hi,def){
+  let v = parseFloat(document.getElementById(id).value);
+  if(isNaN(v)) v=def;
+  return Math.min(hi, Math.max(lo, v));
+}
+function persistSettings(){ save(K_SETTINGS, settings); }
+function setModelSeg(model){
+  document.querySelectorAll("#modelSeg button").forEach(b=> b.classList.toggle("active", b.dataset.model===model));
+}
+
+/* demo HR series: warmup -> tempo -> intervals -> cooldown (~30 min @1s) */
+function makeDemo(){
+  const out=[]; let hr=95;
+  function ramp(target, secs){ for(let i=0;i<secs;i++){ hr += (target-hr)*0.05 + (Math.random()*3-1.5); out.push(Math.round(hr)); } }
+  ramp(120, 180);   // warmup
+  ramp(150, 360);   // endurance
+  for(let r=0;r<4;r++){ ramp(178, 120); ramp(140, 90); } // intervals
+  ramp(110, 240);   // cooldown
+  return out.join(",");
+}
+
+document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

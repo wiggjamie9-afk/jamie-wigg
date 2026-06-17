@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#1e3a8a" />
+<meta name="description" content="PROTOCOL — build reusable recovery & training protocols and track multi-client adherence. Offline-first tool for coaches & physios." />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="PROTOCOL" />
+<meta name="robots" content="noindex" />
+<title>PROTOCOL — Recovery & Training Protocol Builder for Coaches & Physios</title>
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --ink: #0f172a;
+    --ink-soft: #475569;
+    --ink-faint: #94a3b8;
+    --line: #e2e8f0;
+    --line-strong: #cbd5e1;
+    --brand: #1e3a8a;
+    --brand-2: #2563eb;
+    --accent: #0ea5e9;
+    --good: #16a34a;
+    --good-bg: #dcfce7;
+    --warn: #d97706;
+    --warn-bg: #fef3c7;
+    --bad: #dc2626;
+    --bad-bg: #fee2e2;
+    --grad: linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #0ea5e9 100%);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+    --shadow-soft: 0 1px 3px rgba(15,23,42,.08);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .wrap { max-width: 520px; margin: 0 auto; min-height: 100vh; background: var(--bg); }
+
+  /* ---------- Header ---------- */
+  header.app {
+    background: var(--grad);
+    color: #fff;
+    padding: calc(env(safe-area-inset-top) + 20px) 20px 22px;
+    border-radius: 0 0 22px 22px;
+    box-shadow: 0 8px 28px rgba(30,58,138,.28);
+    position: sticky; top: 0; z-index: 20;
+  }
+  header.app .brandrow { display: flex; align-items: center; gap: 11px; }
+  header.app .logo {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: rgba(255,255,255,.16);
+    display: grid; place-items: center; font-size: 19px;
+    border: 1px solid rgba(255,255,255,.25);
+    backdrop-filter: blur(6px);
+  }
+  header.app h1 { margin: 0; font-size: 1.32rem; letter-spacing: .04em; font-weight: 800; }
+  header.app .tag { margin: 0; font-size: .74rem; opacity: .9; letter-spacing: .02em; font-weight: 500; }
+  .statbar { display: flex; gap: 8px; margin-top: 16px; }
+  .stat {
+    flex: 1; background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 12px; padding: 9px 10px; text-align: center;
+  }
+  .stat b { display: block; font-size: 1.12rem; font-weight: 800; line-height: 1.1; }
+  .stat span { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; opacity: .85; }
+
+  /* ---------- Tabs ---------- */
+  nav.tabs {
+    display: flex; gap: 4px; padding: 10px 12px 0;
+    position: sticky; top: 0; z-index: 15;
+  }
+  nav.tabs button {
+    flex: 1; border: none; background: transparent; cursor: pointer;
+    font-family: var(--font); font-size: .8rem; font-weight: 600; color: var(--ink-faint);
+    padding: 10px 4px 12px; border-radius: 10px 10px 0 0; position: relative;
+    transition: color .15s;
+  }
+  nav.tabs button.active { color: var(--brand); }
+  nav.tabs button.active::after {
+    content: ""; position: absolute; left: 18%; right: 18%; bottom: 4px; height: 3px;
+    border-radius: 3px; background: var(--brand-2);
+  }
+
+  main { padding: 14px 16px 28px; }
+
+  /* ---------- Cards & generic ---------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px;
+  }
+  .card.flat { box-shadow: var(--shadow-soft); }
+  .sect-title {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 4px 2px 12px; gap: 10px;
+  }
+  .sect-title h2 { margin: 0; font-size: 1.02rem; font-weight: 800; letter-spacing: .01em; }
+  .sect-title .sub { font-size: .72rem; color: var(--ink-faint); font-weight: 500; }
+
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .muted { color: var(--ink-soft); }
+  .faint { color: var(--ink-faint); }
+  .tiny { font-size: .72rem; }
+  .center { text-align: center; }
+
+  label.fld { display: block; margin-bottom: 11px; }
+  label.fld > span { display: block; font-size: .72rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; letter-spacing: .01em; }
+  input, select, textarea {
+    width: 100%; font-family: var(--font); font-size: .92rem; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+    padding: 11px 12px; transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--brand-2); box-shadow: 0 0 0 3px rgba(37,99,235,.14); background: #fff;
+  }
+  textarea { resize: vertical; min-height: 56px; }
+
+  .btn {
+    font-family: var(--font); font-weight: 700; font-size: .9rem; cursor: pointer;
+    border: 1px solid transparent; border-radius: var(--radius-sm); padding: 11px 15px;
+    background: var(--brand-2); color: #fff; transition: transform .08s, filter .15s, background .15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:hover { filter: brightness(1.05); }
+  .btn.block { width: 100%; }
+  .btn.ghost { background: var(--surface); color: var(--brand); border-color: var(--line-strong); }
+  .btn.ghost:hover { background: var(--surface-2); }
+  .btn.subtle { background: var(--surface-2); color: var(--ink-soft); border-color: var(--line); }
+  .btn.danger { background: var(--bad-bg); color: var(--bad); }
+  .btn.sm { padding: 7px 11px; font-size: .78rem; border-radius: 9px; }
+  .btn.xs { padding: 5px 9px; font-size: .72rem; border-radius: 8px; }
+  .btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px; font-size: .68rem; font-weight: 700;
+    padding: 3px 9px; border-radius: 999px; letter-spacing: .02em;
+  }
+  .pill.phase { background: #eef2ff; color: var(--brand); border: 1px solid #dbe1fb; }
+  .pill.good { background: var(--good-bg); color: var(--good); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+
+  .empty {
+    text-align: center; padding: 34px 18px; color: var(--ink-faint);
+    border: 1.5px dashed var(--line-strong); border-radius: var(--radius); background: var(--surface);
+  }
+  .empty .em { font-size: 30px; display: block; margin-bottom: 8px; }
+  .empty b { color: var(--ink-soft); font-size: .95rem; }
+
+  /* ---------- Protocol list cards ---------- */
+  .plist-card { cursor: pointer; }
+  .plist-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .plist-head h3 { margin: 0 0 3px; font-size: 1rem; font-weight: 800; }
+  .plist-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .chip {
+    font-size: .68rem; font-weight: 600; padding: 3px 8px; border-radius: 7px;
+    background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line);
+  }
+  .cardacts { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* ---------- Item editor rows ---------- */
+  .item-row {
+    border: 1px solid var(--line); border-radius: 12px; padding: 11px; margin-bottom: 10px;
+    background: var(--surface-2); position: relative;
+  }
+  .item-row .ih { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .item-row .ord {
+    width: 24px; height: 24px; border-radius: 7px; background: var(--brand); color: #fff;
+    font-size: .74rem; font-weight: 800; display: grid; place-items: center; flex: none;
+  }
+  .item-row .ih input { font-weight: 600; }
+  .item-row .move { display: flex; gap: 4px; margin-left: auto; flex: none; }
+  .item-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+  .item-grid input, .item-grid select { padding: 8px 9px; font-size: .82rem; }
+  .icircbtn {
+    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line-strong);
+    background: #fff; color: var(--ink-soft); font-size: .9rem; cursor: pointer; display: grid; place-items: center;
+  }
+  .icircbtn:active { transform: scale(.92); }
+
+  /* ---------- Adherence ring ---------- */
+  .ring-wrap { display: flex; align-items: center; gap: 14px; }
+  .ring { position: relative; width: 76px; height: 76px; flex: none; }
+  .ring canvas { width: 76px; height: 76px; }
+  .ring .pct {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 1.08rem; font-weight: 800; color: var(--ink);
+  }
+
+  /* ---------- Dashboard client rows ---------- */
+  .dash-row {
+    display: flex; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line);
+    border-radius: 13px; background: var(--surface); margin-bottom: 10px; cursor: pointer;
+    box-shadow: var(--shadow-soft); transition: border-color .15s;
+  }
+  .dash-row:hover { border-color: var(--line-strong); }
+  . avatar {}
+  .avatar {
+    width: 42px; height: 42px; border-radius: 12px; flex: none; display: grid; place-items: center;
+    font-weight: 800; color: #fff; font-size: .98rem; background: var(--grad);
+  }
+  .dash-row .who { flex: 1; min-width: 0; }
+  .dash-row .who b { display: block; font-size: .95rem; }
+  .dash-row .who .l2 { font-size: .72rem; color: var(--ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .barmini { height: 7px; border-radius: 5px; background: var(--line); overflow: hidden; margin-top: 5px; }
+  .barmini > i { display: block; height: 100%; border-radius: 5px; }
+  .dash-row .score { text-align: right; flex: none; }
+  .dash-row .score b { font-size: 1.05rem; font-weight: 800; }
+
+  .sortbar { display: flex; gap: 7px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+  .sortbar .lbl { font-size: .72rem; color: var(--ink-faint); font-weight: 600; }
+
+  /* ---------- Session logging grid ---------- */
+  .logweek { margin-bottom: 16px; }
+  .logweek .wkhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .logweek .wkhead .wn { font-size: .82rem; font-weight: 700; }
+  .logweek .wkhead .wq { font-size: .72rem; color: var(--ink-faint); }
+  .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .day {
+    aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface-2);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+    font-size: .62rem; color: var(--ink-faint); font-weight: 600; gap: 1px; position: relative; user-select: none;
+    transition: transform .07s;
+  }
+  .day:active { transform: scale(.92); }
+  .day .dn { font-size: .82rem; color: var(--ink); font-weight: 700; }
+  .day.done { background: var(--brand-2); border-color: var(--brand-2); color: #fff; }
+  .day.done .dn { color: #fff; }
+  .day.done::after { content: "✓"; position: absolute; top: 3px; right: 5px; font-size: .6rem; }
+  .day.future { opacity: .45; cursor: default; }
+  .day.today { box-shadow: 0 0 0 2px var(--accent); }
+
+  /* ---------- Modal ---------- */
+  .modal-back {
+    position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 60;
+    display: flex; align-items: flex-end; justify-content: center; padding: 0;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-back.open { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: var(--surface); width: 100%; max-width: 520px; border-radius: 20px 20px 0 0;
+    max-height: 92vh; overflow-y: auto; padding: 20px 18px calc(22px + env(safe-area-inset-bottom));
+    transform: translateY(100%); transition: transform .26s cubic-bezier(.22,1,.36,1);
+    box-shadow: 0 -10px 40px rgba(0,0,0,.25);
+  }
+  .modal-back.open .modal { transform: translateY(0); }
+  .modal .grab { width: 38px; height: 4px; border-radius: 4px; background: var(--line-strong); margin: 0 auto 14px; }
+  .modal h2 { margin: 0 0 14px; font-size: 1.1rem; font-weight: 800; }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 120%); z-index: 90; background: var(--ink); color: #fff;
+    padding: 11px 18px; border-radius: 12px; font-size: .85rem; font-weight: 600; max-width: 90%;
+    box-shadow: 0 10px 30px rgba(0,0,0,.3); transition: transform .3s cubic-bezier(.22,1,.36,1); text-align: center;
+  }
+  #toast.show { transform: translate(-50%, 0); }
+  #toast.good { background: var(--good); }
+  #toast.bad { background: var(--bad); }
+
+  /* ---------- Freemium footer ---------- */
+  .freemium {
+    margin: 6px 2px 0; padding: 14px 15px; border-radius: 14px;
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff); border: 1px solid #dbeafe;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .freemium .fi { font-size: 22px; flex: none; }
+  .freemium .ft { flex: 1; }
+  .freemium .ft b { display: block; font-size: .82rem; color: var(--brand); }
+  .freemium .ft span { font-size: .73rem; color: var(--ink-soft); }
+  .freemium .btn { flex: none; }
+
+  footer.legal { text-align: center; padding: 18px 16px 30px; color: var(--ink-faint); font-size: .68rem; line-height: 1.6; }
+  footer.legal b { color: var(--ink-soft); }
+
+  .hidden { display: none !important; }
+  .divider { height: 1px; background: var(--line); margin: 14px 0; }
+  .inline-link { color: var(--brand-2); font-weight: 600; cursor: pointer; text-decoration: none; }
+</style>
+</head>
+<body>
+<!--
+  ============================================================================
+  PROTOCOL — recovery / training protocol builder for coaches & physios.
+  Self-contained, offline-first, zero external dependencies. Sibling to the
+  personal REHAB app; complements the Reset recovery app.
+
+  >>> FUTURE BACKEND / MONETISATION INTEGRATION POINT <<<
+  Everything below persists to localStorage under the "protocol_" prefix and is
+  single-user/single-device. To ship the B2B SaaS tier ($30/mo) wire in here:
+    1. Auth + multi-coach accounts (e.g. Cloudflare Workers + D1, or Supabase).
+    2. Replace the LS data layer (DB.* fns) with a sync adapter (push/pull,
+       conflict resolution, offline queue) — keep LS as the offline cache.
+    3. Stripe Billing: checkout session for "PROTOCOL B2B" ($30/mo), webhook ->
+       set account.tier = 'pro'; gate FREE_CLIENT_LIMIT below.
+    4. Branded client portal: per-client share link rendering read-only
+       adherence + today's protocol (separate static route, token-scoped).
+  Search "GATE:" markers for the exact spots the paywall is enforced.
+  ============================================================================
+-->
+<div class="wrap">
+  <header class="app">
+    <div class="brandrow">
+      <div class="logo">📋</div>
+      <div>
+        <h1>PROTOCOL</h1>
+        <p class="tag">Protocol builder &amp; adherence tracker</p>
+      </div>
+    </div>
+    <div class="statbar">
+      <div class="stat"><b id="st-prot">0</b><span>Protocols</span></div>
+      <div class="stat"><b id="st-cli">0</b><span>Clients</span></div>
+      <div class="stat"><b id="st-adh">—</b><span>Avg adher.</span></div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="dash" class="active">Dashboard</button>
+    <button data-tab="protocols">Protocols</button>
+    <button data-tab="clients">Clients</button>
+  </nav>
+
+  <main>
+    <!-- ===================== DASHBOARD ===================== -->
+    <section id="tab-dash">
+      <div class="sortbar">
+        <span class="lbl">Sort:</span>
+        <select id="dashSort" style="max-width:175px">
+          <option value="adh-asc">Adherence ↑ (low first)</option>
+          <option value="adh-desc">Adherence ↓ (high first)</option>
+          <option value="name">Name (A–Z)</option>
+          <option value="recent">Recently started</option>
+        </select>
+      </div>
+      <div id="dashList"></div>
+      <div class="freemium" id="freemiumBar">
+        <div class="fi">🚀</div>
+        <div class="ft">
+          <b>Free plan: 1 client</b>
+          <span>B2B $30/mo unlocks unlimited clients + branded client portal.</span>
+        </div>
+        <button class="btn sm" id="upgradeBtn">Upgrade</button>
+      </div>
+    </section>
+
+    <!-- ===================== PROTOCOLS ===================== -->
+    <section id="tab-protocols" class="hidden">
+      <div class="sect-title">
+        <h2>Protocols</h2>
+        <button class="btn sm" id="newProtBtn">＋ New</button>
+      </div>
+      <div id="protList"></div>
+    </section>
+
+    <!-- ===================== CLIENTS ===================== -->
+    <section id="tab-clients" class="hidden">
+      <div class="sect-title">
+        <h2>Clients</h2>
+        <button class="btn sm" id="newCliBtn">＋ New</button>
+      </div>
+      <div id="cliList"></div>
+    </section>
+  </main>
+
+  <footer class="legal">
+    <b>PROTOCOL</b> · offline-first · data stays on this device<br />
+    Built for coaches &amp; physios · sibling to REHAB · complements Reset
+  </footer>
+</div>
+
+<!-- ===================== MODAL HOST ===================== -->
+<div class="modal-back" id="modalBack">
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <div class="grab"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ====================================================================
+   PROTOCOL — single-file app logic
+   ==================================================================== */
+
+/* ---------- Config / gating ---------- */
+const PREFIX = "protocol_";
+const FREE_CLIENT_LIMIT = 1; // GATE: free tier allows 1 client. Pro unlocks unlimited.
+const PHASES = ["Acute", "Recovery", "Build", "Performance", "Maintenance"];
+const FREQ_OPTS = [1,2,3,4,5,6,7];
+const DAY_LABELS = ["S","M","T","W","T","F","S"];
+
+/* ---------- Data layer (localStorage) ----------
+   Replace this block with a sync adapter when wiring the cloud backend. */
+const DB = {
+  load(key, fallback) {
+    try { const v = localStorage.getItem(PREFIX + key); return v ? JSON.parse(v) : fallback; }
+    catch (e) { return fallback; }
+  },
+  save(key, val) { localStorage.setItem(PREFIX + key, JSON.stringify(val)); },
+};
+let state = {
+  tier: DB.load("tier", "free"),          // GATE: 'free' | 'pro'
+  protocols: DB.load("protocols", []),
+  clients: DB.load("clients", []),
+};
+function persist() {
+  DB.save("tier", state.tier);
+  DB.save("protocols", state.protocols);
+  DB.save("clients", state.clients);
+}
+
+/* ---------- Utils ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = (s) => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const todayISO = () => new Date().toISOString().slice(0,10);
+function dateOnly(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+function daysBetween(a,b){ return Math.round((dateOnly(b)-dateOnly(a))/86400000); }
+function fmtDate(iso){ if(!iso) return "—"; const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}); }
+function initials(name){ return (name||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]||"").join("").toUpperCase()||"?"; }
+
+let toastTimer;
+function toast(msg, kind){
+  const t = $("#toast");
+  t.textContent = msg; t.className = "show" + (kind ? " "+kind : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.className = "", 2200);
+}
+
+/* ---------- Helpers: protocol / client lookups ---------- */
+const getProtocol = id => state.protocols.find(p => p.id === id);
+const getClient = id => state.clients.find(c => c.id === id);
+
+/* Weeks elapsed since start (1-based), capped at program length if defined */
+function programWeeks(prot){
+  if(!prot) return 4;
+  const w = parseInt(prot.weeks, 10);
+  return (w && w>0) ? w : 4;
+}
+
+/* Compute adherence for a client.
+   Adherence = sessions logged done / sessions expected so far.
+   Expected/week = max frequency across the active protocol items (the program's
+   prescribed sessions per week). Expected up to today (not beyond program end). */
+function computeAdherence(client){
+  const prot = getClient(client.id) && client.protocolId ? getProtocol(client.protocolId) : null;
+  if(!prot || !prot.items.length){
+    return { pct: null, expected: 0, done: 0, phase: null, week: 0, totalWeeks: 0 };
+  }
+  const perWeek = Math.max(1, ...prot.items.map(i => parseInt(i.freq,10) || 1));
+  const totalWeeks = programWeeks(prot);
+  const start = client.startDate || todayISO();
+  const elapsedDays = Math.max(0, daysBetween(start, todayISO()));
+  const elapsedWeeksRaw = Math.floor(elapsedDays / 7) + 1; // current week, 1-based
+  const curWeek = Math.min(elapsedWeeksRaw, totalWeeks);
+  // expected sessions = perWeek * full completed weeks + partial of current week
+  const fullWeeks = Math.min(Math.floor(elapsedDays / 7), totalWeeks);
+  const partialDays = Math.min(elapsedDays - fullWeeks*7, 7);
+  let expected = perWeek * fullWeeks;
+  if(fullWeeks < totalWeeks){
+    // prorate current week's expected sessions by elapsed fraction of the week
+    expected += Math.round(perWeek * (partialDays/7));
+  }
+  expected = Math.max(expected, 0);
+  const done = Object.keys(client.log || {}).filter(k => client.log[k]).length;
+  const pct = expected > 0 ? Math.min(100, Math.round((done/expected)*100)) : (done>0?100:0);
+  // phase: distribute phases across program weeks by item phases present, else by week thirds
+  const phase = phaseForWeek(prot, curWeek, totalWeeks);
+  return { pct, expected, done, phase, week: curWeek, totalWeeks, perWeek };
+}
+
+/* Determine current phase label. If items declare phases, map week ranges
+   across the distinct phases in item order; else fall back to thirds. */
+function phaseForWeek(prot, week, totalWeeks){
+  const declared = [...new Set(prot.items.map(i=>i.phase).filter(Boolean))];
+  const phases = declared.length ? declared : ["Recovery","Build","Performance"];
+  const idx = Math.min(phases.length-1, Math.floor(((week-1)/Math.max(1,totalWeeks)) * phases.length));
+  return phases[Math.max(0,idx)];
+}
+
+function adhClass(pct){
+  if(pct == null) return "faint";
+  if(pct >= 80) return "good";
+  if(pct >= 50) return "warn";
+  return "bad";
+}
+function adhColor(pct){
+  if(pct == null) return "#94a3b8";
+  if(pct >= 80) return "#16a34a";
+  if(pct >= 50) return "#d97706";
+  return "#dc2626";
+}
+
+/* ====================================================================
+   RENDER: header stats
+   ==================================================================== */
+function renderStats(){
+  $("#st-prot").textContent = state.protocols.length;
+  $("#st-cli").textContent = state.clients.length;
+  const adhs = state.clients.map(c => computeAdherence(c).pct).filter(p => p != null);
+  $("#st-adh").textContent = adhs.length ? Math.round(adhs.reduce((a,b)=>a+b,0)/adhs.length) + "%" : "—";
+}
+
+/* ====================================================================
+   RENDER: Dashboard
+   ==================================================================== */
+function renderDashboard(){
+  const host = $("#dashList");
+  // freemium bar visibility
+  $("#freemiumBar").classList.toggle("hidden", state.tier === "pro");
+
+  if(!state.clients.length){
+    host.innerHTML = `<div class="empty"><span class="em">🧑‍⚕️</span><b>No clients yet</b>
+      <div class="tiny" style="margin-top:6px">Create a client, assign a protocol, then log sessions to track adherence.</div>
+      <div style="margin-top:14px"><button class="btn sm" onclick="switchTab('clients')">Add a client</button></div></div>`;
+    return;
+  }
+  const sort = $("#dashSort").value;
+  let rows = state.clients.map(c => ({ c, a: computeAdherence(c) }));
+  rows.sort((x,y)=>{
+    const px = x.a.pct==null?-1:x.a.pct, py = y.a.pct==null?-1:y.a.pct;
+    switch(sort){
+      case "adh-desc": return py - px;
+      case "name": return x.c.name.localeCompare(y.c.name);
+      case "recent": return (y.c.startDate||"").localeCompare(x.c.startDate||"");
+      default: return px - py; // adh-asc (attention first)
+    }
+  });
+
+  host.innerHTML = rows.map(({c,a})=>{
+    const prot = c.protocolId ? getProtocol(c.protocolId) : null;
+    const cls = adhClass(a.pct);
+    const col = adhColor(a.pct);
+    const pctTxt = a.pct==null ? "—" : a.pct+"%";
+    const l2 = prot
+      ? `${esc(prot.name)} · ${a.phase?esc(a.phase):"—"} · Wk ${a.week}/${a.totalWeeks}`
+      : `No protocol assigned`;
+    return `<div class="dash-row" onclick="openClient('${c.id}')">
+      <div class="avatar">${esc(initials(c.name))}</div>
+      <div class="who">
+        <b>${esc(c.name)}</b>
+        <div class="l2">${l2}</div>
+        <div class="barmini"><i style="width:${a.pct==null?0:a.pct}%;background:${col}"></i></div>
+      </div>
+      <div class="score">
+        <b style="color:${col}">${pctTxt}</b>
+        <div class="tiny faint">${a.done}/${a.expected||0}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ====================================================================
+   RENDER: Protocols list
+   ==================================================================== */
+function renderProtocols(){
+  const host = $("#protList");
+  if(!state.protocols.length){
+    host.innerHTML = `<div class="empty"><span class="em">📋</span><b>No protocols yet</b>
+      <div class="tiny" style="margin-top:6px">A protocol is a named, ordered list of exercises / modalities with dose, frequency &amp; phases.</div>
+      <div style="margin-top:14px"><button class="btn sm" onclick="openProtocolEditor()">Create protocol</button></div></div>`;
+    return;
+  }
+  host.innerHTML = state.protocols.map(p=>{
+    const assigned = state.clients.filter(c=>c.protocolId===p.id).length;
+    const phases = [...new Set(p.items.map(i=>i.phase).filter(Boolean))];
+    return `<div class="card plist-card flat" onclick="openProtocolEditor('${p.id}')">
+      <div class="plist-head">
+        <div>
+          <h3>${esc(p.name)}</h3>
+          <div class="tiny faint">${p.items.length} item${p.items.length===1?"":"s"} · ${programWeeks(p)} wk program</div>
+        </div>
+        <span class="pill phase">${assigned} assigned</span>
+      </div>
+      <div class="plist-meta">
+        ${p.items.slice(0,3).map(i=>`<span class="chip">${esc(i.name||"untitled")}</span>`).join("")}
+        ${p.items.length>3?`<span class="chip">+${p.items.length-3} more</span>`:""}
+      </div>
+      ${phases.length?`<div class="plist-meta">${phases.map(ph=>`<span class="pill phase">${esc(ph)}</span>`).join("")}</div>`:""}
+      <div class="cardacts" onclick="event.stopPropagation()">
+        <button class="btn xs ghost" onclick="openProtocolEditor('${p.id}')">Edit</button>
+        <button class="btn xs subtle" onclick="duplicateProtocol('${p.id}')">Duplicate</button>
+        <button class="btn xs subtle" onclick="exportProtocolCSV('${p.id}')">CSV</button>
+        <button class="btn xs danger" onclick="deleteProtocol('${p.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ====================================================================
+   RENDER: Clients list
+   ==================================================================== */
+function renderClients(){
+  const host = $("#cliList");
+  if(!state.clients.length){
+    host.innerHTML = `<div class="empty"><span class="em">🧑‍⚕️</span><b>No clients yet</b>
+      <div class="tiny" style="margin-top:6px">A client is a local profile (name + start date) you assign a protocol to.</div>
+      <div style="margin-top:14px"><button class="btn sm" onclick="openClientEditor()">Add client</button></div></div>`;
+    return;
+  }
+  host.innerHTML = state.clients.map(c=>{
+    const a = computeAdherence(c);
+    const prot = c.protocolId ? getProtocol(c.protocolId) : null;
+    const col = adhColor(a.pct);
+    return `<div class="card flat plist-card" onclick="openClient('${c.id}')">
+      <div class="plist-head">
+        <div style="display:flex;gap:11px;align-items:center">
+          <div class="avatar">${esc(initials(c.name))}</div>
+          <div>
+            <h3 style="margin-bottom:2px">${esc(c.name)}</h3>
+            <div class="tiny faint">Started ${fmtDate(c.startDate)}</div>
+          </div>
+        </div>
+        <span class="pill ${adhClass(a.pct)}">${a.pct==null?"—":a.pct+"%"}</span>
+      </div>
+      <div class="plist-meta">
+        <span class="chip">${prot?esc(prot.name):"No protocol"}</span>
+        ${a.phase?`<span class="pill phase">${esc(a.phase)}</span>`:""}
+        ${prot?`<span class="chip">Wk ${a.week}/${a.totalWeeks}</span>`:""}
+      </div>
+      <div class="cardacts" onclick="event.stopPropagation()">
+        <button class="btn xs ghost" onclick="openClient('${c.id}')">Open &amp; log</button>
+        <button class="btn xs subtle" onclick="openClientEditor('${c.id}')">Edit</button>
+        <button class="btn xs danger" onclick="deleteClient('${c.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ====================================================================
+   MODAL plumbing
+   ==================================================================== */
+function openModal(html){
+  $("#modalBody").innerHTML = html;
+  $("#modalBack").classList.add("open");
+  $("#modal").scrollTop = 0;
+}
+function closeModal(){ $("#modalBack").classList.remove("open"); }
+$("#modalBack").addEventListener("click", e => { if(e.target.id==="modalBack") closeModal(); });
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeModal(); });
+
+/* ====================================================================
+   PROTOCOL EDITOR
+   ==================================================================== */
+let editItems = []; // working copy of items while editing
+
+function blankItem(){ return { id: uid(), name:"", dose:"", freq:3, phase:"", notes:"" }; }
+
+function openProtocolEditor(id){
+  const existing = id ? getProtocol(id) : null;
+  editItems = existing ? JSON.parse(JSON.stringify(existing.items)) : [blankItem()];
+  const name = existing ? existing.name : "";
+  const weeks = existing ? programWeeks(existing) : 6;
+  openModal(`
+    <h2>${existing ? "Edit protocol" : "New protocol"}</h2>
+    <label class="fld"><span>Protocol name</span>
+      <input id="pName" placeholder="e.g. ACL Phase 1 — Quad Activation" value="${esc(name)}" /></label>
+    <div class="row">
+      <label class="fld"><span>Program length (weeks)</span>
+        <input id="pWeeks" type="number" min="1" max="52" value="${weeks}" /></label>
+      <label class="fld"><span>&nbsp;</span>
+        <button class="btn ghost block" type="button" onclick="addItem()">＋ Add item</button></label>
+    </div>
+    <div style="font-size:.72rem;font-weight:600;color:var(--ink-soft);margin:2px 2px 8px">PROTOCOL ITEMS (ordered)</div>
+    <div id="itemsHost"></div>
+    <div class="divider"></div>
+    <button class="btn block" onclick="saveProtocol('${id||""}')">${existing?"Save changes":"Create protocol"}</button>
+    ${existing?`<button class="btn block subtle" style="margin-top:8px" onclick="closeModal()">Cancel</button>`:""}
+  `);
+  renderItemEditor();
+}
+
+function renderItemEditor(){
+  const host = $("#itemsHost");
+  if(!editItems.length){
+    host.innerHTML = `<div class="empty" style="padding:20px"><b>No items</b><div class="tiny" style="margin-top:6px">Add at least one exercise or modality.</div></div>`;
+    return;
+  }
+  host.innerHTML = editItems.map((it,idx)=>`
+    <div class="item-row" data-idx="${idx}">
+      <div class="ih">
+        <span class="ord">${idx+1}</span>
+        <input class="i-name" placeholder="Exercise / modality" value="${esc(it.name)}" />
+        <div class="move">
+          <button class="icircbtn" type="button" onclick="moveItem(${idx},-1)" ${idx===0?"disabled style='opacity:.35'":""}>↑</button>
+          <button class="icircbtn" type="button" onclick="moveItem(${idx},1)" ${idx===editItems.length-1?"disabled style='opacity:.35'":""}>↓</button>
+          <button class="icircbtn" type="button" onclick="removeItem(${idx})" style="color:var(--bad)">✕</button>
+        </div>
+      </div>
+      <div class="item-grid">
+        <input class="i-dose" placeholder="Dose (3×12 / 10min)" value="${esc(it.dose)}" />
+        <select class="i-freq">
+          ${FREQ_OPTS.map(f=>`<option value="${f}" ${(+it.freq===f)?"selected":""}>${f}×/wk</option>`).join("")}
+        </select>
+        <select class="i-phase">
+          <option value="">Phase…</option>
+          ${PHASES.map(p=>`<option value="${p}" ${it.phase===p?"selected":""}>${p}</option>`).join("")}
+        </select>
+      </div>
+      <textarea class="i-notes" placeholder="Progression notes (optional)" style="margin-top:7px">${esc(it.notes)}</textarea>
+    </div>
+  `).join("");
+}
+
+/* Read current DOM values back into editItems before any reorder/save */
+function syncItemsFromDOM(){
+  $$("#itemsHost .item-row").forEach(row=>{
+    const idx = +row.dataset.idx;
+    if(!editItems[idx]) return;
+    editItems[idx].name  = $(".i-name", row).value.trim();
+    editItems[idx].dose  = $(".i-dose", row).value.trim();
+    editItems[idx].freq  = +$(".i-freq", row).value;
+    editItems[idx].phase = $(".i-phase", row).value;
+    editItems[idx].notes = $(".i-notes", row).value.trim();
+  });
+}
+function addItem(){ syncItemsFromDOM(); editItems.push(blankItem()); renderItemEditor(); }
+function removeItem(i){ syncItemsFromDOM(); editItems.splice(i,1); renderItemEditor(); }
+function moveItem(i,dir){
+  syncItemsFromDOM();
+  const j = i+dir;
+  if(j<0 || j>=editItems.length) return;
+  [editItems[i], editItems[j]] = [editItems[j], editItems[i]];
+  renderItemEditor();
+}
+window.addItem=addItem; window.removeItem=removeItem; window.moveItem=moveItem;
+
+function saveProtocol(id){
+  syncItemsFromDOM();
+  const name = $("#pName").value.trim();
+  if(!name){ toast("Name the protocol first", "bad"); $("#pName").focus(); return; }
+  const items = editItems.filter(i=>i.name);
+  if(!items.length){ toast("Add at least one named item", "bad"); return; }
+  const weeks = Math.max(1, parseInt($("#pWeeks").value,10)||6);
+  if(id){
+    const p = getProtocol(id);
+    p.name = name; p.items = items; p.weeks = weeks; p.updated = Date.now();
+    toast("Protocol updated", "good");
+  } else {
+    state.protocols.push({ id: uid(), name, items, weeks, created: Date.now() });
+    toast("Protocol created", "good");
+  }
+  persist(); closeModal(); renderAll();
+}
+window.saveProtocol=saveProtocol;
+window.openProtocolEditor=openProtocolEditor;
+
+function duplicateProtocol(id){
+  const p = getProtocol(id); if(!p) return;
+  const copy = JSON.parse(JSON.stringify(p));
+  copy.id = uid();
+  copy.name = p.name + " (copy)";
+  copy.items = copy.items.map(i => ({...i, id: uid()}));
+  copy.created = Date.now();
+  state.protocols.push(copy);
+  persist(); renderAll();
+  toast("Protocol duplicated", "good");
+}
+window.duplicateProtocol=duplicateProtocol;
+
+function deleteProtocol(id){
+  const p = getProtocol(id); if(!p) return;
+  const assigned = state.clients.filter(c=>c.protocolId===id);
+  const warn = assigned.length ? `\n\n${assigned.length} client(s) are using it — they'll be unassigned.` : "";
+  if(!confirm(`Delete "${p.name}"?${warn}`)) return;
+  state.protocols = state.protocols.filter(x=>x.id!==id);
+  assigned.forEach(c=> c.protocolId = null);
+  persist(); renderAll();
+  toast("Protocol deleted");
+}
+window.deleteProtocol=deleteProtocol;
+
+/* ====================================================================
+   CLIENT EDITOR
+   ==================================================================== */
+function openClientEditor(id){
+  const existing = id ? getClient(id) : null;
+  // GATE: free tier capped at FREE_CLIENT_LIMIT clients
+  if(!existing && state.tier!=="pro" && state.clients.length >= FREE_CLIENT_LIMIT){
+    return showPaywall();
+  }
+  const name = existing ? existing.name : "";
+  const start = existing ? existing.startDate : todayISO();
+  const protId = existing ? existing.protocolId : "";
+  const protOpts = state.protocols.map(p=>`<option value="${p.id}" ${protId===p.id?"selected":""}>${esc(p.name)}</option>`).join("");
+  openModal(`
+    <h2>${existing ? "Edit client" : "New client"}</h2>
+    <label class="fld"><span>Client name</span>
+      <input id="cName" placeholder="e.g. Jordan M." value="${esc(name)}" /></label>
+    <label class="fld"><span>Start date</span>
+      <input id="cStart" type="date" value="${start}" /></label>
+    <label class="fld"><span>Assigned protocol</span>
+      <select id="cProt">
+        <option value="">— None —</option>
+        ${protOpts}
+      </select>
+      ${state.protocols.length?"":`<div class="tiny faint" style="margin-top:5px">No protocols yet. <span class="inline-link" onclick="closeModal();switchTab('protocols');openProtocolEditor()">Create one →</span></div>`}
+    </label>
+    <div class="divider"></div>
+    <button class="btn block" onclick="saveClient('${id||""}')">${existing?"Save changes":"Add client"}</button>
+    ${existing?`<button class="btn block subtle" style="margin-top:8px" onclick="closeModal()">Cancel</button>`:""}
+  `);
+}
+window.openClientEditor=openClientEditor;
+
+function saveClient(id){
+  const name = $("#cName").value.trim();
+  if(!name){ toast("Enter a client name", "bad"); $("#cName").focus(); return; }
+  const startDate = $("#cStart").value || todayISO();
+  const protocolId = $("#cProt").value || null;
+  if(id){
+    const c = getClient(id);
+    c.name = name; c.startDate = startDate; c.protocolId = protocolId;
+    toast("Client updated", "good");
+  } else {
+    state.clients.push({ id: uid(), name, startDate, protocolId, log: {}, created: Date.now() });
+    toast("Client added", "good");
+  }
+  persist(); closeModal(); renderAll();
+}
+window.saveClient=saveClient;
+
+function deleteClient(id){
+  const c = getClient(id); if(!c) return;
+  if(!confirm(`Delete client "${c.name}"? Their session log will be removed.`)) return;
+  state.clients = state.clients.filter(x=>x.id!==id);
+  persist(); renderAll();
+  toast("Client deleted");
+}
+window.deleteClient=deleteClient;
+
+/* ====================================================================
+   CLIENT DETAIL + SESSION LOGGING
+   ==================================================================== */
+function openClient(id){
+  const c = getClient(id); if(!c) return;
+  const a = computeAdherence(c);
+  const prot = c.protocolId ? getProtocol(c.protocolId) : null;
+  const col = adhColor(a.pct);
+
+  let body = `
+    <h2 style="display:flex;align-items:center;gap:10px">
+      <span class="avatar" style="width:34px;height:34px;font-size:.85rem">${esc(initials(c.name))}</span>
+      ${esc(c.name)}
+    </h2>
+    <div class="ring-wrap card flat" style="margin-bottom:14px">
+      <div class="ring"><canvas id="ringCv" width="152" height="152"></canvas><div class="pct" style="color:${col}">${a.pct==null?"—":a.pct+"%"}</div></div>
+      <div>
+        <div class="tiny faint" style="margin-bottom:3px">ADHERENCE</div>
+        <div style="font-size:.86rem"><b>${a.done}</b> done / <b>${a.expected||0}</b> expected</div>
+        ${prot?`<div class="plist-meta" style="margin-top:8px">
+          <span class="pill phase">${a.phase?esc(a.phase):"—"}</span>
+          <span class="chip">Week ${a.week}/${a.totalWeeks}</span>
+          <span class="chip">${a.perWeek}×/wk target</span>
+        </div>`:""}
+      </div>
+    </div>`;
+
+  if(!prot){
+    body += `<div class="empty"><b>No protocol assigned</b>
+      <div class="tiny" style="margin-top:6px">Assign a protocol to start tracking sessions.</div>
+      <div style="margin-top:13px"><button class="btn sm" onclick="closeModal();openClientEditor('${id}')">Assign protocol</button></div></div>`;
+  } else {
+    body += `<div class="sect-title" style="margin-top:4px"><h2 style="font-size:.95rem">Session log</h2>
+      <span class="sub">tap a day to mark a session done</span></div>`;
+    body += renderLogGrid(c, prot, a);
+    // protocol items quick reference
+    body += `<div class="divider"></div><div style="font-size:.72rem;font-weight:600;color:var(--ink-soft);margin:0 2px 8px">PROTOCOL: ${esc(prot.name)}</div>`;
+    body += prot.items.map((it,i)=>`
+      <div class="item-row" style="cursor:default">
+        <div class="ih"><span class="ord">${i+1}</span><b style="font-size:.9rem">${esc(it.name)}</b>
+          ${it.phase?`<span class="pill phase" style="margin-left:auto">${esc(it.phase)}</span>`:""}</div>
+        <div class="tiny muted">${esc(it.dose||"—")} · ${it.freq}×/wk${it.notes?` · ${esc(it.notes)}`:""}</div>
+      </div>`).join("");
+  }
+
+  body += `<div class="divider"></div>
+    <div class="row">
+      <button class="btn ghost" onclick="closeModal();openClientEditor('${id}')">Edit client</button>
+      <button class="btn subtle" onclick="exportClientCSV('${id}')">Export CSV</button>
+    </div>`;
+
+  openModal(body);
+  if(prot) drawRing($("#ringCv"), a.pct, col);
+}
+window.openClient=openClient;
+
+/* Build week-by-week tap grid from start date up to today (+current week). */
+function renderLogGrid(c, prot, a){
+  const totalWeeks = a.totalWeeks;
+  const start = dateOnly(c.startDate || todayISO());
+  const today = dateOnly(todayISO());
+  let out = "";
+  for(let w=0; w<totalWeeks; w++){
+    const wkStart = new Date(start); wkStart.setDate(start.getDate() + w*7);
+    if(daysBetween(start, wkStart) > daysBetween(start, today) + 7 && w>0 && daysBetween(today, wkStart) > 7) {
+      // skip far-future weeks beyond next week to keep the grid focused
+    }
+    // count done in this week
+    let wkDone = 0;
+    let cells = "";
+    for(let d=0; d<7; d++){
+      const day = new Date(wkStart); day.setDate(wkStart.getDate()+d);
+      const iso = day.toISOString().slice(0,10);
+      const isFuture = day > today;
+      const isToday = day.getTime() === today.getTime();
+      const done = !!(c.log && c.log[iso]);
+      if(done) wkDone++;
+      const cls = ["day"];
+      if(done) cls.push("done");
+      if(isFuture) cls.push("future");
+      if(isToday) cls.push("today");
+      const dm = day.getDate();
+      cells += `<div class="${cls.join(" ")}" ${isFuture?"":`onclick="toggleSession('${c.id}','${iso}')"`}>
+        <span>${DAY_LABELS[day.getDay()]}</span><span class="dn">${dm}</span></div>`;
+    }
+    // only show weeks up to (current week + 1) to avoid huge empty grids
+    if(w > a.week) {
+      if(w === a.week+1){ /* show one preview week */ } else { continue; }
+    }
+    out += `<div class="logweek">
+      <div class="wkhead"><span class="wn">Week ${w+1}${w+1===a.week?` · ${esc(a.phase||"")}`:""}</span>
+        <span class="wq">${wkDone}/${a.perWeek}</span></div>
+      <div class="days">${cells}</div></div>`;
+  }
+  return out;
+}
+
+function toggleSession(clientId, iso){
+  const c = getClient(clientId); if(!c) return;
+  c.log = c.log || {};
+  if(c.log[iso]) delete c.log[iso]; else c.log[iso] = true;
+  persist();
+  // re-render detail in place + dashboard stats
+  openClient(clientId);
+  renderStats();
+  // keep underlying lists fresh for when modal closes
+  renderDashboard(); renderClients();
+}
+window.toggleSession=toggleSession;
+
+/* ====================================================================
+   Canvas adherence ring
+   ==================================================================== */
+function drawRing(cv, pct, color){
+  if(!cv) return;
+  const ctx = cv.getContext("2d");
+  const W = cv.width, cx = W/2, cy = W/2, r = W/2 - 14, lw = 13;
+  ctx.clearRect(0,0,W,W);
+  // track
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.lineWidth = lw; ctx.strokeStyle = "#e2e8f0"; ctx.stroke();
+  // progress
+  const p = (pct==null?0:pct)/100;
+  if(p>0){
+    ctx.beginPath();
+    ctx.arc(cx,cy,r, -Math.PI/2, -Math.PI/2 + Math.PI*2*p);
+    ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.stroke();
+  }
+}
+
+/* ====================================================================
+   CSV EXPORT
+   ==================================================================== */
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(cell => {
+    const s = String(cell==null?"":cell);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(",")).join("\r\n");
+  const blob = new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+}
+
+function exportProtocolCSV(id){
+  const p = getProtocol(id); if(!p) return;
+  const rows = [["Order","Item","Dose","Freq/week","Phase","Progression notes"]];
+  p.items.forEach((it,i)=> rows.push([i+1, it.name, it.dose, it.freq, it.phase, it.notes]));
+  downloadCSV(`protocol-${slug(p.name)}.csv`, rows);
+  toast("Protocol exported", "good");
+}
+window.exportProtocolCSV=exportProtocolCSV;
+
+function exportClientCSV(id){
+  const c = getClient(id); if(!c) return;
+  const a = computeAdherence(c);
+  const prot = c.protocolId ? getProtocol(c.protocolId) : null;
+  const rows = [
+    ["Client", c.name],
+    ["Start date", c.startDate],
+    ["Protocol", prot?prot.name:"(none)"],
+    ["Current phase", a.phase||""],
+    ["Week", prot?`${a.week}/${a.totalWeeks}`:""],
+    ["Adherence %", a.pct==null?"":a.pct],
+    ["Sessions done", a.done],
+    ["Sessions expected", a.expected],
+    [],
+    ["Session date","Status"],
+  ];
+  Object.keys(c.log||{}).sort().forEach(d => rows.push([d, c.log[d]?"done":""]));
+  downloadCSV(`client-${slug(c.name)}.csv`, rows);
+  toast("Client report exported", "good");
+}
+window.exportClientCSV=exportClientCSV;
+
+/* Export the whole dashboard as one adherence CSV */
+function exportDashboardCSV(){
+  const rows = [["Client","Protocol","Phase","Week","Adherence %","Done","Expected","Start date"]];
+  state.clients.forEach(c=>{
+    const a = computeAdherence(c);
+    const prot = c.protocolId?getProtocol(c.protocolId):null;
+    rows.push([c.name, prot?prot.name:"(none)", a.phase||"", prot?`${a.week}/${a.totalWeeks}`:"", a.pct==null?"":a.pct, a.done, a.expected, c.startDate]);
+  });
+  downloadCSV("protocol-dashboard.csv", rows);
+  toast("Dashboard exported", "good");
+}
+window.exportDashboardCSV=exportDashboardCSV;
+
+const slug = s => String(s||"export").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || "export";
+
+/* ====================================================================
+   Paywall / upgrade (demo unlock — real flow = Stripe checkout)
+   ==================================================================== */
+function showPaywall(){
+  openModal(`
+    <h2>🚀 Unlock PROTOCOL B2B</h2>
+    <p class="muted" style="margin-top:-6px;font-size:.9rem">You're on the free plan (limit ${FREE_CLIENT_LIMIT} client). Upgrade to manage unlimited clients and ship a branded client portal.</p>
+    <div class="card flat" style="background:var(--surface-2)">
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
+        <span style="font-size:1.7rem;font-weight:800;color:var(--brand)">$30</span><span class="muted">/month</span>
+      </div>
+      <div class="tiny muted" style="line-height:1.9">
+        ✓ Unlimited clients<br>
+        ✓ Branded client portal (read-only adherence link)<br>
+        ✓ Cloud sync across devices<br>
+        ✓ Multi-coach accounts &amp; CSV/PDF reporting
+      </div>
+    </div>
+    <!-- GATE: real implementation opens a Stripe Checkout session here.
+         The button below is a local demo unlock so the prototype is usable. -->
+    <button class="btn block" onclick="mockUpgrade()">Unlock (demo)</button>
+    <button class="btn block subtle" style="margin-top:8px" onclick="closeModal()">Maybe later</button>
+    <p class="tiny faint center" style="margin-top:10px">Demo unlock stores tier locally. Production = Stripe Billing webhook.</p>
+  `);
+}
+window.showPaywall=showPaywall;
+function mockUpgrade(){
+  state.tier = "pro"; persist(); closeModal(); renderAll();
+  toast("PRO unlocked — unlimited clients", "good");
+}
+window.mockUpgrade=mockUpgrade;
+
+/* ====================================================================
+   Tabs + wiring
+   ==================================================================== */
+function switchTab(tab){
+  $$("nav.tabs button").forEach(b=> b.classList.toggle("active", b.dataset.tab===tab));
+  ["dash","protocols","clients"].forEach(t=> $("#tab-"+t).classList.toggle("hidden", t!==tab));
+  if(tab==="dash") renderDashboard();
+}
+window.switchTab=switchTab;
+
+function renderAll(){
+  renderStats();
+  renderDashboard();
+  renderProtocols();
+  renderClients();
+}
+
+/* event bindings */
+$$("nav.tabs button").forEach(b=> b.addEventListener("click", ()=> switchTab(b.dataset.tab)));
+$("#dashSort").addEventListener("change", renderDashboard);
+$("#newProtBtn").addEventListener("click", ()=> openProtocolEditor());
+$("#newCliBtn").addEventListener("click", ()=> openClientEditor());
+$("#upgradeBtn").addEventListener("click", showPaywall);
+
+/* Long-press dashboard header stat to export whole dashboard (handy on mobile) */
+$("#st-adh").parentElement.addEventListener("dblclick", exportDashboardCSV);
+
+/* ====================================================================
+   Seed example data on first run so the app isn't empty
+   ==================================================================== */
+function seedIfEmpty(){
+  if(state.protocols.length || state.clients.length || DB.load("seeded", false)) return;
+  const protId = uid();
+  state.protocols.push({
+    id: protId, created: Date.now(), weeks: 6,
+    name: "ACL Return-to-Sport — Phase 1",
+    items: [
+      { id: uid(), name: "Quad sets", dose: "3×15", freq: 5, phase: "Acute", notes: "Hold 5s, full extension" },
+      { id: uid(), name: "Stationary bike", dose: "10 min", freq: 4, phase: "Recovery", notes: "Low resistance, build to 15 min" },
+      { id: uid(), name: "Leg press", dose: "3×12", freq: 3, phase: "Build", notes: "0–60° ROM, progress load weekly" },
+      { id: uid(), name: "Single-leg balance", dose: "3×30s", freq: 3, phase: "Performance", notes: "Add perturbation in wk 5" },
+    ],
+  });
+  const start = new Date(); start.setDate(start.getDate()-10);
+  const c = { id: uid(), name: "Jordan M.", startDate: start.toISOString().slice(0,10), protocolId: protId, log: {}, created: Date.now() };
+  // pre-tick a few sessions
+  for(let i=1;i<=8;i++){ const d=new Date(start); d.setDate(start.getDate()+i); if(i%4!==0) c.log[d.toISOString().slice(0,10)]=true; }
+  state.clients.push(c);
+  DB.save("seeded", true);
+  persist();
+}
+
+seedIfEmpty();
+renderAll();
+</script>
+</body>
+</html>
