@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0b14" />
+<meta name="color-scheme" content="dark" />
+<title>STEMSPLIT — AI Stem Separator (Vocals · Drums · Bass · Other)</title>
+<meta name="description" content="Split any song into vocals, drums, bass and other stems with a real AI model (Demucs on Replicate). Bring your own Replicate key — nothing stored on our servers." />
+<meta name="author" content="RHYTHMIX" />
+<meta property="og:title" content="STEMSPLIT — AI Stem Separator" />
+<meta property="og:description" content="Upload a song, get vocals / drums / bass / other stems. Real Demucs separation via your own Replicate token (BYOK)." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%237c5cff'/%3E%3Cg fill='%23fff'%3E%3Crect x='22' y='40' width='8' height='20' rx='4'/%3E%3Crect x='38' y='28' width='8' height='44' rx='4'/%3E%3Crect x='54' y='34' width='8' height='32' rx='4'/%3E%3Crect x='70' y='44' width='8' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E" />
+
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  STEMSPLIT — single-file AI stem separator (BYOK)
+═══════════════════════════════════════════════════════════════════════════════
+
+  HONEST ARCHITECTURE NOTE
+  ────────────────────────
+  Replicate's REST API does NOT send permissive CORS headers, so a browser
+  page CANNOT call https://api.replicate.com directly — the request is blocked
+  by the browser before it ever reaches Replicate. Therefore this app MUST be
+  pointed at a CORS proxy that you deploy yourself.
+
+  This repo ships exactly such a proxy:
+      studio/workers/replicate-proxy/        (Cloudflare Worker)
+
+  That Worker maps:
+      {PROXY_BASE}/api/replicate-proxy/v1/*   →   https://api.replicate.com/v1/*
+  forwarding the Authorization / Content-Type / Prefer headers transit-only
+  (never logged, never stored). Deploy it with `wrangler deploy` from that
+  directory, then paste its URL (e.g. https://replicate-proxy.<sub>.workers.dev)
+  into Settings → CORS proxy base URL below.
+
+  You may also use ANY other Replicate CORS proxy. If your proxy passes through
+  to api.replicate.com at the ROOT (i.e. {PROXY_BASE}/v1/predictions instead of
+  the /api/replicate-proxy/v1/ prefix), tick "proxy passes to /v1 directly" in
+  Settings and the app will adjust the path.
+
+  BACKEND CONTRACT (what this app sends)
+  ──────────────────────────────────────
+  1) CREATE PREDICTION
+       POST  {PROXY_BASE}{PREFIX}/predictions
+       Headers:
+         Authorization: Token <REPLICATE_API_TOKEN>
+         Content-Type:  application/json
+         Prefer:        wait                (optional sync hint; we still poll)
+       Body:
+         {
+           "version": "<DEMUCS_VERSION hash>",
+           "input": {
+             "audio": "<https URL or data: URI of the uploaded track>",
+             "stem":  "none",               // 'none' = return ALL stems
+             "output_format": "mp3"
+           }
+         }
+       → 201 with { id, status, urls:{get}, ... }
+
+  2) POLL PREDICTION
+       GET  {PROXY_BASE}{PREFIX}/predictions/<id>
+       Headers: Authorization: Token <token>
+       Repeat until status ∈ {succeeded, failed, canceled}.
+       On "succeeded", `output` is an object of stem-name → URL, e.g.
+         { "vocals": "...", "drums": "...", "bass": "...", "other": "..." }
+       (Demucs output shape can vary by version; the app renders whatever
+        keys come back and labels them.)
+
+  where  PREFIX = "/api/replicate-proxy/v1"   (this repo's Worker)
+              or "/v1"                          (a root pass-through proxy)
+
+  DEMUCS_VERSION (below) is a version hash from
+  https://replicate.com/ryan5453/demucs — UPDATE IT to the current hash shown
+  on that model page (click a version → copy the hash). The one hard-coded
+  here is a known-good historical value and may have been superseded.
+
+  PRIVACY: token + proxy + prefs live only in this browser's localStorage
+  (prefix "stemsplit_"). The audio file is read locally; in real mode it is
+  sent to Replicate via YOUR proxy using YOUR token. We (RHYTHMIX) never see,
+  store, or proxy any of it.
+═══════════════════════════════════════════════════════════════════════════════
+-->
+
+<style>
+  :root{
+    --bg:#0b0b14; --bg2:#11111f; --card:#15152a; --card2:#1b1b34;
+    --line:#272746; --line2:#34345e;
+    --txt:#eef0ff; --muted:#9aa0c4; --faint:#6b7099;
+    --brand:#7c5cff; --brand2:#16d6c9; --accent:#ff5ca8;
+    --ok:#34e0a1; --warn:#ffcf5c; --err:#ff6b6b;
+    --radius:18px; --radius-sm:12px;
+    --shadow:0 10px 40px rgba(0,0,0,.45);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,
+      "Apple Color Emoji","Segoe UI Emoji",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(22,214,201,.10), transparent 55%),
+      var(--bg);
+    color:var(--txt); font-family:var(--font);
+    -webkit-font-smoothing:antialiased; line-height:1.45;
+    padding:max(12px, env(safe-area-inset-top)) 12px calc(40px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:520px;margin:0 auto}
+
+  /* Header */
+  header.app{
+    border-radius:var(--radius);
+    background:linear-gradient(135deg,var(--brand) 0%, #5a3df0 45%, var(--accent) 130%);
+    padding:22px 20px 24px; position:relative; overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  header.app::after{
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(420px 180px at 85% 0%, rgba(255,255,255,.22), transparent 60%);
+    pointer-events:none;
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.16);
+    display:grid;place-items:center;backdrop-filter:blur(6px);flex:0 0 auto}
+  .logo svg{width:26px;height:26px;display:block}
+  .brand h1{font-size:22px;letter-spacing:.5px;margin:0;font-weight:800}
+  .brand .sub{margin:2px 0 0;font-size:12.5px;color:rgba(255,255,255,.86);font-weight:500}
+  .pillrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .pill{font-size:11px;font-weight:600;padding:5px 10px;border-radius:999px;
+    background:rgba(255,255,255,.16);color:#fff;backdrop-filter:blur(4px)}
+  .mode-pill{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 3px rgba(255,207,92,.22)}
+  .mode-live .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(52,224,161,.22)}
+
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-top:14px;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);
+    margin:0 0 12px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .card h2 .n{width:20px;height:20px;border-radius:6px;background:var(--brand);color:#fff;
+    font-size:12px;display:grid;place-items:center;font-weight:800}
+
+  label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 5px;font-weight:600}
+  input[type=text],input[type=password],input[type=url],select{
+    width:100%;padding:11px 12px;border-radius:var(--radius-sm);
+    background:var(--bg2);border:1px solid var(--line2);color:var(--txt);
+    font-size:14px;font-family:var(--font);outline:none;transition:border-color .15s, box-shadow .15s}
+  input:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(124,92,255,.22)}
+  .hint{font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.4}
+  .hint code{font-family:var(--mono);color:var(--brand2);font-size:11px}
+  .input-row{display:flex;gap:8px;align-items:stretch}
+  .input-row input{flex:1}
+  .field-check{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:12.5px;color:var(--muted);font-weight:600}
+  .field-check input{width:16px;height:16px;accent-color:var(--brand);flex:0 0 auto}
+
+  /* Buttons */
+  button{font-family:var(--font);cursor:pointer;border:none;border-radius:var(--radius-sm);
+    font-weight:700;font-size:14px;transition:transform .08s, filter .15s, opacity .15s}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .btn-primary{width:100%;padding:14px;color:#fff;
+    background:linear-gradient(135deg,var(--brand),#5a3df0 60%,var(--accent));
+    box-shadow:0 8px 24px rgba(124,92,255,.35)}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.07)}
+  .btn-ghost{padding:9px 12px;background:var(--card2);color:var(--txt);border:1px solid var(--line2)}
+  .btn-ghost:hover:not(:disabled){border-color:var(--brand)}
+  .btn-small{padding:8px 12px;font-size:12.5px}
+  .btn-row{display:flex;gap:8px;margin-top:12px}
+  .btn-row .btn-ghost{flex:1}
+
+  /* Dropzone */
+  .drop{border:2px dashed var(--line2);border-radius:var(--radius-sm);padding:26px 16px;
+    text-align:center;color:var(--muted);transition:border-color .15s,background .15s;cursor:pointer}
+  .drop.drag{border-color:var(--brand);background:rgba(124,92,255,.08)}
+  .drop .big{font-size:15px;color:var(--txt);font-weight:700;margin-bottom:4px}
+  .drop .small{font-size:12px;color:var(--faint)}
+  .file-chip{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;
+    background:var(--bg2);border:1px solid var(--line2);border-radius:var(--radius-sm)}
+  .file-chip .nm{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .file-chip .sz{font-size:11.5px;color:var(--faint)}
+  .file-chip audio{width:100%}
+  .file-audio{margin-top:10px;width:100%}
+
+  /* Status log */
+  .statuslog{font-family:var(--mono);font-size:11.5px;background:#0a0a13;border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:10px 12px;max-height:190px;overflow:auto;line-height:1.6;
+    white-space:pre-wrap;word-break:break-word}
+  .statuslog .l{display:block}
+  .statuslog .t{color:var(--faint)}
+  .log-info{color:var(--muted)} .log-ok{color:var(--ok)} .log-warn{color:var(--warn)}
+  .log-err{color:var(--err)} .log-step{color:var(--brand2);font-weight:700}
+
+  .progress{height:6px;background:var(--bg2);border-radius:999px;overflow:hidden;margin-top:12px}
+  .progress > i{display:block;height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,var(--brand),var(--brand2));transition:width .4s}
+  .progress.indet > i{width:40%;animation:slide 1.1s ease-in-out infinite}
+  @keyframes slide{0%{margin-left:-40%}100%{margin-left:100%}}
+
+  /* Stems */
+  .stems{display:grid;gap:10px}
+  .stem{background:var(--card2);border:1px solid var(--line2);border-radius:var(--radius-sm);padding:12px}
+  .stem .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .stem .ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;flex:0 0 auto}
+  .stem .lbl{font-weight:700;font-size:14px;text-transform:capitalize}
+  .stem .dl{margin-left:auto}
+  .stem audio{width:100%;height:38px}
+  .stem.vocals .ico{background:rgba(255,92,168,.18);color:#ff8ac4}
+  .stem.drums  .ico{background:rgba(255,207,92,.18);color:#ffd97a}
+  .stem.bass   .ico{background:rgba(22,214,201,.18);color:#5cf0e6}
+  .stem.other  .ico{background:rgba(124,92,255,.20);color:#b0a0ff}
+  .stem .badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:999px;
+    background:rgba(255,207,92,.16);color:var(--warn);margin-left:6px}
+
+  .notice{font-size:12.5px;border-radius:var(--radius-sm);padding:11px 12px;margin-top:12px;line-height:1.5}
+  .notice.warn{background:rgba(255,207,92,.10);border:1px solid rgba(255,207,92,.32);color:#ffe6a8}
+  .notice.demo{background:rgba(124,92,255,.10);border:1px solid rgba(124,92,255,.32);color:#cfc4ff}
+  .notice a{color:var(--brand2)}
+
+  details.help{margin-top:12px;border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--bg2);padding:0 12px}
+  details.help summary{cursor:pointer;padding:11px 0;font-size:12.5px;font-weight:700;color:var(--muted);list-style:none}
+  details.help summary::-webkit-details-marker{display:none}
+  details.help summary::before{content:"›";display:inline-block;margin-right:8px;transition:transform .15s;color:var(--brand)}
+  details.help[open] summary::before{transform:rotate(90deg)}
+  details.help .body{padding:0 0 12px;font-size:12px;color:var(--muted);line-height:1.6}
+  details.help code{font-family:var(--mono);font-size:11px;color:var(--brand2);background:#0a0a13;padding:1px 5px;border-radius:5px}
+  details.help ol{margin:6px 0;padding-left:20px}
+  details.help li{margin:4px 0}
+
+  /* Toast */
+  #toasts{position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;align-items:center;gap:8px;z-index:99;pointer-events:none}
+  .toast{pointer-events:auto;max-width:480px;width:calc(100% - 28px);padding:12px 14px;border-radius:12px;
+    font-size:13px;font-weight:600;color:#fff;box-shadow:var(--shadow);display:flex;gap:10px;align-items:flex-start;
+    animation:rise .22s ease;border:1px solid rgba(255,255,255,.12)}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .toast.info{background:#23234a}
+  .toast.ok{background:linear-gradient(135deg,#1f8f6a,#34e0a1)}
+  .toast.warn{background:linear-gradient(135deg,#8a6a18,#ffcf5c);color:#1a1400}
+  .toast.err{background:linear-gradient(135deg,#9b2b2b,#ff6b6b)}
+  .toast .x{margin-left:auto;opacity:.7;cursor:pointer;font-weight:800}
+
+  footer.fre{margin-top:18px;text-align:center;font-size:11.5px;color:var(--faint);line-height:1.7;
+    padding:14px 8px 0;border-top:1px solid var(--line)}
+  footer.fre b{color:var(--muted)}
+  footer.fre .sep{opacity:.4;margin:0 6px}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 100 100"><g fill="#fff">
+          <rect x="14" y="42" width="9" height="16" rx="4"/>
+          <rect x="31" y="30" width="9" height="40" rx="4"/>
+          <rect x="48" y="20" width="9" height="60" rx="4"/>
+          <rect x="65" y="34" width="9" height="32" rx="4"/>
+          <rect x="82" y="46" width="9" height="8" rx="4"/>
+        </g></svg>
+      </span>
+      <div>
+        <h1>STEMSPLIT</h1>
+        <p class="sub">AI stem separator · vocals · drums · bass · other</p>
+      </div>
+    </div>
+    <div class="pillrow">
+      <span class="pill mode-pill" id="modePill"><span class="dot"></span><span id="modeText">Demo mode</span></span>
+      <span class="pill">Demucs · Replicate</span>
+      <span class="pill">Bring your own key</span>
+    </div>
+  </header>
+
+  <!-- ░░ STEP 1 — UPLOAD ░░ -->
+  <section class="card" aria-labelledby="s1">
+    <h2 id="s1"><span class="n">1</span>Upload a track</h2>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an audio file">
+      <div class="big">Drop a song here</div>
+      <div class="small">or tap to choose · MP3, WAV, FLAC, M4A · up to ~50&nbsp;MB</div>
+    </div>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg,.aac" class="sr" />
+    <div id="fileChip" style="display:none">
+      <div class="file-chip">
+        <span class="nm" id="fileName">—</span>
+        <span class="sz" id="fileSize"></span>
+        <button class="btn-ghost btn-small" id="clearFile" type="button">Remove</button>
+      </div>
+      <audio id="srcAudio" class="file-audio" controls preload="metadata"></audio>
+    </div>
+  </section>
+
+  <!-- ░░ STEP 2 — SEPARATE ░░ -->
+  <section class="card" aria-labelledby="s2">
+    <h2 id="s2"><span class="n">2</span>Separate</h2>
+    <label for="outfmt">Output format</label>
+    <select id="outfmt">
+      <option value="mp3" selected>MP3 (smaller, fast)</option>
+      <option value="wav">WAV (lossless)</option>
+      <option value="flac">FLAC (lossless, compressed)</option>
+    </select>
+    <button class="btn-primary" id="goBtn" type="button" style="margin-top:14px">Separate stems</button>
+    <div class="btn-row">
+      <button class="btn-ghost" id="demoBtn" type="button">Run demo (no key)</button>
+      <button class="btn-ghost" id="cancelBtn" type="button" disabled>Cancel</button>
+    </div>
+    <div class="progress" id="progress" style="display:none"><i id="progBar"></i></div>
+    <div id="liveNotice"></div>
+  </section>
+
+  <!-- ░░ STEP 3 — STEMS ░░ -->
+  <section class="card" id="resultCard" aria-labelledby="s3" style="display:none">
+    <h2 id="s3"><span class="n">3</span>Your stems</h2>
+    <div class="stems" id="stems"></div>
+    <div id="demoBadgeNotice"></div>
+  </section>
+
+  <!-- ░░ STATUS LOG ░░ -->
+  <section class="card" aria-labelledby="slog">
+    <h2 id="slog"><span class="n">·</span>Status log</h2>
+    <div class="statuslog" id="statuslog" aria-live="polite"></div>
+  </section>
+
+  <!-- ░░ SETTINGS ░░ -->
+  <section class="card" aria-labelledby="sset">
+    <h2 id="sset">⚙︎ Settings (Bring your own key)</h2>
+
+    <label for="token">Replicate API token</label>
+    <div class="input-row">
+      <input id="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"
+        placeholder="r8_xxxxxxxxxxxxxxxxxxxxxxxx" />
+      <button class="btn-ghost btn-small" id="revealTok" type="button">Show</button>
+    </div>
+    <div class="hint">Get one at <code>replicate.com/account/api-tokens</code>. Stored only in this browser (localStorage). Sent only to Replicate via your proxy.</div>
+
+    <label for="proxy">CORS proxy base URL <span style="color:var(--warn)">(required for real separation)</span></label>
+    <input id="proxy" type="url" autocomplete="off" autocapitalize="off" spellcheck="false"
+      placeholder="https://replicate-proxy.&lt;your-subdomain&gt;.workers.dev" />
+    <label class="field-check" for="rootProxy">
+      <input id="rootProxy" type="checkbox" />
+      Proxy passes straight to <code style="font-family:var(--mono);color:var(--brand2)">/v1</code> (tick only for generic proxies; leave OFF for this repo's Worker)
+    </label>
+    <div class="hint">
+      Replicate blocks direct browser calls (CORS). You must deploy a proxy. This repo ships one at
+      <code>studio/workers/replicate-proxy</code> — run <code>wrangler deploy</code> there and paste its URL above.
+      The repo Worker exposes <code>/api/replicate-proxy/v1/*</code>; leave the checkbox unticked for it.
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" id="saveBtn" type="button">Save settings</button>
+      <button class="btn-ghost" id="clearBtn" type="button">Clear</button>
+    </div>
+
+    <details class="help">
+      <summary>How do I set this up? (1‑minute guide)</summary>
+      <div class="body">
+        <ol>
+          <li>Create a Replicate token at <code>replicate.com/account/api-tokens</code> and paste it above.</li>
+          <li>Deploy the proxy: from <code>studio/workers/replicate-proxy/</code> run <code>wrangler deploy</code>.</li>
+          <li>Copy the deployed URL (e.g. <code>https://replicate-proxy.you.workers.dev</code>) into the proxy field.</li>
+          <li>Open <code>replicate.com/ryan5453/demucs</code>, copy the current version hash, and (optionally) update <code>DEMUCS_VERSION</code> near the top of this file if separation 422s on version.</li>
+          <li>Tap <b>Save settings</b>, then <b>Separate stems</b>.</li>
+        </ol>
+        No proxy yet? Use <b>Run demo</b> to preview the full flow with your own file — no key needed.
+      </div>
+    </details>
+  </section>
+
+  <footer class="fre">
+    <b>Bring your own Replicate key</b><span class="sep">·</span>
+    Lifetime <b>$9.99</b> unlocks batch + presets<span class="sep">·</span>
+    Producers B2B
+    <div style="margin-top:8px;opacity:.7">STEMSPLIT — a RHYTHMIX tool · nothing stored on our servers</div>
+  </footer>
+</div>
+
+<div id="toasts" aria-live="assertive"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   STEMSPLIT app logic — single file, no dependencies.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── DEMUCS MODEL VERSION ──────────────────────────────────────────────────
+   This is a version hash for ryan5453/demucs on Replicate.
+   ⚠️  UPDATE ME to the current hash shown at:
+        https://replicate.com/ryan5453/demucs   (pick a version → copy hash)
+   If creating a prediction returns HTTP 422 "Invalid version", the hash below
+   has been superseded — grab the latest one and replace this constant.        */
+const DEMUCS_VERSION = "5a7041cc9b82e5a558fea6b3d7b12dea89625e89da33f0447bd727c2d0ab9e77";
+
+/* Proxy path prefixes (see the contract comment at top of file). */
+const PREFIX_REPO = "/api/replicate-proxy/v1"; // studio/workers/replicate-proxy
+const PREFIX_ROOT = "/v1";                      // generic pass-through proxy
+
+/* Polling/timeout tuning. */
+const POLL_INTERVAL_MS = 2500;
+const MAX_POLL_MS = 10 * 60 * 1000; // 10 minutes hard cap
+
+const LS = "stemsplit_";
+const STEM_ORDER = ["vocals", "drums", "bass", "other"];
+const STEM_ICON = { vocals: "🎤", drums: "🥁", bass: "🎸", other: "🎹", guitar: "🎸", piano: "🎹" };
+
+/* ── DOM refs ─────────────────────────────────────────────────────────── */
+const $ = (id) => document.getElementById(id);
+const els = {
+  drop: $("drop"), file: $("file"), fileChip: $("fileChip"), fileName: $("fileName"),
+  fileSize: $("fileSize"), clearFile: $("clearFile"), srcAudio: $("srcAudio"),
+  outfmt: $("outfmt"), goBtn: $("goBtn"), demoBtn: $("demoBtn"), cancelBtn: $("cancelBtn"),
+  progress: $("progress"), progBar: $("progBar"), liveNotice: $("liveNotice"),
+  resultCard: $("resultCard"), stems: $("stems"), demoBadgeNotice: $("demoBadgeNotice"),
+  statuslog: $("statuslog"),
+  token: $("token"), revealTok: $("revealTok"), proxy: $("proxy"), rootProxy: $("rootProxy"),
+  saveBtn: $("saveBtn"), clearBtn: $("clearBtn"),
+  modePill: $("modePill"), modeText: $("modeText"),
+};
+
+/* ── State ────────────────────────────────────────────────────────────── */
+let currentFile = null;
+let currentObjectUrl = null;
+let busy = false;
+let canceled = false;
+
+/* ════════════════ Toast helper ════════════════ */
+function toast(msg, kind = "info", ms = 4200) {
+  const t = document.createElement("div");
+  t.className = "toast " + kind;
+  t.innerHTML = `<span>${escapeHtml(msg)}</span><span class="x" aria-label="dismiss">✕</span>`;
+  t.querySelector(".x").onclick = () => t.remove();
+  $("toasts").appendChild(t);
+  if (ms) setTimeout(() => t.remove(), ms);
+}
+
+/* ════════════════ Status log ════════════════ */
+function log(msg, kind = "info") {
+  const line = document.createElement("span");
+  line.className = "l log-" + kind;
+  const ts = new Date().toLocaleTimeString();
+  line.innerHTML = `<span class="t">[${ts}]</span> ${escapeHtml(msg)}`;
+  els.statuslog.appendChild(line);
+  els.statuslog.scrollTop = els.statuslog.scrollHeight;
+}
+function logStep(msg) { log("▸ " + msg, "step"); }
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ════════════════ localStorage prefs ════════════════ */
+function loadPrefs() {
+  els.token.value = localStorage.getItem(LS + "token") || "";
+  els.proxy.value = localStorage.getItem(LS + "proxy") || "";
+  els.rootProxy.checked = localStorage.getItem(LS + "rootProxy") === "1";
+  els.outfmt.value = localStorage.getItem(LS + "outfmt") || "mp3";
+  if (!els.proxy.value) {
+    els.proxy.placeholder = "https://replicate-proxy.<your-subdomain>.workers.dev";
+  }
+  refreshMode();
+}
+function savePrefs(silent) {
+  localStorage.setItem(LS + "token", els.token.value.trim());
+  localStorage.setItem(LS + "proxy", els.proxy.value.trim());
+  localStorage.setItem(LS + "rootProxy", els.rootProxy.checked ? "1" : "0");
+  localStorage.setItem(LS + "outfmt", els.outfmt.value);
+  refreshMode();
+  if (!silent) { toast("Settings saved", "ok"); log("Settings saved to localStorage.", "ok"); }
+}
+function hasRealCreds() {
+  return !!els.token.value.trim() && !!els.proxy.value.trim();
+}
+function refreshMode() {
+  if (hasRealCreds()) {
+    els.modePill.classList.add("mode-live");
+    els.modeText.textContent = "Live · real Demucs";
+    els.goBtn.textContent = "Separate stems";
+    els.liveNotice.innerHTML = "";
+  } else {
+    els.modePill.classList.remove("mode-live");
+    els.modeText.textContent = "Demo mode";
+    els.goBtn.textContent = "Separate stems";
+    renderSetupNotice();
+  }
+}
+function renderSetupNotice() {
+  const needs = [];
+  if (!els.token.value.trim()) needs.push("a Replicate token");
+  if (!els.proxy.value.trim()) needs.push("a CORS proxy URL");
+  els.liveNotice.innerHTML =
+    `<div class="notice warn">⚠︎ To run <b>real</b> separation you still need ${needs.join(" and ")}.
+     Add ${needs.length > 1 ? "them" : "it"} in <b>Settings</b> below — or tap <b>Run demo</b> to preview the flow.
+     Replicate can't be called directly from a browser (CORS), so the proxy is required.</div>`;
+}
+
+/* ════════════════ File handling ════════════════ */
+function setFile(f) {
+  if (!f) return;
+  if (!/^audio\//.test(f.type) && !/\.(mp3|wav|flac|m4a|ogg|aac)$/i.test(f.name)) {
+    toast("That doesn't look like an audio file.", "warn");
+    log("Rejected non-audio file: " + f.name, "warn");
+    return;
+  }
+  currentFile = f;
+  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+  currentObjectUrl = URL.createObjectURL(f);
+  els.fileName.textContent = f.name;
+  els.fileSize.textContent = humanSize(f.size);
+  els.srcAudio.src = currentObjectUrl;
+  els.fileChip.style.display = "";
+  els.drop.querySelector(".big").textContent = "Track loaded — tap to replace";
+  log(`Loaded "${f.name}" (${humanSize(f.size)}).`, "ok");
+}
+function clearFile() {
+  currentFile = null;
+  if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; }
+  els.file.value = "";
+  els.fileChip.style.display = "none";
+  els.srcAudio.removeAttribute("src");
+  els.drop.querySelector(".big").textContent = "Drop a song here";
+  log("File cleared.", "info");
+}
+function humanSize(b) {
+  if (b < 1024) return b + " B";
+  if (b < 1048576) return (b / 1024).toFixed(0) + " KB";
+  return (b / 1048576).toFixed(1) + " MB";
+}
+function fileToDataUri(f) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error("Could not read file"));
+    r.readAsDataURL(f);
+  });
+}
+
+/* ════════════════ Proxy URL builder ════════════════ */
+function buildEndpoint(pathAfterV1) {
+  let base = els.proxy.value.trim().replace(/\/+$/, "");
+  const prefix = els.rootProxy.checked ? PREFIX_ROOT : PREFIX_REPO;
+  // If the user already pasted a base that ends in the prefix, don't double it.
+  let pfx = prefix;
+  if (base.endsWith(prefix)) pfx = "";
+  else if (base.endsWith("/v1") && prefix === PREFIX_ROOT) pfx = "";
+  return base + pfx + pathAfterV1;
+}
+
+/* ════════════════ Replicate calls (via proxy) ════════════════ */
+async function createPrediction(audioRef, outFmt) {
+  const url = buildEndpoint("/predictions");
+  logStep(`POST ${redact(url)}`);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": "Token " + els.token.value.trim(),
+      "Content-Type": "application/json",
+      "Prefer": "wait",
+    },
+    body: JSON.stringify({
+      version: DEMUCS_VERSION,
+      input: { audio: audioRef, stem: "none", output_format: outFmt },
+    }),
+  });
+  const text = await res.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (_) { /* non-JSON */ }
+  if (!res.ok) {
+    const detail = data.detail || data.error || text || ("HTTP " + res.status);
+    throw new HttpError(res.status, detail);
+  }
+  return data;
+}
+
+async function getPrediction(id) {
+  const url = buildEndpoint("/predictions/" + encodeURIComponent(id));
+  const res = await fetch(url, {
+    headers: { "Authorization": "Token " + els.token.value.trim() },
+  });
+  const text = await res.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (_) {}
+  if (!res.ok) {
+    const detail = data.detail || data.error || text || ("HTTP " + res.status);
+    throw new HttpError(res.status, detail);
+  }
+  return data;
+}
+
+class HttpError extends Error {
+  constructor(status, detail) { super(detail); this.name = "HttpError"; this.status = status; }
+}
+function redact(u) {
+  // Hide subdomain detail of the user's proxy in the visible log, keep the path.
+  try { const x = new URL(u); return x.origin.replace(/\/\/([^.]+)\./, "//•••.") + x.pathname; }
+  catch (_) { return u; }
+}
+
+/* ════════════════ Main: real separation ════════════════ */
+async function runSeparation() {
+  if (busy) return;
+  if (!currentFile) { toast("Choose an audio file first.", "warn"); return; }
+  if (!hasRealCreds()) {
+    toast("Missing token or proxy — running demo instead.", "warn");
+    renderSetupNotice();
+    return runDemo();
+  }
+
+  setBusy(true);
+  canceled = false;
+  clearStems();
+  showProgress(true, true);
+  log("──────── Real separation ────────", "info");
+
+  try {
+    // 1) Prepare the audio reference. Data URIs keep everything in-browser
+    //    (no third-party upload host needed); Replicate accepts them.
+    logStep("Encoding audio for upload…");
+    const sizeMb = currentFile.size / 1048576;
+    if (sizeMb > 50) {
+      log(`Heads up: file is ${sizeMb.toFixed(1)} MB. Large data URIs may be rejected by some proxies.`, "warn");
+    }
+    const audioRef = await fileToDataUri(currentFile);
+    log(`Encoded ${humanSize(currentFile.size)} as data URI.`, "ok");
+    if (canceled) return abortMsg();
+
+    // 2) Create the prediction.
+    logStep("Creating Demucs prediction on Replicate…");
+    const created = await createPrediction(audioRef, els.outfmt.value);
+    log(`Prediction created: id=${created.id || "?"}, status=${created.status || "?"}.`, "ok");
+    if (canceled) return abortMsg();
+
+    // 3) Poll until terminal.
+    const final = await pollUntilDone(created);
+    if (canceled) return abortMsg();
+
+    if (final.status === "succeeded") {
+      logStep("Separation succeeded.");
+      renderStems(final.output, false);
+      toast("Stems ready ✓", "ok");
+    } else {
+      const why = final.error || final.status;
+      throw new Error("Prediction " + (final.status || "failed") + (why ? ": " + why : ""));
+    }
+  } catch (err) {
+    handleError(err);
+  } finally {
+    showProgress(false);
+    setBusy(false);
+  }
+}
+
+async function pollUntilDone(pred) {
+  let status = pred.status;
+  let data = pred;
+  const getUrl = pred.urls && pred.urls.get;
+  const id = pred.id;
+  const started = Date.now();
+  let n = 0;
+
+  while (status === "starting" || status === "processing") {
+    if (canceled) return data;
+    if (Date.now() - started > MAX_POLL_MS) {
+      throw new Error("Timed out after " + Math.round(MAX_POLL_MS / 60000) + " min waiting for Replicate.");
+    }
+    await sleep(POLL_INTERVAL_MS);
+    if (canceled) return data;
+    n++;
+    try {
+      data = id ? await getPrediction(id) : await getPrediction(extractId(getUrl));
+    } catch (e) {
+      // Transient network blip — log and keep trying within the cap.
+      log("Poll error (will retry): " + (e.message || e), "warn");
+      continue;
+    }
+    status = data.status;
+    const elapsed = Math.round((Date.now() - started) / 1000);
+    log(`Poll #${n}: status=${status} (${elapsed}s elapsed)`, status === "processing" ? "info" : "info");
+  }
+  return data;
+}
+function extractId(getUrl) {
+  if (!getUrl) throw new Error("No prediction id or poll URL returned.");
+  const m = String(getUrl).match(/predictions\/([^/?#]+)/);
+  if (!m) throw new Error("Could not parse prediction id.");
+  return m[1];
+}
+
+/* ════════════════ Demo mode ════════════════ */
+async function runDemo() {
+  if (busy) return;
+  if (!currentFile) { toast("Choose an audio file first.", "warn"); return; }
+  setBusy(true);
+  canceled = false;
+  clearStems();
+  showProgress(true, false);
+  log("──────── DEMO mode (no real separation) ────────", "warn");
+  logStep("Demo: simulating the separation pipeline with your own file.");
+
+  const steps = [
+    "Encoding audio…",
+    "Submitting to (simulated) Demucs…",
+    "Modeling spectral masks…",
+    "Reconstructing stems…",
+  ];
+  for (let i = 0; i < steps.length; i++) {
+    if (canceled) { setBusy(false); showProgress(false); return abortMsg(); }
+    log(steps[i], "info");
+    setProgress(((i + 1) / (steps.length + 1)) * 100);
+    await sleep(650);
+  }
+  setProgress(100);
+  log("Demo complete. Showing your uploaded file as the placeholder 'other' stem.", "warn");
+
+  // Honest demo: only the user's own file, clearly labelled. No fake stems.
+  renderStems({ other: currentObjectUrl }, true);
+  toast("Demo done — connect Replicate for real stems", "info", 5200);
+  showProgress(false);
+  setBusy(false);
+}
+
+/* ════════════════ Render stems ════════════════ */
+function clearStems() {
+  els.stems.innerHTML = "";
+  els.demoBadgeNotice.innerHTML = "";
+  els.resultCard.style.display = "none";
+}
+function renderStems(output, isDemo) {
+  els.stems.innerHTML = "";
+  els.resultCard.style.display = "";
+
+  // Normalise output into [name, url] pairs. Demucs may return an object
+  // {vocals:url, drums:url,...} or an array; handle both defensively.
+  let pairs = [];
+  if (Array.isArray(output)) {
+    output.forEach((u, i) => pairs.push([STEM_ORDER[i] || ("stem " + (i + 1)), u]));
+  } else if (output && typeof output === "object") {
+    pairs = Object.entries(output).filter(([, v]) => typeof v === "string");
+  } else if (typeof output === "string") {
+    pairs = [["output", output]];
+  }
+
+  // Order known stems first.
+  pairs.sort((a, b) => {
+    const ia = STEM_ORDER.indexOf(a[0]); const ib = STEM_ORDER.indexOf(b[0]);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+
+  if (!pairs.length) {
+    els.stems.innerHTML = `<div class="notice warn">No stem URLs were returned. Check the status log and your Demucs version hash.</div>`;
+    return;
+  }
+
+  for (const [name, url] of pairs) {
+    const key = name.toLowerCase();
+    const cls = STEM_ORDER.includes(key) ? key : "other";
+    const ico = STEM_ICON[key] || "🎵";
+    const el = document.createElement("div");
+    el.className = "stem " + cls;
+    el.innerHTML = `
+      <div class="top">
+        <span class="ico">${ico}</span>
+        <span class="lbl">${escapeHtml(name)}</span>
+        ${isDemo ? '<span class="badge">DEMO</span>' : ''}
+        <a class="dl" href="${escapeAttr(url)}" download="${escapeAttr("stem-" + key)}">
+          <button class="btn-ghost btn-small" type="button">Download</button>
+        </a>
+      </div>
+      <audio controls preload="none" src="${escapeAttr(url)}"></audio>`;
+    els.stems.appendChild(el);
+  }
+
+  if (isDemo) {
+    els.demoBadgeNotice.innerHTML =
+      `<div class="notice demo">🧪 <b>Demo — connect your Replicate token for real separation.</b>
+       The single track above is just your uploaded file shown as the “other” placeholder.
+       No AI separation happened. Add a token + proxy in Settings to get genuine vocals / drums / bass / other stems.</div>`;
+  }
+  els.resultCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function escapeAttr(s) { return escapeHtml(s).replace(/`/g, "&#96;"); }
+
+/* ════════════════ Error handling ════════════════ */
+function handleError(err) {
+  console.error(err);
+  let msg = err && err.message ? err.message : String(err);
+  if (err instanceof HttpError) {
+    if (err.status === 401 || err.status === 403)
+      msg = "Auth failed (HTTP " + err.status + "). Check your Replicate token.";
+    else if (err.status === 422)
+      msg = "Invalid request (422). Likely the DEMUCS_VERSION hash is outdated — update it from replicate.com/ryan5453/demucs.";
+    else if (err.status === 404)
+      msg = "404 from proxy. Check the proxy URL and the /v1 prefix setting.";
+    else if (err.status === 429)
+      msg = "Rate limited (429). Wait a minute and retry.";
+    else msg = "HTTP " + err.status + ": " + err.message;
+  } else if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) {
+    msg = "Network/CORS error reaching the proxy. Is the proxy URL correct and deployed? Replicate cannot be called without it.";
+  }
+  log("ERROR: " + msg, "err");
+  toast(msg, "err", 6500);
+}
+function abortMsg() {
+  log("Canceled by user.", "warn");
+  toast("Canceled", "warn");
+  showProgress(false);
+  setBusy(false);
+}
+
+/* ════════════════ UI state helpers ════════════════ */
+function setBusy(b) {
+  busy = b;
+  els.goBtn.disabled = b;
+  els.demoBtn.disabled = b;
+  els.cancelBtn.disabled = !b;
+  els.goBtn.textContent = b ? "Working…" : "Separate stems";
+}
+function showProgress(show, indeterminate) {
+  els.progress.style.display = show ? "" : "none";
+  els.progress.classList.toggle("indet", !!indeterminate);
+  if (!show) setProgress(0);
+}
+function setProgress(pct) { els.progBar.style.width = Math.max(0, Math.min(100, pct)) + "%"; }
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+/* ════════════════ Wiring ════════════════ */
+els.drop.addEventListener("click", () => els.file.click());
+els.drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); els.file.click(); } });
+els.file.addEventListener("change", (e) => setFile(e.target.files[0]));
+els.clearFile.addEventListener("click", clearFile);
+
+["dragenter", "dragover"].forEach((ev) =>
+  els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.add("drag"); }));
+["dragleave", "drop"].forEach((ev) =>
+  els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.remove("drag"); }));
+els.drop.addEventListener("drop", (e) => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) setFile(f);
+});
+
+els.goBtn.addEventListener("click", runSeparation);
+els.demoBtn.addEventListener("click", runDemo);
+els.cancelBtn.addEventListener("click", () => { canceled = true; });
+
+els.saveBtn.addEventListener("click", () => savePrefs(false));
+els.clearBtn.addEventListener("click", () => {
+  ["token", "proxy", "rootProxy", "outfmt"].forEach((k) => localStorage.removeItem(LS + k));
+  els.token.value = ""; els.proxy.value = ""; els.rootProxy.checked = false; els.outfmt.value = "mp3";
+  refreshMode();
+  toast("Settings cleared", "info");
+  log("Settings cleared from localStorage.", "info");
+});
+els.revealTok.addEventListener("click", () => {
+  const showing = els.token.type === "text";
+  els.token.type = showing ? "password" : "text";
+  els.revealTok.textContent = showing ? "Show" : "Hide";
+});
+[els.token, els.proxy].forEach((el) => el.addEventListener("input", () => { savePrefs(true); }));
+els.rootProxy.addEventListener("change", () => savePrefs(true));
+els.outfmt.addEventListener("change", () => savePrefs(true));
+
+/* ════════════════ Init ════════════════ */
+loadPrefs();
+log("STEMSPLIT ready. " + (hasRealCreds() ? "Live mode — real Demucs separation." : "Demo mode — add a token + proxy in Settings for real separation."),
+    hasRealCreds() ? "ok" : "warn");
+log("Demucs version in use: " + DEMUCS_VERSION.slice(0, 12) + "… (update near top of file if 422).", "info");
+</script>
+</body>
+</html>
