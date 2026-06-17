@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08050d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Weight Tracker — weight monitoring with progress charts">
+  <title>Weight Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--canvas:#08050d;--bg:#0f0d18;--muted:#a0a0b0;--text:#f5f0e8;--gold:#f5c000;--orange:#ff9500}
+    html,body{width:100%;height:100%;background:var(--canvas);color:var(--text);font-family:-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+    #app{height:100dvh;display:flex;flex-direction:column;z-index:1}
+    .header{padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between}
+    .logo{font-weight:700;font-size:18px;background:linear-gradient(120deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .content{flex:1;overflow-y:auto;padding:16px 20px;padding-bottom:calc(72px + env(safe-area-inset-bottom,16px))}
+    .stat-card{background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:12px}
+    .stat-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+    .stat-value{font-size:32px;font-weight:900;color:var(--gold)}
+    .stat-meta{font-size:12px;color:var(--muted);margin-top:6px}
+    .chart{width:100%;height:100px;margin-top:8px;display:flex;align-items:flex-end;gap:4px;background:rgba(255,255,255,.02);border-radius:10px;padding:8px}
+    .bar{flex:1;background:linear-gradient(180deg,var(--gold),var(--orange));border-radius:4px;min-height:10px}
+    .form-group{margin-bottom:12px}
+    .form-label{font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block}
+    .form-input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--text);font-size:14px;outline:none}
+    .btn{width:100%;padding:12px;background:linear-gradient(120deg,var(--gold),var(--orange));border:none;border-radius:10px;color:#000;font-weight:700;cursor:pointer;font-size:14px;margin-top:8px}
+    .entries{margin-top:12px}
+    .entry{background:var(--bg);border-left:4px solid var(--gold);border-radius:10px;padding:10px;margin-bottom:8px;font-size:12px}
+    .entry-weight{font-weight:600;font-size:16px}
+    .entry-date{color:var(--muted);font-size:11px;margin-top:2px}
+    .entry-change{color:var(--orange);font-size:11px;margin-top:2px}
+    .tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(8,5,13,.95);border-top:1px solid rgba(255,255,255,.07);display:flex;height:72px;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;gap:4px;font-weight:600}
+    .tab.active{color:var(--gold)}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">⚖️ Weight Tracker</div>
+    <div style="font-size:12px;color:var(--muted)">FREE</div>
+  </div>
+  <div class="content">
+    <div class="stat-card">
+      <div class="stat-title">Current Weight</div>
+      <div class="stat-value" id="current">—</div>
+      <div class="stat-meta" id="meta">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Progress (Last 30 Days)</div>
+      <div class="stat-value" id="change">—</div>
+      <div class="chart" id="chart"></div>
+    </div>
+    <div class="stat-card">
+      <div class="form-label">Log Weight</div>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" id="weight" type="number" placeholder="e.g., 75.5" step="0.1" style="flex:1">
+        <button class="btn" onclick="addWeight()" style="flex:0;width:auto;padding:10px 16px;margin:0">+</button>
+      </div>
+    </div>
+    <div class="entries" id="entries"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active">📊 Log</button>
+    <button class="tab">📈 Trend</button>
+  </div>
+</div>
+
+<script>
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+  let entries=[];
+
+  function load(){
+    const s=localStorage.getItem('weight');
+    entries=s?JSON.parse(s):[];
+    updateUI();
+  }
+
+  function save(){
+    localStorage.setItem('weight', JSON.stringify(entries));
+  }
+
+  function addWeight(){
+    const w=parseFloat(document.getElementById('weight').value);
+    if(!w||w<30||w>300){alert('Invalid weight');return;}
+    entries.push({weight:w,date:new Date().toISOString()});
+    document.getElementById('weight').value='';
+    save();
+    updateUI();
+  }
+
+  function updateUI(){
+    if(!entries.length){
+      document.getElementById('current').textContent='—';
+      document.getElementById('meta').textContent='Log a weight to start';
+      return;
+    }
+
+    const sorted=entries.sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const curr=sorted[0].weight;
+    const prev=sorted[1]?.weight||curr;
+    const change=curr-prev;
+    const changeStr=change>0?`+${change.toFixed(1)} kg`:`${change.toFixed(1)} kg`;
+
+    document.getElementById('current').textContent=`${curr.toFixed(1)} kg`;
+    document.getElementById('meta').textContent=changeStr;
+    document.getElementById('change').textContent=changeStr;
+
+    const last30=entries.filter(e=>new Date(new Date()-30*86400*1000)<new Date(e.date));
+    const min=Math.min(...last30.map(e=>e.weight));
+    const max=Math.max(...last30.map(e=>e.weight));
+    const range=max-min||1;
+
+    document.getElementById('chart').innerHTML=last30.slice(-14).map(e=>{
+      const h=((e.weight-min)/range)*100;
+      return `<div class="bar" style="height:${Math.max(10,h)}%"></div>`;
+    }).join('');
+
+    document.getElementById('entries').innerHTML=sorted.slice(0,10).map((e,i)=>{
+      const d=new Date(e.date);
+      const prev=sorted[i+1];
+      const diff=prev?e.weight-prev.weight:0;
+      const diffStr=diff>0?`+${diff.toFixed(1)}`:`${diff.toFixed(1)}`;
+      return `<div class="entry"><div class="entry-weight">${e.weight.toFixed(1)} kg</div><div class="entry-date">${d.toLocaleDateString()}</div><div class="entry-change">${prev?diffStr:''}</div></div>`;
+    }).join('');
+  }
+
+  load();
+</script>
+</body>
+</html>
