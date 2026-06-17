@@ -46,6 +46,9 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 - **Offline AI Data Stack** — Local data lake + zero-ETL + lineage + version control; supports Gemma, Claude, free
 - **Turbo-OCR** — C++/CUDA rewrite of PaddleOCR; RTX 5090: 15 FPS → 100+/1000+ FPS; open-source on GitHub
 
+#### Security
+- **AgentShield** (`agentshield.md`) — Security scanner for `.claude/` configs; 102 rules / 5 categories (secrets, permissions, hooks, MCP, agents), A–F grade, SARIF + GitHub Action + supply-chain + Opus adversarial analysis. `runtimeConfidence` separates active config from template/doc examples. **First scan of this repo: D (58/100), 0 critical** — see `docs/security/agentshield-findings.md` (most findings are FleetView platform files / false positives; one real item = missing PreToolUse hook)
+
 #### Web Frameworks (reference)
 - **Wasabi** (`wasabi-http-framework.md`) — ⚠️ Archived Kotlin/Netty HTTP framework, merged into Ktor. Design reference only (typed interceptor positions, multi-source content negotiation); use Ktor for any JVM service
 
