@@ -1,0 +1,392 @@
+# Ruflo CLI Changelog
+
+Release notes for the `@claude-flow/cli`, `claude-flow`, and `ruflo` packages, tracking fixes, infrastructure improvements, and security baselines.
+
+---
+
+## v3.10.46
+
+**Subject:** Stale MCP key detection + autopilot/browser/wasm-agent tool restoration
+
+### Fixes
+
+**#2369 — Legacy MCP key detection + Scenario A warning**
+
+If a user's project directory had an `.mcp.json` from a pre-rename install (pre-`ruflo` rename), `writeMCPConfig` was early-returning with a generic skipped message. The user was left with an MCP server pointing to a pre-rename build, missing autopilot, browser, wasm-agent, and other current tools, with zero indication of the problem.
+
+**Fix:** `writeMCPConfig` now parses the existing file, detects stale keys (`claude-flow@alpha`, `claude-flow@v3alpha`), and surfaces:
+
+```
+.mcp.json (existing file uses deprecated key 'claude-flow@alpha' —
+autopilot/browser/wasm-agent tools will be missing; delete .mcp.json
+and re-run, or re-run with --force to overwrite)
+```
+
+Also fixed Scenario B: `detectExistingRufloMCP` now recognizes both legacy keys (`claude-flow`, `claude-flow@alpha`, `claude-flow@v3alpha`) and `ruflo` in both top-level and project-scoped registration paths.
+
+**#2370 — swarm.ts MCP-down hint**
+
+Failure hint changed from:
+```
+claude mcp add claude-flow npx claude-flow@v3alpha mcp start
+```
+
+To:
+```
+claude mcp add claude-flow -- npx -y ruflo@latest mcp start
+```
+
+The `--` separator avoids `claude-mcp` flag ambiguity; the `-y` forces a fresh fetch so `npx` doesn't pick a stale local install.
+
+**#2371 — ContainerWorkerPool worker spawn**
+
+`buildWorkerCommand()` was returning `['npx', 'claude-flow@v3alpha', 'daemon', 'trigger', ...]`. Two problems: the deprecated dist-tag, and the missing `-y` meaning `npx` could silently fall back to any locally-installed `claude-flow` without fetching the published version.
+
+**Fix:** Now returns `['npx', '-y', 'ruflo@latest', 'daemon', 'trigger', ...]`.
+
+### Tests
+
+- `v3/@claude-flow/cli/__tests__/stale-mcp-key-2369.test.ts` — 10 tests pinning all three runtime contracts, plus a comment-stripped sanity sweep over `cli/src/` to prevent future re-introduction of deprecated dist-tags.
+- All 11 existing init-wizard-bugs tests still pass.
+
+### Packages
+
+| Package | Old | New |
+|---------|-----|-----|
+| @claude-flow/cli | 3.10.45 | 3.10.46 |
+| claude-flow | 3.10.45 | 3.10.46 |
+| ruflo | 3.10.45 | 3.10.46 |
+
+---
+
+## v3.10.45
+
+**Subject:** hive-mind `--dangerously-skip-permissions` and `--no-auto-permissions` flag handling
+
+### Fixes
+
+**#2269 — Complete flag predicate**
+
+The arg parser converts kebab-case CLI flags to camelCase and stores only the normalized key. The original predicate in `hive-mind.ts` read only the kebab form for both activation and deny halves:
+
+- `--dangerously-skip-permissions` silently no-op'd
+- `--no-auto-permissions` silently no-op'd
+
+PR #2301 (JOhnsonKC201's branch) fixed the activation half by accepting both kebab + camelCase keys, but the deny half was incomplete: the parser does NOT produce `noAutoPermissions: true` for `--no-auto-permissions` — it uses yargs-style negation and stores `autoPermissions: false`.
+
+**Complete fix:**
+
+```typescript
+const skipPermissions =
+  (flags['dangerously-skip-permissions'] === true || flags.dangerouslySkipPermissions === true) &&
+  !(flags['no-auto-permissions'] || flags.noAutoPermissions || flags.autoPermissions === false);
+```
+
+### Tests
+
+- Parser produces `autoPermissions: false` for `--no-auto-permissions`
+- Predicate denies on the parser-produced shape `{ dangerouslySkipPermissions: true, autoPermissions: false }`
+- `autoPermissions: true` is NOT a deny signal (only `=== false` is)
+- Test suite: 9/9 pass. Closes #2269.
+
+### Credits
+
+- @JOhnsonKC201 (original PR #2301)
+- @rvrheenen (reporter who supplied the patch)
+
+### Packages
+
+| Package | Old | New |
+|---------|-----|-----|
+| @claude-flow/cli | 3.10.44 | 3.10.45 |
+| claude-flow | 3.10.44 | 3.10.45 |
+| ruflo | 3.10.44 | 3.10.45 |
+
+---
+
+## v3.10.43
+
+**Subject:** Model parameter validation, model slug updates, daemon lifecycle, federation plugin constraints
+
+### Fixes
+
+**#2357 — callAnthropicMessages() temperature parameter rejection**
+
+`callAnthropicMessages()` always sent `temperature` (default 0.7), but Fable 5, Opus 4.8, and Opus 4.7 removed `temperature` / `top_p` / `top_k`. Every request returned:
+
+```
+400 invalid_request_error: temperature: Extra inputs are not permitted
+```
+
+Invisible on Claude-Max (no key → provider check short-circuits before fetch); fatal on a raw `ANTHROPIC_API_KEY`.
+
+**Fix:** New `modelRejectsSamplingParams(model)` predicate gates the field. Sonnet 4.6 / Haiku 4.5 / Opus ≤ 4.6 unchanged.
+
+Credits: @HF-teamdev (first-time contributor with file:line-cited finding map).
+
+**#2365 — OpenRouter slugs refreshed to current 4.x family**
+
+The OpenAI-compat path still referenced Oct-2025 retired model IDs:
+
+```
+default model:     anthropic/claude-3.5-sonnet → anthropic/claude-sonnet-4-6
+haiku alias:       anthropic/claude-3.5-haiku → anthropic/claude-haiku-4-5
+sonnet/inherit:    anthropic/claude-3.5-sonnet → anthropic/claude-sonnet-4-6
+opus alias:        anthropic/claude-3-opus → anthropic/claude-opus-4-8
+```
+
+`OPENROUTER_DEFAULT_MODEL` still wins for callers who want to pin a specific slug.
+
+**#2361 — daemon self-terminating TTL + global status + HNSW/init footguns**
+
+The daemon ran interval workers (audit ~30m, optimize/testgaps ~60m, …) forever, each spawning a headless `claude --print` sweep. Audited evidence traced quota burn to 6 immortal daemons (oldest 19 days) and recurrence to 17 per-project daemons (34,533 total worker runs — ~94% of token spend was background machinery).
+
+**Fix:** Self-terminating TTL, idle shutdown, daemon `status --all` (global, not just current workspace), honest HNSW reporting, init footgun guards.
+
+Credits: @shaal (community PR addressing @pacphi's ruflo-machine-ref investigation).
+
+**#2364 — federation plugin: cap agentic-flow peer to <2.0.13**
+
+Upstream `agentic-flow@2.0.13` dropped the `./transport/loader` subpath. Runtime impact was bounded — `midstream-aware-loader.ts` wraps the dynamic import in try/catch and falls back to midstream-native — but the peer range previously said `>=2.0.12-fix.8` and silently accepted 2.0.13.
+
+**Fix:** Tightened to `>=2.0.12-fix.8 <2.0.13` so `npm install` warns about the incompat instead of hiding it behind a silent fallback.
+
+### Still Open
+
+**Finding B (Fable routing tier RFC, PR #2359)** — behavior-neutral, 21/21 tests green, awaiting maintainer decision before the June 22 Max-plan API-credits window.
+
+### Packages
+
+| Package | Old | New |
+|---------|-----|-----|
+| @claude-flow/cli | 3.10.42 | 3.10.43 |
+| claude-flow | 3.10.42 | 3.10.43 |
+| ruflo | 3.10.42 | 3.10.43 |
+
+---
+
+## v3.10.42
+
+**Subject:** Windows path validation, trajectory feedback distillation, init hooks configuration
+
+### Fixes
+
+**#2352 — hooks post-edit: Windows paths rejected, failure printed as [OK]**
+
+`validatePath` used the general `SHELL_META` set which includes `\`, so every absolute Windows path (`E:\Repos\…`) failed with "shell metacharacters". Claude Code hook events deliver absolute paths in `tool_input.file_path`, so every forwarded post-edit call failed silently on Windows.
+
+The CLI action printed `[OK] Outcome recorded for …` whenever the MCP call returned at all, masking the failure.
+
+**Fix:** Now checks `result.success`, surfaces the error, and exits non-zero. Windows paths accepted; POSIX paths, shell metacharacters, and traversal attacks still rejected.
+
+**#2351 — trajectory-end: step-less feedback never distilled**
+
+When `trajectory-end` is called with feedback but no recorded steps (the common LLM-agent case), the feedback was persisted with the trajectory but never embedded as a searchable pattern — `patternsExtracted` always reported 0 and pattern-search never surfaced it.
+
+**Fix:** Routes the trimmed feedback through `bridge.bridgeStorePattern` (or store-fallback) with modest default confidence, tagged `trajectory-feedback`. New `feedbackDistilled.{patternId, controller}` field on the response.
+
+**#2350 — init hooks: subcommand wrote no hooks block to settings.json**
+
+The settings generator gates the `hooks` block on `components.helpers` (the hook commands point at the helper script). The `init hooks` subcommand had `helpers: false`, so the one subcommand whose purpose is "Initialize only hooks configuration" produced `settings.json` with no `hooks` key while reporting "N hooks enabled".
+
+**Fix:** Helpers now ship with the subcommand.
+
+### Tests
+
+- `validate-input-path-2352.test.ts` — 22 tests pinning Windows-path acceptance, POSIX still works, all shell metacharacters and traversal still rejected.
+- All existing validate-input, init-wizard-bugs, hooks-intelligence-learning, hooks-post-task tests still pass.
+
+### Packages
+
+| Package | Old | New |
+|---------|-----|-----|
+| @claude-flow/cli | 3.10.41 | 3.10.42 |
+| claude-flow | 3.10.41 | 3.10.42 |
+| ruflo | 3.10.41 | 3.10.42 |
+
+---
+
+## v3.10.41
+
+**Subject:** Statusline CPU efficiency, process lifecycle, session file atomicity
+
+### Fixes
+
+**#2337 — fix(statusline): resolve installed CLI bin + bump cache TTL 10s→60s**
+
+The statusline was calling `npx --yes @claude-flow/cli@latest hooks statusline --json` on every render — the `@latest` tag forced npm registry re-resolution per call. With ~6 concurrent sessions on a 12-core box: load average 40–65, each `npm exec` consuming 55–90% of a core.
+
+**Fix:** New `resolveCliBin()` finds an installed `bin/cli.js` (project / monorepo / plugin marketplace / global node_modules — covers `~/.npm-global` and similar custom-prefix layouts) and invokes it via `process.execPath` directly. Falls back to `npx --prefer-offline @claude-flow/cli` (no `@latest`) when nothing's installed. Cache TTL 10s→60s. Applied to both the dogfood helper and the ruflo init generator template.
+
+Credits: @shaal (detailed report with %CPU measurements).
+
+**#2297 — fix(hive-mind): await spawned claude before returning**
+
+The parent process exited immediately after `spawn`, the child claude lost its controlling terminal mid-init, and the terminal's capability-query response leaked onto the next shell prompt.
+
+**Fix:** `spawnClaudeCodeInstance()` now awaits the child's exit (or error) before returning. The existing `claudeProcess.on('exit', …)` log lines actually print now, and the non-interactive (`-p` / `--non-interactive`) path completes only after Claude Code does.
+
+Credits: @clement-livdeo (XTVERSION-on-prompt diagnostic that nailed the root cause).
+
+**#2307 — fix(session): atomic writes to current.json + corrupted-file self-heal**
+
+Per-fd-offset semantics in `writeFileSync` meant a shorter payload could overwrite the start of a longer one without shrinking the file, leaving the longer payload's tail dangling past the end (valid JSON + trailing garbage).
+
+**Fix:** All 5 session-file writes go through a new `atomicWrite()` (temp file + rename()). `restore()` wraps `JSON.parse` in try/catch so existing corrupt files self-heal by starting a fresh session instead of throwing.
+
+Credits: @BIWizzard (diff highlighting the same class as #1707 / #1637 which were fixed elsewhere).
+
+### Infrastructure
+
+**ADR-147 — Nested subagent depth=5 integration (PR #2336)**
+
+Captures Boris Cherny's nested-subagent announcement with full empirical block, the ruflo agent files (8 new agents + 1 skill) that opt into nested spawning via `tools: [Task, …]`, P2 stage 1 (CLI flags + MCP schema for capturing `parent_agent_id` in the post-task hook), and a regression probe in `scripts/probe-nested-spawn-depth.mjs`.
+
+**Empirically determined:** Declaring `tools: [Task]` in YAML is necessary but not sufficient in CLI 2.1.169 — the runtime applies a hardcoded denylist that strips Task at parent→child spawn time. Documented in the ADR with the spawn-tree for when the upstream denylist lifts.
+
+**Security baseline (PR #2340)**
+
+`docs/security/socket-baseline.md` documents every category in the Socket.dev alert page for `claude-flow@3.10.40` — what's protected by root overrides, what's not cleanly fixable from inside claude-flow (consumer-side npm overrides only apply at the dep-tree root), what's inherent to a CLI agent platform (filesystem/network/shell access etc.), and the false positives (Socket's "did you mean z-schema?" suggestion against zod). Also removes the broken `pages.yml` workflow that had failed 10+ consecutive runs.
+
+### Still Open
+
+- **#2305** — embedding model/dimension ignored at runtime (architectural; awaiting reporter's config-chain design as PR)
+- **#2296** — 7 controllers null from version skew between @claude-flow/memory@3.0.0-alpha.19 and agentdb@3.0.0-alpha.16 (needs coordinated package republish)
+
+### Packages
+
+| Package | Old | New |
+|---------|-----|-----|
+| @claude-flow/cli | 3.10.40 | 3.10.41 |
+| claude-flow | 3.10.40 | 3.10.41 |
+| ruflo | 3.10.40 | 3.10.41 |
+
+---
+
+## v3.10.38
+
+**Subject:** Security build integrity, Ed25519 signature verification, CI heap allocation
+
+### Fixes
+
+**#2311 — @claude-flow/security standalone TypeScript build**
+
+`integrity-verifier.ts` imported `@noble/ed25519` but the dep was never declared on the package itself (root override didn't propagate — same lesson as #2112). Added directly to `v3/@claude-flow/security/package.json`. Unblocks the ToolOutputGuardrail smoke (ADR-131) job and the broader pipeline outage tracked in #2275.
+
+**#2274 — verify.mjs crashed on @noble/ed25519 v2**
+
+`verify.mjs:175` unconditionally assigned `ed.etc.sha512Sync`; on the v2 patch releases that freeze `etc`, this throws `TypeError: Cannot add property sha512Sync, object is not extensible` and skips every signature check.
+
+**Fix:** Wrapped in `if (!ed.etc.sha512Sync)` plus a try/catch — `sha512Sync` is already wired internally on v2, so the shim is only needed on v1.
+
+**Validated against macOS, Linux, and Windows manifests on this checkout:** Ed25519 signature valid: yes on all three, regressed=0 missing=0.
+
+**#2312 — smoke-trajectory-graph-edges.mjs OOM**
+
+TEST 2's post-task chain (intelligence.recordTrajectory → @ruvector/ruvllm SonaCoordinator) blew past the default 4 GB heap, causing exit 134.
+
+**Fix:** Bumped `NODE_OPTIONS=--max-old-space-size=6144` on the CI step so the job completes. The underlying allocation profile in @ruvector/ruvllm is tracked as a follow-up.
+
+### Not in This Release
+
+- **#2286** — `npx @claude-flow/cli@alpha --version` 60s timeout is install-bandwidth + postinstall, not CLI startup. The `--version` fast-path has been in place since 3.10.33 and exits before any heavy import. Verification harness measures cold `npx -y` which includes downloading the tarball + 300+ deps — nothing to fix in code.
+- **#2319** — `agentic-flow ./transport/loader` export missing is an upstream issue (ruvnet/agentic-flow#153, plus a broken `@fix` dist-tag install). Cannot be fixed from this side until upstream lands the loader export in the stable `^2` release.
+
+### Packages
+
+| Package | Old | New |
+|---------|-----|-----|
+| @claude-flow/security | 3.0.0-alpha.8 | 3.0.0-alpha.10 |
+| @claude-flow/cli | 3.10.37 | 3.10.38 |
+| claude-flow | 3.10.37 | 3.10.38 |
+| ruflo | 3.10.37 | 3.10.38 |
+
+Note: `@claude-flow/cli`'s `@claude-flow/security` dep now pins `^3.0.0-alpha.10` so wrapper users pick up the security fixes automatically.
+
+---
+
+## @claude-flow/memory v3.0.0-alpha.20
+
+**Subject:** Entity arm + signal provenance in hybridSearch controller
+
+### Features
+
+**Entity-tagger extractor**
+
+`entity-tagger.ts` — regex extractor for:
+- Emails
+- URLs
+- File paths (POSIX + Windows)
+- Quoted phrases
+- Proper-noun 2-grams
+
+Deliberately conservative: false negatives OK, false positives would dilute RRF (reciprocal rank fusion).
+
+**hybridSearch three-arm parallel execution**
+
+`hybridSearch` now runs in parallel:
+1. Dense (vector embedding)
+2. Sparse (BM25 keyword match)
+3. Entity (per-token keyword scan, gated on `extractEntities(query).length > 0`)
+
+Empty entity set drops the arm rather than passing `[]` to dilute fusion.
+
+**Signal provenance**
+
+`('vector' | 'bm25' | 'entity')[]` on every fused result. Computed by pre-fusion set membership; lets callers debug which arms surfaced an entry without re-running the search.
+
+### Capability Smoke Test
+
+Corpus: 30 generic "authentication" entries + 1 "Alice Smith" needle.  
+Query: `"Alice Smith authentication"`:
+
+```
+score=0.0477  signals=["vector","bm25","entity"]  key=alice-needle      ← #1
+score=0.0323  signals=["vector","bm25"]           key=generic-1
+score=0.0323  signals=["vector","bm25"]           key=generic-0
+score=0.0313  signals=["vector","bm25"]           key=generic-3
+score=0.0301  signals=["vector","bm25"]           key=generic-2
+```
+
+Alice ranks #1 with full triplet provenance — runners-up only fire on vector + sparse. ~47% RRF score boost from the entity signal.
+
+### Tests
+
+- 12 new `entity-tagger.test.ts` (regex pinning — generic prose returns empty, and/or → empty, "a" over "b" → empty, single capitalized words → empty)
+- 2 new `graceful-retrieval.test.ts` ADR-147 assertions (signal provenance on every fused result; needle-in-haystack)
+- Full memory suite: 416/420 (4 pre-existing Windows-env failures in agent-memory-scope, auto-memory-bridge, benchmark — untouched files)
+
+### What This Implements vs the Dream-Cycle ADR
+
+ADR-147 split the work as P1 "wire FTS5 + RRF fusion" and P2 "entity arm + provenance". Investigation found P1 was already shipped in `controller-registry.ts:713` before the ADR was filed — `applyRRF(k=60)` + `applyMMR(λ=0.7)` over dense + sparse was already in. **This release lands the actual gap, P2.**
+
+### Out of Scope (Follow-ups)
+
+- **Dedicated SQL entity index** — current per-entity `searchKeyword` calls are fine for typical query entity counts (1–3); unbounded if a query mentions 20+. A future ADR can add an `entity_index` table for hard-bound latency.
+- **Async writes by default (ADR-147 P3)** — orthogonal; consolidator already handles HNSW background rebuild.
+- **LoCoMo benchmark publication (ADR-147 P4)** — needs harness wiring + dataset access; separate workstream.
+
+### Packages
+
+| Package | Old | New |
+|---------|-----|-----|
+| @claude-flow/memory | 3.0.0-alpha.19 | 3.0.0-alpha.20 |
+| @claude-flow/cli | 3.10.38 | 3.10.39 |
+| claude-flow | 3.10.38 | 3.10.39 |
+| ruflo | 3.10.38 | 3.10.39 |
+
+Note: `@claude-flow/cli`'s `@claude-flow/memory` dep pinned to `^3.0.0-alpha.20` so wrapper users get the entity arm automatically. `v3/pnpm-lock.yaml` regen included (lesson from #2311 — bumping a workspace dep without lockfile regen breaks `pnpm install --frozen-lockfile`).
+
+---
+
+## Installation / Upgrade
+
+```bash
+npx ruflo@latest init
+# or
+npx claude-flow@latest
+# or
+npm install @claude-flow/cli@latest
+```
+
+All three packages available across all dist-tags (`latest`, `alpha`, `v3alpha`).
