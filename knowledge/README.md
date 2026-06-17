@@ -78,10 +78,13 @@ knowledge/
 
 1. **SEO Machine's skill library** — 26 marketing skills in modular registry
 2. **Carousel Generator** — Multi-platform carousel assets as core capability (Threads, Instagram, LinkedIn, TikTok, Stories); 880 style combinations enable brand consistency
-3. **Polymarket's AI screenshot** — Unexpected high-value feature; build it first, monetize later
-4. **Anthropic's enterprise model** — 70-75% revenue from API; focus on B2B
-5. **Turbo-OCR batch processing** — Offline, no real-time requirement; batch > streaming for cost/throughput
-6. **GLM-5.1's task persistence** — 8-hour continuous work; Mary should sustain campaign generation across sessions
+3. **Kimi CLI's agent architecture** — Terminal-first + IDE integration; MCP tool orchestration; Ctrl-X shell toggle for hybrid workflows
+4. **Polymarket's AI screenshot** — Unexpected high-value feature; build it first, monetize later
+5. **Anthropic's enterprise model** — 70-75% revenue from API; focus on B2B
+6. **Turbo-OCR batch processing** — Offline, no real-time requirement; batch > streaming for cost/throughput
+7. **GLM-5.1's task persistence** — 8-hour continuous work; Mary should sustain campaign generation across sessions
+
+**Orchestration Pattern:** Kimi CLI as meta-orchestrator (handles general dev tasks), Nucleus/Mary as specialized neuromarketing generator (video + carousel + scoring pipeline).
 
 ## For One-Person Builders
 

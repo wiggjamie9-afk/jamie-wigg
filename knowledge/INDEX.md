@@ -31,6 +31,7 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 #### Agent Development Frameworks
 - **Superpowers** — Coding agent skill framework; spec → plan → execution; supports Claude Code, Cursor, Codex
 - **GitNexus** — Graph RAG agent for code analysis; browser-based knowledge graph; zero-server
+- **Kimi CLI** — Terminal-first AI agent + shell (Moonshot AI); Ctrl-X toggle agent ↔ shell; VS Code/ACP/Zsh integration; 100+ MCP tools support
 - **Andrej Karpathy Skills** — CLAUDE.md config fixing LLM coding errors; 4 core principles (think first, simplicity, precise edits, goal-driven)
 
 #### Data & Analysis

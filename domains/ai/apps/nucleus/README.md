@@ -133,7 +133,9 @@ HERMES_MODEL=minimax/MiniMax-M1-80k
 HERMES_BASE_URL=https://openrouter.io/api/v1
 ```
 
-## Future: Hermes Migration
+## Alternative Runtimes
+
+### Hermes Agent (Optional Future Migration)
 
 Current architecture uses Pydantic AI. Optional migration to Hermes Agent harness:
 
@@ -144,6 +146,22 @@ Current architecture uses Pydantic AI. Optional migration to Hermes Agent harnes
 5. **Subagent delegation** for parallel variant generation
 
 **Migration Effort:** 2-3 days. See parent repo MCP evaluation for details.
+
+### Kimi CLI (Complementary Agent)
+
+**Kimi CLI** (Moonshot AI) can orchestrate Nucleus tasks or run independently:
+
+- **Terminal-first development** — Agent mode + shell mode (Ctrl-X toggle)
+- **IDE integration** — VS Code extension, Zed/JetBrains via ACP
+- **MCP support** — Connect to 100+ tools (Context7 docs, Linear issues, Chrome DevTools)
+- **General-purpose** — Code review, debugging, shell automation
+
+**Integration Pattern:**
+1. Kimi CLI handles general dev tasks (code analysis, debugging)
+2. Delegates specialized video generation to Nucleus/Mary
+3. Chains results into broader workflows (social posting, analytics, reporting)
+
+**Use Case:** Multi-agent system where Kimi orchestrates campaigns that require neuromarketing video generation.
 
 ## File Structure
 
