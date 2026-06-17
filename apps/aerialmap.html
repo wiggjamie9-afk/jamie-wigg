@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#1f6b3a" />
+<meta name="description" content="AERIALMAP — offline drone/satellite pasture coverage mapper. Upload a top-down field image and get a client-side vegetation heatmap, zone scores, and grazing recommendations. No network, no maps API." />
+<meta name="color-scheme" content="light" />
+<meta property="og:title" content="AERIALMAP — Aerial Pasture Coverage Mapper" />
+<meta property="og:description" content="Turn a drone or satellite photo into a vegetation heatmap and grazing zone map. Fully offline RGB index analysis." />
+<meta property="og:type" content="website" />
+<title>AERIALMAP — Aerial Pasture Coverage Mapper</title>
+<style>
+  :root {
+    --bg: #f3f6f0;
+    --card: #ffffff;
+    --ink: #1b2a1f;
+    --ink-soft: #51604f;
+    --line: #dde6d8;
+    --brand: #1f6b3a;
+    --brand-2: #3fa05c;
+    --brand-deep: #134426;
+    --accent: #d9a441;
+    --bad: #c0463a;
+    --warn: #d98c2b;
+    --good: #2e9e4f;
+    --shadow: 0 6px 20px rgba(20, 50, 25, 0.10);
+    --radius: 16px;
+    --radius-sm: 11px;
+    --maxw: 520px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 40px;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 14px; }
+
+  header.app {
+    background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand) 55%, var(--brand-2) 100%);
+    color: #fff;
+    padding: 22px 0 26px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  header.app::after {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+    background-size: 26px 26px;
+    pointer-events: none;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent);
+  }
+  header.app .wrap { position: relative; z-index: 1; }
+  .brand-row { display: flex; align-items: center; gap: 11px; }
+  .logo {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.28);
+    display: grid; place-items: center; flex: none;
+  }
+  .logo svg { width: 24px; height: 24px; }
+  h1 { font-size: 1.28rem; margin: 0; letter-spacing: .5px; font-weight: 800; }
+  .tagline { margin: 2px 0 0; font-size: .82rem; opacity: .9; font-weight: 500; }
+
+  main { padding-top: 16px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card h2 {
+    font-size: .96rem; margin: 0 0 12px; font-weight: 750;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-2); flex:none; }
+
+  /* Drop zone */
+  .drop {
+    border: 2px dashed var(--brand-2);
+    border-radius: var(--radius-sm);
+    background: linear-gradient(180deg, #f5faf2, #eef6ea);
+    padding: 26px 16px; text-align: center;
+    cursor: pointer; transition: .15s ease;
+  }
+  .drop.drag { background: #e3f2dc; border-color: var(--brand); transform: scale(.997); }
+  .drop svg { width: 40px; height: 40px; color: var(--brand); }
+  .drop .big { font-weight: 700; margin: 8px 0 2px; }
+  .drop .small { font-size: .8rem; color: var(--ink-soft); }
+  input[type=file] { display: none; }
+
+  /* Controls */
+  .ctrl { margin-bottom: 14px; }
+  .ctrl:last-child { margin-bottom: 0; }
+  .ctrl label { font-size: .82rem; font-weight: 650; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .ctrl label .val { color: var(--brand); font-variant-numeric: tabular-nums; font-weight: 700; }
+  .seg { display: flex; gap: 6px; background: #eef3ea; padding: 4px; border-radius: 11px; }
+  .seg button {
+    flex: 1; border: 0; background: transparent; padding: 9px 6px;
+    border-radius: 8px; font-weight: 650; font-size: .85rem; color: var(--ink-soft);
+    cursor: pointer; font-family: inherit; transition: .12s;
+  }
+  .seg button.active { background: #fff; color: var(--brand); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  input[type=range] {
+    width: 100%; accent-color: var(--brand); height: 26px; margin: 0;
+  }
+  select {
+    width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line);
+    background: #fff; font-family: inherit; font-size: .9rem; color: var(--ink);
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; border: 0; border-radius: 12px; padding: 13px;
+    font-size: .95rem; font-weight: 750; font-family: inherit; cursor: pointer;
+    background: var(--brand); color: #fff; transition: .12s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn[disabled] { opacity: .5; cursor: not-allowed; }
+  .btn.sec { background: #eef3ea; color: var(--brand-deep); border: 1px solid var(--line); }
+  .btn.ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .btn svg { width: 17px; height: 17px; }
+
+  /* Canvas */
+  .canvas-shell {
+    position: relative; border-radius: var(--radius-sm); overflow: auto;
+    background: #0d160f; border: 1px solid var(--line); max-height: 64vh;
+  }
+  .canvas-stack { position: relative; line-height: 0; min-width: 100%; }
+  .canvas-stack canvas { display: block; max-width: 100%; height: auto; }
+  #baseCanvas { position: relative; z-index: 1; }
+  #overlayCanvas { position: absolute; inset: 0; z-index: 2; }
+  #gridCanvas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+
+  .legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: .74rem; color: var(--ink-soft); }
+  .legend .bar { flex: 1; height: 9px; border-radius: 5px; background: linear-gradient(90deg, #c0463a, #d98c2b, #ddd33b, #7fbf45, #2e9e4f); }
+
+  /* Summary stats */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  .stat {
+    background: #f6faf3; border: 1px solid var(--line); border-radius: 11px;
+    padding: 11px 8px; text-align: center;
+  }
+  .stat .n { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: .68rem; color: var(--ink-soft); margin-top: 2px; text-transform: uppercase; letter-spacing: .4px; font-weight: 650; }
+  .stat.good .n { color: var(--good); }
+  .stat.warn .n { color: var(--warn); }
+  .stat.bad .n { color: var(--bad); }
+
+  .zoneline { display: flex; gap: 9px; margin-top: 12px; }
+  .zonepill {
+    flex: 1; border-radius: 11px; padding: 10px 11px; color: #fff;
+  }
+  .zonepill.best { background: linear-gradient(135deg, #2e9e4f, #1f7d3d); }
+  .zonepill.worst { background: linear-gradient(135deg, #c0463a, #9c3329); }
+  .zonepill .t { font-size: .66rem; text-transform: uppercase; letter-spacing: .5px; opacity: .9; font-weight: 700; }
+  .zonepill .z { font-size: 1.02rem; font-weight: 800; margin-top: 2px; }
+  .zonepill .s { font-size: .72rem; opacity: .92; }
+
+  .recs { margin-top: 12px; padding: 0; list-style: none; font-size: .85rem; }
+  .recs li { padding: 8px 0; border-top: 1px dashed var(--line); display: flex; gap: 9px; align-items: flex-start; }
+  .recs li:first-child { border-top: 0; }
+  .recs .ic { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+
+  /* History */
+  .hist-item {
+    display: flex; gap: 11px; align-items: center; padding: 9px 0;
+    border-top: 1px solid var(--line);
+  }
+  .hist-item:first-child { border-top: 0; }
+  .hist-item img { width: 54px; height: 54px; border-radius: 9px; object-fit: cover; border: 1px solid var(--line); flex: none; background:#0d160f; }
+  .hist-meta { flex: 1; min-width: 0; }
+  .hist-meta .nm { font-weight: 700; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-meta .sub { font-size: .74rem; color: var(--ink-soft); }
+  .hist-actions { display: flex; gap: 6px; flex: none; }
+  .icon-btn {
+    border: 1px solid var(--line); background: #fff; border-radius: 9px;
+    width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer; color: var(--ink-soft);
+  }
+  .icon-btn svg { width: 16px; height: 16px; }
+  .icon-btn.del:active { color: var(--bad); }
+  .empty { text-align: center; color: var(--ink-soft); font-size: .85rem; padding: 14px 0; }
+
+  /* Disclaimer */
+  .disclaimer {
+    background: #fff8e9; border: 1px solid #f0dca6; border-radius: 11px;
+    padding: 11px 13px; font-size: .78rem; color: #7a5d18; display: flex; gap: 9px;
+  }
+  .disclaimer svg { width: 18px; height: 18px; flex: none; margin-top: 1px; color: var(--accent); }
+
+  /* Freemium footer */
+  footer.fm {
+    margin-top: 6px; text-align: center; font-size: .77rem; color: var(--ink-soft);
+    padding: 18px 14px 8px;
+  }
+  footer.fm .pro {
+    background: var(--card); border: 1px solid var(--line); border-radius: 13px;
+    padding: 13px 14px; margin-bottom: 12px; box-shadow: var(--shadow); text-align: left;
+  }
+  footer.fm .pro .h { font-weight: 800; color: var(--brand-deep); display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  footer.fm .pro .h .price { margin-left: auto; background: var(--accent); color:#fff; font-size:.72rem; padding: 3px 8px; border-radius: 20px; }
+  footer.fm .pro p { margin: 0; font-size: .8rem; color: var(--ink-soft); }
+  footer.fm .copy { font-size: .72rem; opacity: .8; }
+
+  /* Toast */
+  #toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: var(--brand-deep); color: #fff; padding: 11px 18px; border-radius: 30px;
+    font-size: .85rem; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    opacity: 0; pointer-events: none; transition: .25s ease; z-index: 99; max-width: 90vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .hidden { display: none !important; }
+  .muted { color: var(--ink-soft); font-size: .8rem; }
+  .spin { animation: sp 1s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="wrap">
+    <div class="brand-row">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v6l9 4 9-4V7"/><path d="M12 11v6"/>
+        </svg>
+      </div>
+      <div>
+        <h1>AERIALMAP</h1>
+        <p class="tagline">Aerial &amp; drone pasture coverage mapper</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+  <!-- UPLOAD -->
+  <section class="card" id="uploadCard">
+    <h2><span class="dot"></span>Upload a top-down field image</h2>
+    <div class="drop" id="drop" role="button" tabindex="0" aria-label="Upload drone or satellite image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>
+      </svg>
+      <div class="big">Tap to choose a photo</div>
+      <div class="small">or drag &amp; drop a drone / satellite JPG or PNG</div>
+    </div>
+    <input type="file" id="file" accept="image/*" />
+    <p class="muted" style="margin:10px 0 0;text-align:center">100% offline — your image never leaves this device.</p>
+  </section>
+
+  <!-- ANALYSIS WORKSPACE -->
+  <section class="card hidden" id="workCard">
+    <h2><span class="dot"></span>Vegetation heatmap</h2>
+
+    <div class="canvas-shell">
+      <div class="canvas-stack" id="stack">
+        <canvas id="baseCanvas"></canvas>
+        <canvas id="overlayCanvas"></canvas>
+        <canvas id="gridCanvas"></canvas>
+      </div>
+    </div>
+    <div class="legend">
+      <span>Bare / stressed</span>
+      <span class="bar"></span>
+      <span>Healthy</span>
+    </div>
+
+    <div style="height:14px"></div>
+
+    <div class="ctrl">
+      <label>Vegetation index</label>
+      <div class="seg" id="indexSeg">
+        <button data-index="GLI" class="active">GLI</button>
+        <button data-index="VARI">VARI</button>
+      </div>
+    </div>
+
+    <div class="ctrl">
+      <label>Heatmap opacity <span class="val" id="opVal">75%</span></label>
+      <input type="range" id="opacity" min="0" max="100" value="75" />
+    </div>
+
+    <div class="ctrl">
+      <label>Zone grid <span class="val" id="gridVal">6 × 6</span></label>
+      <input type="range" id="grid" min="2" max="12" value="6" />
+    </div>
+
+    <div class="ctrl">
+      <label style="margin-bottom:0">Show zone scores</label>
+      <div class="seg" id="zoneSeg">
+        <button data-zones="on" class="active">On</button>
+        <button data-zones="off">Off</button>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:6px">
+      <button class="btn sec" id="reuploadBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        New image
+      </button>
+      <button class="btn" id="saveBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save
+      </button>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="card hidden" id="summaryCard">
+    <h2><span class="dot"></span>Coverage summary</h2>
+    <div class="stats">
+      <div class="stat good"><div class="n" id="pHealthy">–</div><div class="l">Healthy</div></div>
+      <div class="stat warn"><div class="n" id="pStressed">–</div><div class="l">Stressed</div></div>
+      <div class="stat bad"><div class="n" id="pBare">–</div><div class="l">Bare / water</div></div>
+    </div>
+
+    <div class="zoneline">
+      <div class="zonepill best">
+        <div class="t">Best grazing zone</div>
+        <div class="z" id="bestZone">–</div>
+        <div class="s" id="bestScore"></div>
+      </div>
+      <div class="zonepill worst">
+        <div class="t">Problem zone</div>
+        <div class="z" id="worstZone">–</div>
+        <div class="s" id="worstScore"></div>
+      </div>
+    </div>
+
+    <ul class="recs" id="recs"></ul>
+
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn sec" id="pngBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        Export PNG
+      </button>
+      <button class="btn sec" id="csvBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2M8 17h2M14 13h2M14 17h2"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </section>
+
+  <!-- DISCLAIMER -->
+  <section class="card hidden" id="discCard" style="padding:14px">
+    <div class="disclaimer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <div><strong>Approximate, not survey-grade.</strong> AERIALMAP derives vegetation indices (GLI / VARI) from <em>visible RGB only</em>. True crop-health NDVI requires a near-infrared (NIR) sensor. Lighting, shadows, camera white-balance and water glare all affect results. Use as a scouting aid, not a definitive measure.</div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="card">
+    <h2><span class="dot"></span>Saved analyses</h2>
+    <div id="histList"></div>
+  </section>
+
+</div>
+</main>
+
+<footer class="fm">
+  <div class="wrap">
+    <div class="pro">
+      <div class="h">AERIALMAP Pro <span class="price">Lifetime $9.99</span></div>
+      <p>Unlocks multi-season time-lapse comparison (track recovery week over week) + AI grazing &amp; fertiliser recommendations. Agencies &amp; co-ops: B2B fleet plans available. The core mapper is free, forever.</p>
+    </div>
+    <div class="copy">AERIALMAP — offline RGB pasture index tool. Complements HerdCheck. No account, no upload, no tracking.</div>
+  </div>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+  var LS_PREFIX = "aerialmap_";
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ---- State ----
+  var state = {
+    img: null,          // HTMLImageElement
+    indexType: "GLI",
+    opacity: 0.75,
+    gridN: 6,
+    showZones: true,
+    width: 0, height: 0,
+    indexMap: null,     // Float32Array of index values [-1..1] per pixel (working res)
+    valid: null,        // Uint8Array 1/0 per pixel (skip near-black borders)
+    zones: [],          // [{r,c,avg,score,classCounts}]
+    summary: null
+  };
+
+  var baseC = $("baseCanvas"), overC = $("overlayCanvas"), gridC = $("gridCanvas");
+  var WORK_MAX = 900; // cap working dimension for performance
+
+  // ---- Toast ----
+  var toastTimer;
+  function toast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  // ---- Index math ----
+  function computeIndex(r, g, b, type){
+    if (type === "VARI"){
+      var den = g + r - b;
+      if (Math.abs(den) < 1e-6) return 0;
+      return (g - r) / den;
+    }
+    // GLI = (2G - R - B) / (2G + R + B)
+    var d = 2*g + r + b;
+    if (d < 1e-6) return 0;
+    return (2*g - r - b) / d;
+  }
+
+  // Map index [-1..1] -> heatmap RGB (red->orange->yellow->lt-green->green)
+  function heatColor(v){
+    // clamp & normalize to 0..1
+    var t = (v + 0.6) / 1.2;
+    if (t < 0) t = 0; if (t > 1) t = 1;
+    // stops
+    var stops = [
+      [192,70,58],   // red    0.0
+      [217,140,43],  // orange 0.25
+      [221,211,59],  // yellow 0.5
+      [127,191,69],  // lt grn 0.75
+      [46,158,79]    // green  1.0
+    ];
+    var seg = t * (stops.length - 1);
+    var i = Math.floor(seg);
+    if (i >= stops.length - 1) i = stops.length - 2;
+    var f = seg - i;
+    var a = stops[i], b = stops[i+1];
+    return [
+      Math.round(a[0] + (b[0]-a[0])*f),
+      Math.round(a[1] + (b[1]-a[1])*f),
+      Math.round(a[2] + (b[2]-a[2])*f)
+    ];
+  }
+
+  // Classification thresholds on index value
+  // healthy: > 0.15, stressed: 0.0..0.15, bare/water: < 0.0
+  function classify(v){
+    if (v > 0.15) return 0;      // healthy
+    if (v >= 0.0) return 1;      // stressed-dry
+    return 2;                    // bare or water
+  }
+
+  // ---- Image load ----
+  function loadImage(fileOrUrl){
+    var img = new Image();
+    img.onload = function(){
+      state.img = img;
+      setupCanvases(img);
+      analyze();
+      revealWorkspace();
+      toast("Image analysed");
+    };
+    img.onerror = function(){ toast("Could not load image"); };
+    if (typeof fileOrUrl === "string"){ img.src = fileOrUrl; }
+    else {
+      var rd = new FileReader();
+      rd.onload = function(e){ img.src = e.target.result; };
+      rd.readAsDataURL(fileOrUrl);
+    }
+  }
+
+  function setupCanvases(img){
+    var w = img.naturalWidth, h = img.naturalHeight;
+    var scale = Math.min(1, WORK_MAX / Math.max(w, h));
+    w = Math.max(1, Math.round(w * scale));
+    h = Math.max(1, Math.round(h * scale));
+    state.width = w; state.height = h;
+    [baseC, overC, gridC].forEach(function(c){ c.width = w; c.height = h; });
+    var bctx = baseC.getContext("2d");
+    bctx.drawImage(img, 0, 0, w, h);
+  }
+
+  // ---- Core analysis ----
+  function analyze(){
+    var w = state.width, h = state.height;
+    var bctx = baseC.getContext("2d");
+    var src;
+    try { src = bctx.getImageData(0, 0, w, h); }
+    catch(e){ toast("Canvas read blocked"); return; }
+    var data = src.data;
+    var n = w * h;
+    var idxMap = new Float32Array(n);
+    var valid = new Uint8Array(n);
+
+    for (var p = 0, j = 0; p < n; p++, j += 4){
+      var r = data[j], g = data[j+1], b = data[j+2], al = data[j+3];
+      // skip transparent or near-black letterbox borders
+      if (al < 16 || (r < 10 && g < 10 && b < 10)){
+        idxMap[p] = -1; valid[p] = 0; continue;
+      }
+      valid[p] = 1;
+      idxMap[p] = computeIndex(r, g, b, state.indexType);
+    }
+    state.indexMap = idxMap;
+    state.valid = valid;
+
+    drawOverlay();
+    computeZones();
+    drawGrid();
+    buildSummary();
+    renderSummary();
+  }
+
+  function drawOverlay(){
+    var w = state.width, h = state.height;
+    var octx = overC.getContext("2d");
+    var out = octx.createImageData(w, h);
+    var od = out.data, idx = state.indexMap, valid = state.valid;
+    var n = w * h;
+    for (var p = 0, j = 0; p < n; p++, j += 4){
+      if (!valid[p]){ od[j+3] = 0; continue; }
+      var col = heatColor(idx[p]);
+      od[j] = col[0]; od[j+1] = col[1]; od[j+2] = col[2]; od[j+3] = 255;
+    }
+    octx.putImageData(out, 0, 0);
+    overC.style.opacity = state.opacity;
+  }
+
+  function computeZones(){
+    var w = state.width, h = state.height, N = state.gridN;
+    var idx = state.indexMap, valid = state.valid;
+    var zones = [];
+    for (var rIdx = 0; rIdx < N; rIdx++){
+      for (var c = 0; c < N; c++){
+        var x0 = Math.floor(c * w / N), x1 = Math.floor((c+1) * w / N);
+        var y0 = Math.floor(rIdx * h / N), y1 = Math.floor((rIdx+1) * h / N);
+        var sum = 0, cnt = 0, ch = [0,0,0];
+        for (var y = y0; y < y1; y++){
+          var row = y * w;
+          for (var x = x0; x < x1; x++){
+            var p = row + x;
+            if (!valid[p]) continue;
+            var v = idx[p];
+            sum += v; cnt++;
+            ch[classify(v)]++;
+          }
+        }
+        var avg = cnt ? sum / cnt : -1;
+        // score 0..100 from avg index (-0.6..0.6 -> 0..100)
+        var score = cnt ? Math.round(Math.max(0, Math.min(100, ((avg + 0.6) / 1.2) * 100))) : -1;
+        zones.push({ r: rIdx, c: c, avg: avg, score: score, count: cnt, classCounts: ch,
+          label: zoneLabel(rIdx, c) });
+      }
+    }
+    state.zones = zones;
+  }
+
+  function zoneLabel(r, c){
+    // A1 style: row letter, col number
+    var letter = String.fromCharCode(65 + r);
+    return letter + (c + 1);
+  }
+
+  function drawGrid(){
+    var w = state.width, h = state.height, N = state.gridN;
+    var ctx = gridC.getContext("2d");
+    ctx.clearRect(0, 0, w, h);
+    if (!state.showZones) return;
+    ctx.lineWidth = Math.max(1, w / 700);
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.font = "bold " + Math.max(11, Math.round(w / 42)) + "px " +
+      "-apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+
+    // grid lines
+    for (var i = 1; i < N; i++){
+      var gx = i * w / N, gy = i * h / N;
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+    }
+    // labels
+    state.zones.forEach(function(z){
+      if (z.count === 0) return;
+      var cx = (z.c + 0.5) * w / N;
+      var cy = (z.r + 0.5) * h / N;
+      var txt = z.score >= 0 ? String(z.score) : "–";
+      // background chip
+      var pad = Math.max(4, w/200);
+      var tw = ctx.measureText(txt).width;
+      var ch = parseInt(ctx.font, 10) + pad;
+      ctx.fillStyle = scoreChipColor(z.score);
+      roundRect(ctx, cx - tw/2 - pad, cy - ch/2, tw + pad*2, ch, ch/3);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.fillText(txt, cx, cy + 0.5);
+    });
+  }
+
+  function roundRect(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
+
+  function scoreChipColor(s){
+    if (s < 0) return "rgba(60,60,60,0.7)";
+    var col = heatColor((s/100)*1.2 - 0.6);
+    return "rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.88)";
+  }
+
+  function buildSummary(){
+    var idx = state.indexMap, valid = state.valid, n = state.width * state.height;
+    var counts = [0,0,0], total = 0;
+    for (var p = 0; p < n; p++){
+      if (!valid[p]) continue;
+      counts[classify(idx[p])]++; total++;
+    }
+    var pct = function(c){ return total ? Math.round(c / total * 100) : 0; };
+    // best / worst zone by score, only zones with data
+    var withData = state.zones.filter(function(z){ return z.count > 0; });
+    var best = null, worst = null;
+    withData.forEach(function(z){
+      if (!best || z.score > best.score) best = z;
+      if (!worst || z.score < worst.score) worst = z;
+    });
+    state.summary = {
+      total: total,
+      healthy: pct(counts[0]),
+      stressed: pct(counts[1]),
+      bare: pct(counts[2]),
+      best: best, worst: worst,
+      avgScore: withData.length ? Math.round(withData.reduce(function(a,z){return a+z.score;},0)/withData.length) : 0
+    };
+  }
+
+  function renderSummary(){
+    var s = state.summary;
+    if (!s) return;
+    $("pHealthy").textContent = s.healthy + "%";
+    $("pStressed").textContent = s.stressed + "%";
+    $("pBare").textContent = s.bare + "%";
+    if (s.best){ $("bestZone").textContent = "Zone " + s.best.label; $("bestScore").textContent = "score " + s.best.score + "/100"; }
+    if (s.worst){ $("worstZone").textContent = "Zone " + s.worst.label; $("worstScore").textContent = "score " + s.worst.score + "/100"; }
+    renderRecs(s);
+    show("summaryCard"); show("discCard");
+  }
+
+  function renderRecs(s){
+    var ul = $("recs"); ul.innerHTML = "";
+    var recs = [];
+    var leaf = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#2e9e4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>';
+    var alert = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#c0463a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+    var info = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#3fa05c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>';
+
+    if (s.best) recs.push([leaf, "Graze <strong>Zone " + s.best.label + "</strong> first — it shows the strongest vegetation cover (" + s.best.score + "/100)."]);
+    if (s.worst && s.worst.score < 40) recs.push([alert, "<strong>Zone " + s.worst.label + "</strong> is bare or stressed (" + s.worst.score + "/100). Rest it, check for water/erosion, or reseed."]);
+    if (s.bare >= 25) recs.push([alert, s.bare + "% of the field reads as bare or water — confirm on the ground; glare and ponds inflate this."]);
+    if (s.healthy >= 60) recs.push([leaf, "Healthy cover across " + s.healthy + "% of the field — good overall pasture condition."]);
+    else if (s.healthy < 35) recs.push([info, "Only " + s.healthy + "% reads as healthy. Consider rotation rest or supplementary feed planning."]);
+    recs.push([info, "Field-wide average zone score is <strong>" + s.avgScore + "/100</strong>. Re-shoot at the same time of day for fair comparisons."]);
+
+    recs.forEach(function(r){
+      var li = document.createElement("li");
+      li.innerHTML = r[0] + "<span>" + r[1] + "</span>";
+      ul.appendChild(li);
+    });
+  }
+
+  // ---- Compositing for export (base + overlay + grid into one canvas) ----
+  function compositeCanvas(){
+    var w = state.width, h = state.height;
+    var out = document.createElement("canvas");
+    out.width = w; out.height = h;
+    var ctx = out.getContext("2d");
+    ctx.drawImage(baseC, 0, 0);
+    ctx.globalAlpha = state.opacity;
+    ctx.drawImage(overC, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(gridC, 0, 0);
+    return out;
+  }
+
+  function thumbDataURL(maxDim){
+    var w = state.width, h = state.height;
+    var scale = Math.min(1, maxDim / Math.max(w, h));
+    var tw = Math.round(w*scale), th = Math.round(h*scale);
+    var c = document.createElement("canvas"); c.width = tw; c.height = th;
+    var ctx = c.getContext("2d");
+    ctx.drawImage(compositeCanvas(), 0, 0, tw, th);
+    return c.toDataURL("image/jpeg", 0.7);
+  }
+
+  // ---- Exports ----
+  function exportPNG(){
+    try {
+      var url = compositeCanvas().toDataURL("image/png");
+      downloadURL(url, "aerialmap-" + dateSlug() + ".png");
+      toast("Heatmap PNG exported");
+    } catch(e){ toast("Export failed"); }
+  }
+
+  function exportCSV(){
+    var rows = [["zone","row","col","avg_index","score_0_100","healthy_px","stressed_px","bare_water_px","pixels"]];
+    state.zones.forEach(function(z){
+      rows.push([z.label, z.r+1, z.c+1,
+        z.count ? z.avg.toFixed(4) : "",
+        z.score >= 0 ? z.score : "",
+        z.classCounts[0], z.classCounts[1], z.classCounts[2], z.count]);
+    });
+    var s = state.summary;
+    rows.push([]);
+    rows.push(["SUMMARY","index="+state.indexType,"grid="+state.gridN+"x"+state.gridN]);
+    rows.push(["healthy_pct", s.healthy, "stressed_pct", s.stressed, "bare_water_pct", s.bare]);
+    if (s.best) rows.push(["best_zone", s.best.label, "score", s.best.score]);
+    if (s.worst) rows.push(["worst_zone", s.worst.label, "score", s.worst.score]);
+    var csv = rows.map(function(r){ return r.join(","); }).join("\n");
+    var blob = new Blob([csv], {type:"text/csv"});
+    var url = URL.createObjectURL(blob);
+    downloadURL(url, "aerialmap-zones-" + dateSlug() + ".csv");
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast("Zone CSV exported");
+  }
+
+  function downloadURL(url, name){
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  function dateSlug(){
+    var d = new Date();
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()) + "_" + pad(d.getHours()) + pad(d.getMinutes());
+  }
+  function pad(n){ return n < 10 ? "0"+n : ""+n; }
+
+  // ---- localStorage history ----
+  function saveAnalysis(){
+    if (!state.summary){ toast("Nothing to save"); return; }
+    var name = prompt("Name this analysis (paddock / date):", "Paddock " + dateSlug());
+    if (name === null) return;
+    if (!name.trim()) name = "Untitled " + dateSlug();
+    var rec = {
+      id: LS_PREFIX + Date.now(),
+      name: name.trim(),
+      date: new Date().toISOString(),
+      index: state.indexType,
+      grid: state.gridN,
+      thumb: thumbDataURL(160),
+      summary: {
+        healthy: state.summary.healthy,
+        stressed: state.summary.stressed,
+        bare: state.summary.bare,
+        avgScore: state.summary.avgScore,
+        best: state.summary.best ? state.summary.best.label : null,
+        bestScore: state.summary.best ? state.summary.best.score : null,
+        worst: state.summary.worst ? state.summary.worst.label : null,
+        worstScore: state.summary.worst ? state.summary.worst.score : null
+      }
+    };
+    try {
+      localStorage.setItem(rec.id, JSON.stringify(rec));
+      toast("Saved to history");
+      renderHistory();
+    } catch(e){
+      toast("Save failed — storage full");
+    }
+  }
+
+  function loadHistory(){
+    var items = [];
+    for (var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if (k && k.indexOf(LS_PREFIX) === 0){
+        try { items.push(JSON.parse(localStorage.getItem(k))); } catch(e){}
+      }
+    }
+    items.sort(function(a,b){ return (b.date||"").localeCompare(a.date||""); });
+    return items;
+  }
+
+  function renderHistory(){
+    var list = $("histList");
+    var items = loadHistory();
+    list.innerHTML = "";
+    if (!items.length){
+      list.innerHTML = '<div class="empty">No saved analyses yet. Analyse an image and tap <strong>Save</strong>.</div>';
+      return;
+    }
+    items.forEach(function(it){
+      var div = document.createElement("div");
+      div.className = "hist-item";
+      var d = new Date(it.date);
+      var dateStr = isNaN(d) ? "" : d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+      var s = it.summary || {};
+      div.innerHTML =
+        '<img src="'+ (it.thumb||"") +'" alt="thumbnail" />' +
+        '<div class="hist-meta">' +
+          '<div class="nm">'+ escapeHTML(it.name) +'</div>' +
+          '<div class="sub">'+ dateStr +' · '+ it.index +' · '+ it.grid+'×'+it.grid +'</div>' +
+          '<div class="sub">🌿 '+ (s.healthy||0) +'% healthy · best '+ (s.best||"–") +' · worst '+ (s.worst||"–") +'</div>' +
+        '</div>' +
+        '<div class="hist-actions">' +
+          '<button class="icon-btn" data-view="'+ it.id +'" title="View thumbnail">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>' +
+          '</button>' +
+          '<button class="icon-btn del" data-del="'+ it.id +'" title="Delete">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>' +
+          '</button>' +
+        '</div>';
+      list.appendChild(div);
+    });
+    // wire actions
+    list.querySelectorAll("[data-del]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        if (confirm("Delete this saved analysis?")){
+          localStorage.removeItem(btn.getAttribute("data-del"));
+          renderHistory();
+          toast("Deleted");
+        }
+      });
+    });
+    list.querySelectorAll("[data-view]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var rec = JSON.parse(localStorage.getItem(btn.getAttribute("data-view"))||"{}");
+        if (rec.thumb){
+          var w = window.open("");
+          if (w) w.document.write('<title>'+escapeHTML(rec.name)+'</title><body style="margin:0;background:#0d160f;display:grid;place-items:center;height:100vh"><img style="max-width:100%;max-height:100%" src="'+rec.thumb+'">');
+          else toast("Pop-up blocked");
+        }
+      });
+    });
+  }
+
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---- UI helpers ----
+  function show(id){ $(id).classList.remove("hidden"); }
+  function hide(id){ $(id).classList.add("hidden"); }
+  function revealWorkspace(){
+    show("workCard");
+    $("workCard").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  // ---- Event wiring ----
+  var drop = $("drop"), fileInput = $("file");
+  drop.addEventListener("click", function(){ fileInput.click(); });
+  drop.addEventListener("keydown", function(e){ if (e.key==="Enter"||e.key===" "){ e.preventDefault(); fileInput.click(); } });
+  fileInput.addEventListener("change", function(e){
+    if (e.target.files && e.target.files[0]) loadImage(e.target.files[0]);
+  });
+  ["dragenter","dragover"].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("drag"); });
+  });
+  ["dragleave","drop"].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("drag"); });
+  });
+  drop.addEventListener("drop", function(e){
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.indexOf("image") === 0) loadImage(f);
+    else toast("Please drop an image file");
+  });
+  // also support drop anywhere on the page once an image is loaded
+  document.addEventListener("dragover", function(e){ e.preventDefault(); });
+  document.addEventListener("drop", function(e){
+    e.preventDefault();
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.indexOf("image") === 0) loadImage(f);
+  });
+
+  // index seg
+  $("indexSeg").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if (!b) return;
+    $("indexSeg").querySelectorAll("button").forEach(function(x){ x.classList.remove("active"); });
+    b.classList.add("active");
+    state.indexType = b.getAttribute("data-index");
+    if (state.img) analyze();
+  });
+  // zone seg
+  $("zoneSeg").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if (!b) return;
+    $("zoneSeg").querySelectorAll("button").forEach(function(x){ x.classList.remove("active"); });
+    b.classList.add("active");
+    state.showZones = b.getAttribute("data-zones") === "on";
+    drawGrid();
+  });
+  // opacity
+  $("opacity").addEventListener("input", function(e){
+    state.opacity = e.target.value / 100;
+    $("opVal").textContent = e.target.value + "%";
+    overC.style.opacity = state.opacity;
+  });
+  // grid size
+  $("grid").addEventListener("input", function(e){
+    state.gridN = parseInt(e.target.value, 10);
+    $("gridVal").textContent = state.gridN + " × " + state.gridN;
+    if (state.img){ computeZones(); drawGrid(); buildSummary(); renderSummary(); }
+  });
+
+  $("reuploadBtn").addEventListener("click", function(){ fileInput.click(); });
+  $("saveBtn").addEventListener("click", saveAnalysis);
+  $("pngBtn").addEventListener("click", exportPNG);
+  $("csvBtn").addEventListener("click", exportCSV);
+
+  // init
+  renderHistory();
+})();
+</script>
+</body>
+</html>
