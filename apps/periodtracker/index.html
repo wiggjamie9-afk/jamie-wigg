@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08050d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Period Tracker — menstrual cycle tracking with predictions">
+  <title>Period Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--canvas:#08050d;--bg:#0f0d18;--muted:#a0a0b0;--text:#f5f0e8;--pink:#ff6fc8;--red:#ff1f5a}
+    html,body{width:100%;height:100%;background:var(--canvas);color:var(--text);font-family:-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+    #app{height:100dvh;display:flex;flex-direction:column;z-index:1}
+    .header{padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between}
+    .logo{font-weight:700;font-size:18px;background:linear-gradient(120deg,var(--pink),#ff1f5a);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .content{flex:1;overflow-y:auto;padding:16px 20px;padding-bottom:calc(72px + env(safe-area-inset-bottom,16px))}
+    .stat-card{background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:12px}
+    .stat-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+    .stat-value{font-size:28px;font-weight:900;color:var(--pink)}
+    .stat-meta{font-size:12px;color:var(--muted);margin-top:6px}
+    .cycle-graph{width:100%;height:120px;background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px;display:flex;align-items:flex-end;gap:6px;margin-top:8px}
+    .day{flex:1;background:rgba(255,111,200,.3);border-radius:4px;min-height:20px}
+    .day.active{background:var(--pink);min-height:60px}
+    .day.fertile{background:rgba(255,111,200,.6)}
+    .form-group{margin-bottom:12px}
+    .form-label{font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block}
+    .form-input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--text);font-size:14px;outline:none}
+    .btn{width:100%;padding:12px;background:linear-gradient(120deg,var(--pink),#ff1f5a);border:none;border-radius:10px;color:#fff;font-weight:700;cursor:pointer;font-size:14px;margin-top:8px}
+    .entries{margin-top:12px}
+    .entry{background:var(--bg);border-left:4px solid var(--pink);border-radius:10px;padding:10px;margin-bottom:8px;font-size:12px}
+    .entry-date{font-weight:600}
+    .entry-days{color:var(--muted);font-size:11px;margin-top:2px}
+    .tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(8,5,13,.95);border-top:1px solid rgba(255,255,255,.07);display:flex;height:72px;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;gap:4px;font-weight:600}
+    .tab.active{color:var(--pink)}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">🌺 Period Tracker</div>
+    <div style="font-size:12px;color:var(--muted)">FREE</div>
+  </div>
+  <div class="content">
+    <div class="stat-card">
+      <div class="stat-title">Next Period Prediction</div>
+      <div class="stat-value" id="nextDate">—</div>
+      <div class="stat-meta" id="daysUntil">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Cycle Length (avg)</div>
+      <div class="stat-value" id="cycleLen">—</div>
+      <div class="cycle-graph" id="graph"></div>
+    </div>
+    <div class="stat-card">
+      <div class="form-label">Log Period Start</div>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" id="periodDate" type="date" style="flex:1">
+        <button class="btn" onclick="addPeriod()" style="flex:0;width:auto;padding:10px 16px;margin:0">+</button>
+      </div>
+    </div>
+    <div class="entries" id="entries"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active">📅 Log</button>
+    <button class="tab">📊 Stats</button>
+  </div>
+</div>
+
+<script>
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+  let periods=[];
+
+  function load(){
+    const s=localStorage.getItem('periods');
+    periods=s?JSON.parse(s):[];
+    updateUI();
+  }
+
+  function save(){
+    localStorage.setItem('periods', JSON.stringify(periods));
+  }
+
+  function addPeriod(){
+    const d=document.getElementById('periodDate').value;
+    if(!d){alert('Date required');return;}
+    periods.push({date:d});
+    document.getElementById('periodDate').value='';
+    save();
+    updateUI();
+  }
+
+  function updateUI(){
+    if(!periods.length){
+      document.getElementById('nextDate').textContent='—';
+      document.getElementById('daysUntil').textContent='Log a period to predict next';
+      document.getElementById('cycleLen').textContent='—';
+      return;
+    }
+
+    const sorted=periods.sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const last=new Date(sorted[0].date);
+    const cycleLengths=[];
+    for(let i=0;i<sorted.length-1;i++){
+      const curr=new Date(sorted[i].date);
+      const next=new Date(sorted[i+1].date);
+      cycleLengths.push(Math.floor((curr-next)/(86400*1000)));
+    }
+    const avgCycle=cycleLengths.length?Math.round(cycleLengths.reduce((a,b)=>a+b,0)/cycleLengths.length):28;
+    const nextP=new Date(last.getTime()+(avgCycle*86400*1000));
+    const daysUntil=Math.ceil((nextP-new Date())/(86400*1000));
+
+    document.getElementById('nextDate').textContent=nextP.toLocaleDateString();
+    document.getElementById('daysUntil').textContent=daysUntil>0?`${daysUntil} days away`:'Today/Soon';
+    document.getElementById('cycleLen').textContent=`${avgCycle} days`;
+
+    document.getElementById('entries').innerHTML=sorted.map(p=>{
+      const pDate=new Date(p.date);
+      const daysAgo=Math.floor((new Date()-pDate)/(86400*1000));
+      return `<div class="entry"><div class="entry-date">${pDate.toLocaleDateString()}</div><div class="entry-days">${daysAgo} days ago</div></div>`;
+    }).join('');
+  }
+
+  load();
+</script>
+</body>
+</html>
