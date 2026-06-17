@@ -39,6 +39,9 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 - **MindSearch** (`mindsearch.md`) — Deep web research agent by InternLM; query decomposition → iterative search → synthesis; built on Lagent v0.5 (lightweight agent framework); multiple search engines (DuckDuckGo/Bing/Brave/Google); local (InternLM2.5-7b) or GPT-4 backends. Micro-agent for Nucleus fact-checking + competitive intelligence
 - **Andrej Karpathy Skills** — CLAUDE.md config fixing LLM coding errors; 4 core principles (think first, simplicity, precise edits, goal-driven)
 
+#### Agent Tools & Extensions
+- **pi-perplexity** (`pi-perplexity.md`) — Perplexity Search plugin for oh-my-pi agents; reverse-engineered OAuth (desktop JWT extraction + email OTP auth); SSE streaming with incremental event merging; formatted LLM output with sources + age. Lightweight web search tool for Nucleus fact-checking and competitive intelligence
+
 #### LLM Gateways & Provider Access
 - **CC Switch** (`cc-switch.md`) — Desktop config manager (Tauri 2) for 7 AI coding tools (Claude Code/Desktop, Codex, Gemini CLI, OpenCode, OpenClaw, Hermes); unified MCP/Skills/prompt sync, provider switching, cost dashboard, atomic SQLite writes. ⚠️ sponsor wall of discount API-relays = same reverse-eng/credential-routing risk as kimi-free-api — use with official channels only. Desktop, not sandbox
 - **GPT4Free (g4f)** (`gpt4free.md`) — Multi-provider LLM aggregator; OpenAI-compatible Python/JS client + FastAPI + MCP server; web search + image gen; local inference (Ollama/vLLM). GPLv3
