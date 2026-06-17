@@ -63,6 +63,12 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 
 ---
 
+### 🎯 Design Patterns for AI Workflows (1 article)
+
+- **Scheduled Agent Loops** (`patterns/scheduled-agent-loops.md`) — Five-step pattern (Schedule, Context, Decide, Act, Verify) for turning one-shot prompts into hands-off, repeating outcomes. Covers three implementations: Claude Code scheduled tasks, n8n no-code workflows, cron+agent service. Best practices: define done first, feed right context, add guardrails, human-in-loop for risky steps, start small. Worked example: morning sales loop (identify follow-ups, draft emails, approve, send).
+
+---
+
 ### 🤖 New Models & AI Tech (16 articles)
 
 #### Kimi / Moonshot Models
