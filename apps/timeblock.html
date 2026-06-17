@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0c0e16" />
+<meta name="description" content="TIMEBLOCK — plan your day as proportional time blocks on a vertical timeline. Spot overlaps, see where your hours go. Free, offline, no account." />
+<meta name="color-scheme" content="dark" />
+<meta property="og:title" content="TIMEBLOCK — Day Time-Blocking Planner" />
+<meta property="og:description" content="Calendar-style time-blocking for your day. Proportional timeline, overlap warnings, category totals. Works offline." />
+<meta property="og:type" content="website" />
+<title>TIMEBLOCK — Day Time-Blocking Planner</title>
+<style>
+  :root {
+    --bg: #0c0e16;
+    --bg2: #11131f;
+    --card: #161927;
+    --card2: #1c2031;
+    --line: #262b3d;
+    --line2: #333a52;
+    --txt: #eef1fb;
+    --muted: #8b91ad;
+    --faint: #5d637d;
+    --accent: #7c5cff;
+    --accent2: #00d4ff;
+    --danger: #ff5d6e;
+    --warn: #ffb13d;
+    --ok: #2fe3a0;
+    --radius: 16px;
+    --radius-sm: 11px;
+    --shadow: 0 10px 30px rgba(0,0,0,.45);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+
+    --cat-deep:   #7c5cff;
+    --cat-meet:   #00d4ff;
+    --cat-break:  #2fe3a0;
+    --cat-admin:  #ffb13d;
+    --cat-person: #ff7ab8;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.45;
+    min-height: 100vh;
+    padding: 0 0 40px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 14px;
+  }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #7c5cff 0%, #5a3fe0 38%, #00b4d8 110%);
+    border-radius: 0 0 22px 22px;
+    padding: 22px 18px 20px;
+    margin: 0 -14px 16px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(110% 80% at 90% -10%, rgba(255,255,255,.22), transparent 60%);
+    pointer-events: none;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.3);
+    display: grid; place-items: center;
+    position: relative; flex: none;
+  }
+  .logo i { position: absolute; background: #fff; border-radius: 1px; }
+  .logo .v { width: 2px; height: 16px; }
+  .logo .h1 { width: 11px; height: 2px; top: 11px; left: 16px; }
+  .logo .h2 { width: 8px; height: 2px; top: 17px; left: 16px; }
+  .logo .h3 { width: 11px; height: 2px; top: 23px; left: 16px; }
+  h1 {
+    font-size: 1.32rem; margin: 0; letter-spacing: 2px; font-weight: 800;
+  }
+  .tag { margin: 4px 0 0; font-size: .8rem; color: rgba(255,255,255,.85); font-weight: 500; }
+
+  /* Date nav */
+  .datenav {
+    display: flex; align-items: center; gap: 8px;
+    margin: 14px 0 14px;
+  }
+  .navbtn {
+    flex: none; width: 40px; height: 40px;
+    border-radius: 11px; border: 1px solid var(--line);
+    background: var(--card); color: var(--txt);
+    font-size: 1.2rem; cursor: pointer; transition: .15s;
+    display: grid; place-items: center;
+  }
+  .navbtn:active { transform: scale(.94); }
+  .navbtn:hover { background: var(--card2); border-color: var(--line2); }
+  .dateblock {
+    flex: 1; text-align: center; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; padding: 6px 8px;
+    cursor: pointer; position: relative;
+  }
+  .dateblock .dow { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .dateblock .dlong { font-size: .98rem; font-weight: 700; }
+  .dateblock.today .dlong { color: var(--accent2); }
+  .dateblock input {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    border: 0;
+  }
+  .todaybtn {
+    width: auto; padding: 0 12px; font-size: .76rem; font-weight: 700;
+    letter-spacing: .5px;
+  }
+
+  /* Actions row */
+  .actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .btn {
+    border: 0; border-radius: 11px; padding: 11px 14px;
+    font-size: .9rem; font-weight: 700; cursor: pointer; transition: .15s;
+    font-family: var(--font); display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #5a3fe0); color: #fff; flex: 1; justify-content: center; box-shadow: 0 6px 18px rgba(124,92,255,.35); }
+  .btn-ghost { background: var(--card); color: var(--txt); border: 1px solid var(--line); }
+  .btn-ghost:hover { background: var(--card2); }
+  .btn-sm { padding: 9px 11px; font-size: .82rem; }
+
+  /* Summary */
+  .summary {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 14px;
+  }
+  .sum-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .sum-head h2 { margin: 0; font-size: .82rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); font-weight: 700; }
+  .sum-free { font-size: .8rem; color: var(--muted); }
+  .sum-free b { color: var(--ok); }
+  .bars { display: flex; flex-direction: column; gap: 9px; }
+  .bar-row { display: flex; align-items: center; gap: 9px; font-size: .82rem; }
+  .bar-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .bar-label { width: 78px; flex: none; color: var(--muted); }
+  .bar-track { flex: 1; height: 8px; background: var(--bg2); border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 5px; transition: width .35s ease; }
+  .bar-val { width: 52px; flex: none; text-align: right; color: var(--txt); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .sum-empty { color: var(--faint); font-size: .85rem; text-align: center; padding: 6px 0; }
+
+  /* Timeline */
+  .tl-wrap {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 12px 12px 12px 0; margin-bottom: 14px;
+    position: relative;
+  }
+  .timeline { position: relative; margin-left: 52px; }
+  .hour-row { position: absolute; left: -52px; right: 0; border-top: 1px solid var(--line); }
+  .hour-row .lbl {
+    position: absolute; left: 0; top: -8px; width: 46px; text-align: right;
+    font-size: .68rem; color: var(--faint); font-variant-numeric: tabular-nums;
+  }
+  .hour-row.major { border-top-color: var(--line2); }
+  .now-line {
+    position: absolute; left: -52px; right: 0; height: 0; z-index: 6; pointer-events: none;
+  }
+  .now-line::before {
+    content: ""; position: absolute; left: 52px; right: 0; top: -1px; height: 2px;
+    background: var(--danger); box-shadow: 0 0 8px rgba(255,93,110,.6);
+  }
+  .now-line .nub {
+    position: absolute; left: 46px; top: -5px; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--danger); box-shadow: 0 0 8px rgba(255,93,110,.7);
+  }
+  .now-line .ntime {
+    position: absolute; right: 2px; top: -16px; font-size: .62rem; font-weight: 700;
+    color: var(--danger); background: var(--card); padding: 0 4px; border-radius: 4px;
+  }
+  .blocks { position: relative; }
+  .block {
+    position: absolute; border-radius: 9px; padding: 5px 9px; overflow: hidden;
+    cursor: pointer; transition: .12s; border: 1px solid transparent;
+    background: var(--card2); display: flex; flex-direction: column; justify-content: center;
+  }
+  .block::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 9px 0 0 9px;
+  }
+  .block:active { transform: scale(.99); }
+  .block .b-title { font-size: .85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .block .b-meta { font-size: .68rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .block.tiny { padding: 2px 9px; }
+  .block.tiny .b-meta { display: none; }
+  .block.overlap { box-shadow: 0 0 0 2px var(--danger); }
+  .block .warnflag {
+    position: absolute; top: 3px; right: 4px; font-size: .62rem; color: var(--danger);
+    background: rgba(255,93,110,.16); border-radius: 5px; padding: 1px 5px; font-weight: 800;
+  }
+  .tl-empty {
+    position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+    text-align: center; color: var(--faint); font-size: .9rem; padding: 0 20px;
+  }
+  .tl-empty .big { font-size: 1.6rem; margin-bottom: 4px; }
+
+  /* Overlap banner */
+  .overlap-banner {
+    background: rgba(255,93,110,.12); border: 1px solid rgba(255,93,110,.4);
+    color: #ffb3bc; border-radius: 11px; padding: 9px 12px; font-size: .82rem;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Modal */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(5,6,12,.7); backdrop-filter: blur(4px);
+    z-index: 50; display: none; align-items: flex-end; justify-content: center;
+  }
+  .overlay.open { display: flex; }
+  .sheet {
+    width: 100%; max-width: 520px; background: var(--bg2);
+    border: 1px solid var(--line); border-bottom: 0;
+    border-radius: 20px 20px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+    box-shadow: 0 -10px 40px rgba(0,0,0,.5); animation: slideup .25s ease;
+  }
+  @keyframes slideup { from { transform: translateY(40px); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
+  .sheet h3 { margin: 2px 0 14px; font-size: 1.05rem; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: .76rem; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
+  .field input[type=text], .field input[type=time], .field input[type=number], .field select {
+    width: 100%; background: var(--card); border: 1px solid var(--line); color: var(--txt);
+    border-radius: 11px; padding: 11px 12px; font-size: .95rem; font-family: var(--font);
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 .field { flex: 1; }
+  .cats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .cat-chip {
+    flex: 1; min-width: 80px; border: 1px solid var(--line); background: var(--card);
+    border-radius: 11px; padding: 9px 6px; cursor: pointer; text-align: center;
+    font-size: .78rem; font-weight: 600; transition: .12s; display: flex; align-items: center; gap: 6px; justify-content: center;
+  }
+  .cat-chip .cdot { width: 11px; height: 11px; border-radius: 4px; flex: none; }
+  .cat-chip.sel { border-color: var(--accent2); background: var(--card2); box-shadow: 0 0 0 1px var(--accent2); }
+  .dur-presets { display: flex; gap: 6px; margin-top: 7px; }
+  .dur-presets button {
+    flex: 1; background: var(--card); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 9px; padding: 7px 0; font-size: .76rem; cursor: pointer; font-weight: 600;
+  }
+  .dur-presets button:active { background: var(--card2); }
+  .sheet-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .sheet-actions .btn-primary { flex: 2; }
+  .sheet-actions .btn-ghost { flex: 1; justify-content: center; }
+  .btn-danger { background: rgba(255,93,110,.14); color: var(--danger); border: 1px solid rgba(255,93,110,.4); }
+
+  /* templates modal list */
+  .tpl-list { display: flex; flex-direction: column; gap: 8px; }
+  .tpl-item {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px; cursor: pointer; transition: .12s;
+  }
+  .tpl-item:hover { background: var(--card2); border-color: var(--line2); }
+  .tpl-item .tn { font-weight: 700; font-size: .95rem; }
+  .tpl-item .td { font-size: .76rem; color: var(--muted); margin-top: 2px; }
+
+  /* Footer */
+  footer {
+    margin-top: 18px; text-align: center;
+  }
+  .promo {
+    background: linear-gradient(135deg, rgba(124,92,255,.14), rgba(0,212,255,.08));
+    border: 1px solid var(--line2); border-radius: 14px; padding: 13px 14px;
+    font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 10px; text-align: left;
+  }
+  .promo .lock { font-size: 1.2rem; flex: none; }
+  .promo b { color: var(--txt); }
+  .promo .price { color: var(--accent2); font-weight: 700; }
+  .foot-note { font-size: .7rem; color: var(--faint); margin-top: 12px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: var(--card2); border: 1px solid var(--line2); color: var(--txt);
+    padding: 11px 18px; border-radius: 12px; font-size: .86rem; font-weight: 600;
+    box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: .25s; z-index: 99;
+    max-width: 90%;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { border-color: var(--danger); color: #ffb3bc; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo"><i class="v"></i><i class="h1"></i><i class="h2"></i><i class="h3"></i></div>
+      <div>
+        <h1>TIMEBLOCK</h1>
+        <p class="tag">Plan your day, block by block.</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="datenav">
+    <button class="navbtn" id="prevDay" aria-label="Previous day">‹</button>
+    <div class="dateblock" id="dateBlock">
+      <div class="dow" id="dateDow">—</div>
+      <div class="dlong" id="dateLong">—</div>
+      <input type="date" id="dateInput" aria-label="Pick date" />
+    </div>
+    <button class="navbtn todaybtn" id="todayBtn">TODAY</button>
+    <button class="navbtn" id="nextDay" aria-label="Next day">›</button>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="addBtn">+ Add block</button>
+    <button class="btn btn-ghost btn-sm" id="tplBtn">⚡ Templates</button>
+    <button class="btn btn-ghost btn-sm" id="copyBtn">↻ Copy prev</button>
+  </div>
+
+  <div id="overlapBanner"></div>
+
+  <div class="summary">
+    <div class="sum-head">
+      <h2>Where the time goes</h2>
+      <div class="sum-free">Free: <b id="freeTime">—</b></div>
+    </div>
+    <div class="bars" id="bars"></div>
+  </div>
+
+  <div class="tl-wrap">
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <footer>
+    <div class="promo">
+      <span class="lock">🔒</span>
+      <span><b>TIMEBLOCK is free.</b> <span class="price">Lifetime $2.99</span> unlocks recurring blocks + calendar sync.</span>
+    </div>
+    <p class="foot-note">Everything stays on this device. No account, works offline.</p>
+  </footer>
+</div>
+
+<!-- Add / Edit sheet -->
+<div class="overlay" id="editOverlay">
+  <div class="sheet">
+    <h3 id="sheetTitle">Add block</h3>
+    <div class="field">
+      <label for="fTitle">Title</label>
+      <input type="text" id="fTitle" placeholder="e.g. Deep work — feature build" maxlength="60" />
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="fStart">Start</label>
+        <input type="time" id="fStart" />
+      </div>
+      <div class="field">
+        <label for="fDur">Minutes</label>
+        <input type="number" id="fDur" min="5" max="1440" step="5" value="60" />
+        <div class="dur-presets">
+          <button type="button" data-d="30">30m</button>
+          <button type="button" data-d="60">1h</button>
+          <button type="button" data-d="90">90m</button>
+          <button type="button" data-d="120">2h</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <div class="cats" id="catChips"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-primary" id="saveBtn">Save block</button>
+      <button class="btn btn-danger" id="deleteBtn" style="display:none;">Delete</button>
+      <button class="btn btn-ghost" id="cancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Templates sheet -->
+<div class="overlay" id="tplOverlay">
+  <div class="sheet">
+    <h3>Apply a template</h3>
+    <p style="color:var(--muted);font-size:.8rem;margin:-6px 0 12px;">Replaces all blocks for this day.</p>
+    <div class="tpl-list" id="tplList"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="tplCancel" style="flex:1;justify-content:center;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var PREFIX = "timeblock_";
+  var DAY_START = 6;   // 6am
+  var DAY_END   = 23;  // 11pm
+  var PX_PER_HOUR = 56;
+  var TOTAL_MIN = (DAY_END - DAY_START) * 60;
+
+  var CATS = [
+    { id:"deep",   name:"Deep work", color:"var(--cat-deep)",   raw:"#7c5cff" },
+    { id:"meet",   name:"Meetings",  color:"var(--cat-meet)",   raw:"#00d4ff" },
+    { id:"break",  name:"Breaks",    color:"var(--cat-break)",  raw:"#2fe3a0" },
+    { id:"admin",  name:"Admin",     color:"var(--cat-admin)",  raw:"#ffb13d" },
+    { id:"person", name:"Personal",  color:"var(--cat-person)", raw:"#ff7ab8" }
+  ];
+  function catById(id){ for(var i=0;i<CATS.length;i++) if(CATS[i].id===id) return CATS[i]; return CATS[0]; }
+
+  var TEMPLATES = [
+    { name:"Work day", desc:"Focus blocks, standup, lunch, admin wrap-up",
+      blocks:[
+        {t:"Morning routine", s:"06:30", d:60, c:"person"},
+        {t:"Deep work — priority", s:"08:00", d:120, c:"deep"},
+        {t:"Team standup", s:"10:00", d:30, c:"meet"},
+        {t:"Deep work block 2", s:"10:30", d:90, c:"deep"},
+        {t:"Lunch + walk", s:"12:00", d:60, c:"break"},
+        {t:"Meetings / calls", s:"13:00", d:90, c:"meet"},
+        {t:"Email + admin", s:"14:30", d:60, c:"admin"},
+        {t:"Deep work — finish", s:"15:30", d:90, c:"deep"},
+        {t:"Wrap-up + plan tomorrow", s:"17:00", d:30, c:"admin"}
+      ]},
+    { name:"Maker day", desc:"Long uninterrupted focus, minimal meetings",
+      blocks:[
+        {t:"Morning routine", s:"06:30", d:60, c:"person"},
+        {t:"Deep work — flow", s:"08:00", d:180, c:"deep"},
+        {t:"Break", s:"11:00", d:30, c:"break"},
+        {t:"Deep work — flow 2", s:"11:30", d:90, c:"deep"},
+        {t:"Lunch", s:"13:00", d:45, c:"break"},
+        {t:"Deep work — flow 3", s:"13:45", d:135, c:"deep"},
+        {t:"Review + ship", s:"16:00", d:60, c:"admin"}
+      ]},
+    { name:"Rest day", desc:"Light structure, plenty of personal time",
+      blocks:[
+        {t:"Slow morning", s:"08:00", d:120, c:"person"},
+        {t:"Errands / admin", s:"10:00", d:90, c:"admin"},
+        {t:"Lunch", s:"12:00", d:60, c:"break"},
+        {t:"Personal project", s:"13:30", d:120, c:"person"},
+        {t:"Walk / exercise", s:"16:00", d:60, c:"break"},
+        {t:"Wind down", s:"20:00", d:90, c:"person"}
+      ]},
+    { name:"Study day", desc:"Pomodoro-style study and review",
+      blocks:[
+        {t:"Study session 1", s:"08:00", d:90, c:"deep"},
+        {t:"Break", s:"09:30", d:20, c:"break"},
+        {t:"Study session 2", s:"09:50", d:90, c:"deep"},
+        {t:"Lunch", s:"12:00", d:60, c:"break"},
+        {t:"Review + notes", s:"13:00", d:90, c:"admin"},
+        {t:"Study session 3", s:"15:00", d:90, c:"deep"},
+        {t:"Practice problems", s:"17:00", d:60, c:"deep"}
+      ]}
+  ];
+
+  // ---------- state ----------
+  var current = new Date();
+  current.setHours(0,0,0,0);
+  var editingId = null;
+  var selectedCat = "deep";
+
+  // ---------- helpers ----------
+  function $(id){ return document.getElementById(id); }
+  function pad(n){ return (n<10?"0":"")+n; }
+  function keyFor(date){ return PREFIX + date.getFullYear()+"-"+pad(date.getMonth()+1)+"-"+pad(date.getDate()); }
+  function toMin(hhmm){ var p=hhmm.split(":"); return parseInt(p[0],10)*60 + parseInt(p[1],10); }
+  function fromMin(m){ m=((m%1440)+1440)%1440; return pad(Math.floor(m/60))+":"+pad(m%60); }
+  function fmt12(m){
+    m=((m%1440)+1440)%1440;
+    var h=Math.floor(m/60), mn=m%60;
+    var ap = h<12?"am":"pm";
+    var h12 = h%12; if(h12===0) h12=12;
+    return h12 + (mn? ":"+pad(mn):"") + ap;
+  }
+  function fmtDur(min){
+    var h=Math.floor(min/60), m=min%60;
+    if(h&&m) return h+"h "+m+"m";
+    if(h) return h+"h";
+    return m+"m";
+  }
+  function isSameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+  function load(date){
+    try {
+      var raw = localStorage.getItem(keyFor(date));
+      if(!raw) return [];
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch(e){ return []; }
+  }
+  function save(date, blocks){
+    try {
+      if(blocks.length) localStorage.setItem(keyFor(date), JSON.stringify(blocks));
+      else localStorage.removeItem(keyFor(date));
+    } catch(e){ toast("Couldn't save — storage full?", true); }
+  }
+
+  function toast(msg, isErr){
+    var t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show" + (isErr?" err":"");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ t.className = "toast"; }, 2200);
+  }
+
+  // ---------- overlap detection ----------
+  function computeOverlaps(blocks){
+    var sorted = blocks.slice().sort(function(a,b){ return a.start-b.start; });
+    var flagged = {};
+    for(var i=0;i<sorted.length;i++){
+      for(var j=i+1;j<sorted.length;j++){
+        var A=sorted[i], B=sorted[j];
+        if(B.start < A.start + A.dur && B.start < A.start + A.dur){
+          if(B.start < A.start + A.dur && A.start < B.start + B.dur){
+            flagged[A.id]=true; flagged[B.id]=true;
+          }
+        }
+      }
+    }
+    return flagged;
+  }
+
+  // ---------- render ----------
+  function renderDateHeader(){
+    var dows = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    var mons = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    $("dateDow").textContent = dows[current.getDay()];
+    $("dateLong").textContent = mons[current.getMonth()]+" "+current.getDate()+", "+current.getFullYear();
+    $("dateInput").value = current.getFullYear()+"-"+pad(current.getMonth()+1)+"-"+pad(current.getDate());
+    var today = new Date(); today.setHours(0,0,0,0);
+    $("dateBlock").className = "dateblock" + (isSameDay(current,today)?" today":"");
+  }
+
+  function renderTimeline(blocks, flagged){
+    var tl = $("timeline");
+    tl.innerHTML = "";
+    var height = (DAY_END-DAY_START)*PX_PER_HOUR;
+    tl.style.height = height + "px";
+
+    // hour gridlines
+    for(var h=DAY_START; h<=DAY_END; h++){
+      var row = document.createElement("div");
+      row.className = "hour-row" + (h%3===0?" major":"");
+      row.style.top = ((h-DAY_START)*PX_PER_HOUR) + "px";
+      var lbl = document.createElement("div");
+      lbl.className = "lbl";
+      lbl.textContent = fmt12(h*60);
+      row.appendChild(lbl);
+      tl.appendChild(row);
+    }
+
+    if(!blocks.length){
+      var empty = document.createElement("div");
+      empty.className = "tl-empty";
+      empty.innerHTML = '<div class="big">🗓️</div>No blocks yet.<br>Tap “+ Add block” or pick a template.';
+      tl.appendChild(empty);
+    }
+
+    // lay out blocks with column splitting for overlaps
+    var laid = layoutColumns(blocks);
+    laid.forEach(function(item){
+      var b = item.block;
+      var top = (b.start - DAY_START*60) / 60 * PX_PER_HOUR;
+      var hgt = b.dur / 60 * PX_PER_HOUR;
+      // clamp into visible window
+      var visTop = Math.max(0, top);
+      var visBot = Math.min(height, top+hgt);
+      var visH = Math.max(16, visBot - visTop);
+
+      var cat = catById(b.cat);
+      var el = document.createElement("div");
+      el.className = "block" + (visH<34?" tiny":"") + (flagged[b.id]?" overlap":"");
+      el.style.top = visTop + "px";
+      el.style.height = (visH-2) + "px";
+      var gap = 2;
+      var colW = (100 - gap*(item.cols-1)) / item.cols;
+      el.style.left = (item.col*(colW+gap)) + "%";
+      el.style.width = colW + "%";
+      el.style.background = "linear-gradient(135deg, "+hexA(cat.raw,0.20)+", "+hexA(cat.raw,0.08)+")";
+      el.style.borderColor = hexA(cat.raw,0.35);
+      el.style.color = "#fff";
+      el.dataset.id = b.id;
+
+      var bar = '<style></style>';
+      el.innerHTML =
+        '<div class="b-title">'+esc(b.title)+'</div>'+
+        '<div class="b-meta">'+fmt12(b.start)+'–'+fmt12(b.start+b.dur)+' · '+fmtDur(b.dur)+'</div>'+
+        (flagged[b.id]?'<span class="warnflag">⚠</span>':'');
+      // colored left edge
+      var edge = document.createElement("span");
+      edge.style.cssText = "position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:9px 0 0 9px;background:"+cat.raw+";";
+      el.appendChild(edge);
+      el.addEventListener("click", function(){ openEdit(b.id); });
+      tl.appendChild(el);
+    });
+
+    // now line
+    var today = new Date(); today.setHours(0,0,0,0);
+    if(isSameDay(current, today)){
+      var now = new Date();
+      var nowMin = now.getHours()*60 + now.getMinutes();
+      if(nowMin >= DAY_START*60 && nowMin <= DAY_END*60){
+        var nl = document.createElement("div");
+        nl.className = "now-line";
+        nl.style.top = ((nowMin - DAY_START*60)/60*PX_PER_HOUR) + "px";
+        nl.innerHTML = '<span class="nub"></span><span class="ntime">'+fmt12(nowMin)+'</span>';
+        tl.appendChild(nl);
+      }
+    }
+  }
+
+  // greedy column packing among overlapping blocks
+  function layoutColumns(blocks){
+    var sorted = blocks.slice().sort(function(a,b){ return a.start-b.start || a.dur-b.dur; });
+    var result = [];
+    var i=0;
+    while(i<sorted.length){
+      // build a cluster of mutually/transitively overlapping blocks
+      var cluster=[sorted[i]];
+      var clusterEnd = sorted[i].start + sorted[i].dur;
+      var j=i+1;
+      while(j<sorted.length && sorted[j].start < clusterEnd){
+        cluster.push(sorted[j]);
+        clusterEnd = Math.max(clusterEnd, sorted[j].start + sorted[j].dur);
+        j++;
+      }
+      // assign columns within cluster
+      var colsEnd=[]; // end time of last block in each column
+      cluster.forEach(function(b){
+        var placed=false;
+        for(var c=0;c<colsEnd.length;c++){
+          if(b.start >= colsEnd[c]){ colsEnd[c]=b.start+b.dur; b._col=c; placed=true; break; }
+        }
+        if(!placed){ b._col=colsEnd.length; colsEnd.push(b.start+b.dur); }
+      });
+      var ncols=colsEnd.length;
+      cluster.forEach(function(b){ result.push({block:b, col:b._col, cols:ncols}); });
+      i=j;
+    }
+    return result;
+  }
+
+  function renderSummary(blocks){
+    var bars = $("bars");
+    bars.innerHTML="";
+    var totals={}; CATS.forEach(function(c){ totals[c.id]=0; });
+    var union = mergedMinutes(blocks); // unique scheduled minutes (for free time)
+    var sumAll = 0;
+    blocks.forEach(function(b){ totals[b.cat]=(totals[b.cat]||0)+b.dur; sumAll+=b.dur; });
+
+    if(!blocks.length){
+      bars.innerHTML = '<div class="sum-empty">Add blocks to see your category breakdown.</div>';
+      $("freeTime").textContent = fmtDur(TOTAL_MIN);
+      return;
+    }
+    var maxVal = 1;
+    CATS.forEach(function(c){ if(totals[c.id]>maxVal) maxVal=totals[c.id]; });
+
+    CATS.forEach(function(c){
+      var v = totals[c.id];
+      var row = document.createElement("div");
+      row.className="bar-row";
+      var w = Math.round(v/maxVal*100);
+      row.innerHTML =
+        '<span class="bar-dot" style="background:'+c.raw+'"></span>'+
+        '<span class="bar-label">'+c.name+'</span>'+
+        '<span class="bar-track"><span class="bar-fill" style="width:'+(v?w:0)+'%;background:'+c.raw+'"></span></span>'+
+        '<span class="bar-val">'+(v?fmtDur(v):'—')+'</span>';
+      bars.appendChild(row);
+    });
+
+    var free = Math.max(0, TOTAL_MIN - union);
+    $("freeTime").textContent = fmtDur(free);
+  }
+
+  // total unique scheduled minutes within the day window (handles overlaps)
+  function mergedMinutes(blocks){
+    var ivs = blocks.map(function(b){
+      return [Math.max(b.start, DAY_START*60), Math.min(b.start+b.dur, DAY_END*60)];
+    }).filter(function(iv){ return iv[1]>iv[0]; }).sort(function(a,b){ return a[0]-b[0]; });
+    var total=0, curS=null, curE=null;
+    ivs.forEach(function(iv){
+      if(curS===null){ curS=iv[0]; curE=iv[1]; }
+      else if(iv[0]<=curE){ curE=Math.max(curE,iv[1]); }
+      else { total+=curE-curS; curS=iv[0]; curE=iv[1]; }
+    });
+    if(curS!==null) total+=curE-curS;
+    return total;
+  }
+
+  function renderOverlapBanner(flagged){
+    var n = Object.keys(flagged).length;
+    var b = $("overlapBanner");
+    if(n){
+      b.innerHTML = '<div class="overlap-banner">⚠️ '+n+' block'+(n>1?'s':'')+' overlap. Adjust times to clear the clash.</div>';
+    } else {
+      b.innerHTML = "";
+    }
+  }
+
+  function render(){
+    renderDateHeader();
+    var blocks = load(current);
+    var flagged = computeOverlaps(blocks);
+    renderOverlapBanner(flagged);
+    renderSummary(blocks);
+    renderTimeline(blocks, flagged);
+  }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function hexA(hex, a){
+    var n = parseInt(hex.slice(1),16);
+    return "rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+a+")";
+  }
+
+  // ---------- edit sheet ----------
+  function buildCatChips(){
+    var wrap = $("catChips");
+    wrap.innerHTML="";
+    CATS.forEach(function(c){
+      var chip=document.createElement("div");
+      chip.className="cat-chip"+(c.id===selectedCat?" sel":"");
+      chip.innerHTML='<span class="cdot" style="background:'+c.raw+'"></span>'+c.name;
+      chip.addEventListener("click", function(){
+        selectedCat=c.id;
+        Array.prototype.forEach.call(wrap.children, function(ch){ ch.classList.remove("sel"); });
+        chip.classList.add("sel");
+      });
+      wrap.appendChild(chip);
+    });
+  }
+
+  function openEdit(id){
+    var blocks = load(current);
+    editingId = id || null;
+    if(id){
+      var b=null; for(var i=0;i<blocks.length;i++) if(blocks[i].id===id) b=blocks[i];
+      if(!b){ return; }
+      $("sheetTitle").textContent="Edit block";
+      $("fTitle").value=b.title;
+      $("fStart").value=fromMin(b.start);
+      $("fDur").value=b.dur;
+      selectedCat=b.cat;
+      $("deleteBtn").style.display="";
+    } else {
+      $("sheetTitle").textContent="Add block";
+      $("fTitle").value="";
+      // default start = next round half hour, or now if today
+      var startMin = DAY_START*60;
+      var today=new Date(); today.setHours(0,0,0,0);
+      if(isSameDay(current,today)){
+        var now=new Date(); var m=now.getHours()*60+now.getMinutes();
+        m=Math.ceil(m/30)*30;
+        if(m>=DAY_START*60 && m<DAY_END*60) startMin=m;
+      } else if(blocks.length){
+        // place after last block
+        var maxEnd=DAY_START*60;
+        blocks.forEach(function(bl){ maxEnd=Math.max(maxEnd, bl.start+bl.dur); });
+        if(maxEnd<DAY_END*60) startMin=maxEnd;
+      }
+      $("fStart").value=fromMin(startMin);
+      $("fDur").value=60;
+      selectedCat="deep";
+      $("deleteBtn").style.display="none";
+    }
+    buildCatChips();
+    $("editOverlay").classList.add("open");
+    setTimeout(function(){ if(!id) $("fTitle").focus(); }, 60);
+  }
+  function closeEdit(){ $("editOverlay").classList.remove("open"); }
+
+  function saveBlock(){
+    var title = $("fTitle").value.trim();
+    var start = $("fStart").value;
+    var dur = parseInt($("fDur").value,10);
+    if(!title){ toast("Give the block a title.", true); $("fTitle").focus(); return; }
+    if(!start){ toast("Pick a start time.", true); return; }
+    if(!dur || dur<5){ toast("Duration must be at least 5 min.", true); return; }
+    if(dur>1440) dur=1440;
+
+    var blocks = load(current);
+    var startMin = toMin(start);
+    if(editingId){
+      for(var i=0;i<blocks.length;i++){
+        if(blocks[i].id===editingId){
+          blocks[i].title=title; blocks[i].start=startMin; blocks[i].dur=dur; blocks[i].cat=selectedCat;
+        }
+      }
+    } else {
+      blocks.push({ id:uid(), title:title, start:startMin, dur:dur, cat:selectedCat });
+    }
+    save(current, blocks);
+    closeEdit();
+    render();
+    toast(editingId?"Block updated":"Block added");
+  }
+
+  function deleteBlock(){
+    if(!editingId) return;
+    var blocks = load(current).filter(function(b){ return b.id!==editingId; });
+    save(current, blocks);
+    closeEdit();
+    render();
+    toast("Block deleted");
+  }
+
+  // ---------- templates ----------
+  function openTpl(){
+    var list=$("tplList");
+    list.innerHTML="";
+    TEMPLATES.forEach(function(tpl, idx){
+      var item=document.createElement("div");
+      item.className="tpl-item";
+      item.innerHTML='<div class="tn">'+esc(tpl.name)+'</div><div class="td">'+esc(tpl.desc)+'</div>';
+      item.addEventListener("click", function(){ applyTpl(idx); });
+      list.appendChild(item);
+    });
+    $("tplOverlay").classList.add("open");
+  }
+  function closeTpl(){ $("tplOverlay").classList.remove("open"); }
+  function applyTpl(idx){
+    var tpl=TEMPLATES[idx];
+    var blocks = tpl.blocks.map(function(b){
+      return { id:uid(), title:b.t, start:toMin(b.s), dur:b.d, cat:b.c };
+    });
+    save(current, blocks);
+    closeTpl();
+    render();
+    toast('Applied “'+tpl.name+'”');
+  }
+
+  // ---------- copy previous day ----------
+  function copyPrev(){
+    var prev = new Date(current); prev.setDate(prev.getDate()-1);
+    var prevBlocks = load(prev);
+    if(!prevBlocks.length){ toast("No blocks on the previous day.", true); return; }
+    var existing = load(current);
+    var copies = prevBlocks.map(function(b){
+      return { id:uid(), title:b.title, start:b.start, dur:b.dur, cat:b.cat };
+    });
+    var merged = existing.concat(copies);
+    save(current, merged);
+    render();
+    toast("Copied "+copies.length+" block"+(copies.length>1?"s":"")+" from yesterday");
+  }
+
+  // ---------- nav ----------
+  function shiftDay(n){
+    current.setDate(current.getDate()+n);
+    render();
+  }
+
+  // ---------- wire up ----------
+  $("prevDay").addEventListener("click", function(){ shiftDay(-1); });
+  $("nextDay").addEventListener("click", function(){ shiftDay(1); });
+  $("todayBtn").addEventListener("click", function(){
+    current=new Date(); current.setHours(0,0,0,0); render();
+  });
+  $("dateInput").addEventListener("change", function(e){
+    var v=e.target.value; if(!v) return;
+    var p=v.split("-");
+    current=new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+    current.setHours(0,0,0,0);
+    render();
+  });
+
+  $("addBtn").addEventListener("click", function(){ openEdit(null); });
+  $("tplBtn").addEventListener("click", openTpl);
+  $("copyBtn").addEventListener("click", copyPrev);
+
+  $("saveBtn").addEventListener("click", saveBlock);
+  $("deleteBtn").addEventListener("click", deleteBlock);
+  $("cancelBtn").addEventListener("click", closeEdit);
+  $("tplCancel").addEventListener("click", closeTpl);
+
+  Array.prototype.forEach.call(document.querySelectorAll(".dur-presets button"), function(btn){
+    btn.addEventListener("click", function(){ $("fDur").value = btn.dataset.d; });
+  });
+
+  // close sheets on backdrop tap
+  $("editOverlay").addEventListener("click", function(e){ if(e.target===this) closeEdit(); });
+  $("tplOverlay").addEventListener("click", function(e){ if(e.target===this) closeTpl(); });
+  document.addEventListener("keydown", function(e){
+    if(e.key==="Escape"){ closeEdit(); closeTpl(); }
+  });
+
+  // refresh now-line periodically
+  setInterval(function(){
+    var today=new Date(); today.setHours(0,0,0,0);
+    if(isSameDay(current,today)) renderTimeline(load(current), computeOverlaps(load(current)));
+  }, 60000);
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e0b1a" />
+<meta name="description" content="CONTENTCAL — plan your social content across Instagram, TikTok, YouTube, LinkedIn, X & Facebook. Month calendar, list view, status workflow, per-platform balance, CSV export. Works offline." />
+<meta name="color-scheme" content="dark" />
+<meta property="og:title" content="CONTENTCAL — Social Content Calendar" />
+<meta property="og:description" content="Plan, balance and schedule posts across every platform. Offline-first." />
+<meta property="og:type" content="website" />
+<title>CONTENTCAL — Social Content Calendar</title>
+<style>
+  :root{
+    --bg:#0e0b1a;
+    --bg2:#15102a;
+    --card:#1b1530;
+    --card2:#221a3c;
+    --line:#2e2552;
+    --line2:#3a2f66;
+    --txt:#ece9f7;
+    --muted:#9b93c4;
+    --faint:#6f6796;
+    --accent:#a855f7;
+    --accent2:#ec4899;
+    --good:#34d399;
+    --warn:#fbbf24;
+    --radius:16px;
+    --radius-sm:10px;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+    /* platform colors */
+    --p-instagram:#e1306c;
+    --p-tiktok:#25f4ee;
+    --p-youtube:#ff0033;
+    --p-linkedin:#0a8fd6;
+    --p-x:#cfd2d6;
+    --p-facebook:#1877f2;
+    /* status colors */
+    --s-idea:#fbbf24;
+    --s-drafting:#a855f7;
+    --s-scheduled:#38bdf8;
+    --s-posted:#34d399;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(168,85,247,.18), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(236,72,153,.12), transparent 55%),
+      var(--bg);
+    color:var(--txt);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 14px 120px;}
+
+  /* Header */
+  header.app{
+    position:sticky;top:0;z-index:30;
+    margin:0 -14px 14px;
+    padding:calc(env(safe-area-inset-top) + 16px) 18px 16px;
+    background:linear-gradient(135deg,#7c3aed 0%, #db2777 60%, #f97316 130%);
+    box-shadow:var(--shadow);
+    border-bottom-left-radius:20px;border-bottom-right-radius:20px;
+  }
+  .brandrow{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0;}
+  .logo{
+    width:34px;height:34px;border-radius:9px;flex:0 0 auto;
+    background:rgba(255,255,255,.18);backdrop-filter:blur(4px);
+    display:grid;place-items:center;font-size:18px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);
+  }
+  h1{font-size:19px;margin:0;letter-spacing:.06em;font-weight:800;}
+  .tag{font-size:11.5px;opacity:.92;margin-top:1px;font-weight:500;letter-spacing:.02em;}
+  .hbtns{display:flex;gap:6px;flex:0 0 auto;}
+  .ghost{
+    border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);
+    color:#fff;border-radius:9px;padding:7px 10px;font-size:12.5px;font-weight:600;
+    cursor:pointer;white-space:nowrap;
+  }
+  .ghost:active{transform:scale(.96);}
+
+  /* View toggle */
+  .views{display:flex;gap:6px;margin-top:14px;background:rgba(0,0,0,.18);padding:4px;border-radius:12px;}
+  .views button{
+    flex:1;border:none;background:transparent;color:rgba(255,255,255,.8);
+    padding:8px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;letter-spacing:.02em;
+  }
+  .views button.on{background:#fff;color:#7c2bbd;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:14px;}
+  .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin:0 0 10px;}
+
+  /* Month nav */
+  .monthnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+  .monthnav .mlabel{font-size:17px;font-weight:800;letter-spacing:.02em;}
+  .navbtn{
+    width:38px;height:38px;border-radius:11px;border:1px solid var(--line2);
+    background:var(--card2);color:var(--txt);font-size:18px;cursor:pointer;flex:0 0 auto;
+    display:grid;place-items:center;
+  }
+  .navbtn:active{transform:scale(.94);}
+  .today-pill{font-size:11.5px;color:var(--accent);background:rgba(168,85,247,.12);border:1px solid var(--line2);border-radius:20px;padding:4px 10px;cursor:pointer;font-weight:600;}
+
+  /* Calendar */
+  .cal-head,.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+  .cal-head{margin-bottom:5px;}
+  .cal-head div{text-align:center;font-size:10.5px;color:var(--faint);font-weight:700;letter-spacing:.04em;}
+  .day{
+    position:relative;aspect-ratio:1/1.05;border:1px solid var(--line);border-radius:10px;
+    background:var(--card2);padding:4px;cursor:pointer;overflow:hidden;
+    display:flex;flex-direction:column;gap:2px;transition:border-color .12s,background .12s;
+  }
+  .day.pad{background:transparent;border-color:transparent;cursor:default;}
+  .day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
+  .day:not(.pad):active{background:#2a2148;}
+  .day .dnum{font-size:11.5px;font-weight:700;color:var(--muted);line-height:1;}
+  .day.today .dnum{color:var(--accent);}
+  .dots{display:flex;flex-wrap:wrap;gap:2px;margin-top:1px;}
+  .dot{width:6px;height:6px;border-radius:50%;flex:0 0 auto;}
+  .day .countbadge{
+    position:absolute;right:3px;top:3px;font-size:9px;font-weight:800;color:var(--faint);
+  }
+  .day .titlepeek{font-size:8.5px;color:var(--faint);line-height:1.15;overflow:hidden;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+
+  /* Balance bars */
+  .balance{display:flex;flex-direction:column;gap:8px;}
+  .balrow{display:flex;align-items:center;gap:9px;}
+  .balrow .pname{display:flex;align-items:center;gap:7px;width:96px;flex:0 0 auto;font-size:12.5px;font-weight:600;}
+  .balrow .swatch{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+  .bartrack{flex:1;height:8px;background:var(--bg2);border-radius:6px;overflow:hidden;}
+  .barfill{height:100%;border-radius:6px;min-width:2px;transition:width .3s;}
+  .balrow .bcount{width:24px;text-align:right;font-size:12.5px;font-weight:700;color:var(--muted);}
+  .baltotal{margin-top:4px;font-size:11.5px;color:var(--faint);}
+
+  /* Filters */
+  .filters{display:flex;flex-direction:column;gap:10px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    border:1px solid var(--line2);background:var(--card2);color:var(--muted);
+    border-radius:20px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .chip .cdot{width:8px;height:8px;border-radius:50%;}
+  .chip.on{color:#fff;border-color:transparent;}
+  .chip[data-on-style]:not(.on) .cdot{opacity:.55;}
+
+  /* List */
+  .post{
+    border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;
+    display:flex;flex-direction:column;gap:7px;
+  }
+  .post:active{transform:scale(.995);}
+  .post .ptop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .post .pdate{font-size:11.5px;color:var(--muted);font-weight:700;}
+  .post .ptitle{font-size:14.5px;font-weight:700;line-height:1.3;}
+  .post .pcaption{font-size:12.5px;color:var(--muted);line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .post .pmeta{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+  .pchip{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;color:#fff;letter-spacing:.02em;}
+  .statuspill{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.03em;border:1px solid;}
+  .ctype{font-size:10.5px;color:var(--faint);background:var(--bg2);border:1px solid var(--line);padding:3px 8px;border-radius:7px;}
+
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:26px 10px;}
+  .empty .big{font-size:30px;margin-bottom:8px;opacity:.7;}
+
+  /* FAB */
+  .fab{
+    position:fixed;right:max(16px,calc(50% - 320px + 16px));bottom:calc(env(safe-area-inset-bottom) + 18px);
+    width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;z-index:40;
+    background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;font-size:30px;line-height:1;
+    box-shadow:0 8px 24px rgba(168,85,247,.5);
+  }
+  .fab:active{transform:scale(.92);}
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;z-index:50;background:rgba(5,3,12,.65);backdrop-filter:blur(3px);
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .overlay.show{display:flex;}
+  .sheet{
+    width:100%;max-width:640px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:20px 20px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 22px);
+    max-height:92vh;overflow-y:auto;box-shadow:0 -10px 40px rgba(0,0,0,.6);
+    animation:slideup .22s ease;
+  }
+  @keyframes slideup{from{transform:translateY(40px);opacity:.4;}to{transform:translateY(0);opacity:1;}}
+  .sheet h2{font-size:17px;margin:0 0 14px;font-weight:800;}
+  .grab{width:40px;height:4px;border-radius:4px;background:var(--line2);margin:0 auto 14px;}
+  label.fld{display:block;margin-bottom:13px;}
+  label.fld .lab{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  input[type=text],input[type=date],textarea,select{
+    width:100%;background:var(--card);border:1px solid var(--line2);color:var(--txt);
+    border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:64px;line-height:1.45;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);}
+  .platgrid{display:flex;flex-wrap:wrap;gap:7px;}
+  .platpick{
+    border:1px solid var(--line2);background:var(--card);border-radius:10px;padding:8px 11px;
+    font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;color:var(--muted);
+  }
+  .platpick .cdot{width:9px;height:9px;border-radius:50%;}
+  .platpick.on{color:#fff;border-color:transparent;}
+  .statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
+  .statpick{
+    border:1px solid var(--line2);background:var(--card);border-radius:10px;padding:9px;
+    font-size:12.5px;font-weight:700;cursor:pointer;text-align:center;color:var(--muted);
+  }
+  .statpick.on{color:#fff;border-color:transparent;}
+  .sheet-actions{display:flex;gap:9px;margin-top:6px;}
+  .btn{flex:1;border:none;border-radius:12px;padding:13px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .btn-primary{background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;}
+  .btn-primary:active{transform:scale(.98);}
+  .btn-secondary{background:var(--card);color:var(--muted);border:1px solid var(--line2);}
+  .btn-danger{background:rgba(239,68,68,.14);color:#f87171;border:1px solid rgba(239,68,68,.35);flex:0 0 auto;padding:13px 16px;}
+
+  /* Day detail list inside sheet */
+  .daylist{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+
+  /* Toast */
+  #toast{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 92px);
+    background:#2b2350;color:#fff;border:1px solid var(--line2);padding:11px 16px;border-radius:12px;
+    font-size:13px;font-weight:600;z-index:60;box-shadow:var(--shadow);opacity:0;pointer-events:none;
+    transition:opacity .25s,transform .25s;max-width:90%;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  /* Footer / freemium */
+  footer.fm{
+    margin-top:20px;border:1px solid var(--line2);border-radius:var(--radius);overflow:hidden;
+    background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(236,72,153,.08));
+  }
+  .fm .barzone{padding:14px;}
+  .fm .quota{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:7px;}
+  .fm .qtrack{height:7px;background:var(--bg2);border-radius:6px;overflow:hidden;}
+  .fm .qfill{height:100%;background:linear-gradient(90deg,#34d399,#fbbf24);border-radius:6px;transition:width .3s;}
+  .fm .qfill.near{background:linear-gradient(90deg,#fbbf24,#f97316);}
+  .fm .qfill.full{background:linear-gradient(90deg,#f97316,#ef4444);}
+  .fm .offer{padding:14px;border-top:1px solid var(--line);}
+  .fm .offer .h{font-size:13.5px;font-weight:800;margin-bottom:3px;}
+  .fm .offer .s{font-size:12px;color:var(--muted);line-height:1.5;}
+  .fm .offer .price{color:var(--good);font-weight:800;}
+  .fm .offer .b2b{color:var(--accent2);font-weight:800;}
+  .footnote{text-align:center;font-size:10.5px;color:var(--faint);margin:14px 0 0;letter-spacing:.02em;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="brandrow">
+      <div class="brand">
+        <div class="logo">📅</div>
+        <div>
+          <h1>CONTENTCAL</h1>
+          <div class="tag">Plan your mix across every platform</div>
+        </div>
+      </div>
+      <div class="hbtns">
+        <button class="ghost" id="btnExport">Export</button>
+      </div>
+    </div>
+    <div class="views">
+      <button data-view="calendar" class="on">Calendar</button>
+      <button data-view="list">List</button>
+      <button data-view="balance">Balance</button>
+    </div>
+  </header>
+
+  <!-- CALENDAR VIEW -->
+  <section id="view-calendar">
+    <div class="card">
+      <div class="monthnav">
+        <button class="navbtn" id="prevMonth" aria-label="Previous month">‹</button>
+        <div style="text-align:center;">
+          <div class="mlabel" id="monthLabel">—</div>
+          <span class="today-pill" id="goToday">Today</span>
+        </div>
+        <button class="navbtn" id="nextMonth" aria-label="Next month">›</button>
+      </div>
+      <div class="cal-head">
+        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <div class="card">
+      <p class="section-title">This month's platform mix</p>
+      <div class="balance" id="calBalance"></div>
+    </div>
+  </section>
+
+  <!-- LIST VIEW -->
+  <section id="view-list" style="display:none;">
+    <div class="card">
+      <p class="section-title">Filter</p>
+      <div class="filters">
+        <div>
+          <div style="font-size:11px;color:var(--faint);margin-bottom:6px;font-weight:600;">Platform</div>
+          <div class="chips" id="platFilters"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--faint);margin-bottom:6px;font-weight:600;">Status</div>
+          <div class="chips" id="statusFilters"></div>
+        </div>
+      </div>
+    </div>
+    <div id="listOut"></div>
+  </section>
+
+  <!-- BALANCE VIEW -->
+  <section id="view-balance" style="display:none;">
+    <div class="card">
+      <div class="monthnav">
+        <button class="navbtn" id="prevMonthB" aria-label="Previous month">‹</button>
+        <div class="mlabel" id="monthLabelB">—</div>
+        <button class="navbtn" id="nextMonthB" aria-label="Next month">›</button>
+      </div>
+      <p class="section-title">Monthly platform balance</p>
+      <div class="balance" id="balBalanceMonth"></div>
+    </div>
+    <div class="card">
+      <p class="section-title">This week (Mon–Sun)</p>
+      <div class="balance" id="balBalanceWeek"></div>
+      <div class="baltotal" id="weekTotal"></div>
+    </div>
+    <div class="card">
+      <p class="section-title">By status — this month</p>
+      <div class="balance" id="balStatus"></div>
+    </div>
+  </section>
+
+  <!-- FREEMIUM FOOTER -->
+  <footer class="fm">
+    <div class="barzone">
+      <div class="quota"><span id="quotaLabel">0 / 30 posts</span><span id="quotaPct">Free plan</span></div>
+      <div class="qtrack"><div class="qfill" id="quotaFill" style="width:0%"></div></div>
+    </div>
+    <div class="offer">
+      <div class="h">Go unlimited 🚀</div>
+      <div class="s">
+        Free up to <strong>30 posts</strong>. <span class="price">Lifetime $4.99</span> unlocks unlimited posts + agency teams.
+        Running content for clients? <span class="b2b">Agency teams — B2B $20/mo</span>.
+      </div>
+    </div>
+  </footer>
+
+  <p class="footnote">CONTENTCAL · works fully offline · your data stays on this device</p>
+</div>
+
+<button class="fab" id="fab" aria-label="Add post">+</button>
+
+<!-- EDIT / ADD SHEET -->
+<div class="overlay" id="editOverlay">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2 id="editTitle">New post</h2>
+    <label class="fld">
+      <span class="lab">Date</span>
+      <input type="date" id="fDate" />
+    </label>
+    <label class="fld">
+      <span class="lab">Title / Hook</span>
+      <input type="text" id="fTitle" placeholder="e.g. 3 mistakes killing your reach" maxlength="140" />
+    </label>
+    <label class="fld">
+      <span class="lab">Caption</span>
+      <textarea id="fCaption" placeholder="Write the caption, hashtags, notes…"></textarea>
+    </label>
+    <div class="fld">
+      <span class="lab">Platforms</span>
+      <div class="platgrid" id="fPlatforms"></div>
+    </div>
+    <div class="fld">
+      <span class="lab">Status</span>
+      <div class="statgrid" id="fStatus"></div>
+    </div>
+    <label class="fld">
+      <span class="lab">Content type</span>
+      <select id="fType">
+        <option>Reel / Short</option>
+        <option>Carousel</option>
+        <option>Single image</option>
+        <option>Long-form video</option>
+        <option>Story</option>
+        <option>Text post</option>
+        <option>Live</option>
+        <option>Thread</option>
+      </select>
+    </label>
+    <div class="sheet-actions">
+      <button class="btn btn-secondary" id="cancelEdit">Cancel</button>
+      <button class="btn btn-danger" id="deletePost" style="display:none;">Delete</button>
+      <button class="btn btn-primary" id="savePost">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAY DETAIL SHEET -->
+<div class="overlay" id="dayOverlay">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2 id="dayTitle">Day</h2>
+    <div class="daylist" id="dayList"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-secondary" id="closeDay">Close</button>
+      <button class="btn btn-primary" id="addOnDay">+ Add post this day</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var PREFIX = "contentcal_";
+  var STORE_KEY = PREFIX + "posts";
+  var FREE_LIMIT = 30;
+
+  var PLATFORMS = [
+    {id:"instagram", name:"Instagram", short:"IG", color:"var(--p-instagram)", hex:"#e1306c"},
+    {id:"tiktok",    name:"TikTok",    short:"TT", color:"var(--p-tiktok)",    hex:"#25f4ee"},
+    {id:"youtube",   name:"YouTube",   short:"YT", color:"var(--p-youtube)",   hex:"#ff0033"},
+    {id:"linkedin",  name:"LinkedIn",  short:"LI", color:"var(--p-linkedin)",  hex:"#0a8fd6"},
+    {id:"x",         name:"X",         short:"X",  color:"var(--p-x)",         hex:"#cfd2d6"},
+    {id:"facebook",  name:"Facebook",  short:"FB", color:"var(--p-facebook)",  hex:"#1877f2"}
+  ];
+  var STATUSES = [
+    {id:"idea",      name:"Idea",      color:"var(--s-idea)",      hex:"#fbbf24"},
+    {id:"drafting",  name:"Drafting",  color:"var(--s-drafting)",  hex:"#a855f7"},
+    {id:"scheduled", name:"Scheduled", color:"var(--s-scheduled)", hex:"#38bdf8"},
+    {id:"posted",    name:"Posted",    color:"var(--s-posted)",    hex:"#34d399"}
+  ];
+  var platMap = {}, statMap = {};
+  PLATFORMS.forEach(function(p){platMap[p.id]=p;});
+  STATUSES.forEach(function(s){statMap[s.id]=s;});
+
+  // ---------- state ----------
+  var posts = load();
+  var view = "calendar";
+  var cal = new Date(); cal.setDate(1);
+  var editingId = null;
+  var draftPlatforms = [];
+  var draftStatus = "idea";
+  var filterPlat = {};  // empty/false = show all
+  var filterStat = {};
+
+  // ---------- storage ----------
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw){ var a = JSON.parse(raw); if(Array.isArray(a)) return a; }
+    }catch(e){}
+    return seed();
+  }
+  function save(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(posts)); }catch(e){ toast("Couldn't save (storage full?)"); }
+  }
+  function seed(){
+    var seeded = localStorage.getItem(PREFIX+"seeded");
+    if(seeded) return [];
+    localStorage.setItem(PREFIX+"seeded","1");
+    var t = new Date();
+    function d(off){ var x=new Date(t); x.setDate(x.getDate()+off); return iso(x); }
+    return [
+      {id:uid(),date:d(0),title:"Behind the scenes: editing setup",caption:"Quick tour of how I batch-edit a week of content in one sitting. #creator #workflow",platforms:["instagram","tiktok"],status:"scheduled",type:"Reel / Short"},
+      {id:uid(),date:d(2),title:"3 mistakes killing your reach",caption:"Stop doing #2 immediately. Full breakdown in the video.",platforms:["youtube"],status:"drafting",type:"Long-form video"},
+      {id:uid(),date:d(2),title:"Lessons from 100k followers",caption:"Long-form post on what actually moved the needle this year.",platforms:["linkedin","x"],status:"idea",type:"Text post"},
+      {id:uid(),date:d(5),title:"Weekly Q&A carousel",caption:"Answering your top questions from the DMs.",platforms:["instagram"],status:"idea",type:"Carousel"},
+      {id:uid(),date:d(-3),title:"New product teaser",caption:"It's finally coming. Drop a 🔥 if you're ready.",platforms:["instagram","facebook","tiktok"],status:"posted",type:"Story"}
+    ];
+  }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  // ---------- date helpers ----------
+  function iso(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function pad(n){ return (n<10?"0":"")+n; }
+  function parseISO(s){ var p=s.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function monthName(d){ return d.toLocaleDateString(undefined,{month:"long",year:"numeric"}); }
+  function prettyDate(s){ return parseISO(s).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); }
+  function sameMonth(s, ref){ var d=parseISO(s); return d.getFullYear()===ref.getFullYear() && d.getMonth()===ref.getMonth(); }
+  // Monday-start week containing `ref`
+  function weekRange(ref){
+    var d = new Date(ref.getFullYear(),ref.getMonth(),ref.getDate());
+    var dow = (d.getDay()+6)%7; // Mon=0
+    var start = new Date(d); start.setDate(d.getDate()-dow);
+    var end = new Date(start); end.setDate(start.getDate()+6);
+    return {start:start, end:end};
+  }
+  function inRange(s, start, end){
+    var d = parseISO(s);
+    return d>=new Date(start.getFullYear(),start.getMonth(),start.getDate()) &&
+           d<=new Date(end.getFullYear(),end.getMonth(),end.getDate(),23,59,59);
+  }
+
+  // ---------- toast ----------
+  var toastEl = document.getElementById("toast"), toastTimer=null;
+  function toast(msg){
+    toastEl.textContent = msg; toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- views ----------
+  var viewSections = {
+    calendar: document.getElementById("view-calendar"),
+    list:     document.getElementById("view-list"),
+    balance:  document.getElementById("view-balance")
+  };
+  document.querySelectorAll(".views button").forEach(function(b){
+    b.addEventListener("click", function(){
+      view = b.getAttribute("data-view");
+      document.querySelectorAll(".views button").forEach(function(x){x.classList.toggle("on", x===b);});
+      Object.keys(viewSections).forEach(function(k){ viewSections[k].style.display = (k===view?"":"none"); });
+      render();
+    });
+  });
+
+  // ---------- calendar ----------
+  function postsOnDay(s){ return posts.filter(function(p){ return p.date===s; }); }
+
+  function renderCalendar(){
+    document.getElementById("monthLabel").textContent = monthName(cal);
+    var grid = document.getElementById("calGrid");
+    grid.innerHTML = "";
+    var first = new Date(cal.getFullYear(), cal.getMonth(), 1);
+    var startPad = (first.getDay()+6)%7; // Mon start
+    var daysInMonth = new Date(cal.getFullYear(), cal.getMonth()+1, 0).getDate();
+    var todayISO = iso(new Date());
+
+    for(var i=0;i<startPad;i++){
+      var pad0 = document.createElement("div"); pad0.className="day pad"; grid.appendChild(pad0);
+    }
+    for(var day=1; day<=daysInMonth; day++){
+      var dDate = new Date(cal.getFullYear(), cal.getMonth(), day);
+      var ds = iso(dDate);
+      var dayPosts = postsOnDay(ds);
+      var el = document.createElement("div");
+      el.className = "day" + (ds===todayISO ? " today" : "");
+      el.setAttribute("data-date", ds);
+
+      var num = document.createElement("div"); num.className="dnum"; num.textContent=day; el.appendChild(num);
+
+      if(dayPosts.length){
+        var badge = document.createElement("div"); badge.className="countbadge"; badge.textContent=dayPosts.length; el.appendChild(badge);
+        var dots = document.createElement("div"); dots.className="dots";
+        var seen = {};
+        dayPosts.forEach(function(p){
+          (p.platforms||[]).forEach(function(pl){
+            if(seen[pl]) return; seen[pl]=1;
+            var dot=document.createElement("span"); dot.className="dot";
+            dot.style.background = platMap[pl] ? platMap[pl].color : "#888";
+            dots.appendChild(dot);
+          });
+        });
+        el.appendChild(dots);
+        var peek = document.createElement("div"); peek.className="titlepeek"; peek.textContent = dayPosts[0].title || "(untitled)";
+        el.appendChild(peek);
+      }
+      el.addEventListener("click", function(){ openDay(this.getAttribute("data-date")); });
+      grid.appendChild(el);
+    }
+    renderBalanceInto("calBalance", monthCounts(cal), monthTotal(cal));
+  }
+
+  function monthCounts(ref){
+    var c = {}; PLATFORMS.forEach(function(p){c[p.id]=0;});
+    posts.forEach(function(p){
+      if(sameMonth(p.date, ref)) (p.platforms||[]).forEach(function(pl){ if(c[pl]!=null) c[pl]++; });
+    });
+    return c;
+  }
+  function monthTotal(ref){ return posts.filter(function(p){return sameMonth(p.date,ref);}).length; }
+
+  function renderBalanceInto(elId, counts, totalPosts){
+    var host = document.getElementById(elId);
+    host.innerHTML = "";
+    var max = 1;
+    PLATFORMS.forEach(function(p){ if(counts[p.id]>max) max=counts[p.id]; });
+    PLATFORMS.forEach(function(p){
+      var row = document.createElement("div"); row.className="balrow";
+      row.innerHTML =
+        '<div class="pname"><span class="swatch" style="background:'+p.color+'"></span>'+p.name+'</div>'+
+        '<div class="bartrack"><div class="barfill" style="width:'+((counts[p.id]/max)*100)+'%;background:'+p.color+'"></div></div>'+
+        '<div class="bcount">'+counts[p.id]+'</div>';
+      host.appendChild(row);
+    });
+    if(typeof totalPosts==="number"){
+      var t = document.createElement("div"); // optional
+    }
+  }
+
+  // ---------- balance view ----------
+  function renderBalanceView(){
+    document.getElementById("monthLabelB").textContent = monthName(cal);
+    renderBalanceInto("balBalanceMonth", monthCounts(cal), monthTotal(cal));
+
+    var wr = weekRange(new Date());
+    var wc = {}; PLATFORMS.forEach(function(p){wc[p.id]=0;});
+    var weekN = 0;
+    posts.forEach(function(p){
+      if(inRange(p.date, wr.start, wr.end)){ weekN++; (p.platforms||[]).forEach(function(pl){ if(wc[pl]!=null) wc[pl]++; }); }
+    });
+    renderBalanceInto("balBalanceWeek", wc);
+    document.getElementById("weekTotal").textContent =
+      weekN+" post"+(weekN===1?"":"s")+" this week ("+
+      wr.start.toLocaleDateString(undefined,{month:"short",day:"numeric"})+" – "+
+      wr.end.toLocaleDateString(undefined,{month:"short",day:"numeric"})+")";
+
+    // status breakdown
+    var host = document.getElementById("balStatus");
+    host.innerHTML="";
+    var sc={}; STATUSES.forEach(function(s){sc[s.id]=0;});
+    posts.forEach(function(p){ if(sameMonth(p.date,cal) && sc[p.status]!=null) sc[p.status]++; });
+    var max=1; STATUSES.forEach(function(s){ if(sc[s.id]>max) max=sc[s.id]; });
+    STATUSES.forEach(function(s){
+      var row=document.createElement("div"); row.className="balrow";
+      row.innerHTML =
+        '<div class="pname"><span class="swatch" style="background:'+s.color+'"></span>'+s.name+'</div>'+
+        '<div class="bartrack"><div class="barfill" style="width:'+((sc[s.id]/max)*100)+'%;background:'+s.color+'"></div></div>'+
+        '<div class="bcount">'+sc[s.id]+'</div>';
+      host.appendChild(row);
+    });
+  }
+
+  // ---------- list ----------
+  function renderFilters(){
+    var pf = document.getElementById("platFilters"); pf.innerHTML="";
+    PLATFORMS.forEach(function(p){
+      var c=document.createElement("button");
+      c.className="chip"+(filterPlat[p.id]?" on":"");
+      c.setAttribute("data-on-style","1");
+      if(filterPlat[p.id]) c.style.background=p.color;
+      c.innerHTML='<span class="cdot" style="background:'+p.color+'"></span>'+p.name;
+      c.addEventListener("click",function(){ filterPlat[p.id]=!filterPlat[p.id]; renderFilters(); renderList(); });
+      pf.appendChild(c);
+    });
+    var sf = document.getElementById("statusFilters"); sf.innerHTML="";
+    STATUSES.forEach(function(s){
+      var c=document.createElement("button");
+      c.className="chip"+(filterStat[s.id]?" on":"");
+      c.setAttribute("data-on-style","1");
+      if(filterStat[s.id]) c.style.background=s.color;
+      c.innerHTML='<span class="cdot" style="background:'+s.color+'"></span>'+s.name;
+      c.addEventListener("click",function(){ filterStat[s.id]=!filterStat[s.id]; renderFilters(); renderList(); });
+      sf.appendChild(c);
+    });
+  }
+
+  function activeFilters(obj){ return Object.keys(obj).filter(function(k){return obj[k];}); }
+
+  function filteredPosts(){
+    var ap = activeFilters(filterPlat), as = activeFilters(filterStat);
+    return posts.filter(function(p){
+      if(ap.length && !(p.platforms||[]).some(function(pl){return filterPlat[pl];})) return false;
+      if(as.length && !filterStat[p.status]) return false;
+      return true;
+    }).sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+  }
+
+  function renderList(){
+    var out = document.getElementById("listOut");
+    var list = filteredPosts();
+    if(!list.length){
+      out.innerHTML = '<div class="card"><div class="empty"><div class="big">🗓️</div>No posts match. Tap + to add one, or clear filters.</div></div>';
+      return;
+    }
+    out.innerHTML = "";
+    list.forEach(function(p){
+      out.appendChild(postCard(p));
+    });
+  }
+
+  function postCard(p){
+    var s = statMap[p.status] || STATUSES[0];
+    var el = document.createElement("div"); el.className="post";
+    var plats = (p.platforms||[]).map(function(pl){
+      var P=platMap[pl]; if(!P) return "";
+      return '<span class="pchip" style="background:'+P.color+';color:'+(pl==="x"||pl==="tiktok"?"#0b0b0b":"#fff")+'">'+P.name+'</span>';
+    }).join("");
+    el.innerHTML =
+      '<div class="ptop"><div class="pdate">'+prettyDate(p.date)+'</div>'+
+        '<span class="statuspill" style="color:'+s.color+';border-color:'+s.color+'33;background:'+s.color+'14">'+s.name+'</span></div>'+
+      '<div class="ptitle">'+esc(p.title||"(untitled)")+'</div>'+
+      (p.caption?'<div class="pcaption">'+esc(p.caption)+'</div>':'')+
+      '<div class="pmeta">'+plats+'<span class="ctype">'+esc(p.type||"")+'</span></div>';
+    el.addEventListener("click", function(){ openEdit(p.id); });
+    return el;
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+  // ---------- day detail ----------
+  var dayContext = null;
+  function openDay(ds){
+    dayContext = ds;
+    document.getElementById("dayTitle").textContent = parseISO(ds).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+    var host = document.getElementById("dayList");
+    host.innerHTML="";
+    var dp = postsOnDay(ds);
+    if(!dp.length){
+      host.innerHTML = '<div class="empty" style="padding:14px;">No posts yet on this day.</div>';
+    }else{
+      dp.forEach(function(p){ host.appendChild(postCard(p)); });
+    }
+    showOverlay("dayOverlay");
+  }
+  document.getElementById("closeDay").addEventListener("click", function(){ hideOverlay("dayOverlay"); });
+  document.getElementById("addOnDay").addEventListener("click", function(){
+    hideOverlay("dayOverlay");
+    openEdit(null, dayContext);
+  });
+
+  // ---------- edit/add sheet ----------
+  function buildPickers(){
+    var pg = document.getElementById("fPlatforms"); pg.innerHTML="";
+    PLATFORMS.forEach(function(p){
+      var b=document.createElement("button"); b.type="button";
+      b.className="platpick"; b.setAttribute("data-id",p.id);
+      b.innerHTML='<span class="cdot" style="background:'+p.color+'"></span>'+p.name;
+      b.addEventListener("click",function(){
+        var id=p.id, i=draftPlatforms.indexOf(id);
+        if(i>=0) draftPlatforms.splice(i,1); else draftPlatforms.push(id);
+        syncPlatPicks();
+      });
+      pg.appendChild(b);
+    });
+    var sg = document.getElementById("fStatus"); sg.innerHTML="";
+    STATUSES.forEach(function(s){
+      var b=document.createElement("button"); b.type="button";
+      b.className="statpick"; b.setAttribute("data-id",s.id); b.textContent=s.name;
+      b.addEventListener("click",function(){ draftStatus=s.id; syncStatPicks(); });
+      sg.appendChild(b);
+    });
+  }
+  function syncPlatPicks(){
+    document.querySelectorAll("#fPlatforms .platpick").forEach(function(b){
+      var id=b.getAttribute("data-id"); var on=draftPlatforms.indexOf(id)>=0;
+      b.classList.toggle("on", on);
+      b.style.background = on ? platMap[id].color : "";
+      b.style.color = on ? ((id==="x"||id==="tiktok")?"#0b0b0b":"#fff") : "";
+    });
+  }
+  function syncStatPicks(){
+    document.querySelectorAll("#fStatus .statpick").forEach(function(b){
+      var id=b.getAttribute("data-id"); var on=id===draftStatus;
+      b.classList.toggle("on", on);
+      b.style.background = on ? statMap[id].color : "";
+      b.style.color = on ? "#0b0b0b" : "";
+    });
+  }
+
+  function openEdit(id, presetDate){
+    editingId = id;
+    var del = document.getElementById("deletePost");
+    if(id){
+      var p = posts.find(function(x){return x.id===id;});
+      if(!p){ return; }
+      document.getElementById("editTitle").textContent = "Edit post";
+      document.getElementById("fDate").value = p.date;
+      document.getElementById("fTitle").value = p.title||"";
+      document.getElementById("fCaption").value = p.caption||"";
+      document.getElementById("fType").value = p.type||"Reel / Short";
+      draftPlatforms = (p.platforms||[]).slice();
+      draftStatus = p.status||"idea";
+      del.style.display="";
+    }else{
+      // gate on free limit for NEW posts
+      if(posts.length >= FREE_LIMIT){
+        toast("Free plan limit ("+FREE_LIMIT+"). Upgrade to add more.");
+        return;
+      }
+      document.getElementById("editTitle").textContent = "New post";
+      document.getElementById("fDate").value = presetDate || iso(new Date());
+      document.getElementById("fTitle").value = "";
+      document.getElementById("fCaption").value = "";
+      document.getElementById("fType").value = "Reel / Short";
+      draftPlatforms = [];
+      draftStatus = "idea";
+      del.style.display="none";
+    }
+    syncPlatPicks(); syncStatPicks();
+    showOverlay("editOverlay");
+    setTimeout(function(){ document.getElementById("fTitle").focus(); }, 60);
+  }
+
+  document.getElementById("savePost").addEventListener("click", function(){
+    var date = document.getElementById("fDate").value;
+    var title = document.getElementById("fTitle").value.trim();
+    var caption = document.getElementById("fCaption").value.trim();
+    var type = document.getElementById("fType").value;
+    if(!date){ toast("Pick a date"); return; }
+    if(!title && !caption){ toast("Add a title or caption"); return; }
+    if(!draftPlatforms.length){ toast("Pick at least one platform"); return; }
+
+    if(editingId){
+      var p = posts.find(function(x){return x.id===editingId;});
+      if(p){ p.date=date; p.title=title; p.caption=caption; p.type=type; p.platforms=draftPlatforms.slice(); p.status=draftStatus; }
+      toast("Post updated");
+    }else{
+      if(posts.length >= FREE_LIMIT){ toast("Free limit reached — upgrade"); return; }
+      posts.push({id:uid(),date:date,title:title,caption:caption,type:type,platforms:draftPlatforms.slice(),status:draftStatus});
+      toast("Post added ✓");
+    }
+    save();
+    hideOverlay("editOverlay");
+    render();
+  });
+
+  document.getElementById("deletePost").addEventListener("click", function(){
+    if(!editingId) return;
+    posts = posts.filter(function(x){return x.id!==editingId;});
+    save();
+    hideOverlay("editOverlay");
+    toast("Post deleted");
+    render();
+  });
+  document.getElementById("cancelEdit").addEventListener("click", function(){ hideOverlay("editOverlay"); });
+
+  // ---------- overlay helpers ----------
+  function showOverlay(id){ document.getElementById(id).classList.add("show"); document.body.style.overflow="hidden"; }
+  function hideOverlay(id){ document.getElementById(id).classList.remove("show"); document.body.style.overflow=""; }
+  [["editOverlay"],["dayOverlay"]].forEach(function(pair){
+    var ov = document.getElementById(pair[0]);
+    ov.addEventListener("click", function(e){ if(e.target===ov) hideOverlay(pair[0]); });
+  });
+
+  // ---------- nav ----------
+  function shiftMonth(n){ cal = new Date(cal.getFullYear(), cal.getMonth()+n, 1); render(); }
+  document.getElementById("prevMonth").addEventListener("click", function(){ shiftMonth(-1); });
+  document.getElementById("nextMonth").addEventListener("click", function(){ shiftMonth(1); });
+  document.getElementById("prevMonthB").addEventListener("click", function(){ shiftMonth(-1); });
+  document.getElementById("nextMonthB").addEventListener("click", function(){ shiftMonth(1); });
+  document.getElementById("goToday").addEventListener("click", function(){ cal=new Date(); cal.setDate(1); render(); });
+  document.getElementById("fab").addEventListener("click", function(){ openEdit(null); });
+
+  // ---------- CSV export ----------
+  document.getElementById("btnExport").addEventListener("click", function(){
+    if(!posts.length){ toast("Nothing to export yet"); return; }
+    var rows = [["date","title","caption","platforms","status","content_type"]];
+    posts.slice().sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(p){
+      rows.push([p.date, p.title||"", p.caption||"", (p.platforms||[]).join("|"), p.status||"", p.type||""]);
+    });
+    var csv = rows.map(function(r){ return r.map(csvCell).join(","); }).join("\r\n");
+    var blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "contentcal-"+iso(new Date())+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast("Exported "+posts.length+" posts to CSV");
+  });
+  function csvCell(v){ v=String(v==null?"":v); if(/[",\r\n]/.test(v)){ v='"'+v.replace(/"/g,'""')+'"'; } return v; }
+
+  // ---------- freemium meter ----------
+  function renderQuota(){
+    var n = posts.length;
+    var pct = Math.min(100, Math.round((n/FREE_LIMIT)*100));
+    document.getElementById("quotaLabel").textContent = n+" / "+FREE_LIMIT+" posts";
+    var fill = document.getElementById("quotaFill");
+    fill.style.width = pct+"%";
+    fill.classList.toggle("near", n>=FREE_LIMIT*0.8 && n<FREE_LIMIT);
+    fill.classList.toggle("full", n>=FREE_LIMIT);
+    var pctEl = document.getElementById("quotaPct");
+    pctEl.textContent = n>=FREE_LIMIT ? "Limit reached" : (n>=FREE_LIMIT*0.8 ? "Almost full" : "Free plan");
+  }
+
+  // ---------- master render ----------
+  function render(){
+    if(view==="calendar") renderCalendar();
+    else if(view==="list"){ renderFilters(); renderList(); }
+    else if(view==="balance") renderBalanceView();
+    renderQuota();
+  }
+
+  // init
+  buildPickers();
+  render();
+})();
+</script>
+</body>
+</html>

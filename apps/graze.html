@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#1b5e36" />
+<meta name="description" content="GRAZE — a simple, offline rotational grazing planner for livestock farmers. Plan paddock rotations, track rest days, and know exactly what to do today." />
+<meta name="author" content="RHYTHMIX / GRAZE" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="GRAZE" />
+<meta property="og:title" content="GRAZE — Rotational Grazing Planner" />
+<meta property="og:description" content="Plan paddock rotations, track rest days, and know exactly what to do today. Offline-first." />
+<meta property="og:type" content="website" />
+<title>GRAZE — Rotational Grazing Planner</title>
+<style>
+  :root {
+    --green-900: #0f3d22;
+    --green-800: #14502c;
+    --green-700: #1b5e36;
+    --green-600: #237a45;
+    --green-500: #2f9c58;
+    --green-400: #4cbd76;
+    --green-300: #86d8a3;
+    --green-100: #e4f4ea;
+    --green-50:  #f1faf4;
+    --earth:     #8a6d3b;
+    --earth-dk:  #6b5329;
+    --amber:     #d99416;
+    --amber-bg:  #fdf3df;
+    --red:       #c0392b;
+    --red-bg:    #fbeae8;
+    --ink:       #1c2b22;
+    --ink-soft:  #4a5d52;
+    --line:      #d8e6dd;
+    --card:      #ffffff;
+    --bg:        #eef5f0;
+    --radius:    16px;
+    --radius-sm: 10px;
+    --shadow:    0 1px 2px rgba(15,61,34,.06), 0 6px 18px rgba(15,61,34,.07);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--bg); }
+
+  /* Header */
+  header.app {
+    background: linear-gradient(135deg, var(--green-800) 0%, var(--green-600) 55%, var(--green-500) 100%);
+    color: #fff;
+    padding: 22px 20px 24px;
+    padding-top: calc(22px + env(safe-area-inset-top));
+    position: relative;
+    overflow: hidden;
+  }
+  header.app::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(120% 80% at 90% -10%, rgba(255,255,255,.18), transparent 60%);
+    pointer-events: none;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand .logo {
+    width: 38px; height: 38px; border-radius: 10px; flex: none;
+    background: rgba(255,255,255,.16);
+    display: grid; place-items: center;
+    backdrop-filter: blur(4px);
+  }
+  .brand .logo svg { width: 22px; height: 22px; }
+  .brand h1 { font-size: 21px; margin: 0; letter-spacing: .14em; font-weight: 800; }
+  .brand p { margin: 1px 0 0; font-size: 11.5px; opacity: .9; letter-spacing: .04em; }
+
+  /* Tabs */
+  nav.tabs {
+    display: flex; gap: 4px;
+    background: var(--green-900);
+    padding: 6px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  nav.tabs button {
+    flex: 1; border: none; background: transparent; color: rgba(255,255,255,.72);
+    font-family: var(--font); font-size: 13px; font-weight: 600;
+    padding: 9px 4px; border-radius: 9px; cursor: pointer; transition: .15s;
+  }
+  nav.tabs button.active { background: rgba(255,255,255,.16); color: #fff; }
+
+  main { padding: 16px 16px 90px; }
+
+  /* Cards */
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 10px; letter-spacing: .02em; display: flex; align-items: center; gap: 8px; }
+  .card h2 .hint { font-size: 11px; font-weight: 500; color: var(--ink-soft); margin-left: auto; }
+
+  /* Dashboard */
+  .today {
+    background: linear-gradient(140deg, var(--green-700), var(--green-500));
+    color: #fff; border: none;
+  }
+  .today h2 { color: #fff; }
+  .today .big { font-size: 26px; font-weight: 800; margin: 2px 0 4px; }
+  .today .sub { font-size: 13.5px; opacity: .92; }
+  .today .move-row {
+    margin-top: 14px; display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.14); border-radius: var(--radius-sm); padding: 11px 13px;
+  }
+  .today .move-row .label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; }
+  .today .move-row .val { font-size: 15px; font-weight: 700; }
+  .today .countdown {
+    margin-left: auto; text-align: center; background: rgba(255,255,255,.18);
+    border-radius: 10px; padding: 6px 11px; min-width: 56px;
+  }
+  .today .countdown .num { font-size: 20px; font-weight: 800; line-height: 1; }
+  .today .countdown .unit { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .stat {
+    background: var(--green-50); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 11px 10px; text-align: center;
+  }
+  .stat .n { font-size: 19px; font-weight: 800; color: var(--green-700); }
+  .stat .l { font-size: 10.5px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+
+  /* Paddock grid (visual) */
+  .pgrid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .ptile {
+    border-radius: var(--radius-sm); padding: 12px; border: 1.5px solid var(--line);
+    background: var(--green-50); position: relative; min-height: 92px; cursor: pointer;
+    display: flex; flex-direction: column; transition: .15s; overflow: hidden;
+  }
+  .ptile:active { transform: scale(.985); }
+  .ptile .pname { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .ptile .pmeta { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+  .ptile .pstatus {
+    margin-top: auto; font-size: 11px; font-weight: 700; padding: 3px 8px;
+    border-radius: 999px; align-self: flex-start; letter-spacing: .02em;
+  }
+  .ptile.grazing { background: linear-gradient(135deg, var(--green-400), var(--green-500)); border-color: var(--green-600); color: #fff; }
+  .ptile.grazing .pmeta { color: rgba(255,255,255,.9); }
+  .ptile.grazing .pstatus { background: rgba(255,255,255,.25); color: #fff; }
+  .ptile.resting { background: var(--amber-bg); border-color: #f0d699; }
+  .ptile.resting .pstatus { background: var(--amber); color: #fff; }
+  .ptile.ready { background: var(--green-100); border-color: var(--green-300); }
+  .ptile.ready .pstatus { background: var(--green-600); color: #fff; }
+  .ptile.overgrazed .pstatus { background: var(--red); color: #fff; }
+  .ptile.overgrazed { border-color: #e8b4ad; background: var(--red-bg); }
+  .ptile .restbar {
+    height: 5px; border-radius: 999px; background: rgba(0,0,0,.08); margin-top: 7px; overflow: hidden;
+  }
+  .ptile .restbar > i { display: block; height: 100%; background: var(--amber); border-radius: 999px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* Forms */
+  label.fld { display: block; margin-bottom: 11px; }
+  label.fld > span { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 4px; }
+  input, select {
+    width: 100%; font-family: var(--font); font-size: 15px; color: var(--ink);
+    padding: 10px 12px; border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+    background: #fff; outline: none; transition: .15s;
+  }
+  input:focus, select:focus { border-color: var(--green-500); box-shadow: 0 0 0 3px rgba(47,156,88,.15); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row2 label.fld { margin-bottom: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; font-family: var(--font); font-size: 15px; font-weight: 700;
+    padding: 12px 16px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+    background: var(--green-600); color: #fff; transition: .15s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.secondary { background: var(--green-100); color: var(--green-800); }
+  .btn.ghost { background: transparent; color: var(--green-700); border: 1.5px solid var(--line); }
+  .btn.danger { background: var(--red-bg); color: var(--red); }
+  .btn.sm { width: auto; padding: 8px 13px; font-size: 13px; }
+  .btn-row { display: flex; gap: 8px; }
+
+  .empty { text-align: center; color: var(--ink-soft); font-size: 13.5px; padding: 18px 8px; }
+  .empty svg { width: 40px; height: 40px; opacity: .35; margin-bottom: 6px; }
+
+  /* Paddock list rows (manage) */
+  .prow {
+    display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line);
+  }
+  .prow:last-child { border-bottom: none; }
+  .prow .info { flex: 1; min-width: 0; }
+  .prow .info .nm { font-weight: 700; font-size: 14px; }
+  .prow .info .mt { font-size: 11.5px; color: var(--ink-soft); }
+  .qbadge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--green-100); color: var(--green-700); }
+  .iconbtn {
+    border: none; background: var(--green-50); border-radius: 9px; width: 34px; height: 34px;
+    display: grid; place-items: center; cursor: pointer; color: var(--ink-soft);
+  }
+  .iconbtn svg { width: 16px; height: 16px; }
+  .iconbtn.del { background: var(--red-bg); color: var(--red); }
+
+  /* Schedule */
+  .sched-item { display: flex; gap: 12px; padding: 10px 0; }
+  .sched-item .when {
+    flex: none; width: 62px; text-align: center; background: var(--green-50);
+    border-radius: 10px; padding: 7px 4px; border: 1px solid var(--line);
+  }
+  .sched-item .when .d { font-size: 17px; font-weight: 800; color: var(--green-700); line-height: 1; }
+  .sched-item .when .m { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+  .sched-item .what { flex: 1; align-self: center; }
+  .sched-item .what .t { font-weight: 700; font-size: 14px; }
+  .sched-item .what .s { font-size: 11.5px; color: var(--ink-soft); }
+  .sched-item.first .when { background: var(--green-600); border-color: var(--green-600); }
+  .sched-item.first .when .d, .sched-item.first .when .m { color: #fff; }
+
+  /* Toast */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none;
+    background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 999px;
+    font-size: 13.5px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    transition: .25s; z-index: 100; max-width: 90vw; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(15,61,34,.42); z-index: 90;
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: #fff; width: 100%; max-width: 480px; border-radius: 20px 20px 0 0;
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); max-height: 88vh; overflow-y: auto;
+    animation: slideUp .22s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal h3 { margin: 0 0 14px; font-size: 17px; }
+
+  .unit-toggle { display: inline-flex; background: var(--green-50); border-radius: 999px; padding: 3px; gap: 2px; }
+  .unit-toggle button {
+    border: none; background: transparent; font-family: var(--font); font-size: 12.5px; font-weight: 700;
+    padding: 6px 13px; border-radius: 999px; cursor: pointer; color: var(--ink-soft);
+  }
+  .unit-toggle button.on { background: var(--green-600); color: #fff; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row .lbl { font-size: 13.5px; font-weight: 600; }
+
+  /* Footer freemium */
+  footer.freemium {
+    margin: 4px 16px 26px; padding: 14px; border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--green-900), var(--earth-dk));
+    color: #fff; text-align: center;
+  }
+  footer.freemium .tag { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+  footer.freemium .pitch { font-size: 13px; margin: 5px 0 10px; opacity: .95; }
+  footer.freemium .pitch b { color: var(--green-300); }
+  footer.freemium a {
+    display: inline-block; background: var(--green-400); color: var(--green-900);
+    text-decoration: none; font-weight: 800; font-size: 13px; padding: 9px 18px; border-radius: 999px;
+  }
+  footer.freemium .free { font-size: 11px; opacity: .65; margin-top: 9px; }
+
+  .note { font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; }
+  .divider { height: 1px; background: var(--line); margin: 14px 0; border: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21V8l9-5 9 5v13"/><path d="M3 14h18"/><path d="M9 21v-5h6v5"/>
+        </svg>
+      </div>
+      <div>
+        <h1>GRAZE</h1>
+        <p>Rotational grazing, planned</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="dash" class="active">Today</button>
+    <button data-tab="paddocks">Paddocks</button>
+    <button data-tab="herd">Herd</button>
+    <button data-tab="settings">More</button>
+  </nav>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section id="tab-dash"></section>
+
+    <!-- PADDOCKS -->
+    <section id="tab-paddocks" style="display:none">
+      <div class="card">
+        <h2>Add paddock <span class="hint" id="unitHintP"></span></h2>
+        <form id="paddockForm">
+          <label class="fld"><span>Name</span><input id="pName" type="text" placeholder="e.g. North Flat" required maxlength="40" /></label>
+          <div class="row2">
+            <label class="fld"><span>Area (<span class="areaUnit"></span>)</span><input id="pArea" type="number" step="0.01" min="0.01" placeholder="0" required /></label>
+            <label class="fld"><span>Forage quality</span>
+              <select id="pQuality">
+                <option value="0.7">Poor (sparse / dry)</option>
+                <option value="1" selected>Average pasture</option>
+                <option value="1.3">Good (lush / improved)</option>
+                <option value="1.6">Excellent (irrigated)</option>
+              </select>
+            </label>
+          </div>
+          <input type="hidden" id="pEditId" />
+          <div class="btn-row">
+            <button type="submit" class="btn" id="pSubmitBtn">Add paddock</button>
+            <button type="button" class="btn ghost sm" id="pCancelBtn" style="display:none;width:auto">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Your paddocks <span class="hint" id="pCount"></span></h2>
+        <div id="paddockList"></div>
+      </div>
+    </section>
+
+    <!-- HERD -->
+    <section id="tab-herd" style="display:none">
+      <div class="card">
+        <h2>Herd &amp; intake</h2>
+        <label class="fld"><span>Animal type</span>
+          <select id="hType">
+            <option value="450">Beef cattle / cows (~450 kg)</option>
+            <option value="600">Dairy cattle (~600 kg)</option>
+            <option value="650">Buffalo (~650 kg)</option>
+            <option value="60">Sheep (~60 kg)</option>
+            <option value="55">Goats (~55 kg)</option>
+          </select>
+        </label>
+        <div class="row2">
+          <label class="fld"><span>Herd size (head)</span><input id="hCount" type="number" min="1" step="1" placeholder="e.g. 40" /></label>
+          <label class="fld"><span>Daily intake (% body wt)</span><input id="hIntake" type="number" min="1" max="6" step="0.1" value="3" /></label>
+        </div>
+        <label class="fld"><span>Forage available — base estimate (<span class="forageUnit"></span> per <span class="areaUnit"></span>)</span>
+          <input id="hForage" type="number" min="1" step="1" placeholder="e.g. 2000" />
+        </label>
+        <p class="note">Forage is the usable dry-matter you expect per <span class="areaUnit"></span> of average pasture. Each paddock's forage-quality factor scales this up or down. A conservative figure leaves a residual for fast recovery.</p>
+        <hr class="divider" />
+        <label class="fld"><span>Target rest / recovery days (after grazing)</span><input id="hRest" type="number" min="5" max="120" step="1" value="30" /></label>
+        <button type="button" class="btn" id="saveHerdBtn">Save herd settings</button>
+      </div>
+
+      <div class="card" id="herdCalcCard">
+        <h2>Per-paddock grazing days</h2>
+        <div id="herdCalc"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" style="display:none">
+      <div class="card">
+        <h2>Units</h2>
+        <div class="settings-row">
+          <span class="lbl">Area</span>
+          <div class="unit-toggle" id="areaToggle">
+            <button data-u="ac" data-k="area">Acres</button>
+            <button data-u="ha" data-k="area">Hectares</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="lbl">Weight</span>
+          <div class="unit-toggle" id="weightToggle">
+            <button data-u="kg" data-k="weight">kg</button>
+            <button data-u="lb" data-k="weight">lb</button>
+          </div>
+        </div>
+        <p class="note">Switching units converts stored values automatically.</p>
+      </div>
+
+      <div class="card">
+        <h2>Data</h2>
+        <div class="btn-row" style="flex-wrap:wrap">
+          <button class="btn secondary sm" id="exportPaddocksBtn" style="flex:1">Export paddocks CSV</button>
+          <button class="btn secondary sm" id="exportSchedBtn" style="flex:1">Export schedule CSV</button>
+        </div>
+        <button class="btn ghost" id="resetRotBtn" style="margin-top:8px">Reset rotation status</button>
+        <button class="btn danger" id="wipeBtn" style="margin-top:8px">Erase all data</button>
+        <p class="note">All data stays on this device in your browser (localStorage). Nothing is uploaded. Works fully offline.</p>
+      </div>
+
+      <div class="card">
+        <h2>About GRAZE</h2>
+        <p style="font-size:13px;color:var(--ink-soft);margin:0">
+          A planning aid for rotational / managed grazing. Computes a starting estimate of grazing days per paddock from stocking rate and available forage, builds a forward move schedule, and tracks rest days so you never return to a paddock too soon. Always confirm against what you see in the field. Pairs with HerdCheck for animal health.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="freemium">
+    <div class="tag">GRAZE · Free forever</div>
+    <div class="pitch"><b>Lifetime $6.99</b> unlocks multi-mob, maps &amp; extension-agent tools <b>(B2B)</b></div>
+    <a href="#" id="upgradeBtn">Unlock Lifetime</a>
+    <div class="free">You're on the free plan — every core feature included.</div>
+  </footer>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var PFX = "graze_";
+  var DAY = 86400000;
+
+  /* ---------- storage ---------- */
+  function load(k, def){ try { var v = localStorage.getItem(PFX+k); return v===null ? def : JSON.parse(v); } catch(e){ return def; } }
+  function save(k, v){ try { localStorage.setItem(PFX+k, JSON.stringify(v)); } catch(e){} }
+
+  var state = {
+    paddocks: load("paddocks", []),     // {id,name,area(ac),quality}
+    herd: load("herd", { type:450, count:0, intake:3, forage:2000, rest:30 }), // forage = lb/acre internally
+    units: load("units", { area:"ac", weight:"lb" }),
+    rotation: load("rotation", { currentId:null, startedAt:null }) // current paddock + when herd entered
+  };
+
+  /* ---------- unit helpers (internal canonical: acres + lb) ---------- */
+  var AC_PER_HA = 2.47105, LB_PER_KG = 2.20462;
+  function areaToDisplay(ac){ return state.units.area==="ha" ? ac/AC_PER_HA : ac; }
+  function areaToCanonical(v){ return state.units.area==="ha" ? v*AC_PER_HA : v; }
+  function wtToDisplay(lb){ return state.units.weight==="kg" ? lb/LB_PER_KG : lb; }
+  function wtToCanonical(v){ return state.units.weight==="kg" ? v*LB_PER_KG : v; }
+  function areaUnit(){ return state.units.area==="ha" ? "ha" : "ac"; }
+  function wtUnit(){ return state.units.weight==="kg" ? "kg" : "lb"; }
+  function fmt(n, d){ d = d===undefined?1:d; if(!isFinite(n)) return "0"; var r = Math.round(n*Math.pow(10,d))/Math.pow(10,d); return (r % 1 === 0) ? r.toFixed(0) : r.toFixed(d); }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  /* ---------- grazing math ----------
+     Daily herd demand (lb DM) = head * bodyWt(kg→lb) * intake%
+     Paddock supply (lb DM)    = area(ac) * baseForage(lb/ac) * quality
+     Grazing days              = supply / demand  (floored, min 1)
+  -------------------------------------------------------------------- */
+  function dailyDemandLb(){
+    var bodyLb = state.herd.type * LB_PER_KG; // type stored in kg
+    return Math.max(0, state.herd.count) * bodyLb * (state.herd.intake/100);
+  }
+  function paddockSupplyLb(p){
+    var baseLbPerAc = state.herd.forage; // canonical lb/acre
+    return p.area * baseLbPerAc * p.quality;
+  }
+  function grazingDays(p){
+    var demand = dailyDemandLb();
+    if(demand<=0) return 0;
+    return Math.max(1, Math.floor(paddockSupplyLb(p) / demand));
+  }
+  function restDaysElapsed(p){
+    if(!p.restStartedAt) return null;
+    return Math.floor((Date.now() - p.restStartedAt)/DAY);
+  }
+  function paddockStatus(p){
+    if(state.rotation.currentId === p.id) return "grazing";
+    if(p.restStartedAt){
+      var elapsed = restDaysElapsed(p);
+      if(elapsed < state.herd.rest) return (elapsed < state.herd.rest*0.4 ? "overgrazed" : "resting");
+      return "ready";
+    }
+    return "ready";
+  }
+
+  /* ---------- ordered rotation list ---------- */
+  function rotationOrder(){
+    // paddocks ordered by readiness: current first, then most-rested ready, then others
+    return state.paddocks.slice();
+  }
+  function nextPaddock(afterId){
+    var ps = state.paddocks;
+    if(ps.length===0) return null;
+    if(!afterId) {
+      // pick most-rested / ready
+      var best=null, bestRest=-1;
+      ps.forEach(function(p){
+        var r = p.restStartedAt ? restDaysElapsed(p) : 9999;
+        if(r>bestRest){ bestRest=r; best=p; }
+      });
+      return best;
+    }
+    var idx = ps.findIndex(function(p){ return p.id===afterId; });
+    if(idx===-1) return ps[0];
+    return ps[(idx+1)%ps.length];
+  }
+
+  function currentPaddock(){ return state.paddocks.find(function(p){ return p.id===state.rotation.currentId; }) || null; }
+
+  function moveOutDate(){
+    var cur = currentPaddock();
+    if(!cur || !state.rotation.startedAt) return null;
+    var days = grazingDays(cur);
+    return new Date(state.rotation.startedAt + days*DAY);
+  }
+  function daysUntilMove(){
+    var d = moveOutDate();
+    if(!d) return null;
+    return Math.ceil((d.getTime() - Date.now())/DAY);
+  }
+
+  /* ---------- forward schedule ---------- */
+  function buildSchedule(maxRotations){
+    maxRotations = maxRotations || 8;
+    var out = [];
+    if(state.paddocks.length===0) return out;
+    var cur = currentPaddock();
+    var startTime;
+    if(cur && state.rotation.startedAt){
+      startTime = state.rotation.startedAt + grazingDays(cur)*DAY; // next move
+    } else {
+      startTime = Date.now();
+    }
+    // start from current (if any) else most-rested
+    var pointer = cur ? cur.id : (nextPaddock(null)||{}).id;
+    var t = startTime;
+    for(var i=0;i<maxRotations;i++){
+      var np = nextPaddock(pointer);
+      if(!np) break;
+      out.push({ date:new Date(t), paddock:np, days:grazingDays(np) });
+      t += grazingDays(np)*DAY;
+      pointer = np.id;
+    }
+    return out;
+  }
+
+  /* ---------- UI helpers ---------- */
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._tm); t._tm = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+  function fmtDate(d){
+    if(!d) return "—";
+    return d.toLocaleDateString(undefined,{ weekday:"short", day:"numeric", month:"short" });
+  }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  /* ---------- DASHBOARD render ---------- */
+  function renderDash(){
+    var el = document.getElementById("tab-dash");
+    var ps = state.paddocks;
+    var cur = currentPaddock();
+    var html = "";
+
+    // Today card
+    if(ps.length===0){
+      html += card("today", "What to do today",
+        '<div class="big">Add your paddocks</div>'+
+        '<div class="sub">Head to the Paddocks tab to map out your land, then set your herd. GRAZE will plan the rotation.</div>');
+    } else if(!cur){
+      var first = nextPaddock(null);
+      html += '<div class="card today"><h2>What to do today</h2>'+
+        '<div class="big">Start the rotation</div>'+
+        '<div class="sub">Put the herd into <b>'+esc(first?first.name:"a paddock")+'</b> to begin tracking.</div>'+
+        '<div class="move-row"><div><div class="label">Suggested start</div><div class="val">'+esc(first?first.name:"—")+'</div></div>'+
+        '<button class="btn sm" style="margin-left:auto;background:rgba(255,255,255,.22)" onclick="GRAZE.startRotation(\''+(first?first.id:"")+'\')">Move herd in</button></div></div>';
+    } else {
+      var days = daysUntilMove();
+      var moveDate = moveOutDate();
+      var nxt = nextPaddock(cur.id);
+      var overdue = days!==null && days<=0;
+      html += '<div class="card today"><h2>What to do today</h2>'+
+        '<div class="big">'+ (overdue ? "Move the herd now" : "Grazing "+esc(cur.name)) +'</div>'+
+        '<div class="sub">'+ (overdue
+            ? cur.name+" is grazed out — time to rotate."
+            : "On track. Keep the herd here for now.") +'</div>'+
+        '<div class="move-row">'+
+          '<div><div class="label">Next move</div><div class="val">'+esc(nxt?nxt.name:"—")+'</div></div>'+
+          '<div class="countdown"><div class="num">'+ (days===null?"—":(overdue?"0":days)) +'</div><div class="unit">'+(overdue?"now":(Math.abs(days)===1?"day":"days"))+'</div></div>'+
+        '</div>'+
+        '<div style="font-size:12px;opacity:.85;margin-top:8px">Planned move date: <b>'+fmtDate(moveDate)+'</b></div>'+
+        '<button class="btn" style="margin-top:12px;background:#fff;color:var(--green-800)" onclick="GRAZE.moveHerd()">'+
+          'Move herd → '+esc(nxt?nxt.name:"next")+'</button>'+
+      '</div>';
+    }
+
+    // Stats
+    var grazingN = cur ? 1 : 0;
+    var restingN = ps.filter(function(p){ var s=paddockStatus(p); return s==="resting"||s==="overgrazed"; }).length;
+    var readyN = ps.filter(function(p){ return paddockStatus(p)==="ready" && p.id!==(cur&&cur.id); }).length;
+    html += '<div class="card"><div class="stat-grid">'+
+      stat(grazingN, "Grazing")+ stat(restingN, "Resting")+ stat(readyN, "Ready")+
+    '</div></div>';
+
+    // Paddock visual grid
+    if(ps.length){
+      html += '<div class="card"><h2>Paddocks <span class="hint">tap for detail</span></h2><div class="pgrid">';
+      ps.forEach(function(p){
+        var s = paddockStatus(p);
+        var label = { grazing:"● Grazing now", resting:"Resting", ready:"Ready", overgrazed:"Just grazed" }[s];
+        var sub="";
+        var bar="";
+        if(s==="grazing"){
+          var gd = grazingDays(p);
+          var elapsed = state.rotation.startedAt ? Math.floor((Date.now()-state.rotation.startedAt)/DAY) : 0;
+          sub = "Day "+(elapsed+1)+" of "+gd;
+        } else if(s==="resting"||s==="overgrazed"){
+          var rd = restDaysElapsed(p);
+          var pct = Math.min(100, Math.round(rd/state.herd.rest*100));
+          sub = rd+" / "+state.herd.rest+" rest days";
+          bar = '<div class="restbar"><i style="width:'+pct+'%"></i></div>';
+        } else {
+          sub = fmt(areaToDisplay(p.area),2)+" "+areaUnit()+" · ~"+grazingDays(p)+"d graze";
+        }
+        html += '<div class="ptile '+s+'" onclick="GRAZE.paddockDetail(\''+p.id+'\')">'+
+          '<div class="pname">'+esc(p.name)+'</div>'+
+          '<div class="pmeta">'+esc(sub)+'</div>'+ bar +
+          '<div class="pstatus">'+label+'</div>'+
+        '</div>';
+      });
+      html += '</div></div>';
+
+      // schedule preview
+      var sched = buildSchedule(5);
+      if(sched.length){
+        html += '<div class="card"><h2>Upcoming moves</h2>';
+        sched.forEach(function(s, i){
+          var dd = s.date.getDate();
+          var mm = s.date.toLocaleDateString(undefined,{month:"short"});
+          html += '<div class="sched-item'+(i===0?" first":"")+'">'+
+            '<div class="when"><div class="d">'+dd+'</div><div class="m">'+mm+'</div></div>'+
+            '<div class="what"><div class="t">Move herd to '+esc(s.paddock.name)+'</div>'+
+            '<div class="s">'+(i===0?"next move · ":"")+"~"+s.days+' day'+(s.days===1?"":"s")+' grazing</div></div>'+
+          '</div>';
+        });
+        html += '</div>';
+      }
+    }
+
+    el.innerHTML = html;
+  }
+  function card(cls,title,body){ return '<div class="card '+cls+'"><h2>'+title+'</h2>'+body+'</div>'; }
+  function stat(n,l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+
+  /* ---------- PADDOCKS render ---------- */
+  function renderPaddocks(){
+    document.querySelectorAll(".areaUnit").forEach(function(e){ e.textContent = areaUnit(); });
+    document.querySelectorAll(".forageUnit").forEach(function(e){ e.textContent = wtUnit(); });
+    document.getElementById("unitHintP").textContent = "in "+areaUnit();
+    var list = document.getElementById("paddockList");
+    document.getElementById("pCount").textContent = state.paddocks.length+" total";
+    if(state.paddocks.length===0){
+      list.innerHTML = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21V8l9-5 9 5v13M3 14h18"/></svg><div>No paddocks yet. Add your first above.</div></div>';
+      return;
+    }
+    var html = "";
+    state.paddocks.forEach(function(p){
+      var ql = {0.7:"Poor","1":"Avg","1.3":"Good","1.6":"Excellent"}[String(p.quality)] || "Avg";
+      html += '<div class="prow">'+
+        '<div class="info"><div class="nm">'+esc(p.name)+'</div>'+
+        '<div class="mt">'+fmt(areaToDisplay(p.area),2)+" "+areaUnit()+' · ~'+grazingDays(p)+' grazing days</div></div>'+
+        '<span class="qbadge">'+ql+'</span>'+
+        '<button class="iconbtn" onclick="GRAZE.editPaddock(\''+p.id+'\')" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'+
+        '<button class="iconbtn del" onclick="GRAZE.deletePaddock(\''+p.id+'\')" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>'+
+      '</div>';
+    });
+    list.innerHTML = html;
+  }
+
+  /* ---------- HERD render ---------- */
+  function renderHerd(){
+    document.querySelectorAll(".areaUnit").forEach(function(e){ e.textContent = areaUnit(); });
+    document.querySelectorAll(".forageUnit").forEach(function(e){ e.textContent = wtUnit(); });
+    document.getElementById("hType").value = String(state.herd.type);
+    document.getElementById("hCount").value = state.herd.count || "";
+    document.getElementById("hIntake").value = state.herd.intake;
+    document.getElementById("hForage").value = state.herd.forage ? fmt(wtToDisplay(state.herd.forage),0) : "";
+    document.getElementById("hRest").value = state.herd.rest;
+
+    var calc = document.getElementById("herdCalc");
+    var demand = dailyDemandLb();
+    if(state.herd.count<=0 || state.paddocks.length===0){
+      calc.innerHTML = '<div class="empty"><div>Set herd size and add paddocks to see grazing days.</div></div>';
+      return;
+    }
+    var html = '<div class="note" style="margin-top:0">Daily herd demand: <b>'+fmt(wtToDisplay(demand),0)+" "+wtUnit()+' dry matter</b></div><hr class="divider"/>';
+    state.paddocks.forEach(function(p){
+      html += '<div class="prow"><div class="info"><div class="nm">'+esc(p.name)+'</div>'+
+        '<div class="mt">'+fmt(areaToDisplay(p.area),2)+" "+areaUnit()+' · '+fmt(wtToDisplay(paddockSupplyLb(p)),0)+" "+wtUnit()+' available</div></div>'+
+        '<span class="qbadge" style="background:var(--green-600);color:#fff">'+grazingDays(p)+'d</span></div>';
+    });
+    var totalDays = state.paddocks.reduce(function(a,p){ return a+grazingDays(p); },0);
+    html += '<hr class="divider"/><div class="note" style="text-align:center">Full cycle: <b>'+totalDays+' grazing days</b> across '+state.paddocks.length+' paddocks · avg rest '+(totalDays-Math.round(totalDays/state.paddocks.length))+' days per paddock</div>';
+    calc.innerHTML = html;
+  }
+
+  /* ---------- SETTINGS render ---------- */
+  function renderSettings(){
+    document.querySelectorAll("#areaToggle button").forEach(function(b){ b.classList.toggle("on", b.dataset.u===state.units.area); });
+    document.querySelectorAll("#weightToggle button").forEach(function(b){ b.classList.toggle("on", b.dataset.u===state.units.weight); });
+  }
+
+  function renderAll(){ renderDash(); renderPaddocks(); renderHerd(); renderSettings(); }
+
+  /* ---------- public actions ---------- */
+  var GRAZE = {};
+  window.GRAZE = GRAZE;
+
+  GRAZE.startRotation = function(id){
+    if(!id){ id = (nextPaddock(null)||{}).id; }
+    if(!id){ toast("Add a paddock first"); return; }
+    if(state.herd.count<=0){ toast("Set your herd size first"); switchTab("herd"); return; }
+    state.rotation = { currentId:id, startedAt:Date.now() };
+    // clear rest timer on the entered paddock
+    var p = state.paddocks.find(function(x){return x.id===id;});
+    if(p) delete p.restStartedAt;
+    save("rotation", state.rotation); save("paddocks", state.paddocks);
+    var pn = p?p.name:"paddock";
+    toast("Herd moved into "+pn);
+    renderAll();
+  };
+
+  GRAZE.moveHerd = function(){
+    var cur = currentPaddock();
+    if(!cur){ GRAZE.startRotation(); return; }
+    var nxt = nextPaddock(cur.id);
+    if(!nxt){ toast("No other paddock to move to"); return; }
+    // start rest timer on vacated paddock
+    cur.restStartedAt = Date.now();
+    delete nxt.restStartedAt;
+    state.rotation = { currentId:nxt.id, startedAt:Date.now() };
+    save("paddocks", state.paddocks); save("rotation", state.rotation);
+    toast("Moved to "+nxt.name+" · "+cur.name+" now resting");
+    renderAll();
+  };
+
+  GRAZE.paddockDetail = function(id){
+    var p = state.paddocks.find(function(x){return x.id===id;});
+    if(!p) return;
+    var s = paddockStatus(p);
+    var statusTxt = { grazing:"Herd grazing here now", resting:"Resting — recovering", ready:"Rested & ready to graze", overgrazed:"Recently grazed — needs full rest" }[s];
+    var body = '<h3>'+esc(p.name)+'</h3>';
+    body += '<div class="settings-row"><span class="lbl">Status</span><span>'+statusTxt+'</span></div>';
+    body += '<div class="settings-row"><span class="lbl">Area</span><span>'+fmt(areaToDisplay(p.area),2)+" "+areaUnit()+'</span></div>';
+    body += '<div class="settings-row"><span class="lbl">Forage available</span><span>'+fmt(wtToDisplay(paddockSupplyLb(p)),0)+" "+wtUnit()+'</span></div>';
+    body += '<div class="settings-row"><span class="lbl">Est. grazing days</span><span>'+grazingDays(p)+' days</span></div>';
+    if(s==="resting"||s==="overgrazed"){
+      var rd = restDaysElapsed(p);
+      body += '<div class="settings-row"><span class="lbl">Rested</span><span>'+rd+' / '+state.herd.rest+' days ('+(state.herd.rest-rd)+' to go)</span></div>';
+    }
+    body += '<div style="margin-top:14px">';
+    if(s==="grazing"){
+      body += '<button class="btn" onclick="GRAZE.closeModal();GRAZE.moveHerd()">Move herd out now</button>';
+    } else {
+      body += '<button class="btn" onclick="GRAZE.closeModal();GRAZE.startRotation(\''+p.id+'\')">Move herd in here</button>';
+      body += '<button class="btn ghost" style="margin-top:8px" onclick="GRAZE.markRested(\''+p.id+'\')">Mark fully rested</button>';
+    }
+    body += '<button class="btn secondary" style="margin-top:8px" onclick="GRAZE.closeModal()">Close</button></div>';
+    openModal(body);
+  };
+
+  GRAZE.markRested = function(id){
+    var p = state.paddocks.find(function(x){return x.id===id;});
+    if(p){ p.restStartedAt = Date.now() - (state.herd.rest+1)*DAY; save("paddocks", state.paddocks); }
+    GRAZE.closeModal(); toast("Marked rested"); renderAll();
+  };
+
+  GRAZE.editPaddock = function(id){
+    var p = state.paddocks.find(function(x){return x.id===id;});
+    if(!p) return;
+    switchTab("paddocks");
+    document.getElementById("pEditId").value = p.id;
+    document.getElementById("pName").value = p.name;
+    document.getElementById("pArea").value = fmt(areaToDisplay(p.area),2);
+    document.getElementById("pQuality").value = String(p.quality);
+    document.getElementById("pSubmitBtn").textContent = "Save changes";
+    document.getElementById("pCancelBtn").style.display = "inline-flex";
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+
+  GRAZE.deletePaddock = function(id){
+    var p = state.paddocks.find(function(x){return x.id===id;});
+    if(!p) return;
+    var body = '<h3>Delete "'+esc(p.name)+'"?</h3><p style="color:var(--ink-soft);font-size:13.5px">This removes the paddock from your rotation. This cannot be undone.</p>'+
+      '<button class="btn danger" onclick="GRAZE.confirmDelete(\''+id+'\')">Delete paddock</button>'+
+      '<button class="btn secondary" style="margin-top:8px" onclick="GRAZE.closeModal()">Cancel</button>';
+    openModal(body);
+  };
+  GRAZE.confirmDelete = function(id){
+    state.paddocks = state.paddocks.filter(function(p){ return p.id!==id; });
+    if(state.rotation.currentId===id) state.rotation = { currentId:null, startedAt:null };
+    save("paddocks", state.paddocks); save("rotation", state.rotation);
+    GRAZE.closeModal(); toast("Paddock deleted"); renderAll();
+  };
+
+  GRAZE.closeModal = function(){ document.getElementById("modalBg").classList.remove("show"); };
+
+  function openModal(html){
+    document.getElementById("modalContent").innerHTML = html;
+    document.getElementById("modalBg").classList.add("show");
+  }
+
+  /* ---------- CSV export ---------- */
+  function csvCell(v){ v=String(v==null?"":v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+  function download(name, text){
+    var blob = new Blob([text], {type:"text/csv;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  }
+  GRAZE.exportPaddocks = function(){
+    if(!state.paddocks.length){ toast("No paddocks to export"); return; }
+    var rows = [["Paddock","Area ("+areaUnit()+")","Forage quality","Forage available ("+wtUnit()+")","Est. grazing days","Status","Rest days elapsed"]];
+    state.paddocks.forEach(function(p){
+      rows.push([p.name, fmt(areaToDisplay(p.area),2), p.quality, fmt(wtToDisplay(paddockSupplyLb(p)),0), grazingDays(p), paddockStatus(p), p.restStartedAt? restDaysElapsed(p):""]);
+    });
+    download("graze-paddocks.csv", rows.map(function(r){return r.map(csvCell).join(",");}).join("\n"));
+    toast("Paddocks exported");
+  };
+  GRAZE.exportSchedule = function(){
+    var sched = buildSchedule(12);
+    if(!sched.length){ toast("Build a rotation first"); return; }
+    var rows = [["Move date","Action","Paddock","Grazing days"]];
+    sched.forEach(function(s){
+      rows.push([s.date.toISOString().slice(0,10), "Move herd to", s.paddock.name, s.days]);
+    });
+    download("graze-schedule.csv", rows.map(function(r){return r.map(csvCell).join(",");}).join("\n"));
+    toast("Schedule exported");
+  };
+
+  GRAZE.resetRotation = function(){
+    state.rotation = { currentId:null, startedAt:null };
+    state.paddocks.forEach(function(p){ delete p.restStartedAt; });
+    save("rotation", state.rotation); save("paddocks", state.paddocks);
+    toast("Rotation reset"); renderAll();
+  };
+  GRAZE.wipe = function(){
+    var body = '<h3>Erase all data?</h3><p style="color:var(--ink-soft);font-size:13.5px">This deletes every paddock, herd setting and rotation record on this device. Cannot be undone.</p>'+
+      '<button class="btn danger" onclick="GRAZE.confirmWipe()">Erase everything</button>'+
+      '<button class="btn secondary" style="margin-top:8px" onclick="GRAZE.closeModal()">Cancel</button>';
+    openModal(body);
+  };
+  GRAZE.confirmWipe = function(){
+    Object.keys(localStorage).forEach(function(k){ if(k.indexOf(PFX)===0) localStorage.removeItem(k); });
+    state.paddocks = []; state.herd = { type:450, count:0, intake:3, forage:2000, rest:30 };
+    state.units = { area:"ac", weight:"lb" }; state.rotation = { currentId:null, startedAt:null };
+    GRAZE.closeModal(); toast("All data erased"); renderAll();
+  };
+
+  /* ---------- unit switching (convert canonical stays, just re-render) ---------- */
+  function setUnit(kind, val){
+    state.units[kind] = val; save("units", state.units);
+    renderAll();
+    toast("Units updated");
+  }
+
+  /* ---------- tab switching ---------- */
+  function switchTab(name){
+    ["dash","paddocks","herd","settings"].forEach(function(t){
+      document.getElementById("tab-"+t).style.display = (t===name)?"":"none";
+    });
+    document.querySelectorAll("nav.tabs button").forEach(function(b){ b.classList.toggle("active", b.dataset.tab===name); });
+    if(name==="dash") renderDash();
+    if(name==="herd") renderHerd();
+    if(name==="paddocks") renderPaddocks();
+    window.scrollTo({top:0});
+  }
+
+  /* ---------- wire up ---------- */
+  document.querySelectorAll("nav.tabs button").forEach(function(b){
+    b.addEventListener("click", function(){ switchTab(b.dataset.tab); });
+  });
+
+  document.getElementById("paddockForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = document.getElementById("pName").value.trim();
+    var areaDisp = parseFloat(document.getElementById("pArea").value);
+    var quality = parseFloat(document.getElementById("pQuality").value);
+    if(!name || !(areaDisp>0)){ toast("Enter a name and area"); return; }
+    var areaCanon = areaToCanonical(areaDisp);
+    var editId = document.getElementById("pEditId").value;
+    if(editId){
+      var p = state.paddocks.find(function(x){return x.id===editId;});
+      if(p){ p.name=name; p.area=areaCanon; p.quality=quality; }
+      toast("Paddock updated");
+    } else {
+      state.paddocks.push({ id:uid(), name:name, area:areaCanon, quality:quality });
+      toast("Paddock added");
+    }
+    save("paddocks", state.paddocks);
+    resetPaddockForm();
+    renderAll();
+  });
+  function resetPaddockForm(){
+    document.getElementById("paddockForm").reset();
+    document.getElementById("pQuality").value = "1";
+    document.getElementById("pEditId").value = "";
+    document.getElementById("pSubmitBtn").textContent = "Add paddock";
+    document.getElementById("pCancelBtn").style.display = "none";
+  }
+  document.getElementById("pCancelBtn").addEventListener("click", resetPaddockForm);
+
+  document.getElementById("saveHerdBtn").addEventListener("click", function(){
+    state.herd.type = parseFloat(document.getElementById("hType").value);
+    state.herd.count = Math.max(0, parseInt(document.getElementById("hCount").value||"0",10));
+    state.herd.intake = Math.min(6, Math.max(1, parseFloat(document.getElementById("hIntake").value||"3")));
+    state.herd.rest = Math.min(120, Math.max(5, parseInt(document.getElementById("hRest").value||"30",10)));
+    var forageDisp = parseFloat(document.getElementById("hForage").value||"0");
+    if(forageDisp>0) state.herd.forage = wtToCanonical(forageDisp);
+    save("herd", state.herd);
+    toast("Herd settings saved");
+    renderAll();
+  });
+
+  document.querySelectorAll("#areaToggle button, #weightToggle button").forEach(function(b){
+    b.addEventListener("click", function(){ setUnit(b.dataset.k, b.dataset.u); });
+  });
+
+  document.getElementById("exportPaddocksBtn").addEventListener("click", GRAZE.exportPaddocks);
+  document.getElementById("exportSchedBtn").addEventListener("click", GRAZE.exportSchedule);
+  document.getElementById("resetRotBtn").addEventListener("click", GRAZE.resetRotation);
+  document.getElementById("wipeBtn").addEventListener("click", GRAZE.wipe);
+  document.getElementById("upgradeBtn").addEventListener("click", function(e){ e.preventDefault(); toast("Lifetime $6.99 — multi-mob, maps & agent tools coming for B2B"); });
+  document.getElementById("modalBg").addEventListener("click", function(e){ if(e.target===this) GRAZE.closeModal(); });
+
+  /* ---------- init ---------- */
+  renderAll();
+})();
+</script>
+</body>
+</html>
