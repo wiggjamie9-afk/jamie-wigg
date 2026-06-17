@@ -1,0 +1,90 @@
+# Knowledge Base Index
+
+Curated business cases, technical deep dives, and tool references for AI agent development and one-person company operations.
+
+## Categories
+
+### 🎯 OPC/AI Earning Cases (6 articles)
+
+1. **Anthropic's Billion-to-Billion Scaling** — 16-month journey from $1B to $30B ARR; Claude Code single prototype = $2.5B ARR; enterprise API-first model vs OpenAI's user-centric B2C focus
+2. **Polymarket Tool Viral Growth** — 600 users in zero-marketing MVP; AI screenshot analysis became most viral feature; 1% transaction fee model
+3. **Service-as-Software Pattern** — AI agents reducing service delivery cost to near-zero; $6 service market per $1 software market; single-person operators taking standard service contracts
+4. **AI Hardware Window: Sleep Tracking** — Ex-Xiaomi executive: $100M+ funding for AI sleep device; 2-3 year product roadmap; "精力资产管理" (energy asset management) ecosystem
+5. **Alibaba AI to B Shift** — Token-based pricing for merchant AI agents; goal: $100B AI+cloud revenue in 5 years; search relevance +20%, recommendation +10%, ad ROI +12%
+6. **[Not summarized in detail]** — Additional case study on [topic]
+
+---
+
+### 🛠️ AI Tools & Frameworks (11 articles)
+
+#### Browser/GUI Automation & Agent Extension
+- **eyehands** — Local HTTP server giving Claude Code eyes/hands on Windows; OCR + mouse/keyboard control; $19 one-time Pro fee
+- **Custom Slack Inbox** — Perplexity Computer automating 150+ daily notifications; "anti-todo" philosophy (1hr/day to automate forever tasks)
+- **Finalrun** — AI-powered mobile app testing via visual recognition; no selectors needed
+
+#### Content Generation & Automation
+- **Reddit Video Maker Bot** — One-command YouTube/TikTok creation from Reddit posts; Python 3.10 + Playwright
+- **SEO Machine** — Claude Code workspace with `/research` `/write` `/optimize` commands; 10+ agents + 26 marketing skills; GA4+GSC integration
+- **Prefab** — Generative UI framework for Python; 100+ shadcn components; MCP-native
+
+#### Agent Development Frameworks
+- **Superpowers** — Coding agent skill framework; spec → plan → execution; supports Claude Code, Cursor, Codex
+- **GitNexus** — Graph RAG agent for code analysis; browser-based knowledge graph; zero-server
+- **Andrej Karpathy Skills** — CLAUDE.md config fixing LLM coding errors; 4 core principles (think first, simplicity, precise edits, goal-driven)
+
+#### Data & Analysis
+- **Offline AI Data Stack** — Local data lake + zero-ETL + lineage + version control; supports Gemma, Claude, free
+- **Turbo-OCR** — C++/CUDA rewrite of PaddleOCR; RTX 5090: 15 FPS → 100+/1000+ FPS; open-source on GitHub
+
+---
+
+### 🤖 New Models & AI Tech (10 articles)
+
+#### Model Releases
+- **Meta Muse Spark** — Opus 4.6 / GPT 5.4 -level performance; 16 integrated tools (search, Instagram search, SVG render, live sports)
+- **GLM-5.1** — 58.4% on SWE-bench Pro (beats Opus 4.6); 744B MoE; 200K context; $30 deployment cost vs $1K Claude Opus 4.6
+- **Liquid LFM2.5-VL-450M** — 450M parameters; 240ms image processing; 4 FPS video; structured output + multi-language
+- **NVIDIA PersonaPlex** — Full-duplex voice conversation; real-time persona control via text prompts; Moshi-based
+- **Horus-1.0 (Egypt)** — First open-source Egyptian model; 4B params; beats Qwen 3.5-4B, Gemma 2 9B on benchmarks
+- **Transformer on Commodore 64** — 25K params in 64KB RAM; 8-bit quantized; pure assembly implementation
+
+#### Optimization & Research
+- **Qwen 3.5 Chat Template Cache Bug** — Empty `<think>` tags breaking prefix cache reuse; simple one-line fix submitted as PR
+- **Google AI Edge Gallery** — Offline Gemma 4 on-device; Agent Skills integration; no internet required
+- **LiteRT-LM** — Cross-platform edge LLM deployment (Android, iOS, Web, Raspberry Pi); Gemma 4 support
+- **Newton Physics Engine** — GPU-accelerated physics simulation for robotics; NVIDIA Warp + OpenUSD; MuJoCo backend
+
+---
+
+### 💰 Funding & Hardware Startup Cases (2 articles)
+
+1. **光学传感器 (Optical Sensors for Robotics)** — Oxford postdoc; $millions in back-to-back funding; light-based force sensors (0.3% crosstalk); humanoid robot supply chain entry
+2. **器官芯片 + AI (Organ Chip + AI Drug Development)** — $200M Series A funding; organ chip + AI + automation pipeline; FDA approves non-animal data for IND filing; 88.9% drug sensitivity prediction accuracy
+
+---
+
+## Usage
+
+### For AI Agents
+- Reference successful one-person company models in `/OPC-cases/`
+- Study tool implementation patterns in `/tools/`
+- Benchmark model capabilities in `/models/`
+
+### For Nucleus Project
+- **Mary Agent:** Emulate SEO Machine's skill-based architecture + AI agent orchestration pattern
+- **Tool Registry:** Port patterns from eyehands, GitNexus for GUI automation + code analysis
+- **Memory System:** Learn from Turbo-OCR's "batch offline processing" and Slack automation's context prioritization
+- **Business Model:** Reference Polymarket tool's 1% transaction fee + enterprise API model (Anthropic style)
+
+### For One-Person Builder
+- Monitor OPC/AI earning cases for emerging tool opportunities
+- Track model releases for cost/capability inflection points (e.g., GLM-5.1 @ $30 vs $1K)
+- Study viral growth mechanics: AI screenshot analysis (Polymarket) → unexpected breakout feature
+
+---
+
+## Last Updated
+2026-06-17
+
+## Source
+Curated articles, Reddit posts, GitHub trending, Hacker News, blogging platforms (Simon Willison, Lenny's Newsletter, 36氪, 爱范儿, Trends.vc)
