@@ -15,7 +15,7 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 
 ---
 
-### 🛠️ AI Tools & Frameworks (11 articles)
+### 🛠️ AI Tools & Frameworks (18 articles)
 
 #### Browser/GUI Automation & Agent Extension
 - **eyehands** — Local HTTP server giving Claude Code eyes/hands on Windows; OCR + mouse/keyboard control; $19 one-time Pro fee
@@ -25,24 +25,43 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 #### Content Generation & Automation
 - **Reddit Video Maker Bot** — One-command YouTube/TikTok creation from Reddit posts; Python 3.10 + Playwright
 - **SEO Machine** — Claude Code workspace with `/research` `/write` `/optimize` commands; 10+ agents + 26 marketing skills; GA4+GSC integration
-- **Carousel Generator** — Text-to-carousel skill: 12 slide types, 6 platforms, 880 style combos (5 fonts × 8 surfaces × 11 accents × 2 purposes); PNG + PDF export; live preview toolbar
+- **Carousel Generator** (`carousel-generator.md`) — Text-to-carousel skill: 12 slide types, 6 platforms, 880 style combos (5 fonts × 8 surfaces × 11 accents × 2 purposes); PNG + PDF export; live preview toolbar
 - **Prefab** — Generative UI framework for Python; 100+ shadcn components; MCP-native
+- **KimiK2Manim** (`kimik2manim.md`) — Kimi K2 thinking → Manim math animations; 4-stage pipeline (tree → math → visual → narrative); Kosong integration; E2B sandbox. Pairs with HyperFrames/Nucleus for explainer content
+- **Remotion** (`remotion.md`) — Programmatic video in React (already in repo as dormant `video/`; ADR-0001 chose HyperFrames for Promos). ⚠️ special/paid license; niche = data-driven/personalized/batch video ("RHYTHMIX Wrapped")
 
 #### Agent Development Frameworks
 - **Superpowers** — Coding agent skill framework; spec → plan → execution; supports Claude Code, Cursor, Codex
 - **GitNexus** — Graph RAG agent for code analysis; browser-based knowledge graph; zero-server
-- **Kimi CLI** — Terminal-first AI agent + shell (Moonshot AI); Ctrl-X toggle agent ↔ shell; VS Code/ACP/Zsh integration; 100+ MCP tools support
+- **Kimi CLI** (`kimi-cli.md`) — Terminal-first AI agent + shell (Moonshot AI); Ctrl-X toggle agent ↔ shell; VS Code/ACP/Zsh integration; 100+ MCP tools support
+- **MiroFlow** (`miroflow.md`) — SOTA multi-step research agent (MiroMind); #1 FutureX, GAIA 82.4%, xBench-DeepSearch 72.0%; hierarchical sub-agents; MiroThinker runs on single RTX 4090
 - **Andrej Karpathy Skills** — CLAUDE.md config fixing LLM coding errors; 4 core principles (think first, simplicity, precise edits, goal-driven)
+
+#### LLM Gateways & Provider Access
+- **GPT4Free (g4f)** (`gpt4free.md`) — Multi-provider LLM aggregator; OpenAI-compatible Python/JS client + FastAPI + MCP server; web search + image gen; local inference (Ollama/vLLM). GPLv3
+- **OpenClaw Zero Token** (`openclaw-zero-token.md`) — Free gateway to 13 web LLMs (ChatGPT/Claude/Gemini/DeepSeek/Kimi/Qwen/Grok/GLM…) via browser login; tool calling on 11/13; local credential storage. MIT
+- **kimi-free-api (fix)** (`kimi-free-api.md`) — ⚠️ Reverse-engineered Kimi API; documented with supply-chain-attack warnings; NOT recommended — prefer official API / OpenClaw Zero Token
 
 #### Data & Analysis
 - **Offline AI Data Stack** — Local data lake + zero-ETL + lineage + version control; supports Gemma, Claude, free
 - **Turbo-OCR** — C++/CUDA rewrite of PaddleOCR; RTX 5090: 15 FPS → 100+/1000+ FPS; open-source on GitHub
 
+#### Web Frameworks (reference)
+- **Wasabi** (`wasabi-http-framework.md`) — ⚠️ Archived Kotlin/Netty HTTP framework, merged into Ktor. Design reference only (typed interceptor positions, multi-source content negotiation); use Ktor for any JVM service
+
 ---
 
-### 🤖 New Models & AI Tech (10 articles)
+### 🤖 New Models & AI Tech (16 articles)
 
-#### Model Releases
+#### Kimi / Moonshot Models
+- **Kimi K2** (`kimi-k2.md`) — 1T-param MoE, 32B activated; agentic optimization, native tool calling; 65.8% SWE-bench Verified, 97.4% MATH-500; OpenAI/Anthropic-compatible API. Primary LLM reasoning backbone
+- **Kimi-Audio** (`kimi-audio.md`) — Audio foundation model (ASR, audio Q&A, emotion recognition, generation); 13M+ hrs pretraining; 1.28 WER LibriSpeech. Audio understanding + TTS for Nucleus
+- **Kimi Agent Internals** (`kimi-agent-internals.md`) — Production Kimi agent architecture (6 agent types, runtime, 38 tools, episodic/semantic/procedural memory, security model). Design reference for Nucleus
+
+#### SkyReels Video Models (Skywork AI)
+- **SkyReels V1** (`skyreels-v1.md`) — Human-centric video foundation model (HunyuanVideo fine-tune); 33 expressions, cinematic aesthetics; open-source SOTA VBench 82.43. Short cinematic human clips
+- **SkyReels V2** (`skyreels-v2.md`) — Infinite-length film model (AutoRegressive Diffusion Forcing); T2V/I2V/extension/start-end control; VBench 83.9%. Long-form cinematic promos
+- **SkyReels V3** (`skyreels-v3.md`) — Unified multimodal in-context model; reference-to-video (1–4 refs), talking avatar (audio→lip-sync ≤200s), shot-switching extension; hosted API on apifree.ai. Avatar-narrated promos
 - **Meta Muse Spark** — Opus 4.6 / GPT 5.4 -level performance; 16 integrated tools (search, Instagram search, SVG render, live sports)
 - **GLM-5.1** — 58.4% on SWE-bench Pro (beats Opus 4.6); 744B MoE; 200K context; $30 deployment cost vs $1K Claude Opus 4.6
 - **Liquid LFM2.5-VL-450M** — 450M parameters; 240ms image processing; 4 FPS video; structured output + multi-language
@@ -73,10 +92,19 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 - Benchmark model capabilities in `/models/`
 
 ### For Nucleus Project
-- **Mary Agent:** Emulate SEO Machine's skill-based architecture + AI agent orchestration pattern
+- **Mary Agent:** Emulate SEO Machine's skill-based architecture + AI agent orchestration pattern; Kimi K2 as alt LLM runtime; Kimi Agent Internals for runtime/memory design
 - **Tool Registry:** Port patterns from eyehands, GitNexus for GUI automation + code analysis
-- **Memory System:** Learn from Turbo-OCR's "batch offline processing" and Slack automation's context prioritization
+- **Memory System:** Learn from Turbo-OCR's "batch offline processing" and Slack automation's context prioritization; consider Kimi's episodic/semantic/procedural split
+- **LLM Access:** Layered providers — Kimi K2 (primary) → GPT4Free / OpenClaw Zero Token (free fallback + web search + image gen)
+- **Research:** Delegate multi-step research to MiroFlow, feed synthesis into carousel/video generation
 - **Business Model:** Reference Polymarket tool's 1% transaction fee + enterprise API model (Anthropic style)
+
+### Video Pipeline (RHYTHMIX)
+- **HyperFrames** — default for Promos (ADR-0001): HTML/CSS/GSAP motion graphics
+- **SkyReels V1/V2/V3** — generative cinematic footage, infinite-length, talking avatars (GPU-heavy: use apifree.ai/Replicate/rented GPU, not the sandbox)
+- **KimiK2Manim** — math/technical explainer animations
+- **Remotion** (dormant `video/`) — reserved for data-driven/personalized/batch video; port via `remotion-to-hyperframes`
+- **Nucleus/Mary** — orchestration + carousel + scoring across all of the above
 
 ### For One-Person Builder
 - Monitor OPC/AI earning cases for emerging tool opportunities
@@ -86,7 +114,7 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 ---
 
 ## Last Updated
-2026-06-17
+2026-06-17 — added Kimi suite (K2, Audio, agent internals, CLI, Writer skill, KimiK2Manim), SkyReels V1/V2/V3 video models, LLM gateways (GPT4Free, OpenClaw Zero Token, kimi-free-api), MiroFlow research agent, Carousel system, and Remotion/Wasabi reference docs.
 
 ## Source
 Curated articles, Reddit posts, GitHub trending, Hacker News, blogging platforms (Simon Willison, Lenny's Newsletter, 36氪, 爱范儿, Trends.vc)
