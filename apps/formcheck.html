@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>FORMCHECK — Running Form Analyzer</title>
+<meta name="description" content="On-device running & movement form analyzer. Upload a side-view clip or use your camera; AI pose detection flags overstriding, heel strike, cadence, trunk lean and left/right asymmetry — all private, nothing leaves your phone." />
+<meta name="theme-color" content="#0a0e17" />
+<meta name="color-scheme" content="dark" />
+<meta property="og:title" content="FORMCHECK — Running Form Analyzer" />
+<meta property="og:description" content="Side-view running form analysis with on-device pose AI. Private, fast, coach-grade tips." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>" />
+<style>
+  :root{
+    --bg:#0a0e17;
+    --bg2:#0e1422;
+    --card:#121a2b;
+    --card2:#16203448;
+    --line:#1f2b44;
+    --line2:#293a5c;
+    --txt:#e8eefc;
+    --muted:#8a99bd;
+    --faint:#5d6c8f;
+    --accent:#22e3a6;
+    --accent2:#3aa0ff;
+    --warn:#ffb23e;
+    --bad:#ff5d6c;
+    --good:#22e3a6;
+    --grad:linear-gradient(135deg,#22e3a6 0%,#3aa0ff 60%,#7a5cff 100%);
+    --grad-head:radial-gradient(120% 140% at 0% 0%,#16314a 0%,#0a0e17 60%),linear-gradient(135deg,#0f2740 0%,#0a0e17 70%);
+    --r:18px;
+    --r-sm:12px;
+    --sh:0 12px 40px -12px rgba(0,0,0,.6);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(900px 500px at 100% -10%,#13243a55 0%,transparent 60%),
+      radial-gradient(700px 600px at -10% 20%,#1b2f4a44 0%,transparent 60%),
+      var(--bg);
+    color:var(--txt);
+    font-family:var(--font);
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:0 14px 40px}
+  /* Header */
+  header{
+    background:var(--grad-head);
+    border-bottom:1px solid var(--line);
+    padding:calc(env(safe-area-inset-top) + 20px) 18px 22px;
+    margin:0 -14px 16px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";position:absolute;inset:auto -40px -60px auto;width:200px;height:200px;
+    background:var(--grad);filter:blur(60px);opacity:.18;border-radius:50%;
+  }
+  .brand{display:flex;align-items:center;gap:11px;position:relative;z-index:1}
+  .logo{
+    width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+    background:var(--grad);font-size:22px;box-shadow:0 6px 20px -6px #22e3a677;
+  }
+  .brand h1{font-size:21px;margin:0;letter-spacing:.06em;font-weight:800}
+  .brand .tag{font-size:11.5px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:1px}
+  .sub{color:var(--muted);font-size:13px;margin:12px 0 0;position:relative;z-index:1;max-width:42ch}
+  /* Model status pill */
+  .status{
+    display:inline-flex;align-items:center;gap:7px;margin-top:14px;position:relative;z-index:1;
+    background:#0c1322;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;
+    color:var(--muted);
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+  .dot.load{background:var(--warn);animation:pulse 1s infinite}
+  .dot.ok{background:var(--good)}
+  .dot.err{background:var(--bad)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  /* Cards */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px;margin-bottom:14px;box-shadow:var(--sh);
+  }
+  .card h2{font-size:13px;margin:0 0 12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:8px}
+  .card h2 .n{width:20px;height:20px;border-radius:6px;background:var(--card2);border:1px solid var(--line2);display:grid;place-items:center;font-size:11px;color:var(--accent)}
+  /* Buttons */
+  .btn{
+    appearance:none;border:1px solid var(--line2);background:#0e1626;color:var(--txt);
+    font-family:inherit;font-size:14px;font-weight:600;padding:12px 14px;border-radius:var(--r-sm);
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.15s;
+    width:100%;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--grad);border:none;color:#04130d;box-shadow:0 8px 22px -8px #22e3a688}
+  .btn.ghost{background:transparent}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn-row.three{grid-template-columns:1fr 1fr 1fr}
+  .mini{font-size:12.5px;padding:9px 10px}
+  /* Source picker */
+  .drop{
+    border:1.5px dashed var(--line2);border-radius:var(--r-sm);padding:20px;text-align:center;
+    color:var(--muted);font-size:13px;cursor:pointer;transition:.15s;background:#0c1320;
+  }
+  .drop:hover{border-color:var(--accent2);color:var(--txt)}
+  .drop b{color:var(--txt);display:block;margin-bottom:3px;font-size:14px}
+  input[type=file]{display:none}
+  /* Stage */
+  .stage{position:relative;border-radius:var(--r-sm);overflow:hidden;background:#05080f;border:1px solid var(--line);aspect-ratio:9/12}
+  .stage.empty{display:grid;place-items:center;color:var(--faint);font-size:13px;text-align:center;padding:30px}
+  video{display:block;width:100%;height:100%;object-fit:contain;background:#05080f}
+  canvas#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .stage-bad{position:absolute;left:10px;top:10px;background:#0009;border:1px solid var(--line2);border-radius:8px;padding:4px 9px;font-size:11px;color:var(--muted);backdrop-filter:blur(6px)}
+  /* Transport */
+  .transport{margin-top:12px}
+  .scrub{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;background:#1a2740;outline:none}
+  .scrub::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px #22e3a633;cursor:pointer}
+  .scrub::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--accent);cursor:pointer}
+  .tline{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:6px;font-variant-numeric:tabular-nums}
+  /* Metrics grid */
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .metric{background:#0e1626;border:1px solid var(--line);border-radius:var(--r-sm);padding:12px}
+  .metric .lbl{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:6px}
+  .metric .val{font-size:23px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .metric .val small{font-size:13px;font-weight:600;color:var(--muted)}
+  .metric .hint{font-size:11px;color:var(--muted);margin-top:3px;min-height:14px}
+  .metric.s-good{border-color:#22e3a644}.metric.s-good .val{color:var(--good)}
+  .metric.s-warn{border-color:#ffb23e44}.metric.s-warn .val{color:var(--warn)}
+  .metric.s-bad{border-color:#ff5d6c44}.metric.s-bad .val{color:var(--bad)}
+  /* Report */
+  .issue{display:flex;gap:11px;padding:12px;border-radius:var(--r-sm);background:#0e1626;border:1px solid var(--line);margin-bottom:9px}
+  .issue .ic{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:15px}
+  .issue.good .ic{background:#22e3a61f;border:1px solid #22e3a655}
+  .issue.warn .ic{background:#ffb23e1f;border:1px solid #ffb23e55}
+  .issue.bad  .ic{background:#ff5d6c1f;border:1px solid #ff5d6c55}
+  .issue .ti{font-weight:700;font-size:14px}
+  .issue.good .ti{color:var(--good)}.issue.warn .ti{color:var(--warn)}.issue.bad .ti{color:var(--bad)}
+  .issue .tip{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .empty-note{font-size:13px;color:var(--faint);text-align:center;padding:14px 4px}
+  /* Toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:#121b2e;border:1px solid var(--line2);color:var(--txt);padding:11px 16px;border-radius:12px;
+    font-size:13px;box-shadow:var(--sh);opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  /* Disclaimer */
+  .disc{font-size:11.5px;color:var(--faint);background:#0c1320;border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;line-height:1.5}
+  .disc b{color:var(--muted)}
+  /* Freemium footer */
+  .free{
+    background:linear-gradient(135deg,#16203d 0%,#101728 100%);
+    border:1px solid var(--line2);border-radius:var(--r);padding:16px;margin-top:4px;position:relative;overflow:hidden;
+  }
+  .free::before{content:"";position:absolute;inset:-1px;background:var(--grad);opacity:.06}
+  .free h3{margin:0 0 4px;font-size:15px;position:relative}
+  .free p{margin:0 0 12px;font-size:12.5px;color:var(--muted);position:relative}
+  .free .price{color:var(--accent);font-weight:800}
+  .free .count{font-size:11.5px;color:var(--faint);margin-top:10px;position:relative;text-align:center}
+  .free .b2b{font-size:11px;color:var(--faint);position:relative;margin-top:9px;text-align:center}
+  .footnote{text-align:center;font-size:11px;color:var(--faint);margin-top:18px}
+  .row{display:flex;gap:8px;align-items:center}
+  .pillset{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .pill{font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--line2);background:#0e1626;color:var(--muted);cursor:pointer;transition:.15s}
+  .pill.on{background:var(--accent2);border-color:var(--accent2);color:#04101f;font-weight:700}
+  .hide{display:none!important}
+  .small{font-size:11.5px;color:var(--muted)}
+  a{color:var(--accent2);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="logo">🏃</div>
+      <div>
+        <h1>FORMCHECK</h1>
+        <div class="tag">Running Form Analyzer</div>
+      </div>
+    </div>
+    <p class="sub">Upload a side-view clip of yourself running. On-device pose AI tracks your body and flags common form issues — nothing ever leaves your phone.</p>
+    <div class="status" id="modelStatus">
+      <span class="dot" id="modelDot"></span>
+      <span id="modelText">Pose AI idle — loads on first analysis</span>
+    </div>
+  </header>
+
+  <!-- SOURCE -->
+  <div class="card">
+    <h2><span class="n">1</span> Add a clip</h2>
+    <label class="drop" for="fileIn" id="dropZone">
+      <b>Tap to choose a video</b>
+      Side-view, whole body in frame, treadmill or steady pan works best
+    </label>
+    <input type="file" id="fileIn" accept="video/*" />
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn ghost mini" id="camBtn">📷 Use camera</button>
+      <button class="btn ghost mini" id="sampleBtn">▶ Demo motion</button>
+    </div>
+    <div class="pillset" style="margin-top:12px">
+      <span class="small" style="width:100%;margin-bottom:2px">Facing direction:</span>
+      <span class="pill on" data-dir="auto">Auto-detect</span>
+      <span class="pill" data-dir="right">Moving →</span>
+      <span class="pill" data-dir="left">← Moving</span>
+    </div>
+  </div>
+
+  <!-- STAGE -->
+  <div class="card">
+    <h2><span class="n">2</span> Review &amp; scrub</h2>
+    <div class="stage empty" id="stage">
+      <span id="stageMsg">No clip yet — add one above to begin</span>
+      <video id="vid" class="hide" playsinline muted></video>
+      <canvas id="overlay" class="hide"></canvas>
+      <div class="stage-bad hide" id="poseBadge">pose</div>
+    </div>
+
+    <div class="transport hide" id="transport">
+      <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0" step="1" />
+      <div class="tline"><span id="tCur">0.00s</span><span id="tDur">0.00s</span></div>
+      <div class="btn-row three" style="margin-top:11px">
+        <button class="btn mini" id="playBtn">▶ Play</button>
+        <button class="btn mini" id="stepB">⟨ Frame</button>
+        <button class="btn mini" id="stepF">Frame ⟩</button>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn primary mini" id="analyzeBtn">⚡ Analyze form</button>
+        <button class="btn ghost mini" id="shotBtn">📸 Save frame</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="card" id="metricsCard">
+    <h2><span class="n">3</span> Live metrics</h2>
+    <div class="metrics" id="metrics">
+      <div class="metric" id="m-lean"><div class="lbl">Trunk lean</div><div class="val">—<small>°</small></div><div class="hint">forward lean angle</div></div>
+      <div class="metric" id="m-stride"><div class="lbl">Foot vs hip</div><div class="val">—</div><div class="hint">at footstrike</div></div>
+      <div class="metric" id="m-cadence"><div class="lbl">Cadence</div><div class="val">—<small>spm</small></div><div class="hint">estimated steps/min</div></div>
+      <div class="metric" id="m-sym"><div class="lbl">L / R symmetry</div><div class="val">—<small>%</small></div><div class="hint">knee height balance</div></div>
+    </div>
+    <p class="small" style="margin:11px 2px 0">Metrics update live while a pose is tracked. Run <b>Analyze form</b> to scan the whole clip and build a report.</p>
+  </div>
+
+  <!-- REPORT -->
+  <div class="card" id="reportCard">
+    <h2><span class="n">4</span> Form report</h2>
+    <div id="report"><div class="empty-note">Analyze a clip to see detected issues and coaching tips.</div></div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="disc" style="margin-bottom:14px">
+    <b>Honest note:</b> FORMCHECK analyzes 2D side-view pose from your video. It gives general running-form guidance to compare against yourself over time — it is <b>not</b> a medical or clinical diagnosis. Accuracy depends on camera angle, framing and lighting. If you have pain or injury, see a physio or sports clinician.
+  </div>
+
+  <!-- FREEMIUM -->
+  <div class="free">
+    <h3>Unlock FORMCHECK Pro</h3>
+    <p>Free includes <b>3 full analyses</b>. <span class="price">Lifetime $7.99</span> unlocks <b>unlimited analyses + side-by-side compare</b> to track form across sessions.</p>
+    <button class="btn primary mini" id="upgradeBtn" style="width:100%">Get Lifetime — $7.99</button>
+    <div class="count" id="freeCount">3 free analyses remaining</div>
+    <div class="b2b">Coaches &amp; clubs → <a href="#" id="b2bLink">B2B team licensing</a></div>
+  </div>
+
+  <p class="footnote">Pairs with <b>Reset</b> recovery · 100% on-device · v1.0</p>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   FORMCHECK — single-file running form analyzer
+   On-device pose detection (TF.js + MoveNet from CDN, first use).
+   Degrades gracefully offline: manual scrub still works.
+   ============================================================ */
+(function(){
+  "use strict";
+  const LS="formcheck_";
+  const $=s=>document.querySelector(s);
+  const lsGet=(k,d)=>{try{const v=localStorage.getItem(LS+k);return v===null?d:JSON.parse(v);}catch(e){return d;}};
+  const lsSet=(k,v)=>{try{localStorage.setItem(LS+k,JSON.stringify(v));}catch(e){}};
+
+  // ---- Elements
+  const vid=$("#vid"), overlay=$("#overlay"), octx=overlay.getContext("2d");
+  const stage=$("#stage"), stageMsg=$("#stageMsg"), transport=$("#transport");
+  const scrub=$("#scrub"), tCur=$("#tCur"), tDur=$("#tDur");
+  const playBtn=$("#playBtn"), analyzeBtn=$("#analyzeBtn"), shotBtn=$("#shotBtn");
+  const modelDot=$("#modelDot"), modelText=$("#modelText"), poseBadge=$("#poseBadge");
+  const reportEl=$("#report"), freeCount=$("#freeCount");
+
+  // ---- Toast
+  let toT;
+  function toast(msg,ms=2200){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toT);toT=setTimeout(()=>t.classList.remove("show"),ms);}
+
+  // ---- Prefs
+  let dir=lsGet("dir","auto");
+  document.querySelectorAll(".pill[data-dir]").forEach(p=>{
+    if(p.dataset.dir===dir)p.classList.add("on");else p.classList.remove("on");
+    p.addEventListener("click",()=>{
+      document.querySelectorAll(".pill[data-dir]").forEach(x=>x.classList.remove("on"));
+      p.classList.add("on");dir=p.dataset.dir;lsSet("dir",dir);
+    });
+  });
+
+  // ---- Freemium
+  const FREE_MAX=3;
+  let pro=lsGet("pro",false);
+  let used=lsGet("used",0);
+  function renderFree(){
+    if(pro){freeCount.textContent="Pro unlocked — unlimited analyses ✓";$("#upgradeBtn").textContent="Pro active ✓";$("#upgradeBtn").disabled=true;}
+    else{const left=Math.max(0,FREE_MAX-used);freeCount.textContent=left+" free analysis"+(left===1?"":"es")+" remaining";}
+  }
+  renderFree();
+  $("#upgradeBtn").addEventListener("click",()=>{
+    // Local unlock stub — real build wires Gumroad/Stripe license here.
+    if(pro){toast("Pro already active");return;}
+    pro=true;lsSet("pro",true);renderFree();
+    toast("Lifetime unlocked — unlimited analyses + compare ✓",2800);
+  });
+  $("#b2bLink").addEventListener("click",e=>{e.preventDefault();toast("B2B: email teams@formcheck.app for club licensing",3000);});
+
+  // ============================================================
+  // Pose model (lazy load from CDN). Graceful offline fallback.
+  // ============================================================
+  let detector=null, modelState="idle"; // idle|loading|ready|error
+  const TFJS="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js";
+  const POSE="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js";
+
+  function setModel(state,txt){
+    modelState=state;
+    modelDot.className="dot"+(state==="loading"?" load":state==="ready"?" ok":state==="error"?" err":"");
+    modelText.textContent=txt;
+  }
+  function loadScript(src){
+    return new Promise((res,rej)=>{
+      const s=document.createElement("script");s.src=src;s.async=true;
+      s.onload=res;s.onerror=()=>rej(new Error("load "+src));
+      document.head.appendChild(s);
+    });
+  }
+  async function ensureModel(){
+    if(modelState==="ready")return true;
+    if(modelState==="loading")return false;
+    if(!navigator.onLine){
+      setModel("error","Pose AI needs internet to load the model the first time");
+      toast("Offline — load the pose model once with a connection. You can still scrub manually.",4200);
+      return false;
+    }
+    setModel("loading","Loading pose model… (first time, ~5 MB)");
+    try{
+      if(typeof tf==="undefined")await loadScript(TFJS);
+      if(typeof poseDetection==="undefined")await loadScript(POSE);
+      await tf.ready();
+      try{await tf.setBackend("webgl");}catch(e){}
+      detector=await poseDetection.createDetector(
+        poseDetection.SupportedModels.MoveNet,
+        {modelType:poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING}
+      );
+      setModel("ready","Pose AI ready ✓ (on-device)");
+      return true;
+    }catch(err){
+      console.warn(err);
+      setModel("error","Couldn’t load Pose AI — check your connection and retry");
+      toast("Pose AI needs an internet connection to load the model the first time. Manual scrub still works.",4600);
+      return false;
+    }
+  }
+
+  // ============================================================
+  // Video source handling
+  // ============================================================
+  let camStream=null, objURL=null;
+  function clearCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}}
+  function revoke(){if(objURL){URL.revokeObjectURL(objURL);objURL=null;}}
+
+  function showStage(){
+    stage.classList.remove("empty");
+    vid.classList.remove("hide");overlay.classList.remove("hide");
+    transport.classList.remove("hide");
+    stageMsg.classList.add("hide");
+  }
+
+  function loadFile(file){
+    if(!file)return;
+    clearCam();revoke();
+    objURL=URL.createObjectURL(file);
+    vid.srcObject=null;vid.src=objURL;vid.loop=false;vid.muted=true;
+    vid.load();showStage();
+    resetAnalysis();
+    toast("Clip loaded — scrub or analyze");
+  }
+
+  $("#fileIn").addEventListener("change",e=>loadFile(e.target.files[0]));
+  // Drag-drop
+  ["dragover","dragenter"].forEach(ev=>$("#dropZone").addEventListener(ev,e=>{e.preventDefault();}));
+  $("#dropZone").addEventListener("drop",e=>{e.preventDefault();if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+
+  $("#camBtn").addEventListener("click",async()=>{
+    try{
+      revoke();
+      camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280}},audio:false});
+      vid.src="";vid.srcObject=camStream;vid.loop=false;vid.muted=true;
+      await vid.play();showStage();resetAnalysis();
+      toast("Camera live — record yourself from the side, then scrub a saved clip for best analysis",3600);
+    }catch(err){toast("Camera unavailable — try uploading a clip instead");}
+  });
+
+  // Demo: synthetic running stick-figure rendered to a canvas-backed stream.
+  let demoRAF=null;
+  $("#sampleBtn").addEventListener("click",()=>{
+    clearCam();revoke();
+    const c=document.createElement("canvas");c.width=540;c.height=720;const cx=c.getContext("2d");
+    let t0=performance.now();
+    function draw(now){
+      const t=(now-t0)/1000;
+      cx.fillStyle="#0a1018";cx.fillRect(0,0,c.width,c.height);
+      cx.strokeStyle="#1b2740";cx.lineWidth=2;
+      for(let y=120;y<720;y+=80){cx.beginPath();cx.moveTo(0,y);cx.lineTo(540,y);cx.stroke();}
+      // simple runner
+      const cxp=270, bob=Math.sin(t*2*Math.PI*1.5)*12;
+      const hipY=420+bob, ph=t*2*Math.PI*1.5;
+      const hipX=cxp, headY=hipY-150;
+      const lean=8;
+      function seg(x1,y1,x2,y2,w,col){cx.strokeStyle=col;cx.lineWidth=w;cx.lineCap="round";cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke();}
+      // trunk
+      seg(hipX,hipY,hipX+lean,headY+30,16,"#22e3a6");
+      // head
+      cx.fillStyle="#3aa0ff";cx.beginPath();cx.arc(hipX+lean,headY,22,0,7);cx.fill();
+      // legs (alternating)
+      const kneeSw=Math.sin(ph)*70, kneeSw2=Math.sin(ph+Math.PI)*70;
+      const footSw=Math.sin(ph-0.5)*90, footSw2=Math.sin(ph+Math.PI-0.5)*90;
+      seg(hipX,hipY,hipX+kneeSw*0.5,hipY+90,14,"#7a5cff");
+      seg(hipX+kneeSw*0.5,hipY+90,hipX+footSw,hipY+200,12,"#7a5cff");
+      seg(hipX,hipY,hipX+kneeSw2*0.5,hipY+90,14,"#5d7cff");
+      seg(hipX+kneeSw2*0.5,hipY+90,hipX+footSw2,hipY+200,12,"#5d7cff");
+      // arms
+      seg(hipX+lean*0.6,headY+50,hipX+lean+Math.sin(ph+Math.PI)*55,headY+120,10,"#ffb23e");
+      seg(hipX+lean*0.6,headY+50,hipX+lean+Math.sin(ph)*55,headY+120,10,"#ff8a3e");
+      cx.fillStyle="#5d6c8f";cx.font="13px sans-serif";cx.fillText("DEMO — synthetic motion",14,28);
+      demoRAF=requestAnimationFrame(draw);
+    }
+    if(demoRAF)cancelAnimationFrame(demoRAF);
+    draw(performance.now());
+    const stream=c.captureStream(30);
+    vid.src="";vid.srcObject=stream;vid.muted=true;vid.loop=false;
+    vid.play().then(()=>{showStage();resetAnalysis();toast("Demo motion playing — Analyze to see pose tracking");});
+  });
+
+  // ============================================================
+  // Transport / playback
+  // ============================================================
+  function fmt(s){return (s||0).toFixed(2)+"s";}
+  let isLive=()=>!!vid.srcObject;
+
+  vid.addEventListener("loadedmetadata",()=>{
+    sizeOverlay();
+    tDur.textContent=isFinite(vid.duration)?fmt(vid.duration):"live";
+  });
+  vid.addEventListener("timeupdate",()=>{
+    if(!isLive()&&isFinite(vid.duration)){
+      scrub.value=Math.round((vid.currentTime/vid.duration)*1000)||0;
+      tCur.textContent=fmt(vid.currentTime);
+    }
+  });
+  vid.addEventListener("play",()=>{playBtn.textContent="⏸ Pause";liveLoop();});
+  vid.addEventListener("pause",()=>{playBtn.textContent="▶ Play";});
+  vid.addEventListener("ended",()=>{playBtn.textContent="▶ Play";});
+  vid.addEventListener("seeked",()=>{if(modelState==="ready"&&!liveOn)trackOnce();else if(detector)trackOnce();});
+
+  playBtn.addEventListener("click",()=>{if(vid.paused)vid.play();else vid.pause();});
+  $("#stepB").addEventListener("click",()=>step(-1));
+  $("#stepF").addEventListener("click",()=>step(1));
+  function step(d){
+    if(isLive()||!isFinite(vid.duration))return;
+    vid.pause();
+    vid.currentTime=Math.min(vid.duration,Math.max(0,vid.currentTime+d*(1/30)));
+  }
+  scrub.addEventListener("input",()=>{
+    if(isLive()||!isFinite(vid.duration))return;
+    vid.pause();
+    vid.currentTime=(scrub.value/1000)*vid.duration;
+    tCur.textContent=fmt(vid.currentTime);
+  });
+
+  function sizeOverlay(){
+    const w=vid.videoWidth||vid.clientWidth, h=vid.videoHeight||vid.clientHeight;
+    if(w&&h){overlay.width=w;overlay.height=h;}
+  }
+
+  // ============================================================
+  // Pose drawing + per-frame tracking
+  // ============================================================
+  const KP=["nose","left_eye","right_eye","left_ear","right_ear","left_shoulder","right_shoulder",
+    "left_elbow","right_elbow","left_wrist","right_wrist","left_hip","right_hip",
+    "left_knee","right_knee","left_ankle","right_ankle"];
+  const SKELETON=[[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],
+    [11,13],[13,15],[12,14],[14,16],[0,5],[0,6]];
+
+  let lastPose=null, liveOn=false;
+
+  function drawPose(kps){
+    octx.clearRect(0,0,overlay.width,overlay.height);
+    if(!kps){poseBadge.classList.add("hide");return;}
+    poseBadge.classList.remove("hide");poseBadge.textContent="pose ✓";
+    const ok=i=>kps[i]&&kps[i].score>0.3;
+    octx.lineWidth=Math.max(3,overlay.width/180);
+    octx.strokeStyle="#22e3a6";octx.lineCap="round";
+    SKELETON.forEach(([a,b])=>{
+      if(ok(a)&&ok(b)){octx.beginPath();octx.moveTo(kps[a].x,kps[a].y);octx.lineTo(kps[b].x,kps[b].y);octx.stroke();}
+    });
+    const r=Math.max(4,overlay.width/120);
+    kps.forEach((k,i)=>{if(k&&k.score>0.3){
+      octx.fillStyle=i<5?"#3aa0ff":"#22e3a6";
+      octx.beginPath();octx.arc(k.x,k.y,r,0,7);octx.fill();
+    }});
+  }
+
+  function kpByName(pose){const m={};pose.keypoints.forEach(k=>m[k.name]=k);return m;}
+  // Resolve facing: returns +1 if subject moves right, -1 if left
+  function facing(m){
+    if(dir==="right")return 1; if(dir==="left")return -1;
+    // auto: nose ahead of hip center tends toward direction; fall back to shoulder>hip
+    const hc=(m.left_hip&&m.right_hip)?(m.left_hip.x+m.right_hip.x)/2:(m.left_hip?m.left_hip.x:(m.right_hip?m.right_hip.x:null));
+    if(m.nose&&hc!=null)return m.nose.x>=hc?1:-1;
+    return 1;
+  }
+
+  async function trackOnce(){
+    if(!detector)return null;
+    try{
+      const poses=await detector.estimatePoses(vid,{maxPoses:1,flipHorizontal:false});
+      if(poses&&poses[0]){
+        const idx=poses[0].keypoints; lastPose=idx;
+        drawPose(idx);
+        updateLiveMetrics(poses[0]);
+        return poses[0];
+      }else{drawPose(null);}
+    }catch(e){/* frame not ready */}
+    return null;
+  }
+
+  function liveLoop(){
+    if(!detector||vid.paused||vid.ended){liveOn=false;return;}
+    liveOn=true;
+    trackOnce().finally(()=>{if(!vid.paused&&!vid.ended)requestAnimationFrame(liveLoop);else liveOn=false;});
+  }
+
+  // ============================================================
+  // Metrics computation (single frame -> live cards)
+  // ============================================================
+  function angleFromVertical(dx,dy){
+    // dy points up if negative in image coords; we measure lean of trunk from vertical
+    return Math.atan2(Math.abs(dx),Math.abs(dy))*180/Math.PI;
+  }
+
+  function frameMetrics(pose){
+    const m=kpByName(pose);
+    const f=facing(m);
+    const need=n=>m[n]&&m[n].score>0.3;
+    const out={};
+    // Trunk lean: shoulder-center to hip-center vs vertical, sign by facing
+    if((need("left_shoulder")||need("right_shoulder"))&&(need("left_hip")||need("right_hip"))){
+      const sx=avg(m.left_shoulder,m.right_shoulder,"x"), sy=avg(m.left_shoulder,m.right_shoulder,"y");
+      const hx=avg(m.left_hip,m.right_hip,"x"), hy=avg(m.left_hip,m.right_hip,"y");
+      if(sx!=null&&hx!=null){
+        let ang=angleFromVertical(sx-hx,sy-hy);
+        // forward (toward facing) positive, backward negative
+        const fwd=Math.sign(sx-hx)===Math.sign(f);
+        out.lean= fwd?ang:-ang;
+      }
+    }
+    // Foot vs hip horizontal offset (overstride proxy): ankle ahead of hip in facing dir
+    const ankle=lowestAnkle(m); const hipx=avg(m.left_hip,m.right_hip,"x");
+    if(ankle&&hipx!=null){
+      const torso=torsoLen(m)||120;
+      out.footOffset=((ankle.x-hipx)*f)/torso; // normalized; >0 = ahead of hip
+    }
+    // knee heights for symmetry (instantaneous)
+    if(need("left_knee")&&need("right_knee")){out.lk=m.left_knee.y;out.rk=m.right_knee.y;}
+    // ankle/knee for heel-strike-ish: ankle far ahead + relatively high = reaching
+    if(ankle&&need("left_knee")&&need("right_knee")){
+      const knee=(m.left_knee.y+m.right_knee.y)/2;
+      out.reach=out.footOffset; // reuse offset as primary heel-strike signal
+    }
+    out.bobY = avg(m.left_hip,m.right_hip,"y");
+    out.kp=m;
+    return out;
+  }
+  function avg(a,b,k){const A=a&&a.score>0.3,B=b&&b.score>0.3;if(A&&B)return (a[k]+b[k])/2;if(A)return a[k];if(B)return b[k];return null;}
+  function torsoLen(m){const sy=avg(m.left_shoulder,m.right_shoulder,"y"),hy=avg(m.left_hip,m.right_hip,"y");return (sy!=null&&hy!=null)?Math.abs(hy-sy):null;}
+  function lowestAnkle(m){const a=m.left_ankle,b=m.right_ankle;const A=a&&a.score>0.3,B=b&&b.score>0.3;if(A&&B)return a.y>b.y?a:b;return A?a:(B?b:null);}
+
+  function cls(v,goodMax,warnMax){const x=Math.abs(v);return x<=goodMax?"good":x<=warnMax?"warn":"bad";}
+  function setMetric(id,valHtml,hint,state){
+    const el=$(id);el.className="metric"+(state?(" s-"+state):"");
+    el.querySelector(".val").innerHTML=valHtml;
+    if(hint!=null)el.querySelector(".hint").textContent=hint;
+  }
+
+  function updateLiveMetrics(pose){
+    const fm=frameMetrics(pose);
+    if(fm.lean!=null){
+      const st=cls(fm.lean,8,14); // good: small fwd lean; we treat >0 forward as fine up to ~8-14
+      const v=fm.lean>=0?fm.lean.toFixed(0):fm.lean.toFixed(0);
+      setMetric("#m-lean",(v)+'<small>°</small>',fm.lean>=0?"forward":"backward",
+        fm.lean<0?"warn":st);
+    }
+    if(fm.footOffset!=null){
+      const ahead=fm.footOffset; const st=ahead<=0.18?"good":ahead<=0.35?"warn":"bad";
+      setMetric("#m-stride",(ahead>0?"+":"")+ahead.toFixed(2),ahead>0.18?"foot ahead of hip":"under hip ✓",st);
+    }
+    if(fm.lk!=null&&fm.rk!=null){
+      const diff=Math.abs(fm.lk-fm.rk); const t=torsoLen(fm.kp)||120;
+      const symPct=Math.max(0,100-(diff/t*100));
+      setMetric("#m-sym",symPct.toFixed(0)+'<small>%</small>',"knee height balance",
+        symPct>=85?"good":symPct>=72?"warn":"bad");
+    }
+  }
+
+  // ============================================================
+  // Full-clip analysis -> cadence, averages, report
+  // ============================================================
+  let analyzing=false;
+  analyzeBtn.addEventListener("click",runAnalysis);
+
+  async function runAnalysis(){
+    if(analyzing)return;
+    if(isLive()){toast("For a full report, record a clip then upload/scrub it. Live cam shows tracking only.",4200);}
+    if(!pro && used>=FREE_MAX){
+      toast("Free limit reached — unlock Lifetime $7.99 for unlimited analyses",3400);
+      return;
+    }
+    const ready=await ensureModel();
+    if(!ready)return; // status already messaged
+    if(isLive()){ // live: just confirm tracking is on
+      toast("Tracking live pose — metrics update in real time");
+      return;
+    }
+    if(!isFinite(vid.duration)||vid.duration<=0){toast("Clip has no seekable duration to analyze");return;}
+
+    analyzing=true;analyzeBtn.disabled=true;analyzeBtn.textContent="Analyzing…";
+    vid.pause();
+    const dur=vid.duration;
+    const N=Math.min(60,Math.max(20,Math.round(dur*12))); // sample density
+    const samples=[];
+    try{
+      for(let i=0;i<=N;i++){
+        const t=(i/N)*Math.max(0.001,dur-0.02);
+        await seekTo(t);
+        const pose=await detector.estimatePoses(vid,{maxPoses:1,flipHorizontal:false}).then(p=>p&&p[0]).catch(()=>null);
+        if(pose){drawPose(pose.keypoints);updateLiveMetrics(pose);samples.push({t,fm:frameMetrics(pose)});}
+        analyzeBtn.textContent="Analyzing… "+Math.round(i/N*100)+"%";
+      }
+    }catch(e){console.warn(e);}
+    analyzing=false;analyzeBtn.disabled=false;analyzeBtn.textContent="⚡ Analyze form";
+
+    if(samples.length<6){
+      buildReport(null);
+      toast("Couldn’t track a clear pose — try a side-view clip with the whole body in frame",4200);
+      return;
+    }
+    const summary=summarize(samples,dur);
+    buildReport(summary);
+    if(!pro){used++;lsSet("used",used);renderFree();}
+    toast("Analysis complete — see your form report below",2600);
+    reportEl.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+
+  function seekTo(t){
+    return new Promise(res=>{
+      let done=false;const h=()=>{if(done)return;done=true;vid.removeEventListener("seeked",h);setTimeout(res,30);};
+      vid.addEventListener("seeked",h);
+      try{vid.currentTime=t;}catch(e){res();}
+      setTimeout(()=>{if(!done){done=true;vid.removeEventListener("seeked",h);res();}},500);
+    });
+  }
+
+  function median(arr){if(!arr.length)return null;const s=[...arr].sort((a,b)=>a-b);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+
+  function summarize(samples,dur){
+    const leans=[],offsets=[],symDiffs=[],bobs=[],times=[];
+    samples.forEach(s=>{const f=s.fm;
+      if(f.lean!=null)leans.push(f.lean);
+      if(f.footOffset!=null)offsets.push(f.footOffset);
+      if(f.lk!=null&&f.rk!=null){const t=torsoLen(f.kp)||120;symDiffs.push(Math.abs(f.lk-f.rk)/t);}
+      if(f.bobY!=null){bobs.push(f.bobY);times.push(s.t);}
+    });
+    // Cadence from vertical oscillation of hip (bob). Count peaks -> strides; *2 for steps.
+    let cadence=null;
+    if(bobs.length>=8){
+      // normalize
+      const mn=Math.min(...bobs),mx=Math.max(...bobs);
+      const amp=mx-mn;
+      if(amp>2){
+        const norm=bobs.map(v=>(v-mn)/amp);
+        let peaks=0;
+        for(let i=1;i<norm.length-1;i++){
+          if(norm[i]>norm[i-1]&&norm[i]>=norm[i+1]&&norm[i]>0.55)peaks++;
+        }
+        // each vertical oscillation peak ~ one stride cycle bottom; hip bobs twice per stride cycle (one per foot)
+        const cyclesPerSec=peaks/dur;
+        cadence=Math.round(cyclesPerSec*60*2); // steps/min approx
+        if(cadence<120||cadence>230)cadence=Math.max(120,Math.min(230,cadence));
+      }
+    }
+    const overstridePct = offsets.length? offsets.filter(o=>o>0.30).length/offsets.length*100 : null;
+    return {
+      lean: median(leans),
+      offset: median(offsets),
+      overstridePct,
+      sym: symDiffs.length? Math.max(0,100-median(symDiffs)*100) : null,
+      cadence,
+      frames: samples.length,
+      dur
+    };
+  }
+
+  // ============================================================
+  // Report rendering with coaching tips
+  // ============================================================
+  function issue(level,icon,title,tip){
+    return `<div class="issue ${level}"><div class="ic">${icon}</div><div><div class="ti">${title}</div><div class="tip">${tip}</div></div></div>`;
+  }
+
+  function buildReport(s){
+    if(!s){
+      reportEl.innerHTML=`<div class="empty-note">No clear pose detected. Use a side-view clip with your whole body in frame, good lighting, and steady framing — then analyze again.</div>`;
+      return;
+    }
+    const items=[];
+    // Trunk lean
+    if(s.lean!=null){
+      if(s.lean<-3) items.push(issue("warn","🪑","Leaning back",`Your trunk tilts back ~${Math.abs(s.lean).toFixed(0)}°. Leaning back acts as a brake. Cue: run "tall", lean slightly from the ankles, not the waist.`));
+      else if(s.lean>16) items.push(issue("bad","🙇","Excessive forward lean",`~${s.lean.toFixed(0)}° forward — often a hip-flexion/bending-at-waist habit. Cue: stack ribs over hips, lean from the ankles as one line.`));
+      else if(s.lean>=4) items.push(issue("good","🏃","Healthy forward lean",`A slight ${s.lean.toFixed(0)}° forward lean from the ankles — this is what you want. Keep it driven from the ground, not the hips.`));
+      else items.push(issue("good","🧍","Upright posture",`Trunk is near-vertical (${s.lean.toFixed(0)}°). A touch more forward lean from the ankles can add free propulsion.`));
+    }
+    // Overstride / foot vs hip
+    if(s.offset!=null){
+      const ovr=s.overstridePct||0;
+      if(s.offset>0.35||ovr>40) items.push(issue("bad","👟","Overstriding",`Your foot frequently lands well ahead of your hips (${ovr.toFixed(0)}% of strides). This usually means a hard heel-strike and braking. Cue: shorten your stride and aim to land with the foot under your body. Try lifting cadence ~5%.`));
+      else if(s.offset>0.20||ovr>20) items.push(issue("warn","👟","Mild reaching",`Foot lands a little ahead of the hip on some strides (${ovr.toFixed(0)}%). Focus on quick, light steps landing closer to under your center of mass.`));
+      else items.push(issue("good","✅","Good footstrike position",`Foot lands close to under your hips — low braking, efficient. Nice.`));
+    }
+    // Cadence
+    if(s.cadence!=null){
+      if(s.cadence<160) items.push(issue("warn","🥁","Low cadence",`~${s.cadence} steps/min. Many runners are more efficient and lower-impact nearer 170–180. Try a metronome at +5% and let stride shorten naturally. (Estimate from vertical bounce — verify with a watch.)`));
+      else if(s.cadence>190) items.push(issue("good","⚡","Brisk cadence",`~${s.cadence} steps/min — quick turnover, generally low impact. Make sure you're still covering ground, not just shuffling.`));
+      else items.push(issue("good","🥁","Good cadence",`~${s.cadence} steps/min — right in the efficient range for most runners.`));
+    }
+    // Symmetry
+    if(s.sym!=null){
+      if(s.sym<72) items.push(issue("bad","⚖️","Notable L/R asymmetry",`Knee-height balance ~${s.sym.toFixed(0)}%. Sizeable side-to-side difference. Could be camera angle, or a real imbalance/old injury. Re-shoot dead side-on; if it persists, worth a physio screen.`));
+      else if(s.sym<85) items.push(issue("warn","⚖️","Slight asymmetry",`~${s.sym.toFixed(0)}% balance. Minor left/right difference — common. Add single-leg strength work (lunges, step-ups) and re-test.`));
+      else items.push(issue("good","⚖️","Symmetrical",`~${s.sym.toFixed(0)}% left/right balance — your stride looks even side to side.`));
+    }
+    // Overall header
+    const bad=items.filter(i=>i.includes('issue bad')).length;
+    const warn=items.filter(i=>i.includes('issue warn')).length;
+    let head;
+    if(bad===0&&warn===0) head=issue("good","🌟","Looking strong",`No major flags from this clip (${s.frames} frames over ${s.dur.toFixed(1)}s). Re-test periodically to track changes.`);
+    else if(bad===0) head=issue("warn","🛠️","Minor tweaks available",`A few small things to polish — details below. Based on ${s.frames} tracked frames.`);
+    else head=issue("bad","🎯","Worth working on",`${bad} key item${bad>1?"s":""} to address. Pick one cue and re-film in a week. Based on ${s.frames} tracked frames.`);
+
+    reportEl.innerHTML=head+items.join("")+
+      `<p class="small" style="margin:10px 2px 0">Guidance only, not a diagnosis. Best with a true side-on view. Compare clips over time${pro?"":" — side-by-side compare is a Pro feature"}.</p>`;
+  }
+
+  function resetAnalysis(){
+    reportEl.innerHTML=`<div class="empty-note">Analyze a clip to see detected issues and coaching tips.</div>`;
+    ["#m-lean","#m-stride","#m-cadence","#m-sym"].forEach(id=>{
+      const el=$(id);el.className="metric";el.querySelector(".val").innerHTML="—";
+    });
+    $("#m-lean").querySelector(".val").innerHTML='—<small>°</small>';
+    $("#m-cadence").querySelector(".val").innerHTML='—<small>spm</small>';
+    $("#m-sym").querySelector(".val").innerHTML='—<small>%</small>';
+    octx.clearRect(0,0,overlay.width,overlay.height);
+    poseBadge.classList.add("hide");
+  }
+
+  // ============================================================
+  // Save frame (skeleton + video) as PNG
+  // ============================================================
+  shotBtn.addEventListener("click",()=>{
+    try{
+      const w=vid.videoWidth||overlay.width||540, h=vid.videoHeight||overlay.height||720;
+      const c=document.createElement("canvas");c.width=w;c.height=h;const cx=c.getContext("2d");
+      cx.drawImage(vid,0,0,w,h);
+      if(overlay.width)cx.drawImage(overlay,0,0,w,h);
+      cx.fillStyle="rgba(10,14,23,.7)";cx.fillRect(0,h-34,w,34);
+      cx.fillStyle="#22e3a6";cx.font="bold "+Math.round(w/26)+"px sans-serif";
+      cx.fillText("FORMCHECK",12,h-11);
+      c.toBlob(b=>{
+        if(!b){toast("Couldn’t capture frame");return;}
+        const a=document.createElement("a");a.href=URL.createObjectURL(b);
+        a.download="formcheck-"+Date.now()+".png";a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+        toast("Frame saved 📸");
+      },"image/png");
+    }catch(e){toast("Capture blocked (cross-origin video?) — try an uploaded clip");}
+  });
+
+  // online/offline reactions
+  window.addEventListener("offline",()=>{if(modelState!=="ready")setModel("error","Offline — Pose AI loads when you reconnect");});
+  window.addEventListener("online",()=>{if(modelState==="error"&&!detector)setModel("idle","Back online — Pose AI loads on next analysis");});
+  window.addEventListener("resize",sizeOverlay);
+
+  // Initial idle state
+  setModel("idle","Pose AI idle — loads on first analysis");
+})();
+</script>
+</body>
+</html>
