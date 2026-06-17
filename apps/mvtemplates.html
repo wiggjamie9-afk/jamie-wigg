@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0612" />
+<meta name="description" content="MVTEMPLATES — pick a song vibe, browse music-video template styles, and generate a structured scene-by-scene production brief (JSON + Markdown) ready for the RHYTHMIX / STARLIGHTMIX / HyperFrames pipeline. Fully offline, no AI key." />
+<meta name="color-scheme" content="dark" />
+<meta property="og:title" content="MVTEMPLATES — Music-Video Concept & Brief Generator" />
+<meta property="og:description" content="Browse music-video template styles and generate a production-ready scene brief for your track. Offline, client-side, no key." />
+<meta property="og:type" content="website" />
+<title>MVTEMPLATES — Music-Video Concept &amp; Brief Generator</title>
+
+<!--
+============================================================================
+  MVTEMPLATES — PIPELINE MAPPING NOTE (RHYTHMIX / STARLIGHTMIX / HyperFrames)
+============================================================================
+  The exported JSON brief is designed to feed this repo's video pipeline.
+  Field-by-field mapping onto the HyperFrames Cut folder
+  (rhythmix-<name>-<length>/ — see CLAUDE.md "Anatomy of a Cut folder"):
+
+  brief.song.title / .artist  -> folder name slug + DESIGN.md heading
+  brief.duration (sec)        -> hyperframes.json timeline length;
+                                 drives GSAP master timeline duration
+  brief.aspect ("16:9" etc.)  -> hyperframes.json {"width":W,"height":H}
+                                 16:9->1920x1080, 9:16->1080x1920, 1:1->1080x1080
+  brief.palette[]             -> :root CSS custom props in index.html
+                                 (--mv-c1 ... ) used by the GSAP composition
+  brief.scenes[]              -> each scene = one HyperFrames "frame"/segment:
+      scene.start/.end (sec)  -> GSAP timeline position + segment duration
+      scene.shot              -> composition layout / camera note
+      scene.text              -> on-screen <div> text layer + typography rule
+      scene.transition        -> GSAP ease + transition between segments
+      scene.promptSeed        -> prompt passed to the `replicate` /
+                                 `higgsfield-to-hyperframes` skill for the
+                                 generative b-roll / image-to-video clip
+  brief.typography            -> font stack + kinetic-type rules in index.html
+  brief.narrationHint         -> seed for script.txt -> `npx hyperframes tts`
+                                 (Kokoro / ElevenLabs) -> narration.wav
+
+  Suggested flow:
+    1. /rhythmix-new  (or invoke the `rhythmix-author` skill)
+    2. paste this JSON as the creative brief
+    3. the skill scaffolds the Cut folder, writes index.html (GSAP),
+       generates narration.wav, and runs `npx --yes hyperframes@0.4.42 render`.
+
+  The Markdown export is a human-readable shot list for the same brief —
+  drop it into the Cut folder's DESIGN.md.
+============================================================================
+-->
+<style>
+  :root{
+    /* RHYTHMIX-ish neon palette */
+    --bg:#0a0612;
+    --bg2:#120a22;
+    --panel:#170d2b;
+    --panel2:#1f1338;
+    --line:rgba(255,255,255,.08);
+    --line2:rgba(255,255,255,.14);
+    --txt:#f3effb;
+    --muted:#a99fc6;
+    --faint:#6f6690;
+    --neon1:#ff2e9a;   /* magenta */
+    --neon2:#7b2dff;   /* violet */
+    --neon3:#22e0ff;   /* cyan */
+    --neon4:#ffd23f;   /* gold */
+    --grad:linear-gradient(135deg,var(--neon1),var(--neon2) 55%,var(--neon3));
+    --grad-soft:linear-gradient(135deg,rgba(255,46,154,.18),rgba(123,45,255,.16),rgba(34,224,255,.14));
+    --radius:18px;
+    --radius-sm:12px;
+    --shadow:0 18px 50px -18px rgba(123,45,255,.55);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(123,45,255,.22), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(34,224,255,.14), transparent 55%),
+      radial-gradient(700px 500px at 50% 120%, rgba(255,46,154,.16), transparent 60%),
+      var(--bg);
+    color:var(--txt);
+    font-family:var(--font);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+    padding-bottom:96px;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px}
+
+  /* ---------- header ---------- */
+  header.app{
+    position:relative;
+    margin:0 auto;
+    max-width:560px;
+    padding:26px 20px 22px;
+    border-radius:0 0 26px 26px;
+    background:var(--grad);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  header.app::after{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(400px 200px at 80% -20%, rgba(255,255,255,.35), transparent 60%),
+      repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 2px, transparent 2px 9px);
+    mix-blend-mode:soft-light;pointer-events:none;
+  }
+  .brand{display:flex;align-items:center;gap:11px;position:relative;z-index:1}
+  .logo{
+    width:42px;height:42px;border-radius:12px;flex:none;
+    background:rgba(10,6,18,.55);display:grid;place-items:center;
+    border:1px solid rgba(255,255,255,.35);
+    box-shadow:inset 0 0 14px rgba(255,255,255,.2);
+  }
+  .logo svg{display:block}
+  .brand h1{font-size:20px;margin:0;letter-spacing:1.5px;font-weight:800}
+  .brand p{margin:1px 0 0;font-size:11.5px;letter-spacing:.4px;color:rgba(255,255,255,.92);font-weight:600}
+  .tag{position:relative;z-index:1;margin:12px 0 0;font-size:13px;color:rgba(255,255,255,.95);max-width:90%}
+
+  /* ---------- generic ---------- */
+  h2.sec{font-size:13px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);margin:26px 4px 12px;font-weight:700}
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+  }
+  label.fld{display:block;margin:0 0 12px}
+  label.fld:last-child{margin-bottom:0}
+  .lab{display:block;font-size:11.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:700}
+  input,select,textarea{
+    width:100%;font-family:var(--font);font-size:15px;color:var(--txt);
+    background:rgba(10,6,18,.55);border:1px solid var(--line2);
+    border-radius:var(--radius-sm);padding:11px 12px;outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  textarea{resize:vertical;min-height:62px;line-height:1.4}
+  input:focus,select:focus,textarea:focus{border-color:var(--neon3);box-shadow:0 0 0 3px rgba(34,224,255,.18)}
+  select{appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a99fc6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;padding-right:34px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--font);font-weight:700;font-size:15px;letter-spacing:.3px;
+    border:none;border-radius:14px;padding:13px 18px;cursor:pointer;width:100%;
+    color:#fff;background:var(--grad);box-shadow:var(--shadow);
+    transition:transform .08s ease, filter .15s;
+  }
+  .btn:active{transform:translateY(1px) scale(.997)}
+  .btn:disabled{filter:grayscale(.5) brightness(.7);cursor:not-allowed;box-shadow:none}
+  .btn.ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);box-shadow:none;color:var(--txt)}
+  .btn.ghost:hover{border-color:var(--neon3)}
+  .btn.sm{width:auto;font-size:13px;padding:10px 14px}
+
+  /* ---------- template grid ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .tpl{
+    position:relative;cursor:pointer;border-radius:var(--radius);overflow:hidden;
+    border:1px solid var(--line2);background:var(--panel);
+    transition:transform .1s, border-color .15s, box-shadow .15s;
+    text-align:left;padding:0;color:inherit;font-family:var(--font);
+  }
+  .tpl:hover{transform:translateY(-2px);border-color:var(--neon2)}
+  .tpl.sel{border-color:var(--neon3);box-shadow:0 0 0 2px rgba(34,224,255,.4),var(--shadow)}
+  .tpl canvas{display:block;width:100%;height:96px;background:#000}
+  .tpl .meta{padding:9px 11px 11px}
+  .tpl .meta b{display:block;font-size:13.5px;letter-spacing:.3px}
+  .tpl .meta span{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35}
+  .tpl .badge{
+    position:absolute;top:8px;right:8px;font-size:10px;font-weight:800;letter-spacing:.5px;
+    background:rgba(10,6,18,.7);border:1px solid var(--line2);border-radius:7px;padding:3px 6px;
+    color:var(--neon4);backdrop-filter:blur(4px);
+  }
+  .tpl.locked{opacity:.62}
+  .tpl.locked .badge{color:var(--muted)}
+
+  /* ---------- brief ---------- */
+  #briefOut{display:none}
+  .brief-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .brief-head h3{margin:0;font-size:18px;letter-spacing:.3px}
+  .brief-head .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.4px;
+    padding:4px 9px;border-radius:999px;background:var(--grad-soft);border:1px solid var(--line2);color:var(--txt);margin:3px 4px 0 0}
+
+  /* storyboard strip */
+  .stripWrap{margin:14px 0 4px}
+  #storyStrip{display:block;width:100%;height:84px;border-radius:12px;border:1px solid var(--line2);background:#000}
+
+  /* palette */
+  .swatches{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+  .sw{width:46px;height:46px;border-radius:10px;border:1px solid rgba(255,255,255,.18);position:relative;flex:none}
+  .sw small{position:absolute;left:0;right:0;bottom:-16px;text-align:center;font-size:9.5px;color:var(--faint);font-family:var(--mono)}
+
+  /* scene list */
+  .scene{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+  .scene:first-child{border-top:none}
+  .tc{font-family:var(--mono);font-size:12px;color:var(--neon3);font-weight:600;line-height:1.35}
+  .tc small{display:block;color:var(--faint);font-weight:400}
+  .scene .body b{font-size:13.5px;display:block}
+  .scene .body p{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+  .scene .body .seed{margin-top:5px;font-family:var(--mono);font-size:11px;color:var(--neon4);background:rgba(255,210,63,.07);border:1px solid rgba(255,210,63,.18);border-radius:8px;padding:5px 8px;word-break:break-word}
+  .scene .body .tx{margin-top:5px;font-size:12px;color:var(--txt)}
+  .scene .body .tx em{color:var(--neon1);font-style:normal;font-weight:600}
+
+  .kv{display:flex;gap:8px;font-size:12.5px;margin-top:8px;flex-wrap:wrap}
+  .kv b{color:var(--muted);font-weight:600;letter-spacing:.3px}
+
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .actions .full{grid-column:1/-1}
+
+  /* saved */
+  .saved-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:rgba(10,6,18,.4)}
+  .saved-item .si-main{min-width:0}
+  .saved-item b{font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .saved-item span{font-size:11.5px;color:var(--muted)}
+  .saved-item .si-btns{display:flex;gap:6px;flex:none}
+  .iconbtn{background:rgba(255,255,255,.06);border:1px solid var(--line2);border-radius:9px;color:var(--txt);font-size:12px;font-weight:700;padding:7px 10px;cursor:pointer}
+  .iconbtn:hover{border-color:var(--neon3)}
+  .iconbtn.del:hover{border-color:var(--neon1);color:var(--neon1)}
+  .empty{font-size:12.5px;color:var(--faint);padding:6px 2px}
+
+  /* footer / freemium */
+  .freemium{margin:24px 0 8px;padding:16px;border-radius:var(--radius);
+    background:var(--grad-soft);border:1px solid var(--line2)}
+  .freemium b{font-size:13.5px}
+  .freemium p{margin:6px 0 0;font-size:12.5px;color:var(--muted)}
+  .freemium .price{color:var(--neon4);font-weight:700}
+  footer.legal{text-align:center;font-size:11px;color:var(--faint);margin:18px 0 0;line-height:1.6}
+
+  /* toast */
+  #toast{
+    position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
+    background:rgba(20,12,36,.96);color:var(--txt);border:1px solid var(--neon2);
+    padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:600;
+    box-shadow:0 16px 40px -12px rgba(0,0,0,.7);opacity:0;pointer-events:none;
+    transition:opacity .22s, transform .22s;z-index:99;max-width:90vw;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .hint{font-size:11.5px;color:var(--faint);margin:8px 4px 0}
+  .divider{height:1px;background:var(--line);margin:14px 0}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="10" width="2.6" height="4" rx="1.3" fill="#22e0ff"/>
+        <rect x="7" y="6" width="2.6" height="12" rx="1.3" fill="#ff2e9a"/>
+        <rect x="11" y="3" width="2.6" height="18" rx="1.3" fill="#ffd23f"/>
+        <rect x="15" y="7" width="2.6" height="10" rx="1.3" fill="#7b2dff"/>
+        <rect x="19" y="10" width="2.6" height="4" rx="1.3" fill="#22e0ff"/>
+      </svg>
+    </div>
+    <div>
+      <h1>MVTEMPLATES</h1>
+      <p>MUSIC-VIDEO CONCEPT &amp; BRIEF GENERATOR</p>
+    </div>
+  </div>
+  <p class="tag">Pick a vibe, browse video styles, and generate a scene-by-scene production brief — timed, palette-locked, and ready for your generative video pipeline.</p>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ SONG INPUT ============ -->
+  <h2 class="sec">1 · Your track</h2>
+  <div class="card">
+    <div class="row2">
+      <label class="fld"><span class="lab">Title</span>
+        <input id="f-title" type="text" placeholder="Neon Tides" autocomplete="off"/></label>
+      <label class="fld"><span class="lab">Artist</span>
+        <input id="f-artist" type="text" placeholder="AURA V" autocomplete="off"/></label>
+    </div>
+    <div class="row2">
+      <label class="fld"><span class="lab">Genre</span>
+        <select id="f-genre">
+          <option>Synthwave</option><option>Hip-Hop</option><option>Pop</option>
+          <option>Lo-Fi</option><option>EDM / House</option><option>Indie / Alt</option>
+          <option>R&amp;B / Soul</option><option>Rock</option><option>Ambient</option>
+          <option>Drill / Trap</option><option>Folk / Acoustic</option><option>Cinematic</option>
+        </select></label>
+      <label class="fld"><span class="lab">Mood</span>
+        <select id="f-mood">
+          <option>Euphoric</option><option>Moody / Dark</option><option>Dreamy</option>
+          <option>Aggressive</option><option>Romantic</option><option>Nostalgic</option>
+          <option>Hopeful</option><option>Melancholic</option><option>Playful</option>
+          <option>Epic</option>
+        </select></label>
+    </div>
+    <div class="row3">
+      <label class="fld"><span class="lab">BPM</span>
+        <input id="f-bpm" type="number" min="40" max="220" step="1" value="120" inputmode="numeric"/></label>
+      <label class="fld"><span class="lab">Duration</span>
+        <select id="f-dur">
+          <option value="15">15 sec</option>
+          <option value="30" selected>30 sec</option>
+          <option value="45">45 sec</option>
+          <option value="60">60 sec</option>
+          <option value="90">90 sec</option>
+        </select></label>
+    </div>
+    <label class="fld"><span class="lab">Aspect ratio</span>
+      <select id="f-aspect">
+        <option value="9:16">9:16 — TikTok / Reels / Shorts</option>
+        <option value="16:9">16:9 — YouTube / LinkedIn</option>
+        <option value="1:1">1:1 — Instagram feed</option>
+      </select></label>
+    <label class="fld"><span class="lab">Lyric / theme snippet <span style="text-transform:none;color:var(--faint);font-weight:400">(optional)</span></span>
+      <textarea id="f-lyric" placeholder="we chase the city lights till they fade to blue…"></textarea></label>
+    <p class="hint">Everything stays on your device. No upload, no key, no account.</p>
+  </div>
+
+  <!-- ============ TEMPLATE LIBRARY ============ -->
+  <h2 class="sec">2 · Pick a video style</h2>
+  <div class="grid" id="tplGrid"><!-- cards injected --></div>
+  <p class="hint" id="lockHint" style="display:none">Locked styles unlock with Lifetime. They still preview — Lifetime adds them to your exportable library.</p>
+
+  <!-- ============ GENERATE ============ -->
+  <div style="margin-top:16px">
+    <button class="btn" id="genBtn" disabled>Generate production brief</button>
+  </div>
+
+  <!-- ============ BRIEF OUTPUT ============ -->
+  <section id="briefOut">
+    <h2 class="sec">3 · Production brief</h2>
+    <div class="card">
+      <div class="brief-head">
+        <div>
+          <h3 id="b-title">—</h3>
+          <div class="sub" id="b-sub">—</div>
+        </div>
+      </div>
+      <div id="b-pills" style="margin-top:8px"></div>
+
+      <div class="stripWrap">
+        <canvas id="storyStrip" width="528" height="84" aria-label="storyboard strip preview"></canvas>
+      </div>
+
+      <div class="divider"></div>
+
+      <span class="lab">Color palette</span>
+      <div class="swatches" id="b-swatches"></div>
+      <div style="height:18px"></div>
+
+      <div class="kv"><b>Transitions:</b><span id="b-trans">—</span></div>
+      <div class="kv"><b>Typography:</b><span id="b-type">—</span></div>
+      <div class="kv"><b>Motion / camera:</b><span id="b-motion">—</span></div>
+      <div class="kv"><b>Narration seed:</b><span id="b-narr">—</span></div>
+
+      <div class="divider"></div>
+
+      <span class="lab">Scene list &amp; prompt seeds</span>
+      <div id="b-scenes"></div>
+
+      <div class="actions">
+        <button class="btn ghost sm" id="copyMd">Copy Markdown</button>
+        <button class="btn ghost sm" id="dlJson">Export JSON</button>
+        <button class="btn full" id="saveBrief">Save brief</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SAVED ============ -->
+  <h2 class="sec">Saved briefs</h2>
+  <div class="card">
+    <div id="savedList"><div class="empty">No saved briefs yet. Generate one above and hit Save.</div></div>
+  </div>
+
+  <!-- ============ FREEMIUM ============ -->
+  <div class="freemium">
+    <b>MVTEMPLATES is free.</b>
+    <p><span class="price">Lifetime $14.99</span> unlocks 4K render presets + all styles. Bands &amp; labels: B2B licensing available.</p>
+  </div>
+
+  <footer class="legal">
+    MVTEMPLATES · composes briefs from curated template rules — no AI key required.<br/>
+    Exports map onto the RHYTHMIX / STARLIGHTMIX / HyperFrames video pipeline.
+  </footer>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+(function(){
+  /* ============================================================
+     TEMPLATE LIBRARY (inline curated rules)
+     Each template carries palette seeds, transition/typography
+     rules, motion notes, and a scene-beat scaffold whose timings
+     are scaled to the chosen duration at generation time.
+     ============================================================ */
+  var LS = "mvtemplates_";
+
+  // mood -> accent palette bias (hex)
+  var MOOD_PAL = {
+    "Euphoric":   ["#ff2e9a","#ffd23f","#22e0ff","#7b2dff"],
+    "Moody / Dark":["#7b2dff","#22304a","#0e1730","#ff2e9a"],
+    "Dreamy":     ["#b388ff","#7be0ff","#ffd3f0","#5a4b8a"],
+    "Aggressive": ["#ff2e2e","#ff8a00","#111111","#ffd23f"],
+    "Romantic":   ["#ff6fae","#ffd23f","#7b2dff","#fff0f6"],
+    "Nostalgic":  ["#e0a96d","#7b5ea7","#3a2c4d","#ffd9a8"],
+    "Hopeful":    ["#22e0ff","#7bff9e","#ffd23f","#7b2dff"],
+    "Melancholic":["#5a7bb8","#2a3550","#9aa7c7","#1a2238"],
+    "Playful":    ["#ff2e9a","#22e0ff","#7bff9e","#ffd23f"],
+    "Epic":       ["#ffd23f","#ff5e3a","#1a1030","#7b2dff"]
+  };
+
+  var TEMPLATES = [
+    {
+      id:"neon-performance", name:"Neon Performance", tier:"free",
+      desc:"Stage-lit artist, neon haze, beat-cut close-ups.",
+      pal:["#ff2e9a","#7b2dff","#22e0ff","#0a0612"],
+      transitions:"Hard beat-cuts + RGB flash on the downbeat",
+      typography:"Bold condensed sans, lower-third artist lockup, glow",
+      motion:"Slow push-in on artist, strobe accents, handheld micro-shake",
+      narr:"Confident hype intro naming the artist & track.",
+      beats:[
+        {w:1.0,shot:"Cold open — silhouette in haze, single key light",text:"%ARTIST%"},
+        {w:1.4,shot:"Close-up performance to camera, neon rim light",text:"%TITLE%"},
+        {w:1.2,shot:"Wide stage, volumetric beams pulse to BPM",text:""},
+        {w:1.6,shot:"Beat-cut montage: hands, eyes, crowd flash",text:"%HOOK%"},
+        {w:1.0,shot:"Final hero pose, logo glow out",text:"OUT NOW"}
+      ]
+    },
+    {
+      id:"lofi-loop", name:"Lo-Fi Loop", tier:"free",
+      desc:"Cozy seamless loop, grain, warm window light.",
+      pal:["#e0a96d","#7b5ea7","#3a2c4d","#ffd9a8"],
+      transitions:"Seamless match-cut loop, gentle crossfades",
+      typography:"Rounded serif caption, soft drop, handwritten accents",
+      motion:"Static framing with parallax dust, slow rack focus",
+      narr:"Soft spoken-word intro, low and intimate.",
+      beats:[
+        {w:1.2,shot:"Desk scene, rain on window, steam from cup",text:"%TITLE%"},
+        {w:1.3,shot:"Character study, headphones, slow rack focus",text:""},
+        {w:1.2,shot:"Vinyl / cassette detail, warm grain",text:"%HOOK%"},
+        {w:1.3,shot:"City window dusk, lo-fi parallax",text:""},
+        {w:1.0,shot:"Loop point matches opening frame",text:"%ARTIST%"}
+      ]
+    },
+    {
+      id:"kinetic-type", name:"Lyric Kinetic Type", tier:"free",
+      desc:"Lyrics as motion — words snap, scale, fill the frame.",
+      pal:["#ffffff","#ff2e9a","#22e0ff","#0a0612"],
+      transitions:"Type whip-pans, scale snaps on stressed syllables",
+      typography:"Variable-weight display, massive scale, mixed case",
+      motion:"Words enter from beat, kerning animates, camera dolly through text",
+      narr:"None — lyrics are the visual; leave music bare.",
+      beats:[
+        {w:0.9,shot:"Black frame, first lyric snaps in huge",text:"%LYRIC1%"},
+        {w:1.3,shot:"Word stack builds, color fills on emphasis",text:"%LYRIC2%"},
+        {w:1.2,shot:"Camera dollies through 3D extruded type",text:"%HOOK%"},
+        {w:1.4,shot:"Chorus burst — words explode outward to beat",text:"%TITLE%"},
+        {w:1.0,shot:"Resolve to clean title card",text:"%ARTIST%"}
+      ]
+    },
+    {
+      id:"nature-broll", name:"Nature B-Roll", tier:"free",
+      desc:"Cinematic landscapes, golden hour, slow aerials.",
+      pal:["#22e0ff","#7bff9e","#ffd23f","#1a2238"],
+      transitions:"Long dissolves, light-leak wipes between vistas",
+      typography:"Thin elegant sans, centered, wide letter-spacing",
+      motion:"Drone reveals, slow-mo water, tracking through grass",
+      narr:"Reflective, cinematic voiceover — sparse and poetic.",
+      beats:[
+        {w:1.3,shot:"Aerial over mountains at sunrise",text:""},
+        {w:1.2,shot:"Slow-mo water / waves, golden backlight",text:"%TITLE%"},
+        {w:1.3,shot:"Tracking shot through forest light shafts",text:"%HOOK%"},
+        {w:1.2,shot:"Wide horizon, lens flare, figure small in frame",text:""},
+        {w:1.0,shot:"Stars / aurora time-lapse close",text:"%ARTIST%"}
+      ]
+    },
+    {
+      id:"retro-vhs", name:"Retro VHS", tier:"free",
+      desc:"80s tape warble, scanlines, chroma fringe, date stamp.",
+      pal:["#ff2e9a","#22e0ff","#ffd23f","#120a22"],
+      transitions:"Tracking-glitch cuts, tape rewind whoosh, channel-flip",
+      typography:"Pixel / digital readout font, REC dot, timecode HUD",
+      motion:"Static-zoom, chroma drift, jittery handheld VHS feel",
+      narr:"Lo-fi 'broadcast' announcer, slightly distorted.",
+      beats:[
+        {w:1.0,shot:"VHS power-on, tracking lines settle, REC HUD",text:"REC ●"},
+        {w:1.3,shot:"Artist in retro room, chroma fringe + grain",text:"%ARTIST%"},
+        {w:1.2,shot:"Glitch cut montage, date stamp overlay",text:"%TITLE%"},
+        {w:1.5,shot:"Neon grid / palm sunset, scanline pulse",text:"%HOOK%"},
+        {w:1.0,shot:"Tape eject, signal cuts to static",text:"▌▌ STOP"}
+      ]
+    },
+    {
+      id:"abstract-visualizer", name:"Abstract Visualizer", tier:"free",
+      desc:"Reactive gradient blobs & waveforms pulse to audio.",
+      pal:["#7b2dff","#22e0ff","#ff2e9a","#0a0612"],
+      transitions:"Morph-blends, gradient sweeps, audio-reactive warps",
+      typography:"Mono / technical caption, low-third, subtle flicker",
+      motion:"Fluid metaball flow, waveform bars, particles on beat",
+      narr:"Optional minimal tag at the end — visuals carry it.",
+      beats:[
+        {w:1.1,shot:"Single gradient orb breathes from black",text:"%TITLE%"},
+        {w:1.4,shot:"Waveform ring reacts to amplitude",text:""},
+        {w:1.3,shot:"Metaball fluid morphs through palette",text:"%HOOK%"},
+        {w:1.2,shot:"Particle burst on drop, spectrum bars",text:""},
+        {w:1.0,shot:"Collapse to logo / title lockup",text:"%ARTIST%"}
+      ]
+    },
+    {
+      id:"split-screen", name:"Split-Screen Story", tier:"premium",
+      desc:"2–4 panels tell parallel scenes in sync.",
+      pal:["#ff2e9a","#ffd23f","#22e0ff","#1f1338"],
+      transitions:"Panel slides, sync-cut all frames on the beat",
+      typography:"Grid-aligned bold caps, per-panel labels",
+      motion:"Each panel its own micro-shot, unified beat sync",
+      narr:"Narration ties the parallel stories together.",
+      beats:[
+        {w:1.1,shot:"2-up split: artist L / city R, sync push-in",text:"%TITLE%"},
+        {w:1.3,shot:"4-up grid, each panel a different time of day",text:""},
+        {w:1.3,shot:"Panels collapse into one on the hook",text:"%HOOK%"},
+        {w:1.2,shot:"Re-split, mirrored choreography",text:"%ARTIST%"},
+        {w:1.0,shot:"Single full-frame resolve",text:"OUT NOW"}
+      ]
+    },
+    {
+      id:"anime-cel", name:"Anime Cel Drift", tier:"premium",
+      desc:"Stylized cel-shaded city, speed-lines, sakura drift.",
+      pal:["#7be0ff","#ff6fae","#ffd23f","#2a2350"],
+      transitions:"Speed-line swipes, flash-frame impact cuts",
+      typography:"Brush-style display + furigana-like accents",
+      motion:"Pan across painted backgrounds, parallax petals, dramatic zoom",
+      narr:"Earnest, emotive intro line — anime-trailer energy.",
+      beats:[
+        {w:1.1,shot:"Painted skyline dawn, slow pan, petals drift",text:"%TITLE%"},
+        {w:1.3,shot:"Character close-up, wind in hair, cel shading",text:""},
+        {w:1.2,shot:"Speed-line run through neon street",text:"%HOOK%"},
+        {w:1.4,shot:"Sky burst, dramatic zoom on the drop",text:"%ARTIST%"},
+        {w:1.0,shot:"Title brush-stroke reveal",text:"%TITLE%"}
+      ]
+    }
+  ];
+
+  /* ---------- helpers ---------- */
+  var $ = function(s,ctx){return (ctx||document).querySelector(s);};
+  var $$ = function(s,ctx){return Array.prototype.slice.call((ctx||document).querySelectorAll(s));};
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+
+  var toastTimer;
+  function toast(msg){
+    var t=$("#toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove("show");},2100);
+  }
+  function fmtTime(sec){
+    sec=Math.max(0,Math.round(sec));
+    var m=Math.floor(sec/60), s=sec%60;
+    return m+":"+(s<10?"0":"")+s;
+  }
+  function slug(s){return String(s||"untitled").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"untitled";}
+  function aspectDims(a){
+    return a==="16:9"?{w:1920,h:1080}:a==="1:1"?{w:1080,h:1080}:{w:1080,h:1920};
+  }
+
+  /* ---------- state ---------- */
+  var selected = null;     // template id
+  var lastBrief = null;    // generated brief object
+
+  /* ============================================================
+     Template thumbnail painter (Canvas, per-style mock)
+     ============================================================ */
+  function paintThumb(cv, tpl){
+    var ctx=cv.getContext("2d"), W=cv.width, H=cv.height, p=tpl.pal;
+    ctx.clearRect(0,0,W,H);
+    // base
+    var g=ctx.createLinearGradient(0,0,W,H);
+    g.addColorStop(0,p[0]); g.addColorStop(.5,p[1]); g.addColorStop(1,p[2]||p[0]);
+    ctx.fillStyle=p[3]||"#0a0612"; ctx.fillRect(0,0,W,H);
+
+    function bars(){ // visualizer
+      for(var i=0;i<26;i++){
+        var bh=8+ (Math.sin(i*0.7)+1)*0.5*H*0.7;
+        ctx.fillStyle=p[i%3];
+        ctx.globalAlpha=.85;
+        ctx.fillRect(i*(W/26)+2, H-bh, W/26-3, bh);
+      }
+      ctx.globalAlpha=1;
+    }
+    function haze(){
+      var rg=ctx.createRadialGradient(W*.5,H*.4,4,W*.5,H*.4,H*.9);
+      rg.addColorStop(0,p[0]); rg.addColorStop(1,"transparent");
+      ctx.globalAlpha=.85; ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+      ctx.fillStyle="rgba(255,255,255,.9)";
+      ctx.beginPath();ctx.ellipse(W*.5,H*.7,16,26,0,0,7);ctx.fill();
+    }
+    function scan(){
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      ctx.globalAlpha=.18; ctx.fillStyle="#000";
+      for(var y=0;y<H;y+=4) ctx.fillRect(0,y,W,2);
+      ctx.globalAlpha=1;
+      ctx.fillStyle="rgba(255,255,255,.85)";ctx.font="bold 10px monospace";ctx.fillText("REC ●",6,14);
+    }
+    function type(){
+      ctx.fillStyle="#fff";ctx.font="900 26px sans-serif";ctx.textBaseline="middle";
+      ctx.fillText("ABC",10,H*.4);
+      ctx.fillStyle=p[1];ctx.fillText("123",70,H*.7);
+      ctx.fillStyle=p[2];ctx.fillRect(0,H-6,W,6);
+    }
+    function nature(){
+      ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+      ctx.fillStyle="rgba(255,255,255,.25)";ctx.beginPath();ctx.arc(W*.75,H*.32,16,0,7);ctx.fill();
+      ctx.fillStyle=p[3]||"#1a2238";
+      ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(W*.3,H*.55);ctx.lineTo(W*.55,H*.8);
+      ctx.lineTo(W*.8,H*.5);ctx.lineTo(W,H*.75);ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+    }
+    function lofi(){
+      ctx.fillStyle=p[2];ctx.fillRect(0,0,W,H);
+      ctx.fillStyle=p[3]||"#ffd9a8";ctx.fillRect(W*.55,0,W*.45,H); // window light
+      ctx.fillStyle=p[1];ctx.fillRect(0,H*.6,W,H*.4); // desk
+      ctx.fillStyle="#fff";ctx.globalAlpha=.5;ctx.fillRect(W*.2,H*.4,10,H*.2);ctx.globalAlpha=1; // cup
+    }
+    function split(){
+      var cols=2,rows=2;
+      for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
+        ctx.fillStyle=p[(r*2+c)%p.length];
+        ctx.fillRect(c*W/2+1,r*H/2+1,W/2-2,H/2-2);
+      }
+    }
+    function anime(){
+      var sk=ctx.createLinearGradient(0,0,0,H);
+      sk.addColorStop(0,p[0]);sk.addColorStop(1,p[1]);
+      ctx.fillStyle=sk;ctx.fillRect(0,0,W,H);
+      ctx.fillStyle="rgba(255,255,255,.9)";
+      for(var i=0;i<10;i++){ctx.fillRect(20+i*22,8+(i%3)*14,3,8);} // petals
+      ctx.fillStyle=p[3]||"#2a2350";
+      ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(W*.4,H*.45);ctx.lineTo(W,H*.65);ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+    }
+    var m={
+      "neon-performance":haze,"lofi-loop":lofi,"kinetic-type":type,"nature-broll":nature,
+      "retro-vhs":scan,"abstract-visualizer":bars,"split-screen":split,"anime-cel":anime
+    };
+    (m[tpl.id]||bars)();
+    // frame label
+    ctx.fillStyle="rgba(0,0,0,.35)";ctx.fillRect(0,H-18,W,18);
+    ctx.fillStyle="#fff";ctx.font="bold 10px sans-serif";ctx.textBaseline="alphabetic";
+    ctx.fillText(tpl.name.toUpperCase(),6,H-6);
+  }
+
+  /* ============================================================
+     Render template grid
+     ============================================================ */
+  function renderGrid(){
+    var grid=$("#tplGrid"); grid.innerHTML="";
+    var anyLocked=false;
+    TEMPLATES.forEach(function(tpl){
+      var locked = tpl.tier==="premium";
+      if(locked) anyLocked=true;
+      var btn=document.createElement("button");
+      btn.className="tpl"+(locked?" locked":"");
+      btn.type="button";
+      btn.setAttribute("data-id",tpl.id);
+      btn.setAttribute("aria-pressed","false");
+      btn.innerHTML =
+        '<span class="badge">'+(locked?"★ LIFETIME":"FREE")+'</span>'+
+        '<canvas width="252" height="96"></canvas>'+
+        '<div class="meta"><b>'+esc(tpl.name)+'</b><span>'+esc(tpl.desc)+'</span></div>';
+      btn.addEventListener("click",function(){selectTpl(tpl.id);});
+      grid.appendChild(btn);
+      paintThumb($("canvas",btn), tpl);
+    });
+    if(anyLocked) $("#lockHint").style.display="block";
+  }
+
+  function selectTpl(id){
+    selected=id;
+    $$(".tpl").forEach(function(b){
+      var on=b.getAttribute("data-id")===id;
+      b.classList.toggle("sel",on);
+      b.setAttribute("aria-pressed",on?"true":"false");
+    });
+    $("#genBtn").disabled=false;
+    var t=TEMPLATES.filter(function(x){return x.id===id;})[0];
+    toast("Style: "+t.name);
+  }
+
+  /* ============================================================
+     Read inputs
+     ============================================================ */
+  function readSong(){
+    var title=($("#f-title").value||"").trim()||"Untitled";
+    var artist=($("#f-artist").value||"").trim()||"Unknown Artist";
+    var bpm=parseInt($("#f-bpm").value,10); if(!bpm||bpm<40)bpm=120;
+    var lyric=($("#f-lyric").value||"").trim();
+    return {
+      title:title, artist:artist,
+      genre:$("#f-genre").value, mood:$("#f-mood").value,
+      bpm:bpm, duration:parseInt($("#f-dur").value,10),
+      aspect:$("#f-aspect").value, lyric:lyric
+    };
+  }
+
+  /* ============================================================
+     Brief generation — compose from template rules
+     ============================================================ */
+  function buildPalette(tpl, mood){
+    var moodPal = MOOD_PAL[mood]||[];
+    var out=[]; var seen={};
+    // interleave template palette with mood bias, dedupe, keep 4
+    [tpl.pal[0], moodPal[0], tpl.pal[1], moodPal[1], tpl.pal[2], tpl.pal[3]].forEach(function(c){
+      if(c && !seen[c.toLowerCase()]){seen[c.toLowerCase()]=1; out.push(c);}
+    });
+    return out.slice(0,4);
+  }
+
+  function lyricLines(lyric){
+    if(!lyric) return [];
+    return lyric.split(/[\n,.;]+|\s—\s/).map(function(s){return s.trim();}).filter(Boolean);
+  }
+
+  function fillText(tmpl, song, lines){
+    var hook = lines[0] || (song.lyric ? song.lyric.slice(0,42) : "");
+    return tmpl
+      .replace(/%ARTIST%/g, song.artist)
+      .replace(/%TITLE%/g, song.title)
+      .replace(/%HOOK%/g, hook || song.title)
+      .replace(/%LYRIC1%/g, lines[0] || song.title)
+      .replace(/%LYRIC2%/g, lines[1] || lines[0] || song.artist);
+  }
+
+  function generate(){
+    var song=readSong();
+    var tpl=TEMPLATES.filter(function(x){return x.id===selected;})[0];
+    if(!tpl){toast("Pick a style first");return;}
+    var lines=lyricLines(song.lyric);
+    var palette=buildPalette(tpl, song.mood);
+    var dims=aspectDims(song.aspect);
+
+    // distribute duration by beat weights
+    var totW=tpl.beats.reduce(function(a,b){return a+b.w;},0);
+    var t=0, scenes=[];
+    tpl.beats.forEach(function(b,i){
+      var len = song.duration * (b.w/totW);
+      // snap last scene end exactly to duration
+      var start=t, end=(i===tpl.beats.length-1)?song.duration:Math.round((t+len)*10)/10;
+      t=end;
+      var txt=fillText(b.text||"", song, lines);
+      var seed = composeSeed(tpl, song, b, i, palette);
+      scenes.push({
+        n:i+1,
+        start:Math.round(start*10)/10,
+        end:Math.round(end*10)/10,
+        dur:Math.round((end-start)*10)/10,
+        shot: b.shot,
+        text: txt,
+        transition: (i===tpl.beats.length-1)?"Hold / loop out":tpl.transitions,
+        promptSeed: seed
+      });
+    });
+
+    var brief={
+      generator:"MVTEMPLATES",
+      version:"1.0",
+      createdAt:new Date().toISOString(),
+      song:song,
+      template:{id:tpl.id, name:tpl.name},
+      duration:song.duration,
+      aspect:song.aspect,
+      dimensions:dims,
+      bpm:song.bpm,
+      beatGridSec: Math.round((60/song.bpm)*1000)/1000,
+      palette:palette,
+      transitions:tpl.transitions,
+      typography:tpl.typography,
+      motion:tpl.motion,
+      narrationHint: composeNarration(tpl, song),
+      scenes:scenes
+    };
+    lastBrief=brief;
+    renderBrief(brief, tpl);
+    $("#briefOut").style.display="block";
+    $("#briefOut").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function composeSeed(tpl, song, beat, i, palette){
+    var palWords = palette.join(" / ");
+    var base = beat.shot.toLowerCase();
+    return [
+      song.genre.toLowerCase()+" music video,",
+      song.mood.toLowerCase()+",",
+      base+",",
+      tpl.name.toLowerCase()+" style,",
+      "color palette "+palWords+",",
+      "cinematic, "+song.aspect+", high detail"
+    ].join(" ");
+  }
+  function composeNarration(tpl, song){
+    return tpl.narr+" Track: \""+song.title+"\" by "+song.artist+" ("+song.genre+", "+song.mood.toLowerCase()+").";
+  }
+
+  /* ============================================================
+     Render brief into DOM + storyboard strip
+     ============================================================ */
+  function renderBrief(b, tpl){
+    $("#b-title").textContent = b.song.title;
+    $("#b-sub").textContent = b.song.artist+" · "+tpl.name;
+    $("#b-pills").innerHTML =
+      pill(b.song.genre)+pill(b.song.mood)+pill(b.bpm+" BPM")+
+      pill(b.duration+"s")+pill(b.aspect)+pill(b.dimensions.w+"×"+b.dimensions.h);
+
+    // swatches
+    var sw=$("#b-swatches"); sw.innerHTML="";
+    b.palette.forEach(function(c){
+      var d=document.createElement("div");
+      d.className="sw"; d.style.background=c;
+      d.innerHTML='<small>'+esc(c)+'</small>';
+      sw.appendChild(d);
+    });
+
+    $("#b-trans").textContent=b.transitions;
+    $("#b-type").textContent=b.typography;
+    $("#b-motion").textContent=b.motion;
+    $("#b-narr").textContent=b.narrationHint;
+
+    // scenes
+    var sc=$("#b-scenes"); sc.innerHTML="";
+    b.scenes.forEach(function(s){
+      var div=document.createElement("div");
+      div.className="scene";
+      var txt = s.text ? '<div class="tx">On-screen: <em>'+esc(s.text)+'</em></div>' : '';
+      div.innerHTML=
+        '<div class="tc">'+fmtTime(s.start)+'<small>→ '+fmtTime(s.end)+'</small><small>'+s.dur+'s</small></div>'+
+        '<div class="body">'+
+          '<b>Scene '+s.n+'</b>'+
+          '<p>'+esc(s.shot)+'</p>'+
+          txt+
+          '<div class="seed">⟢ '+esc(s.promptSeed)+'</div>'+
+        '</div>';
+      sc.appendChild(div);
+    });
+
+    paintStrip(b);
+  }
+  function pill(x){return '<span class="pill">'+esc(x)+'</span>';}
+
+  function paintStrip(b){
+    var cv=$("#storyStrip");
+    // size canvas to displayed width for crispness
+    var cssW=cv.clientWidth||528;
+    cv.width=cssW*2; cv.height=84*2;
+    var ctx=cv.getContext("2d"); ctx.scale(2,2);
+    var W=cssW, H=84;
+    ctx.clearRect(0,0,W,H);
+    var n=b.scenes.length, gap=4;
+    var fw=(W-gap*(n-1))/n;
+    var pal=b.palette;
+    b.scenes.forEach(function(s,i){
+      var x=i*(fw+gap);
+      // frame fill: gradient from palette pair
+      var g=ctx.createLinearGradient(x,0,x,H);
+      g.addColorStop(0,pal[i%pal.length]);
+      g.addColorStop(1,pal[(i+1)%pal.length]);
+      ctx.fillStyle=g; ctx.fillRect(x,0,fw,H);
+      // dark base strip bottom for label
+      ctx.fillStyle="rgba(0,0,0,.45)";ctx.fillRect(x,H-26,fw,26);
+      // scene number chip
+      ctx.fillStyle="rgba(0,0,0,.4)";ctx.fillRect(x+5,5,20,16);
+      ctx.fillStyle="#fff";ctx.font="bold 11px sans-serif";ctx.textBaseline="middle";
+      ctx.fillText(""+s.n,x+10,14);
+      // timecode
+      ctx.fillStyle="#fff";ctx.font="bold 9px monospace";ctx.textBaseline="alphabetic";
+      ctx.fillText(fmtTime(s.start),x+5,H-14);
+      // text/shot label
+      ctx.fillStyle="rgba(255,255,255,.92)";ctx.font="bold 9px sans-serif";
+      var lab=(s.text||s.shot).toUpperCase();
+      lab=clip(ctx,lab,fw-10);
+      ctx.fillText(lab,x+5,H-4);
+    });
+  }
+  function clip(ctx,str,max){
+    if(ctx.measureText(str).width<=max) return str;
+    while(str.length>1 && ctx.measureText(str+"…").width>max) str=str.slice(0,-1);
+    return str+"…";
+  }
+
+  /* ============================================================
+     Export: JSON + Markdown
+     ============================================================ */
+  function briefToMarkdown(b){
+    var L=[];
+    L.push("# "+b.song.title+" — Music-Video Brief");
+    L.push("");
+    L.push("**Artist:** "+b.song.artist+"  ");
+    L.push("**Style:** "+b.template.name+"  ");
+    L.push("**Genre / Mood:** "+b.song.genre+" / "+b.song.mood+"  ");
+    L.push("**BPM:** "+b.bpm+" (beat grid ≈ "+b.beatGridSec+"s)  ");
+    L.push("**Duration:** "+b.duration+"s  ");
+    L.push("**Aspect:** "+b.aspect+" ("+b.dimensions.w+"×"+b.dimensions.h+")  ");
+    L.push("");
+    L.push("## Palette");
+    L.push(b.palette.map(function(c){return "`"+c+"`";}).join(" · "));
+    L.push("");
+    L.push("## Look & feel");
+    L.push("- **Transitions:** "+b.transitions);
+    L.push("- **Typography:** "+b.typography);
+    L.push("- **Motion / camera:** "+b.motion);
+    L.push("- **Narration seed:** "+b.narrationHint);
+    L.push("");
+    L.push("## Scene list");
+    L.push("");
+    L.push("| # | Time | Shot | On-screen | Prompt seed |");
+    L.push("|---|------|------|-----------|-------------|");
+    b.scenes.forEach(function(s){
+      L.push("| "+s.n+" | "+fmtTime(s.start)+"–"+fmtTime(s.end)+" ("+s.dur+"s) | "+
+        mdCell(s.shot)+" | "+mdCell(s.text||"—")+" | "+mdCell(s.promptSeed)+" |");
+    });
+    L.push("");
+    L.push("---");
+    L.push("_Generated by MVTEMPLATES — feed into the RHYTHMIX / STARLIGHTMIX / HyperFrames pipeline (see exported JSON)._");
+    return L.join("\n");
+  }
+  function mdCell(s){return String(s).replace(/\|/g,"\\|").replace(/\n/g," ");}
+
+  function download(name, text, type){
+    var blob=new Blob([text],{type:type||"text/plain"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url; a.download=name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);a.remove();},120);
+  }
+
+  function copyText(text, okMsg){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){toast(okMsg);},fallback);
+    } else fallback();
+    function fallback(){
+      var ta=document.createElement("textarea");
+      ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try{document.execCommand("copy");toast(okMsg);}catch(e){toast("Copy failed — long-press to copy");}
+      ta.remove();
+    }
+  }
+
+  /* ============================================================
+     Saved briefs (localStorage prefix mvtemplates_)
+     ============================================================ */
+  function saveKey(b){
+    return LS+"brief_"+slug(b.song.title)+"_"+slug(b.template.id)+"_"+Date.now();
+  }
+  function saveBrief(){
+    if(!lastBrief){return;}
+    var key=saveKey(lastBrief);
+    try{
+      localStorage.setItem(key, JSON.stringify(lastBrief));
+      toast("Brief saved");
+      renderSaved();
+    }catch(e){toast("Storage full — couldn't save");}
+  }
+  function listSaved(){
+    var out=[];
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k && k.indexOf(LS+"brief_")===0){
+        try{out.push({key:k, data:JSON.parse(localStorage.getItem(k))});}catch(e){}
+      }
+    }
+    out.sort(function(a,b){
+      return (new Date(b.data.createdAt))-(new Date(a.data.createdAt));
+    });
+    return out;
+  }
+  function renderSaved(){
+    var box=$("#savedList"); var items=listSaved();
+    if(!items.length){box.innerHTML='<div class="empty">No saved briefs yet. Generate one above and hit Save.</div>';return;}
+    box.innerHTML="";
+    items.forEach(function(it){
+      var b=it.data;
+      var row=document.createElement("div");
+      row.className="saved-item";
+      var when=new Date(b.createdAt);
+      row.innerHTML=
+        '<div class="si-main">'+
+          '<b>'+esc(b.song.title)+'</b>'+
+          '<span>'+esc(b.template.name)+' · '+b.duration+'s · '+esc(b.aspect)+' · '+
+            when.toLocaleDateString()+'</span>'+
+        '</div>'+
+        '<div class="si-btns">'+
+          '<button class="iconbtn" data-act="load">Load</button>'+
+          '<button class="iconbtn" data-act="json">JSON</button>'+
+          '<button class="iconbtn del" data-act="del">✕</button>'+
+        '</div>';
+      $("[data-act=load]",row).addEventListener("click",function(){loadSaved(b);});
+      $("[data-act=json]",row).addEventListener("click",function(){
+        download(slug(b.song.title)+"-"+slug(b.template.id)+".json", JSON.stringify(b,null,2),"application/json");
+        toast("JSON exported");
+      });
+      $("[data-act=del]",row).addEventListener("click",function(){
+        localStorage.removeItem(it.key); renderSaved(); toast("Deleted");
+      });
+      box.appendChild(row);
+    });
+  }
+  function loadSaved(b){
+    // restore inputs + selection, re-render brief
+    $("#f-title").value=b.song.title; $("#f-artist").value=b.song.artist;
+    setSelect("#f-genre",b.song.genre); setSelect("#f-mood",b.song.mood);
+    $("#f-bpm").value=b.song.bpm; setSelect("#f-dur",String(b.duration));
+    setSelect("#f-aspect",b.aspect); $("#f-lyric").value=b.song.lyric||"";
+    selectTpl(b.template.id);
+    lastBrief=b;
+    var tpl=TEMPLATES.filter(function(x){return x.id===b.template.id;})[0]||{name:b.template.name};
+    renderBrief(b, tpl);
+    $("#briefOut").style.display="block";
+    $("#briefOut").scrollIntoView({behavior:"smooth",block:"start"});
+    toast("Loaded "+b.song.title);
+  }
+  function setSelect(sel,val){
+    var s=$(sel); if(!s)return;
+    var found=false;
+    $$("option",s).forEach(function(o){if(o.value===val||o.text===val){o.selected=true;found=true;}});
+    if(!found && s.options.length) s.selectedIndex=0;
+  }
+
+  /* ============================================================
+     Wire up
+     ============================================================ */
+  function init(){
+    renderGrid();
+    renderSaved();
+    $("#genBtn").addEventListener("click",generate);
+    $("#copyMd").addEventListener("click",function(){
+      if(lastBrief) copyText(briefToMarkdown(lastBrief),"Markdown copied");
+    });
+    $("#dlJson").addEventListener("click",function(){
+      if(lastBrief) download(slug(lastBrief.song.title)+"-"+slug(lastBrief.template.id)+".json",
+        JSON.stringify(lastBrief,null,2),"application/json"),toast("JSON exported");
+    });
+    $("#saveBrief").addEventListener("click",saveBrief);
+    // repaint strip on resize for crispness
+    var rt;
+    window.addEventListener("resize",function(){
+      if(!lastBrief)return; clearTimeout(rt); rt=setTimeout(function(){paintStrip(lastBrief);},180);
+    });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
+  else init();
+})();
+</script>
+</body>
+</html>
