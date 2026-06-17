@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0d1117" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="THUMBFORGE" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="description" content="Type a video title and instantly forge a grid of YouTube / TikTok thumbnail concepts. Tweak the text, palette and accents, then download a PNG starting template." />
+<title>THUMBFORGE — Thumbnail Concept Generator</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b25;
+    --surface-2: #1f2735;
+    --line: #2a3344;
+    --accent: #7c5cff;
+    --accent-2: #b39bff;
+    --accent-soft: rgba(124, 92, 255, 0.16);
+    --text: #e6edf3;
+    --text-dim: #8b96a8;
+    --danger: #f85149;
+    --ok: #3fb950;
+    --shadow: 0 12px 34px rgba(0,0,0,0.45);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.4;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow-x: hidden;
+    background:
+      radial-gradient(70vw 60vw at 50% -12%, rgba(124,92,255,0.13), transparent 60%),
+      var(--bg);
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 14px 16px 130px; }
+
+  /* header */
+  .brand { display: flex; align-items: center; gap: 11px; padding: 10px 4px 8px; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center; font-weight: 800; font-size: 18px; color: #0d1117;
+    box-shadow: 0 6px 18px rgba(124,92,255,0.4);
+  }
+  .brand-name { font-weight: 800; letter-spacing: 0.5px; font-size: 21px; }
+  .brand-tag { color: var(--text-dim); font-size: 13px; margin-left: auto; text-align: right; }
+
+  .hero {
+    background: linear-gradient(135deg, rgba(124,92,255,0.22), rgba(124,92,255,0.04));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 16px 18px;
+    margin: 6px 0 16px;
+  }
+  .hero h1 { margin: 0 0 4px; font-size: 19px; font-weight: 800; }
+  .hero p { margin: 0; color: var(--text-dim); font-size: 14px; }
+
+  label.fld { display: block; font-size: 13px; color: var(--text-dim); margin: 0 0 6px 2px; font-weight: 600; }
+  input[type=text] {
+    width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--text);
+    border-radius: 13px; padding: 13px 14px; font-size: 16px; font-family: inherit;
+    margin-bottom: 14px; outline: none;
+  }
+  input[type=text]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  .btn {
+    width: 100%; border: 0; border-radius: 13px; padding: 14px; font-size: 16px; font-weight: 700;
+    font-family: inherit; cursor: pointer; color: #0d1117;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 8px 22px rgba(124,92,255,0.35);
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); box-shadow: none; }
+
+  .row { display: flex; gap: 10px; }
+  .row .btn { flex: 1; }
+
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 11px; padding: 3px; gap: 3px; }
+  .seg button {
+    border: 0; background: transparent; color: var(--text-dim); font-family: inherit; font-weight: 700;
+    font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer;
+  }
+  .seg button.on { background: var(--accent); color: #0d1117; }
+
+  .section-title { font-size: 13px; color: var(--text-dim); font-weight: 700; margin: 22px 2px 10px; text-transform: uppercase; letter-spacing: 0.6px; }
+
+  /* concept grid */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tile {
+    border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer;
+    background: var(--surface); transition: transform .12s, border-color .12s;
+    position: relative;
+  }
+  .tile:active { transform: scale(0.98); }
+  .tile.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .tile canvas { display: block; width: 100%; height: auto; }
+  .tile .meta { font-size: 11px; color: var(--text-dim); padding: 6px 8px; display: flex; justify-content: space-between; }
+
+  /* editor */
+  .editor { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-top: 8px; box-shadow: var(--shadow); }
+  .preview-wrap { background: #000; border-radius: 12px; overflow: hidden; display: grid; place-items: center; margin-bottom: 14px; }
+  .preview-wrap canvas { display: block; max-width: 100%; height: auto; }
+
+  .pal-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .swatch { width: 38px; height: 38px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; position: relative; overflow: hidden; }
+  .swatch.on { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+
+  .toggle-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .toggle {
+    flex: 1; text-align: center; padding: 11px; border-radius: 11px; border: 1px solid var(--line);
+    background: var(--surface-2); color: var(--text-dim); font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .toggle.on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+  .emoji-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .emoji-btn { font-size: 20px; width: 40px; height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
+  .emoji-btn.on { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* freemium footer */
+  .freemium {
+    margin-top: 20px; border: 1px dashed var(--line); border-radius: 14px; padding: 14px;
+    background: var(--surface); font-size: 13px; color: var(--text-dim); text-align: center;
+  }
+  .freemium b { color: var(--accent-2); }
+  .freemium .price { display: inline-block; margin-top: 8px; background: var(--accent-soft); color: var(--accent-2); font-weight: 700; padding: 6px 12px; border-radius: 20px; }
+
+  footer.legal { text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 18px; }
+
+  /* toast */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--text); padding: 11px 18px;
+    border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow); opacity: 0;
+    pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50; max-width: 90vw; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <div class="brand-mark">TF</div>
+    <div class="brand-name">THUMBFORGE</div>
+    <div class="brand-tag">thumbnail<br>concepts</div>
+  </div>
+
+  <div class="hero">
+    <h1>Forge scroll-stopping thumbnails.</h1>
+    <p>Type your video title. Get a grid of layout concepts. Tweak, then download a PNG starting template.</p>
+  </div>
+
+  <label class="fld" for="title">Video title</label>
+  <input type="text" id="title" placeholder="I QUIT MY JOB to do THIS" maxlength="60" />
+
+  <label class="fld" for="subtitle">Subtitle / topic (optional)</label>
+  <input type="text" id="subtitle" placeholder="Here's what happened next…" maxlength="60" />
+
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+    <label class="fld" style="margin:0;">Aspect ratio</label>
+    <div class="seg" id="aspectSeg">
+      <button data-a="16:9" class="on">16:9</button>
+      <button data-a="9:16">9:16</button>
+    </div>
+  </div>
+
+  <button class="btn" id="genBtn">Forge concepts ⚡</button>
+
+  <div id="gridSection" class="hidden">
+    <div class="section-title">Pick a concept</div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div id="editorSection" class="hidden">
+    <div class="section-title">Edit &amp; download</div>
+    <div class="editor">
+      <div class="preview-wrap"><canvas id="previewCanvas"></canvas></div>
+
+      <label class="fld" for="eTitle">Title text</label>
+      <input type="text" id="eTitle" maxlength="60" />
+      <label class="fld" for="eSub">Subtitle text</label>
+      <input type="text" id="eSub" maxlength="60" />
+
+      <label class="fld">Palette</label>
+      <div class="pal-row" id="palRow"></div>
+
+      <label class="fld">Accents</label>
+      <div class="toggle-row">
+        <div class="toggle" id="tBadge">Badge</div>
+        <div class="toggle" id="tEmoji">Emoji</div>
+      </div>
+      <div class="emoji-row hidden" id="emojiRow"></div>
+
+      <label class="fld">Aspect</label>
+      <div class="seg" id="eAspectSeg" style="margin-bottom:16px;">
+        <button data-a="16:9">16:9</button>
+        <button data-a="9:16">9:16</button>
+      </div>
+
+      <div class="row">
+        <button class="btn ghost" id="reshuffleBtn">↺ More concepts</button>
+        <button class="btn" id="dlBtn">Download PNG ⬇</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="freemium">
+    Free plan: <b>1 export per session</b> — no hard limits, forge as many concepts as you like.
+    <br><span class="price">Lifetime $3.99 — unlimited exports + brand palettes</span>
+  </div>
+
+  <footer class="legal">THUMBFORGE · concepts rendered on-device · nothing uploaded</footer>
+</main>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var LS = "thumbforge_";
+  var $ = function(s){ return document.querySelector(s); };
+
+  /* ---------- toast ---------- */
+  var toastEl = $("#toast"), toastT;
+  function toast(msg){
+    toastEl.textContent = msg; toastEl.classList.add("show");
+    clearTimeout(toastT); toastT = setTimeout(function(){ toastEl.classList.remove("show"); }, 2200);
+  }
+
+  /* ---------- storage ---------- */
+  function save(k,v){ try{ localStorage.setItem(LS+k, JSON.stringify(v)); }catch(e){} }
+  function load(k,d){ try{ var v=localStorage.getItem(LS+k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+
+  /* ---------- curated palettes ---------- */
+  // bg can be a solid or a 2-stop gradient [from,to]; title/accent/sub colors picked for contrast
+  var PALETTES = [
+    { name:"Voltage",  bg:["#1b0a3d","#3b1d8f"], title:"#ffffff", accent:"#ffd000", sub:"#c9b8ff" },
+    { name:"Ember",    bg:["#2a0606","#8a1212"], title:"#ffffff", accent:"#ffb800", sub:"#ffc9c9" },
+    { name:"Mint",     bg:["#03261f","#0a7d5e"], title:"#ffffff", accent:"#7dffc4", sub:"#bff3e3" },
+    { name:"Sunset",   bg:["#3d1158","#ff5e62"], title:"#ffffff", accent:"#ffd166", sub:"#ffd9e0" },
+    { name:"Ocean",    bg:["#021a33","#0a5db8"], title:"#ffffff", accent:"#36e0ff", sub:"#a9dcff" },
+    { name:"Carbon",   bg:["#0a0a0a","#222222"], title:"#ffffff", accent:"#ff3d6e", sub:"#bdbdbd" },
+    { name:"Lime",     bg:["#10260a","#3f8f12"], title:"#0d1117", accent:"#0d1117", sub:"#0d1117" },
+    { name:"Bubblegum",bg:["#5a0a4e","#ff4fa3"], title:"#ffffff", accent:"#ffe600", sub:"#ffd6ec" },
+    { name:"Steel",    bg:["#11161f","#2b3a52"], title:"#ffffff", accent:"#ffae00", sub:"#9fb3cf" },
+    { name:"Gold",     bg:["#1a1405","#5e4a0f"], title:"#fff6d6", accent:"#ffd000", sub:"#e6d39a" }
+  ];
+
+  var POSITIONS = ["top","center","bottom"];
+  var EMOJIS = ["🔥","💰","🚀","😱","⚡","✅","❤️","🤯","👀","💯","🎯","🏆"];
+
+  /* ---------- state ---------- */
+  var aspect = load("aspect", "16:9");
+  var title = load("title", "");
+  var subtitle = load("subtitle", "");
+  var concepts = [];      // generated concept specs
+  var selectedIdx = -1;
+  var current = null;     // working copy being edited
+  var exportsThisSession = 0;
+
+  /* ---------- DOM ---------- */
+  var titleIn=$("#title"), subIn=$("#subtitle"), genBtn=$("#genBtn");
+  var gridSection=$("#gridSection"), grid=$("#grid");
+  var editorSection=$("#editorSection"), previewCanvas=$("#previewCanvas");
+  var eTitle=$("#eTitle"), eSub=$("#eSub"), palRow=$("#palRow"), emojiRow=$("#emojiRow");
+  var tBadge=$("#tBadge"), tEmoji=$("#tEmoji"), dlBtn=$("#dlBtn"), reshuffleBtn=$("#reshuffleBtn");
+
+  titleIn.value = title; subIn.value = subtitle;
+
+  // hydrate aspect segs
+  function setSeg(seg, val){ Array.prototype.forEach.call(seg.querySelectorAll("button"), function(b){ b.classList.toggle("on", b.dataset.a===val); }); }
+  setSeg($("#aspectSeg"), aspect);
+  setSeg($("#eAspectSeg"), aspect);
+
+  $("#aspectSeg").addEventListener("click", function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    aspect=b.dataset.a; save("aspect",aspect); setSeg($("#aspectSeg"),aspect);
+    if(concepts.length){ generate(true); }
+  });
+  $("#eAspectSeg").addEventListener("click", function(e){
+    var b=e.target.closest("button"); if(!b||!current) return;
+    aspect=b.dataset.a; save("aspect",aspect); setSeg($("#eAspectSeg"),aspect); setSeg($("#aspectSeg"),aspect);
+    current.aspect=aspect; renderPreview(); generate(true, true); // refresh grid sizes silently
+  });
+
+  /* ---------- dimensions ---------- */
+  function dims(a){ return a==="9:16" ? {w:1080,h:1920} : {w:1280,h:720}; }
+
+  /* ---------- text wrapping ---------- */
+  function wrapText(ctx, text, maxWidth){
+    var words = (text||"").split(/\s+/).filter(Boolean);
+    if(!words.length) return [];
+    var lines=[], line=words[0];
+    for(var i=1;i<words.length;i++){
+      var test=line+" "+words[i];
+      if(ctx.measureText(test).width > maxWidth){ lines.push(line); line=words[i]; }
+      else line=test;
+    }
+    lines.push(line);
+    return lines;
+  }
+
+  /* ---------- rounded rect ---------- */
+  function rr(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  /* ---------- core renderer ---------- */
+  // spec: {palIdx, position, weight(700/900), split(bool), badge(bool), emoji(string|null), aspect, title, subtitle}
+  function draw(canvas, spec, exportScale){
+    var d = dims(spec.aspect);
+    var W = d.w, H = d.h;
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext("2d");
+    var pal = PALETTES[spec.palIdx];
+
+    // background gradient (diagonal)
+    var g = ctx.createLinearGradient(0,0,W,H);
+    if(Array.isArray(pal.bg)){ g.addColorStop(0,pal.bg[0]); g.addColorStop(1,pal.bg[1]); }
+    else { g.addColorStop(0,pal.bg); g.addColorStop(1,pal.bg); }
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+    // subtle vignette
+    var vg = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2, W/2,H/2,Math.max(W,H)*0.75);
+    vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,0.35)");
+    ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+
+    // accent corner shape (diagonal slash band)
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = pal.accent;
+    ctx.translate(W,0); ctx.rotate(Math.PI/4);
+    ctx.fillRect(-H*0.2, 0, H*0.18, H*1.6);
+    ctx.restore();
+
+    var pad = Math.round(W*0.06);
+    var maxW = W - pad*2;
+    var portrait = spec.aspect==="9:16";
+
+    // ---- title ----
+    var t = (spec.title||"YOUR TITLE HERE").toUpperCase();
+    // size: scale to fill ~ aim for big bold
+    var baseSize = portrait ? Math.round(W*0.13) : Math.round(W*0.105);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    var fontFor = function(sz){ return spec.weight + " " + sz + "px -apple-system, 'Segoe UI', system-ui, sans-serif"; };
+
+    // shrink until ≤ 3-4 lines fit
+    var maxLines = portrait ? 4 : 3;
+    var size = baseSize, lines;
+    do {
+      ctx.font = fontFor(size);
+      lines = wrapText(ctx, t, maxW);
+      if(lines.length <= maxLines) break;
+      size -= Math.round(baseSize*0.06);
+    } while(size > baseSize*0.45);
+
+    ctx.font = fontFor(size);
+    var lineH = size*1.04;
+    var blockH = lines.length*lineH;
+
+    // subtitle metrics
+    var hasSub = spec.subtitle && spec.subtitle.trim().length;
+    var subSize = Math.round(size*0.42);
+    var subGap = hasSub ? subSize*1.8 : 0;
+
+    // badge metrics
+    var badgeH = spec.badge ? Math.round(W*0.07) : 0;
+    var badgeGap = spec.badge ? badgeH*1.4 : 0;
+
+    var totalH = blockH + subGap + badgeGap;
+
+    // vertical anchor by position
+    var topY;
+    if(spec.position==="top") topY = pad + size;
+    else if(spec.position==="bottom") topY = H - pad - totalH + size;
+    else topY = (H - totalH)/2 + size;
+
+    // ---- badge (drawn above title block) ----
+    var y = topY - size; // top of block
+    if(spec.badge){
+      var label = "NEW";
+      ctx.font = "900 " + Math.round(badgeH*0.6) + "px -apple-system, system-ui, sans-serif";
+      var bw = ctx.measureText(label).width + badgeH*0.9;
+      ctx.fillStyle = pal.accent;
+      rr(ctx, pad, y - badgeGap, bw, badgeH, badgeH*0.28); ctx.fill();
+      ctx.fillStyle = isLight(pal.accent) ? "#0d1117" : "#ffffff";
+      ctx.textBaseline = "middle"; ctx.textAlign="left";
+      ctx.fillText(label, pad + badgeH*0.45, y - badgeGap + badgeH/2);
+      ctx.textBaseline = "alphabetic";
+    }
+
+    // ---- title lines ----
+    ctx.font = fontFor(size);
+    ctx.textAlign = "left";
+    var ly = topY;
+    for(var i=0;i<lines.length;i++){
+      // shadow for pop
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur = size*0.12; ctx.shadowOffsetY = size*0.05;
+      if(spec.split && i % 2 === 1){ ctx.fillStyle = pal.accent; }
+      else { ctx.fillStyle = pal.title; }
+      ctx.fillText(lines[i], pad, ly);
+      ctx.restore();
+      ly += lineH;
+    }
+
+    // ---- subtitle ----
+    if(hasSub){
+      ctx.font = "600 " + subSize + "px -apple-system, system-ui, sans-serif";
+      ctx.fillStyle = pal.sub;
+      var subLines = wrapText(ctx, spec.subtitle, maxW);
+      var sy = ly + subSize*0.4;
+      for(var j=0;j<Math.min(subLines.length,2);j++){
+        ctx.fillText(subLines[j], pad, sy);
+        sy += subSize*1.2;
+      }
+    }
+
+    // ---- emoji ----
+    if(spec.emoji){
+      var em = portrait ? Math.round(W*0.22) : Math.round(W*0.16);
+      ctx.font = em + "px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+      ctx.fillText(spec.emoji, W - pad*0.6, H - pad*0.4);
+      ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    }
+  }
+
+  function isLight(hex){
+    var c = hex.replace("#","");
+    if(c.length===3) c = c.split("").map(function(x){return x+x;}).join("");
+    var r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+    return (0.299*r+0.587*g+0.114*b) > 150;
+  }
+
+  /* ---------- concept generation ---------- */
+  function buildConcepts(){
+    var t = titleIn.value.trim();
+    var s = subIn.value.trim();
+    var specs = [];
+    // shuffle palette order for variety each forge
+    var palOrder = PALETTES.map(function(_,i){return i;}).sort(function(){return Math.random()-0.5;});
+    var combos = [
+      {position:"center", weight:900, split:false, badge:false, emoji:null},
+      {position:"bottom", weight:900, split:true,  badge:false, emoji:"🔥"},
+      {position:"top",    weight:800, split:false, badge:true,  emoji:null},
+      {position:"center", weight:900, split:true,  badge:false, emoji:"🚀"},
+      {position:"bottom", weight:900, split:false, badge:true,  emoji:"💰"},
+      {position:"center", weight:800, split:false, badge:false, emoji:"😱"},
+      {position:"top",    weight:900, split:true,  badge:false, emoji:null},
+      {position:"bottom", weight:900, split:true,  badge:true,  emoji:"⚡"},
+      {position:"center", weight:900, split:false, badge:true,  emoji:"🤯"},
+      {position:"bottom", weight:800, split:false, badge:false, emoji:"💯"}
+    ];
+    for(var i=0;i<combos.length;i++){
+      var c = combos[i];
+      specs.push({
+        palIdx: palOrder[i % palOrder.length],
+        position: c.position, weight: c.weight, split: c.split,
+        badge: c.badge, emoji: c.emoji,
+        aspect: aspect, title: t, subtitle: s
+      });
+    }
+    return specs;
+  }
+
+  function generate(reuseInputs, silentGrid){
+    var t = titleIn.value.trim();
+    if(!t){ toast("Type a video title first"); titleIn.focus(); return; }
+    save("title", t); save("subtitle", subIn.value.trim());
+
+    if(!reuseInputs || !concepts.length){
+      concepts = buildConcepts();
+    } else {
+      // keep concept design, refresh text + aspect
+      concepts.forEach(function(c){ c.title=t; c.subtitle=subIn.value.trim(); c.aspect=aspect; });
+    }
+
+    grid.innerHTML = "";
+    concepts.forEach(function(spec, idx){
+      var tile = document.createElement("div");
+      tile.className = "tile" + (idx===selectedIdx ? " sel" : "");
+      var cv = document.createElement("canvas");
+      draw(cv, spec);
+      tile.appendChild(cv);
+      var meta = document.createElement("div");
+      meta.className = "meta";
+      meta.innerHTML = "<span>"+PALETTES[spec.palIdx].name+"</span><span>"+spec.position+"</span>";
+      tile.appendChild(meta);
+      tile.addEventListener("click", function(){ selectConcept(idx); });
+      grid.appendChild(tile);
+    });
+    gridSection.classList.remove("hidden");
+    if(!silentGrid && !reuseInputs){
+      gridSection.scrollIntoView({behavior:"smooth", block:"start"});
+    }
+  }
+
+  /* ---------- editor ---------- */
+  function selectConcept(idx){
+    selectedIdx = idx;
+    Array.prototype.forEach.call(grid.children, function(t,i){ t.classList.toggle("sel", i===idx); });
+    // working copy
+    current = JSON.parse(JSON.stringify(concepts[idx]));
+    save("palette", current.palIdx);
+    buildEditor();
+    editorSection.classList.remove("hidden");
+    renderPreview();
+    editorSection.scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  function buildEditor(){
+    eTitle.value = current.title;
+    eSub.value = current.subtitle;
+    setSeg($("#eAspectSeg"), current.aspect);
+
+    // palettes
+    palRow.innerHTML = "";
+    PALETTES.forEach(function(p, i){
+      var sw = document.createElement("div");
+      sw.className = "swatch" + (i===current.palIdx ? " on" : "");
+      sw.title = p.name;
+      sw.style.background = Array.isArray(p.bg) ? "linear-gradient(135deg,"+p.bg[0]+","+p.bg[1]+")" : p.bg;
+      sw.addEventListener("click", function(){
+        current.palIdx = i; save("palette", i);
+        Array.prototype.forEach.call(palRow.children, function(s,si){ s.classList.toggle("on", si===i); });
+        renderPreview();
+      });
+      palRow.appendChild(sw);
+    });
+
+    tBadge.classList.toggle("on", !!current.badge);
+    tEmoji.classList.toggle("on", !!current.emoji);
+    buildEmojiRow();
+  }
+
+  function buildEmojiRow(){
+    emojiRow.innerHTML = "";
+    EMOJIS.forEach(function(e){
+      var b = document.createElement("button");
+      b.className = "emoji-btn" + (current.emoji===e ? " on" : "");
+      b.textContent = e;
+      b.addEventListener("click", function(){
+        current.emoji = (current.emoji===e) ? null : e;
+        tEmoji.classList.toggle("on", !!current.emoji);
+        Array.prototype.forEach.call(emojiRow.children, function(x){ x.classList.toggle("on", x.textContent===current.emoji); });
+        renderPreview();
+      });
+      emojiRow.appendChild(b);
+    });
+  }
+
+  eTitle.addEventListener("input", function(){ current.title=eTitle.value; renderPreview(); });
+  eSub.addEventListener("input", function(){ current.subtitle=eSub.value; renderPreview(); });
+  tBadge.addEventListener("click", function(){ current.badge=!current.badge; tBadge.classList.toggle("on",current.badge); renderPreview(); });
+  tEmoji.addEventListener("click", function(){
+    if(current.emoji){ current.emoji=null; tEmoji.classList.remove("on"); emojiRow.classList.add("hidden"); }
+    else { current.emoji = EMOJIS[0]; tEmoji.classList.add("on"); emojiRow.classList.remove("hidden"); }
+    buildEmojiRow();
+    renderPreview();
+  });
+
+  function renderPreview(){
+    if(!current) return;
+    draw(previewCanvas, current);
+    emojiRow.classList.toggle("hidden", !current.emoji && !tEmoji.classList.contains("on"));
+  }
+
+  /* ---------- download ---------- */
+  dlBtn.addEventListener("click", function(){
+    if(!current) return;
+    var cv = document.createElement("canvas");
+    draw(cv, current, 1); // full export resolution (1280x720 / 1080x1920)
+    var name = (current.title||"thumbnail").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || "thumbnail";
+    cv.toBlob(function(blob){
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "thumbforge-"+name+".png";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+      exportsThisSession++;
+      if(exportsThisSession===1) toast("Downloaded! Free export used — forge more anytime.");
+      else toast("Downloaded ✓ (Lifetime $3.99 = unlimited)");
+    }, "image/png");
+  });
+
+  /* ---------- wiring ---------- */
+  genBtn.addEventListener("click", function(){ selectedIdx=-1; current=null; editorSection.classList.add("hidden"); generate(false); });
+  reshuffleBtn.addEventListener("click", function(){ selectedIdx=-1; generate(false); toast("Fresh concepts forged"); });
+  titleIn.addEventListener("input", function(){ save("title", titleIn.value.trim()); });
+  subIn.addEventListener("input", function(){ save("subtitle", subIn.value.trim()); });
+  titleIn.addEventListener("keydown", function(e){ if(e.key==="Enter"){ genBtn.click(); } });
+
+  // auto-forge if we have a saved title
+  if(title){ generate(false, true); gridSection.scrollIntoView({block:"nearest"}); }
+})();
+</script>
+</body>
+</html>
