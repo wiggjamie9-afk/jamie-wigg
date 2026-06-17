@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="STATLINE" />
+<meta name="theme-color" content="#0b1020" />
+<meta name="description" content="STATLINE — a personal sports stats tracker for amateur athletes. Log per-game stats, track season totals & averages, see trend charts, and share a stat card per game. Works fully offline." />
+<title>STATLINE — Personal Sports Stats Tracker</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --bg-2: #0f1530;
+    --surface: #141b35;
+    --surface-2: #1b2444;
+    --border: #26305a;
+    --text: #f4f6fc;
+    --text-2: #aeb6d6;
+    --text-3: #7a83ab;
+    --brand: #38e1b0;
+    --brand-2: #1fb6ff;
+    --accent: #ff5a8a;
+    --warn: #ffb547;
+    --good: #38e1b0;
+    --bad: #ff5a6a;
+    --grad: linear-gradient(135deg, #1fb6ff 0%, #38e1b0 55%, #b6ff5a 100%);
+    --grad-pink: linear-gradient(135deg, #ff5a8a 0%, #ff9a5a 100%);
+    --safe-top: env(safe-area-inset-top, 0);
+    --safe-bot: env(safe-area-inset-bottom, 0);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, sans-serif;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+  body {
+    min-height: 100vh; min-height: 100dvh;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(31,182,255,.18), transparent 60%),
+      radial-gradient(900px 500px at 110% 0%, rgba(56,225,176,.12), transparent 55%),
+      var(--bg);
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
+  input, select, textarea {
+    font: inherit; color: var(--text); width: 100%;
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; outline: none;
+  }
+  input:focus, select:focus { border-color: var(--brand-2); }
+  select { appearance: none; -webkit-appearance: none; }
+  a { color: var(--brand-2); text-decoration: none; }
+
+  .app {
+    max-width: 480px; margin: 0 auto;
+    min-height: 100vh; min-height: 100dvh;
+    padding-bottom: calc(28px + var(--safe-bot));
+  }
+
+  /* Header */
+  .header {
+    background: var(--grad);
+    padding: calc(20px + var(--safe-top)) 20px 22px;
+    border-radius: 0 0 26px 26px;
+    color: #06121f;
+    position: relative; overflow: hidden;
+  }
+  .header::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(400px 200px at 90% -20%, rgba(255,255,255,.35), transparent 60%);
+    pointer-events: none;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: #06121f; display: grid; place-items: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25);
+  }
+  .brand .logo svg { display: block; }
+  .brand h1 {
+    margin: 0; font-size: 24px; font-weight: 800; letter-spacing: .04em;
+    color: #06121f;
+  }
+  .brand .tag { font-size: 11px; font-weight: 700; letter-spacing: .14em; color: rgba(6,18,31,.6); margin-top:1px; }
+  .sport-pick { margin-top: 16px; display:flex; align-items:center; gap:10px; }
+  .sport-pick label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(6,18,31,.65); }
+  .sport-pick select {
+    background: rgba(6,18,31,.9); border: none; color: #eafff7; font-weight: 700;
+    flex: 1; padding: 11px 14px; border-radius: 12px;
+  }
+
+  .wrap { padding: 18px 16px 0; }
+
+  /* Stat grid */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 12px; text-align: center;
+  }
+  .stat .v { font-size: 24px; font-weight: 800; letter-spacing: -.02em; line-height: 1; background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat .k { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-top: 7px; }
+  .stat.wide { grid-column: span 3; display:flex; align-items:center; justify-content:space-between; text-align:left; }
+  .stat.wide .v { font-size: 22px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+  }
+  .card h3 {
+    margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text-3);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card h3 .pick { color: var(--brand); font-weight: 700; }
+
+  canvas { display:block; width:100%; height:auto; border-radius: 12px; }
+  .chart-empty { color: var(--text-3); font-size: 13px; text-align:center; padding: 28px 0; }
+
+  /* Section title */
+  .sec-title {
+    display:flex; align-items:center; justify-content:space-between;
+    margin: 4px 2px 10px;
+  }
+  .sec-title h2 { margin:0; font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+  .sec-title .count { font-size: 12px; color: var(--text-3); font-weight:600; }
+
+  /* Buttons */
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background: var(--grad); color:#06121f; font-weight: 800;
+    border-radius: 12px; padding: 14px 16px; width: 100%;
+    box-shadow: 0 8px 22px rgba(31,182,255,.25);
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.sec { background: var(--surface-2); color: var(--text); box-shadow:none; border:1px solid var(--border); font-weight:700; }
+  .btn.ghost { background: transparent; color: var(--text-2); box-shadow:none; font-weight:700; }
+  .btn-row { display:flex; gap:10px; }
+  .btn-row .btn { width:auto; flex:1; }
+
+  /* Game log */
+  .game {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; margin-bottom: 10px; overflow: hidden;
+  }
+  .game-head { display:flex; align-items:center; gap:12px; padding: 13px 14px; }
+  .game-head .badge {
+    width: 42px; height: 42px; flex:0 0 42px; border-radius: 11px;
+    background: var(--bg-2); display:grid; place-items:center; font-size:20px;
+  }
+  .game-head .gh-main { flex:1; min-width:0; }
+  .game-head .gh-main .opp { font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .game-head .gh-main .date { font-size:12px; color: var(--text-3); margin-top:2px; }
+  .game-head .gh-key { text-align:right; }
+  .game-head .gh-key .kv { font-size:18px; font-weight:800; letter-spacing:-.02em; }
+  .game-head .gh-key .kk { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color: var(--text-3); }
+  .game-body { display:none; padding: 0 14px 14px; }
+  .game.open .game-body { display:block; }
+  .game-body .full {
+    display:grid; grid-template-columns: repeat(2,1fr); gap:8px;
+    padding: 12px 0; border-top: 1px solid var(--border);
+  }
+  .game-body .fr { display:flex; justify-content:space-between; font-size:13px; padding:5px 10px; background: var(--bg-2); border-radius:9px; }
+  .game-body .fr .frk { color: var(--text-3); }
+  .game-body .fr .frv { font-weight:700; }
+  .game-actions { display:flex; gap:8px; margin-top: 4px; }
+  .game-actions .btn { padding: 10px; font-size: 13px; }
+
+  .empty {
+    text-align:center; color: var(--text-3); padding: 36px 16px; font-size: 14px;
+    border: 1px dashed var(--border); border-radius: 14px;
+  }
+
+  /* Modal / sheet */
+  .sheet-bg {
+    position: fixed; inset: 0; background: rgba(4,8,20,.66);
+    backdrop-filter: blur(3px); display:none; z-index: 40;
+    align-items: flex-end; justify-content: center;
+  }
+  .sheet-bg.show { display:flex; }
+  .sheet {
+    background: var(--bg-2); width:100%; max-width:480px;
+    border-radius: 22px 22px 0 0; border:1px solid var(--border); border-bottom:none;
+    padding: 18px 16px calc(20px + var(--safe-bot));
+    max-height: 92vh; overflow:auto; animation: up .26s ease;
+  }
+  @keyframes up { from { transform: translateY(30px); opacity:.6; } to { transform:none; opacity:1; } }
+  .sheet .sh-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+  .sheet .sh-head h2 { margin:0; font-size: 19px; font-weight: 800; }
+  .sheet .sh-head .x { font-size: 24px; color: var(--text-3); width:34px; height:34px; border-radius:999px; display:grid;place-items:center; }
+  .field { margin-bottom: 12px; }
+  .field label { display:block; font-size:12px; font-weight:700; letter-spacing:.04em; color: var(--text-2); margin-bottom:6px; text-transform:uppercase; }
+  .field-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:10px; }
+
+  /* Stat card (share) */
+  .statcard-bg {
+    position: fixed; inset:0; background: rgba(4,8,20,.78); backdrop-filter: blur(4px);
+    display:none; z-index:50; align-items:center; justify-content:center; padding: 18px;
+  }
+  .statcard-bg.show { display:flex; flex-direction:column; }
+  #statcard {
+    width: 100%; max-width: 340px;
+    background: var(--grad); border-radius: 22px; padding: 4px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  #statcard .inner {
+    background: #0b1020; border-radius: 19px; padding: 22px 20px;
+  }
+  #statcard .sc-top { display:flex; align-items:center; justify-content:space-between; }
+  #statcard .sc-top .sc-brand { font-weight:800; letter-spacing:.1em; font-size:13px; background:var(--grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  #statcard .sc-top .sc-sport { font-size:24px; }
+  #statcard .sc-opp { font-size:22px; font-weight:800; margin-top: 14px; letter-spacing:-.01em; }
+  #statcard .sc-date { color: var(--text-3); font-size:13px; margin-top:2px; }
+  #statcard .sc-hero { display:flex; align-items:baseline; gap:8px; margin: 16px 0 4px; }
+  #statcard .sc-hero .h-v { font-size: 48px; font-weight:900; line-height:1; background:var(--grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  #statcard .sc-hero .h-k { font-size:13px; color: var(--text-2); font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+  #statcard .sc-rows { margin-top: 14px; border-top:1px solid var(--border); }
+  #statcard .sc-row { display:flex; justify-content:space-between; padding: 9px 0; border-bottom:1px solid rgba(38,48,90,.5); font-size:14px; }
+  #statcard .sc-row .scr-k { color: var(--text-3); }
+  #statcard .sc-row .scr-v { font-weight:800; }
+  #statcard .sc-foot { margin-top:14px; font-size:11px; color: var(--text-3); text-align:center; letter-spacing:.04em; }
+  .statcard-actions { display:flex; gap:10px; margin-top:16px; width:100%; max-width:340px; }
+  .statcard-actions .btn { flex:1; }
+
+  /* Freemium footer */
+  .freemium {
+    margin: 6px 2px 4px; padding: 16px;
+    background: linear-gradient(135deg, rgba(255,90,138,.14), rgba(255,154,90,.1));
+    border: 1px solid rgba(255,90,138,.3); border-radius: 16px;
+  }
+  .freemium .ft { font-weight:800; font-size:14px; display:flex; align-items:center; gap:8px; }
+  .freemium .ft .pill { background: var(--grad-pink); color:#1a0610; font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; letter-spacing:.04em; }
+  .freemium p { margin: 8px 0 0; font-size:13px; color: var(--text-2); line-height:1.5; }
+  .freemium .b2b { color: var(--text-3); }
+
+  .lock-note { font-size:12px; color: var(--warn); margin-top:8px; display:none; }
+  .lock-note.show { display:block; }
+
+  /* Toast */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(28px + var(--safe-bot));
+    transform: translateX(-50%) translateY(20px);
+    background: #06121f; color:#eafff7; border:1px solid var(--brand);
+    padding: 12px 18px; border-radius: 999px; font-size:14px; font-weight:600;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4); z-index: 80;
+    opacity:0; pointer-events:none; transition: opacity .22s, transform .22s; max-width: 88%;
+  }
+  #toast.show { opacity:1; transform: translateX(-50%) translateY(0); }
+
+  .foot-credit { text-align:center; color: var(--text-3); font-size:11px; margin: 20px 0 4px; letter-spacing:.04em; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <div class="brand">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M3 17l5-6 4 4 8-9" stroke="#38e1b0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="20" cy="6" r="2" fill="#1fb6ff"/>
+        </svg>
+      </div>
+      <div>
+        <h1>STATLINE</h1>
+        <div class="tag">TRACK EVERY GAME</div>
+      </div>
+    </div>
+    <div class="sport-pick">
+      <label for="sportSel">Sport</label>
+      <select id="sportSel"></select>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- Season summary -->
+    <div class="sec-title">
+      <h2>Season Averages</h2>
+      <span class="count" id="gameCount">0 games</span>
+    </div>
+    <div class="stat-grid" id="avgGrid"></div>
+
+    <!-- Totals -->
+    <div class="card">
+      <h3>Season Totals <span class="pick" id="totalsSport"></span></h3>
+      <div class="stat-grid" id="totalGrid" style="margin-bottom:0"></div>
+    </div>
+
+    <!-- Trend chart -->
+    <div class="card">
+      <h3>Trend <span class="pick" id="trendMetricLabel"></span></h3>
+      <canvas id="trendChart" width="448" height="200"></canvas>
+      <div class="chart-empty" id="chartEmpty">Log at least 2 games to see your trend.</div>
+    </div>
+
+    <button class="btn" id="addBtn">+ Log a Game</button>
+
+    <!-- Game log -->
+    <div class="sec-title" style="margin-top:22px">
+      <h2>Game Log</h2>
+      <span class="count" id="logCount"></span>
+    </div>
+    <div id="gameLog"></div>
+
+    <div class="btn-row" id="logTools" style="margin-top:6px; display:none">
+      <button class="btn sec" id="exportBtn">Export CSV</button>
+      <button class="btn ghost" id="clearBtn">Clear All</button>
+    </div>
+
+    <!-- Freemium -->
+    <div class="freemium" style="margin-top:22px">
+      <div class="ft"><span class="pill">FREE</span> 1 sport, unlimited games</div>
+      <p>
+        <strong>Lifetime $4.99</strong> unlocks all sports + advanced stats (shooting splits,
+        per-minute rates, opponent breakdowns).
+        <span class="b2b">Teams &amp; coaches — STATLINE for Teams (B2B) available on request.</span>
+      </p>
+      <div class="lock-note" id="lockNote"></div>
+    </div>
+
+    <div class="foot-credit">STATLINE · works offline · part of the Reset sport &amp; recovery suite</div>
+  </div>
+</div>
+
+<!-- Add/Edit sheet -->
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet">
+    <div class="sh-head">
+      <h2 id="sheetTitle">Log a Game</h2>
+      <button class="x" id="sheetClose">&times;</button>
+    </div>
+    <form id="gameForm" autocomplete="off">
+      <div class="field-grid">
+        <div class="field">
+          <label for="fDate">Date</label>
+          <input type="date" id="fDate" required />
+        </div>
+        <div class="field">
+          <label for="fOpp">Opponent</label>
+          <input type="text" id="fOpp" placeholder="vs ..." maxlength="40" />
+        </div>
+      </div>
+      <div class="field-grid" id="statFields"></div>
+      <input type="hidden" id="fId" />
+      <button type="submit" class="btn" style="margin-top:6px">Save Game</button>
+    </form>
+  </div>
+</div>
+
+<!-- Stat card -->
+<div class="statcard-bg" id="statcardBg">
+  <div id="statcard">
+    <div class="inner">
+      <div class="sc-top">
+        <span class="sc-brand">STATLINE</span>
+        <span class="sc-sport" id="scSport"></span>
+      </div>
+      <div class="sc-opp" id="scOpp"></div>
+      <div class="sc-date" id="scDate"></div>
+      <div class="sc-hero">
+        <span class="h-v" id="scHeroV"></span>
+        <span class="h-k" id="scHeroK"></span>
+      </div>
+      <div class="sc-rows" id="scRows"></div>
+      <div class="sc-foot">tracked with STATLINE</div>
+    </div>
+  </div>
+  <div class="statcard-actions">
+    <button class="btn sec" id="scShare">Share</button>
+    <button class="btn ghost" id="scClose">Close</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var LS = "statline_";
+
+  /* ---------- Sport definitions ---------- */
+  // fields: {key,label,unit?}  derived: fn(stats)->{label,value}  key: headline metric key for log + chart
+  var SPORTS = {
+    basketball: {
+      name: "Basketball", icon: "🏀", free: true,
+      fields: [
+        {key:"pts", label:"Points"},
+        {key:"reb", label:"Rebounds"},
+        {key:"ast", label:"Assists"},
+        {key:"stl", label:"Steals"},
+        {key:"fgm", label:"FG Made"},
+        {key:"fga", label:"FG Att"},
+        {key:"min", label:"Minutes"}
+      ],
+      headline: "pts", headlineLabel: "PTS",
+      // simple efficiency: pts+reb+ast+stl - missed shots
+      derived: function(s){
+        var missed = num(s.fga) - num(s.fgm);
+        var eff = num(s.pts)+num(s.reb)+num(s.ast)+num(s.stl) - Math.max(0,missed);
+        return {label:"Efficiency", value: round1(eff), short:"EFF"};
+      },
+      trend: {key:"pts", label:"Points / game"}
+    },
+    soccer: {
+      name: "Soccer / Football", icon: "⚽", free: false,
+      fields: [
+        {key:"goals", label:"Goals"},
+        {key:"ast", label:"Assists"},
+        {key:"shots", label:"Shots"},
+        {key:"passes", label:"Passes"},
+        {key:"min", label:"Minutes"}
+      ],
+      headline: "goals", headlineLabel: "GLS",
+      // goal contributions per 90
+      derived: function(s){
+        var ga = num(s.goals)+num(s.ast);
+        var per90 = num(s.min) > 0 ? (ga * 90 / num(s.min)) : ga;
+        return {label:"G+A per 90", value: round2(per90), short:"G+A/90"};
+      },
+      trend: {key:"goals", label:"Goals / game"}
+    },
+    tennis: {
+      name: "Tennis", icon: "🎾", free: false,
+      fields: [
+        {key:"aces", label:"Aces"},
+        {key:"winners", label:"Winners"},
+        {key:"ue", label:"Unforced Err"},
+        {key:"df", label:"Double Faults"}
+      ],
+      headline: "winners", headlineLabel: "WNR",
+      // winner-to-error ratio
+      derived: function(s){
+        var err = num(s.ue) + num(s.df);
+        var ratio = err > 0 ? (num(s.winners) / err) : num(s.winners);
+        return {label:"Winner/Error", value: round2(ratio), short:"W/E"};
+      },
+      trend: {key:"winners", label:"Winners / match"}
+    },
+    generic: {
+      name: "Generic / Custom", icon: "🏆", free: false,
+      fields: [
+        {key:"score", label:"Score / Points"},
+        {key:"assists2", label:"Assists / Helps"},
+        {key:"errors", label:"Errors"},
+        {key:"min", label:"Minutes"}
+      ],
+      headline: "score", headlineLabel: "PTS",
+      derived: function(s){
+        var net = num(s.score) - num(s.errors);
+        return {label:"Net (score-errors)", value: round1(net), short:"NET"};
+      },
+      trend: {key:"score", label:"Score / game"}
+    }
+  };
+
+  /* ---------- Helpers ---------- */
+  function num(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function round1(n){ return Math.round(n*10)/10; }
+  function round2(n){ return Math.round(n*100)/100; }
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function fmtDate(d){
+    if(!d) return "";
+    var dt = new Date(d + "T00:00:00");
+    if(isNaN(dt)) return d;
+    return dt.toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"});
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  /* ---------- Storage ---------- */
+  function loadSport(){ return localStorage.getItem(LS+"sport") || "basketball"; }
+  function saveSport(s){ localStorage.setItem(LS+"sport", s); }
+  function gamesKey(sport){ return LS + "games_" + sport; }
+  function loadGames(sport){
+    try { return JSON.parse(localStorage.getItem(gamesKey(sport)) || "[]"); }
+    catch(e){ return []; }
+  }
+  function saveGames(sport, games){ localStorage.setItem(gamesKey(sport), JSON.stringify(games)); }
+
+  /* ---------- State ---------- */
+  var currentSport = loadSport();
+  if(!SPORTS[currentSport]) currentSport = "basketball";
+
+  /* ---------- Sport selector ---------- */
+  function buildSportSelect(){
+    var sel = $("sportSel");
+    sel.innerHTML = "";
+    Object.keys(SPORTS).forEach(function(k){
+      var sp = SPORTS[k];
+      var o = document.createElement("option");
+      o.value = k;
+      o.textContent = sp.icon + "  " + sp.name + (sp.free ? "" : "  🔒");
+      sel.appendChild(o);
+    });
+    sel.value = currentSport;
+  }
+
+  // Free tier: only basketball unlocked. Picking another is allowed (non-blocking),
+  // but we surface the upgrade note.
+  function refreshLockNote(){
+    var sp = SPORTS[currentSport];
+    var note = $("lockNote");
+    if(sp.free){ note.classList.remove("show"); note.textContent = ""; }
+    else {
+      note.textContent = "Preview: " + sp.name + " is a Lifetime sport. Logging works here for demo; upgrade to keep it.";
+      note.classList.add("show");
+    }
+  }
+
+  /* ---------- Render dashboard ---------- */
+  function computeTotals(games, sport){
+    var sp = SPORTS[sport];
+    var totals = {};
+    sp.fields.forEach(function(f){ totals[f.key] = 0; });
+    games.forEach(function(g){
+      sp.fields.forEach(function(f){ totals[f.key] += num(g.stats[f.key]); });
+    });
+    return totals;
+  }
+
+  function render(){
+    var sp = SPORTS[currentSport];
+    var games = loadGames(currentSport);
+    // sort by date ascending for charts, but log shows newest first
+    var byDate = games.slice().sort(function(a,b){ return (a.date||"").localeCompare(b.date||""); });
+    var n = games.length;
+
+    $("gameCount").textContent = n + (n===1?" game":" games");
+    $("totalsSport").textContent = sp.icon + " " + sp.name;
+    $("trendMetricLabel").textContent = sp.trend.label;
+
+    var totals = computeTotals(games, currentSport);
+
+    // Averages grid (headline fields + derived avg)
+    var avgGrid = $("avgGrid");
+    avgGrid.innerHTML = "";
+    var avgFields = sp.fields.slice(0, 4); // top stats as averages
+    avgFields.forEach(function(f){
+      var avg = n ? totals[f.key]/n : 0;
+      avgGrid.appendChild(statEl(round1(avg), f.label));
+    });
+    // derived average across games
+    var derivedAvg = 0;
+    if(n){
+      games.forEach(function(g){ derivedAvg += num(sp.derived(g.stats).value); });
+      derivedAvg = derivedAvg / n;
+    }
+    var dExample = sp.derived({});
+    var dWide = document.createElement("div");
+    dWide.className = "stat wide";
+    dWide.innerHTML = '<div><div class="k" style="margin-top:0">Avg ' + esc(dExample.label) + '</div></div>'
+      + '<div class="v">' + (n ? round2(derivedAvg) : "—") + '</div>';
+    avgGrid.appendChild(dWide);
+
+    // Totals grid (all fields)
+    var totalGrid = $("totalGrid");
+    totalGrid.innerHTML = "";
+    sp.fields.forEach(function(f){
+      totalGrid.appendChild(statEl(round1(totals[f.key]), f.label));
+    });
+
+    // Chart
+    drawTrend(byDate, sp);
+
+    // Game log (newest first)
+    renderLog(games, sp);
+
+    // tools visibility
+    $("logTools").style.display = n ? "flex" : "none";
+
+    refreshLockNote();
+  }
+
+  function statEl(value, label){
+    var d = document.createElement("div");
+    d.className = "stat";
+    d.innerHTML = '<div class="v">' + esc(value) + '</div><div class="k">' + esc(label) + '</div>';
+    return d;
+  }
+
+  function renderLog(games, sp){
+    var log = $("gameLog");
+    var sorted = games.slice().sort(function(a,b){ return (b.date||"").localeCompare(a.date||""); });
+    $("logCount").textContent = games.length ? games.length + " logged" : "";
+    if(!games.length){
+      log.innerHTML = '<div class="empty">No games yet.<br>Tap <strong>+ Log a Game</strong> to start your season.</div>';
+      return;
+    }
+    log.innerHTML = "";
+    sorted.forEach(function(g){
+      var key = sp.headline;
+      var keyVal = round1(num(g.stats[key]));
+      var d = sp.derived(g.stats);
+      var el = document.createElement("div");
+      el.className = "game";
+      var full = sp.fields.map(function(f){
+        return '<div class="fr"><span class="frk">'+esc(f.label)+'</span><span class="frv">'+esc(round1(num(g.stats[f.key])))+'</span></div>';
+      }).join("");
+      full += '<div class="fr" style="background:rgba(56,225,176,.12)"><span class="frk">'+esc(d.label)+'</span><span class="frv">'+esc(d.value)+'</span></div>';
+
+      el.innerHTML =
+        '<div class="game-head" data-act="toggle">'
+          + '<div class="badge">'+sp.icon+'</div>'
+          + '<div class="gh-main"><div class="opp">'+esc(g.opponent || "Game")+'</div><div class="date">'+esc(fmtDate(g.date))+'</div></div>'
+          + '<div class="gh-key"><div class="kv">'+esc(keyVal)+'</div><div class="kk">'+esc(sp.headlineLabel)+'</div></div>'
+        + '</div>'
+        + '<div class="game-body">'
+          + '<div class="full">'+full+'</div>'
+          + '<div class="game-actions">'
+            + '<button class="btn sec" data-act="card">Stat Card</button>'
+            + '<button class="btn sec" data-act="edit">Edit</button>'
+            + '<button class="btn ghost" data-act="del" style="color:var(--bad)">Delete</button>'
+          + '</div>'
+        + '</div>';
+
+      el.querySelector('[data-act="toggle"]').addEventListener("click", function(){ el.classList.toggle("open"); });
+      el.querySelector('[data-act="card"]').addEventListener("click", function(e){ e.stopPropagation(); showStatCard(g); });
+      el.querySelector('[data-act="edit"]').addEventListener("click", function(e){ e.stopPropagation(); openSheet(g); });
+      el.querySelector('[data-act="del"]').addEventListener("click", function(e){ e.stopPropagation(); deleteGame(g.id); });
+      log.appendChild(el);
+    });
+  }
+
+  /* ---------- Canvas trend chart ---------- */
+  function drawTrend(byDate, sp){
+    var canvas = $("trendChart");
+    var empty = $("chartEmpty");
+    var key = sp.trend.key;
+    var data = byDate.map(function(g){ return num(g.stats[key]); });
+
+    if(data.length < 2){
+      canvas.style.display = "none";
+      empty.style.display = "block";
+      return;
+    }
+    canvas.style.display = "block";
+    empty.style.display = "none";
+
+    // crisp rendering
+    var cssW = canvas.clientWidth || 448;
+    var dpr = window.devicePixelRatio || 1;
+    var W = cssW, H = 200;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.height = H + "px";
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+
+    var padL = 30, padR = 14, padT = 16, padB = 26;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var max = Math.max.apply(null, data);
+    var min = Math.min.apply(null, data);
+    if(max === min){ max = max + 1; min = Math.max(0, min - 1); }
+    // pad range
+    var range = max - min;
+    max += range*0.12; min -= range*0.12; if(min < 0) min = 0;
+    range = (max - min) || 1;
+
+    function X(i){ return padL + (data.length===1?plotW/2:(i/(data.length-1))*plotW); }
+    function Y(v){ return padT + plotH - ((v - min)/range)*plotH; }
+
+    // gridlines + y labels
+    ctx.font = "10px -apple-system, system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    var lines = 4;
+    for(var li=0; li<=lines; li++){
+      var gy = padT + (plotH/lines)*li;
+      ctx.strokeStyle = "rgba(38,48,90,.6)";
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(W-padR, gy); ctx.stroke();
+      var val = max - (range/lines)*li;
+      ctx.fillStyle = "#7a83ab";
+      ctx.textAlign = "right";
+      ctx.fillText(Math.round(val*10)/10, padL-6, gy);
+    }
+
+    // area fill
+    var grad = ctx.createLinearGradient(0, padT, 0, padT+plotH);
+    grad.addColorStop(0, "rgba(56,225,176,.35)");
+    grad.addColorStop(1, "rgba(31,182,255,.02)");
+    ctx.beginPath();
+    ctx.moveTo(X(0), Y(data[0]));
+    data.forEach(function(v,i){ ctx.lineTo(X(i), Y(v)); });
+    ctx.lineTo(X(data.length-1), padT+plotH);
+    ctx.lineTo(X(0), padT+plotH);
+    ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+
+    // line
+    var lg = ctx.createLinearGradient(padL,0,W-padR,0);
+    lg.addColorStop(0, "#1fb6ff"); lg.addColorStop(1, "#38e1b0");
+    ctx.beginPath();
+    data.forEach(function(v,i){ i===0 ? ctx.moveTo(X(i),Y(v)) : ctx.lineTo(X(i),Y(v)); });
+    ctx.strokeStyle = lg; ctx.lineWidth = 2.5; ctx.lineJoin="round"; ctx.lineCap="round"; ctx.stroke();
+
+    // points + last value label
+    data.forEach(function(v,i){
+      ctx.beginPath(); ctx.arc(X(i), Y(v), 3.2, 0, Math.PI*2);
+      ctx.fillStyle = "#0b1020"; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = "#38e1b0"; ctx.stroke();
+    });
+    // x labels: first and last
+    ctx.fillStyle = "#7a83ab"; ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+    ctx.fillText(shortDate(byDate[0].date), padL, H-8);
+    ctx.textAlign = "right";
+    ctx.fillText(shortDate(byDate[byDate.length-1].date), W-padR, H-8);
+  }
+  function shortDate(d){
+    if(!d) return "";
+    var dt = new Date(d+"T00:00:00"); if(isNaN(dt)) return d;
+    return dt.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  }
+
+  /* ---------- Add / Edit sheet ---------- */
+  function buildStatFields(stats){
+    var sp = SPORTS[currentSport];
+    var wrap = $("statFields");
+    wrap.innerHTML = "";
+    sp.fields.forEach(function(f){
+      var v = stats && stats[f.key] != null ? stats[f.key] : "";
+      var div = document.createElement("div");
+      div.className = "field";
+      div.innerHTML = '<label for="sf_'+f.key+'">'+esc(f.label)+'</label>'
+        + '<input type="number" inputmode="decimal" step="any" min="0" id="sf_'+f.key+'" value="'+esc(v)+'" placeholder="0" />';
+      wrap.appendChild(div);
+    });
+  }
+
+  function openSheet(game){
+    buildStatFields(game ? game.stats : null);
+    $("sheetTitle").textContent = game ? "Edit Game" : "Log a Game";
+    $("fId").value = game ? game.id : "";
+    $("fOpp").value = game ? (game.opponent||"") : "";
+    $("fDate").value = game ? game.date : new Date().toISOString().slice(0,10);
+    $("sheetBg").classList.add("show");
+  }
+  function closeSheet(){ $("sheetBg").classList.remove("show"); }
+
+  $("gameForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var sp = SPORTS[currentSport];
+    var stats = {};
+    sp.fields.forEach(function(f){
+      var el = $("sf_"+f.key);
+      stats[f.key] = el && el.value !== "" ? num(el.value) : 0;
+    });
+    var id = $("fId").value;
+    var games = loadGames(currentSport);
+    var rec = {
+      id: id || uid(),
+      date: $("fDate").value || new Date().toISOString().slice(0,10),
+      opponent: $("fOpp").value.trim(),
+      stats: stats
+    };
+    if(id){
+      var idx = games.findIndex(function(g){ return g.id === id; });
+      if(idx >= 0) games[idx] = rec; else games.push(rec);
+      toast("Game updated");
+    } else {
+      games.push(rec);
+      toast("Game logged 💪");
+    }
+    saveGames(currentSport, games);
+    closeSheet();
+    render();
+  });
+
+  function deleteGame(id){
+    if(!confirm("Delete this game? This can't be undone.")) return;
+    var games = loadGames(currentSport).filter(function(g){ return g.id !== id; });
+    saveGames(currentSport, games);
+    render();
+    toast("Game deleted");
+  }
+
+  /* ---------- Stat card ---------- */
+  function showStatCard(g){
+    var sp = SPORTS[currentSport];
+    $("scSport").textContent = sp.icon;
+    $("scOpp").textContent = g.opponent || (sp.name + " Game");
+    $("scDate").textContent = fmtDate(g.date);
+    $("scHeroV").textContent = round1(num(g.stats[sp.headline]));
+    $("scHeroK").textContent = sp.headlineLabel;
+    var rows = $("scRows");
+    rows.innerHTML = "";
+    sp.fields.forEach(function(f){
+      if(f.key === sp.headline) return; // headline already shown
+      var r = document.createElement("div");
+      r.className = "sc-row";
+      r.innerHTML = '<span class="scr-k">'+esc(f.label)+'</span><span class="scr-v">'+esc(round1(num(g.stats[f.key])))+'</span>';
+      rows.appendChild(r);
+    });
+    var d = sp.derived(g.stats);
+    var dr = document.createElement("div");
+    dr.className = "sc-row";
+    dr.innerHTML = '<span class="scr-k" style="color:#38e1b0">'+esc(d.label)+'</span><span class="scr-v" style="color:#38e1b0">'+esc(d.value)+'</span>';
+    rows.appendChild(dr);
+    $("statcardBg")._game = g;
+    $("statcardBg").classList.add("show");
+  }
+  function closeStatCard(){ $("statcardBg").classList.remove("show"); }
+
+  function shareCard(){
+    var g = $("statcardBg")._game;
+    var sp = SPORTS[currentSport];
+    var lines = [];
+    lines.push("STATLINE — " + sp.name);
+    lines.push((g.opponent || "Game") + "  ·  " + fmtDate(g.date));
+    lines.push("");
+    sp.fields.forEach(function(f){ lines.push(f.label + ": " + round1(num(g.stats[f.key]))); });
+    var d = sp.derived(g.stats);
+    lines.push(d.label + ": " + d.value);
+    var text = lines.join("\n");
+    if(navigator.share){
+      navigator.share({ title:"STATLINE stat card", text:text }).catch(function(){});
+    } else if(navigator.clipboard){
+      navigator.clipboard.writeText(text).then(function(){ toast("Stat card copied 📋"); }, function(){ toast("Copy failed"); });
+    } else {
+      toast("Sharing not supported");
+    }
+  }
+
+  /* ---------- CSV export ---------- */
+  function exportCSV(){
+    var sp = SPORTS[currentSport];
+    var games = loadGames(currentSport).slice().sort(function(a,b){ return (a.date||"").localeCompare(b.date||""); });
+    if(!games.length){ toast("No games to export"); return; }
+    var cols = ["date","opponent"].concat(sp.fields.map(function(f){ return f.key; })).concat(["derived_"+sp.derived({}).short]);
+    var headerLabels = ["Date","Opponent"].concat(sp.fields.map(function(f){ return f.label; })).concat([sp.derived({}).label]);
+    var rows = [headerLabels.map(csvCell).join(",")];
+    games.forEach(function(g){
+      var row = [g.date, g.opponent||""];
+      sp.fields.forEach(function(f){ row.push(round1(num(g.stats[f.key]))); });
+      row.push(sp.derived(g.stats).value);
+      rows.push(row.map(csvCell).join(","));
+    });
+    var csv = rows.join("\r\n");
+    var blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "statline-" + currentSport + "-" + new Date().toISOString().slice(0,10) + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast("CSV exported");
+  }
+  function csvCell(v){
+    var s = String(v==null?"":v);
+    if(/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }
+
+  function clearAll(){
+    if(!confirm("Clear ALL games for " + SPORTS[currentSport].name + "? This can't be undone.")) return;
+    saveGames(currentSport, []);
+    render();
+    toast("Season cleared");
+  }
+
+  /* ---------- Wire up ---------- */
+  $("sportSel").addEventListener("change", function(){
+    currentSport = this.value;
+    saveSport(currentSport);
+    render();
+  });
+  $("addBtn").addEventListener("click", function(){ openSheet(null); });
+  $("sheetClose").addEventListener("click", closeSheet);
+  $("sheetBg").addEventListener("click", function(e){ if(e.target === this) closeSheet(); });
+  $("exportBtn").addEventListener("click", exportCSV);
+  $("clearBtn").addEventListener("click", clearAll);
+  $("scShare").addEventListener("click", shareCard);
+  $("scClose").addEventListener("click", closeStatCard);
+  $("statcardBg").addEventListener("click", function(e){ if(e.target === this) closeStatCard(); });
+  window.addEventListener("resize", function(){
+    var sp = SPORTS[currentSport];
+    var byDate = loadGames(currentSport).slice().sort(function(a,b){ return (a.date||"").localeCompare(b.date||""); });
+    drawTrend(byDate, sp);
+  });
+
+  /* ---------- Boot ---------- */
+  buildSportSelect();
+  render();
+})();
+</script>
+</body>
+</html>
