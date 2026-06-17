@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="STRETCH — a guided stretching atlas & routine timer. Browse 25+ stretches by body part, build a routine, and run a guided timer with countdown, beeps and auto-advance. Works fully offline.">
+<meta name="theme-color" content="#FB7185">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STRETCH">
+<title>STRETCH – Guided Stretching Atlas & Routine Timer</title>
+<style>
+:root{
+  --rose:#FB7185;
+  --rose-deep:#E11D48;
+  --amber:#FBBF24;
+  --teal:#2DD4BF;
+  --violet:#8B5CF6;
+  --grad:linear-gradient(135deg,#FB7185 0%,#F472B6 45%,#FB923C 100%);
+  --bg:#FFF7F9;
+  --card:#FFFFFF;
+  --ink:#1F2430;
+  --muted:#6B7280;
+  --line:#F1E3E8;
+  --ok:#16A34A;
+  --shadow:0 6px 22px rgba(225,29,72,0.10);
+  --radius:18px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:90px}
+
+/* Header */
+header{background:var(--grad);color:#fff;padding:calc(env(safe-area-inset-top) + 22px) 20px 22px;border-radius:0 0 26px 26px;box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo{font-size:26px}
+.brand h1{font-size:24px;font-weight:800;letter-spacing:1.5px}
+.tagline{margin-top:4px;font-size:13px;opacity:.92;font-weight:500}
+.stats-row{display:flex;gap:10px;margin-top:16px}
+.stat{flex:1;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:10px 12px;backdrop-filter:blur(4px)}
+.stat .n{font-size:22px;font-weight:800;line-height:1}
+.stat .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;opacity:.9;margin-top:4px}
+
+/* Sections */
+.view{padding:16px 16px 0}
+.view[hidden]{display:none}
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:6px 2px 12px;display:flex;align-items:center;justify-content:space-between}
+
+/* Chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;padding:9px 15px;border-radius:999px;background:var(--card);border:1.5px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);transition:all .15s;white-space:nowrap}
+.chip.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(251,113,133,.35)}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin-bottom:12px;box-shadow:0 2px 10px rgba(31,36,48,.04);display:flex;gap:13px;align-items:flex-start}
+.card .emoji{font-size:30px;flex:0 0 auto;width:46px;height:46px;display:flex;align-items:center;justify-content:center;background:var(--bg);border-radius:13px}
+.card .body{flex:1;min-width:0}
+.card .name{font-size:16px;font-weight:700;line-height:1.2}
+.card .meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.4px}
+.pill.area{background:rgba(45,212,191,.16);color:#0D9488}
+.pill.time{background:rgba(251,191,36,.18);color:#B45309}
+.pill.beginner{background:rgba(22,163,74,.14);color:var(--ok)}
+.pill.intermediate{background:rgba(139,92,246,.14);color:var(--violet)}
+.pill.advanced{background:rgba(225,29,72,.12);color:var(--rose-deep)}
+.card .instr{font-size:13px;color:#444;line-height:1.45;margin-top:8px}
+.add-btn{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--grad);color:#fff;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 9px rgba(251,113,133,.4);line-height:1}
+.add-btn.added{background:var(--ok);box-shadow:none}
+.expand{margin-top:6px;font-size:12px;color:var(--rose-deep);font-weight:600}
+
+/* Routine list */
+.routine-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.routine-item .ri-emoji{font-size:24px}
+.routine-item .ri-body{flex:1;min-width:0}
+.routine-item .ri-name{font-size:15px;font-weight:700}
+.routine-item .ri-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.routine-item .ri-remove{font-size:20px;color:var(--muted);width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.routine-item .ri-remove:active{background:var(--line)}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;border-radius:15px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;box-shadow:var(--shadow);transition:transform .1s}
+.btn:active{transform:scale(.98)}
+.btn[disabled]{opacity:.4;box-shadow:none}
+.btn.ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+.btn.sm{padding:11px;font-size:14px;border-radius:12px}
+.btn-row{display:flex;gap:10px;margin-top:6px}
+
+input[type=text]{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:13px;font-size:15px;background:var(--card);color:var(--ink)}
+input[type=text]:focus{outline:none;border-color:var(--rose)}
+
+/* Saved routines */
+.saved-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px}
+.saved-card .sc-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.saved-card .sc-name{font-size:15px;font-weight:700}
+.saved-card .sc-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.saved-card .sc-actions{display:flex;gap:8px;margin-top:10px}
+
+.empty{text-align:center;padding:38px 20px;color:var(--muted)}
+.empty .ee{font-size:42px;margin-bottom:10px}
+.empty p{font-size:14px;line-height:1.5}
+
+/* Bottom nav */
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;padding:8px 6px calc(env(safe-area-inset-bottom) + 8px);z-index:50}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;color:var(--muted);font-size:11px;font-weight:600;border-radius:12px}
+nav button .ni{font-size:21px}
+nav button.on{color:var(--rose-deep)}
+.badge{position:absolute;top:2px;right:50%;margin-right:-26px;background:var(--rose-deep);color:#fff;font-size:10px;font-weight:800;min-width:17px;height:17px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* Runner overlay */
+.runner{position:fixed;inset:0;background:linear-gradient(160deg,#1F1430 0%,#3B1530 55%,#5B1E3A 100%);color:#fff;z-index:100;display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 16px) 22px calc(env(safe-area-inset-bottom) + 20px)}
+.runner.show{display:flex}
+.runner .r-top{display:flex;align-items:center;justify-content:space-between}
+.runner .r-close{font-size:26px;opacity:.8;width:40px;height:40px}
+.runner .r-progress{font-size:13px;font-weight:600;letter-spacing:.5px;opacity:.85}
+.runner .r-bar{height:6px;background:rgba(255,255,255,.15);border-radius:6px;margin-top:14px;overflow:hidden}
+.runner .r-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--rose));transition:width .3s}
+.runner .r-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.runner .r-emoji{font-size:64px;margin-bottom:6px}
+.runner .r-phase{font-size:13px;text-transform:uppercase;letter-spacing:3px;font-weight:700;color:var(--amber)}
+.runner .r-phase.rest{color:var(--teal)}
+.runner .r-name{font-size:30px;font-weight:800;line-height:1.1;margin:8px 14px 4px}
+.runner .r-area{font-size:13px;opacity:.8;margin-bottom:16px}
+.ring-wrap{position:relative;width:230px;height:230px;margin:6px auto}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.12);stroke-width:12}
+.ring-fg{fill:none;stroke:var(--amber);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .3s}
+.ring-fg.rest{stroke:var(--teal)}
+.ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:62px;font-weight:800}
+.runner .r-instr{font-size:15px;line-height:1.5;opacity:.92;max-width:340px;margin:0 auto}
+.runner .r-controls{display:flex;gap:12px;margin-top:14px}
+.r-ctrl{flex:1;padding:15px;border-radius:14px;background:rgba(255,255,255,.12);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+.r-ctrl.primary{background:linear-gradient(135deg,var(--amber),var(--rose));color:#2A1020}
+.r-ctrl:active{transform:scale(.97)}
+.runner .r-up-next{font-size:12px;opacity:.7;text-align:center;margin-top:12px;min-height:16px}
+
+.done-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px}
+.done-stage .de{font-size:70px}
+.done-stage h2{font-size:28px;font-weight:800}
+.done-stage p{opacity:.85;font-size:15px}
+
+/* Toast */
+#toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .3s;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90%}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Freemium footer */
+.freemium{margin:18px 2px 8px;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,113,133,.1));border:1px solid rgba(251,191,36,.3);border-radius:16px;padding:14px 16px;font-size:13px;line-height:1.5;color:#5A4A2E}
+.freemium b{color:var(--rose-deep)}
+.detail-instr{display:none}
+.card.open .detail-instr{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <span class="logo">🤸</span>
+      <h1>STRETCH</h1>
+    </div>
+    <div class="tagline">Your guided stretching atlas & routine timer</div>
+    <div class="stats-row">
+      <div class="stat"><div class="n" id="statRoutine">0</div><div class="l">In Routine</div></div>
+      <div class="stat"><div class="n" id="statDone">0</div><div class="l">Completed</div></div>
+      <div class="stat"><div class="n" id="statLib">25</div><div class="l">Stretches</div></div>
+    </div>
+  </header>
+
+  <!-- BROWSE VIEW -->
+  <section class="view" id="view-browse">
+    <div class="section-title">Browse by body part</div>
+    <div class="chips" id="chips"></div>
+    <div id="stretchList"></div>
+    <div class="freemium" id="freemiumNote">
+      ✨ <b>Free</b> — full stretch library + 1 saved routine.
+      <b>Lifetime $2.99</b> unlocks unlimited saved routines + sport-specific programs.
+    </div>
+  </section>
+
+  <!-- ROUTINE VIEW -->
+  <section class="view" id="view-routine" hidden>
+    <div class="section-title">My Routine <span id="routineCount" style="color:var(--rose-deep)"></span></div>
+    <div id="routineList"></div>
+    <div id="routineActions" hidden>
+      <button class="btn" id="runBtn">▶ Run Guided Routine</button>
+      <div class="btn-row">
+        <button class="btn ghost sm" id="saveBtn">💾 Save Routine</button>
+        <button class="btn ghost sm" id="clearBtn">Clear All</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAVED VIEW -->
+  <section class="view" id="view-saved" hidden>
+    <div class="section-title">Saved Routines</div>
+    <div id="savedList"></div>
+  </section>
+</div>
+
+<!-- Bottom nav -->
+<nav>
+  <button data-view="browse" class="on"><span class="ni">🔎</span>Browse</button>
+  <button data-view="routine" style="position:relative"><span class="ni">📋</span>Routine<span class="badge" id="navBadge" hidden>0</span></button>
+  <button data-view="saved"><span class="ni">⭐</span>Saved</button>
+</nav>
+
+<!-- Runner overlay -->
+<div class="runner" id="runner">
+  <div class="r-top">
+    <div class="r-progress" id="rProgress">1 / 5</div>
+    <button class="r-close" id="rClose">✕</button>
+  </div>
+  <div class="r-bar"><i id="rBar"></i></div>
+
+  <div class="r-stage" id="rStage">
+    <div class="r-emoji" id="rEmoji">🧘</div>
+    <div class="r-phase" id="rPhase">Hold</div>
+    <div class="r-name" id="rName">Stretch</div>
+    <div class="r-area" id="rArea">Target</div>
+    <div class="ring-wrap">
+      <svg width="230" height="230" viewBox="0 0 230 230">
+        <circle class="ring-bg" cx="115" cy="115" r="100"></circle>
+        <circle class="ring-fg" id="ring" cx="115" cy="115" r="100"></circle>
+      </svg>
+      <div class="ring-num" id="rNum">30</div>
+    </div>
+    <div class="r-instr" id="rInstr"></div>
+    <div class="r-controls">
+      <button class="r-ctrl" id="rPause">⏸ Pause</button>
+      <button class="r-ctrl primary" id="rSkip">⏭ Skip</button>
+    </div>
+    <div class="r-up-next" id="rNext"></div>
+  </div>
+
+  <div class="done-stage" id="doneStage" style="display:none">
+    <div class="de">🎉</div>
+    <h2>Routine Complete!</h2>
+    <p id="doneSub">Nice work. You've earned that.</p>
+    <button class="r-ctrl primary" id="doneBtn" style="flex:none;padding:14px 34px;margin-top:12px">Done</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============ DATA: built-in stretch library ============ */
+const LIBRARY = [
+  // NECK
+  {id:'neck-tilt', name:'Lateral Neck Tilt', area:'neck', emoji:'🙆', hold:30, level:'beginner',
+   instr:'Sit or stand tall. Gently drop your right ear toward your right shoulder until you feel a stretch on the left side of your neck. Keep shoulders relaxed and down. Hold, then switch sides.'},
+  {id:'neck-rotate', name:'Neck Rotation', area:'neck', emoji:'🔄', hold:25, level:'beginner',
+   instr:'Looking forward, slowly turn your head to look over one shoulder. Keep your chin level. Hold, return to centre, then turn to the other side.'},
+  {id:'neck-flex', name:'Chin Tuck & Flexion', area:'neck', emoji:'👇', hold:25, level:'beginner',
+   instr:'Tuck your chin slightly, then lower it toward your chest to lengthen the back of the neck. Avoid rounding the upper back. Breathe slowly throughout.'},
+
+  // SHOULDERS
+  {id:'shoulder-cross', name:'Cross-Body Shoulder', area:'shoulders', emoji:'💪', hold:30, level:'beginner',
+   instr:'Bring one arm straight across your chest. Use the opposite hand to gently draw it closer, feeling the stretch in the back of the shoulder. Keep the shoulder down, not shrugged.'},
+  {id:'shoulder-roll', name:'Shoulder Rolls', area:'shoulders', emoji:'🔁', hold:20, level:'beginner',
+   instr:'Roll both shoulders up, back, and down in a smooth circle. Make the circles as large as comfortable. Reverse direction halfway through.'},
+  {id:'shoulder-eagle', name:'Eagle Arm Stretch', area:'shoulders', emoji:'🦅', hold:30, level:'intermediate',
+   instr:'Extend arms forward, cross one elbow over the other, and wrap forearms so palms meet (or backs of hands). Lift elbows slightly to deepen the stretch between the shoulder blades.'},
+
+  // CHEST
+  {id:'chest-doorway', name:'Doorway Chest Stretch', area:'chest', emoji:'🚪', hold:30, level:'beginner',
+   instr:'Place forearms on a doorframe with elbows at shoulder height. Step one foot through and lean gently forward until you feel the stretch across the chest and front of the shoulders.'},
+  {id:'chest-clasp', name:'Behind-Back Clasp', area:'chest', emoji:'🤝', hold:30, level:'intermediate',
+   instr:'Clasp your hands behind your back, straighten the arms, and gently lift them away from your body while squeezing the shoulder blades together. Keep the chest open and tall.'},
+  {id:'chest-floor', name:'Floor Pec Opener', area:'chest', emoji:'🛋️', hold:35, level:'beginner',
+   instr:'Lie face down, extend one arm out to the side at shoulder height, then roll gently onto that side using your other hand for support. Feel the chest open. Switch sides.'},
+
+  // BACK
+  {id:'back-cat-cow', name:'Cat-Cow', area:'back', emoji:'🐈', hold:30, level:'beginner',
+   instr:'On hands and knees, alternate between arching your back upward (cat) and dropping the belly while lifting the chest (cow). Move slowly with your breath through the full spine.'},
+  {id:'back-child', name:"Child's Pose", area:'back', emoji:'🧎', hold:40, level:'beginner',
+   instr:'Kneel and sit back onto your heels, then fold forward reaching the arms out in front. Rest the forehead down and let the lower back and shoulders relax with each exhale.'},
+  {id:'back-twist', name:'Supine Spinal Twist', area:'back', emoji:'🌀', hold:30, level:'beginner',
+   instr:'Lie on your back, bring one knee across your body toward the floor while keeping shoulders flat. Look toward the opposite arm. Hold, then twist to the other side.'},
+  {id:'back-cobra', name:'Cobra / Sphinx', area:'back', emoji:'🐍', hold:30, level:'intermediate',
+   instr:'Lie face down and press up onto forearms (sphinx) or hands (cobra), lifting the chest while keeping hips on the floor. Relax the glutes and lengthen through the spine.'},
+
+  // HIPS
+  {id:'hip-pigeon', name:'Figure-4 / Pigeon', area:'hips', emoji:'🕊️', hold:35, level:'intermediate',
+   instr:'Lying on your back, cross one ankle over the opposite thigh, then pull that thigh toward your chest. Feel the stretch deep in the glute and outer hip. Switch sides.'},
+  {id:'hip-flexor', name:'Kneeling Hip Flexor', area:'hips', emoji:'🦵', hold:35, level:'beginner',
+   instr:'Kneel on one knee with the other foot flat in front. Tuck the pelvis and gently press the hips forward until you feel a stretch in the front of the back-leg hip. Keep tall.'},
+  {id:'hip-butterfly', name:'Butterfly Stretch', area:'hips', emoji:'🦋', hold:35, level:'beginner',
+   instr:'Sit with the soles of your feet together, knees out to the sides. Hold your ankles and gently lean forward from the hips, letting the knees relax toward the floor.'},
+
+  // HAMSTRINGS
+  {id:'ham-forward', name:'Standing Forward Fold', area:'hamstrings', emoji:'🙇', hold:30, level:'beginner',
+   instr:'Stand with feet hip-width, hinge at the hips and fold forward, letting the head hang. Bend the knees slightly if needed. Feel the stretch along the back of the legs.'},
+  {id:'ham-seated', name:'Seated Hamstring Reach', area:'hamstrings', emoji:'🪑', hold:30, level:'beginner',
+   instr:'Sit with one leg extended, the other bent. Reach toward the toes of the straight leg, keeping the back long rather than rounding. Switch legs.'},
+  {id:'ham-supine', name:'Supine Leg Raise', area:'hamstrings', emoji:'🦶', hold:35, level:'intermediate',
+   instr:'Lie on your back and raise one straight leg, holding behind the thigh or calf. Gently draw the leg toward you while keeping the other leg on the floor. Switch sides.'},
+
+  // QUADS
+  {id:'quad-standing', name:'Standing Quad Stretch', area:'quads', emoji:'🧍', hold:30, level:'beginner',
+   instr:'Stand tall, bend one knee and grab the ankle behind you, pulling the heel toward your glute. Keep knees together and stand up straight. Hold a wall for balance if needed.'},
+  {id:'quad-side', name:'Side-Lying Quad', area:'quads', emoji:'🛏️', hold:30, level:'beginner',
+   instr:'Lie on one side, bend the top knee and hold the ankle, drawing the heel toward the glute. Keep the hips stacked and pushed slightly forward. Switch sides.'},
+  {id:'quad-couch', name:'Couch Stretch', area:'quads', emoji:'🛋️', hold:40, level:'advanced',
+   instr:'Place the back foot up against a wall or couch with the shin vertical, front foot planted. Sink the hips down and forward for a deep quad and hip-flexor stretch. Switch sides.'},
+
+  // CALVES
+  {id:'calf-wall', name:'Wall Calf Stretch', area:'calves', emoji:'🧱', hold:30, level:'beginner',
+   instr:'Stand facing a wall, hands on it. Step one foot back, keeping the heel down and the leg straight. Lean forward until you feel a stretch in the calf. Switch sides.'},
+  {id:'calf-step', name:'Step Heel Drop', area:'calves', emoji:'🪜', hold:30, level:'intermediate',
+   instr:'Stand on a step with the balls of your feet on the edge. Slowly drop the heels below the step level and hold, feeling the stretch through the calves. Hold a rail for safety.'},
+  {id:'calf-soleus', name:'Bent-Knee Soleus', area:'calves', emoji:'🦿', hold:30, level:'beginner',
+   instr:'In the wall calf position, bend the back knee slightly while keeping the heel down. This targets the deeper soleus muscle lower in the calf. Switch sides.'},
+
+  // WRISTS
+  {id:'wrist-flex', name:'Wrist Flexor Stretch', area:'wrists', emoji:'✋', hold:25, level:'beginner',
+   instr:'Extend one arm forward, palm up. Use the other hand to gently pull the fingers down and back toward you, stretching the underside of the forearm. Switch hands.'},
+  {id:'wrist-ext', name:'Wrist Extensor Stretch', area:'wrists', emoji:'🤚', hold:25, level:'beginner',
+   instr:'Extend one arm forward, palm down. Gently press the back of the hand down and toward you with the other hand to stretch the top of the forearm. Switch hands.'},
+  {id:'wrist-prayer', name:'Prayer Wrist Stretch', area:'wrists', emoji:'🙏', hold:25, level:'beginner',
+   instr:'Press palms together at chest height (prayer position) and slowly lower the hands while keeping palms together until you feel a stretch through the wrists and forearms.'}
+];
+
+const AREAS = ['all','neck','shoulders','chest','back','hips','hamstrings','quads','calves','wrists'];
+const REST_SECONDS = 8;
+const FREE_SAVE_LIMIT = 1;
+
+/* ============ STATE / STORAGE ============ */
+const LS = {
+  get:(k,d)=>{try{const v=localStorage.getItem('stretch_'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},
+  set:(k,v)=>{try{localStorage.setItem('stretch_'+k,JSON.stringify(v));}catch(e){}}
+};
+let routine = LS.get('routine', []);          // array of stretch ids
+let saved = LS.get('saved', []);              // [{name, ids, ts}]
+let completed = LS.get('completed', 0);
+let activeArea = 'all';
+
+/* ============ AUDIO (Web Audio beep) ============ */
+let actx=null;
+function beep(freq=880, dur=0.16, type='sine', vol=0.18){
+  try{
+    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended') actx.resume();
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type=type; o.frequency.value=freq;
+    o.connect(g); g.connect(actx.destination);
+    const t=actx.currentTime;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(vol,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.02);
+  }catch(e){}
+}
+function holdEndChime(){ beep(660,0.14,'sine',0.16); setTimeout(()=>beep(990,0.22,'sine',0.18),130); }
+function tickBeep(){ beep(1200,0.05,'sine',0.08); }
+function vibrate(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+
+/* ============ TOAST ============ */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ============ HELPERS ============ */
+const byId = id => LIBRARY.find(s=>s.id===id);
+const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+function routineSeconds(ids){
+  return ids.reduce((sum,id)=>{const s=byId(id);return s?sum+s.hold:sum;},0);
+}
+function fmtDur(sec){
+  const m=Math.floor(sec/60), s=sec%60;
+  return m>0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+/* ============ RENDER: stats + nav ============ */
+function renderStats(){
+  document.getElementById('statRoutine').textContent = routine.length;
+  document.getElementById('statDone').textContent = completed;
+  document.getElementById('statLib').textContent = LIBRARY.length;
+  const badge=document.getElementById('navBadge');
+  if(routine.length>0){ badge.hidden=false; badge.textContent=routine.length; }
+  else badge.hidden=true;
+}
+
+/* ============ RENDER: chips ============ */
+function renderChips(){
+  const wrap=document.getElementById('chips');
+  wrap.innerHTML='';
+  AREAS.forEach(a=>{
+    const b=document.createElement('button');
+    b.className='chip'+(a===activeArea?' on':'');
+    b.textContent = a==='all'?'All':cap(a);
+    b.onclick=()=>{ activeArea=a; renderChips(); renderList(); };
+    wrap.appendChild(b);
+  });
+}
+
+/* ============ RENDER: stretch list ============ */
+function renderList(){
+  const wrap=document.getElementById('stretchList');
+  wrap.innerHTML='';
+  const items = LIBRARY.filter(s=>activeArea==='all'||s.area===activeArea);
+  items.forEach(s=>{
+    const inRoutine = routine.includes(s.id);
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <div class="emoji">${s.emoji}</div>
+      <div class="body">
+        <div class="name">${s.name}</div>
+        <div class="meta">
+          <span class="pill area">${cap(s.area)}</span>
+          <span class="pill time">${s.hold}s hold</span>
+          <span class="pill ${s.level}">${cap(s.level)}</span>
+        </div>
+        <div class="expand">Tap card for instructions ▾</div>
+        <div class="instr detail-instr">${s.instr}</div>
+      </div>
+      <button class="add-btn ${inRoutine?'added':''}" aria-label="add">${inRoutine?'✓':'+'}</button>`;
+    // toggle detail
+    card.addEventListener('click',()=>card.classList.toggle('open'));
+    // add/remove (stop propagation so it doesn't toggle)
+    const addBtn=card.querySelector('.add-btn');
+    addBtn.addEventListener('click',(e)=>{ e.stopPropagation(); toggleRoutine(s.id); });
+    wrap.appendChild(card);
+  });
+}
+
+function toggleRoutine(id){
+  const i=routine.indexOf(id);
+  if(i>=0){ routine.splice(i,1); toast('Removed from routine'); }
+  else { routine.push(id); toast('Added to routine'); vibrate(8); }
+  LS.set('routine',routine);
+  renderStats(); renderList(); renderRoutine();
+}
+
+/* ============ RENDER: routine view ============ */
+function renderRoutine(){
+  const wrap=document.getElementById('routineList');
+  const actions=document.getElementById('routineActions');
+  const count=document.getElementById('routineCount');
+  wrap.innerHTML='';
+  if(routine.length===0){
+    actions.hidden=true; count.textContent='';
+    wrap.innerHTML=`<div class="empty"><div class="ee">📋</div><p>Your routine is empty.<br>Browse stretches and tap <b>+</b> to add them here.</p></div>`;
+    return;
+  }
+  count.textContent=`· ${fmtDur(routineSeconds(routine)+REST_SECONDS*(routine.length-1))}`;
+  actions.hidden=false;
+  routine.forEach((id,idx)=>{
+    const s=byId(id); if(!s) return;
+    const row=document.createElement('div');
+    row.className='routine-item';
+    row.innerHTML=`
+      <span class="ri-emoji">${s.emoji}</span>
+      <div class="ri-body">
+        <div class="ri-name">${idx+1}. ${s.name}</div>
+        <div class="ri-meta">${cap(s.area)} · ${s.hold}s hold · ${cap(s.level)}</div>
+      </div>
+      <button class="ri-remove" aria-label="remove">✕</button>`;
+    row.querySelector('.ri-remove').onclick=()=>toggleRoutine(id);
+    wrap.appendChild(row);
+  });
+}
+
+/* ============ RENDER: saved view ============ */
+function renderSaved(){
+  const wrap=document.getElementById('savedList');
+  wrap.innerHTML='';
+  if(saved.length===0){
+    wrap.innerHTML=`<div class="empty"><div class="ee">⭐</div><p>No saved routines yet.<br>Build a routine and tap <b>Save Routine</b> to keep it.</p></div>`;
+    return;
+  }
+  saved.forEach((r,idx)=>{
+    const total=fmtDur(routineSeconds(r.ids)+REST_SECONDS*Math.max(0,r.ids.length-1));
+    const card=document.createElement('div');
+    card.className='saved-card';
+    card.innerHTML=`
+      <div class="sc-top">
+        <div>
+          <div class="sc-name">${r.name}</div>
+          <div class="sc-meta">${r.ids.length} stretches · ${total}</div>
+        </div>
+        <span style="font-size:22px">⭐</span>
+      </div>
+      <div class="sc-actions">
+        <button class="btn ghost sm" data-act="load">📋 Load</button>
+        <button class="btn sm" data-act="run">▶ Run</button>
+        <button class="btn ghost sm" data-act="del" style="flex:0 0 auto;width:46px">🗑</button>
+      </div>`;
+    card.querySelector('[data-act="load"]').onclick=()=>{ routine=[...r.ids]; LS.set('routine',routine); renderStats(); renderList(); renderRoutine(); switchView('routine'); toast('Routine loaded'); };
+    card.querySelector('[data-act="run"]').onclick=()=>startRunner([...r.ids]);
+    card.querySelector('[data-act="del"]').onclick=()=>{ if(confirm(`Delete "${r.name}"?`)){ saved.splice(idx,1); LS.set('saved',saved); renderSaved(); toast('Deleted'); } };
+    wrap.appendChild(card);
+  });
+}
+
+/* ============ ACTIONS: save / clear ============ */
+document.getElementById('saveBtn').onclick=()=>{
+  if(routine.length===0){ toast('Add some stretches first'); return; }
+  if(saved.length>=FREE_SAVE_LIMIT){
+    toast(`Free plan: ${FREE_SAVE_LIMIT} saved routine. Lifetime $2.99 unlocks unlimited.`);
+    // Soft limit only — do NOT hard block; allow overwrite of the existing one.
+    if(!confirm(`Free plan keeps ${FREE_SAVE_LIMIT} saved routine.\n\nReplace your existing saved routine? (Lifetime $2.99 unlocks unlimited.)`)) return;
+    saved = saved.slice(0, FREE_SAVE_LIMIT-1);
+  }
+  const name=(prompt('Name this routine:', 'My Routine '+(saved.length+1))||'').trim();
+  if(!name) return;
+  saved.push({name, ids:[...routine], ts:Date.now()});
+  LS.set('saved',saved);
+  renderSaved();
+  toast('Routine saved ⭐');
+  vibrate(12);
+};
+document.getElementById('clearBtn').onclick=()=>{
+  if(routine.length===0) return;
+  if(confirm('Clear all stretches from your routine?')){ routine=[]; LS.set('routine',routine); renderStats(); renderList(); renderRoutine(); toast('Routine cleared'); }
+};
+document.getElementById('runBtn').onclick=()=>{ if(routine.length) startRunner([...routine]); };
+
+/* ============ VIEW SWITCH ============ */
+function switchView(name){
+  ['browse','routine','saved'].forEach(v=>{
+    document.getElementById('view-'+v).hidden = (v!==name);
+  });
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.view===name));
+  if(name==='routine') renderRoutine();
+  if(name==='saved') renderSaved();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick=()=>switchView(b.dataset.view);
+});
+
+/* ============ ROUTINE RUNNER ============ */
+const RING_LEN = 2*Math.PI*100; // r=100
+let run = null; // {ids, idx, phase:'hold'|'rest', remaining, total, paused, timer}
+
+function startRunner(ids){
+  if(!ids.length) return;
+  // unlock audio on user gesture
+  beep(1,0.01,'sine',0.001);
+  run = { ids, idx:0, phase:'hold', paused:false, timer:null };
+  document.getElementById('runner').classList.add('show');
+  document.getElementById('rStage').style.display='flex';
+  document.getElementById('doneStage').style.display='none';
+  loadStep();
+  tick(); // immediate paint
+  run.timer = setInterval(stepTick, 1000);
+}
+
+function loadStep(){
+  const s = byId(run.ids[run.idx]);
+  if(run.phase==='hold'){
+    run.total = s.hold; run.remaining = s.hold;
+    document.getElementById('rPhase').textContent='Hold';
+    document.getElementById('rPhase').classList.remove('rest');
+    document.getElementById('ring').classList.remove('rest');
+    document.getElementById('rEmoji').textContent=s.emoji;
+    document.getElementById('rName').textContent=s.name;
+    document.getElementById('rArea').textContent=cap(s.area)+' · '+cap(s.level);
+    document.getElementById('rInstr').textContent=s.instr;
+  } else {
+    run.total = REST_SECONDS; run.remaining = REST_SECONDS;
+    const next = byId(run.ids[run.idx+1]);
+    document.getElementById('rPhase').textContent='Rest';
+    document.getElementById('rPhase').classList.add('rest');
+    document.getElementById('ring').classList.add('rest');
+    document.getElementById('rEmoji').textContent='💧';
+    document.getElementById('rName').textContent='Rest & breathe';
+    document.getElementById('rArea').textContent='Get ready';
+    document.getElementById('rInstr').textContent = next ? 'Next up: '+next.name : '';
+  }
+  updateProgress();
+  paintRing();
+  paintUpNext();
+}
+
+function paintRing(){
+  const frac = run.total>0 ? run.remaining/run.total : 0;
+  const ring=document.getElementById('ring');
+  ring.style.strokeDasharray = RING_LEN;
+  ring.style.strokeDashoffset = RING_LEN*(1-frac);
+  document.getElementById('rNum').textContent = run.remaining;
+}
+function updateProgress(){
+  document.getElementById('rProgress').textContent = `${run.idx+1} / ${run.ids.length}`;
+  const pct = ((run.idx + (run.phase==='rest'?0.5:0)) / run.ids.length)*100;
+  document.getElementById('rBar').style.width = pct+'%';
+}
+function paintUpNext(){
+  const next = byId(run.ids[run.idx+1]);
+  document.getElementById('rNext').textContent = next ? `Up next: ${next.emoji} ${next.name}` : 'Last one — finish strong!';
+}
+function tick(){ paintRing(); }
+
+function stepTick(){
+  if(run.paused) return;
+  run.remaining--;
+  if(run.remaining<=3 && run.remaining>0){ tickBeep(); }
+  paintRing();
+  if(run.remaining<=0){
+    advance();
+  }
+}
+
+function advance(){
+  holdEndChime();
+  vibrate([0,40,60,40]);
+  if(run.phase==='hold'){
+    if(run.idx < run.ids.length-1){
+      run.phase='rest';
+      loadStep();
+    } else {
+      finishRoutine();
+    }
+  } else { // rest done -> next hold
+    run.idx++;
+    run.phase='hold';
+    loadStep();
+  }
+}
+
+function finishRoutine(){
+  clearInterval(run.timer);
+  completed++;
+  LS.set('completed',completed);
+  renderStats();
+  vibrate([0,80,80,80,80,150]);
+  document.getElementById('rStage').style.display='none';
+  document.getElementById('doneStage').style.display='flex';
+  document.getElementById('doneSub').textContent = `${run.ids.length} stretches · ${completed} routine${completed===1?'':'s'} completed all-time.`;
+  beep(523,0.18); setTimeout(()=>beep(659,0.18),160); setTimeout(()=>beep(784,0.3),320);
+}
+
+document.getElementById('rPause').onclick=function(){
+  run.paused=!run.paused;
+  this.textContent = run.paused ? '▶ Resume' : '⏸ Pause';
+};
+document.getElementById('rSkip').onclick=()=>{ if(run){ run.remaining=0; document.getElementById('rPause').textContent='⏸ Pause'; run.paused=false; advance(); } };
+document.getElementById('rClose').onclick=closeRunner;
+document.getElementById('doneBtn').onclick=()=>{ closeRunner(); switchView('browse'); };
+function closeRunner(){
+  if(run&&run.timer) clearInterval(run.timer);
+  run=null;
+  document.getElementById('runner').classList.remove('show');
+  document.getElementById('rPause').textContent='⏸ Pause';
+}
+
+/* ============ INIT ============ */
+renderChips();
+renderList();
+renderStats();
+</script>
+</body>
+</html>
