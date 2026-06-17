@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TABPLAYER — ASCII Guitar Tab Player</title>
+<meta name="description" content="Paste a standard ASCII guitar tab and play it back as synthesized plucked-string notes. Adjustable tempo, slow-down, A/B loop, and a moving playhead. A free offline practice tool.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A0F1F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TABPLAYER">
+<style>
+:root{
+  --bg:#0A0F1F; --bg-2:#101830; --bg-3:#19224a;
+  --ink:#EDEFF7; --soft:#b9c0d6; --muted:#7e88a8;
+  --accent:#7C5CFF; --accent-2:#27E0C0; --warn:#FF7A59;
+  --line:rgba(255,255,255,0.09);
+  --card:rgba(255,255,255,0.035);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;min-height:100%}
+body{padding:0 0 40px;line-height:1.5}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+::selection{background:var(--accent);color:#fff}
+
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+
+/* Header */
+header{
+  background:linear-gradient(135deg,#7C5CFF 0%,#27E0C0 120%);
+  padding:30px 16px 26px;margin-bottom:18px;
+  border-bottom-left-radius:26px;border-bottom-right-radius:26px;
+}
+header .wrap{padding:0 4px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .mark{
+  width:38px;height:38px;border-radius:11px;background:rgba(10,15,31,0.32);
+  display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(4px)
+}
+.logo h1{font-size:21px;font-weight:800;letter-spacing:0.04em;color:#fff}
+header p{margin-top:10px;font-size:13.5px;color:rgba(255,255,255,0.92);max-width:420px}
+
+/* Cards */
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:14px
+}
+.card h2{font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:700}
+
+textarea{
+  width:100%;min-height:130px;resize:vertical;background:var(--bg-2);border:1px solid var(--line);
+  border-radius:12px;padding:12px;font-family:var(--mono);font-size:13px;line-height:1.55;color:var(--ink);
+  white-space:pre;overflow:auto
+}
+textarea:focus{outline:none;border-color:var(--accent)}
+
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{
+  flex:1;min-width:88px;padding:13px 14px;border-radius:12px;font-weight:700;font-size:14px;
+  background:var(--bg-3);color:var(--ink);border:1px solid var(--line);transition:transform .08s,background .15s;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;text-align:center
+}
+.btn:active{transform:scale(0.97)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),#9b80ff);border-color:transparent;color:#fff}
+.btn.accent{background:linear-gradient(135deg,var(--accent-2),#3affd9);border-color:transparent;color:#03261f}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:0.4;pointer-events:none}
+.btn.small{flex:0 0 auto;min-width:0;padding:9px 13px;font-size:12.5px;font-weight:600}
+
+/* Tab display */
+.tabview-shell{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tabview{overflow-x:auto;overflow-y:hidden;padding:12px 6px;-webkit-overflow-scrolling:touch}
+.tabgrid{display:inline-block;font-family:var(--mono);font-size:14px;line-height:1.9;white-space:nowrap}
+.tabgrid .strow{display:flex}
+.tabgrid .lbl{position:sticky;left:0;background:var(--bg-2);padding-right:6px;color:var(--accent-2);font-weight:700;z-index:2}
+.cell{display:inline-block;width:1.05ch;text-align:center;color:var(--soft);border-radius:3px;transition:background .04s,color .04s}
+.cell.fret{color:var(--ink);font-weight:600}
+.col-active .cell{background:rgba(124,92,255,0.34);color:#fff}
+.col-active .cell.fret{background:var(--accent);color:#fff}
+.col-loopA{box-shadow:inset 2px 0 0 var(--accent-2)}
+.col-loopB{box-shadow:inset -2px 0 0 var(--warn)}
+.empty-tab{color:var(--muted);font-family:var(--mono);font-size:13px;padding:14px}
+
+/* Controls */
+.ctrl{margin-bottom:14px}
+.ctrl:last-child{margin-bottom:0}
+.ctrl label{display:flex;justify-content:space-between;font-size:13px;color:var(--soft);margin-bottom:7px}
+.ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:6px;background:var(--bg-3);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);box-shadow:0 1px 6px rgba(0,0,0,0.5);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-radius:50%;background:var(--accent);cursor:pointer}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.switch{position:relative;width:48px;height:28px;flex:0 0 auto}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--bg-3);border-radius:28px;transition:.2s}
+.slider:before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked + .slider{background:var(--accent)}
+.switch input:checked + .slider:before{transform:translateX(20px)}
+
+.loop-fields{display:flex;gap:10px;margin-top:10px}
+.loop-fields .lf{flex:1}
+.loop-fields label{font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.08em}
+.loop-fields input[type=number]{width:100%;background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-family:var(--mono);font-size:14px}
+.loop-fields input:focus{outline:none;border-color:var(--accent)}
+.hint{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+/* Footer */
+.foot{margin-top:6px;text-align:center;font-size:12px;color:var(--muted);line-height:1.7}
+.foot .pro{display:inline-block;margin-top:8px;padding:10px 14px;border:1px dashed var(--line);border-radius:12px;font-size:12px;color:var(--soft)}
+.foot .pro b{color:var(--accent-2)}
+
+/* Toast */
+#toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+  background:#1c2444;border:1px solid var(--line);color:var(--ink);padding:12px 18px;border-radius:12px;
+  font-size:13.5px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;z-index:200;max-width:90vw;text-align:center
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="logo">
+      <div class="mark">🎸</div>
+      <h1>TABPLAYER</h1>
+    </div>
+    <p>Paste an ASCII guitar tab and hear it play, with a moving playhead. Slow it down, loop a section, and learn it by ear.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="card">
+    <h2>Your tab</h2>
+    <textarea id="tabInput" spellcheck="false" placeholder="Paste a 6-line ASCII tab here…"></textarea>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="parseBtn">Parse</button>
+      <button class="btn small ghost" id="exampleBtn">Example</button>
+      <button class="btn small ghost" id="clearBtn">Clear</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Tab view</h2>
+    <div class="tabview-shell">
+      <div class="tabview" id="tabView">
+        <div class="empty-tab">Parse a tab to see it here.</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn accent" id="playBtn">▶ Play</button>
+      <button class="btn" id="stopBtn" disabled>■ Stop</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Controls</h2>
+
+    <div class="ctrl">
+      <label>Tempo <b><span id="tempoVal">120</span> notes/min</b></label>
+      <input type="range" id="tempo" min="40" max="240" step="2" value="120">
+    </div>
+
+    <div class="ctrl">
+      <label>Slow-down <b><span id="slowVal">100</span>%</b></label>
+      <input type="range" id="slow" min="25" max="100" step="5" value="100">
+    </div>
+
+    <div class="ctrl">
+      <div class="toggle-row">
+        <span style="font-size:13px;color:var(--soft)">A/B loop</span>
+        <label class="switch"><input type="checkbox" id="loopOn"><span class="slider"></span></label>
+      </div>
+      <div class="loop-fields">
+        <div class="lf"><label>From col (A)</label><input type="number" id="loopA" min="1" value="1"></div>
+        <div class="lf"><label>To col (B)</label><input type="number" id="loopB" min="1" value="8"></div>
+      </div>
+      <div class="hint">Loop repeats columns A→B until you press Stop. Columns are 1-indexed (the playhead position).</div>
+    </div>
+  </section>
+
+  <div class="foot">
+    Free &amp; fully offline. Nothing leaves your device.
+    <div class="pro"><b>Lifetime $3.99</b> unlocks bass / ukulele / piano voices + tab file import</div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- storage ---------- */
+var LS = "tabplayer_";
+function save(k,v){ try{ localStorage.setItem(LS+k, v); }catch(e){} }
+function load(k){ try{ return localStorage.getItem(LS+k); }catch(e){ return null; } }
+
+/* ---------- toast ---------- */
+var toastEl = document.getElementById("toast"), toastT;
+function toast(msg){
+  toastEl.textContent = msg; toastEl.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(function(){ toastEl.classList.remove("show"); }, 2200);
+}
+
+/* ---------- example ---------- */
+var EXAMPLE =
+"e|---------------------------------|\n"+
+"B|---------------------------------|\n"+
+"G|-------------0----0--------------|\n"+
+"D|----0--2--2-----2----2--0--------|\n"+
+"A|-3--------------------------3----|\n"+
+"E|---------------------------------|\n";
+
+/* Standard tuning open-string MIDI notes, top string (e) first -> low (E) last */
+var OPEN_MIDI = { e:64, B:59, G:55, D:50, A:45, E:40 };
+var STRING_ORDER = ["e","B","G","D","A","E"]; // display order top->bottom
+
+/* ---------- parser ----------
+   Tolerant: scans all lines, picks the 6 that look like tab lines
+   (start with a string label optionally + a bar), strips label, aligns by char column.
+   Returns { cols: [ [ {string, fret} ... ], ... ], lines: [ {label, chars[]} x6 ] }
+*/
+function parseTab(text){
+  var raw = text.replace(/\r/g,"").split("\n");
+  // Find candidate tab lines: contain dashes and digits-ish, possibly a label like "e|" or "E |"
+  var candidates = [];
+  for(var i=0;i<raw.length;i++){
+    var ln = raw[i];
+    if(!ln) continue;
+    var m = ln.match(/^\s*([eEbBgGdDaA])\s*\|?(.*)$/);
+    var body, label;
+    if(m && /[-\d]/.test(m[2])){
+      label = m[1]; body = m[2];
+    } else if(/^[\s\-\d|hpbr\/\\~x()*.<>=^]+$/.test(ln) && /-/.test(ln) && ln.replace(/[^-]/g,"").length>=3){
+      label = null; body = ln.replace(/^\s*\|/,"");
+    } else {
+      continue;
+    }
+    candidates.push({ label:label, body:body });
+  }
+  if(candidates.length < 6) return null;
+
+  // Take blocks of 6. If more than 6, use the first 6 (single block) — most pasted tabs are one block.
+  // Support multi-block: group consecutive runs into blocks of 6 and concatenate columns.
+  var blocks = [];
+  for(var b=0; b+6<=candidates.length; b+=6){
+    blocks.push(candidates.slice(b,b+6));
+  }
+  if(blocks.length===0) return null;
+
+  // Normalize labels per block to STRING_ORDER. If labels missing, assume order as-is.
+  var allCols = [];        // each col = array of {stringIndex, fret}
+  var displayLines = [];   // 6 lines of chars for rendering (concatenated across blocks)
+  for(var s=0;s<6;s++) displayLines.push({ label: STRING_ORDER[s], chars: [] });
+
+  blocks.forEach(function(block){
+    // Map block rows to canonical string slots
+    var rows = new Array(6);
+    var labelled = block.every(function(r){ return r.label; });
+    if(labelled){
+      block.forEach(function(r){
+        var key = canonLabel(r.label);
+        var idx = STRING_ORDER.indexOf(key);
+        if(idx<0) idx = block.indexOf(r);
+        rows[idx] = r.body;
+      });
+      for(var k=0;k<6;k++){ if(rows[k]==null) rows[k] = block[k].body; }
+    } else {
+      for(var k2=0;k2<6;k2++) rows[k2] = block[k2].body;
+    }
+
+    var maxLen = 0;
+    rows.forEach(function(r){ if(r.length>maxLen) maxLen=r.length; });
+
+    // Walk columns; combine multi-digit frets.
+    var col = 0;
+    while(col < maxLen){
+      var colEvents = [];
+      var consumed = 1;
+      for(var sIdx=0;sIdx<6;sIdx++){
+        var line = rows[sIdx] || "";
+        var ch = line[col] || "-";
+        if(/\d/.test(ch)){
+          // read full number starting here
+          var num = ch, j = col+1;
+          while(j<line.length && /\d/.test(line[j])){ num += line[j]; j++; }
+          if(j-col > consumed) consumed = j-col;
+          colEvents.push({ stringIndex:sIdx, fret: parseInt(num,10) });
+        }
+      }
+      // push display chars for this position (one display column per source column)
+      for(var d=0; d<consumed; d++){
+        for(var sd=0; sd<6; sd++){
+          var L = rows[sd] || "";
+          displayLines[sd].chars.push(L[col+d] || "-");
+        }
+      }
+      // record a playable column only at the start position; map it to current display index
+      allCols.push({
+        events: colEvents,
+        displayIndex: displayLines[0].chars.length - consumed
+      });
+      col += consumed;
+    }
+  });
+
+  return { cols: allCols, lines: displayLines };
+}
+
+function canonLabel(l){
+  // tab convention: lowercase 'e' = high E (MIDI 64), uppercase 'E' = low E (40), 'b'=B etc.
+  if(l==='e') return 'e';
+  if(l==='E') return 'E';
+  if(l==='B'||l==='b') return 'B';
+  if(l==='G'||l==='g') return 'G';
+  if(l==='D'||l==='d') return 'D';
+  if(l==='A'||l==='a') return 'A';
+  return l;
+}
+
+function midiFor(stringIndex, fret){
+  var key = STRING_ORDER[stringIndex];
+  var open = OPEN_MIDI[key];
+  if(open==null) return null;
+  return open + fret;
+}
+function midiToFreq(m){ return 440 * Math.pow(2, (m-69)/12); }
+
+/* ---------- audio (plucked string via Karplus-Strong) ---------- */
+var ac = null;
+function ensureAudio(){
+  if(!ac){
+    var AC = window.AudioContext || window.webkitAudioContext;
+    ac = new AC();
+  }
+  if(ac.state==="suspended") ac.resume();
+  return ac;
+}
+
+function pluck(freq, when, gain){
+  var ctx = ac;
+  var sr = ctx.sampleRate;
+  var dur = 1.4;
+  // Karplus-Strong: noise burst through a tuned delay line with lowpass feedback.
+  var N = Math.max(2, Math.round(sr / freq));
+  var total = Math.floor(sr * dur);
+  var buf = ctx.createBuffer(1, total, sr);
+  var data = buf.getChannelData(0);
+  var ring = new Float32Array(N);
+  for(var i=0;i<N;i++) ring[i] = Math.random()*2-1;
+  var idx = 0, prev = 0;
+  var decay = 0.996;
+  for(var n=0;n<total;n++){
+    var cur = ring[idx];
+    var out = 0.5*(cur + prev) * decay; // lowpass averaging
+    prev = cur;
+    ring[idx] = out;
+    data[n] = out;
+    idx = (idx+1) % N;
+  }
+  var src = ctx.createBufferSource();
+  src.buffer = buf;
+  var g = ctx.createGain();
+  g.gain.setValueAtTime(gain || 0.9, when);
+  // gentle body filter
+  var f = ctx.createBiquadFilter();
+  f.type = "lowpass"; f.frequency.value = 4500;
+  src.connect(f); f.connect(g); g.connect(ctx.destination);
+  src.start(when);
+  src.stop(when + dur);
+}
+
+/* ---------- state ---------- */
+var parsed = null;
+var playing = false;
+var schedTimer = null;
+var curCol = 0;
+var els = {
+  input: document.getElementById("tabInput"),
+  view: document.getElementById("tabView"),
+  tempo: document.getElementById("tempo"),
+  tempoVal: document.getElementById("tempoVal"),
+  slow: document.getElementById("slow"),
+  slowVal: document.getElementById("slowVal"),
+  loopOn: document.getElementById("loopOn"),
+  loopA: document.getElementById("loopA"),
+  loopB: document.getElementById("loopB"),
+  play: document.getElementById("playBtn"),
+  stop: document.getElementById("stopBtn")
+};
+
+/* ---------- render ---------- */
+function renderTab(){
+  if(!parsed){ els.view.innerHTML = '<div class="empty-tab">Parse a tab to see it here.</div>'; return; }
+  var grid = document.createElement("div");
+  grid.className = "tabgrid";
+  parsed.lines.forEach(function(line){
+    var row = document.createElement("div");
+    row.className = "strow";
+    var lbl = document.createElement("span");
+    lbl.className = "lbl";
+    lbl.textContent = line.label + "|";
+    row.appendChild(lbl);
+    line.chars.forEach(function(ch){
+      var c = document.createElement("span");
+      c.className = "cell" + (/\d/.test(ch) ? " fret" : "");
+      c.textContent = ch;
+      row.appendChild(c);
+    });
+    grid.appendChild(row);
+  });
+  els.view.innerHTML = "";
+  els.view.appendChild(grid);
+  cellRows = Array.prototype.map.call(grid.querySelectorAll(".strow"), function(r){
+    return Array.prototype.slice.call(r.querySelectorAll(".cell"));
+  });
+  markLoopBounds();
+}
+var cellRows = [];
+
+function clearHighlight(){
+  var grid = els.view.querySelector(".tabgrid");
+  if(!grid) return;
+  Array.prototype.forEach.call(grid.querySelectorAll(".col-active"), function(c){ c.classList.remove("col-active"); });
+}
+function highlightCol(playIndex){
+  var grid = els.view.querySelector(".tabgrid");
+  if(!grid || !parsed) return;
+  Array.prototype.forEach.call(grid.querySelectorAll(".col-active"), function(c){ c.classList.remove("col-active"); });
+  var di = parsed.cols[playIndex] ? parsed.cols[playIndex].displayIndex : -1;
+  if(di<0) return;
+  cellRows.forEach(function(row){
+    var cell = row[di];
+    if(cell){
+      cell.classList.add("col-active");
+      // scroll into view horizontally
+    }
+  });
+  // auto-scroll
+  var anyCell = cellRows[0] && cellRows[0][di];
+  if(anyCell){ ensureVisible(anyCell); }
+}
+function ensureVisible(cell){
+  var view = els.view;
+  var cl = cell.offsetLeft, cw = cell.offsetWidth;
+  if(cl < view.scrollLeft + 30) view.scrollLeft = cl - 60;
+  else if(cl + cw > view.scrollLeft + view.clientWidth - 30) view.scrollLeft = cl - view.clientWidth + 90;
+}
+function markLoopBounds(){
+  // visual hint only handled via active class; kept minimal
+}
+
+/* ---------- playback ---------- */
+function colDuration(){
+  var npm = parseInt(els.tempo.value,10);          // notes per minute
+  var slow = parseInt(els.slow.value,10)/100;
+  var perNote = 60 / npm;                           // seconds per column
+  return perNote / slow;                            // slow<1 => longer
+}
+
+function startPlay(){
+  if(!parsed || parsed.cols.length===0){ toast("Parse a tab first"); return; }
+  ensureAudio();
+  playing = true;
+  els.play.disabled = true; els.stop.disabled = false;
+  var loop = els.loopOn.checked;
+  var a = clamp(parseInt(els.loopA.value,10)-1, 0, parsed.cols.length-1);
+  var b = clamp(parseInt(els.loopB.value,10)-1, 0, parsed.cols.length-1);
+  if(b<a){ var t=a; a=b; b=t; }
+  var startIdx = loop ? a : 0;
+  var endIdx = loop ? b : parsed.cols.length-1;
+  curCol = startIdx;
+  step(startIdx, endIdx, loop, a);
+}
+
+function step(idx, endIdx, loop, loopStart){
+  if(!playing) return;
+  var col = parsed.cols[idx];
+  highlightCol(idx);
+  if(col && col.events.length){
+    var now = ac.currentTime + 0.02;
+    col.events.forEach(function(ev){
+      var m = midiFor(ev.stringIndex, ev.fret);
+      if(m!=null) pluck(midiToFreq(m), now, 0.9);
+    });
+  }
+  var dur = colDuration();
+  schedTimer = setTimeout(function(){
+    if(!playing) return;
+    if(idx >= endIdx){
+      if(loop){ step(loopStart, endIdx, loop, loopStart); }
+      else { stopPlay(true); }
+      return;
+    }
+    step(idx+1, endIdx, loop, loopStart);
+  }, dur*1000);
+}
+
+function stopPlay(natural){
+  playing = false;
+  clearTimeout(schedTimer);
+  els.play.disabled = false; els.stop.disabled = true;
+  clearHighlight();
+  if(natural) { /* finished */ }
+}
+
+function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, isNaN(v)?lo:v)); }
+
+/* ---------- wiring ---------- */
+function doParse(){
+  var txt = els.input.value;
+  var p = parseTab(txt);
+  if(!p){ toast("Couldn't find 6 tab lines"); return; }
+  parsed = p;
+  renderTab();
+  // default loop B to last column if still at initial
+  els.loopB.max = parsed.cols.length;
+  els.loopA.max = parsed.cols.length;
+  if(parseInt(els.loopB.value,10) > parsed.cols.length || parseInt(els.loopB.value,10)===8){
+    els.loopB.value = Math.min(parsed.cols.length, parsed.cols.length);
+  }
+  save("tab", txt);
+  toast(parsed.cols.length + " columns parsed");
+}
+
+els.input.addEventListener("input", function(){ save("tab", els.input.value); });
+document.getElementById("parseBtn").addEventListener("click", doParse);
+document.getElementById("exampleBtn").addEventListener("click", function(){
+  els.input.value = EXAMPLE; save("tab", EXAMPLE); doParse();
+});
+document.getElementById("clearBtn").addEventListener("click", function(){
+  stopPlay(); els.input.value=""; parsed=null; renderTab(); save("tab","");
+  toast("Cleared");
+});
+els.play.addEventListener("click", startPlay);
+els.stop.addEventListener("click", function(){ stopPlay(); });
+
+els.tempo.addEventListener("input", function(){ els.tempoVal.textContent = els.tempo.value; save("tempo", els.tempo.value); });
+els.slow.addEventListener("input", function(){ els.slowVal.textContent = els.slow.value; save("slow", els.slow.value); });
+els.loopOn.addEventListener("change", function(){ save("loopOn", els.loopOn.checked?"1":"0"); });
+els.loopA.addEventListener("change", function(){ save("loopA", els.loopA.value); });
+els.loopB.addEventListener("change", function(){ save("loopB", els.loopB.value); });
+
+/* ---------- restore ---------- */
+(function init(){
+  var savedTab = load("tab");
+  els.input.value = (savedTab!=null && savedTab!=="") ? savedTab : EXAMPLE;
+  var t = load("tempo"); if(t){ els.tempo.value=t; els.tempoVal.textContent=t; }
+  var s = load("slow"); if(s){ els.slow.value=s; els.slowVal.textContent=s; }
+  var lo = load("loopOn"); if(lo==="1") els.loopOn.checked=true;
+  var la = load("loopA"); if(la) els.loopA.value=la;
+  var lb = load("loopB"); if(lb) els.loopB.value=lb;
+  doParse();
+})();
+
+})();
+</script>
+</body>
+</html>

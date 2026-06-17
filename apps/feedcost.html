@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2F6B3C">
+  <meta name="description" content="FEEDCOST — a free offline livestock feed cost calculator for smallholder farmers. Track feed types and animal groups, see daily/weekly/monthly cost per animal, and spot your most expensive group.">
+  <title>FEEDCOST — Livestock Feed Cost Calculator</title>
+  <style>
+    :root {
+      --green-900: #1B3A22;
+      --green-700: #2F6B3C;
+      --green-600: #3B8049;
+      --green-500: #4CA45D;
+      --green-100: #E5F2E8;
+      --earth: #8B6B43;
+      --amber: #E0A93B;
+      --danger: #C2553B;
+      --bg: #F4F1EA;
+      --card: #FFFFFF;
+      --line: #E3DDD0;
+      --ink: #232019;
+      --ink-soft: #6B6457;
+      --radius: 16px;
+      --shadow: 0 2px 10px rgba(27, 58, 34, 0.08);
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { font-family: var(--font); background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+    body { padding-bottom: env(safe-area-inset-bottom); }
+    .container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
+
+    /* Header */
+    .header {
+      background: linear-gradient(140deg, var(--green-700) 0%, var(--green-900) 100%);
+      color: #fff; padding: 22px 20px calc(22px + env(safe-area-inset-top));
+      padding-top: calc(22px + env(safe-area-inset-top));
+      border-bottom-left-radius: 22px; border-bottom-right-radius: 22px;
+    }
+    .header .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .header h1 { font-size: 24px; letter-spacing: 1px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .header p { font-size: 12.5px; opacity: .85; margin-top: 4px; }
+    .cur-select {
+      background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600; font-family: var(--font);
+    }
+    .cur-select option { color: #232019; }
+
+    .content { flex: 1; padding: 18px 16px 28px; }
+
+    /* Dashboard */
+    .dash { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .stat {
+      background: var(--card); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+    }
+    .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-soft); font-weight: 700; }
+    .stat .v { font-size: 22px; font-weight: 800; margin-top: 6px; color: var(--green-700); line-height: 1.1; }
+    .stat .sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+
+    .expensive {
+      grid-column: 1 / -1; background: linear-gradient(135deg, #FBEEDC, #F6E0C3);
+      border: 1px solid #E9CFA3; border-left: 5px solid var(--amber);
+    }
+    .expensive .k { color: #8a6420; }
+    .expensive .v { color: #9a5a1c; font-size: 18px; }
+    .expensive.none { background: var(--green-100); border-color: #cfe6d3; border-left-color: var(--green-500); }
+    .expensive.none .k, .expensive.none .v { color: var(--green-700); }
+
+    /* Sections */
+    .section { margin-bottom: 18px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; }
+    .section-head h2 { font-size: 15px; font-weight: 800; letter-spacing: .3px; }
+    .btn-add {
+      background: var(--green-600); color: #fff; border: none; border-radius: 10px;
+      padding: 8px 12px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font);
+    }
+    .btn-add:active { transform: scale(.97); }
+
+    .card {
+      background: var(--card); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
+      border: 1px solid var(--line); margin-bottom: 10px;
+    }
+    .item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .item-name { font-size: 15px; font-weight: 700; }
+    .item-meta { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+    .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .icon-btn {
+      background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px;
+      font-size: 13px; cursor: pointer; color: var(--ink-soft); font-family: var(--font);
+    }
+    .icon-btn.del { color: var(--danger); }
+    .icon-btn:active { transform: scale(.95); }
+
+    .cost-row { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+    .cost-cell { text-align: center; flex: 1; }
+    .cost-cell .cl { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: var(--ink-soft); font-weight: 700; }
+    .cost-cell .cv { font-size: 14px; font-weight: 800; color: var(--green-700); margin-top: 3px; }
+    .tag-flag {
+      display: inline-block; background: var(--amber); color: #3a2a08; font-size: 10px; font-weight: 800;
+      padding: 2px 7px; border-radius: 20px; margin-left: 6px; vertical-align: middle; letter-spacing: .3px;
+    }
+
+    .empty { text-align: center; padding: 22px 14px; color: var(--ink-soft); font-size: 13px; background: var(--card);
+      border: 1px dashed var(--line); border-radius: var(--radius); }
+
+    .toolbar { display: flex; gap: 8px; margin-bottom: 14px; }
+    .btn-ghost {
+      flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+      padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--green-700); font-family: var(--font);
+    }
+    .btn-ghost:active { transform: scale(.98); }
+
+    /* Footer freemium */
+    .freemium {
+      margin-top: 6px; background: var(--green-900); color: #E5F2E8; border-radius: var(--radius);
+      padding: 14px 16px; text-align: center; font-size: 12.5px; line-height: 1.5;
+    }
+    .freemium strong { color: var(--amber); }
+    .freemium .price { display: inline-block; margin-top: 6px; font-weight: 800; color: #fff; }
+
+    /* Modal */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(20, 30, 22, 0.55); display: none;
+      align-items: flex-end; justify-content: center; z-index: 50; padding: 0;
+    }
+    .overlay.show { display: flex; }
+    .sheet {
+      background: var(--bg); width: 100%; max-width: 480px; border-top-left-radius: 22px;
+      border-top-right-radius: 22px; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+      max-height: 90vh; overflow-y: auto;
+    }
+    .sheet h3 { font-size: 18px; font-weight: 800; margin-bottom: 14px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-bottom: 5px; }
+    .field input, .field select {
+      width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 15px;
+      background: #fff; color: var(--ink); font-family: var(--font);
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--green-500); }
+    .field .hint { font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+    .sheet-actions { display: flex; gap: 10px; margin-top: 8px; }
+    .btn-primary {
+      flex: 2; background: var(--green-600); color: #fff; border: none; border-radius: 12px;
+      padding: 14px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: var(--font);
+    }
+    .btn-cancel {
+      flex: 1; background: var(--card); color: var(--ink-soft); border: 1px solid var(--line);
+      border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+      background: var(--green-900); color: #fff; padding: 12px 18px; border-radius: 12px;
+      font-size: 13.5px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,.25); opacity: 0;
+      pointer-events: none; transition: opacity .25s, transform .25s; z-index: 100; max-width: 88%; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="row">
+        <div>
+          <h1>🌾 FEEDCOST</h1>
+          <p>Livestock feed cost calculator</p>
+        </div>
+        <select class="cur-select" id="currency" aria-label="Currency"></select>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Dashboard -->
+      <div class="dash" id="dashboard"></div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="btn-ghost" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="btn-ghost" onclick="loadSample()">✨ Load Sample</button>
+      </div>
+
+      <!-- Feeds -->
+      <div class="section">
+        <div class="section-head">
+          <h2>🧺 Feed Types</h2>
+          <button class="btn-add" onclick="openFeed()">+ Add Feed</button>
+        </div>
+        <div id="feedList"></div>
+      </div>
+
+      <!-- Groups -->
+      <div class="section">
+        <div class="section-head">
+          <h2>🐄 Animal Groups</h2>
+          <button class="btn-add" onclick="openGroup()">+ Add Group</button>
+        </div>
+        <div id="groupList"></div>
+      </div>
+
+      <!-- Freemium -->
+      <div class="freemium">
+        FEEDCOST is <strong>free</strong> and works fully offline.<br>
+        <span class="price">Lifetime $3.99</span> unlocks multi-farm &amp; cost forecasting.
+      </div>
+    </div>
+  </div>
+
+  <!-- Feed modal -->
+  <div class="overlay" id="feedOverlay">
+    <div class="sheet">
+      <h3 id="feedTitle">Add Feed</h3>
+      <div class="field">
+        <label>Feed name</label>
+        <input type="text" id="f_name" placeholder="e.g. Dairy Meal" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Cost per bag / unit</label>
+        <input type="number" id="f_cost" placeholder="0.00" min="0" step="any" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Kg per bag / unit</label>
+        <input type="number" id="f_kg" placeholder="50" min="0" step="any" inputmode="decimal">
+        <div class="hint">Used to compute cost per kg.</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn-cancel" onclick="closeFeed()">Cancel</button>
+        <button class="btn-primary" onclick="saveFeed()">Save Feed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group modal -->
+  <div class="overlay" id="groupOverlay">
+    <div class="sheet">
+      <h3 id="groupTitle">Add Group</h3>
+      <div class="field">
+        <label>Group name</label>
+        <input type="text" id="g_name" placeholder="e.g. Milking Cows" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Number of animals</label>
+        <input type="number" id="g_count" placeholder="10" min="0" step="1" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Feed used</label>
+        <select id="g_feed"></select>
+      </div>
+      <div class="field">
+        <label>Daily kg per animal</label>
+        <input type="number" id="g_kg" placeholder="5" min="0" step="any" inputmode="decimal">
+        <div class="hint">How many kg each animal eats per day.</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn-cancel" onclick="closeGroup()">Cancel</button>
+        <button class="btn-primary" onclick="saveGroup()">Save Group</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var PREFIX = "feedcost_";
+    var CURRENCIES = [
+      { sym: "$",   label: "$ Dollar" },
+      { sym: "£",   label: "£ Pound" },
+      { sym: "€",   label: "€ Euro" },
+      { sym: "₹",   label: "₹ Rupee" },
+      { sym: "R",   label: "R Rand" },
+      { sym: "₦",   label: "₦ Naira" },
+      { sym: "KSh", label: "KSh Shilling" },
+      { sym: "AUD", label: "AUD" },
+      { sym: "¤",   label: "¤ Generic" }
+    ];
+
+    // ---- State ----
+    var feeds = load("feeds", []);
+    var groups = load("groups", []);
+    var currency = loadRaw("currency", "¤"); // default generic configurable symbol
+
+    var editFeedId = null;
+    var editGroupId = null;
+
+    // ---- Persistence ----
+    function load(key, fallback) {
+      try {
+        var v = localStorage.getItem(PREFIX + key);
+        return v ? JSON.parse(v) : fallback;
+      } catch (e) { return fallback; }
+    }
+    function loadRaw(key, fallback) {
+      try {
+        var v = localStorage.getItem(PREFIX + key);
+        return v == null ? fallback : v;
+      } catch (e) { return fallback; }
+    }
+    function save() {
+      try {
+        localStorage.setItem(PREFIX + "feeds", JSON.stringify(feeds));
+        localStorage.setItem(PREFIX + "groups", JSON.stringify(groups));
+        localStorage.setItem(PREFIX + "currency", currency);
+      } catch (e) { /* storage full / blocked */ }
+    }
+
+    // ---- Helpers ----
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+    function num(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function money(v) {
+      var n = isFinite(v) ? v : 0;
+      var s = n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return currency + (currency.length > 1 ? " " : "") + s;
+    }
+    function feedById(id) {
+      for (var i = 0; i < feeds.length; i++) if (feeds[i].id === id) return feeds[i];
+      return null;
+    }
+
+    // ---- Cost model ----
+    // feed: { id, name, cost (per unit), kg (kg per unit) }  -> costPerKg = cost / kg
+    // group: { id, name, count, feedId, dailyKg (per animal) }
+    function feedCostPerKg(feed) {
+      if (!feed) return 0;
+      var kg = num(feed.kg);
+      if (kg === 0) return 0;
+      return num(feed.cost) / kg;
+    }
+    function groupDaily(group) {
+      var feed = feedById(group.feedId);
+      var perKg = feedCostPerKg(feed);
+      var count = num(group.count);
+      var dailyKg = num(group.dailyKg);
+      var totalKg = count * dailyKg;
+      var daily = totalKg * perKg;
+      return {
+        feed: feed,
+        perKg: perKg,
+        count: count,
+        dailyKgTotal: totalKg,
+        daily: daily,
+        weekly: daily * 7,
+        monthly: daily * 30,
+        perAnimalDaily: count > 0 ? daily / count : 0,
+        perAnimalMonthly: count > 0 ? (daily * 30) / count : 0
+      };
+    }
+    function totals() {
+      var dailyTotal = 0, animalsTotal = 0, mostExp = null, mostVal = -1;
+      groups.forEach(function (g) {
+        var c = groupDaily(g);
+        dailyTotal += c.daily;
+        animalsTotal += c.count;
+        if (c.monthly > mostVal && c.monthly > 0) { mostVal = c.monthly; mostExp = { group: g, calc: c }; }
+      });
+      return {
+        daily: dailyTotal,
+        weekly: dailyTotal * 7,
+        monthly: dailyTotal * 30,
+        animals: animalsTotal,
+        avgPerAnimalMonthly: animalsTotal > 0 ? (dailyTotal * 30) / animalsTotal : 0,
+        mostExpensive: mostExp
+      };
+    }
+
+    // ---- Render ----
+    function renderCurrency() {
+      var sel = document.getElementById("currency");
+      sel.innerHTML = "";
+      CURRENCIES.forEach(function (c) {
+        var o = document.createElement("option");
+        o.value = c.sym; o.textContent = c.label;
+        if (c.sym === currency) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+
+    function renderDashboard() {
+      var t = totals();
+      var exp = t.mostExpensive;
+      var expHtml;
+      if (exp) {
+        expHtml = '<div class="stat expensive">' +
+          '<div class="k">⚠ Most expensive group</div>' +
+          '<div class="v">' + esc(exp.group.name) + ' — ' + money(exp.calc.monthly) + '/mo</div>' +
+          '<div class="sub">Watch this group for waste or overspend.</div>' +
+          '</div>';
+      } else {
+        expHtml = '<div class="stat expensive none">' +
+          '<div class="k">Most expensive group</div>' +
+          '<div class="v">No data yet</div>' +
+          '<div class="sub">Add feeds and groups to see your cost breakdown.</div>' +
+          '</div>';
+      }
+      document.getElementById("dashboard").innerHTML =
+        '<div class="stat"><div class="k">Monthly feed cost</div><div class="v">' + money(t.monthly) +
+          '</div><div class="sub">' + money(t.daily) + '/day · ' + money(t.weekly) + '/wk</div></div>' +
+        '<div class="stat"><div class="k">Total animals</div><div class="v">' + t.animals +
+          '</div><div class="sub">across ' + groups.length + ' group' + (groups.length === 1 ? '' : 's') + '</div></div>' +
+        '<div class="stat"><div class="k">Avg cost / animal</div><div class="v">' + money(t.avgPerAnimalMonthly) +
+          '</div><div class="sub">per month</div></div>' +
+        '<div class="stat"><div class="k">Feed types</div><div class="v">' + feeds.length +
+          '</div><div class="sub">defined</div></div>' +
+        expHtml;
+    }
+
+    function renderFeeds() {
+      var el = document.getElementById("feedList");
+      if (feeds.length === 0) {
+        el.innerHTML = '<div class="empty">No feeds yet. Add a feed type (e.g. Dairy Meal) to begin.</div>';
+        return;
+      }
+      el.innerHTML = feeds.map(function (f) {
+        var perKg = feedCostPerKg(f);
+        return '<div class="card">' +
+          '<div class="item-top">' +
+            '<div><div class="item-name">' + esc(f.name) + '</div>' +
+            '<div class="item-meta">' + money(num(f.cost)) + ' per ' + (num(f.kg) || '?') + ' kg unit · ' +
+              money(perKg) + '/kg</div></div>' +
+            '<div class="item-actions">' +
+              '<button class="icon-btn" onclick="editFeed(\'' + f.id + '\')">Edit</button>' +
+              '<button class="icon-btn del" onclick="delFeed(\'' + f.id + '\')">Del</button>' +
+            '</div>' +
+          '</div></div>';
+      }).join("");
+    }
+
+    function renderGroups() {
+      var el = document.getElementById("groupList");
+      if (groups.length === 0) {
+        el.innerHTML = '<div class="empty">No animal groups yet. Add a group (e.g. Milking Cows) to calculate feed cost.</div>';
+        return;
+      }
+      var t = totals();
+      var expId = t.mostExpensive ? t.mostExpensive.group.id : null;
+      el.innerHTML = groups.map(function (g) {
+        var c = groupDaily(g);
+        var feedName = c.feed ? esc(c.feed.name) : '<em style="color:var(--danger)">no feed set</em>';
+        var flag = (g.id === expId) ? '<span class="tag-flag">PRIORITY</span>' : '';
+        return '<div class="card">' +
+          '<div class="item-top">' +
+            '<div><div class="item-name">' + esc(g.name) + flag + '</div>' +
+            '<div class="item-meta">' + c.count + ' animals · ' + feedName + ' · ' +
+              num(g.dailyKg) + ' kg/animal/day</div></div>' +
+            '<div class="item-actions">' +
+              '<button class="icon-btn" onclick="editGroup(\'' + g.id + '\')">Edit</button>' +
+              '<button class="icon-btn del" onclick="delGroup(\'' + g.id + '\')">Del</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="cost-row">' +
+            '<div class="cost-cell"><div class="cl">Daily</div><div class="cv">' + money(c.daily) + '</div></div>' +
+            '<div class="cost-cell"><div class="cl">Weekly</div><div class="cv">' + money(c.weekly) + '</div></div>' +
+            '<div class="cost-cell"><div class="cl">Monthly</div><div class="cv">' + money(c.monthly) + '</div></div>' +
+            '<div class="cost-cell"><div class="cl">/Animal/mo</div><div class="cv">' + money(c.perAnimalMonthly) + '</div></div>' +
+          '</div></div>';
+      }).join("");
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderFeeds();
+      renderGroups();
+    }
+
+    // ---- Feed CRUD ----
+    window.openFeed = function () {
+      editFeedId = null;
+      document.getElementById("feedTitle").textContent = "Add Feed";
+      document.getElementById("f_name").value = "";
+      document.getElementById("f_cost").value = "";
+      document.getElementById("f_kg").value = "";
+      show("feedOverlay");
+    };
+    window.editFeed = function (id) {
+      var f = feedById(id);
+      if (!f) return;
+      editFeedId = id;
+      document.getElementById("feedTitle").textContent = "Edit Feed";
+      document.getElementById("f_name").value = f.name;
+      document.getElementById("f_cost").value = f.cost;
+      document.getElementById("f_kg").value = f.kg;
+      show("feedOverlay");
+    };
+    window.closeFeed = function () { hide("feedOverlay"); };
+    window.saveFeed = function () {
+      var name = document.getElementById("f_name").value.trim();
+      var cost = parseFloat(document.getElementById("f_cost").value);
+      var kg = parseFloat(document.getElementById("f_kg").value);
+      if (!name) { toast("Enter a feed name"); return; }
+      if (!isFinite(cost) || cost < 0) { toast("Enter a valid cost"); return; }
+      if (!isFinite(kg) || kg <= 0) { toast("Enter kg per unit (> 0)"); return; }
+      if (editFeedId) {
+        var f = feedById(editFeedId);
+        f.name = name; f.cost = cost; f.kg = kg;
+        toast("Feed updated");
+      } else {
+        feeds.push({ id: uid(), name: name, cost: cost, kg: kg });
+        toast("Feed added");
+      }
+      save(); hide("feedOverlay"); renderAll();
+    };
+    window.delFeed = function (id) {
+      var used = groups.some(function (g) { return g.feedId === id; });
+      var msg = used ? "Delete this feed? Groups using it will lose their feed cost." : "Delete this feed?";
+      if (!confirm(msg)) return;
+      feeds = feeds.filter(function (f) { return f.id !== id; });
+      groups.forEach(function (g) { if (g.feedId === id) g.feedId = null; });
+      save(); renderAll(); toast("Feed deleted");
+    };
+
+    // ---- Group CRUD ----
+    function fillFeedSelect(selectedId) {
+      var sel = document.getElementById("g_feed");
+      sel.innerHTML = "";
+      if (feeds.length === 0) {
+        var o = document.createElement("option");
+        o.value = ""; o.textContent = "— add a feed first —";
+        sel.appendChild(o);
+        return;
+      }
+      feeds.forEach(function (f) {
+        var o = document.createElement("option");
+        o.value = f.id; o.textContent = f.name;
+        if (f.id === selectedId) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+    window.openGroup = function () {
+      if (feeds.length === 0) { toast("Add a feed type first"); return; }
+      editGroupId = null;
+      document.getElementById("groupTitle").textContent = "Add Group";
+      document.getElementById("g_name").value = "";
+      document.getElementById("g_count").value = "";
+      document.getElementById("g_kg").value = "";
+      fillFeedSelect(feeds[0].id);
+      show("groupOverlay");
+    };
+    window.editGroup = function (id) {
+      var g = null;
+      groups.forEach(function (x) { if (x.id === id) g = x; });
+      if (!g) return;
+      editGroupId = id;
+      document.getElementById("groupTitle").textContent = "Edit Group";
+      document.getElementById("g_name").value = g.name;
+      document.getElementById("g_count").value = g.count;
+      document.getElementById("g_kg").value = g.dailyKg;
+      fillFeedSelect(g.feedId);
+      show("groupOverlay");
+    };
+    window.closeGroup = function () { hide("groupOverlay"); };
+    window.saveGroup = function () {
+      var name = document.getElementById("g_name").value.trim();
+      var count = parseFloat(document.getElementById("g_count").value);
+      var feedId = document.getElementById("g_feed").value;
+      var kg = parseFloat(document.getElementById("g_kg").value);
+      if (!name) { toast("Enter a group name"); return; }
+      if (!isFinite(count) || count < 0) { toast("Enter number of animals"); return; }
+      if (!feedId) { toast("Pick a feed"); return; }
+      if (!isFinite(kg) || kg < 0) { toast("Enter daily kg per animal"); return; }
+      if (editGroupId) {
+        groups.forEach(function (g) {
+          if (g.id === editGroupId) { g.name = name; g.count = count; g.feedId = feedId; g.dailyKg = kg; }
+        });
+        toast("Group updated");
+      } else {
+        groups.push({ id: uid(), name: name, count: count, feedId: feedId, dailyKg: kg });
+        toast("Group added");
+      }
+      save(); hide("groupOverlay"); renderAll();
+    };
+    window.delGroup = function (id) {
+      if (!confirm("Delete this group?")) return;
+      groups = groups.filter(function (g) { return g.id !== id; });
+      save(); renderAll(); toast("Group deleted");
+    };
+
+    // ---- CSV export ----
+    window.exportCSV = function () {
+      if (groups.length === 0) { toast("Nothing to export yet"); return; }
+      var t = totals();
+      var rows = [];
+      rows.push(["FEEDCOST — Feed Cost Breakdown"]);
+      rows.push(["Currency", currency]);
+      rows.push(["Generated", new Date().toLocaleString()]);
+      rows.push([]);
+      rows.push(["Group", "Animals", "Feed", "Cost/kg", "Daily kg total",
+        "Daily cost", "Weekly cost", "Monthly cost", "Monthly cost/animal", "Most expensive"]);
+      var expId = t.mostExpensive ? t.mostExpensive.group.id : null;
+      groups.forEach(function (g) {
+        var c = groupDaily(g);
+        rows.push([
+          g.name, c.count, c.feed ? c.feed.name : "(none)",
+          c.perKg.toFixed(4), c.dailyKgTotal.toFixed(2),
+          c.daily.toFixed(2), c.weekly.toFixed(2), c.monthly.toFixed(2),
+          c.perAnimalMonthly.toFixed(2), g.id === expId ? "YES" : ""
+        ]);
+      });
+      rows.push([]);
+      rows.push(["TOTAL", t.animals, "", "", "",
+        t.daily.toFixed(2), t.weekly.toFixed(2), t.monthly.toFixed(2),
+        t.avgPerAnimalMonthly.toFixed(2), ""]);
+      var csv = rows.map(function (r) {
+        return r.map(function (cell) {
+          var s = String(cell == null ? "" : cell);
+          return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        }).join(",");
+      }).join("\n");
+
+      var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "feedcost-breakdown.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      toast("CSV exported");
+    };
+
+    // ---- Sample data ----
+    window.loadSample = function () {
+      if ((feeds.length || groups.length) && !confirm("Replace current data with sample data?")) return;
+      var f1 = uid(), f2 = uid(), f3 = uid();
+      feeds = [
+        { id: f1, name: "Dairy Meal", cost: 28, kg: 50 },
+        { id: f2, name: "Maize Bran", cost: 14, kg: 50 },
+        { id: f3, name: "Hay Bale", cost: 6, kg: 20 }
+      ];
+      groups = [
+        { id: uid(), name: "Milking Cows", count: 8, feedId: f1, dailyKg: 6 },
+        { id: uid(), name: "Heifers", count: 5, feedId: f2, dailyKg: 4 },
+        { id: uid(), name: "Calves", count: 6, feedId: f3, dailyKg: 2 }
+      ];
+      save(); renderAll(); toast("Sample loaded");
+    };
+
+    // ---- Currency change ----
+    document.getElementById("currency").addEventListener("change", function (e) {
+      currency = e.target.value;
+      save(); renderAll(); toast("Currency set to " + currency);
+    });
+
+    // ---- Modal helpers ----
+    function show(id) { document.getElementById(id).classList.add("show"); }
+    function hide(id) { document.getElementById(id).classList.remove("show"); }
+    ["feedOverlay", "groupOverlay"].forEach(function (id) {
+      document.getElementById(id).addEventListener("click", function (e) {
+        if (e.target === this) hide(id);
+      });
+    });
+
+    // ---- Toast ----
+    var toastTimer = null;
+    function toast(msg) {
+      var el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2200);
+    }
+    window.toast = toast;
+
+    // ---- Init ----
+    renderCurrency();
+    renderAll();
+  })();
+  </script>
+</body>
+</html>

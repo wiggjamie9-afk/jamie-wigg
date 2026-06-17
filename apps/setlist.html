@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0d1117" />
+<meta name="description" content="SETLIST — a gig setlist builder for musicians. Build a song library, drag songs into an ordered set, track running time, save sets per venue, and print a stage-ready list. Fully offline." />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="SETLIST" />
+<title>SETLIST — gig setlist builder</title>
+
+<!--
+  ════════════════════════════════════════════════════════════════════════
+  SETLIST — single-file, fully-offline gig setlist builder.
+  All state lives in localStorage under the "setlist_" key prefix:
+    setlist_library  → array of songs {id,title,artist,key,bpm,dur,notes}
+    setlist_sets     → array of saved setlists {id,name,items:[...]}
+    setlist_current  → working setlist items (unsaved scratch)
+    setlist_pro      → "1" once lifetime unlock is purchased
+  No network requests. No CDN. No external deps. Songs entered manually.
+
+  ── FUTURE BACKEND INTEGRATION POINT ──────────────────────────────────────
+  A cloud sync / venue-booking backend would slot in behind the Store object
+  below (see `Store` near the top of the script). Replace its localStorage
+  read/write with REST/websocket calls to e.g. POST /api/sets, GET /api/sets,
+  and a venue-sharing endpoint (share a set by id → public stage URL).
+  License/unlock validation would move server-side (mirrors the Studio
+  license Worker pattern). Until then everything is local & private.
+  ════════════════════════════════════════════════════════════════════════
+-->
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b25;
+    --surface-2: #1f2735;
+    --line: #2a3344;
+    --accent: #f4a942;
+    --accent-2: #ffd58a;
+    --accent-soft: rgba(244, 169, 66, 0.14);
+    --violet: #9b6bff;
+    --text: #e6edf3;
+    --text-dim: #8b96a8;
+    --danger: #f85149;
+    --ok: #3fb950;
+    --shadow: 0 10px 30px rgba(0,0,0,0.4);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    min-height: 100dvh;
+    background:
+      radial-gradient(60vw 60vw at 50% -10%, rgba(244,169,66,0.08), transparent 60%),
+      var(--bg);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  main { max-width: 520px; margin: 0 auto; padding: 14px 16px 96px; }
+
+  /* Header */
+  header.app {
+    background: linear-gradient(135deg, var(--accent), var(--violet));
+    border-radius: var(--radius);
+    padding: 18px 20px 20px;
+    box-shadow: var(--shadow);
+    color: #0d1117;
+    position: relative;
+    overflow: hidden;
+  }
+  header.app::after {
+    content:""; position:absolute; inset:0;
+    background: radial-gradient(80% 120% at 100% 0%, rgba(255,255,255,0.22), transparent 60%);
+    pointer-events:none;
+  }
+  .brand { display:flex; align-items:center; gap:10px; position:relative; }
+  .brand-mark {
+    width:30px; height:30px; border-radius:8px; flex:none;
+    background:#0d1117; position:relative;
+  }
+  .brand-mark span { position:absolute; left:7px; right:7px; background:var(--accent); height:3px; border-radius:2px; }
+  .brand-mark span:nth-child(1){ top:8px; }
+  .brand-mark span:nth-child(2){ top:14px; width:10px; }
+  .brand-mark span:nth-child(3){ top:20px; }
+  .brand-name { font-weight:800; letter-spacing:1.5px; font-size:22px; }
+  .brand-tag { font-size:12px; font-weight:600; opacity:.75; margin-left:auto; text-align:right; }
+
+  /* Big total */
+  .total-row { display:flex; align-items:baseline; gap:10px; margin-top:14px; position:relative; }
+  .total-time { font-size:40px; font-weight:800; letter-spacing:-1px; line-height:1; }
+  .total-meta { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; opacity:.7; }
+
+  /* Tabs */
+  .tabs { display:flex; gap:6px; margin:16px 0 12px; }
+  .tab {
+    flex:1; padding:11px 8px; border-radius:var(--radius-sm); border:1px solid var(--line);
+    background:var(--surface); color:var(--text-dim); font-weight:700; font-size:14px;
+    text-align:center; cursor:pointer;
+  }
+  .tab.on { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-2); }
+
+  section { display:none; }
+  section.on { display:block; }
+
+  /* Cards */
+  .card {
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px; margin-bottom:12px; box-shadow:var(--shadow);
+  }
+  .card h2 { margin:0 0 10px; font-size:15px; letter-spacing:.5px; text-transform:uppercase; color:var(--text-dim); }
+
+  /* Inputs */
+  label { display:block; font-size:12px; color:var(--text-dim); margin:8px 0 4px; font-weight:600; }
+  input, textarea, select {
+    width:100%; background:var(--surface-2); color:var(--text); border:1px solid var(--line);
+    border-radius:var(--radius-sm); padding:11px 12px; font:inherit; font-size:16px;
+  }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--accent); }
+  textarea { resize:vertical; min-height:54px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+  /* Buttons */
+  button { font:inherit; cursor:pointer; border:none; }
+  .btn {
+    width:100%; padding:13px; border-radius:var(--radius-sm); font-weight:700; font-size:15px;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#0d1117;
+  }
+  .btn:active { transform:translateY(1px); }
+  .btn-ghost { background:var(--surface-2); color:var(--text); border:1px solid var(--line); }
+  .btn-danger { background:var(--surface-2); color:var(--danger); border:1px solid var(--line); }
+  .btn-row { display:flex; gap:8px; }
+  .btn-row .btn { flex:1; }
+  .mini {
+    width:auto; padding:7px 11px; font-size:13px; border-radius:8px;
+    background:var(--surface-2); color:var(--text); border:1px solid var(--line);
+  }
+
+  /* Library list */
+  .lib-item, .set-item {
+    display:flex; align-items:center; gap:10px; padding:11px 12px;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm);
+    margin-bottom:8px;
+  }
+  .li-main { flex:1; min-width:0; }
+  .li-title { font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .li-sub { font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .badges { display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
+  .badge {
+    font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px;
+    background:var(--accent-soft); color:var(--accent-2); border:1px solid rgba(244,169,66,0.3);
+  }
+  .badge.bpm { background:rgba(155,107,255,0.16); color:#c7b0ff; border-color:rgba(155,107,255,0.35); }
+  .badge.dur { background:var(--surface); color:var(--text-dim); border-color:var(--line); }
+
+  /* Setlist rows */
+  .set-item { cursor:grab; }
+  .set-item.dragging { opacity:.4; }
+  .set-item.dragover { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
+  .set-item.break { background:rgba(155,107,255,0.10); border-style:dashed; border-color:rgba(155,107,255,0.4); }
+  .pos { font-weight:800; color:var(--accent); width:24px; text-align:center; flex:none; font-size:15px; }
+  .cum { font-size:11px; color:var(--text-dim); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .row-ctrls { display:flex; flex-direction:column; gap:3px; flex:none; }
+  .arrow { width:30px; height:22px; line-height:1; padding:0; font-size:13px; }
+  .grip { color:var(--text-dim); font-size:18px; flex:none; padding:0 2px; cursor:grab; }
+  .x { background:none; color:var(--text-dim); font-size:20px; padding:0 4px; line-height:1; }
+
+  .empty { color:var(--text-dim); text-align:center; padding:22px 10px; font-size:14px; }
+
+  /* Saved sets */
+  .saved-item { display:flex; align-items:center; gap:10px; }
+  .saved-item .li-title { font-size:15px; }
+
+  /* Footer / freemium */
+  .freemium {
+    margin-top:14px; text-align:center; font-size:12px; color:var(--text-dim);
+    border-top:1px solid var(--line); padding-top:14px;
+  }
+  .freemium strong { color:var(--accent-2); }
+  .freemium .unlock { display:inline-block; margin-top:6px; color:var(--accent); text-decoration:underline; cursor:pointer; }
+
+  /* Toast */
+  #toast {
+    position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2); color:var(--text); border:1px solid var(--line);
+    padding:11px 18px; border-radius:30px; font-size:14px; font-weight:600;
+    box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.25s; z-index:200; max-width:90vw;
+  }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* Print view */
+  #printview { display:none; }
+  @media print {
+    body { background:#fff; color:#000; }
+    main, header.app, .tabs, .freemium, #toast { display:none !important; }
+    #printview { display:block !important; padding:0; color:#000; }
+    #printview h1 { font-size:34px; margin:0 0 4px; letter-spacing:1px; }
+    #printview .pv-meta { font-size:15px; color:#444; margin-bottom:18px; }
+    #printview ol { list-style:none; margin:0; padding:0; }
+    #printview li {
+      display:flex; align-items:baseline; gap:14px; padding:9px 0;
+      border-bottom:1px solid #ccc; font-size:24px;
+    }
+    #printview .pv-pos { font-weight:800; width:34px; }
+    #printview .pv-title { flex:1; font-weight:700; }
+    #printview .pv-info { font-size:15px; color:#333; font-weight:500; white-space:nowrap; }
+    #printview li.pv-break { font-style:italic; color:#555; font-size:19px; }
+    #printview .pv-foot { margin-top:20px; font-size:14px; color:#666; }
+    @page { margin:14mm; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="app">
+    <div class="brand">
+      <div class="brand-mark"><span></span><span></span><span></span></div>
+      <div class="brand-name">SETLIST</div>
+      <div class="brand-tag">gig setlist<br>builder</div>
+    </div>
+    <div class="total-row">
+      <div class="total-time" id="totalTime">0:00</div>
+      <div class="total-meta"><span id="songCount">0</span> songs · running time</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab on" data-tab="set">Setlist</div>
+    <div class="tab" data-tab="library">Library</div>
+    <div class="tab" data-tab="saved">Saved</div>
+  </div>
+
+  <!-- ───────────── SETLIST TAB ───────────── -->
+  <section id="tab-set" class="on">
+    <div class="card">
+      <h2>Current Set</h2>
+      <div id="setList"></div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-ghost" id="addBreakBtn">+ Break / Note</button>
+        <button class="btn btn-ghost" id="clearSetBtn">Clear</button>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn" id="saveSetBtn">Save Set</button>
+        <button class="btn btn-ghost" id="printBtn">Print</button>
+        <button class="btn btn-ghost" id="csvBtn">CSV</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Add from Library</h2>
+      <div id="libPicker"></div>
+    </div>
+  </section>
+
+  <!-- ───────────── LIBRARY TAB ───────────── -->
+  <section id="tab-library">
+    <div class="card">
+      <h2 id="songFormTitle">Add Song</h2>
+      <label>Title</label>
+      <input id="f-title" placeholder="Song title" />
+      <label>Artist</label>
+      <input id="f-artist" placeholder="Artist / original" />
+      <div class="grid3">
+        <div><label>Key</label><input id="f-key" placeholder="Am" /></div>
+        <div><label>BPM</label><input id="f-bpm" type="number" inputmode="numeric" placeholder="120" /></div>
+        <div><label>Length</label><input id="f-dur" placeholder="3:45" inputmode="numeric" /></div>
+      </div>
+      <label>Notes / cues</label>
+      <textarea id="f-notes" placeholder="Intro on acoustic, key change in bridge…"></textarea>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn" id="songSaveBtn">Add Song</button>
+        <button class="btn btn-ghost" id="songCancelBtn" style="display:none">Cancel</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Song Library (<span id="libCount">0</span>)</h2>
+      <div id="libList"></div>
+    </div>
+  </section>
+
+  <!-- ───────────── SAVED TAB ───────────── -->
+  <section id="tab-saved">
+    <div class="card">
+      <h2>Saved Setlists (<span id="savedCount">0</span>)</h2>
+      <div id="savedList"></div>
+    </div>
+  </section>
+
+  <div class="freemium">
+    <span id="planLine">Free plan · up to <strong>5</strong> saved setlists.</span><br>
+    <span class="unlock" id="unlockBtn">Lifetime $4.99 — unlock unlimited + venue sharing</span>
+  </div>
+</main>
+
+<!-- Stage-ready print view (populated on demand) -->
+<div id="printview"></div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+(function(){
+  // ── Storage layer (FUTURE BACKEND swaps in here) ───────────────────────
+  const PREFIX = "setlist_";
+  const Store = {
+    get(k, fb){ try { return JSON.parse(localStorage.getItem(PREFIX+k)) ?? fb; } catch(e){ return fb; } },
+    set(k, v){ try { localStorage.setItem(PREFIX+k, JSON.stringify(v)); } catch(e){} },
+  };
+  const FREE_LIMIT = 5;
+
+  let library = Store.get("library", []);
+  let current = Store.get("current", []);   // working set items
+  let sets    = Store.get("sets", []);
+  let isPro   = Store.get("pro", "0") === "1";
+  let edit    = null; // id of song being edited
+
+  // items in `current`: song ref → {type:"song", songId} OR break → {type:"break", text}
+  // each has its own uid for drag identity
+  const uid = () => Math.random().toString(36).slice(2,9);
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function parseDur(str){
+    if(str==null) return 0;
+    str = String(str).trim();
+    if(!str) return 0;
+    if(str.indexOf(":")>=0){
+      const p = str.split(":");
+      const m = parseInt(p[0],10)||0, s = parseInt(p[1],10)||0;
+      return m*60 + s;
+    }
+    // bare number = seconds if <60 typed? Treat as minutes-only is ambiguous; assume seconds.
+    return parseInt(str,10)||0;
+  }
+  function fmt(sec){
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec/60), s = sec%60;
+    return m + ":" + String(s).padStart(2,"0");
+  }
+  function songById(id){ return library.find(x=>x.id===id); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  function toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>t.classList.remove("show"), 1900);
+  }
+
+  function persist(){
+    Store.set("library", library);
+    Store.set("current", current);
+    Store.set("sets", sets);
+    Store.set("pro", isPro?"1":"0");
+  }
+
+  // ── Totals ──────────────────────────────────────────────────────────────
+  function totalSeconds(){
+    return current.reduce((sum,it)=>{
+      if(it.type==="song"){ const s = songById(it.songId); return sum + (s? s.durSec : 0); }
+      return sum + (it.breakSec||0);
+    },0);
+  }
+  function songCount(){ return current.filter(i=>i.type==="song").length; }
+
+  function renderTotals(){
+    document.getElementById("totalTime").textContent = fmt(totalSeconds());
+    document.getElementById("songCount").textContent = songCount();
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────────────
+  document.querySelectorAll(".tab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+      tab.classList.add("on");
+      document.querySelectorAll("section").forEach(s=>s.classList.remove("on"));
+      document.getElementById("tab-"+tab.dataset.tab).classList.add("on");
+    });
+  });
+
+  // ── Library form ─────────────────────────────────────────────────────────
+  const F = {
+    title:  document.getElementById("f-title"),
+    artist: document.getElementById("f-artist"),
+    key:    document.getElementById("f-key"),
+    bpm:    document.getElementById("f-bpm"),
+    dur:    document.getElementById("f-dur"),
+    notes:  document.getElementById("f-notes"),
+  };
+  function resetForm(){
+    edit = null;
+    Object.values(F).forEach(el=>el.value="");
+    document.getElementById("songFormTitle").textContent = "Add Song";
+    document.getElementById("songSaveBtn").textContent = "Add Song";
+    document.getElementById("songCancelBtn").style.display = "none";
+  }
+  document.getElementById("songSaveBtn").addEventListener("click", ()=>{
+    const title = F.title.value.trim();
+    if(!title){ toast("Title required"); F.title.focus(); return; }
+    const durSec = parseDur(F.dur.value);
+    const rec = {
+      id: edit || uid(),
+      title,
+      artist: F.artist.value.trim(),
+      key: F.key.value.trim(),
+      bpm: F.bpm.value.trim(),
+      durStr: F.dur.value.trim(),
+      durSec,
+      notes: F.notes.value.trim(),
+    };
+    if(edit){
+      const i = library.findIndex(x=>x.id===edit);
+      if(i>=0) library[i] = rec;
+      toast("Song updated");
+    } else {
+      library.push(rec);
+      toast("Added to library");
+    }
+    persist(); resetForm(); renderAll();
+  });
+  document.getElementById("songCancelBtn").addEventListener("click", resetForm);
+
+  function editSong(id){
+    const s = songById(id); if(!s) return;
+    edit = id;
+    F.title.value=s.title; F.artist.value=s.artist; F.key.value=s.key;
+    F.bpm.value=s.bpm; F.dur.value=s.durStr; F.notes.value=s.notes;
+    document.getElementById("songFormTitle").textContent = "Edit Song";
+    document.getElementById("songSaveBtn").textContent = "Save Changes";
+    document.getElementById("songCancelBtn").style.display = "block";
+    // jump to library tab
+    document.querySelector('.tab[data-tab="library"]').click();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  function deleteSong(id){
+    if(!confirm("Delete this song from the library?")) return;
+    library = library.filter(x=>x.id!==id);
+    current = current.filter(it=> !(it.type==="song" && it.songId===id));
+    persist(); renderAll(); toast("Song deleted");
+  }
+
+  function songBadges(s){
+    let h = '<div class="badges">';
+    if(s.key)  h += '<span class="badge">'+esc(s.key)+'</span>';
+    if(s.bpm)  h += '<span class="badge bpm">'+esc(s.bpm)+' BPM</span>';
+    h += '<span class="badge dur">'+fmt(s.durSec)+'</span>';
+    h += '</div>';
+    return h;
+  }
+
+  // ── Render library list (manage) ─────────────────────────────────────────
+  function renderLibrary(){
+    document.getElementById("libCount").textContent = library.length;
+    const wrap = document.getElementById("libList");
+    if(!library.length){ wrap.innerHTML = '<div class="empty">No songs yet. Add your first above.</div>'; return; }
+    wrap.innerHTML = library.map(s=>`
+      <div class="lib-item">
+        <div class="li-main">
+          <div class="li-title">${esc(s.title)}</div>
+          <div class="li-sub">${esc(s.artist||"—")}${s.notes?" · "+esc(s.notes):""}</div>
+          ${songBadges(s)}
+        </div>
+        <button class="mini" data-edit="${s.id}">Edit</button>
+        <button class="x" data-del="${s.id}" aria-label="Delete">&times;</button>
+      </div>`).join("");
+    wrap.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editSong(b.dataset.edit));
+    wrap.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteSong(b.dataset.del));
+  }
+
+  // ── Render library picker (add to set) ───────────────────────────────────
+  function renderPicker(){
+    const wrap = document.getElementById("libPicker");
+    if(!library.length){ wrap.innerHTML = '<div class="empty">Add songs in the Library tab first.</div>'; return; }
+    wrap.innerHTML = library.map(s=>`
+      <div class="lib-item">
+        <div class="li-main">
+          <div class="li-title">${esc(s.title)}</div>
+          <div class="li-sub">${esc(s.artist||"—")}</div>
+        </div>
+        <button class="mini" data-add="${s.id}">+ Add</button>
+      </div>`).join("");
+    wrap.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{
+      current.push({uid:uid(), type:"song", songId:b.dataset.add});
+      persist(); renderSet(); renderTotals(); toast("Added to set");
+    });
+  }
+
+  // ── Render current setlist with cumulative times + DnD ───────────────────
+  function renderSet(){
+    const wrap = document.getElementById("setList");
+    if(!current.length){ wrap.innerHTML = '<div class="empty">Empty set. Add songs below, drag to reorder.</div>'; return; }
+    let cum = 0;
+    let pos = 0;
+    wrap.innerHTML = current.map((it,idx)=>{
+      if(it.type==="break"){
+        cum += (it.breakSec||0);
+        return `
+        <div class="set-item break" draggable="true" data-idx="${idx}">
+          <span class="grip">⋮⋮</span>
+          <div class="li-main">
+            <div class="li-title">▮ ${esc(it.text||"Break")}</div>
+            <div class="cum">${it.breakSec?fmt(it.breakSec)+" · ":""}runs to ${fmt(cum)}</div>
+          </div>
+          <div class="row-ctrls">
+            <button class="mini arrow" data-up="${idx}">▲</button>
+            <button class="mini arrow" data-down="${idx}">▼</button>
+          </div>
+          <button class="x" data-remove="${idx}" aria-label="Remove">&times;</button>
+        </div>`;
+      }
+      const s = songById(it.songId);
+      pos++;
+      if(!s){
+        return `<div class="set-item" data-idx="${idx}"><div class="li-main"><div class="li-sub">⚠ Missing song</div></div><button class="x" data-remove="${idx}">&times;</button></div>`;
+      }
+      cum += s.durSec;
+      return `
+      <div class="set-item" draggable="true" data-idx="${idx}">
+        <span class="pos">${pos}</span>
+        <div class="li-main">
+          <div class="li-title">${esc(s.title)}</div>
+          <div class="li-sub">${esc(s.artist||"—")}</div>
+          ${songBadges(s)}
+          <div class="cum">runs to ${fmt(cum)}</div>
+        </div>
+        <div class="row-ctrls">
+          <button class="mini arrow" data-up="${idx}">▲</button>
+          <button class="mini arrow" data-down="${idx}">▼</button>
+        </div>
+        <button class="x" data-remove="${idx}" aria-label="Remove">&times;</button>
+      </div>`;
+    }).join("");
+
+    wrap.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{
+      current.splice(+b.dataset.remove,1); persist(); renderSet(); renderTotals();
+    });
+    wrap.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>move(+b.dataset.up,-1));
+    wrap.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>move(+b.dataset.down,1));
+
+    // Drag & drop (HTML5)
+    let dragIdx = null;
+    wrap.querySelectorAll(".set-item[draggable]").forEach(row=>{
+      row.addEventListener("dragstart", e=>{ dragIdx = +row.dataset.idx; row.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; });
+      row.addEventListener("dragend", ()=>{ row.classList.remove("dragging"); wrap.querySelectorAll(".dragover").forEach(r=>r.classList.remove("dragover")); });
+      row.addEventListener("dragover", e=>{ e.preventDefault(); row.classList.add("dragover"); });
+      row.addEventListener("dragleave", ()=> row.classList.remove("dragover"));
+      row.addEventListener("drop", e=>{
+        e.preventDefault();
+        const to = +row.dataset.idx;
+        if(dragIdx==null || dragIdx===to) return;
+        const [m] = current.splice(dragIdx,1);
+        current.splice(to,0,m);
+        persist(); renderSet(); renderTotals();
+      });
+    });
+  }
+  function move(idx, dir){
+    const to = idx+dir;
+    if(to<0 || to>=current.length) return;
+    const [m] = current.splice(idx,1);
+    current.splice(to,0,m);
+    persist(); renderSet(); renderTotals();
+  }
+
+  // ── Set actions ───────────────────────────────────────────────────────────
+  document.getElementById("addBreakBtn").addEventListener("click", ()=>{
+    const text = prompt("Break / note label (e.g. \"Set break\", \"Banter\", \"Tuning\"):", "Set break");
+    if(text===null) return;
+    const mins = prompt("Length in minutes (blank = 0):", "");
+    const breakSec = mins ? Math.round((parseFloat(mins)||0)*60) : 0;
+    current.push({uid:uid(), type:"break", text:text.trim()||"Break", breakSec});
+    persist(); renderSet(); renderTotals();
+  });
+  document.getElementById("clearSetBtn").addEventListener("click", ()=>{
+    if(!current.length) return;
+    if(!confirm("Clear the current set? (Saved setlists are not affected.)")) return;
+    current = []; persist(); renderSet(); renderTotals(); toast("Set cleared");
+  });
+
+  document.getElementById("saveSetBtn").addEventListener("click", ()=>{
+    if(!current.length){ toast("Set is empty"); return; }
+    if(!isPro && sets.length >= FREE_LIMIT){
+      toast("Free limit: "+FREE_LIMIT+" sets. Unlock lifetime for unlimited.");
+      return;
+    }
+    const name = prompt("Name this setlist (e.g. venue / date):", "");
+    if(name===null) return;
+    const n = name.trim() || ("Set "+(sets.length+1));
+    sets.push({ id:uid(), name:n, items:JSON.parse(JSON.stringify(current)), saved:Date.now() });
+    persist(); renderSaved(); toast("Saved \""+n+"\"");
+  });
+
+  // ── Saved sets ──────────────────────────────────────────────────────────
+  function setSeconds(items){
+    return items.reduce((sum,it)=>{
+      if(it.type==="song"){ const s=songById(it.songId); return sum+(s?s.durSec:0); }
+      return sum+(it.breakSec||0);
+    },0);
+  }
+  function renderSaved(){
+    document.getElementById("savedCount").textContent = sets.length;
+    const wrap = document.getElementById("savedList");
+    if(!sets.length){ wrap.innerHTML = '<div class="empty">No saved setlists yet. Build a set and tap Save.</div>'; return; }
+    wrap.innerHTML = sets.map(st=>{
+      const n = st.items.filter(i=>i.type==="song").length;
+      return `
+      <div class="lib-item saved-item">
+        <div class="li-main">
+          <div class="li-title">${esc(st.name)}</div>
+          <div class="li-sub">${n} songs · ${fmt(setSeconds(st.items))}</div>
+        </div>
+        <button class="mini" data-load="${st.id}">Load</button>
+        <button class="x" data-delset="${st.id}" aria-label="Delete">&times;</button>
+      </div>`;
+    }).join("");
+    wrap.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{
+      const st = sets.find(x=>x.id===b.dataset.load); if(!st) return;
+      current = JSON.parse(JSON.stringify(st.items));
+      // refresh uids to keep drag identity unique
+      current.forEach(it=>it.uid=uid());
+      persist(); renderSet(); renderTotals();
+      document.querySelector('.tab[data-tab="set"]').click();
+      window.scrollTo({top:0,behavior:"smooth"});
+      toast("Loaded \""+st.name+"\"");
+    });
+    wrap.querySelectorAll("[data-delset]").forEach(b=>b.onclick=()=>{
+      const st = sets.find(x=>x.id===b.dataset.delset);
+      if(!confirm("Delete saved setlist \""+(st?st.name:"")+"\"?")) return;
+      sets = sets.filter(x=>x.id!==b.dataset.delset);
+      persist(); renderSaved(); updatePlanLine(); toast("Setlist deleted");
+    });
+  }
+
+  // ── Print view (stage-ready) ──────────────────────────────────────────────
+  document.getElementById("printBtn").addEventListener("click", ()=>{
+    if(!current.length){ toast("Set is empty"); return; }
+    const pv = document.getElementById("printview");
+    let pos = 0;
+    const rows = current.map(it=>{
+      if(it.type==="break"){
+        return `<li class="pv-break"><span class="pv-pos"></span><span class="pv-title">— ${esc(it.text||"Break")} —</span><span class="pv-info">${it.breakSec?fmt(it.breakSec):""}</span></li>`;
+      }
+      const s = songById(it.songId); if(!s) return "";
+      pos++;
+      const info = [s.key, s.bpm?s.bpm+" BPM":"", fmt(s.durSec)].filter(Boolean).join("  ·  ");
+      return `<li><span class="pv-pos">${pos}</span><span class="pv-title">${esc(s.title)}</span><span class="pv-info">${esc(info)}</span></li>`;
+    }).join("");
+    pv.innerHTML = `
+      <h1>SETLIST</h1>
+      <div class="pv-meta">${songCount()} songs · total ${fmt(totalSeconds())}</div>
+      <ol>${rows}</ol>
+      <div class="pv-foot">Generated by SETLIST</div>`;
+    window.print();
+  });
+
+  // ── CSV export ────────────────────────────────────────────────────────────
+  document.getElementById("csvBtn").addEventListener("click", ()=>{
+    if(!current.length){ toast("Set is empty"); return; }
+    const q = v => '"'+String(v==null?"":v).replace(/"/g,'""')+'"';
+    let cum = 0, pos = 0;
+    const lines = [["#","Title","Artist","Key","BPM","Duration","CumulativeTime","Notes"].map(q).join(",")];
+    current.forEach(it=>{
+      if(it.type==="break"){
+        cum += (it.breakSec||0);
+        lines.push(["","[BREAK] "+(it.text||"Break"),"","","",it.breakSec?fmt(it.breakSec):"",fmt(cum),""].map(q).join(","));
+        return;
+      }
+      const s = songById(it.songId); if(!s) return;
+      pos++; cum += s.durSec;
+      lines.push([pos,s.title,s.artist,s.key,s.bpm,fmt(s.durSec),fmt(cum),s.notes].map(q).join(","));
+    });
+    const blob = new Blob([lines.join("\r\n")], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "setlist.csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 500);
+    toast("CSV exported");
+  });
+
+  // ── Freemium ──────────────────────────────────────────────────────────────
+  function updatePlanLine(){
+    const line = document.getElementById("planLine");
+    const unlock = document.getElementById("unlockBtn");
+    if(isPro){
+      line.innerHTML = '<strong>Lifetime unlocked</strong> · unlimited setlists + venue sharing.';
+      unlock.style.display = "none";
+    } else {
+      line.innerHTML = 'Free plan · <strong>'+sets.length+'/'+FREE_LIMIT+'</strong> saved setlists.';
+      unlock.style.display = "inline-block";
+    }
+  }
+  document.getElementById("unlockBtn").addEventListener("click", ()=>{
+    // FUTURE BACKEND: replace this local toggle with a real purchase /
+    // license-validation flow (mirrors the Studio license Worker).
+    if(confirm("Unlock SETLIST Lifetime for $4.99?\nUnlimited setlists + venue sharing.\n\n(Demo: confirm to simulate unlock.)")){
+      isPro = true; persist(); updatePlanLine();
+      toast("Lifetime unlocked — thank you!");
+    }
+  });
+
+  // ── Boot ────────────────────────────────────────────────────────────────
+  function renderAll(){
+    renderLibrary(); renderPicker(); renderSet(); renderSaved(); renderTotals(); updatePlanLine();
+  }
+
+  // Seed a tiny demo library on first ever run so the app isn't blank.
+  if(library.length===0 && sets.length===0 && current.length===0 && !localStorage.getItem(PREFIX+"seeded")){
+    library = [
+      {id:uid(),title:"Mr. Brightside",artist:"The Killers",key:"D",bpm:"148",durStr:"3:42",durSec:222,notes:"Open the set"},
+      {id:uid(),title:"Valerie",artist:"Amy Winehouse",key:"Eb",bpm:"104",durStr:"3:54",durSec:234,notes:"Slow it down"},
+      {id:uid(),title:"Sweet Child O' Mine",artist:"Guns N' Roses",key:"D",bpm:"125",durStr:"5:03",durSec:303,notes:"Big finish"},
+    ];
+    localStorage.setItem(PREFIX+"seeded","1");
+    persist();
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
