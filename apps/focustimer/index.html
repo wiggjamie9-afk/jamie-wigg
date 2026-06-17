@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08050d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Focus Timer — Pomodoro + deep work timer with break reminders">
+  <title>Focus Timer</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --canvas:#08050d;--magenta:#ff1f5a;--purple:#7c3aed;--cyan:#00d8ff;
+      --green:#00e887;--gold:#f5c000;--pink:#ff6fc8;
+      --bg:#0f0d18;--muted:#a0a0b0;--text:#f5f0e8;
+    }
+    html,body{width:100%;height:100%;background:var(--canvas);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;-webkit-font-smoothing:antialiased;
+      overflow:hidden;user-select:none;-webkit-user-select:none}
+    #app{height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      position:relative;z-index:1;padding:20px}
+    .header{position:absolute;top:16px;left:20px;right:20px;
+      display:flex;justify-content:space-between;align-items:center;padding-top:env(safe-area-inset-top, 0px)}
+    .logo{font-weight:700;font-size:18px;background:linear-gradient(120deg,var(--purple),var(--pink));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .timer-display{text-align:center;margin-bottom:40px}
+    .mode{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;
+      margin-bottom:12px;font-weight:700}
+    .time{font-family:'Courier New',monospace;font-size:clamp(60px,20vw,120px);font-weight:900;
+      letter-spacing:-2px;line-height:1;margin-bottom:16px;background:linear-gradient(120deg,var(--purple),var(--pink));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .progress-ring{width:280px;height:280px;margin:0 auto;position:relative}
+    .ring-bg{fill:none;stroke:rgba(255,255,255,.1);stroke-width:8}
+    .ring-progress{fill:none;stroke:url(#ringGradient);stroke-width:8;stroke-linecap:round;
+      transition:stroke-dashoffset .5s ease;transform:rotate(-90deg);transform-origin:50% 50%}
+    .controls{display:flex;gap:12px;margin-top:40px}
+    .btn{width:64px;height:64px;border-radius:20px;border:none;font-size:28px;
+      cursor:pointer;transition:.2s;font-weight:700;flex-shrink:0}
+    .btn-play{background:linear-gradient(120deg,var(--purple),var(--pink));color:#fff;
+      box-shadow:0 8px 24px rgba(124,58,237,.3)}
+    .btn-play:active{transform:scale(.92)}
+    .btn-reset{background:rgba(255,255,255,.1);color:var(--text);border:1px solid rgba(255,255,255,.2)}
+    .btn-reset:active{background:rgba(255,255,255,.15)}
+    .presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:28px;width:100%;max-width:320px}
+    .preset{padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+      border-radius:10px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+    .preset:active{background:rgba(255,255,255,.12);color:var(--text)}
+    .preset.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+    .sound-toggle{position:absolute;bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);
+      left:20px;background:rgba(255,255,255,.1);border:none;color:var(--text);
+      padding:10px 14px;border-radius:10px;font-size:13px;cursor:pointer;font-weight:600}
+    .sessions{position:absolute;bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);
+      right:20px;background:rgba(255,255,255,.1);border:none;color:var(--text);
+      padding:10px 14px;border-radius:10px;font-size:13px;cursor:pointer;font-weight:600}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">⏱️ Focus Timer</div>
+    <div style="font-size:12px;color:var(--muted)">Pro</div>
+  </div>
+
+  <div class="timer-display">
+    <div class="mode" id="mode">Work • 25 min</div>
+    <div class="time" id="timeDisplay">25:00</div>
+  </div>
+
+  <svg class="progress-ring" viewBox="0 0 140 140">
+    <defs>
+      <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#ff6fc8;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <circle class="ring-bg" cx="70" cy="70" r="66"></circle>
+    <circle class="ring-progress" id="ringProgress" cx="70" cy="70" r="66"
+      style="stroke-dasharray:414.48;stroke-dashoffset:0"></circle>
+  </svg>
+
+  <div class="controls">
+    <button class="btn btn-reset" id="resetBtn">↺</button>
+    <button class="btn btn-play" id="playBtn">▶</button>
+  </div>
+
+  <div class="presets">
+    <button class="preset active" data-mins="25">25m</button>
+    <button class="preset" data-mins="15">15m</button>
+    <button class="preset" data-mins="45">45m</button>
+    <button class="preset" data-mins="90">90m</button>
+  </div>
+
+  <button class="sound-toggle" id="soundBtn">🔊</button>
+  <button class="sessions" id="sessionsBtn">📊</button>
+</div>
+
+<script>
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+  let mins=25, secs=0, running=false, totalSeconds=25*60, soundOn=true, sessions=[];
+
+  const display=document.getElementById('timeDisplay');
+  const ringProgress=document.getElementById('ringProgress');
+  const playBtn=document.getElementById('playBtn');
+  const resetBtn=document.getElementById('resetBtn');
+  const modeEl=document.getElementById('mode');
+  const soundBtn=document.getElementById('soundBtn');
+  const sessionsBtn=document.getElementById('sessionsBtn');
+
+  function load(){
+    const saved=localStorage.getItem('focusTimer');
+    if(saved){
+      const data=JSON.parse(saved);
+      soundOn=data.soundOn??true;
+      sessions=data.sessions||[];
+    }
+    updateSoundBtn();
+  }
+
+  function save(){
+    localStorage.setItem('focusTimer', JSON.stringify({soundOn, sessions}));
+  }
+
+  function setTime(m){
+    mins=m;
+    secs=0;
+    totalSeconds=m*60;
+    running=false;
+    playBtn.textContent='▶';
+    updateDisplay();
+  }
+
+  function updateDisplay(){
+    display.textContent=`${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    const elapsed=totalSeconds-(mins*60+secs);
+    const pct=elapsed/totalSeconds;
+    const offset=414.48*(1-pct);
+    ringProgress.style.strokeDashoffset=offset;
+  }
+
+  function tick(){
+    if(!running) return;
+    if(secs===0){
+      if(mins===0){
+        if(soundOn) playNotification();
+        toggleMode();
+        return;
+      }
+      mins--;
+      secs=59;
+    } else {
+      secs--;
+    }
+    updateDisplay();
+  }
+
+  function toggleMode(){
+    const isWork=modeEl.textContent.includes('Work');
+    mins=isWork?5:25;
+    modeEl.textContent=isWork?'Break • 5 min':'Work • 25 min';
+    secs=0;
+    totalSeconds=mins*60;
+    updateDisplay();
+    running=false;
+    playBtn.textContent='▶';
+    if(isWork) sessions.push({date:new Date().toISOString(),duration:25});
+  }
+
+  function playNotification(){
+    const c=new(window.AudioContext||window.webkitAudioContext)();
+    const o=c.createOscillator();
+    const g=c.createGain();
+    o.connect(g);
+    g.connect(c.destination);
+    o.frequency.value=800;
+    g.gain.setValueAtTime(.3,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.01,c.currentTime+.5);
+    o.start();
+    setTimeout(()=>o.stop(),500);
+  }
+
+  function updateSoundBtn(){
+    soundBtn.textContent=soundOn?'🔊':'🔇';
+  }
+
+  setInterval(tick, 1000);
+
+  playBtn.addEventListener('click', ()=>{
+    running=!running;
+    playBtn.textContent=running?'⏸':'▶';
+    save();
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    running=false;
+    playBtn.textContent='▶';
+    const work=modeEl.textContent.includes('Work');
+    mins=work?25:5;
+    secs=0;
+    totalSeconds=mins*60;
+    updateDisplay();
+  });
+
+  soundBtn.addEventListener('click', ()=>{
+    soundOn=!soundOn;
+    updateSoundBtn();
+    save();
+  });
+
+  sessionsBtn.addEventListener('click', ()=>{
+    const count=sessions.length;
+    alert(`Sessions completed: ${count}\nTotal: ${count*25} min`);
+  });
+
+  document.querySelectorAll('.preset').forEach(p=>{
+    p.addEventListener('click', e=>{
+      document.querySelectorAll('.preset').forEach(x=>x.classList.remove('active'));
+      e.target.classList.add('active');
+      setTime(parseInt(e.target.dataset.mins));
+    });
+  });
+
+  load();
+  updateDisplay();
+</script>
+</body>
+</html>
