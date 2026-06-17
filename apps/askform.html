@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#5b3df5" />
+<meta name="description" content="ASKFORM — build a short survey or poll, share a link, and tally responses. Fully offline, single-file, no backend. Sharing via encoded links." />
+<title>ASKFORM — Lightweight Survey & Poll Builder</title>
+
+<!--
+  ============================================================================
+  BACKEND SLOT (where a real hosted-collection backend would plug in)
+  ----------------------------------------------------------------------------
+  This MVP is fully offline + single-file. "Sharing" works by encoding the
+  survey definition into the URL hash (#s=<base64-json>). Respondents submit a
+  copyable response CODE that the creator pastes back into RESULTS to tally.
+  Locally collected responses are kept in localStorage (key prefix "askform_").
+
+  To upgrade to true hosted collection (Lifetime / agency B2B tier), replace
+  the two functions below (currently no-ops / local-only):
+
+    async function backendPublishSurvey(survey) {
+      // POST survey -> { id }. Replace shareable hash link with /r/<id>.
+      // return await fetch(API + '/surveys', {method:'POST', body: JSON...})
+    }
+    async function backendSubmitResponse(surveyId, answers) {
+      // POST a response so the creator never has to paste codes.
+      // return await fetch(API + '/surveys/'+id+'/responses', {...})
+    }
+    async function backendFetchResults(surveyId) {
+      // GET aggregated responses for the RESULTS view.
+    }
+
+  Everything else (build UI, render, charts, CSV export) stays identical.
+  ============================================================================
+-->
+<style>
+  :root {
+    --bg: #f4f3fb;
+    --surface: #ffffff;
+    --surface-2: #f7f6fd;
+    --ink: #1c1830;
+    --ink-soft: #5b5670;
+    --ink-faint: #908ba6;
+    --brand: #5b3df5;
+    --brand-2: #8b5cf6;
+    --brand-soft: #ece8ff;
+    --accent: #18c29c;
+    --danger: #e0455e;
+    --line: #e7e4f1;
+    --radius: 16px;
+    --radius-sm: 11px;
+    --shadow: 0 10px 30px -12px rgba(40, 22, 110, 0.28);
+    --shadow-sm: 0 3px 12px -6px rgba(40, 22, 110, 0.25);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 0 64px;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 0 16px; }
+
+  /* Header */
+  header.app {
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 55%, #b06bf5 100%);
+    color: #fff;
+    padding: 26px 0 22px;
+    text-align: center;
+    border-radius: 0 0 26px 26px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  header.app::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(120% 80% at 80% -10%, rgba(255,255,255,.25), transparent 60%);
+    pointer-events: none;
+  }
+  .brand {
+    font-size: 26px; font-weight: 800; letter-spacing: 0.14em;
+    margin: 0; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .brand .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(255,255,255,.25); }
+  .tagline { margin: 6px 0 0; font-size: 13px; opacity: .9; font-weight: 500; }
+
+  /* Mode tabs */
+  .tabs {
+    display: flex; gap: 6px; background: var(--surface);
+    border-radius: 999px; padding: 5px; margin: 18px 0 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .tabs button {
+    flex: 1; border: 0; background: transparent; color: var(--ink-soft);
+    font-weight: 600; font-size: 13px; padding: 10px 4px; border-radius: 999px;
+    cursor: pointer; font-family: var(--font); transition: .18s;
+  }
+  .tabs button.active { background: var(--brand); color: #fff; box-shadow: var(--shadow-sm); }
+
+  /* Cards */
+  .card {
+    background: var(--surface); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); padding: 16px; margin-bottom: 14px;
+    border: 1px solid var(--line);
+  }
+  .card h2 { font-size: 16px; margin: 0 0 12px; }
+  .card .hint { font-size: 12.5px; color: var(--ink-faint); margin: -4px 0 12px; }
+
+  label.fld { display: block; font-size: 12px; font-weight: 700; color: var(--ink-soft); margin: 0 0 5px; text-transform: uppercase; letter-spacing: .04em; }
+  input[type=text], textarea, select {
+    width: 100%; font-family: var(--font); font-size: 15px; color: var(--ink);
+    background: var(--surface-2); border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm); padding: 11px 12px; outline: none; transition: .15s;
+  }
+  input[type=text]:focus, textarea:focus, select:focus { border-color: var(--brand); background: #fff; }
+  textarea { resize: vertical; min-height: 60px; }
+  select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235b5670' d='M6 8 0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 34px; }
+
+  /* Buttons */
+  .btn {
+    font-family: var(--font); font-weight: 700; font-size: 14px; border: 0;
+    border-radius: var(--radius-sm); padding: 12px 16px; cursor: pointer;
+    background: var(--brand); color: #fff; transition: .15s; display: inline-flex;
+    align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.block { width: 100%; }
+  .btn.ghost { background: var(--brand-soft); color: var(--brand); }
+  .btn.soft { background: var(--surface-2); color: var(--ink-soft); border: 1.5px solid var(--line); }
+  .btn.danger { background: transparent; color: var(--danger); padding: 8px 10px; }
+  .btn.sm { padding: 8px 11px; font-size: 12.5px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+
+  /* Question editor list */
+  .qitem { background: var(--surface-2); border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px; }
+  .qitem .qhead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .qitem .qnum { width: 24px; height: 24px; border-radius: 7px; background: var(--brand-soft); color: var(--brand); font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .qitem .qtype-badge { font-size: 11px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .04em; margin-left: auto; }
+  .qitem .qbody { font-size: 14.5px; font-weight: 600; word-break: break-word; }
+  .qitem .qopts { font-size: 12.5px; color: var(--ink-faint); margin-top: 4px; word-break: break-word; }
+  .qitem .qctrls { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .iconbtn { border: 0; background: #fff; border: 1.5px solid var(--line); border-radius: 9px; width: 34px; height: 34px; font-size: 15px; cursor: pointer; color: var(--ink-soft); display: flex; align-items: center; justify-content: center; }
+  .iconbtn:active { transform: translateY(1px); }
+  .iconbtn:disabled { opacity: .35; }
+
+  .empty { text-align: center; color: var(--ink-faint); font-size: 13.5px; padding: 18px 8px; }
+
+  /* Respond / option pills */
+  .opt-list { display: flex; flex-direction: column; gap: 8px; }
+  .opt-list label, .scale label {
+    display: flex; align-items: center; gap: 10px; background: var(--surface-2);
+    border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 11px 12px;
+    cursor: pointer; font-size: 14.5px; transition: .15s; user-select: none;
+  }
+  .opt-list label.checked, .scale label.checked { border-color: var(--brand); background: var(--brand-soft); }
+  .opt-list input, .scale input { accent-color: var(--brand); width: 18px; height: 18px; flex: 0 0 auto; }
+  .scale { display: flex; gap: 8px; }
+  .scale label { flex: 1; flex-direction: column; gap: 4px; padding: 12px 4px; justify-content: center; }
+  .scale label .num { font-size: 18px; font-weight: 800; }
+  .yn { display: flex; gap: 10px; }
+  .yn label { flex: 1; justify-content: center; }
+
+  .respond-q { margin-bottom: 18px; }
+  .respond-q .qlabel { font-weight: 700; font-size: 15.5px; margin-bottom: 9px; display: block; }
+  .respond-q .qlabel .req { color: var(--danger); }
+
+  /* Code box */
+  .codebox {
+    width: 100%; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; background: #1c1830; color: #d7ccff; border: 0;
+    border-radius: var(--radius-sm); padding: 12px; min-height: 90px; resize: vertical;
+    word-break: break-all; line-height: 1.45;
+  }
+
+  /* Results */
+  .chart-wrap { margin: 6px 0 4px; }
+  .chart-wrap canvas { width: 100%; display: block; }
+  .resq-title { font-weight: 700; font-size: 14.5px; margin: 0 0 2px; }
+  .resq-meta { font-size: 12px; color: var(--ink-faint); margin-bottom: 8px; }
+  .textans { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 6px; }
+  .textans li { background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; font-size: 13.5px; word-break: break-word; }
+  .bigstat { display: flex; gap: 10px; }
+  .bigstat .stat { flex: 1; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+  .bigstat .stat .v { font-size: 22px; font-weight: 800; color: var(--brand); }
+  .bigstat .stat .l { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .04em; }
+
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); }
+
+  /* Toast */
+  #toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: #1c1830; color: #fff; padding: 11px 18px; border-radius: 999px;
+    font-size: 13.5px; font-weight: 600; box-shadow: var(--shadow); opacity: 0;
+    pointer-events: none; transition: .25s; z-index: 99; max-width: 90vw; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Footer / freemium */
+  footer.app { text-align: center; padding: 8px 0 0; }
+  .freemium {
+    background: linear-gradient(135deg, #1c1830, #322a55); color: #fff;
+    border-radius: var(--radius); padding: 16px; margin-top: 6px; text-align: left;
+  }
+  .freemium h3 { margin: 0 0 4px; font-size: 14px; }
+  .freemium p { margin: 0; font-size: 12.5px; opacity: .82; }
+  .freemium .price { color: var(--accent); font-weight: 800; }
+  .copyright { font-size: 11px; color: var(--ink-faint); margin: 14px 0 0; }
+
+  .divider { height: 1px; background: var(--line); margin: 14px 0; border: 0; }
+  .small-link { background: none; border: 0; color: var(--brand); font-weight: 600; font-size: 13px; cursor: pointer; font-family: var(--font); padding: 0; }
+</style>
+</head>
+<body>
+  <header class="app">
+    <h1 class="brand"><span class="dot"></span>ASKFORM</h1>
+    <p class="tagline">Build a survey · share a link · tally the answers</p>
+  </header>
+
+  <div class="wrap">
+    <nav class="tabs" id="tabs">
+      <button data-mode="build" class="active">Build</button>
+      <button data-mode="respond">Respond</button>
+      <button data-mode="results">Results</button>
+    </nav>
+
+    <main id="view"></main>
+
+    <footer class="app">
+      <div class="freemium">
+        <h3>ASKFORM is free, forever 🎉</h3>
+        <p><span class="price">Lifetime $6.99</span> unlocks hosted collection (no pasting codes) + unlimited surveys. Agencies: B2B plans with white-label & team workspaces.</p>
+      </div>
+      <p class="copyright">Runs entirely on your device. No accounts, no servers, no tracking.</p>
+    </footer>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- constants ---------- */
+  var PREFIX = "askform_";
+  var DRAFT_KEY = PREFIX + "draft";
+  var RESP_KEY = function (id) { return PREFIX + "responses_" + id; };
+  var TYPES = {
+    mc:   { label: "Multiple choice", needsOpts: true },
+    rate: { label: "Rating 1–5",      needsOpts: false },
+    yn:   { label: "Yes / No",        needsOpts: false },
+    text: { label: "Short text",      needsOpts: false }
+  };
+
+  /* ---------- state ---------- */
+  var survey = null;       // the survey being built / responded to
+  var mode = "build";
+  var loadedFromHash = false;
+
+  /* ---------- utils ---------- */
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function el(tag, attrs, children) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "class") e.className = attrs[k];
+      else if (k === "html") e.innerHTML = attrs[k];
+      else if (k === "text") e.textContent = attrs[k];
+      else if (k.slice(0, 2) === "on" && typeof attrs[k] === "function") e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    });
+    (children || []).forEach(function (c) { if (c != null) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function uid() { return Math.random().toString(36).slice(2, 8); }
+
+  // Unicode-safe base64 (URL-safe)
+  function encodeObj(obj) {
+    var json = JSON.stringify(obj);
+    var b64 = btoa(unescape(encodeURIComponent(json)));
+    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function decodeObj(str) {
+    try {
+      var b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+      while (b64.length % 4) b64 += "=";
+      return JSON.parse(decodeURIComponent(escape(atob(b64))));
+    } catch (e) { return null; }
+  }
+
+  var toastTimer;
+  function toast(msg) {
+    var t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+
+  function copyText(text, okMsg) {
+    function fallback() {
+      var ta = el("textarea"); ta.value = text;
+      ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try { document.execCommand("copy"); toast(okMsg || "Copied"); }
+      catch (e) { toast("Copy failed — select manually"); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast(okMsg || "Copied"); }, fallback);
+    } else { fallback(); }
+  }
+
+  function saveDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(survey)); } catch (e) {} }
+  function loadDraft() { try { var d = localStorage.getItem(DRAFT_KEY); return d ? JSON.parse(d) : null; } catch (e) { return null; } }
+
+  function localResponses(id) {
+    try { var r = localStorage.getItem(RESP_KEY(id)); return r ? JSON.parse(r) : []; } catch (e) { return []; }
+  }
+  function addLocalResponse(id, answers) {
+    var arr = localResponses(id);
+    arr.push({ t: Date.now(), a: answers });
+    try { localStorage.setItem(RESP_KEY(id), JSON.stringify(arr)); } catch (e) {}
+  }
+
+  function newSurvey() {
+    return { id: uid(), title: "", questions: [] };
+  }
+  function newQuestion(type) {
+    var q = { id: uid(), type: type || "mc", text: "", required: false };
+    if (TYPES[q.type].needsOpts) q.options = ["Option 1", "Option 2"];
+    return q;
+  }
+
+  /* ---------- hash routing ---------- */
+  function readHash() {
+    var h = location.hash.replace(/^#/, "");
+    if (!h) return null;
+    var m = h.match(/(?:^|&)s=([^&]+)/);
+    return m ? m[1] : null;
+  }
+  function shareLink() {
+    var base = location.href.split("#")[0];
+    return base + "#s=" + encodeObj(survey);
+  }
+
+  /* ============================================================
+     BUILD MODE
+     ============================================================ */
+  function renderBuild() {
+    var view = $("#view");
+    view.innerHTML = "";
+
+    // Title card
+    var titleCard = el("div", { class: "card" }, [
+      el("label", { class: "fld", text: "Survey title" }),
+      el("input", { type: "text", id: "s-title", placeholder: "e.g. Team coffee preferences", value: survey.title })
+    ]);
+    $("input", titleCard).addEventListener("input", function (e) { survey.title = e.target.value; saveDraft(); });
+    view.appendChild(titleCard);
+
+    // Questions card
+    var qCard = el("div", { class: "card" }, [
+      el("h2", { text: "Questions" }),
+      el("p", { class: "hint", text: "Add up to any number of questions. Reorder, edit or remove below." })
+    ]);
+    var list = el("div", { id: "qlist" });
+    qCard.appendChild(list);
+
+    if (!survey.questions.length) {
+      list.appendChild(el("div", { class: "empty", text: "No questions yet — add your first one below." }));
+    } else {
+      survey.questions.forEach(function (q, i) { list.appendChild(buildQItem(q, i)); });
+    }
+
+    // Add-question controls
+    var typeSel = el("select", { id: "add-type" });
+    Object.keys(TYPES).forEach(function (k) { typeSel.appendChild(el("option", { value: k, text: TYPES[k].label })); });
+    var addRow = el("div", { class: "row", style: "margin-top:12px" }, [
+      typeSel,
+      el("button", { class: "btn ghost", onclick: function () {
+        survey.questions.push(newQuestion(typeSel.value));
+        saveDraft(); renderBuild();
+      } }, ["+ Add"])
+    ]);
+    qCard.appendChild(addRow);
+    view.appendChild(qCard);
+
+    // Share / actions card
+    var actions = el("div", { class: "card" }, [
+      el("h2", { text: "Share & collect" }),
+      el("p", { class: "hint", text: "Generate a link that opens the survey in Respond mode. Respondents send back a short code you tally in Results." })
+    ]);
+    var linkBox = el("textarea", { class: "codebox", id: "share-link", readonly: "true", rows: "3" });
+    linkBox.value = "";
+    actions.appendChild(linkBox);
+    actions.appendChild(el("div", { class: "row", style: "margin-top:10px" }, [
+      el("button", { class: "btn block", onclick: function () {
+        var problem = validateSurvey();
+        if (problem) { toast(problem); return; }
+        linkBox.value = shareLink();
+        copyText(linkBox.value, "Share link copied");
+      } }, ["Generate & copy link"]),
+      el("button", { class: "btn ghost", onclick: function () {
+        var problem = validateSurvey();
+        if (problem) { toast(problem); return; }
+        survey.id = survey.id || uid();
+        location.hash = "s=" + encodeObj(survey);
+        toast("Previewing in Respond mode");
+      } }, ["Preview"])
+    ]));
+    actions.appendChild(el("hr", { class: "divider" }));
+    actions.appendChild(el("div", { class: "row" }, [
+      el("button", { class: "btn soft sm", onclick: function () {
+        if (confirm("Start a new blank survey? Your current draft will be cleared.")) {
+          survey = newSurvey(); saveDraft(); renderBuild(); toast("New survey started");
+        }
+      } }, ["New / clear"])
+    ]));
+    view.appendChild(actions);
+  }
+
+  function buildQItem(q, i) {
+    var item = el("div", { class: "qitem" });
+    var head = el("div", { class: "qhead" }, [
+      el("span", { class: "qnum", text: String(i + 1) }),
+      el("span", { class: "qtype-badge", text: TYPES[q.type].label })
+    ]);
+    item.appendChild(head);
+
+    // Question text
+    var txt = el("input", { type: "text", placeholder: "Question text…", value: q.text });
+    txt.addEventListener("input", function (e) { q.text = e.target.value; saveDraft(); });
+    item.appendChild(txt);
+
+    // Options editor for MC
+    if (TYPES[q.type].needsOpts) {
+      var optsWrap = el("div", { style: "margin-top:8px" });
+      function drawOpts() {
+        optsWrap.innerHTML = "";
+        optsWrap.appendChild(el("label", { class: "fld", text: "Options" }));
+        q.options.forEach(function (opt, oi) {
+          var oin = el("input", { type: "text", value: opt, style: "margin-bottom:6px" });
+          oin.addEventListener("input", function (e) { q.options[oi] = e.target.value; saveDraft(); });
+          var del = el("button", { class: "iconbtn", title: "Remove option", onclick: function () {
+            if (q.options.length <= 2) { toast("Keep at least 2 options"); return; }
+            q.options.splice(oi, 1); saveDraft(); drawOpts();
+          } }, ["✕"]);
+          optsWrap.appendChild(el("div", { class: "row", style: "gap:6px;align-items:center" }, [
+            oin,
+            el("div", { style: "flex:0 0 auto", html: "" })
+          ]));
+          // place delete button next to input
+          optsWrap.lastChild.appendChild(del);
+          optsWrap.lastChild.style.display = "flex";
+        });
+        optsWrap.appendChild(el("button", { class: "btn soft sm", onclick: function () {
+          q.options.push("Option " + (q.options.length + 1)); saveDraft(); drawOpts();
+        } }, ["+ Option"]));
+      }
+      drawOpts();
+      item.appendChild(optsWrap);
+    }
+
+    // Required toggle
+    var reqLabel = el("label", { style: "display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--ink-soft);font-weight:600;cursor:pointer" }, [
+      (function () {
+        var c = el("input", { type: "checkbox" });
+        c.checked = !!q.required;
+        c.addEventListener("change", function (e) { q.required = e.target.checked; saveDraft(); });
+        return c;
+      })(),
+      document.createTextNode("Required")
+    ]);
+    item.appendChild(reqLabel);
+
+    // Controls: reorder + delete
+    var ctrls = el("div", { class: "qctrls" }, [
+      (function () { var b = el("button", { class: "iconbtn", title: "Move up", onclick: function () { move(i, -1); } }, ["↑"]); if (i === 0) b.disabled = true; return b; })(),
+      (function () { var b = el("button", { class: "iconbtn", title: "Move down", onclick: function () { move(i, 1); } }, ["↓"]); if (i === survey.questions.length - 1) b.disabled = true; return b; })(),
+      el("button", { class: "btn danger sm", style: "margin-left:auto", onclick: function () {
+        survey.questions.splice(i, 1); saveDraft(); renderBuild();
+      } }, ["Delete"])
+    ]);
+    item.appendChild(ctrls);
+    return item;
+  }
+
+  function move(i, dir) {
+    var j = i + dir;
+    if (j < 0 || j >= survey.questions.length) return;
+    var tmp = survey.questions[i];
+    survey.questions[i] = survey.questions[j];
+    survey.questions[j] = tmp;
+    saveDraft(); renderBuild();
+  }
+
+  function validateSurvey() {
+    if (!survey.title.trim()) return "Add a survey title first";
+    if (!survey.questions.length) return "Add at least one question";
+    for (var i = 0; i < survey.questions.length; i++) {
+      var q = survey.questions[i];
+      if (!q.text.trim()) return "Question " + (i + 1) + " needs text";
+      if (TYPES[q.type].needsOpts) {
+        var filled = q.options.filter(function (o) { return o.trim(); });
+        if (filled.length < 2) return "Question " + (i + 1) + " needs 2+ options";
+      }
+    }
+    return null;
+  }
+
+  /* ============================================================
+     RESPOND MODE
+     ============================================================ */
+  function renderRespond() {
+    var view = $("#view");
+    view.innerHTML = "";
+
+    if (!loadedFromHash || !survey || !survey.questions.length) {
+      view.appendChild(el("div", { class: "card" }, [
+        el("h2", { text: "No survey loaded" }),
+        el("p", { class: "hint", text: "Open a survey link (it contains #s=…) to fill it in, or build one in the Build tab and tap Preview." })
+      ]));
+      return;
+    }
+
+    var answers = {}; // qid -> value
+
+    var head = el("div", { class: "card" }, [
+      el("span", { class: "pill", text: "Survey" }),
+      el("h2", { text: survey.title || "Untitled survey", style: "margin-top:8px" }),
+      el("p", { class: "hint", text: survey.questions.length + " question" + (survey.questions.length === 1 ? "" : "s") + " · your answers stay on your device until you send the code." })
+    ]);
+    view.appendChild(head);
+
+    var form = el("div", { class: "card" });
+    survey.questions.forEach(function (q, i) {
+      form.appendChild(buildRespondQ(q, i, answers));
+    });
+    view.appendChild(form);
+
+    // submit
+    var submitCard = el("div", { class: "card" });
+    var resultArea = el("div");
+    submitCard.appendChild(el("button", { class: "btn block", onclick: function () {
+      // validate required
+      for (var i = 0; i < survey.questions.length; i++) {
+        var q = survey.questions[i];
+        if (q.required) {
+          var v = answers[q.id];
+          if (v == null || v === "" || (typeof v === "string" && !v.trim())) {
+            toast("Please answer question " + (i + 1)); return;
+          }
+        }
+      }
+      // build ordered answer array aligned to questions
+      var ordered = survey.questions.map(function (q) { return answers.hasOwnProperty(q.id) ? answers[q.id] : null; });
+      var code = encodeObj({ sid: survey.id, a: ordered });
+
+      // local collection on this device too
+      addLocalResponse(survey.id, ordered);
+
+      resultArea.innerHTML = "";
+      resultArea.appendChild(el("hr", { class: "divider" }));
+      resultArea.appendChild(el("p", { class: "hint", text: "✅ Saved on this device. Copy the code below and send it to the survey creator to be counted:" }));
+      var cb = el("textarea", { class: "codebox", readonly: "true", rows: "3" });
+      cb.value = code;
+      resultArea.appendChild(cb);
+      resultArea.appendChild(el("button", { class: "btn block", style: "margin-top:10px", onclick: function () { copyText(code, "Response code copied"); } }, ["Copy response code"]));
+      cb.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast("Response recorded");
+    } }, ["Submit response"]));
+    submitCard.appendChild(resultArea);
+    view.appendChild(submitCard);
+  }
+
+  function buildRespondQ(q, i, answers) {
+    var wrap = el("div", { class: "respond-q" });
+    var lbl = el("span", { class: "qlabel" });
+    lbl.appendChild(document.createTextNode((i + 1) + ". " + (q.text || "Question")));
+    if (q.required) lbl.appendChild(el("span", { class: "req", text: " *" }));
+    wrap.appendChild(lbl);
+
+    if (q.type === "mc") {
+      var listEl = el("div", { class: "opt-list" });
+      (q.options || []).forEach(function (opt, oi) {
+        if (!opt.trim()) return;
+        var input = el("input", { type: "radio", name: "q_" + q.id });
+        var l = el("label", {}, [input, document.createTextNode(opt)]);
+        input.addEventListener("change", function () {
+          answers[q.id] = opt;
+          Array.prototype.forEach.call(listEl.children, function (c) { c.classList.remove("checked"); });
+          l.classList.add("checked");
+        });
+        listEl.appendChild(l);
+      });
+      wrap.appendChild(listEl);
+    } else if (q.type === "rate") {
+      var scale = el("div", { class: "scale" });
+      for (var n = 1; n <= 5; n++) {
+        (function (val) {
+          var input = el("input", { type: "radio", name: "q_" + q.id, style: "display:none" });
+          var l = el("label", {}, [el("span", { class: "num", text: String(val) }), input]);
+          l.addEventListener("click", function () {
+            answers[q.id] = val;
+            Array.prototype.forEach.call(scale.children, function (c) { c.classList.remove("checked"); });
+            l.classList.add("checked");
+          });
+          scale.appendChild(l);
+        })(n);
+      }
+      wrap.appendChild(scale);
+    } else if (q.type === "yn") {
+      var yn = el("div", { class: "yn" });
+      ["Yes", "No"].forEach(function (opt) {
+        var input = el("input", { type: "radio", name: "q_" + q.id });
+        var l = el("label", {}, [input, document.createTextNode(opt)]);
+        input.addEventListener("change", function () {
+          answers[q.id] = opt;
+          Array.prototype.forEach.call(yn.children, function (c) { c.classList.remove("checked"); });
+          l.classList.add("checked");
+        });
+        yn.appendChild(l);
+      });
+      wrap.appendChild(yn);
+    } else if (q.type === "text") {
+      var ta = el("textarea", { placeholder: "Your answer…", rows: "2" });
+      ta.addEventListener("input", function (e) { answers[q.id] = e.target.value; });
+      wrap.appendChild(ta);
+    }
+    return wrap;
+  }
+
+  /* ============================================================
+     RESULTS MODE
+     ============================================================ */
+  function renderResults() {
+    var view = $("#view");
+    view.innerHTML = "";
+
+    var target = (survey && survey.questions.length) ? survey : loadDraft();
+    if (!target || !target.questions || !target.questions.length) {
+      view.appendChild(el("div", { class: "card" }, [
+        el("h2", { text: "No survey to tally" }),
+        el("p", { class: "hint", text: "Build a survey or open a survey link first, then collect responses here." })
+      ]));
+      return;
+    }
+    survey = target;
+
+    // Paste-codes card
+    var pasteCard = el("div", { class: "card" }, [
+      el("h2", { text: "Add response codes" }),
+      el("p", { class: "hint", text: "Paste one or more response codes (one per line) that respondents sent you. Locally collected responses on this device are already included." })
+    ]);
+    var codeTA = el("textarea", { class: "codebox", placeholder: "Paste response code(s) here, one per line…", rows: "3" });
+    pasteCard.appendChild(codeTA);
+    pasteCard.appendChild(el("div", { class: "row", style: "margin-top:10px" }, [
+      el("button", { class: "btn block", onclick: function () {
+        var lines = codeTA.value.split(/\s+/).map(function (s) { return s.trim(); }).filter(Boolean);
+        var added = 0, bad = 0;
+        lines.forEach(function (line) {
+          var obj = decodeObj(line.replace(/^#?s?=?/, ""));
+          if (obj && Array.isArray(obj.a) && obj.sid === survey.id) { addLocalResponse(survey.id, obj.a); added++; }
+          else if (obj && Array.isArray(obj.a)) { bad++; } // wrong survey
+          else { bad++; }
+        });
+        codeTA.value = "";
+        toast(added + " added" + (bad ? ", " + bad + " skipped (invalid/wrong survey)" : ""));
+        renderResults();
+      } }, ["Add codes"])
+    ]));
+    view.appendChild(pasteCard);
+
+    var responses = localResponses(survey.id);
+
+    // Summary
+    var summary = el("div", { class: "card" }, [
+      el("h2", { text: survey.title || "Untitled survey" }),
+      el("div", { class: "bigstat" }, [
+        el("div", { class: "stat" }, [ el("div", { class: "v", text: String(responses.length) }), el("div", { class: "l", text: "Responses" }) ]),
+        el("div", { class: "stat" }, [ el("div", { class: "v", text: String(survey.questions.length) }), el("div", { class: "l", text: "Questions" }) ])
+      ])
+    ]);
+    summary.appendChild(el("div", { class: "row", style: "margin-top:12px" }, [
+      el("button", { class: "btn ghost sm", onclick: function () { exportCSV(survey, responses); } }, ["Export CSV"]),
+      el("button", { class: "btn soft sm", onclick: function () {
+        if (confirm("Clear all locally stored responses for this survey?")) {
+          try { localStorage.removeItem(RESP_KEY(survey.id)); } catch (e) {}
+          renderResults(); toast("Responses cleared");
+        }
+      } }, ["Clear responses"])
+    ]));
+    view.appendChild(summary);
+
+    if (!responses.length) {
+      view.appendChild(el("div", { class: "card" }, [ el("div", { class: "empty", text: "No responses yet. Paste a code above, or share the survey link and collect replies." }) ]));
+      return;
+    }
+
+    // Per-question results
+    survey.questions.forEach(function (q, qi) {
+      var card = el("div", { class: "card" });
+      card.appendChild(el("p", { class: "resq-title", text: (qi + 1) + ". " + (q.text || "Question") }));
+      card.appendChild(el("p", { class: "resq-meta", text: TYPES[q.type].label }));
+
+      var vals = responses.map(function (r) { return r.a[qi]; }).filter(function (v) { return v != null && v !== ""; });
+
+      if (q.type === "text") {
+        if (!vals.length) { card.appendChild(el("p", { class: "hint", text: "No answers." })); }
+        else {
+          var ul = el("ul", { class: "textans" });
+          vals.forEach(function (v) { ul.appendChild(el("li", { text: String(v) })); });
+          card.appendChild(ul);
+        }
+      } else {
+        // tally categories
+        var cats, counts = {};
+        if (q.type === "mc") cats = (q.options || []).filter(function (o) { return o.trim(); });
+        else if (q.type === "yn") cats = ["Yes", "No"];
+        else cats = ["1", "2", "3", "4", "5"];
+        cats.forEach(function (c) { counts[c] = 0; });
+        vals.forEach(function (v) { var key = String(v); if (counts.hasOwnProperty(key)) counts[key]++; else counts[key] = (counts[key] || 0) + 1; });
+
+        var labels = Object.keys(counts);
+        var data = labels.map(function (l) { return counts[l]; });
+        var cv = el("canvas");
+        var wrapC = el("div", { class: "chart-wrap" }, [cv]);
+        card.appendChild(wrapC);
+        // average for rating
+        if (q.type === "rate" && vals.length) {
+          var avg = vals.reduce(function (s, v) { return s + Number(v); }, 0) / vals.length;
+          card.appendChild(el("p", { class: "resq-meta", text: "Average: " + avg.toFixed(2) + " / 5  ·  " + vals.length + " response" + (vals.length === 1 ? "" : "s") }));
+        }
+        // draw after attached to DOM
+        setTimeout(function () { drawBarChart(cv, labels, data); }, 0);
+      }
+      view.appendChild(card);
+    });
+  }
+
+  /* ---------- Canvas bar chart ---------- */
+  function drawBarChart(canvas, labels, data) {
+    var dpr = window.devicePixelRatio || 1;
+    var cssW = canvas.parentNode.clientWidth || 480;
+    var n = labels.length;
+    var rowH = 34;
+    var cssH = Math.max(40, n * rowH + 8);
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
+    canvas.width = cssW * dpr;
+    canvas.height = cssH * dpr;
+    var ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    var max = Math.max(1, Math.max.apply(null, data));
+    var labelW = 0;
+    ctx.font = "600 12px " + getComputedStyle(document.body).fontFamily;
+    labels.forEach(function (l) { labelW = Math.max(labelW, ctx.measureText(l.length > 16 ? l.slice(0, 15) + "…" : l).width); });
+    labelW = Math.min(labelW, cssW * 0.4) + 10;
+    var valW = 34;
+    var barAreaX = labelW;
+    var barAreaW = cssW - labelW - valW;
+
+    var brand = (getComputedStyle(document.documentElement).getPropertyValue("--brand") || "#5b3df5").trim();
+    var brand2 = (getComputedStyle(document.documentElement).getPropertyValue("--brand-2") || "#8b5cf6").trim();
+    var track = (getComputedStyle(document.documentElement).getPropertyValue("--surface-2") || "#f7f6fd").trim();
+    var ink = (getComputedStyle(document.documentElement).getPropertyValue("--ink") || "#1c1830").trim();
+    var inkFaint = (getComputedStyle(document.documentElement).getPropertyValue("--ink-faint") || "#908ba6").trim();
+
+    labels.forEach(function (lbl, i) {
+      var y = i * rowH + 4;
+      var barH = 18;
+      var by = y + (rowH - barH) / 2 - 4;
+      // label
+      ctx.fillStyle = inkFaint;
+      ctx.font = "600 12px " + getComputedStyle(document.body).fontFamily;
+      ctx.textBaseline = "middle";
+      var txt = lbl.length > 16 ? lbl.slice(0, 15) + "…" : lbl;
+      ctx.textAlign = "left";
+      ctx.fillText(txt, 0, by + barH / 2);
+      // track
+      var radius = barH / 2;
+      roundRect(ctx, barAreaX, by, barAreaW, barH, radius);
+      ctx.fillStyle = track; ctx.fill();
+      // value bar
+      var w = Math.max(data[i] > 0 ? barH : 0, (data[i] / max) * barAreaW);
+      if (data[i] > 0) {
+        var grad = ctx.createLinearGradient(barAreaX, 0, barAreaX + barAreaW, 0);
+        grad.addColorStop(0, brand); grad.addColorStop(1, brand2);
+        roundRect(ctx, barAreaX, by, w, barH, radius);
+        ctx.fillStyle = grad; ctx.fill();
+      }
+      // count
+      ctx.fillStyle = ink;
+      ctx.font = "800 12px " + getComputedStyle(document.body).fontFamily;
+      ctx.textAlign = "right";
+      ctx.fillText(String(data[i]), cssW, by + barH / 2);
+    });
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2); if (w <= 0) { return; }
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  /* ---------- CSV export ---------- */
+  function exportCSV(survey, responses) {
+    function esc(v) {
+      if (v == null) v = "";
+      v = String(v);
+      if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+      return v;
+    }
+    var header = ["#", "timestamp"].concat(survey.questions.map(function (q, i) { return (i + 1) + ". " + (q.text || "Q" + (i + 1)); }));
+    var rows = [header.map(esc).join(",")];
+    responses.forEach(function (r, ri) {
+      var row = [ri + 1, new Date(r.t).toISOString()];
+      survey.questions.forEach(function (q, qi) { row.push(r.a[qi]); });
+      rows.push(row.map(esc).join(","));
+    });
+    var csv = rows.join("\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = el("a", { href: url, download: (survey.title || "askform-results").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".csv" });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast("CSV exported");
+  }
+
+  /* ============================================================
+     ROUTING / INIT
+     ============================================================ */
+  function setMode(m) {
+    mode = m;
+    Array.prototype.forEach.call($("#tabs").children, function (b) {
+      b.classList.toggle("active", b.getAttribute("data-mode") === m);
+    });
+    if (m === "build") renderBuild();
+    else if (m === "respond") renderRespond();
+    else renderResults();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function bootFromHash() {
+    var enc = readHash();
+    if (enc) {
+      var obj = decodeObj(enc);
+      if (obj && obj.questions) {
+        survey = obj;
+        if (!survey.id) survey.id = uid();
+        loadedFromHash = true;
+        setMode("respond");
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function init() {
+    // tab handlers
+    Array.prototype.forEach.call($("#tabs").children, function (b) {
+      b.addEventListener("click", function () { setMode(b.getAttribute("data-mode")); });
+    });
+
+    // hash change (e.g. opening a link after load)
+    window.addEventListener("hashchange", function () {
+      if (!bootFromHash()) {
+        // hash cleared -> back to build with draft
+        survey = loadDraft() || newSurvey();
+        loadedFromHash = false;
+        setMode("build");
+      }
+    });
+
+    // redraw charts on resize when in results
+    var resizeTimer;
+    window.addEventListener("resize", function () {
+      if (mode !== "results") return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () { renderResults(); }, 200);
+    });
+
+    if (!bootFromHash()) {
+      survey = loadDraft() || newSurvey();
+      setMode("build");
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
