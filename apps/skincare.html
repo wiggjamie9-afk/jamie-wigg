@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08050d">
+    <title>SkinCare Routine Tracker</title>
+    <style>
+        :root { --canvas:#08050d; --green:#00e887; --red:#ff1f5a; --cyan:#00d8ff; --purple:#7c3aed; --text:#fff; --text-muted:#aaa; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--canvas); color:var(--text); min-height:100vh; padding-bottom:80px; }
+        .header { padding:20px; border-bottom:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-between; }
+        h1 { font-size:24px; font-weight:700; }
+        .badge { background:var(--green); color:var(--canvas); padding:4px 12px; border-radius:20px; font-size:11px; }
+        .content { padding:20px; }
+        input, select { background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:6px; color:var(--text); padding:10px; margin:8px 0; width:100%; }
+        button { background:var(--green); color:var(--canvas); border:0; padding:10px 16px; border-radius:6px; cursor:pointer; font-weight:600; margin:10px 0; width:100%; }
+        .routine { background:rgba(0,232,135,0.05); border:1px solid rgba(0,232,135,0.2); border-radius:8px; padding:12px; margin:10px 0; }
+        .routine-title { font-weight:600; margin-bottom:8px; }
+        .items { font-size:13px; color:var(--text-muted); }
+        .panel { display:none; }
+        .panel.on { display:block; }
+        .tabs { position:fixed; bottom:0; left:0; right:0; background:var(--canvas); border-top:1px solid rgba(0,232,135,0.2); display:flex; justify-content:space-around; height:70px; z-index:100; }
+        .tab { flex:1; background:0; border:0; color:var(--text-muted); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; }
+        .tab.on { color:var(--green); }
+        .premium { background:rgba(124,58,237,0.1); border-left:3px solid var(--purple); padding:12px; margin-top:20px; border-radius:4px; font-size:13px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💆 SkinCare</h1>
+        <div class="badge">FREE</div>
+    </div>
+    <div class="content">
+        <div id="log" class="panel on">
+            <select id="time">
+                <option>Morning</option>
+                <option>Evening</option>
+            </select>
+            <input type="text" id="product" placeholder="Product name...">
+            <input type="text" id="brand" placeholder="Brand...">
+            <input type="range" id="rating" min="1" max="5" step="1" value="3" style="width:100%">
+            <div style="font-size:12px;color:var(--text-muted)">Rating: <span id="rating-val">3</span>/5</div>
+            <button onclick="addProduct()">+ Log Product</button>
+            <div id="products" style="margin-top:20px"></div>
+            <div class="premium">💎 Premium: AI recommendation engine</div>
+        </div>
+        <div id="routine" class="panel">
+            <div id="routines"></div>
+        </div>
+    </div>
+    <div class="tabs">
+        <button class="tab on" data-p="log">📝 Log</button>
+        <button class="tab" data-p="routine">✓ Routine</button>
+    </div>
+    <script>
+        let products = [];
+        
+        function load() {
+            let d = localStorage.getItem('skincare');
+            if (d) products = JSON.parse(d);
+            draw();
+        }
+        
+        function save() {
+            localStorage.setItem('skincare', JSON.stringify(products));
+            draw();
+        }
+        
+        function addProduct() {
+            let p = document.getElementById('product').value;
+            let b = document.getElementById('brand').value;
+            let t = document.getElementById('time').value;
+            let r = document.getElementById('rating').value;
+            
+            if (!p || !b) return;
+            products.push({p,b,t,r,d:new Date().toLocaleDateString()});
+            document.getElementById('product').value = '';
+            document.getElementById('brand').value = '';
+            save();
+        }
+        
+        function draw() {
+            document.getElementById('products').innerHTML = products.length ?
+                products.map((x,i) => `<div class="routine"><div class="routine-title">${x.p} (${x.b})</div><div class="items">${x.t} • ${x.d} • ${x.r}★</div></div>`).join('') :
+                '<p style="color:var(--text-muted)">No products logged</p>';
+            
+            let m = products.filter(x => x.t === 'Morning');
+            let e = products.filter(x => x.t === 'Evening');
+            document.getElementById('routines').innerHTML = 
+                `<div class="routine"><div class="routine-title">Morning (${m.length})</div><div class="items">${m.map(x => `${x.p} (${x.b})`).join('<br>')}</div></div>` +
+                `<div class="routine"><div class="routine-title">Evening (${e.length})</div><div class="items">${e.map(x => `${x.p} (${x.b})`).join('<br>')}</div></div>`;
+        }
+        
+        document.getElementById('rating').oninput = () => {
+            document.getElementById('rating-val').textContent = document.getElementById('rating').value;
+        };
+        
+        document.querySelectorAll('.tab').forEach(t => {
+            t.onclick = () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+                document.querySelectorAll('.panel').forEach(x => x.classList.remove('on'));
+                t.classList.add('on');
+                document.getElementById(t.dataset.p).classList.add('on');
+            };
+        });
+        
+        load();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('data:application/javascript,self.addEventListener("install",e=>self.skipWaiting());');
+    </script>
+</body>
+</html>
