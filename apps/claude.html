@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Claude — Chat</title>
+<meta name="description" content="A fast, private, bring-your-own-key chat interface for Claude. Multi-model, streaming, zero tracking.">
+<style>
+    :root{
+        --bg:#0e0e10; --panel:#17171a; --panel-2:#1f1f23; --line:#2a2a30;
+        --txt:#ececf1; --txt-dim:#9a9aa5; --txt-faint:#6b6b76;
+        --accent:#c96442; --accent-soft:#c9644222; --ok:#3fa66a; --warn:#d6a83a;
+        --radius:14px; --mono:'SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+        --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--sans);background:var(--bg);color:var(--txt);overflow:hidden;
+        -webkit-font-smoothing:antialiased;display:flex}
+
+    /* ---------- Sidebar ---------- */
+    #sidebar{width:264px;flex:0 0 264px;background:var(--panel);border-right:1px solid var(--line);
+        display:flex;flex-direction:column;transition:margin-left .25s ease}
+    #sidebar.hidden{margin-left:-264px}
+    .side-top{padding:14px;border-bottom:1px solid var(--line)}
+    .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;letter-spacing:-.01em}
+    .brand .spark{width:22px;height:22px;border-radius:6px;background:var(--accent);
+        display:grid;place-items:center;color:#fff;font-size:13px;flex:0 0 auto}
+    .btn-new{margin-top:12px;width:100%;padding:10px;border:1px solid var(--line);background:var(--panel-2);
+        color:var(--txt);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;gap:8px;transition:.15s}
+    .btn-new:hover{background:#26262b;border-color:#37373f}
+    #chatList{flex:1;overflow-y:auto;padding:8px}
+    .chat-item{padding:9px 11px;border-radius:9px;cursor:pointer;font-size:13.5px;color:var(--txt-dim);
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px;
+        position:relative;transition:.12s}
+    .chat-item:hover{background:var(--panel-2);color:var(--txt)}
+    .chat-item.active{background:var(--accent-soft);color:var(--txt)}
+    .chat-item .x{margin-left:auto;opacity:0;font-size:15px;color:var(--txt-faint);padding:0 2px;flex:0 0 auto}
+    .chat-item:hover .x{opacity:1}
+    .chat-item .x:hover{color:var(--accent)}
+    .side-bottom{padding:10px;border-top:1px solid var(--line)}
+    .side-link{padding:9px 11px;border-radius:9px;cursor:pointer;font-size:13.5px;color:var(--txt-dim);
+        display:flex;align-items:center;gap:9px;transition:.12s}
+    .side-link:hover{background:var(--panel-2);color:var(--txt)}
+
+    /* ---------- Main ---------- */
+    #main{flex:1;display:flex;flex-direction:column;min-width:0}
+    .topbar{height:54px;flex:0 0 54px;border-bottom:1px solid var(--line);display:flex;align-items:center;
+        gap:10px;padding:0 16px;background:rgba(14,14,16,.7);backdrop-filter:blur(8px)}
+    .icon-btn{width:34px;height:34px;border:none;background:transparent;color:var(--txt-dim);
+        border-radius:8px;cursor:pointer;display:grid;place-items:center;font-size:18px;transition:.12s;flex:0 0 auto}
+    .icon-btn:hover{background:var(--panel-2);color:var(--txt)}
+    .model-pick{position:relative;margin-left:2px}
+    .model-btn{padding:7px 12px;border:1px solid var(--line);background:var(--panel);color:var(--txt);
+        border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px}
+    .model-btn:hover{border-color:#37373f}
+    .model-menu{position:absolute;top:42px;left:0;background:var(--panel-2);border:1px solid var(--line);
+        border-radius:11px;padding:6px;min-width:248px;box-shadow:0 14px 40px #000a;z-index:50;display:none}
+    .model-menu.open{display:block}
+    .model-opt{padding:10px 11px;border-radius:8px;cursor:pointer;transition:.12s}
+    .model-opt:hover{background:var(--panel)}
+    .model-opt .t{font-size:13.5px;font-weight:600}
+    .model-opt .d{font-size:11.5px;color:var(--txt-faint);margin-top:2px}
+    .model-opt.on{background:var(--accent-soft)}
+    .spacer{flex:1}
+    .pill{font-size:11px;color:var(--txt-faint);padding:3px 9px;border:1px solid var(--line);border-radius:20px}
+
+    /* ---------- Messages ---------- */
+    #scroll{flex:1;overflow-y:auto;scroll-behavior:smooth}
+    #thread{max-width:760px;margin:0 auto;padding:26px 20px 140px}
+    .msg{display:flex;gap:14px;margin-bottom:26px;animation:rise .3s ease}
+    @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .avatar{width:30px;height:30px;border-radius:8px;flex:0 0 30px;display:grid;place-items:center;
+        font-size:13px;font-weight:700;color:#fff}
+    .avatar.u{background:#3a3a42}
+    .avatar.a{background:var(--accent)}
+    .bubble{flex:1;min-width:0;padding-top:3px}
+    .role{font-size:12.5px;font-weight:700;color:var(--txt-dim);margin-bottom:5px}
+    .content{font-size:15px;line-height:1.66;word-wrap:break-word}
+    .content p{margin:0 0 12px}
+    .content p:last-child{margin-bottom:0}
+    .content ul,.content ol{margin:0 0 12px;padding-left:24px}
+    .content li{margin-bottom:5px}
+    .content h1,.content h2,.content h3{margin:18px 0 9px;line-height:1.3;font-weight:700}
+    .content h1{font-size:21px}.content h2{font-size:18px}.content h3{font-size:16px}
+    .content a{color:var(--accent);text-decoration:none}.content a:hover{text-decoration:underline}
+    .content strong{font-weight:700;color:#fff}
+    .content code.inline{background:var(--panel-2);border:1px solid var(--line);padding:1px 6px;
+        border-radius:5px;font-family:var(--mono);font-size:13px}
+    .content blockquote{border-left:3px solid var(--accent);padding-left:14px;color:var(--txt-dim);margin:0 0 12px}
+    .codewrap{margin:0 0 14px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0a0a0c}
+    .codehead{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;
+        background:var(--panel-2);border-bottom:1px solid var(--line);font-size:11.5px;color:var(--txt-faint)}
+    .copy-btn{background:transparent;border:none;color:var(--txt-dim);cursor:pointer;font-size:11.5px;
+        padding:2px 6px;border-radius:5px}
+    .copy-btn:hover{color:var(--txt);background:var(--panel)}
+    .codewrap pre{margin:0;padding:14px;overflow-x:auto}
+    .codewrap code{font-family:var(--mono);font-size:13px;line-height:1.6;color:#e6e6ec}
+    .cursor{display:inline-block;width:8px;height:16px;background:var(--accent);margin-left:1px;
+        border-radius:1px;animation:blink 1s steps(2) infinite;vertical-align:text-bottom}
+    @keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
+    .typing i{display:inline-block;width:7px;height:7px;margin-right:4px;border-radius:50%;
+        background:var(--txt-faint);animation:bounce 1.2s infinite}
+    .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+    @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+    /* ---------- Welcome ---------- */
+    .welcome{max-width:600px;margin:8vh auto 0;text-align:center;padding:0 20px}
+    .welcome .big{width:54px;height:54px;border-radius:14px;background:var(--accent);margin:0 auto 20px;
+        display:grid;place-items:center;font-size:26px;color:#fff}
+    .welcome h2{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+    .welcome p{color:var(--txt-dim);font-size:15px;line-height:1.6;margin-bottom:26px}
+    .starters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .starter{text-align:left;padding:13px 15px;border:1px solid var(--line);background:var(--panel);
+        border-radius:11px;cursor:pointer;font-size:13.5px;color:var(--txt-dim);transition:.14s}
+    .starter:hover{border-color:#37373f;color:var(--txt);transform:translateY(-1px)}
+    .starter b{display:block;color:var(--txt);font-weight:600;margin-bottom:2px}
+
+    /* ---------- Composer ---------- */
+    .composer-wrap{position:absolute;bottom:0;left:0;right:0;padding:0 20px 18px;
+        background:linear-gradient(transparent,var(--bg) 36%);pointer-events:none}
+    .composer{max-width:760px;margin:0 auto;pointer-events:auto;background:var(--panel);
+        border:1px solid var(--line);border-radius:18px;padding:8px 8px 8px 16px;display:flex;
+        align-items:flex-end;gap:8px;box-shadow:0 8px 30px #0006;transition:border-color .15s}
+    .composer:focus-within{border-color:#3a3a44}
+    #input{flex:1;background:transparent;border:none;outline:none;color:var(--txt);font-family:var(--sans);
+        font-size:15px;line-height:1.5;resize:none;max-height:200px;padding:9px 0}
+    #input::placeholder{color:var(--txt-faint)}
+    .send{width:38px;height:38px;flex:0 0 38px;border:none;border-radius:11px;background:var(--accent);
+        color:#fff;cursor:pointer;display:grid;place-items:center;font-size:17px;transition:.15s}
+    .send:hover{filter:brightness(1.08)}
+    .send:disabled{background:var(--panel-2);color:var(--txt-faint);cursor:default}
+    .hint{max-width:760px;margin:8px auto 0;text-align:center;font-size:11px;color:var(--txt-faint)}
+
+    /* ---------- Modal ---------- */
+    .overlay{position:fixed;inset:0;background:#000a;backdrop-filter:blur(4px);display:none;
+        align-items:center;justify-content:center;z-index:100;padding:20px}
+    .overlay.open{display:flex}
+    .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:100%;
+        max-width:440px;padding:24px;animation:rise .25s ease}
+    .modal h3{font-size:18px;font-weight:700;margin-bottom:6px}
+    .modal .sub{font-size:13px;color:var(--txt-dim);line-height:1.55;margin-bottom:18px}
+    .field{margin-bottom:16px}
+    .field label{display:block;font-size:12.5px;font-weight:600;color:var(--txt-dim);margin-bottom:7px}
+    .field input,.field textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);
+        border-radius:10px;padding:11px 13px;color:var(--txt);font-size:14px;font-family:var(--sans);outline:none}
+    .field input:focus,.field textarea:focus{border-color:var(--accent)}
+    .field textarea{resize:vertical;min-height:80px;line-height:1.5}
+    .field .note{font-size:11.5px;color:var(--txt-faint);margin-top:6px;line-height:1.5}
+    .field .note a{color:var(--accent);text-decoration:none}
+    .modal-actions{display:flex;gap:10px;margin-top:4px}
+    .btn{flex:1;padding:11px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--line);transition:.15s}
+    .btn.ghost{background:transparent;color:var(--txt-dim)}.btn.ghost:hover{background:var(--panel-2);color:var(--txt)}
+    .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.primary:hover{filter:brightness(1.08)}
+
+    .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+        background:var(--panel-2);border:1px solid var(--line);color:var(--txt);padding:10px 18px;
+        border-radius:30px;font-size:13px;opacity:0;transition:.25s;z-index:200;pointer-events:none}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    @media(max-width:760px){
+        #sidebar{position:fixed;z-index:90;height:100%;box-shadow:8px 0 40px #0008}
+        #sidebar.hidden{margin-left:-264px}
+        .starters{grid-template-columns:1fr}
+    }
+    ::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:#2e2e34;border-radius:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+    <div class="side-top">
+        <div class="brand"><span class="spark">✦</span> Claude</div>
+        <button class="btn-new" onclick="newChat()">＋ New chat</button>
+    </div>
+    <div id="chatList"></div>
+    <div class="side-bottom">
+        <div class="side-link" onclick="openSettings()">⚙ Settings &amp; API key</div>
+        <div class="side-link" onclick="exportChats()">⭳ Export chats</div>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<div id="main">
+    <div class="topbar">
+        <button class="icon-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+        <div class="model-pick">
+            <button class="model-btn" onclick="toggleModelMenu(event)">
+                <span id="modelLabel">Claude</span> <span style="font-size:10px">▾</span>
+            </button>
+            <div class="model-menu" id="modelMenu"></div>
+        </div>
+        <div class="spacer"></div>
+        <span class="pill" id="keyPill">no key</span>
+    </div>
+
+    <div id="scroll">
+        <div id="thread"></div>
+    </div>
+
+    <div class="composer-wrap">
+        <div class="composer">
+            <textarea id="input" rows="1" placeholder="Message Claude…"
+                oninput="autosize()" onkeydown="keydown(event)"></textarea>
+            <button class="send" id="sendBtn" onclick="send()">↑</button>
+        </div>
+        <div class="hint">Bring your own Anthropic key · stored only in your browser · zero tracking</div>
+    </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="settings">
+    <div class="modal">
+        <h3>Settings</h3>
+        <p class="sub">Your key is stored only in this browser (<code class="inline">localStorage</code>) and sent directly to Anthropic. It never touches any other server.</p>
+        <div class="field">
+            <label>Anthropic API key</label>
+            <input type="password" id="keyInput" placeholder="sk-ant-…" autocomplete="off">
+            <div class="note">Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a></div>
+        </div>
+        <div class="field">
+            <label>System prompt / persona <span style="color:var(--txt-faint);font-weight:400">(optional)</span></label>
+            <textarea id="sysInput" placeholder="e.g. You are a concise, friendly assistant who explains things simply."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn ghost" onclick="closeSettings()">Cancel</button>
+            <button class="btn primary" onclick="saveSettings()">Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =============================================================
+   Claude Chat — single-file, BYO-key, streaming, zero deps.
+   Storage keys are namespaced cc_*. Conversations live locally.
+============================================================= */
+
+const MODELS = [
+    { id:'claude-opus-4-8',       name:'Opus 4.8',   desc:'Most capable — deep reasoning & hard problems' },
+    { id:'claude-sonnet-4-6',     name:'Sonnet 4.6', desc:'Balanced — great default for everyday work' },
+    { id:'claude-haiku-4-5-20251001', name:'Haiku 4.5', desc:'Fastest & cheapest — quick tasks & chat' },
+];
+
+const store = {
+    get key()   { return localStorage.getItem('cc_key')   || ''; },
+    set key(v)  { localStorage.setItem('cc_key', v); },
+    get sys()   { return localStorage.getItem('cc_sys')   || ''; },
+    set sys(v)  { localStorage.setItem('cc_sys', v); },
+    get model() { return localStorage.getItem('cc_model') || 'claude-sonnet-4-6'; },
+    set model(v){ localStorage.setItem('cc_model', v); },
+    get chats() { try { return JSON.parse(localStorage.getItem('cc_chats')||'[]'); } catch { return []; } },
+    set chats(v){ localStorage.setItem('cc_chats', JSON.stringify(v)); },
+    get active(){ return localStorage.getItem('cc_active') || ''; },
+    set active(v){ localStorage.setItem('cc_active', v); },
+};
+
+let chats = store.chats;
+let activeId = store.active;
+let streaming = false;
+
+/* ---------- Conversation model ---------- */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function activeChat(){ return chats.find(c => c.id === activeId); }
+function persist(){ store.chats = chats; store.active = activeId; }
+
+function newChat(){
+    if (streaming) return;
+    const c = { id: uid(), title: 'New chat', messages: [], ts: Date.now() };
+    chats.unshift(c); activeId = c.id; persist();
+    renderChatList(); renderThread(); closeSidebarMobile();
+    document.getElementById('input').focus();
+}
+function openChat(id){
+    if (streaming) return;
+    activeId = id; persist(); renderChatList(); renderThread(); closeSidebarMobile();
+}
+function deleteChat(id, ev){
+    ev && ev.stopPropagation();
+    chats = chats.filter(c => c.id !== id);
+    if (activeId === id) activeId = chats[0]?.id || '';
+    persist(); renderChatList(); renderThread();
+}
+
+/* ---------- Rendering: sidebar ---------- */
+function renderChatList(){
+    const list = document.getElementById('chatList');
+    if (!chats.length){ list.innerHTML = '<div style="padding:14px;color:var(--txt-faint);font-size:13px">No chats yet</div>'; return; }
+    list.innerHTML = chats.map(c => `
+        <div class="chat-item ${c.id===activeId?'active':''}" onclick="openChat('${c.id}')">
+            <span>${esc(c.title)}</span>
+            <span class="x" onclick="deleteChat('${c.id}',event)" title="Delete">×</span>
+        </div>`).join('');
+}
+
+/* ---------- Rendering: thread ---------- */
+function renderThread(){
+    const thread = document.getElementById('thread');
+    const c = activeChat();
+    if (!c || !c.messages.length){ thread.innerHTML = welcomeHTML(); return; }
+    thread.innerHTML = c.messages.map(m => msgHTML(m.role, m.content)).join('');
+    scrollDown();
+}
+function welcomeHTML(){
+    const s = [
+        ['Explain a concept','Break down how vector embeddings work, simply'],
+        ['Write & refactor code','Refactor this function to be cleaner and faster'],
+        ['Draft something','Write a friendly follow-up email to a client'],
+        ['Think it through','Help me weigh the pros and cons of a decision'],
+    ];
+    return `<div class="welcome">
+        <div class="big">✦</div>
+        <h2>How can I help today?</h2>
+        <p>A fast, private chat with Claude. Pick a model above, and your conversations stay on this device.</p>
+        <div class="starters">
+            ${s.map(([t,p])=>`<div class="starter" onclick="useStarter('${esc(p).replace(/'/g,"\\'")}')"><b>${t}</b>${esc(p)}</div>`).join('')}
+        </div>
+    </div>`;
+}
+function msgHTML(role, content){
+    const u = role === 'user';
+    return `<div class="msg">
+        <div class="avatar ${u?'u':'a'}">${u?'You'.slice(0,1):'✦'}</div>
+        <div class="bubble">
+            <div class="role">${u?'You':'Claude'}</div>
+            <div class="content">${u ? esc(content).replace(/\n/g,'<br>') : renderMarkdown(content)}</div>
+        </div>
+    </div>`;
+}
+
+function useStarter(p){ document.getElementById('input').value = p; autosize(); send(); }
+
+/* ---------- Sending / streaming ---------- */
+function keydown(e){
+    if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+}
+function autosize(){
+    const t = document.getElementById('input');
+    t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px';
+}
+
+async function send(){
+    if (streaming) return;
+    const ta = document.getElementById('input');
+    const text = ta.value.trim();
+    if (!text) return;
+    if (!store.key){ openSettings(); toast('Add your Anthropic API key first'); return; }
+
+    let c = activeChat();
+    if (!c){ newChat(); c = activeChat(); }
+
+    c.messages.push({ role:'user', content:text });
+    if (c.title === 'New chat') c.title = text.slice(0, 42);
+    ta.value = ''; autosize(); persist(); renderChatList(); renderThread();
+
+    // build assistant placeholder
+    const thread = document.getElementById('thread');
+    thread.insertAdjacentHTML('beforeend', `
+        <div class="msg" id="streamMsg">
+            <div class="avatar a">✦</div>
+            <div class="bubble"><div class="role">Claude</div>
+            <div class="content" id="streamContent"><span class="typing"><i></i><i></i><i></i></span></div></div>
+        </div>`);
+    scrollDown();
+
+    streaming = true; setSendState();
+    const target = document.getElementById('streamContent');
+    let acc = '';
+
+    try {
+        await streamClaude(c.messages, {
+            onToken: (full) => {
+                acc = full;
+                target.innerHTML = renderMarkdown(full) + '<span class="cursor"></span>';
+                scrollDown();
+            }
+        });
+        c.messages.push({ role:'assistant', content: acc });
+        persist();
+    } catch (err) {
+        const map = {
+            NO_KEY:'No API key set. Open Settings to add one.',
+            BAD_KEY:'That API key was rejected (401). Check it in Settings.',
+        };
+        acc = '⚠️ ' + (map[err.message] || ('Error: ' + err.message));
+        c.messages.push({ role:'assistant', content: acc });
+        persist();
+    } finally {
+        streaming = false; setSendState();
+        renderThread();
+    }
+}
+
+function setSendState(){
+    document.getElementById('sendBtn').disabled = streaming;
+    document.getElementById('sendBtn').innerHTML = streaming ? '■' : '↑';
+}
+
+async function streamClaude(messages, { onToken } = {}){
+    const key = store.key;
+    if (!key) throw new Error('NO_KEY');
+
+    // System prompt with prompt caching (cuts cost on repeated turns).
+    const body = {
+        model: store.model,
+        max_tokens: 4096,
+        messages: messages.map(m => ({ role:m.role, content:m.content })),
+        stream: true,
+    };
+    if (store.sys.trim()){
+        body.system = [{ type:'text', text: store.sys.trim(), cache_control:{ type:'ephemeral' } }];
+    }
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{
+            'content-type':'application/json',
+            'x-api-key':key,
+            'anthropic-version':'2023-06-01',
+            'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok){
+        const t = await res.text().catch(()=> '');
+        throw new Error(res.status === 401 ? 'BAD_KEY' : ('HTTP_'+res.status+' '+t.slice(0,160)));
+    }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '', full = '';
+    while (true){
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream:true });
+        const parts = buf.split('\n\n'); buf = parts.pop();
+        for (const part of parts){
+            const line = part.split('\n').find(l => l.startsWith('data:'));
+            if (!line) continue;
+            const data = line.slice(5).trim();
+            if (data === '[DONE]') continue;
+            try {
+                const ev = JSON.parse(data);
+                if (ev.type === 'content_block_delta' && ev.delta?.text){
+                    full += ev.delta.text;
+                    onToken && onToken(full);
+                }
+            } catch {}
+        }
+    }
+    return full;
+}
+
+/* ---------- Minimal markdown renderer (safe: escape first) ---------- */
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderMarkdown(src){
+    src = src || '';
+    const blocks = [];
+    // fenced code blocks → placeholders
+    src = src.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) => {
+        const i = blocks.length;
+        const safe = esc(code.replace(/\n$/,''));
+        blocks.push(`<div class="codewrap"><div class="codehead"><span>${esc(lang||'code')}</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>${safe}</code></pre></div>`);
+        return ` ${i} `;
+    });
+
+    let out = esc(src);
+    // inline code
+    out = out.replace(/`([^`\n]+)`/g, (_,c)=>`<code class="inline">${c}</code>`);
+    // bold / italic / links
+    out = out.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+             .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
+             .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+    // line-by-line: headings, lists, quotes, paragraphs
+    const lines = out.split('\n');
+    let html = '', list = null;
+    const closeList = () => { if (list){ html += `</${list}>`; list = null; } };
+    for (let ln of lines){
+        if (/^ \d+ $/.test(ln.trim())){ closeList(); html += ln; continue; }
+        let m;
+        if (m = ln.match(/^### (.*)/)){ closeList(); html += `<h3>${m[1]}</h3>`; }
+        else if (m = ln.match(/^## (.*)/)){ closeList(); html += `<h2>${m[1]}</h2>`; }
+        else if (m = ln.match(/^# (.*)/)){ closeList(); html += `<h1>${m[1]}</h1>`; }
+        else if (m = ln.match(/^&gt; (.*)/)){ closeList(); html += `<blockquote>${m[1]}</blockquote>`; }
+        else if (m = ln.match(/^\s*[-*] (.*)/)){ if (list!=='ul'){ closeList(); html+='<ul>'; list='ul'; } html += `<li>${m[1]}</li>`; }
+        else if (m = ln.match(/^\s*\d+\. (.*)/)){ if (list!=='ol'){ closeList(); html+='<ol>'; list='ol'; } html += `<li>${m[1]}</li>`; }
+        else if (ln.trim()===''){ closeList(); }
+        else { closeList(); html += `<p>${ln}</p>`; }
+    }
+    closeList();
+
+    // restore code blocks
+    html = html.replace(/ (\d+) /g, (_,i)=> blocks[+i] || '');
+    return html;
+}
+
+function copyCode(btn){
+    const code = btn.closest('.codewrap').querySelector('code').innerText;
+    navigator.clipboard.writeText(code).then(()=>{ btn.textContent='Copied'; setTimeout(()=>btn.textContent='Copy',1400); });
+}
+
+/* ---------- Model picker ---------- */
+function buildModelMenu(){
+    const menu = document.getElementById('modelMenu');
+    menu.innerHTML = MODELS.map(m => `
+        <div class="model-opt ${m.id===store.model?'on':''}" onclick="pickModel('${m.id}')">
+            <div class="t">${m.name}</div><div class="d">${m.desc}</div>
+        </div>`).join('');
+    const cur = MODELS.find(m => m.id === store.model) || MODELS[1];
+    document.getElementById('modelLabel').textContent = cur.name;
+}
+function toggleModelMenu(e){ e.stopPropagation(); document.getElementById('modelMenu').classList.toggle('open'); }
+function pickModel(id){ store.model = id; buildModelMenu(); document.getElementById('modelMenu').classList.remove('open'); }
+document.addEventListener('click', ()=> document.getElementById('modelMenu').classList.remove('open'));
+
+/* ---------- Settings ---------- */
+function openSettings(){
+    document.getElementById('keyInput').value = store.key;
+    document.getElementById('sysInput').value = store.sys;
+    document.getElementById('settings').classList.add('open');
+}
+function closeSettings(){ document.getElementById('settings').classList.remove('open'); }
+function saveSettings(){
+    store.key = document.getElementById('keyInput').value.trim();
+    store.sys = document.getElementById('sysInput').value;
+    closeSettings(); updateKeyPill(); toast('Saved');
+}
+function updateKeyPill(){
+    const p = document.getElementById('keyPill');
+    p.textContent = store.key ? 'key set' : 'no key';
+    p.style.color = store.key ? 'var(--ok)' : 'var(--txt-faint)';
+    p.style.borderColor = store.key ? 'var(--ok)' : 'var(--line)';
+}
+
+/* ---------- Misc UI ---------- */
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('hidden'); }
+function closeSidebarMobile(){ if (innerWidth <= 760) document.getElementById('sidebar').classList.add('hidden'); }
+function scrollDown(){ const s = document.getElementById('scroll'); s.scrollTop = s.scrollHeight; }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+function exportChats(){
+    const blob = new Blob([JSON.stringify(chats,null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'claude-chats.json'; a.click();
+    toast('Exported '+chats.length+' chats');
+}
+
+/* ---------- Init ---------- */
+(function init(){
+    buildModelMenu();
+    updateKeyPill();
+    if (!activeId && chats.length) activeId = chats[0].id;
+    renderChatList();
+    renderThread();
+    if (innerWidth <= 760) document.getElementById('sidebar').classList.add('hidden');
+    if (!store.key) setTimeout(openSettings, 400);
+})();
+</script>
+</body>
+</html>
