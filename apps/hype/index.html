@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08070a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="HYPE — Your daily hype. Powered by you. Personalized morning affirmations.">
+  <title>HYPE — Your Daily Hype</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="/universal-mvp-enhancements.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #08070a;
+      --bg2:          #100e14;
+      --primary:      #ca8a04;
+      --primary-light:#fbbf24;
+      --accent:       #fefce8;
+      --glass:        rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.09);
+      --gold-glow:    rgba(202,138,4,0.28);
+      --gold-glow2:   rgba(251,191,36,0.18);
+      --text:         #fefce8;
+      --text2:        #fef3c7;
+      --muted:        #78716c;
+      --muted2:       #a8a29e;
+      --red:          #ef4444;
+      --green:        #10b981;
+      --radius:       20px;
+      --tab-h:        68px;
+      --safe-bottom:  env(safe-area-inset-bottom, 16px);
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── BACKGROUND CANVAS ── */
+    #bg-canvas {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── APP SHELL ── */
+    #app {
+      position: relative; z-index: 1;
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    #app.onboarding-mode > .header,
+    #app.onboarding-mode > .tab-bar { display: none; }
+
+    /* ══════════════════════════════════════
+       ONBOARDING
+    ══════════════════════════════════════ */
+    #onboarding {
+      position: fixed; inset: 0; z-index: 200;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 28px 24px;
+      padding-top: calc(28px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(28px + var(--safe-bottom));
+    }
+    #onboarding.hidden { display: none; }
+
+    .ob-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 32px; font-weight: 800;
+      letter-spacing: -1px; margin-bottom: 6px;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ob-tagline {
+      font-size: 14px; color: var(--muted2);
+      margin-bottom: 36px; text-align: center;
+      letter-spacing: 0.2px;
+    }
+
+    .ob-step {
+      width: 100%; max-width: 400px;
+      display: none; flex-direction: column;
+      align-items: center; text-align: center;
+    }
+    .ob-step.active { display: flex; animation: fade-up 0.35s ease forwards; }
+
+    .ob-step-num {
+      font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--primary);
+      margin-bottom: 14px;
+    }
+    .ob-step h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px; font-weight: 700; line-height: 1.2;
+      margin-bottom: 28px; letter-spacing: -0.5px;
+    }
+    .ob-step h2 span { color: var(--primary-light); }
+
+    /* Name input */
+    .ob-input {
+      width: 100%; padding: 16px 20px;
+      background: var(--glass); border: 1.5px solid var(--glass-border);
+      border-radius: 16px; color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 600; text-align: center;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none; caret-color: var(--primary-light);
+    }
+    .ob-input::placeholder { color: var(--muted); font-weight: 400; font-size: 16px; }
+    .ob-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--gold-glow);
+    }
+
+    /* Chip grid */
+    .chip-grid {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: center; width: 100%;
+      margin-bottom: 8px;
+    }
+    .chip {
+      padding: 10px 18px; border-radius: 40px;
+      border: 1.5px solid var(--glass-border);
+      background: var(--glass); color: var(--muted2);
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .chip:active { transform: scale(0.95); }
+    .chip.selected {
+      background: linear-gradient(135deg, rgba(202,138,4,0.25), rgba(251,191,36,0.15));
+      border-color: var(--primary);
+      color: var(--primary-light);
+      box-shadow: 0 0 14px var(--gold-glow);
+    }
+    .chip-custom-wrap {
+      display: flex; gap: 8px; width: 100%; margin-top: 4px;
+    }
+    .chip-custom-input {
+      flex: 1; padding: 10px 16px;
+      background: var(--glass); border: 1.5px solid var(--glass-border);
+      border-radius: 40px; color: var(--text);
+      font-family: inherit; font-size: 14px; outline: none;
+      transition: border-color 0.2s; caret-color: var(--primary-light);
+    }
+    .chip-custom-input::placeholder { color: var(--muted); }
+    .chip-custom-input:focus { border-color: var(--primary); }
+    .chip-custom-add {
+      padding: 10px 16px; border-radius: 40px;
+      border: 1.5px solid var(--primary); background: var(--glass);
+      color: var(--primary-light); font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chip-custom-add:active { transform: scale(0.95); }
+
+    /* Progress dots */
+    .ob-progress {
+      display: flex; gap: 6px; margin-bottom: 28px;
+    }
+    .ob-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--glass-border); transition: all 0.3s ease;
+    }
+    .ob-dot.active { background: var(--primary); width: 20px; border-radius: 3px; }
+    .ob-dot.done { background: var(--primary-light); }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      width: 100%; max-width: 400px; padding: 16px;
+      border: none; border-radius: 16px;
+      background: linear-gradient(135deg, var(--primary), #b45309);
+      color: #08070a; font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 32px var(--gold-glow);
+      transition: all 0.2s; margin-top: 24px;
+      letter-spacing: 0.2px;
+    }
+    .btn-primary:active { transform: scale(0.97); box-shadow: 0 4px 16px var(--gold-glow); }
+    .btn-primary:disabled { opacity: 0.4; pointer-events: none; }
+
+    /* ══════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════ */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px 6px;
+      padding-top: calc(14px + env(safe-area-inset-top, 0px));
+      flex-shrink: 0;
+    }
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .streak-badge {
+      display: flex; align-items: center; gap: 5px;
+      background: linear-gradient(135deg, rgba(202,138,4,0.18), rgba(251,191,36,0.1));
+      border: 1px solid rgba(202,138,4,0.3);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 13px; font-weight: 600; color: var(--primary-light);
+    }
+    .pro-badge {
+      background: linear-gradient(135deg, var(--primary), #b45309);
+      color: #08070a; font-size: 10px; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px;
+      letter-spacing: 0.5px; cursor: pointer; flex-shrink: 0;
+    }
+    .pro-badge.unlocked {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+    }
+
+    /* ══════════════════════════════════════
+       VIEWS
+    ══════════════════════════════════════ */
+    .view {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 0 20px;
+      padding-bottom: calc(var(--tab-h) + var(--safe-bottom) + 20px);
+      display: none; flex-direction: column; align-items: center;
+    }
+    .view.active { display: flex; }
+    .view::-webkit-scrollbar { display: none; }
+    .view { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ══════════════════════════════════════
+       HOME VIEW — HERO CARD
+    ══════════════════════════════════════ */
+    .home-greeting {
+      width: 100%; margin-top: 8px; margin-bottom: 18px;
+      font-size: 14px; color: var(--muted2);
+    }
+    .home-greeting strong { color: var(--text2); }
+
+    /* HERO CARD */
+    .hero-card {
+      width: 100%; border-radius: 28px; padding: 32px 28px;
+      position: relative; overflow: hidden;
+      min-height: 260px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      margin-bottom: 20px;
+      cursor: default;
+    }
+    .hero-card-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #1a1003 0%, #2a1e02 30%, #0f0a01 60%, #1c1504 100%);
+      z-index: 0;
+    }
+    /* Animated gradient orbs */
+    .hero-orb {
+      position: absolute; border-radius: 50%;
+      pointer-events: none; z-index: 1;
+    }
+    .hero-orb-1 {
+      width: 220px; height: 220px; top: -60px; right: -40px;
+      background: radial-gradient(circle, rgba(202,138,4,0.3) 0%, rgba(202,138,4,0) 70%);
+      animation: orb1 8s ease-in-out infinite;
+    }
+    .hero-orb-2 {
+      width: 180px; height: 180px; bottom: -30px; left: -20px;
+      background: radial-gradient(circle, rgba(251,191,36,0.18) 0%, rgba(251,191,36,0) 70%);
+      animation: orb2 10s ease-in-out infinite;
+    }
+    .hero-orb-3 {
+      width: 120px; height: 120px; top: 40%; left: 50%;
+      background: radial-gradient(circle, rgba(254,252,232,0.06) 0%, rgba(254,252,232,0) 70%);
+      animation: orb3 7s ease-in-out infinite;
+    }
+    @keyframes orb1 {
+      0%, 100% { transform: translate(0,0) scale(1); }
+      33% { transform: translate(-20px,15px) scale(1.1); }
+      66% { transform: translate(10px,-10px) scale(0.95); }
+    }
+    @keyframes orb2 {
+      0%, 100% { transform: translate(0,0) scale(1); }
+      40% { transform: translate(15px,-20px) scale(1.15); }
+      70% { transform: translate(-10px,10px) scale(0.9); }
+    }
+    @keyframes orb3 {
+      0%, 100% { transform: translate(-50%,-50%) scale(1); }
+      50% { transform: translate(-50%,-50%) scale(1.4); }
+    }
+    /* Subtle top shimmer */
+    .hero-shimmer {
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(251,191,36,0.6), transparent);
+      animation: shimmer 4s ease-in-out infinite;
+      z-index: 2;
+    }
+    @keyframes shimmer {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .hero-card-content {
+      position: relative; z-index: 3;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .hero-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(251,191,36,0.7);
+    }
+    .hero-affirmation {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(20px, 5.5vw, 26px);
+      font-weight: 700; line-height: 1.35;
+      letter-spacing: -0.3px;
+      color: var(--accent);
+      min-height: 130px;
+    }
+    .hero-date {
+      font-size: 12px; color: rgba(251,191,36,0.5);
+      letter-spacing: 0.3px;
+    }
+
+    /* Hero action row */
+    .hero-actions {
+      display: flex; gap: 10px; align-items: center;
+      position: relative; z-index: 3; margin-top: 4px;
+    }
+    .btn-speak {
+      flex: 1; padding: 13px 16px; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), #b45309);
+      color: #08070a; font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 20px var(--gold-glow);
+      transition: all 0.2s;
+    }
+    .btn-speak:active { transform: scale(0.96); }
+    .btn-speak.speaking {
+      background: linear-gradient(135deg, #1a1003, #2a1e02);
+      color: var(--primary-light);
+      border: 1.5px solid rgba(202,138,4,0.4);
+      box-shadow: 0 0 24px var(--gold-glow);
+    }
+    .btn-icon {
+      width: 46px; height: 46px; border-radius: 13px;
+      border: 1.5px solid var(--glass-border); background: rgba(0,0,0,0.4);
+      color: var(--muted2); font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+      backdrop-filter: blur(4px);
+    }
+    .btn-icon:active { transform: scale(0.91); }
+    .btn-icon.hearted { color: var(--red); border-color: rgba(239,68,68,0.3); }
+    .btn-icon.refreshing { animation: spin 0.4s ease; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* SOUND WAVE (speak animation) */
+    .sound-wave {
+      display: flex; gap: 2.5px; align-items: flex-end; height: 18px;
+    }
+    .wave-bar {
+      width: 3px; background: #08070a; border-radius: 2px;
+      height: 4px;
+    }
+    .btn-speak.speaking .wave-bar {
+      background: var(--primary-light);
+      animation: wave-anim var(--d, 0.6s) ease-in-out infinite alternate;
+    }
+    @keyframes wave-anim { from { height: 3px; } to { height: 14px; } }
+
+    /* ── REFRESH HINT ── */
+    .refresh-hint {
+      font-size: 12px; color: var(--muted); text-align: center;
+      margin-bottom: 8px;
+    }
+
+    /* ── QUICK STATS ROW ── */
+    .quick-stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px; width: 100%; margin-bottom: 20px;
+    }
+    .qs-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 16px; padding: 14px 10px; text-align: center;
+    }
+    .qs-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px; font-weight: 700;
+      color: var(--primary-light);
+    }
+    .qs-label { font-size: 10px; color: var(--muted2); margin-top: 3px; letter-spacing: 0.3px; }
+
+    /* ── REMINDER CARD ── */
+    .reminder-card {
+      width: 100%;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 18px; padding: 18px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .reminder-left { display: flex; align-items: center; gap: 12px; }
+    .reminder-icon { font-size: 22px; }
+    .reminder-info h4 { font-size: 15px; font-weight: 600; }
+    .reminder-info p { font-size: 12px; color: var(--muted2); margin-top: 2px; }
+    .reminder-time-input {
+      background: none; border: none; color: var(--primary-light);
+      font-family: 'Space Grotesk', sans-serif; font-size: 17px;
+      font-weight: 700; cursor: pointer; outline: none;
+    }
+    /* style the time input nicely on mobile */
+    .reminder-time-input::-webkit-calendar-picker-indicator {
+      display: none;
+    }
+
+    .toggle {
+      width: 46px; height: 27px; border-radius: 14px;
+      background: var(--glass-border); position: relative;
+      cursor: pointer; transition: background 0.3s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--primary); }
+    .toggle::after {
+      content: ''; position: absolute;
+      top: 3px; left: 3px;
+      width: 21px; height: 21px; border-radius: 50%;
+      background: #fff; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .toggle.on::after { transform: translateX(19px); }
+
+    /* ══════════════════════════════════════
+       FAVOURITES VIEW
+    ══════════════════════════════════════ */
+    .view-header {
+      width: 100%; margin-bottom: 18px; margin-top: 10px;
+    }
+    .view-header h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px; font-weight: 700; letter-spacing: -0.4px;
+    }
+    .view-header p { font-size: 13px; color: var(--muted2); margin-top: 4px; }
+
+    .fav-empty {
+      width: 100%; text-align: center; padding: 60px 20px;
+    }
+    .fav-empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .fav-empty-text { font-size: 15px; color: var(--muted2); line-height: 1.5; }
+
+    .fav-list {
+      display: flex; flex-direction: column; gap: 12px; width: 100%;
+    }
+    .fav-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 18px; padding: 20px;
+      position: relative; overflow: hidden;
+    }
+    .fav-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(251,191,36,0.4), transparent);
+    }
+    .fav-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 600; line-height: 1.4;
+      color: var(--text2); margin-bottom: 12px;
+    }
+    .fav-actions {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .fav-date { font-size: 11px; color: var(--muted); flex: 1; }
+    .fav-btn {
+      padding: 7px 14px; border-radius: 10px;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      color: var(--muted2); font-family: inherit; font-size: 12px;
+      font-weight: 500; cursor: pointer; transition: all 0.2s;
+    }
+    .fav-btn:active { transform: scale(0.95); }
+    .fav-btn.danger { color: var(--red); border-color: rgba(239,68,68,0.2); }
+    .fav-btn.speak-btn { color: var(--primary-light); border-color: rgba(202,138,4,0.3); }
+
+    /* ══════════════════════════════════════
+       SETTINGS VIEW
+    ══════════════════════════════════════ */
+    .settings-section {
+      width: 100%; margin-bottom: 16px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .settings-section-label {
+      padding: 12px 18px 0;
+      font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 15px 18px; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-left h4 { font-size: 15px; font-weight: 500; }
+    .settings-row-left p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .settings-chevron { color: var(--muted); font-size: 14px; }
+
+    /* Reset profile button */
+    .btn-danger {
+      width: 100%; padding: 14px; border-radius: 14px;
+      border: 1.5px solid rgba(239,68,68,0.25); background: rgba(239,68,68,0.06);
+      color: var(--red); font-family: inherit; font-size: 15px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+    .btn-danger:active { background: rgba(239,68,68,0.12); }
+
+    /* Goals preview chips */
+    .goals-preview {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .goals-chip-mini {
+      padding: 4px 10px; border-radius: 20px;
+      background: linear-gradient(135deg, rgba(202,138,4,0.18), rgba(251,191,36,0.1));
+      border: 1px solid rgba(202,138,4,0.25);
+      color: var(--primary-light); font-size: 11px; font-weight: 500;
+    }
+
+    /* ══════════════════════════════════════
+       PAYWALL MODAL
+    ══════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(10px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .modal-sheet {
+      width: 100%; max-width: 480px;
+      background: linear-gradient(to bottom, #120e00, #08070a);
+      border: 1px solid rgba(202,138,4,0.15);
+      border-radius: 28px 28px 0 0; padding: 28px 24px;
+      padding-bottom: calc(28px + var(--safe-bottom));
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .modal-overlay.show .modal-sheet { transform: translateY(0); }
+    .modal-handle {
+      width: 40px; height: 4px; background: rgba(255,255,255,0.12);
+      border-radius: 2px; margin: 0 auto 24px;
+    }
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px; font-weight: 800; text-align: center;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .modal-sub {
+      text-align: center; font-size: 14px; color: var(--muted2); margin-bottom: 20px;
+    }
+    .modal-price {
+      text-align: center; margin-bottom: 20px;
+    }
+    .price-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 44px; font-weight: 800; color: var(--primary-light);
+    }
+    .price-period { font-size: 14px; color: var(--muted2); }
+    .free-trial-tag {
+      display: inline-block; background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.1));
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--green); padding: 4px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; margin-top: 6px;
+    }
+    .modal-features { list-style: none; margin-bottom: 24px; }
+    .modal-features li {
+      padding: 7px 0; font-size: 14px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .modal-features li:last-child { border-bottom: none; }
+    .modal-features li::before { content: '✦'; color: var(--primary-light); font-size: 10px; flex-shrink: 0; }
+    .btn-restore {
+      background: none; border: none; color: var(--muted2);
+      font-size: 13px; margin-top: 12px; cursor: pointer;
+      text-decoration: underline; display: block; width: 100%; text-align: center;
+    }
+    .btn-maybe {
+      background: none; border: none; color: var(--muted);
+      font-size: 13px; margin-top: 8px; cursor: pointer;
+      display: block; width: 100%; text-align: center;
+    }
+
+    /* ══════════════════════════════════════
+       BOTTOM TAB BAR
+    ══════════════════════════════════════ */
+    .tab-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(var(--tab-h) + var(--safe-bottom));
+      background: rgba(8,7,10,0.88);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-top: 1px solid var(--glass-border);
+      display: flex; align-items: flex-start;
+      padding: 10px 0 0; z-index: 50;
+    }
+    .tab-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 4px; padding: 8px 4px;
+      border: none; background: transparent;
+      color: var(--muted); cursor: pointer;
+      transition: color 0.2s; position: relative;
+    }
+    .tab-btn.active { color: var(--primary-light); }
+    .tab-icon { font-size: 21px; transition: transform 0.2s; }
+    .tab-btn.active .tab-icon { transform: scale(1.1); }
+    .tab-label { font-size: 10px; font-weight: 500; letter-spacing: 0.3px; }
+    .tab-indicator {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 20px; height: 2px; border-radius: 2px;
+      background: var(--primary); opacity: 0; transition: opacity 0.2s;
+    }
+    .tab-btn.active .tab-indicator { opacity: 1; }
+
+    /* ══════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 16px);
+      left: 50%; transform: translateX(-50%) translateY(-100px);
+      background: linear-gradient(135deg, var(--primary), #b45309);
+      color: #08070a; padding: 12px 24px; border-radius: 20px;
+      font-size: 14px; font-weight: 700; z-index: 400;
+      box-shadow: 0 8px 32px var(--gold-glow);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap; max-width: calc(100vw - 40px);
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ══════════════════════════════════════
+       MISC UTILS
+    ══════════════════════════════════════ */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fade-up 0.4s ease forwards; }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px var(--gold-glow); }
+      50%       { box-shadow: 0 0 40px rgba(251,191,36,0.4); }
+    }
+    .hero-card.pulse { animation: pulse-glow 2s ease-in-out 1; }
+
+    .spacer { height: 24px; flex-shrink: 0; }
+
+    /* Pro gate overlay on fav card */
+    .pro-lock-overlay {
+      position: absolute; inset: 0; border-radius: 18px;
+      background: rgba(8,7,10,0.75);
+      backdrop-filter: blur(4px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+      z-index: 10;
+    }
+    .pro-lock-overlay span { font-size: 22px; }
+    .pro-lock-overlay p { font-size: 13px; color: var(--muted2); text-align: center; padding: 0 12px; }
+    .pro-lock-overlay button {
+      padding: 8px 20px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, var(--primary), #b45309);
+      color: #08070a; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div id="app">
+
+  <!-- ════════════════════════════════════
+       ONBOARDING OVERLAY
+  ════════════════════════════════════ -->
+  <div id="onboarding">
+    <div class="ob-logo">HYPE</div>
+    <p class="ob-tagline">Your daily hype. Powered by you.</p>
+
+    <div class="ob-progress">
+      <div class="ob-dot active" id="ob-dot-0"></div>
+      <div class="ob-dot" id="ob-dot-1"></div>
+      <div class="ob-dot" id="ob-dot-2"></div>
+    </div>
+
+    <!-- Step 1: Name -->
+    <div class="ob-step active" id="ob-step-0">
+      <div class="ob-step-num">Step 1 of 3</div>
+      <h2>What's your <span>name?</span></h2>
+      <input class="ob-input" id="ob-name" type="text"
+        placeholder="Your first name"
+        maxlength="30" autocomplete="given-name"
+        autocorrect="off" autocapitalize="words"
+        oninput="obValidateStep0()">
+      <button class="btn-primary" id="ob-next-0" onclick="obNext(1)" disabled>Continue →</button>
+    </div>
+
+    <!-- Step 2: Goals -->
+    <div class="ob-step" id="ob-step-1">
+      <div class="ob-step-num">Step 2 of 3</div>
+      <h2>What are you <span>working toward?</span></h2>
+      <div class="chip-grid" id="goals-chips">
+        <div class="chip" data-val="fitness" aria-label="Fitness goal" onclick="toggleChip(this,'goals')">💪 Fitness</div>
+        <div class="chip" data-val="career" aria-label="Career goal" onclick="toggleChip(this,'goals')">🚀 Career</div>
+        <div class="chip" data-val="relationships" aria-label="Relationships goal" onclick="toggleChip(this,'goals')">💛 Relationships</div>
+        <div class="chip" data-val="creativity" aria-label="Creativity goal" onclick="toggleChip(this,'goals')">🎨 Creativity</div>
+        <div class="chip" data-val="wealth" aria-label="Wealth goal" onclick="toggleChip(this,'goals')">💰 Wealth</div>
+        <div class="chip" data-val="peace" aria-label="Peace goal" onclick="toggleChip(this,'goals')">🕊 Peace</div>
+        <div class="chip" data-val="confidence" aria-label="Confidence goal" onclick="toggleChip(this,'goals')">⚡ Confidence</div>
+      </div>
+      <div class="chip-custom-wrap">
+        <input class="chip-custom-input" id="goal-custom-input"
+          aria-label="Enter custom goal"
+          placeholder="Your own goal…" maxlength="30"
+          autocorrect="off" autocapitalize="words">
+        <button class="chip-custom-add" aria-label="Add custom goal" onclick="addCustomChip('goals','goal-custom-input')">Add</button>
+      </div>
+      <button class="btn-primary" id="ob-next-1" onclick="obNext(2)" disabled>Continue →</button>
+    </div>
+
+    <!-- Step 3: Feel -->
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-step-num">Step 3 of 3</div>
+      <h2>How do you want to <span>feel?</span></h2>
+      <div class="chip-grid" id="feel-chips">
+        <div class="chip" data-val="powerful" aria-label="Powerful feeling" onclick="toggleChip(this,'feel')">🔥 Powerful</div>
+        <div class="chip" data-val="calm" aria-label="Calm feeling" onclick="toggleChip(this,'feel')">🌊 Calm</div>
+        <div class="chip" data-val="focused" aria-label="Focused feeling" onclick="toggleChip(this,'feel')">🎯 Focused</div>
+        <div class="chip" data-val="motivated" aria-label="Motivated feeling" onclick="toggleChip(this,'feel')">⚡ Motivated</div>
+        <div class="chip" data-val="grateful" aria-label="Grateful feeling" onclick="toggleChip(this,'feel')">🙏 Grateful</div>
+        <div class="chip" data-val="brave" aria-label="Brave feeling" onclick="toggleChip(this,'feel')">🦁 Brave</div>
+        <div class="chip" data-val="loved" aria-label="Loved feeling" onclick="toggleChip(this,'feel')">💛 Loved</div>
+      </div>
+      <button class="btn-primary" id="ob-next-2" onclick="obFinish()" disabled>Let's go ✦</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       HEADER
+  ════════════════════════════════════ -->
+  <div class="header">
+    <div class="logo">HYPE</div>
+    <div class="header-right">
+      <div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span></div>
+      <div class="pro-badge" id="pro-badge" onclick="openPaywall()">PRO</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       HOME VIEW
+  ════════════════════════════════════ -->
+  <div class="view active" id="view-home">
+
+    <div class="home-greeting" id="home-greeting" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Hero affirmation card -->
+    <div class="hero-card" id="hero-card">
+      <div class="hero-card-bg"></div>
+      <div class="hero-orb hero-orb-1"></div>
+      <div class="hero-orb hero-orb-2"></div>
+      <div class="hero-orb hero-orb-3"></div>
+      <div class="hero-shimmer"></div>
+      <div class="hero-card-content">
+        <div class="hero-label">Today's Affirmation</div>
+        <div class="hero-affirmation" id="hero-affirmation">
+          Loading your hype…
+        </div>
+        <div class="hero-date" id="hero-date"></div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-speak" id="btn-speak" onclick="toggleSpeak()">
+          <div class="sound-wave">
+            <div class="wave-bar" style="--d:0.5s"></div>
+            <div class="wave-bar" style="--d:0.7s"></div>
+            <div class="wave-bar" style="--d:0.4s"></div>
+            <div class="wave-bar" style="--d:0.8s"></div>
+            <div class="wave-bar" style="--d:0.6s"></div>
+          </div>
+          <span id="speak-label">Speak it</span>
+        </button>
+        <button class="btn-icon" id="btn-heart" onclick="toggleFavourite()" title="Save">♡</button>
+        <button class="btn-icon" id="btn-refresh" onclick="nextAffirmation()" title="New">↻</button>
+      </div>
+    </div>
+
+    <p class="refresh-hint" id="refresh-hint">New affirmation every day — or tap ↻ for another</p>
+
+    <!-- Quick stats -->
+    <div class="quick-stats">
+      <div class="qs-card fade-up">
+        <div class="qs-val" id="qs-streak">0</div>
+        <div class="qs-label">Day streak</div>
+      </div>
+      <div class="qs-card fade-up" style="animation-delay:0.05s">
+        <div class="qs-val" id="qs-favs">0</div>
+        <div class="qs-label">Favourites</div>
+      </div>
+      <div class="qs-card fade-up" style="animation-delay:0.1s">
+        <div class="qs-val" id="qs-days">0</div>
+        <div class="qs-label">Days used</div>
+      </div>
+    </div>
+
+    <!-- Morning reminder card -->
+    <div class="reminder-card">
+      <div class="reminder-left">
+        <div class="reminder-icon">⏰</div>
+        <div class="reminder-info">
+          <h4>Morning reminder</h4>
+          <p>
+            <input class="reminder-time-input" type="time" id="reminder-time"
+              value="07:00" onchange="saveReminderTime(this.value)">
+          </p>
+        </div>
+      </div>
+      <div class="toggle" id="notif-toggle" onclick="toggleNotifications()"></div>
+    </div>
+
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       FAVOURITES VIEW
+  ════════════════════════════════════ -->
+  <div class="view" id="view-favs">
+    <div class="view-header fade-up">
+      <h2>Favourites</h2>
+      <p>The words that moved you</p>
+    </div>
+
+    <div id="favs-pro-gate" style="display:none;width:100%;position:relative">
+      <div class="fav-card" style="opacity:0.3;pointer-events:none">
+        <div class="fav-text">Every step you take toward your goal is proof of who you're becoming.</div>
+      </div>
+      <div class="pro-lock-overlay">
+        <span>✦</span>
+        <p>Save your favourite affirmations with HYPE Pro</p>
+        <button onclick="openPaywall()">Unlock — $2.99</button>
+      </div>
+    </div>
+
+    <div id="favs-content" style="width:100%">
+      <div class="fav-empty" id="fav-empty">
+        <div class="fav-empty-icon">💛</div>
+        <p class="fav-empty-text">Heart an affirmation from the home screen<br>and it'll live here.</p>
+      </div>
+      <div class="fav-list" id="fav-list"></div>
+    </div>
+
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SETTINGS VIEW
+  ════════════════════════════════════ -->
+  <div class="view" id="view-settings">
+    <div class="view-header fade-up">
+      <h2>Settings</h2>
+    </div>
+
+    <!-- Profile summary -->
+    <div class="settings-section">
+      <div class="settings-section-label">Your profile</div>
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <h4 id="settings-name-display">—</h4>
+          <div class="goals-preview" id="settings-goals-preview"></div>
+        </div>
+        <button class="btn-icon" style="font-size:14px;color:var(--muted2)" onclick="openResetConfirm()">Edit</button>
+      </div>
+    </div>
+
+    <!-- Affirmation prefs -->
+    <div class="settings-section">
+      <div class="settings-section-label">Affirmations</div>
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <h4>New every day</h4>
+          <p>Date-seeded so it's consistent on refresh</p>
+        </div>
+        <span class="settings-chevron">✓</span>
+      </div>
+      <div class="settings-row" onclick="testSpeak()" style="cursor:pointer">
+        <div class="settings-row-left">
+          <h4>Test voice</h4>
+          <p>Hear a sample affirmation</p>
+        </div>
+        <span class="settings-chevron">▶</span>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="settings-section">
+      <div class="settings-section-label">Notifications</div>
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <h4>Morning reminder</h4>
+          <p id="settings-notif-status">Off</p>
+        </div>
+        <div class="toggle" id="settings-notif-toggle" onclick="toggleNotifications()"></div>
+      </div>
+    </div>
+
+    <!-- Pro -->
+    <div class="settings-section" id="pro-section">
+      <div class="settings-section-label">HYPE Pro — $2.99 once</div>
+      <div class="settings-row" onclick="openPaywall()" style="cursor:pointer">
+        <div class="settings-row-left">
+          <h4>Unlock lifetime access</h4>
+          <p>Favourites, history &amp; custom affirmations</p>
+        </div>
+        <span class="settings-chevron">→</span>
+      </div>
+      <div class="settings-row" onclick="restorePurchase()" style="cursor:pointer">
+        <div class="settings-row-left">
+          <h4>Restore purchase</h4>
+          <p>Already bought? Tap to restore</p>
+        </div>
+        <span class="settings-chevron">↩</span>
+      </div>
+    </div>
+
+    <!-- Reset -->
+    <button class="btn-danger" onclick="openResetConfirm()">Reset my profile</button>
+
+    <div style="text-align:center;padding:12px 0 4px">
+      <p style="font-size:11px;color:var(--muted)">HYPE v1.0 · Made with ♡</p>
+    </div>
+
+    <div class="spacer"></div>
+  </div>
+
+  <!-- BOTTOM TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="home" onclick="switchTab('home')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">✦</span>
+      <span class="tab-label">Today</span>
+    </button>
+    <button class="tab-btn" data-tab="favs" onclick="switchTab('favs')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">♡</span>
+      <span class="tab-label">Saved</span>
+    </button>
+    <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">⚙</span>
+      <span class="tab-label">Settings</span>
+    </button>
+  </div>
+</div>
+
+<!-- PAYWALL MODAL -->
+<div class="modal-overlay" id="paywall-modal" onclick="closePaywallOutside(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">HYPE Pro</div>
+    <p class="modal-sub">One payment. Lifetime hype.</p>
+    <div class="modal-price">
+      <div class="price-amount">$2.99</div>
+      <div class="price-period">one-time · yours forever</div>
+      <div class="free-trial-tag">✓ 7-day free trial included</div>
+    </div>
+    <ul class="modal-features">
+      <li>Save unlimited favourite affirmations</li>
+      <li>Full affirmation history</li>
+      <li>Custom affirmations with your own words</li>
+      <li>Speak any saved favourite aloud</li>
+      <li>All future features included</li>
+    </ul>
+    <button class="btn-primary" style="max-width:100%;margin-top:0" onclick="activatePro()">
+      Start 7-Day Free Trial
+    </button>
+    <button class="btn-restore" onclick="restorePurchase()">Restore purchase</button>
+    <button class="btn-maybe" onclick="closePaywall()">Maybe later</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  HYPE — Personalized Morning Affirmation PWA
+//  © 2026 — Mobile-first PWA
+// ══════════════════════════════════════════════
+
+// ── AFFIRMATION TEMPLATES ──────────────────────
+// {name} = user's name, {goal} = one of their goals
+const TEMPLATES = {
+  // Universal (shown regardless of goal tag)
+  universal: [
+    "Today, {name}, you have everything you need to move toward {goal}.",
+    "{name}, your consistency is building something extraordinary.",
+    "Every step you take toward {goal} is proof of who you're becoming, {name}.",
+    "{name}, the version of you who achieves {goal} is already being built — one day at a time.",
+    "You don't need permission to be great, {name}. You are already on your way.",
+    "{name}, every morning you choose to show up is a vote for the person you're becoming.",
+    "Obstacles don't stop you, {name} — they are part of the path to {goal}.",
+    "Today is one more day closer to everything you're working toward, {name}.",
+    "{name}, the courage it takes to keep going is your greatest strength.",
+    "You were made for this, {name}. Keep moving.",
+    "{name}, your effort today is an investment that compounds — trust the process.",
+    "The fact that you keep going, {name}, is the whole story.",
+    "{name}, you are not behind. You are exactly where your journey requires you to be.",
+    "Progress isn't always visible, {name}, but it is always happening.",
+    "{name}, your potential is not a fixed thing — it grows every time you try.",
+  ],
+  // Tagged by feel
+  powerful: [
+    "{name}, there is a quiet power in you that the world hasn't fully seen yet.",
+    "You are stronger than the resistance you feel today, {name}.",
+    "{name}, you have overcome harder things than this. Breathe. You've got it.",
+    "Power doesn't announce itself, {name} — it shows up in how you move through the day.",
+  ],
+  calm: [
+    "{name}, peace is not the absence of challenges — it is your capacity to move through them.",
+    "You can be both ambitious about {goal} and at ease with where you are now, {name}.",
+    "{name}, today you are allowed to go at exactly your own pace.",
+    "Still waters move mountains, {name}. Your calm is your power.",
+  ],
+  focused: [
+    "{name}, single-minded effort on {goal} today will matter more than you think.",
+    "One clear intention this morning is enough, {name}. Just begin.",
+    "{name}, distractions are everywhere — your focus is the rare thing.",
+    "The path to {goal} gets shorter every time you choose to concentrate, {name}.",
+  ],
+  motivated: [
+    "{name}, think about why you started pursuing {goal} — that reason is still true.",
+    "Your future self is cheering for you today, {name}. Do it for them.",
+    "{name}, momentum is real. One action now becomes a wave.",
+    "The discomfort you push through today, {name}, is the price of the life you're building.",
+  ],
+  grateful: [
+    "{name}, the fact that you are pursuing {goal} at all is worth celebrating.",
+    "Gratitude and ambition aren't opposites, {name} — you can hold both at once.",
+    "{name}, list three things working in your favour right now. They exist.",
+    "You have more going for you than you often give yourself credit for, {name}.",
+  ],
+  brave: [
+    "{name}, courage isn't a feeling — it's showing up anyway.",
+    "The version of you chasing {goal} is already brave, {name}. Own it.",
+    "{name}, fear is information, not a stop sign.",
+    "Most people won't do what you're doing, {name}. That already makes you different.",
+  ],
+  loved: [
+    "{name}, you are worthy of good things — including the success waiting for you.",
+    "The people who matter see your effort, {name}, even when you can't.",
+    "{name}, be as kind to yourself today as you would be to someone you deeply love.",
+    "You do not have to earn rest or love, {name}. Both are yours already.",
+  ],
+  // Tagged by goal
+  fitness: [
+    "{name}, your body is capable of more than your mind believes today.",
+    "Every workout, every walk, every choice — it adds up, {name}.",
+    "{name}, strength is built in the moments you show up when you least feel like it.",
+  ],
+  career: [
+    "{name}, the compound effect of your work is greater than any single day shows.",
+    "Your skills are growing whether or not today feels like progress, {name}.",
+    "{name}, the career you want is built in ordinary days like this one.",
+  ],
+  relationships: [
+    "{name}, the love you give is already coming back to you in ways you might not see yet.",
+    "Showing up for the people you care about, {name}, is one of the most powerful things you do.",
+    "{name}, vulnerability is not weakness — it is how connection is made.",
+  ],
+  creativity: [
+    "{name}, the creative work you're afraid to show the world is exactly what someone needs.",
+    "Ideas that feel small today can become your most powerful work, {name}.",
+    "{name}, creativity is not inspiration — it is showing up and letting what comes, come.",
+  ],
+  wealth: [
+    "{name}, every smart financial decision, however small, is a brick in the foundation.",
+    "Wealth is patience given direction, {name}. You are already on the path.",
+    "{name}, financial freedom starts with the habits you're building right now.",
+  ],
+  peace: [
+    "{name}, inner peace is not a destination — it is how you travel.",
+    "You don't need everything resolved to be okay, {name}.",
+    "{name}, let go of what you cannot control today. Your energy is needed elsewhere.",
+  ],
+  confidence: [
+    "{name}, you don't need to be fearless to act — you just need to act.",
+    "The more you do it, {name}, the less you'll need permission from yourself.",
+    "{name}, confidence is built by doing the thing you think you can't do.",
+  ],
+};
+
+// ── STATE ─────────────────────────────────────
+let profile = null;         // { name, goals[], feel[] }
+let isPro    = false;
+let isSpeaking = false;
+let speechUtterance = null;
+let currentAffirmationIndex = 0;
+let todayAffirmationPool = [];
+
+// ── PERSISTENCE ───────────────────────────────
+function load(key, fallback) {
+  try { return JSON.parse(localStorage.getItem('hype_' + key)) ?? fallback; }
+  catch { return fallback; }
+}
+function save(key, val) {
+  localStorage.setItem('hype_' + key, JSON.stringify(val));
+}
+
+// ── DATE UTILS ────────────────────────────────
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Simple seeded random (mulberry32)
+function seededRng(seed) {
+  let s = seed >>> 0;
+  return function() {
+    s += 0x6D2B79F5;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 0xFFFFFFFF;
+  };
+}
+
+function dateSeed(offset = 0) {
+  const d = todayStr().replace(/-/g, '');
+  return parseInt(d, 10) + offset;
+}
+
+// Fisher-Yates shuffle with a given rng
+function shuffle(arr, rng) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── AFFIRMATION GENERATOR ─────────────────────
+function buildPool(profile, rng) {
+  if (!profile) return TEMPLATES.universal;
+
+  const pool = [];
+  // Always add universals
+  pool.push(...TEMPLATES.universal);
+
+  // Add feel-tagged templates
+  (profile.feel || []).forEach(f => {
+    if (TEMPLATES[f]) pool.push(...TEMPLATES[f]);
+  });
+
+  // Add goal-tagged templates
+  (profile.goals || []).forEach(g => {
+    if (TEMPLATES[g]) pool.push(...TEMPLATES[g]);
+  });
+
+  return shuffle(pool, rng);
+}
+
+function fillTemplate(template, profile) {
+  if (!profile) return template.replace(/\{name\}/g, 'You').replace(/\{goal\}/g, 'your goals');
+  const name = profile.name || 'You';
+  const goals = profile.goals || ['your goals'];
+  // Pick a random goal for variety
+  const goal = goals[Math.floor(Math.random() * goals.length)] || 'your goals';
+  const goalLabel = goal.charAt(0).toUpperCase() + goal.slice(1);
+  return template.replace(/\{name\}/g, name).replace(/\{goal\}/g, goalLabel);
+}
+
+function getAffirmationForToday(indexOffset = 0) {
+  const rng = seededRng(dateSeed(indexOffset));
+  const pool = buildPool(profile, rng);
+  const index = Math.floor(rng() * pool.length);
+  return fillTemplate(pool[index], profile);
+}
+
+// Build a stable daily pool (so the ↻ button gives different but consistent affirmations)
+function buildTodayPool() {
+  const rng = seededRng(dateSeed());
+  const pool = buildPool(profile, rng);
+  const shuffled = shuffle(pool, seededRng(dateSeed() + 1337));
+  todayAffirmationPool = shuffled.slice(0, Math.min(20, shuffled.length));
+  currentAffirmationIndex = 0;
+}
+
+function getCurrentAffirmation() {
+  if (!todayAffirmationPool.length) buildTodayPool();
+  const tpl = todayAffirmationPool[currentAffirmationIndex % todayAffirmationPool.length];
+  return fillTemplate(tpl, profile);
+}
+
+// ══════════════════════════════════════════════
+//  ONBOARDING
+// ══════════════════════════════════════════════
+let ob = { name: '', goals: [], feel: [] };
+
+function obValidateStep0() {
+  const val = document.getElementById('ob-name').value.trim();
+  document.getElementById('ob-next-0').disabled = val.length < 1;
+}
+
+function toggleChip(el, group) {
+  el.classList.toggle('selected');
+  const allChips = document.querySelectorAll(`#${group === 'goals' ? 'goals' : 'feel'}-chips .chip`);
+  const selected = [...allChips].filter(c => c.classList.contains('selected'));
+  ob[group === 'goals' ? 'goals' : 'feel'] = selected.map(c => c.dataset.val);
+
+  if (group === 'goals') {
+    document.getElementById('ob-next-1').disabled = ob.goals.length === 0;
+  } else {
+    document.getElementById('ob-next-2').disabled = ob.feel.length === 0;
+  }
+}
+
+function addCustomChip(group, inputId) {
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  if (!val) { showToast('⚠️ Enter a ' + (group === 'goals' ? 'goal' : 'feeling')); return; }
+  if (val.length > 30) { showToast('⚠️ Text is too long (max 30 characters)'); return; }
+  const container = document.getElementById(group === 'goals' ? 'goals-chips' : 'feel-chips');
+  const chip = document.createElement('div');
+  chip.className = 'chip selected';
+  chip.dataset.val = val.toLowerCase().replace(/\s+/g, '-');
+  chip.textContent = '✦ ' + val;
+  chip.onclick = () => toggleChip(chip, group);
+  chip.setAttribute('aria-label', (group === 'goals' ? 'Custom goal: ' : 'Custom feeling: ') + val);
+  container.appendChild(chip);
+  input.value = '';
+  ob[group === 'goals' ? 'goals' : 'feel'].push(chip.dataset.val);
+  if (group === 'goals') document.getElementById('ob-next-1').disabled = false;
+  if (group === 'feel')  document.getElementById('ob-next-2').disabled = false;
+}
+
+function obNext(step) {
+  if (step === 1) {
+    ob.name = document.getElementById('ob-name').value.trim();
+  }
+
+  // Animate out current step, in next
+  document.getElementById(`ob-step-${step - 1}`).classList.remove('active');
+  document.getElementById(`ob-step-${step}`).classList.add('active');
+
+  // Update progress dots
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById(`ob-dot-${i}`);
+    dot.classList.remove('active', 'done');
+    if (i < step) dot.classList.add('done');
+    else if (i === step) dot.classList.add('active');
+  }
+}
+
+function obFinish() {
+  profile = {
+    name:       ob.name,
+    goals:      ob.goals,
+    feel:       ob.feel,
+    createdAt:  todayStr(),
+  };
+  save('profile', profile);
+  save('installed_date', todayStr());
+  document.getElementById('onboarding').classList.add('hidden');
+  document.getElementById('app').classList.remove('onboarding-mode');
+  initApp();
+}
+
+// ══════════════════════════════════════════════
+//  STREAK
+// ══════════════════════════════════════════════
+function updateStreak() {
+  let streak = load('streak', 0);
+  let lastOpen = load('last_open', null);
+  const today = todayStr();
+
+  if (!lastOpen) {
+    streak = 1;
+  } else if (lastOpen === today) {
+    // same day — no change
+  } else {
+    const diff = Math.round((new Date(today) - new Date(lastOpen)) / 86400000);
+    if (diff === 1) streak += 1;
+    else streak = 1;
+  }
+
+  save('streak', streak);
+  save('last_open', today);
+  return streak;
+}
+
+function getTotalDays() {
+  const installed = load('installed_date', todayStr());
+  const diff = Math.round((new Date(todayStr()) - new Date(installed)) / 86400000);
+  return diff + 1;
+}
+
+// ══════════════════════════════════════════════
+//  FAVOURITES
+// ══════════════════════════════════════════════
+function getFavourites() {
+  return load('favourites', []);
+}
+function saveFavourites(favs) {
+  save('favourites', favs);
+  updateFavCount();
+}
+
+function isFavourited(text) {
+  return getFavourites().some(f => f.text === text);
+}
+
+function addFavourite(text) {
+  const favs = getFavourites();
+  if (!isFavourited(text)) {
+    favs.unshift({ text, date: todayStr(), id: Date.now() });
+    saveFavourites(favs);
+    showToast('💛 Saved to favourites');
+  }
+}
+
+function removeFavourite(id) {
+  const favs = getFavourites().filter(f => f.id !== id);
+  saveFavourites(favs);
+  renderFavourites();
+  showToast('Removed');
+}
+
+function updateFavCount() {
+  const count = getFavourites().length;
+  document.getElementById('qs-favs').textContent = count;
+}
+
+function renderFavourites() {
+  const favs = getFavourites();
+  const empty = document.getElementById('fav-empty');
+  const list = document.getElementById('fav-list');
+
+  if (favs.length === 0) {
+    empty.style.display = '';
+    list.innerHTML = '';
+  } else {
+    empty.style.display = 'none';
+    list.innerHTML = favs.map(f => `
+      <div class="fav-card fade-up" data-id="${f.id}">
+        <div class="fav-text">${escapeHTML(f.text)}</div>
+        <div class="fav-actions">
+          <span class="fav-date">${formatDate(f.date)}</span>
+          <button class="fav-btn speak-btn" onclick="speakText('${escapeAttr(f.text)}')">▶ Speak</button>
+          <button class="fav-btn danger" onclick="removeFavourite(${f.id})">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function escapeHTML(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escapeAttr(s) {
+  return s.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+}
+function formatDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-AU', { weekday:'short', month:'short', day:'numeric' });
+}
+
+// ══════════════════════════════════════════════
+//  SPEAK (Web Speech API)
+// ══════════════════════════════════════════════
+function speakText(text) {
+  if (!('speechSynthesis' in window)) {
+    showToast('Speech not supported on this browser');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.88;
+  u.pitch = 1.05;
+  u.volume = 1;
+
+  // Pick a warm-sounding English voice if available
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v =>
+    /Samantha|Karen|Moira|Tessa|Daniel|Ava|Siri|Enhanced/i.test(v.name) && /en/i.test(v.lang)
+  ) || voices.find(v => /en.*AU|en.*GB/i.test(v.lang))
+    || voices.find(v => /en/i.test(v.lang));
+  if (preferred) u.voice = preferred;
+
+  u.onstart  = () => {};
+  u.onend    = () => { stopSpeakUI(); isSpeaking = false; };
+  u.onerror  = () => { stopSpeakUI(); isSpeaking = false; };
+
+  window.speechSynthesis.speak(u);
+  speechUtterance = u;
+}
+
+function toggleSpeak() {
+  const text = document.getElementById('hero-affirmation').textContent;
+  if (isSpeaking) {
+    window.speechSynthesis.cancel();
+    stopSpeakUI();
+    isSpeaking = false;
+  } else {
+    isSpeaking = true;
+    startSpeakUI();
+    speakText(text);
+  }
+}
+
+function startSpeakUI() {
+  const btn = document.getElementById('btn-speak');
+  const label = document.getElementById('speak-label');
+  btn.classList.add('speaking');
+  label.textContent = 'Stop';
+}
+
+function stopSpeakUI() {
+  const btn = document.getElementById('btn-speak');
+  const label = document.getElementById('speak-label');
+  btn.classList.remove('speaking');
+  label.textContent = 'Speak it';
+}
+
+// ══════════════════════════════════════════════
+//  HEART / FAVOURITE
+// ══════════════════════════════════════════════
+function toggleFavourite() {
+  if (!isPro) {
+    openPaywall(); return;
+  }
+  const text = document.getElementById('hero-affirmation').textContent;
+  const btn = document.getElementById('btn-heart');
+
+  if (isFavourited(text)) {
+    const favs = getFavourites().filter(f => f.text !== text);
+    saveFavourites(favs);
+    btn.textContent = '♡';
+    btn.classList.remove('hearted');
+    showToast('Removed from favourites');
+  } else {
+    addFavourite(text);
+    btn.textContent = '♥';
+    btn.classList.add('hearted');
+  }
+}
+
+function syncHeartState(text) {
+  const btn = document.getElementById('btn-heart');
+  if (isFavourited(text)) {
+    btn.textContent = '♥';
+    btn.classList.add('hearted');
+  } else {
+    btn.textContent = '♡';
+    btn.classList.remove('hearted');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  AFFIRMATION DISPLAY
+// ══════════════════════════════════════════════
+function renderAffirmation(text, animate = false) {
+  const el = document.getElementById('hero-affirmation');
+  if (animate) {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(12px)';
+    setTimeout(() => {
+      el.textContent = text;
+      el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 160);
+  } else {
+    el.textContent = text;
+  }
+  syncHeartState(text);
+
+  // Date label
+  const now = new Date();
+  document.getElementById('hero-date').textContent =
+    now.toLocaleDateString('en-AU', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function nextAffirmation() {
+  if (isSpeaking) { window.speechSynthesis.cancel(); stopSpeakUI(); isSpeaking = false; }
+  currentAffirmationIndex++;
+  const text = getCurrentAffirmation();
+  renderAffirmation(text, true);
+
+  // Spin the button briefly
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('refreshing');
+  setTimeout(() => btn.classList.remove('refreshing'), 400);
+}
+
+// ══════════════════════════════════════════════
+//  NOTIFICATIONS
+// ══════════════════════════════════════════════
+let notifEnabled = false;
+
+function toggleNotifications() {
+  if (!notifEnabled) {
+    requestNotifPermission();
+  } else {
+    notifEnabled = false;
+    save('notif_enabled', false);
+    updateNotifUI();
+    showToast('Reminder off');
+  }
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    showToast('Notifications not supported'); return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    notifEnabled = true;
+    save('notif_enabled', true);
+    updateNotifUI();
+    showToast('⏰ Reminder set!');
+    scheduleDailyNotif();
+  } else {
+    showToast('Permission denied — check browser settings');
+  }
+}
+
+function saveReminderTime(val) {
+  save('reminder_time', val);
+  if (notifEnabled) scheduleDailyNotif();
+}
+
+function scheduleDailyNotif() {
+  // Service worker handles the actual scheduling in production.
+  // Here we set a page-level timeout for the current session as a fallback.
+  const time = load('reminder_time', '07:00');
+  const [h, m] = time.split(':').map(Number);
+  const now = new Date();
+  const target = new Date();
+  target.setHours(h, m, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  const msUntil = target - now;
+
+  clearTimeout(window._notifTimer);
+  if (msUntil < 86400000 * 1.5) { // within 36h
+    window._notifTimer = setTimeout(() => {
+      if (Notification.permission === 'granted') {
+        const text = getCurrentAffirmation();
+        new Notification('Good morning ✦', {
+          body: text.length > 80 ? text.slice(0, 77) + '…' : text,
+          icon: 'icons/icon-192.png',
+          tag: 'hype-daily',
+        });
+      }
+      scheduleDailyNotif(); // reschedule for tomorrow
+    }, msUntil);
+  }
+}
+
+function updateNotifUI() {
+  document.getElementById('notif-toggle').classList.toggle('on', notifEnabled);
+  document.getElementById('settings-notif-toggle').classList.toggle('on', notifEnabled);
+  document.getElementById('settings-notif-status').textContent =
+    notifEnabled ? `On · ${load('reminder_time', '07:00')}` : 'Off';
+}
+
+// ══════════════════════════════════════════════
+//  TEST SPEAK (settings)
+// ══════════════════════════════════════════════
+function testSpeak() {
+  const text = getCurrentAffirmation();
+  speakText(text);
+  showToast('▶ Speaking…');
+}
+
+// ══════════════════════════════════════════════
+//  PAYWALL
+// ══════════════════════════════════════════════
+function isInTrial() {
+  const installed = load('installed_date', todayStr());
+  const diff = Math.round((new Date(todayStr()) - new Date(installed)) / 86400000);
+  return diff < 7;
+}
+
+function checkProGate() {
+  return isPro || isInTrial();
+}
+
+function openPaywall() {
+  document.getElementById('paywall-modal').classList.add('show');
+}
+function closePaywall() {
+  document.getElementById('paywall-modal').classList.remove('show');
+}
+function closePaywallOutside(e) {
+  if (e.target === document.getElementById('paywall-modal')) closePaywall();
+}
+
+function activatePro() {
+  isPro = true;
+  save('is_pro', true);
+  document.getElementById('pro-badge').textContent = '✦ PRO';
+  document.getElementById('pro-badge').classList.add('unlocked');
+  document.getElementById('pro-section').style.display = 'none';
+  // Show favs content, hide gate
+  document.getElementById('favs-pro-gate').style.display = 'none';
+  document.getElementById('favs-content').style.display = '';
+  closePaywall();
+  showToast('✦ HYPE Pro unlocked!');
+}
+
+function restorePurchase() {
+  if (load('is_pro', false)) {
+    activatePro();
+  } else {
+    showToast('No purchase found');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  RESET PROFILE
+// ══════════════════════════════════════════════
+function openResetConfirm() {
+  MVPEnhancements.confirm(
+    'Reset your profile? This will clear your name, goals, and all favourites.',
+    { label: 'Reset', isDangerous: true },
+    () => {
+      try {
+        ['profile','streak','last_open','installed_date','favourites','notif_enabled',
+         'reminder_time','is_pro'].forEach(k => localStorage.removeItem('hype_' + k));
+        location.reload();
+      } catch (e) {
+        showToast('⚠️ Error resetting profile');
+      }
+    }
+  );
+}
+
+// ══════════════════════════════════════════════
+//  TAB NAVIGATION
+// ══════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+
+  if (name === 'favs') {
+    if (checkProGate()) {
+      document.getElementById('favs-pro-gate').style.display = 'none';
+      document.getElementById('favs-content').style.display = '';
+      renderFavourites();
+    } else {
+      document.getElementById('favs-pro-gate').style.display = '';
+      document.getElementById('favs-content').style.display = 'none';
+    }
+  }
+  if (name === 'settings') renderSettingsProfile();
+}
+
+function renderSettingsProfile() {
+  if (!profile) return;
+  document.getElementById('settings-name-display').textContent = profile.name;
+  const preview = document.getElementById('settings-goals-preview');
+  preview.innerHTML = [...(profile.goals || []), ...(profile.feel || [])].map(g =>
+    `<span class="goals-chip-mini">${g}</span>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ══════════════════════════════════════════════
+//  GREETING
+// ══════════════════════════════════════════════
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function renderGreeting() {
+  const name = profile?.name || '';
+  const greeting = getGreeting();
+  const el = document.getElementById('home-greeting');
+  el.innerHTML = `${greeting}, <strong>${escapeHTML(name)}</strong>. Here's your hype for today.`;
+}
+
+// ══════════════════════════════════════════════
+//  BACKGROUND CANVAS
+// ══════════════════════════════════════════════
+(function initBg() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let t = 0;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    // Warm gold glow — top
+    const r1 = canvas.height * (0.45 + 0.04 * Math.sin(t));
+    const g1 = ctx.createRadialGradient(cx, cy * 0.3, 0, cx, cy * 0.3, r1);
+    g1.addColorStop(0, 'rgba(202,138,4,0.07)');
+    g1.addColorStop(1, 'rgba(202,138,4,0)');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Amber accent — bottom right
+    const r2 = canvas.height * (0.3 + 0.03 * Math.sin(t + 2));
+    const g2 = ctx.createRadialGradient(canvas.width, canvas.height, 0, canvas.width, canvas.height, r2);
+    g2.addColorStop(0, 'rgba(251,191,36,0.05)');
+    g2.addColorStop(1, 'rgba(251,191,36,0)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    t += 0.004;
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+function initApp() {
+  // Pro status
+  isPro = load('is_pro', false);
+  if (isPro) {
+    document.getElementById('pro-badge').textContent = '✦ PRO';
+    document.getElementById('pro-badge').classList.add('unlocked');
+    document.getElementById('pro-section').style.display = 'none';
+  }
+
+  // Streak
+  const streak = updateStreak();
+  document.getElementById('streak-count').textContent = streak;
+  document.getElementById('qs-streak').textContent = streak;
+  document.getElementById('qs-days').textContent = getTotalDays();
+  updateFavCount();
+
+  // Greeting
+  renderGreeting();
+
+  // Build affirmation pool and render
+  buildTodayPool();
+  const text = getCurrentAffirmation();
+  renderAffirmation(text);
+
+  // Notifications
+  notifEnabled = load('notif_enabled', false);
+  const savedTime = load('reminder_time', '07:00');
+  document.getElementById('reminder-time').value = savedTime;
+  updateNotifUI();
+  if (notifEnabled) scheduleDailyNotif();
+
+  // Speech voices often load async
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {};
+  }
+
+  // Pro gate on favs view
+  if (!checkProGate()) {
+    document.getElementById('favs-pro-gate').style.display = '';
+    document.getElementById('favs-content').style.display = 'none';
+  }
+
+  // Service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+
+function init() {
+  profile = load('profile', null);
+
+  if (!profile) {
+    // Show onboarding
+    document.getElementById('app').classList.add('onboarding-mode');
+    document.getElementById('onboarding').classList.remove('hidden');
+    return;
+  }
+
+  // Already onboarded
+  document.getElementById('onboarding').classList.add('hidden');
+  initApp();
+}
+
+init();
+</script>
+</body>
+</html>

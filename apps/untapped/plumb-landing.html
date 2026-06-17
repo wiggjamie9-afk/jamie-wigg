@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PLUMB — Walk the job. Get the punchlist.</title>
+<meta name="description" content="AR punchlist for solo contractors. PLUMB auto-marks defects, generates a client-ready report and change-order. $39/mo. No 50k enterprise BS.">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#fde047">
+<style>
+:root{
+  --bg:#ffffff; --hivis:#fde047; --hivis-dark:#eab308;
+  --ink:#18181b; --ink-2:#3f3f46; --muted:#71717a; --line:#e4e4e7;
+  --alert:#f97316; --critical:#dc2626; --safe:#16a34a;
+  --mono:ui-monospace,'SF Mono','Monaco','Consolas','Courier New',monospace;
+  --sans:-apple-system,'Inter',system-ui,'Helvetica Neue',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,a{font:inherit;color:inherit;text-decoration:none;cursor:pointer}
+::selection{background:var(--ink);color:var(--hivis)}
+
+/* ── Caution-tape header ── */
+.tape{position:sticky;top:0;z-index:50;background:var(--hivis);border-bottom:2px solid var(--ink);height:52px;display:flex;align-items:center;padding:0 18px;gap:14px;overflow:hidden}
+.tape::before,.tape::after{content:"";flex:0 0 auto;width:30px;height:36px;background:repeating-linear-gradient(135deg,var(--ink) 0 7px,transparent 7px 14px)}
+.brand{font-family:var(--mono);font-weight:800;font-size:20px;letter-spacing:0.04em;text-transform:uppercase}
+.brand span{background:var(--ink);color:var(--hivis);padding:3px 7px;margin-right:5px}
+.nav{margin-left:auto;display:flex;gap:22px;font-family:var(--mono);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700}
+.nav a:hover{color:var(--alert)}
+.nav .cta{background:var(--ink);color:var(--hivis);padding:7px 14px}
+.nav .cta:hover{background:var(--alert);color:#fff}
+@media (max-width:680px){.nav a:not(.cta){display:none}}
+
+/* ── Container ── */
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+section{padding:80px 0;border-bottom:2px solid var(--ink)}
+@media (max-width:680px){section{padding:56px 0}}
+
+/* ── Type ── */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:var(--ink-2);margin-bottom:18px;display:inline-flex;align-items:center;gap:8px}
+.eyebrow::before{content:"";width:8px;height:8px;background:var(--alert);border-radius:50%}
+h1{font-family:var(--mono);font-weight:800;font-size:clamp(44px,8vw,88px);line-height:0.93;letter-spacing:-0.02em;text-transform:uppercase;margin-bottom:22px}
+h1 mark{background:var(--hivis);color:var(--ink);padding:0 6px}
+h2{font-family:var(--mono);font-weight:800;font-size:clamp(30px,4.6vw,46px);line-height:1;letter-spacing:-0.015em;text-transform:uppercase;margin-bottom:14px}
+h3{font-family:var(--mono);font-weight:800;font-size:14px;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px}
+.lede{font-size:19px;color:var(--ink-2);max-width:580px;margin-bottom:30px;line-height:1.45}
+.sect-intro{max-width:640px;margin-bottom:38px}
+.sect-intro p{color:var(--ink-2);font-size:17px;line-height:1.5}
+
+/* ── HERO ── */
+.hero{padding:96px 0 80px;background:var(--bg);position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 80px,rgba(253,224,71,0.07) 80px 82px);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:40px;align-items:center;position:relative}
+@media (max-width:880px){.hero-grid{grid-template-columns:1fr;gap:32px}}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+.btn-primary{font-family:var(--mono);font-weight:800;font-size:14px;letter-spacing:0.14em;text-transform:uppercase;background:var(--ink);color:var(--hivis);padding:18px 26px;border:3px solid var(--ink);box-shadow:6px 6px 0 var(--hivis);transition:transform 0.1s,box-shadow 0.1s;display:inline-flex;align-items:center;gap:10px}
+.btn-primary:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--hivis)}
+.btn-primary:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--hivis)}
+.btn-primary.alert{box-shadow:6px 6px 0 var(--alert)}
+.btn-primary.alert:hover{box-shadow:8px 8px 0 var(--alert)}
+.btn-ghost{font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink);padding:18px 22px;border:2px solid var(--ink);background:var(--bg)}
+.btn-ghost:hover{background:var(--hivis)}
+.proof{display:flex;gap:24px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase}
+.proof b{color:var(--ink);font-weight:800}
+
+/* Hero phone mock */
+.hero-phone{aspect-ratio:9/19;max-width:280px;margin:0 auto;background:#000;border:3px solid var(--ink);border-radius:32px;position:relative;overflow:hidden;box-shadow:0 30px 60px -20px rgba(24,24,27,0.15),0 0 0 4px var(--hivis)}
+.hero-phone::before{content:"";position:absolute;top:12px;left:50%;transform:translateX(-50%);width:74px;height:20px;background:var(--ink);border-radius:12px;z-index:5}
+.hero-phone svg{width:100%;height:100%;display:block}
+.hero-phone .ar-pin{position:absolute;width:22px;height:22px;border:2px solid var(--alert);border-radius:50%;box-shadow:0 0 0 1px var(--ink),0 0 12px rgba(249,115,22,0.7)}
+.hero-phone .ar-pin::before,.hero-phone .ar-pin::after{content:"";position:absolute;background:var(--alert);box-shadow:0 0 0 1px var(--ink)}
+.hero-phone .ar-pin::before{left:50%;top:-4px;bottom:-4px;width:2px;transform:translateX(-50%)}
+.hero-phone .ar-pin::after{top:50%;left:-4px;right:-4px;height:2px;transform:translateY(-50%)}
+.hero-phone .ar-pin .tag{position:absolute;left:30px;top:-4px;background:var(--ink);color:var(--hivis);font-family:var(--mono);font-size:8px;font-weight:800;padding:3px 6px;letter-spacing:0.05em;white-space:nowrap;border-left:2px solid var(--alert);text-transform:uppercase}
+.pin-pulse{animation:phasePulse 2.5s ease-in-out infinite}
+@keyframes phasePulse{0%,100%{opacity:0.85;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+
+/* ── Defects grid ── */
+.def-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:2px solid var(--ink);border-bottom:none;border-right:none}
+@media (max-width:880px){.def-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.def-grid{grid-template-columns:1fr}}
+.def{padding:24px 22px 26px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);background:var(--bg);transition:background 0.15s}
+.def:hover{background:var(--hivis)}
+.def .num{font-family:var(--mono);font-weight:800;font-size:11px;letter-spacing:0.16em;color:var(--alert);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.def .num .icon{width:34px;height:34px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:18px}
+.def h4{font-family:var(--mono);font-weight:800;font-size:15px;text-transform:uppercase;line-height:1.15;margin-bottom:8px;letter-spacing:-0.005em}
+.def p{font-size:13px;color:var(--ink-2);line-height:1.4}
+
+/* ── Who it's for ── */
+.who-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+@media (max-width:880px){.who-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.who-grid{grid-template-columns:1fr}}
+.who-card{border:2px solid var(--ink);padding:20px;background:var(--bg);position:relative}
+.who-card .badge{position:absolute;top:-10px;left:12px;background:var(--ink);color:var(--hivis);font-family:var(--mono);font-size:9px;font-weight:800;padding:3px 7px;letter-spacing:0.14em;text-transform:uppercase}
+.who-card h4{font-family:var(--mono);font-size:15px;font-weight:800;text-transform:uppercase;margin-top:8px;margin-bottom:6px;letter-spacing:-0.005em}
+.who-card p{font-size:13px;color:var(--ink-2);line-height:1.4}
+
+/* ── Comparison ── */
+.cmp{background:var(--hivis);padding:80px 0;border-bottom:2px solid var(--ink);border-top:2px solid var(--ink);position:relative;overflow:hidden}
+.cmp::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 24px,rgba(24,24,27,0.04) 24px 26px)}
+.cmp-inner{position:relative}
+.cmp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:3px solid var(--ink);background:var(--bg)}
+@media (max-width:760px){.cmp-grid{grid-template-columns:1fr}}
+.cmp-col{padding:28px 24px;border-right:2px solid var(--ink);position:relative}
+@media (max-width:760px){.cmp-col{border-right:none;border-bottom:2px solid var(--ink)}.cmp-col:last-child{border-bottom:none}}
+.cmp-col:last-child{border-right:none}
+.cmp-col.us{background:var(--ink);color:var(--hivis)}
+.cmp-col.us .cmp-tag,.cmp-col.us li,.cmp-col.us .cmp-price{color:var(--hivis)}
+.cmp-col.us li::before{color:var(--hivis)}
+.cmp-tag{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.cmp-col h4{font-family:var(--mono);font-size:18px;font-weight:800;text-transform:uppercase;margin-bottom:10px;letter-spacing:-0.005em;line-height:1.1}
+.cmp-price{font-family:var(--mono);font-weight:800;font-size:32px;margin-bottom:18px;color:var(--ink)}
+.cmp-price small{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:0.04em}
+.cmp-col ul{list-style:none}
+.cmp-col li{font-size:14px;padding:7px 0 7px 22px;position:relative;line-height:1.4;color:var(--ink-2)}
+.cmp-col li::before{content:"✕";position:absolute;left:0;top:7px;font-family:var(--mono);font-weight:800;color:var(--critical)}
+.cmp-col li.ok::before{content:"✓";color:var(--safe)}
+.cmp-col.us li::before{content:"✓";color:var(--hivis)}
+.cmp-col.us .ribbon{position:absolute;top:-16px;right:14px;background:var(--alert);color:#fff;font-family:var(--mono);font-size:10px;font-weight:800;padding:5px 10px;letter-spacing:0.16em;text-transform:uppercase;transform:rotate(2deg)}
+
+/* ── Pricing ── */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:3px solid var(--ink)}
+@media (max-width:760px){.price-grid{grid-template-columns:1fr}}
+.price{padding:32px 26px;border-right:2px solid var(--ink);background:var(--bg);position:relative}
+@media (max-width:760px){.price{border-right:none;border-bottom:2px solid var(--ink)}.price:last-child{border-bottom:none}}
+.price:last-child{border-right:none}
+.price.feature{background:var(--ink);color:var(--hivis)}
+.price.feature .p-name,.price.feature .p-amount,.price.feature .p-per,.price.feature li{color:var(--hivis)}
+.price.feature li::before{color:var(--alert)}
+.price.feature .ribbon{position:absolute;top:-14px;left:50%;transform:translateX(-50%) rotate(-2deg);background:var(--alert);color:#fff;font-family:var(--mono);font-size:10px;font-weight:800;padding:4px 10px;letter-spacing:0.16em;text-transform:uppercase}
+.p-name{font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.p-amount{font-family:var(--mono);font-weight:800;font-size:48px;line-height:1;color:var(--ink);margin-bottom:4px}
+.p-amount small{font-size:16px;color:var(--muted);font-weight:600;letter-spacing:0.04em;margin-left:4px}
+.p-per{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;margin-bottom:22px}
+.price ul{list-style:none;margin-bottom:22px}
+.price li{font-size:14px;padding:6px 0 6px 22px;position:relative;line-height:1.4;color:var(--ink-2)}
+.price li::before{content:"✓";position:absolute;left:0;top:6px;font-family:var(--mono);font-weight:800;color:var(--safe)}
+.price .pick{font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;display:block;width:100%;padding:14px;text-align:center;border:2px solid var(--ink);background:var(--bg);color:var(--ink)}
+.price.feature .pick{background:var(--hivis);color:var(--ink);border-color:var(--hivis)}
+.price .pick:hover{background:var(--alert);color:#fff;border-color:var(--alert)}
+
+/* ── Testimonials ── */
+.quote-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media (max-width:880px){.quote-grid{grid-template-columns:1fr}}
+.quote{border:2px solid var(--ink);padding:24px;background:var(--bg);position:relative}
+.quote::before{content:"";position:absolute;top:0;left:24px;right:24px;height:4px;background:var(--alert)}
+.quote .stars{color:var(--alert);font-size:13px;letter-spacing:0.1em;margin-bottom:10px;margin-top:8px}
+.quote p{font-size:15px;line-height:1.45;color:var(--ink);margin-bottom:18px}
+.quote .who{display:flex;gap:12px;align-items:center;padding-top:14px;border-top:1px dashed var(--line)}
+.quote .av{width:38px;height:38px;background:var(--ink);color:var(--hivis);font-family:var(--mono);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;letter-spacing:0.04em}
+.quote .name{font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase}
+.quote .role{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-top:2px}
+
+/* ── CTA ── */
+.cta-final{background:var(--ink);color:var(--hivis);text-align:center;padding:100px 28px;border-bottom:none;position:relative;overflow:hidden}
+.cta-final::before{content:"";position:absolute;top:0;left:0;right:0;height:14px;background:repeating-linear-gradient(135deg,var(--hivis) 0 14px,var(--ink) 14px 28px)}
+.cta-final::after{content:"";position:absolute;bottom:0;left:0;right:0;height:14px;background:repeating-linear-gradient(135deg,var(--hivis) 0 14px,var(--ink) 14px 28px)}
+.cta-final h2{color:var(--hivis);margin-bottom:14px}
+.cta-final p{color:#a1a1aa;max-width:520px;margin:0 auto 30px;font-size:17px}
+.cta-final .btn-primary{background:var(--hivis);color:var(--ink);border-color:var(--hivis);box-shadow:6px 6px 0 var(--alert)}
+.cta-final .btn-primary:hover{box-shadow:8px 8px 0 var(--alert);background:var(--hivis)}
+
+footer{padding:30px 28px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;border-top:2px solid var(--ink);background:var(--bg)}
+footer b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="tape">
+  <div class="brand"><span>P</span>LUMB</div>
+  <nav class="nav">
+    <a href="#defects">Defects</a>
+    <a href="#who">Trades</a>
+    <a href="#cmp">Compare</a>
+    <a href="#price">Pricing</a>
+    <a class="cta" href="plumb.html">Try the demo</a>
+  </nav>
+</header>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">AR Punchlist · Solo Contractor Edition</div>
+        <h1>Walk the job.<br>Get the <mark>punchlist.</mark></h1>
+        <p class="lede">Point your phone at the room. PLUMB auto-marks off-plumb walls, scratched paint, missing trim, code violations. By the time you're back at the truck, the change-order is in your client's inbox.</p>
+        <div class="hero-cta">
+          <a class="btn-primary" href="plumb.html">▶ Try the demo</a>
+          <a class="btn-ghost" href="#price">See pricing</a>
+        </div>
+        <div class="proof">
+          <span><b>2 min</b> walkthrough</span>
+          <span><b>8</b> defect types</span>
+          <span><b>$39/mo</b> · solo plan</span>
+          <span>iPhone Pro</span>
+        </div>
+      </div>
+      <div class="hero-phone" aria-hidden="true">
+        <svg viewBox="0 0 280 590" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="hf" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3a2f1e"/><stop offset="1" stop-color="#1a1410"/></linearGradient>
+            <linearGradient id="hwL" x1="0" x2="1"><stop offset="0" stop-color="#e8dccc"/><stop offset="1" stop-color="#c9bba6"/></linearGradient>
+            <linearGradient id="hwR" x1="0" x2="1"><stop offset="0" stop-color="#c9bba6"/><stop offset="1" stop-color="#e8dccc"/></linearGradient>
+          </defs>
+          <polygon points="0,0 280,0 230,140 50,140" fill="#a89880"/>
+          <polygon points="50,140 230,140 230,410 50,410" fill="#dccfb9"/>
+          <polygon points="0,0 50,140 50,410 0,510" fill="url(#hwL)"/>
+          <polygon points="280,0 230,140 230,410 280,510" fill="url(#hwR)"/>
+          <polygon points="50,410 230,410 280,510 280,590 0,590 0,510" fill="url(#hf)"/>
+          <rect x="90" y="180" width="100" height="125" fill="#a8c4dc" stroke="#fff" stroke-width="2"/>
+          <line x1="140" y1="180" x2="140" y2="305" stroke="#fff" stroke-width="2"/>
+          <rect x="18" y="320" width="16" height="26" fill="#0a0a0a"/>
+        </svg>
+        <!-- AR pins -->
+        <div class="ar-pin pin-pulse" style="left:9%;top:55%"><span class="tag">D2 · No cover plate</span></div>
+        <div class="ar-pin pin-pulse" style="left:62%;top:32%;animation-delay:0.6s"><span class="tag">D1 · 3° off-plumb</span></div>
+        <div class="ar-pin pin-pulse" style="left:48%;top:68%;animation-delay:1.2s"><span class="tag">D4 · Trim gap</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 8 DEFECTS ── -->
+<section id="defects">
+  <div class="wrap">
+    <div class="sect-intro">
+      <div class="eyebrow">What PLUMB catches</div>
+      <h2>Eight defect types. On-device.</h2>
+      <p>Trained on 40,000 walkthroughs from working trades. No cloud upload required. The classifier runs on the phone — fast enough to overlay markers in real time.</p>
+    </div>
+    <div class="def-grid">
+      <div class="def"><div class="num">D01 <span class="icon">📐</span></div><h4>Off-plumb walls</h4><p>LiDAR measures deviation to 0.5°. Flags joints, top plates, door jambs that won't pass framing inspection.</p></div>
+      <div class="def"><div class="num">D02 <span class="icon">🔌</span></div><h4>Missing cover plates</h4><p>Outlets, switches, junction boxes. Code violation, fast fix — but the most-missed punch item on every job.</p></div>
+      <div class="def"><div class="num">D03 <span class="icon">🎨</span></div><h4>Paint scuffs &amp; misses</h4><p>Touch-up flags with location pinned to wall ID. Distinguishes scuff from intentional accent.</p></div>
+      <div class="def"><div class="num">D04 <span class="icon">📏</span></div><h4>Trim &amp; baseboard gaps</h4><p>Anything over 1/8" — flagged as code-borderline. Caulk or shim recommendations included.</p></div>
+      <div class="def"><div class="num">D05 <span class="icon">⚡</span></div><h4>Drywall cracks &amp; pops</h4><p>Hairline, vertical, settling — categorized so you know whether it's cosmetic or structural concern.</p></div>
+      <div class="def"><div class="num">D06 <span class="icon">💧</span></div><h4>Moisture &amp; staining</h4><p>Ceiling stains, behind-wall hints from thermal pattern. Auto-flags to investigate above before paint.</p></div>
+      <div class="def"><div class="num">D07 <span class="icon">🪵</span></div><h4>Floor scratches &amp; gouges</h4><p>Distinguishes from natural grain. Refinish recommendations per material — hardwood, LVP, tile.</p></div>
+      <div class="def"><div class="num">D08 <span class="icon">🌬️</span></div><h4>Window &amp; door seal gaps</h4><p>Visible perimeter gaps. Air-leak flags. Suggests caulk vs. weatherstrip vs. re-shim.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WHO IT'S FOR ── -->
+<section id="who">
+  <div class="wrap">
+    <div class="sect-intro">
+      <div class="eyebrow">Who PLUMB is for</div>
+      <h2>One-truck shops. Trades that finish.</h2>
+      <p>If your day ends with a clipboard and a phone full of un-named photos — this is for you. PLUMB replaces the worst hour of every job.</p>
+    </div>
+    <div class="who-grid">
+      <div class="who-card"><span class="badge">01</span><h4>Remodelers</h4><p>Walk the final with the client. Punchlist generates as you go.</p></div>
+      <div class="who-card"><span class="badge">02</span><h4>Painters</h4><p>Pre-walk for scope. Post-walk for sign-off. No more "we already paid for that wall."</p></div>
+      <div class="who-card"><span class="badge">03</span><h4>Drywallers</h4><p>Catch every nail pop and seam crack before the painter does — and you eat the call-back.</p></div>
+      <div class="who-card"><span class="badge">04</span><h4>Electricians</h4><p>Cover plates, junction box gaps, code-compliance flags. Trim-out walk in 90 seconds.</p></div>
+      <div class="who-card"><span class="badge">05</span><h4>Home inspectors</h4><p>Two-hour inspection → 12-minute walk. Photos, locations, severities tagged automatically.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── COMPARISON ── -->
+<section class="cmp" id="cmp">
+  <div class="wrap cmp-inner">
+    <div class="sect-intro">
+      <div class="eyebrow" style="color:var(--ink)">How PLUMB stacks up</div>
+      <h2>Priced for the truck. Not the C-suite.</h2>
+      <p style="color:var(--ink)">Buildots and OpenSpace serve general contractors with $50M+ revenue. The clipboard-and-iPhone method serves everybody else — badly. PLUMB sits in the middle, where 700,000 small US shops actually work.</p>
+    </div>
+    <div class="cmp-grid">
+      <div class="cmp-col">
+        <div class="cmp-tag">Enterprise tools</div>
+        <h4>Buildots / OpenSpace</h4>
+        <div class="cmp-price">$50k+<small>/yr</small></div>
+        <ul>
+          <li>2-week implementation</li>
+          <li>Dedicated CSM required</li>
+          <li>Built for 50-person GC firms</li>
+          <li>Hardware rigs ($3-8k each)</li>
+          <li class="ok">Real defect detection</li>
+        </ul>
+      </div>
+      <div class="cmp-col us">
+        <span class="ribbon">You are here</span>
+        <div class="cmp-tag">Solo / small-crew</div>
+        <h4>PLUMB</h4>
+        <div class="cmp-price">$39<small>/mo</small></div>
+        <ul>
+          <li>30-second sign-up</li>
+          <li>Phone you already own</li>
+          <li>Built for one-truck shops</li>
+          <li>Offline-first</li>
+          <li>Real defect detection</li>
+          <li>Client-ready report in 2min</li>
+        </ul>
+      </div>
+      <div class="cmp-col">
+        <div class="cmp-tag">Current method</div>
+        <h4>Clipboard + iPhone roll</h4>
+        <div class="cmp-price">$0<small>/mo</small></div>
+        <ul>
+          <li>1hr to write up after every walk</li>
+          <li>Photos with no labels</li>
+          <li>"Was that wall the kitchen or hallway?"</li>
+          <li>Missed items = call-backs</li>
+          <li>No change-order template</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section id="price">
+  <div class="wrap">
+    <div class="sect-intro">
+      <div class="eyebrow">Pricing</div>
+      <h2>Pay like a contractor pays for tools.</h2>
+      <p>Monthly, yearly, or once. No seat math. No "contact sales." Cancel any time — your reports stay yours.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price">
+        <div class="p-name">Solo</div>
+        <div class="p-amount">$39<small>/mo</small></div>
+        <div class="p-per">One phone · one trade</div>
+        <ul>
+          <li>Unlimited walkthroughs</li>
+          <li>All 8 defect types</li>
+          <li>Client-ready PDF reports</li>
+          <li>Change-order export</li>
+          <li>Offline-first</li>
+        </ul>
+        <button class="pick">Start free 14-day trial</button>
+      </div>
+      <div class="price feature">
+        <span class="ribbon">Most picked</span>
+        <div class="p-name">Crew</div>
+        <div class="p-amount">$79<small>/mo</small></div>
+        <div class="p-per">Up to 5 phones · shared jobs</div>
+        <ul>
+          <li>Everything in Solo</li>
+          <li>5 user seats</li>
+          <li>Shared job folders</li>
+          <li>Client signature capture</li>
+          <li>Invoice sync (QuickBooks, Square)</li>
+          <li>Insurance-claim export format</li>
+        </ul>
+        <button class="pick">Start free 14-day trial</button>
+      </div>
+      <div class="price">
+        <div class="p-name">Lifetime-ish</div>
+        <div class="p-amount">$399<small>/yr</small></div>
+        <div class="p-per">Solo · annual · no recurring</div>
+        <ul>
+          <li>All Solo features</li>
+          <li>Locked-in price for 5 yrs</li>
+          <li>Priority defect-classifier updates</li>
+          <li>Beta access · new defect types</li>
+          <li>No card on file after pay</li>
+        </ul>
+        <button class="pick">Buy once</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIALS ── -->
+<section>
+  <div class="wrap">
+    <div class="sect-intro">
+      <div class="eyebrow">From the truck</div>
+      <h2>What working trades say.</h2>
+    </div>
+    <div class="quote-grid">
+      <div class="quote">
+        <div class="stars">★★★★★</div>
+        <p>"Used to spend Sunday night writing punchlists. Now I'm done by the time I'm back in the truck. Got a callback rate down to maybe one job in twenty."</p>
+        <div class="who">
+          <div class="av">RV</div>
+          <div><div class="name">Ramon V.</div><div class="role">Remodeler · Phoenix · 14yrs</div></div>
+        </div>
+      </div>
+      <div class="quote">
+        <div class="stars">★★★★★</div>
+        <p>"The trim-gap flag alone saved me from a code re-inspection. Inspector laughed when I pulled out my phone — then asked what app it was."</p>
+        <div class="who">
+          <div class="av">DK</div>
+          <div><div class="name">Dave K.</div><div class="role">Drywall · Cincinnati · solo</div></div>
+        </div>
+      </div>
+      <div class="quote">
+        <div class="stars">★★★★★</div>
+        <p>"Clients used to argue every line item. Now they see the photo, the location, the fix, the price. No argument. Just signature."</p>
+        <div class="who">
+          <div class="av">MJ</div>
+          <div><div class="name">Marie J.</div><div class="role">Interior painter · Atlanta · 2-truck shop</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FINAL CTA ── -->
+<section class="cta-final">
+  <h2>Walk a job in 90 seconds.</h2>
+  <p>Real demo. No sign-up. Tap "Start walkthrough" and watch PLUMB mark eight defects in a simulated room.</p>
+  <a class="btn-primary" href="plumb.html">▶ Try the demo</a>
+</section>
+
+<footer>
+  <b>PLUMB</b> · v0.4 beta · built by trades, for trades · <span style="color:var(--ink-2)">© 2026 · privacy · terms · support@plumb.tools</span>
+</footer>
+
+</body>
+</html>

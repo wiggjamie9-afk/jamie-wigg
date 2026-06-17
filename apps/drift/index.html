@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#04040f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="DRIFT — AI Sleep Coach. Sleep smarter. Wake better.">
+  <title>DRIFT — AI Sleep Coach</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <script src="/universal-mvp-enhancements.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #04040f;
+      --bg2:       #0a0a1e;
+      --bg3:       #0f0f28;
+      --glass:     rgba(255,255,255,0.04);
+      --glass-b:   rgba(255,255,255,0.07);
+      --glass-h:   rgba(255,255,255,0.09);
+      --primary:   #4f46e5;
+      --primary-l: #818cf8;
+      --primary-g: rgba(79,70,229,0.28);
+      --accent:    #e0e7ff;
+      --green:     #22d3a5;
+      --green-g:   rgba(34,211,165,0.2);
+      --amber:     #f59e0b;
+      --amber-g:   rgba(245,158,11,0.2);
+      --red:       #f87171;
+      --red-g:     rgba(248,113,113,0.2);
+      --text:      #e8e8f8;
+      --muted:     #5a5a7a;
+      --muted2:    #8888aa;
+      --radius:    20px;
+      --tab-h:     72px;
+      --safe-b:    env(safe-area-inset-bottom, 16px);
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── AMBIENT BACKGROUND ── */
+    .ambient-bg {
+      position: fixed; inset: 0;
+      z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.18;
+      animation: orbDrift linear infinite;
+    }
+    .orb1 {
+      width: 60vw; height: 60vw;
+      background: radial-gradient(circle, #4f46e5, transparent 70%);
+      top: -15%; left: -10%;
+      animation-duration: 28s;
+    }
+    .orb2 {
+      width: 45vw; height: 45vw;
+      background: radial-gradient(circle, #818cf8, transparent 70%);
+      top: 30%; right: -15%;
+      animation-duration: 38s;
+      animation-direction: reverse;
+    }
+    .orb3 {
+      width: 50vw; height: 50vw;
+      background: radial-gradient(circle, #1e1b6e, transparent 70%);
+      bottom: -10%; left: 20%;
+      animation-duration: 22s;
+    }
+    @keyframes orbDrift {
+      0%   { transform: translate(0, 0) scale(1); }
+      25%  { transform: translate(4%, 6%) scale(1.05); }
+      50%  { transform: translate(-3%, 10%) scale(0.97); }
+      75%  { transform: translate(5%, 3%) scale(1.03); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+
+    /* ── WIND-DOWN AMBIENT ── */
+    .windown-ambient {
+      position: fixed; inset: 0;
+      z-index: 0; pointer-events: none;
+      opacity: 0;
+      transition: opacity 2s ease;
+    }
+    .windown-ambient.active { opacity: 1; }
+    .wa-layer {
+      position: absolute; inset: -50%;
+      background: conic-gradient(
+        from 0deg at 40% 40%,
+        #04040f 0deg,
+        #0a0730 90deg,
+        #04040f 180deg,
+        #060412 270deg,
+        #04040f 360deg
+      );
+      animation: waSpin 60s linear infinite;
+      opacity: 0.6;
+    }
+    .wa-layer2 {
+      position: absolute; inset: -60%;
+      background: conic-gradient(
+        from 180deg at 60% 55%,
+        transparent 0deg,
+        rgba(79,70,229,0.06) 60deg,
+        transparent 120deg,
+        rgba(129,140,248,0.04) 200deg,
+        transparent 300deg
+      );
+      animation: waSpin 90s linear infinite reverse;
+    }
+    @keyframes waSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ── APP SHELL ── */
+    #app {
+      position: relative; z-index: 1;
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px 6px;
+      padding-top: calc(14px + env(safe-area-inset-top, 0px));
+      flex-shrink: 0;
+    }
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+      letter-spacing: -0.3px;
+      background: linear-gradient(135deg, #a5b4fc, #818cf8 50%, #6366f1);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo span { opacity: 0.55; font-weight: 600; }
+    .pro-btn {
+      background: linear-gradient(135deg, #4f46e5, #818cf8);
+      color: #fff; font-size: 10px; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px;
+      letter-spacing: 0.6px; cursor: pointer; border: none;
+      font-family: inherit;
+      box-shadow: 0 2px 12px var(--primary-g);
+    }
+    .pro-btn.unlocked {
+      background: linear-gradient(135deg, var(--green), #10b981);
+      box-shadow: 0 2px 12px var(--green-g);
+    }
+
+    /* ── VIEWS ── */
+    .view {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 8px 16px;
+      padding-bottom: calc(var(--tab-h) + var(--safe-b) + 12px);
+      display: none; flex-direction: column;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+    .view.active { display: flex; }
+    .view > * { flex-shrink: 0; }
+
+    /* ── BOTTOM TAB BAR ── */
+    .tab-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(var(--tab-h) + var(--safe-b));
+      padding-bottom: var(--safe-b);
+      background: rgba(4,4,15,0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-top: 1px solid var(--glass-b);
+      display: flex; align-items: flex-start;
+      z-index: 50; flex-shrink: 0;
+    }
+    .tab {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px; padding-top: 10px;
+      cursor: pointer; border: none; background: transparent;
+      font-family: inherit; color: var(--muted); font-size: 10px;
+      font-weight: 500; letter-spacing: 0.3px;
+      transition: color 0.2s; -webkit-tap-highlight-color: transparent;
+    }
+    .tab.active { color: var(--primary-l); }
+    .tab-icon {
+      font-size: 22px; line-height: 1;
+      transition: transform 0.2s;
+    }
+    .tab.active .tab-icon { transform: scale(1.12); }
+    .tab-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--primary-l);
+      opacity: 0; transition: opacity 0.2s;
+      position: absolute; bottom: calc(var(--safe-b) + 6px);
+    }
+    .tab.active .tab-dot { opacity: 1; }
+
+    /* ── GLASS CARD ── */
+    .card {
+      background: var(--glass);
+      border: 1px solid var(--glass-b);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--glass-h); }
+    .card-title {
+      font-size: 11px; font-weight: 600;
+      color: var(--muted2); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 14px;
+    }
+
+    /* ── SCORE RING ── */
+    .score-wrap {
+      display: flex; align-items: center;
+      justify-content: center; margin: 8px 0 4px;
+      position: relative;
+    }
+    .score-svg {
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 24px var(--primary-g));
+    }
+    .score-center {
+      position: absolute; text-align: center;
+      pointer-events: none;
+    }
+    .score-num {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 52px; font-weight: 700;
+      letter-spacing: -2px; line-height: 1;
+    }
+    .score-label {
+      font-size: 11px; color: var(--muted2);
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* ── TONIGHT VIEW ── */
+    .tonight-hero {
+      text-align: center; padding: 10px 0 20px;
+    }
+    .tonight-greeting {
+      font-size: 13px; color: var(--muted2);
+      letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .tonight-headline {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px; font-weight: 700;
+      letter-spacing: -0.5px; line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .tonight-sub {
+      font-size: 14px; color: var(--muted2); line-height: 1.5;
+    }
+
+    /* Bedtime recommendation card */
+    .rec-card {
+      background: linear-gradient(135deg, rgba(79,70,229,0.18), rgba(129,140,248,0.08));
+      border: 1px solid rgba(79,70,229,0.3);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .rec-card::before {
+      content: '';
+      position: absolute; top: -1px; left: 20%; right: 20%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(129,140,248,0.6), transparent);
+    }
+    .rec-label {
+      font-size: 11px; font-weight: 600; color: var(--primary-l);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .rec-time {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 42px; font-weight: 700;
+      letter-spacing: -1.5px; line-height: 1;
+      color: var(--accent);
+    }
+    .rec-reason {
+      font-size: 13px; color: var(--muted2);
+      margin-top: 8px; line-height: 1.5;
+    }
+
+    /* Wind-down countdown */
+    .windown-card {
+      background: linear-gradient(135deg, rgba(15,12,40,0.9), rgba(10,7,30,0.9));
+      border: 1px solid rgba(79,70,229,0.2);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .windown-icon { font-size: 32px; flex-shrink: 0; }
+    .windown-info { flex: 1; }
+    .windown-title {
+      font-size: 13px; font-weight: 600;
+      margin-bottom: 3px;
+    }
+    .windown-time {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px; font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--primary-l);
+    }
+    .windown-sub { font-size: 12px; color: var(--muted2); margin-top: 2px; }
+
+    /* Debt meter */
+    .debt-meter-wrap {
+      margin: 14px 0 4px;
+    }
+    .debt-bar-bg {
+      height: 10px; border-radius: 99px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .debt-bar-fill {
+      height: 100%; border-radius: 99px;
+      transition: width 0.8s cubic-bezier(0.25,1,0.5,1);
+      background: linear-gradient(90deg, var(--primary), var(--primary-l));
+    }
+    .debt-bar-fill.danger {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+    }
+    .debt-bar-fill.warning {
+      background: linear-gradient(90deg, var(--amber), #fbbf24);
+    }
+    .debt-labels {
+      display: flex; justify-content: space-between;
+      margin-top: 6px;
+      font-size: 11px; color: var(--muted2);
+    }
+    .debt-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+    .debt-tagline {
+      font-size: 13px; color: var(--muted2);
+      margin-top: 3px; line-height: 1.4;
+    }
+
+    /* Score breakdown pills */
+    .score-breakdown {
+      display: flex; gap: 8px; margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .score-pill {
+      flex: 1; min-width: 80px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--glass-b);
+      border-radius: 12px; padding: 10px 12px;
+      text-align: center;
+    }
+    .score-pill-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .score-pill-label {
+      font-size: 10px; color: var(--muted2);
+      letter-spacing: 0.5px; text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* ── LOG VIEW ── */
+    .time-picker-card {
+      background: var(--glass);
+      border: 1px solid var(--glass-b);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      margin-bottom: 12px;
+    }
+    .tp-label {
+      font-size: 11px; font-weight: 600; color: var(--muted2);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .tp-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .tp-icon { font-size: 22px; flex-shrink: 0; }
+    .tp-fields {
+      flex: 1; display: flex; gap: 8px; align-items: center;
+    }
+    .tp-input-wrap {
+      flex: 1; display: flex; flex-direction: column; gap: 3px;
+    }
+    .tp-input-label { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+    .tp-input {
+      width: 100%; padding: 14px 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--glass-b);
+      border-radius: 14px;
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+      letter-spacing: -0.3px;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .tp-input:focus {
+      border-color: var(--primary-l);
+      box-shadow: 0 0 0 3px var(--primary-g);
+    }
+    .tp-separator {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px; font-weight: 700; color: var(--muted);
+    }
+
+    /* Quick-entry chips */
+    .quick-chips {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--glass-b);
+      border-radius: 99px; padding: 6px 12px;
+      font-size: 12px; color: var(--muted2);
+      cursor: pointer; transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .chip:active, .chip.selected {
+      background: var(--primary-g);
+      border-color: var(--primary);
+      color: var(--primary-l);
+    }
+
+    /* Duration display */
+    .duration-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--glass-b);
+    }
+    .dur-label { font-size: 13px; color: var(--muted2); }
+    .dur-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+    }
+    .dur-val.good { color: var(--green); }
+    .dur-val.ok { color: var(--amber); }
+    .dur-val.bad { color: var(--red); }
+
+    /* Submit button */
+    .btn-log {
+      width: 100%; height: 58px; border-radius: 16px; border: none;
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px; font-weight: 700;
+      cursor: pointer; margin-top: 4px; margin-bottom: 12px;
+      box-shadow: 0 8px 32px var(--primary-g);
+      transition: all 0.2s; letter-spacing: 0.2px;
+    }
+    .btn-log:active { transform: scale(0.97); box-shadow: 0 4px 16px var(--primary-g); }
+
+    /* History list */
+    .history-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--glass-b);
+    }
+    .history-item:last-child { border-bottom: none; }
+    .hi-date {
+      font-size: 12px; color: var(--muted2);
+      min-width: 38px; text-align: center;
+    }
+    .hi-date-num {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+      color: var(--text); line-height: 1;
+    }
+    .hi-date-day { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .hi-divider {
+      width: 1px; height: 36px;
+      background: var(--glass-b); flex-shrink: 0;
+    }
+    .hi-times { flex: 1; }
+    .hi-sleep-row {
+      font-size: 13px; color: var(--muted2); line-height: 1.6;
+    }
+    .hi-sleep-row strong { color: var(--text); font-weight: 600; }
+    .hi-badge {
+      display: inline-block;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; font-weight: 700;
+      padding: 4px 10px; border-radius: 99px;
+      letter-spacing: -0.3px;
+    }
+    .hi-badge.good { background: var(--green-g); color: var(--green); }
+    .hi-badge.ok   { background: var(--amber-g); color: var(--amber); }
+    .hi-badge.bad  { background: var(--red-g); color: var(--red); }
+
+    /* Delete button */
+    .hi-del {
+      background: none; border: none;
+      color: var(--muted); font-size: 16px;
+      cursor: pointer; padding: 6px;
+      opacity: 0.6; transition: opacity 0.2s;
+    }
+    .hi-del:active { opacity: 1; color: var(--red); }
+
+    /* ── TRENDS VIEW ── */
+    .chart-wrap {
+      margin: 8px 0 4px;
+    }
+    .chart-bars {
+      display: flex; align-items: flex-end; gap: 6px;
+      height: 120px;
+    }
+    .chart-bar-col {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 4px; height: 100%;
+      justify-content: flex-end;
+    }
+    .chart-bar {
+      width: 100%; border-radius: 6px 6px 0 0;
+      min-height: 4px;
+      transition: height 0.6s cubic-bezier(0.25,1,0.5,1);
+      position: relative;
+    }
+    .chart-bar.good { background: linear-gradient(180deg, var(--green), rgba(34,211,165,0.6)); }
+    .chart-bar.ok   { background: linear-gradient(180deg, var(--amber), rgba(245,158,11,0.6)); }
+    .chart-bar.bad  { background: linear-gradient(180deg, var(--red), rgba(248,113,113,0.6)); }
+    .chart-bar.empty { background: rgba(255,255,255,0.05); border-radius: 4px; }
+    .chart-day-label {
+      font-size: 10px; color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+    .chart-day-label.today { color: var(--primary-l); font-weight: 600; }
+    .chart-grid-line {
+      position: absolute; left: 0; right: 0;
+      height: 1px; background: rgba(255,255,255,0.04);
+    }
+    .chart-y-labels {
+      display: flex; flex-direction: column; justify-content: space-between;
+      height: 120px; padding: 0;
+      font-size: 10px; color: var(--muted);
+      margin-right: 6px; text-align: right;
+      flex-shrink: 0;
+    }
+    .chart-container {
+      display: flex; align-items: flex-end; gap: 0;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: flex; gap: 10px; margin-bottom: 12px;
+    }
+    .stat-card {
+      flex: 1; background: var(--glass);
+      border: 1px solid var(--glass-b);
+      border-radius: 16px; padding: 14px 12px;
+      text-align: center;
+    }
+    .stat-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px; font-weight: 700;
+      letter-spacing: -0.5px; line-height: 1;
+    }
+    .stat-label {
+      font-size: 10px; color: var(--muted2);
+      margin-top: 4px; letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* ── COACH VIEW ── */
+    .coach-greeting {
+      background: linear-gradient(135deg, rgba(79,70,229,0.12), rgba(129,140,248,0.06));
+      border: 1px solid rgba(79,70,229,0.2);
+      border-radius: var(--radius); padding: 22px 20px;
+      margin-bottom: 12px;
+    }
+    .coach-avatar {
+      font-size: 36px; margin-bottom: 10px; display: block;
+    }
+    .coach-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+      letter-spacing: -0.3px; margin-bottom: 8px;
+    }
+    .coach-text {
+      font-size: 14px; color: var(--muted2);
+      line-height: 1.65;
+    }
+    .coach-text strong { color: var(--text); }
+
+    .tip-card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: var(--radius); padding: 18px 20px;
+      margin-bottom: 10px;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .tip-icon { font-size: 24px; flex-shrink: 0; margin-top: 1px; }
+    .tip-body { flex: 1; }
+    .tip-title {
+      font-size: 14px; font-weight: 600; margin-bottom: 4px;
+    }
+    .tip-desc {
+      font-size: 13px; color: var(--muted2); line-height: 1.55;
+    }
+
+    /* ── PAYWALL MODAL ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(4,4,15,0.85);
+      backdrop-filter: blur(16px) saturate(120%);
+      -webkit-backdrop-filter: blur(16px) saturate(120%);
+      display: none; align-items: flex-end; justify-content: center;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal {
+      background: linear-gradient(180deg, #0d0b28 0%, #07060f 100%);
+      border: 1px solid rgba(79,70,229,0.3);
+      border-radius: 28px 28px 0 0;
+      padding: 28px 24px;
+      padding-bottom: calc(28px + var(--safe-b));
+      width: 100%; max-width: 480px;
+      animation: slideUp 0.4s cubic-bezier(0.25,1,0.5,1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    .modal-pill {
+      width: 36px; height: 4px; border-radius: 99px;
+      background: rgba(255,255,255,0.15); margin: 0 auto 22px;
+    }
+    .modal-icon { font-size: 44px; text-align: center; display: block; margin-bottom: 12px; }
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px; font-weight: 700;
+      text-align: center; letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .modal-sub {
+      font-size: 14px; color: var(--muted2);
+      text-align: center; line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .modal-features {
+      list-style: none; margin-bottom: 24px;
+    }
+    .modal-features li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; padding: 8px 0;
+      border-bottom: 1px solid var(--glass-b);
+    }
+    .modal-features li:last-child { border-bottom: none; }
+    .modal-features li span:first-child { font-size: 18px; }
+    .modal-price {
+      text-align: center; margin-bottom: 18px;
+    }
+    .price-main {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 36px; font-weight: 700;
+      letter-spacing: -1px;
+    }
+    .price-period { font-size: 16px; color: var(--muted2); }
+    .price-trial {
+      font-size: 12px; color: var(--green);
+      margin-top: 3px; letter-spacing: 0.3px;
+    }
+    .btn-subscribe {
+      width: 100%; height: 58px; border-radius: 16px; border: none;
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px; font-weight: 700;
+      cursor: pointer; margin-bottom: 10px;
+      box-shadow: 0 8px 32px var(--primary-g);
+      transition: all 0.2s;
+    }
+    .btn-subscribe:active { transform: scale(0.97); }
+    .btn-dismiss {
+      width: 100%; height: 44px; border-radius: 12px; border: none;
+      background: transparent; color: var(--muted2);
+      font-family: inherit; font-size: 14px; cursor: pointer;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; top: calc(20px + env(safe-area-inset-top, 0px));
+      left: 50%; transform: translateX(-50%) translateY(-80px);
+      background: rgba(15,15,40,0.95);
+      border: 1px solid rgba(79,70,229,0.3);
+      border-radius: 14px; padding: 12px 20px;
+      font-size: 14px; font-weight: 500;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 200; white-space: nowrap;
+      transition: transform 0.3s cubic-bezier(0.25,1,0.5,1);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: var(--muted2);
+    }
+    .empty-icon {
+      font-size: 48px; margin-bottom: 16px; display: block;
+      opacity: 0.5;
+    }
+    .empty-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 700;
+      margin-bottom: 8px; color: var(--muted2);
+    }
+    .empty-desc { font-size: 14px; line-height: 1.55; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 0; }
+  </style>
+</head>
+<body>
+
+<!-- Ambient background layers -->
+<div class="ambient-bg">
+  <div class="ambient-orb orb1"></div>
+  <div class="ambient-orb orb2"></div>
+  <div class="ambient-orb orb3"></div>
+</div>
+<div class="windown-ambient" id="windAmbient">
+  <div class="wa-layer"></div>
+  <div class="wa-layer2"></div>
+</div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">DRIFT <span>Sleep Coach</span></div>
+    <button class="pro-btn" id="proBadge" onclick="openPaywall()">PRO</button>
+  </div>
+
+  <!-- ── TONIGHT VIEW ── -->
+  <div class="view active" id="view-tonight">
+
+    <!-- Greeting + score -->
+    <div class="tonight-hero">
+      <div class="tonight-greeting" id="greetingText">Good evening</div>
+      <div class="tonight-headline" id="headlineText">How did you sleep?</div>
+      <div class="tonight-sub" id="subText">Log last night to get your score.</div>
+    </div>
+
+    <!-- Score ring -->
+    <div class="card" style="padding:24px 20px; text-align:center;">
+      <div class="card-title">Sleep Score</div>
+      <div class="score-wrap">
+        <svg class="score-svg" width="160" height="160" viewBox="0 0 160 160">
+          <defs>
+            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#4f46e5"/>
+              <stop offset="100%" stop-color="#818cf8"/>
+            </linearGradient>
+            <linearGradient id="scoreGradGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#22d3a5"/>
+              <stop offset="100%" stop-color="#10b981"/>
+            </linearGradient>
+            <linearGradient id="scoreGradAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#fbbf24"/>
+            </linearGradient>
+            <linearGradient id="scoreGradRed" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f87171"/>
+              <stop offset="100%" stop-color="#ef4444"/>
+            </linearGradient>
+          </defs>
+          <circle class="score-track" cx="80" cy="80" r="68" fill="none"
+            stroke="rgba(255,255,255,0.05)" stroke-width="10"/>
+          <circle id="scoreArc" cx="80" cy="80" r="68" fill="none"
+            stroke="url(#scoreGrad)" stroke-width="10"
+            stroke-linecap="round"
+            stroke-dasharray="427.26"
+            stroke-dashoffset="427.26"
+            style="transition: stroke-dashoffset 1.2s cubic-bezier(0.25,1,0.5,1)"/>
+        </svg>
+        <div class="score-center">
+          <div class="score-num" id="scoreNum">–</div>
+          <div class="score-label">out of 100</div>
+        </div>
+      </div>
+      <div class="score-breakdown" id="scoreBreakdown">
+        <div class="score-pill">
+          <div class="score-pill-val" id="durScore">–</div>
+          <div class="score-pill-label">Duration</div>
+        </div>
+        <div class="score-pill">
+          <div class="score-pill-val" id="conScore">–</div>
+          <div class="score-pill-label">Consistency</div>
+        </div>
+        <div class="score-pill">
+          <div class="score-pill-val" id="debtScore">–</div>
+          <div class="score-pill-label">Debt</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bedtime recommendation -->
+    <div class="rec-card" id="recCard">
+      <div class="rec-label">Tonight's Target</div>
+      <div class="rec-time" id="recTime">–:––</div>
+      <div class="rec-reason" id="recReason">Log some sleep to get your personalised recommendation.</div>
+    </div>
+
+    <!-- Wind-down countdown -->
+    <div class="windown-card" id="windDownCard">
+      <div class="windown-icon">🌙</div>
+      <div class="windown-info">
+        <div class="windown-title">Wind-down in</div>
+        <div class="windown-time" id="windCountdown">–h ––m</div>
+        <div class="windown-sub" id="windSub">Until recommended bedtime</div>
+      </div>
+    </div>
+
+    <!-- Sleep debt -->
+    <div class="card">
+      <div class="card-title">7-Day Sleep Debt</div>
+      <div class="debt-value" id="debtValue">0h 0m</div>
+      <div class="debt-tagline" id="debtTagline">You owe your body 0 hours of sleep.</div>
+      <div class="debt-meter-wrap">
+        <div class="debt-bar-bg">
+          <div class="debt-bar-fill" id="debtBar" style="width:0%"></div>
+        </div>
+        <div class="debt-labels">
+          <span>0h debt</span>
+          <span>8h debt</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── LOG VIEW ── -->
+  <div class="view" id="view-log">
+
+    <div style="padding: 8px 0 16px;">
+      <div style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; letter-spacing:-0.3px; margin-bottom:4px;">Log Sleep</div>
+      <div style="font-size:13px; color:var(--muted2);">Enter last night's sleep times</div>
+    </div>
+
+    <!-- Time entry card -->
+    <div class="time-picker-card">
+      <div class="tp-label">Bedtime</div>
+      <div class="tp-row">
+        <div class="tp-icon">🛌</div>
+        <div class="tp-fields">
+          <div class="tp-input-wrap">
+            <div class="tp-input-label">HOUR</div>
+            <input type="number" class="tp-input" id="bedHour" min="1" max="12" placeholder="10" inputmode="numeric" aria-label="Bedtime hour">
+          </div>
+          <div class="tp-separator">:</div>
+          <div class="tp-input-wrap">
+            <div class="tp-input-label">MIN</div>
+            <input type="number" class="tp-input" id="bedMin" min="0" max="59" placeholder="30" inputmode="numeric" aria-label="Bedtime minutes">
+          </div>
+          <div class="tp-input-wrap" style="max-width:58px;">
+            <div class="tp-input-label">AM/PM</div>
+            <select class="tp-input" id="bedAmpm" style="font-size:14px; padding:13px 6px;">
+              <option value="PM">PM</option>
+              <option value="AM">AM</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick bedtime chips -->
+      <div class="quick-chips" id="bedChips">
+        <div class="chip" onclick="setQuickTime('bed','9','00','PM')">9:00 PM</div>
+        <div class="chip" onclick="setQuickTime('bed','9','30','PM')">9:30 PM</div>
+        <div class="chip" onclick="setQuickTime('bed','10','00','PM')">10:00 PM</div>
+        <div class="chip" onclick="setQuickTime('bed','10','30','PM')">10:30 PM</div>
+        <div class="chip" onclick="setQuickTime('bed','11','00','PM')">11:00 PM</div>
+        <div class="chip" onclick="setQuickTime('bed','11','30','PM')">11:30 PM</div>
+        <div class="chip" onclick="setQuickTime('bed','12','00','AM')">12:00 AM</div>
+      </div>
+
+      <div class="tp-label" style="margin-top:20px;">Wake Time</div>
+      <div class="tp-row">
+        <div class="tp-icon">☀️</div>
+        <div class="tp-fields">
+          <div class="tp-input-wrap">
+            <div class="tp-input-label">HOUR</div>
+            <input type="number" class="tp-input" id="wakeHour" min="1" max="12" placeholder="6" inputmode="numeric" aria-label="Wake time hour">
+          </div>
+          <div class="tp-separator">:</div>
+          <div class="tp-input-wrap">
+            <div class="tp-input-label">MIN</div>
+            <input type="number" class="tp-input" id="wakeMin" min="0" max="59" placeholder="30" inputmode="numeric" aria-label="Wake time minutes">
+          </div>
+          <div class="tp-input-wrap" style="max-width:58px;">
+            <div class="tp-input-label">AM/PM</div>
+            <select class="tp-input" id="wakeAmpm" style="font-size:14px; padding:13px 6px;">
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick wake time chips -->
+      <div class="quick-chips" id="wakeChips">
+        <div class="chip" onclick="setQuickTime('wake','5','00','AM')">5:00 AM</div>
+        <div class="chip" onclick="setQuickTime('wake','5','30','AM')">5:30 AM</div>
+        <div class="chip" onclick="setQuickTime('wake','6','00','AM')">6:00 AM</div>
+        <div class="chip" onclick="setQuickTime('wake','6','30','AM')">6:30 AM</div>
+        <div class="chip" onclick="setQuickTime('wake','7','00','AM')">7:00 AM</div>
+        <div class="chip" onclick="setQuickTime('wake','7','30','AM')">7:30 AM</div>
+        <div class="chip" onclick="setQuickTime('wake','8','00','AM')">8:00 AM</div>
+      </div>
+
+      <!-- Duration preview -->
+      <div class="duration-row">
+        <div class="dur-label">Sleep duration</div>
+        <div class="dur-val" id="durPreview">–</div>
+      </div>
+    </div>
+
+    <button class="btn-log" onclick="logSleep()">Log Sleep</button>
+
+    <!-- History -->
+    <div class="card" id="historyCard">
+      <div class="card-title">Recent Logs</div>
+      <div id="historyList">
+        <div class="empty-state" style="padding:24px 0;">
+          <span class="empty-icon" style="font-size:32px;">📋</span>
+          <div style="font-size:13px; color:var(--muted2);">No sleep logged yet.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── TRENDS VIEW ── -->
+  <div class="view" id="view-trends">
+
+    <div style="padding: 8px 0 16px;">
+      <div style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; letter-spacing:-0.3px; margin-bottom:4px;">Weekly Trends</div>
+      <div style="font-size:13px; color:var(--muted2);">Last 7 days at a glance</div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val" id="avgSleepStat">–h –m</div>
+        <div class="stat-label">Avg Sleep</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="bestNight">–h –m</div>
+        <div class="stat-label">Best Night</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="daysLogged">0/7</div>
+        <div class="stat-label">Days Logged</div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card">
+      <div class="card-title">Sleep Duration</div>
+      <div class="chart-container">
+        <div class="chart-y-labels">
+          <span>10h</span>
+          <span>8h</span>
+          <span>6h</span>
+          <span>4h</span>
+          <span style="visibility:hidden">0</span>
+        </div>
+        <div class="chart-wrap" style="flex:1; position:relative;">
+          <!-- Reference lines -->
+          <div style="position:absolute; left:0; right:0; top:0; height:120px; pointer-events:none;">
+            <div style="position:absolute; top:0; left:0; right:0; height:1px; background:rgba(255,255,255,0.04);"></div>
+            <div style="position:absolute; top:24%; left:0; right:0; height:1px; background:rgba(79,70,229,0.18); border-top:1px dashed rgba(79,70,229,0.3);"></div>
+            <div style="position:absolute; top:48%; left:0; right:0; height:1px; background:rgba(255,255,255,0.04);"></div>
+            <div style="position:absolute; top:72%; left:0; right:0; height:1px; background:rgba(255,255,255,0.04);"></div>
+          </div>
+          <div class="chart-bars" id="chartBars"></div>
+          <div style="display:flex; margin-top:6px; gap:6px;" id="chartLabels"></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:14px; margin-top:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted2);">
+          <div style="width:10px;height:10px;border-radius:3px;background:var(--green);"></div> ≥7h (good)
+        </div>
+        <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted2);">
+          <div style="width:10px;height:10px;border-radius:3px;background:var(--amber);"></div> 5–7h (ok)
+        </div>
+        <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted2);">
+          <div style="width:10px;height:10px;border-radius:3px;background:var(--red);"></div> &lt;5h (poor)
+        </div>
+      </div>
+    </div>
+
+    <!-- Patterns analysis (gated) -->
+    <div class="card" id="patternsCard">
+      <div class="card-title">Bedtime Consistency</div>
+      <div id="consistencyContent">
+        <div class="empty-state" style="padding:16px 0 8px;">
+          <span class="empty-icon" style="font-size:28px;">📊</span>
+          <div style="font-size:13px; color:var(--muted2);">Log 3+ nights to see patterns.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── COACH VIEW ── -->
+  <div class="view" id="view-coach">
+
+    <div style="padding: 8px 0 16px;">
+      <div style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; letter-spacing:-0.3px; margin-bottom:4px;">Sleep Coach</div>
+      <div style="font-size:13px; color:var(--muted2);">Personalised insights</div>
+    </div>
+
+    <!-- Coach card -->
+    <div class="coach-greeting" id="coachCard">
+      <span class="coach-avatar">🧠</span>
+      <div class="coach-title" id="coachTitle">Build your sleep baseline</div>
+      <div class="coach-text" id="coachText">
+        Log your sleep for a few nights and I'll analyse your patterns, debt, and consistency to give you personalised recommendations.
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="tip-card">
+      <div class="tip-icon">⏰</div>
+      <div class="tip-body">
+        <div class="tip-title">Set a consistent wake time</div>
+        <div class="tip-desc">Your circadian rhythm anchors to your wake time, not your bedtime. Even on weekends, try to wake within ±30 minutes of your target.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">📵</div>
+      <div class="tip-body">
+        <div class="tip-title">Screen-free wind-down</div>
+        <div class="tip-desc">Blue light suppresses melatonin for up to 3 hours. Put your phone face-down 60 minutes before your target bedtime.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">🌡️</div>
+      <div class="tip-body">
+        <div class="tip-title">Cool room = deeper sleep</div>
+        <div class="tip-desc">Core body temperature needs to drop 1–2°C to initiate sleep. Keep your bedroom between 16–19°C for optimal slow-wave sleep.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">☕</div>
+      <div class="tip-body">
+        <div class="tip-title">Caffeine half-life is 5–7 hours</div>
+        <div class="tip-desc">An afternoon coffee at 3pm still has half its caffeine in your system at 9pm. Aim for no caffeine after 1pm if you're a slow metaboliser.</div>
+      </div>
+    </div>
+
+    <!-- Upgrade prompt (shown when not pro) -->
+    <div class="card" id="upgradePrompt" style="text-align:center; padding:28px 20px;">
+      <div style="font-size:40px; margin-bottom:12px;">✨</div>
+      <div style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; margin-bottom:8px;">Unlock Full Coach</div>
+      <div style="font-size:13px; color:var(--muted2); margin-bottom:20px; line-height:1.6;">
+        Get weekly AI analysis, personalised bedtime schedules, and sleep debt payoff plans with DRIFT Pro.
+      </div>
+      <button class="btn-log" style="margin-bottom:0;" onclick="openPaywall()">Start 7-Day Free Trial</button>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab active" id="tab-tonight" onclick="switchTab('tonight')">
+      <div class="tab-icon">🌙</div>
+      <span>Tonight</span>
+      <div class="tab-dot"></div>
+    </button>
+    <button class="tab" id="tab-log" onclick="switchTab('log')">
+      <div class="tab-icon">📝</div>
+      <span>Log</span>
+      <div class="tab-dot"></div>
+    </button>
+    <button class="tab" id="tab-trends" onclick="switchTab('trends')">
+      <div class="tab-icon">📈</div>
+      <span>Trends</span>
+      <div class="tab-dot"></div>
+    </button>
+    <button class="tab" id="tab-coach" onclick="switchTab('coach')">
+      <div class="tab-icon">🧠</div>
+      <span>Coach</span>
+      <div class="tab-dot"></div>
+    </button>
+  </nav>
+
+</div>
+
+<!-- PAYWALL MODAL -->
+<div class="modal-backdrop" id="paywallModal" onclick="closePaywallOutside(event)">
+  <div class="modal">
+    <div class="modal-pill"></div>
+    <span class="modal-icon">🌙</span>
+    <div class="modal-title">DRIFT Pro</div>
+    <div class="modal-sub">Unlock your full sleep intelligence. 7 days free, then cancel anytime.</div>
+    <ul class="modal-features">
+      <li><span>📊</span><span>Unlimited sleep history &amp; trends</span></li>
+      <li><span>🤖</span><span>AI-powered weekly sleep analysis</span></li>
+      <li><span>🎯</span><span>Smart debt payoff schedules</span></li>
+      <li><span>🔔</span><span>Bedtime &amp; wind-down reminders</span></li>
+      <li><span>📤</span><span>Export sleep data as CSV</span></li>
+    </ul>
+    <div class="modal-price">
+      <div class="price-main">$5.99<span class="price-period">/mo</span></div>
+      <div class="price-trial">7-day free trial • No charge today</div>
+    </div>
+    <button class="btn-subscribe" onclick="activatePro()">Start 7-Day Free Trial</button>
+    <button class="btn-dismiss" onclick="closePaywall()">Maybe later</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const STORE_KEY  = 'drift_logs_v1';
+const PRO_KEY    = 'drift_pro_v1';
+const TRIAL_KEY  = 'drift_trial_start';
+const TARGET_HRS = 8;
+
+let logs = [];
+let isPro = false;
+let trialActive = false;
+let windTimer = null;
+
+function loadData() {
+  try {
+    logs = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+    isPro = JSON.parse(localStorage.getItem(PRO_KEY) || 'false');
+    const ts = localStorage.getItem(TRIAL_KEY);
+    if (ts) {
+      const daysElapsed = (Date.now() - parseInt(ts)) / 86400000;
+      trialActive = daysElapsed <= 7;
+    }
+  } catch(e) {
+    logs = [];
+    showToast('⚠️ Error loading data, starting fresh');
+  }
+}
+
+function saveData() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(logs));
+}
+
+// ── SLEEP SCORE ───────────────────────────────────────────────────────────────
+
+function calcScore(recentLogs) {
+  if (!recentLogs.length) return { total: 0, dur: 0, con: 0, debt: 0 };
+  const last = recentLogs[recentLogs.length - 1];
+  const durHrs = last.duration / 60;
+
+  // Duration score (0–50)
+  const durScore = Math.round(50 * Math.min(durHrs / TARGET_HRS, 1));
+
+  // Consistency score (0–30): std dev of bedtime minutes
+  let conScore = 30;
+  if (recentLogs.length >= 2) {
+    const bedMins = recentLogs.map(l => {
+      const [h, m] = l.bedtime.split(':').map(Number);
+      return h * 60 + m;
+    });
+    const mean = bedMins.reduce((a,b) => a+b, 0) / bedMins.length;
+    const variance = bedMins.reduce((s,v) => s + (v-mean)**2, 0) / bedMins.length;
+    const stdDev = Math.sqrt(variance);
+    conScore = Math.round(30 * (1 - Math.min(stdDev / 60, 1)));
+  }
+
+  // Debt score (0–20)
+  const debtHrs = calcDebt(recentLogs);
+  const debtScore = Math.round(20 * Math.max(0, 1 - debtHrs / TARGET_HRS));
+
+  return {
+    total: durScore + conScore + debtScore,
+    dur: durScore,
+    con: conScore,
+    debt: debtScore
+  };
+}
+
+function calcDebt(recentLogs) {
+  if (!recentLogs.length) return 0;
+  const last7 = recentLogs.slice(-7);
+  const totalSlept = last7.reduce((s, l) => s + l.duration, 0) / 60;
+  const totalTarget = last7.length * TARGET_HRS;
+  return Math.max(0, totalTarget - totalSlept);
+}
+
+// ── SLEEP RECOMMENDATION ──────────────────────────────────────────────────────
+
+function calcRecommendedBedtime() {
+  // Target 8h sleep to hit wake time, plus account for debt
+  // Use avg wake time from recent logs or default 6:30am
+  const last7 = logs.slice(-7);
+  let wakeTarget = 6 * 60 + 30; // default 6:30am
+
+  if (last7.length >= 2) {
+    const wakeMins = last7.map(l => {
+      const [h, m] = l.waketime.split(':').map(Number);
+      return h * 60 + m;
+    });
+    wakeTarget = Math.round(wakeMins.reduce((a,b) => a+b, 0) / wakeMins.length);
+  }
+
+  // Add 30 min extra to pay off debt over 7 days
+  const debt = calcDebt(last7);
+  const extraMins = Math.min(Math.round((debt / 7) * 60), 45);
+
+  let bedMins = wakeTarget - (TARGET_HRS * 60) - extraMins;
+  // Normalise to 0–1440
+  if (bedMins < 0) bedMins += 1440;
+  if (bedMins >= 1440) bedMins -= 1440;
+
+  const h24 = Math.floor(bedMins / 60);
+  const m   = bedMins % 60;
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  const h12  = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+
+  return {
+    display: `${h12}:${String(m).padStart(2,'0')} ${ampm}`,
+    minutes: bedMins,
+    debtPayoff: extraMins,
+    wakeDisplay: fmtMins12(wakeTarget)
+  };
+}
+
+function fmtMins12(totalMins) {
+  const h24 = Math.floor(totalMins / 60) % 24;
+  const m   = totalMins % 60;
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  const h12  = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+  return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+// ── UI RENDERING ──────────────────────────────────────────────────────────────
+
+function renderAll() {
+  renderTonightView();
+  renderTrendsView();
+  renderHistoryList();
+  renderCoachView();
+  updateProUI();
+}
+
+function renderTonightView() {
+  const now = new Date();
+  const h = now.getHours();
+  const greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greetingText').textContent = greeting;
+
+  const last7 = logs.slice(-7);
+  const score = calcScore(last7);
+
+  if (logs.length === 0) {
+    document.getElementById('headlineText').textContent = 'Welcome to DRIFT';
+    document.getElementById('subText').textContent = 'Log your first sleep to get started.';
+    setScoreRing(0, 'primary');
+    document.getElementById('scoreNum').textContent = '–';
+    document.getElementById('durScore').textContent = '–';
+    document.getElementById('conScore').textContent = '–';
+    document.getElementById('debtScore').textContent = '–';
+  } else {
+    const last = logs[logs.length - 1];
+    const durH = Math.floor(last.duration / 60);
+    const durM = last.duration % 60;
+
+    document.getElementById('headlineText').textContent =
+      score.total >= 75 ? 'Great sleep last night! 🌟' :
+      score.total >= 50 ? 'Decent sleep last night.' :
+      'Rough night. Let\'s improve.';
+
+    document.getElementById('subText').textContent =
+      `${durH}h ${durM}m last night · Score ${score.total}/100`;
+
+    const color = score.total >= 75 ? 'green' : score.total >= 50 ? 'amber' : 'red';
+    setScoreRing(score.total, color);
+    document.getElementById('scoreNum').textContent = score.total;
+    document.getElementById('durScore').textContent = score.dur;
+    document.getElementById('conScore').textContent = score.con;
+    document.getElementById('debtScore').textContent = score.debt;
+  }
+
+  // Debt
+  const debtH = calcDebt(last7);
+  const debtHrs = Math.floor(debtH);
+  const debtMins = Math.round((debtH - debtHrs) * 60);
+  document.getElementById('debtValue').textContent = `${debtHrs}h ${debtMins}m`;
+  document.getElementById('debtTagline').textContent =
+    debtH < 0.25 ? 'You\'re fully rested. Keep it up!' :
+    debtH < 2 ? `You owe your body ${debtHrs > 0 ? debtHrs + 'h ' : ''}${debtMins}m of sleep.` :
+    `You owe your body ${debtHrs}h ${debtMins}m — prioritise rest tonight.`;
+
+  const debtPct = Math.min((debtH / TARGET_HRS) * 100, 100);
+  const bar = document.getElementById('debtBar');
+  bar.style.width = debtPct + '%';
+  bar.className = 'debt-bar-fill' + (debtPct > 60 ? ' danger' : debtPct > 30 ? ' warning' : '');
+
+  // Recommendation
+  const rec = calcRecommendedBedtime();
+  document.getElementById('recTime').textContent = rec.display;
+  if (logs.length >= 2) {
+    const payoff = rec.debtPayoff > 0 ? ` (+${rec.debtPayoff}m to repay ${debtHrs > 0 ? debtHrs+'h ' : ''}${debtMins}m debt)` : '';
+    document.getElementById('recReason').textContent =
+      `To hit ${TARGET_HRS}h and wake by ~${rec.wakeDisplay}${payoff}.`;
+  } else if (logs.length === 1) {
+    document.getElementById('recReason').textContent =
+      `Based on your wake time. Log more nights to refine this.`;
+  }
+
+  // Wind-down countdown
+  updateWindDown(rec.minutes);
+}
+
+function setScoreRing(score, colorKey) {
+  const circ = 2 * Math.PI * 68;
+  const offset = circ - (circ * score / 100);
+  const arc = document.getElementById('scoreArc');
+  arc.style.strokeDashoffset = offset;
+  const gradMap = { green: 'scoreGradGreen', amber: 'scoreGradAmber', red: 'scoreGradRed', primary: 'scoreGrad' };
+  arc.setAttribute('stroke', `url(#${gradMap[colorKey] || 'scoreGrad'})`);
+}
+
+function updateWindDown(recBedMins) {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  let diff = recBedMins - nowMins;
+  if (diff < -12 * 60) diff += 1440; // wrap midnight
+  if (diff < 0) diff += 1440;
+
+  const hrs = Math.floor(diff / 60);
+  const mins = diff % 60;
+  const el = document.getElementById('windCountdown');
+  const sub = document.getElementById('windSub');
+  const ambient = document.getElementById('windAmbient');
+
+  if (diff <= 30 && diff >= 0) {
+    el.textContent = `${mins}m`;
+    sub.textContent = 'Start winding down now! 🌙';
+    el.style.color = 'var(--amber)';
+    ambient.classList.add('active');
+  } else if (diff < 0 || diff > 23 * 60) {
+    el.textContent = 'Time to sleep';
+    sub.textContent = 'Bedtime has arrived.';
+    el.style.color = 'var(--green)';
+    ambient.classList.add('active');
+  } else {
+    el.textContent = hrs > 0 ? `${hrs}h ${String(mins).padStart(2,'0')}m` : `${mins}m`;
+    sub.textContent = 'Until recommended bedtime';
+    el.style.color = 'var(--primary-l)';
+    ambient.classList.remove('active');
+  }
+}
+
+function renderHistoryList() {
+  const el = document.getElementById('historyList');
+  const available = isPro || trialActive ? logs : logs.slice(-7);
+
+  if (!logs.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:24px 0;">
+      <span class="empty-icon" style="font-size:32px;">📋</span>
+      <div style="font-size:13px;color:var(--muted2);">No sleep logged yet.</div>
+    </div>`;
+    return;
+  }
+
+  const sorted = [...available].reverse();
+  el.innerHTML = sorted.map((log, i) => {
+    const realIdx = logs.length - 1 - i;
+    const d = new Date(log.date);
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const durH = Math.floor(log.duration / 60);
+    const durM = log.duration % 60;
+    const cls = log.duration >= 420 ? 'good' : log.duration >= 300 ? 'ok' : 'bad';
+    return `<div class="history-item">
+      <div class="hi-date">
+        <div class="hi-date-num">${d.getDate()}</div>
+        <div class="hi-date-day">${dayNames[d.getDay()]}</div>
+      </div>
+      <div class="hi-divider"></div>
+      <div class="hi-times">
+        <div class="hi-sleep-row">
+          <strong>${log.bedtimeDisplay}</strong> → <strong>${log.waketimeDisplay}</strong>
+        </div>
+      </div>
+      <div class="hi-badge ${cls}">${durH}h ${durM}m</div>
+      <button class="hi-del" aria-label="Delete sleep log entry" onclick="deleteLog(${realIdx})" title="Delete">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function renderTrendsView() {
+  const last7 = getLast7();
+  const barsEl = document.getElementById('chartBars');
+  const labelsEl = document.getElementById('chartLabels');
+  const maxH = 10; // 10 hours max display
+  const maxMins = maxH * 60;
+
+  barsEl.innerHTML = '';
+  labelsEl.innerHTML = '';
+
+  const dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const today = new Date();
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = dateKey(d);
+    const log = last7.find(l => l.date === key);
+
+    const col = document.createElement('div');
+    col.className = 'chart-bar-col';
+
+    if (log) {
+      const pct = Math.min(log.duration / maxMins, 1);
+      const barH = Math.round(pct * 100);
+      const cls = log.duration >= 420 ? 'good' : log.duration >= 300 ? 'ok' : 'bad';
+      col.innerHTML = `<div class="chart-bar ${cls}" style="height:${barH}px;" title="${Math.floor(log.duration/60)}h ${log.duration%60}m"></div>`;
+    } else {
+      col.innerHTML = `<div class="chart-bar empty" style="height:8px;"></div>`;
+    }
+    barsEl.appendChild(col);
+
+    const lbl = document.createElement('div');
+    lbl.style.flex = '1';
+    lbl.style.textAlign = 'center';
+    lbl.className = 'chart-day-label' + (i === 0 ? ' today' : '');
+    lbl.textContent = i === 0 ? 'Today' : dayNames[d.getDay()];
+    lbl.style.fontSize = '10px';
+    labelsEl.appendChild(lbl);
+  }
+
+  // Stats
+  const logged = last7.filter(l => l.duration > 0);
+  const daysLogged = logged.length;
+  document.getElementById('daysLogged').textContent = `${daysLogged}/7`;
+
+  if (logged.length) {
+    const avgMins = Math.round(logged.reduce((s,l) => s+l.duration, 0) / logged.length);
+    document.getElementById('avgSleepStat').textContent = `${Math.floor(avgMins/60)}h ${avgMins%60}m`;
+    const bestMins = Math.max(...logged.map(l => l.duration));
+    document.getElementById('bestNight').textContent = `${Math.floor(bestMins/60)}h ${bestMins%60}m`;
+  } else {
+    document.getElementById('avgSleepStat').textContent = '–';
+    document.getElementById('bestNight').textContent = '–';
+  }
+
+  // Consistency card
+  const consEl = document.getElementById('consistencyContent');
+  if (logged.length >= 3) {
+    const bedMins = logged.map(l => {
+      const [h, m] = l.bedtime.split(':').map(Number);
+      return h * 60 + m;
+    });
+    const mean = bedMins.reduce((a,b)=>a+b,0) / bedMins.length;
+    const variance = bedMins.reduce((s,v)=>s+(v-mean)**2,0)/bedMins.length;
+    const std = Math.sqrt(variance);
+    const consistPct = Math.round(Math.max(0, (1 - Math.min(std/60,1))) * 100);
+    const meanDisplay = fmtMins12(Math.round(mean));
+    consEl.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div>
+          <div style="font-size:13px; color:var(--muted2);">Avg bedtime</div>
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; letter-spacing:-0.5px;">${meanDisplay}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px; color:var(--muted2);">Consistency</div>
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; letter-spacing:-0.5px; color:${consistPct>=70?'var(--green)':consistPct>=40?'var(--amber)':'var(--red)'};">${consistPct}%</div>
+        </div>
+      </div>
+      <div class="debt-bar-bg">
+        <div class="debt-bar-fill" style="width:${consistPct}%; background:${consistPct>=70?'linear-gradient(90deg,var(--green),#10b981)':consistPct>=40?'linear-gradient(90deg,var(--amber),#fbbf24)':'linear-gradient(90deg,var(--red),#ef4444)'};"></div>
+      </div>
+      <div style="font-size:12px; color:var(--muted2); margin-top:8px;">
+        ${std<20?'Excellent — your body clock is well-calibrated.':std<40?'Good consistency. Aim for bedtime within ±30 min.':'High variability — irregular bedtimes disrupt your circadian rhythm.'}
+      </div>`;
+  } else {
+    consEl.innerHTML = `<div class="empty-state" style="padding:16px 0 8px;">
+      <span class="empty-icon" style="font-size:28px;">📊</span>
+      <div style="font-size:13px;color:var(--muted2);">Log ${3-logged.length} more night${3-logged.length!==1?'s':''} to see patterns.</div>
+    </div>`;
+  }
+}
+
+function renderCoachView() {
+  const last7 = logs.slice(-7);
+  const score = calcScore(last7);
+  const debt = calcDebt(last7);
+  const logged = last7.filter(l => l.duration > 0).length;
+
+  const title = document.getElementById('coachTitle');
+  const text = document.getElementById('coachText');
+
+  if (logged === 0) {
+    title.textContent = 'Build your sleep baseline';
+    text.innerHTML = 'Log your sleep for a few nights and I\'ll analyse your patterns, debt, and consistency to give you <strong>personalised recommendations</strong>.';
+  } else if (logged < 3) {
+    title.textContent = `${logged}/3 nights logged`;
+    text.innerHTML = `You're getting started! Log <strong>${3-logged} more night${3-logged>1?'s':''}</strong> to unlock your first AI insight.`;
+  } else if (debt > 3) {
+    title.textContent = '⚠️ Significant sleep debt';
+    const dh = Math.floor(debt); const dm = Math.round((debt-dh)*60);
+    text.innerHTML = `You're carrying <strong>${dh}h ${dm}m of sleep debt</strong> this week. Your cognitive performance is likely reduced. I recommend adding <strong>30–45 extra minutes</strong> each night until debt is cleared.`;
+  } else if (score.con < 15) {
+    title.textContent = '⏰ Fix your bedtime consistency';
+    text.innerHTML = `Your bedtimes vary significantly, which disrupts your <strong>circadian rhythm</strong>. Try to sleep within ±30 minutes of the same time each night — this is the single biggest lever for sleep quality.`;
+  } else if (score.total >= 75) {
+    title.textContent = '🌟 Outstanding sleep habit';
+    text.innerHTML = `You're sleeping well! Your score of <strong>${score.total}/100</strong> puts you in the top tier. Maintain your current schedule and focus on sleep environment (temperature, darkness, noise) for further gains.`;
+  } else {
+    title.textContent = '📈 On track to improve';
+    text.innerHTML = `Your sleep score is <strong>${score.total}/100</strong>. Focus on: ${score.dur < 35 ? 'getting at least 7 hours' : 'maintaining your duration'}${score.con < 20 ? ', keeping a consistent bedtime' : ''}${debt > 1 ? ', paying off your sleep debt' : ''}.`;
+  }
+}
+
+// ── LOGGING ───────────────────────────────────────────────────────────────────
+
+function to24h(hour, min, ampm) {
+  let h = parseInt(hour) || 0;
+  const m = parseInt(min) || 0;
+  if (ampm === 'AM' && h === 12) h = 0;
+  if (ampm === 'PM' && h !== 12) h += 12;
+  return { h, m };
+}
+
+function calcDuration(bedH, bedM, wakeH, wakeM) {
+  const bedTotal  = bedH * 60 + bedM;
+  const wakeTotal = wakeH * 60 + wakeM;
+  let diff = wakeTotal - bedTotal;
+  if (diff <= 0) diff += 1440; // next day
+  return diff;
+}
+
+function logSleep() {
+  try {
+    const bH = document.getElementById('bedHour').value;
+    const bM = document.getElementById('bedMin').value;
+    const bAP = document.getElementById('bedAmpm').value;
+    const wH = document.getElementById('wakeHour').value;
+    const wM = document.getElementById('wakeMin').value;
+    const wAP = document.getElementById('wakeAmpm').value;
+
+    if (!bH || !bM || !wH || !wM) {
+      showToast('⚠️ Fill in all time fields');
+      return;
+    }
+
+    const bed  = to24h(bH, bM, bAP);
+    const wake = to24h(wH, wM, wAP);
+    const duration = calcDuration(bed.h, bed.m, wake.h, wake.m);
+
+    if (duration < 30 || duration > 20 * 60) {
+      showToast('⚠️ Check your times — does that look right?');
+      return;
+    }
+
+    const today = new Date();
+    // Use today's date; if bedtime is PM and it's past midnight, could be yesterday
+    const dateStr = dateKey(today);
+
+    const bedTime24  = `${String(bed.h).padStart(2,'0')}:${String(bed.m).padStart(2,'0')}`;
+    const wakeTime24 = `${String(wake.h).padStart(2,'0')}:${String(wake.m).padStart(2,'0')}`;
+
+    // Check for duplicate today
+    const existingIdx = logs.findIndex(l => l.date === dateStr);
+
+    const entry = {
+      date: dateStr,
+      bedtime: bedTime24,
+      waketime: wakeTime24,
+      bedtimeDisplay: `${bH}:${String(bM).padStart(2,'0')} ${bAP}`,
+      waketimeDisplay: `${wH}:${String(wM).padStart(2,'0')} ${wAP}`,
+      duration,
+      ts: Date.now()
+    };
+
+    if (existingIdx >= 0) {
+      logs[existingIdx] = entry;
+      showToast('✅ Today\'s log updated');
+    } else {
+      logs.push(entry);
+      // Keep max 90 days
+      if (logs.length > 90) logs.shift();
+      showToast('✅ Sleep logged!');
+    }
+
+    saveData();
+    updateDurPreview();
+    renderAll();
+
+    // Check paywall if not pro
+    if (!isPro && !trialActive && logs.length > 7) {
+      setTimeout(openPaywall, 1000);
+    }
+  } catch (e) {
+    showToast('⚠️ Error logging sleep');
+  }
+}
+
+function deleteLog(idx) {
+  MVPEnhancements.confirm(
+    'Delete this sleep log entry? This action cannot be undone.',
+    { label: 'Delete', isDangerous: true },
+    () => {
+      try {
+        logs.splice(idx, 1);
+        saveData();
+        renderAll();
+        showToast('✓ Sleep log deleted');
+      } catch (e) {
+        showToast('⚠️ Error deleting log');
+      }
+    }
+  );
+}
+
+function setQuickTime(type, hour, min, ampm) {
+  if (type === 'bed') {
+    document.getElementById('bedHour').value = hour;
+    document.getElementById('bedMin').value = min;
+    document.getElementById('bedAmpm').value = ampm;
+    // Clear previous selections
+    document.querySelectorAll('#bedChips .chip').forEach(c => c.classList.remove('selected'));
+    event.target.classList.add('selected');
+  } else {
+    document.getElementById('wakeHour').value = hour;
+    document.getElementById('wakeMin').value = min;
+    document.getElementById('wakeAmpm').value = ampm;
+    document.querySelectorAll('#wakeChips .chip').forEach(c => c.classList.remove('selected'));
+    event.target.classList.add('selected');
+  }
+  updateDurPreview();
+}
+
+function updateDurPreview() {
+  const bH = document.getElementById('bedHour').value;
+  const bM = document.getElementById('bedMin').value;
+  const bAP = document.getElementById('bedAmpm').value;
+  const wH = document.getElementById('wakeHour').value;
+  const wM = document.getElementById('wakeMin').value;
+  const wAP = document.getElementById('wakeAmpm').value;
+
+  const el = document.getElementById('durPreview');
+  if (!bH || !bM || !wH || !wM) { el.textContent = '–'; el.className = 'dur-val'; return; }
+
+  const bed  = to24h(bH, bM, bAP);
+  const wake = to24h(wH, wM, wAP);
+  const dur  = calcDuration(bed.h, bed.m, wake.h, wake.m);
+
+  const h = Math.floor(dur / 60);
+  const m = dur % 60;
+  el.textContent = `${h}h ${m}m`;
+  el.className = 'dur-val ' + (dur >= 420 ? 'good' : dur >= 300 ? 'ok' : 'bad');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getLast7() {
+  const today = new Date();
+  const result = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = dateKey(d);
+    const found = logs.find(l => l.date === key);
+    if (found) result.push(found);
+  }
+  return result;
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+
+function switchTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+
+  if (name === 'trends') renderTrendsView();
+  if (name === 'coach') renderCoachView();
+}
+
+// ── PAYWALL ───────────────────────────────────────────────────────────────────
+
+function openPaywall() {
+  if (isPro) { showToast('✨ You\'re already on DRIFT Pro!'); return; }
+  document.getElementById('paywallModal').classList.add('show');
+}
+
+function closePaywall() {
+  document.getElementById('paywallModal').classList.remove('show');
+}
+
+function closePaywallOutside(e) {
+  if (e.target === document.getElementById('paywallModal')) closePaywall();
+}
+
+function activatePro() {
+  isPro = true;
+  localStorage.setItem(PRO_KEY, 'true');
+  if (!localStorage.getItem(TRIAL_KEY)) {
+    localStorage.setItem(TRIAL_KEY, Date.now().toString());
+  }
+  closePaywall();
+  updateProUI();
+  renderAll();
+  showToast('🎉 Welcome to DRIFT Pro! 7-day trial started.');
+}
+
+function updateProUI() {
+  const badge = document.getElementById('proBadge');
+  const upgrade = document.getElementById('upgradePrompt');
+  if (isPro || trialActive) {
+    badge.textContent = 'PRO ✓';
+    badge.classList.add('unlocked');
+    if (upgrade) upgrade.style.display = 'none';
+  } else {
+    badge.textContent = 'PRO';
+    badge.classList.remove('unlocked');
+    if (upgrade) upgrade.style.display = '';
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ── WIND-DOWN CLOCK ───────────────────────────────────────────────────────────
+
+function startWindClock() {
+  function tick() {
+    if (document.getElementById('view-tonight').classList.contains('active')) {
+      const rec = calcRecommendedBedtime();
+      updateWindDown(rec.minutes);
+    }
+  }
+  tick();
+  windTimer = setInterval(tick, 30000); // update every 30s
+}
+
+// ── INPUT LISTENERS ───────────────────────────────────────────────────────────
+
+function bindInputs() {
+  ['bedHour','bedMin','bedAmpm','wakeHour','wakeMin','wakeAmpm'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateDurPreview);
+    document.getElementById(id).addEventListener('change', updateDurPreview);
+  });
+
+  // Clamp values on blur
+  document.getElementById('bedHour').addEventListener('blur', function() {
+    const v = parseInt(this.value);
+    if (v < 1) this.value = 1;
+    if (v > 12) this.value = 12;
+  });
+  document.getElementById('wakeHour').addEventListener('blur', function() {
+    const v = parseInt(this.value);
+    if (v < 1) this.value = 1;
+    if (v > 12) this.value = 12;
+  });
+  document.getElementById('bedMin').addEventListener('blur', function() {
+    const v = parseInt(this.value);
+    if (v < 0) this.value = 0;
+    if (v > 59) this.value = 59;
+    this.value = String(v).padStart(2,'0');
+  });
+  document.getElementById('wakeMin').addEventListener('blur', function() {
+    const v = parseInt(this.value);
+    if (v < 0) this.value = 0;
+    if (v > 59) this.value = 59;
+    this.value = String(v).padStart(2,'0');
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+
+loadData();
+bindInputs();
+renderAll();
+startWindClock();
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// Trigger first-run paywall check
+if (!isPro && !trialActive) {
+  const ts = localStorage.getItem(TRIAL_KEY);
+  if (!ts) {
+    // Start the 7-day free trial window silently on first visit
+    localStorage.setItem(TRIAL_KEY, Date.now().toString());
+    trialActive = true;
+    updateProUI();
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keto/Low-Carb Specialist — Food Nutrition Buddy</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="Keto/Low-Carb Specialist — Your personalized food nutrition guide. Offline-first PWA with recipes, meal planning, medical tracking, and Claude API integration.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Keto/Low-Carb Specialist">
+  <style>
+    :root {
+      --vibe-primary: #EFEBE9;
+    --vibe-secondary: #D7CCC8;
+    --vibe-accent: #5D4037;
+    --vibe-text: #3E2723;
+    --vibe-animation-duration: 400ms;
+    --vibe-shadow-blur: 12px;
+    --vibe-shadow-color: rgba(0, 0, 0, 0.15);
+    --vibe-font-scale: 1;
+      --accent: var(--vibe-accent);
+      --accent-2: #388E3C;
+      --ink: #2A2230;
+      --muted: #837890;
+      --radius: 22px;
+      --radius-sm: 14px;
+      --card: rgba(255,255,255,0.74);
+      --shadow-sm: 0 2px 10px rgba(56,142,60,0.10);
+      --shadow-md: 0 10px 28px rgba(76,175,80,0.16);
+      --shadow-lg: 0 20px 48px rgba(76,175,80,0.22);
+      --spring: 450ms cubic-bezier(0.34,1.56,0.64,1);
+      --shadow-float: var(--shadow-md);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; width: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background:
+        radial-gradient(circle at 14% 14%, color-mix(in srgb, var(--vibe-accent) 30%, transparent) 0%, transparent 44%),
+        radial-gradient(circle at 86% 10%, #FFE4D0 0%, transparent 42%),
+        radial-gradient(circle at 50% 112%, #EAD7FB 0%, transparent 58%),
+        linear-gradient(160deg, #FFF5F8 0%, #FFF0F6 100%);
+      background-attachment: fixed;
+      color: var(--ink);
+      overflow: hidden;
+      font-size: calc(15px * var(--vibe-font-scale));
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: max(env(safe-area-inset-top), 14px) 20px 14px;
+      background: rgba(255,255,255,0.58);
+      backdrop-filter: blur(22px) saturate(180%);
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+      border-bottom: 1px solid rgba(255,255,255,0.6);
+      position: relative;
+      z-index: 10;
+    }
+
+    .navbar h1 {
+      font-size: calc(19px * var(--vibe-font-scale));
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar button {
+      padding: 9px 14px;
+      background: rgba(255,255,255,0.7);
+      border: 1.5px solid rgba(76,175,80,0.2);
+      color: var(--accent);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: all var(--spring);
+    }
+
+    .navbar button:hover { background: #fff; }
+    .navbar button:active { transform: scale(0.94); }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px 12px;
+      background: transparent;
+      overflow-x: auto;
+      position: relative;
+      z-index: 9;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 9px 16px;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.7);
+      color: var(--muted);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: calc(13.5px * var(--vibe-font-scale));
+      font-weight: 600;
+      transition: all var(--spring);
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 45%, transparent);
+      transform: translateY(-1px);
+    }
+
+    .screen { display: none; flex-direction: column; flex: 1; }
+    .screen.active { display: flex; }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 16px max(env(safe-area-inset-bottom), 24px);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: var(--radius);
+      padding: calc(18px * var(--vibe-font-scale));
+      margin-bottom: 14px;
+      position: relative;
+      box-shadow: var(--shadow-md);
+      transition: all var(--spring);
+    }
+
+    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+    .card h3 {
+      font-size: calc(18px * var(--vibe-font-scale));
+      margin-bottom: 12px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+    .card p { font-size: calc(14px * var(--vibe-font-scale)); line-height: 1.6; margin-bottom: 8px; }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    input, textarea, select {
+      background: #fff;
+      border: 1.5px solid rgba(76,175,80,0.15);
+      color: var(--ink);
+      padding: 13px 15px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: calc(15px * var(--vibe-font-scale));
+      transition: all var(--spring);
+    }
+
+    input::placeholder, textarea::placeholder { color: #B8AEC2; }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+    }
+
+    button {
+      padding: 14px 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: calc(15px * var(--vibe-font-scale));
+      font-weight: 700;
+      transition: all var(--spring);
+      box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 32%, transparent);
+    }
+
+    button:hover { transform: translateY(-2px); box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 40%, transparent); }
+    button:active { transform: scale(0.97); }
+
+    .recipe-card, .ingredient-card, .meal-item {
+      background: rgba(255,255,255,0.66);
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .recipe-card h4, .ingredient-card h4, .meal-item h4 {
+      font-size: calc(15px * var(--vibe-font-scale));
+      margin-bottom: 6px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .recipe-card p, .ingredient-card p, .meal-item p {
+      font-size: calc(13.5px * var(--vibe-font-scale));
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .disclaimer {
+      background: rgba(255, 100, 100, 0.08);
+      border: 1px solid rgba(255, 100, 100, 0.22);
+      border-left: 4px solid var(--accent);
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: calc(13px * var(--vibe-font-scale));
+      margin-bottom: 16px;
+      color: var(--ink);
+    }
+
+    .premium-feature { opacity: 0.6; pointer-events: none; }
+
+    .premium-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 12px;
+      padding: 8px;
+      font-size: 11px;
+      text-align: center;
+      background: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: all var(--spring);
+    }
+
+    .calendar-day:hover { background: #fff; transform: translateY(-1px); }
+    .calendar-day.selected { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-color: transparent; }
+
+    .medical-disclaimer {
+      background: rgba(255, 150, 0, 0.1);
+      border: 1px solid rgba(255, 150, 0, 0.25);
+      border-left: 4px solid var(--accent);
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: calc(12.5px * var(--vibe-font-scale));
+      margin-bottom: 16px;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+
+    .escalation-text {
+      background: rgba(255, 100, 100, 0.08);
+      border: 1px solid rgba(255, 100, 100, 0.2);
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: calc(12.5px * var(--vibe-font-scale));
+      margin-top: 12px;
+    }
+
+    /* ===== Cover / Welcome Screen ===== */
+    .cover {
+      position: fixed; inset: 0; z-index: 2000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 32px 26px calc(env(safe-area-inset-bottom) + 32px);
+      text-align: center; overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 16%, color-mix(in srgb, var(--accent) 32%, transparent) 0%, transparent 50%),
+        radial-gradient(circle at 82% 12%, #FFD8BD 0%, transparent 44%),
+        radial-gradient(circle at 50% 110%, #D9BEF7 0%, transparent 60%),
+        linear-gradient(165deg, #FFEAF2 0%, #F3E6FF 100%);
+      transition: opacity 700ms ease, transform 700ms var(--spring);
+    }
+    .cover.hidden { opacity: 0; transform: scale(1.05); pointer-events: none; }
+    .cover-glow {
+      position: absolute; width: 520px; height: 520px; border-radius: 50%;
+      background: radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent), transparent 65%);
+      filter: blur(20px); animation: cover-breathe 6s ease-in-out infinite;
+    }
+    @keyframes cover-breathe { 0%,100%{transform:scale(1);opacity:.7} 50%{transform:scale(1.12);opacity:1} }
+    .cover-inner { position: relative; z-index: 1; max-width: 420px; width: 100%; animation: cover-rise 900ms cubic-bezier(0.22,1,0.36,1) both; }
+    @keyframes cover-rise { from{opacity:0;transform:translateY(26px)} to{opacity:1;transform:translateY(0)} }
+    .cover-badge {
+      display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2.5px;
+      color: var(--accent); background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.8);
+      padding: 7px 14px; border-radius: 999px; margin-bottom: 24px; backdrop-filter: blur(8px);
+    }
+    .cover-emblem { font-size: 64px; line-height: 1; margin-bottom: 16px; filter: drop-shadow(0 10px 22px color-mix(in srgb, var(--accent) 40%, transparent)); animation: cover-float 4s ease-in-out infinite; }
+    @keyframes cover-float { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-10px) rotate(3deg)} }
+    .cover-title {
+      font-size: 40px; line-height: 1.05; font-weight: 800; letter-spacing: -1px; margin-bottom: 14px;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .cover-tagline { font-size: 16px; line-height: 1.55; color: var(--ink); opacity: 0.82; margin-bottom: 30px; }
+    .cover-btn {
+      width: 100%; max-width: 300px; padding: 17px 24px; border: none; border-radius: 18px;
+      font-size: 17px; font-weight: 800; color: #fff; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 42%, transparent);
+      transition: all var(--spring);
+    }
+    .cover-btn:hover { transform: translateY(-2px); }
+    .cover-btn:active { transform: scale(0.97); }
+    .cover-foot { margin-top: 18px; font-size: 11.5px; color: var(--muted); }
+
+    @media (max-width: 600px) {
+      .content { padding: 14px 12px max(env(safe-area-inset-bottom), 20px); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Cover / Welcome Screen -->
+  <div id="cover" class="cover">
+    <div class="cover-glow"></div>
+    <div class="cover-inner">
+      <div class="cover-badge">YOUR NUTRITION COMPANION</div>
+      <div class="cover-emblem">🥑</div>
+      <h1 class="cover-title">Keto/Low-Carb Specialist</h1>
+      <p class="cover-tagline">Personalized, friendly nutrition guidance for Ketogenic/low-carb nutrition, macronutrient balance, electrolytes, sustainability — with a coach who talks <em>with</em> you.</p>
+      <button id="cover-enter" class="cover-btn">Get Started →</button>
+      <p class="cover-foot">Private &amp; on your device • Not a substitute for medical care</p>
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="navbar">
+      <h1>🥑 Keto/Low-Carb Specialist</h1>
+      <button onclick="switchTab('settings')">⚙️</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('home')">Home</button>
+      <button class="tab-btn" onclick="switchTab('recipes')">Recipes</button>
+      <button class="tab-btn" onclick="switchTab('ingredients')">Ingredients</button>
+      <button class="tab-btn" onclick="switchTab('meals')">Meal Plan</button>
+      <button class="tab-btn" onclick="switchTab('tracker')">Tracker</button>
+      <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+    </div>
+
+    <!-- HOME TAB -->
+    <div class="screen active" id="screen-home">
+      <div class="content">
+        <div class="card">
+          <h3>Welcome! 👋</h3>
+          <p id="greeting">Hi! I'm Keto/Low-Carb Specialist, your personalized nutrition guide. Let's work together to help you eat well and feel great.</p>
+        </div>
+
+        <div class="medical-disclaimer">
+          <strong>📋 Important:</strong> I'm not a doctor or replacement for professional medical advice. Always consult your healthcare provider for medical concerns, medication interactions, allergies, or diagnosis.
+        </div>
+
+        <div class="card">
+          <h3>Quick Stats</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="font-size: 20px; font-weight: 600; color: var(--vibe-accent);" id="meals-logged">0</div>
+              <div style="font-size: 12px; color: #999;">Meals Logged</div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="font-size: 20px; font-weight: 600; color: var(--vibe-accent);" id="streak">0</div>
+              <div style="font-size: 12px; color: #999;">Day Streak</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Today's Message</h3>
+          <p id="daily-message">You're taking great care of yourself by paying attention to nutrition. Keep going!</p>
+        </div>
+
+        <div class="card" id="upgrade-card">
+          <h3>✨ Premium Features</h3>
+          <p>Unlock meal planning, medical tracking, and advanced features.</p>
+          <button onclick="showPremium()">Learn More</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECIPES TAB -->
+    <div class="screen" id="screen-recipes">
+      <div class="content">
+        <div class="card">
+          <h3>Recipe Generator</h3>
+          <div class="input-group">
+            <input type="text" id="ingredient-input" placeholder="What ingredients do you have?" />
+            <textarea id="dietary-needs" placeholder="Any dietary needs? (allergies, restrictions, medical conditions)" style="height: 60px;"></textarea>
+            <button onclick="generateRecipes()">🍳 Generate Recipes with Claude API</button>
+          </div>
+        </div>
+
+        <div id="recipes-output" style="display: none;">
+          <div class="card">
+            <h3>Suggested Recipes</h3>
+            <div id="recipe-list"></div>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Video Tutorials <span class="premium-badge">PRO</span></h3>
+          <p>Premium members get access to video cooking tutorials and nutrition education.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- INGREDIENTS TAB -->
+    <div class="screen" id="screen-ingredients">
+      <div class="content">
+        <div class="card">
+          <h3>Ingredient Matcher</h3>
+          <p>Find safe recipes based on available ingredients and your dietary needs.</p>
+          <div class="input-group">
+            <input type="text" id="available-ingredients" placeholder="Enter available ingredients (comma-separated)" />
+            <button onclick="matchIngredients()">🔍 Find Safe Recipes</button>
+          </div>
+        </div>
+
+        <div id="ingredients-output" style="display: none;">
+          <div class="card">
+            <h3>Matching Recipes</h3>
+            <div id="ingredient-matches"></div>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Allergy Management <span class="premium-badge">PRO</span></h3>
+          <p>Cross-contamination prevention, label reading guides, and emergency preparedness resources.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEAL PLAN TAB -->
+    <div class="screen" id="screen-meals">
+      <div class="content">
+        <div class="card">
+          <h3>Weekly Meal Planner</h3>
+          <p>Plan your week and generate shopping lists.</p>
+          <div class="input-group">
+            <button onclick="generateMealPlan()" class="premium-feature">📅 Generate 7-Day Plan <span class="premium-badge">PRO</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Sample Planning</h3>
+          <p>Monday: Balanced breakfast, protein lunch, veggie dinner</p>
+          <p style="font-size: 12px; color: #999; margin-top: 8px;">Upgrade to Premium for personalized meal plans based on your medical needs and preferences.</p>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Shopping List <span class="premium-badge">PRO</span></h3>
+          <p>Automatic shopping list generation from your meal plan, with budget tracking.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKER TAB -->
+    <div class="screen" id="screen-tracker">
+      <div class="content">
+        <div class="card">
+          <h3>Food & Health Tracker</h3>
+          <p>Log meals, track symptoms, monitor progress.</p>
+          <div class="input-group">
+            <input type="text" placeholder="What did you eat?" />
+            <textarea placeholder="How do you feel? Any symptoms?" style="height: 60px;"></textarea>
+            <button>📝 Log Entry</button>
+          </div>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Medical Tracking <span class="premium-badge">PRO</span></h3>
+          <p>Blood sugar logs, weight tracking, symptom journal, mood↔eating correlation analysis.</p>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Advanced Analytics <span class="premium-badge">PRO</span></h3>
+          <p>Export data, identify patterns, track nutrition metrics over time.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="screen" id="screen-settings">
+      <div class="content">
+        <div class="card">
+          <h3>Claude API Key</h3>
+          <p>Add your own Claude API key to enable recipe generation with full context.</p>
+          <div class="input-group">
+            <input type="password" id="api-key" placeholder="sk-ant-..." />
+            <button onclick="saveSettings()">💾 Save API Key</button>
+          </div>
+          <p style="font-size: 12px; color: #999; margin-top: 8px;">Get your API key at https://console.anthropic.com</p>
+        </div>
+
+        <div class="card">
+          <h3>Your Medical Profile</h3>
+          <div class="input-group">
+            <input type="text" id="medical-conditions" placeholder="Medical conditions (diabetes, allergies, etc.)" />
+            <input type="text" id="dietary-restrictions" placeholder="Dietary restrictions" />
+            <input type="text" id="family-members" placeholder="Family members to coordinate nutrition" />
+            <button onclick="saveSettings()">💾 Save Profile</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🎤 ElevenLabs API Key (Optional)</h3>
+          <p>Add an ElevenLabs key for a natural human voice. Without it, your device's built-in voice is used.</p>
+          <div class="input-group">
+            <input type="password" id="elevenlabs-key" placeholder="(Optional for voice)" />
+            <button onclick="saveSettings()">💾 Save</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🌐 Avatar Proxy URL</h3>
+          <p>Runs on your Mac to keep your Higgsfield secret safe and fix CORS.</p>
+          <div class="input-group">
+            <input type="text" id="proxy-url" placeholder="http://localhost:3001" value="http://localhost:3001" />
+            <button onclick="saveSettings()">💾 Save</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>✨ Avatar Studio</h3>
+          <p>Generate a talking-head face for Keto/Low-Carb Specialist.</p>
+          <textarea id="avatar-prompt" placeholder="Describe appearance..." style="width:100%;height:70px;"></textarea>
+          <button onclick="generateAvatarStill()" style="width:100%;margin-top:8px;">✨ Generate Face</button>
+          <button onclick="animateAvatar()" style="width:100%;margin-top:8px;">🎬 Bring to Life</button>
+        </div>
+
+        <div class="card premium-feature">
+          <h3>💎 Premium Subscription <span class="premium-badge">PRO</span></h3>
+          <p>Lifetime access to premium features: meal planning, medical tracking, advanced recipes, video tutorials.</p>
+          <button onclick="showPremium()">Upgrade to Premium</button>
+        </div>
+
+        <div class="card">
+          <h3>About Keto/Low-Carb Specialist</h3>
+          <p><strong>Specialization:</strong> Ketogenic/low-carb nutrition, macronutrient balance, electrolytes, sustainability</p>
+          <p><strong>Age Group:</strong> 18-65</p>
+          <p style="font-size: 12px; color: #999; margin-top: 12px;">Offline-first PWA • Works without internet • Claude API optional</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Service Worker for Offline -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    // Buddy personality data (injected from generator)
+    const BUDDY_DATA = {"id":38,"name":"Keto/Low-Carb Specialist","ageGroup":"18-65","category":"specialized","specialization":"Ketogenic/low-carb nutrition, macronutrient balance, electrolytes, sustainability","systemPrompt":"You are an informed guide for ketogenic or low-carb approaches. Focus: macro balance (<50g carbs for keto), electrolyte management (sodium, potassium, magnesium important with keto), sustainability (many can\'t sustain extreme restriction), monitoring health markers, not confusing keto with calorie-free eating. Key: Keto can work short-term; long-term sustainability varies. Not prescriptive; inform about options. Not a doctor.","voice_style":"knowledgeable, balanced, practical","affirmations":["Your approach works if sustainable.","Electrolyte balance supports your health.","Flexibility supports long-term success."],"greeting_examples":["Hi! Let\'s optimize your low-carb/keto nutrition."],"medical_disclaimer":"Not a doctor. Consult doctor before starting keto, esp. if diabetic/medications.","escalation_triggers":["keto flu severe","electrolyte imbalance","unsustainability/bingeing","health marker worsening"]};
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(`screen-${tabName}`).classList.add('active');
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    async function generateRecipes() {
+      const ingredients = document.getElementById('ingredient-input').value;
+      const dietaryNeeds = document.getElementById('dietary-needs').value;
+
+      if (!ingredients.trim()) {
+        alert('Please enter some ingredients');
+        return;
+      }
+
+      const apiKey = localStorage.getItem('apiKey');
+      const recipeList = document.getElementById('recipe-list');
+      document.getElementById('recipes-output').style.display = 'block';
+
+      // No key — graceful local suggestion (offline-friendly).
+      if (!apiKey) {
+        recipeList.innerHTML = `<div class="recipe-card"><p>Add your Claude API key in Settings to get personalized recipes for "${ingredients}". For now: combine ${ingredients} into a balanced plate respecting ${dietaryNeeds || 'your goals'}.</p></div>`;
+        return;
+      }
+
+      recipeList.innerHTML = '<div class="recipe-card"><p>👩‍🍳 Generating recipes…</p></div>';
+
+      const profile = JSON.parse(localStorage.getItem('medicalProfile') || '{}');
+      const systemPrompt = `${BUDDY_DATA.systemPrompt || 'You are a warm, knowledgeable nutrition coach.'} You are ${BUDDY_DATA.name}, specializing in ${BUDDY_DATA.specialization || 'nutrition'}.`;
+      const userPrompt = `Suggest 3 healthy recipes using: ${ingredients}.\nDietary needs: ${dietaryNeeds || 'none specified'}.\nMedical conditions: ${profile.conditions || 'none'}. Restrictions: ${profile.restrictions || 'none'}.\nFor each recipe give a title, short ingredient list, and 3-4 quick steps. Keep it encouraging and safe.`;
+
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userPrompt }],
+          }),
+        });
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        const data = await response.json();
+        const text = data.content[0].text;
+        recipeList.innerHTML = `<div class="recipe-card"><div style="white-space:pre-wrap;">${text.replace(/</g, '&lt;')}</div></div>`;
+        speakText(`Here are some recipe ideas using ${ingredients}.`);
+      } catch (err) {
+        recipeList.innerHTML = `<div class="recipe-card"><p>Couldn't reach Claude (${err.message}). Check your API key in Settings.</p></div>`;
+      }
+    }
+
+    // ---- Voice (ElevenLabs with device fallback) ----
+    function speakText(text) {
+      const key = localStorage.getItem('elevenlabs-key');
+      if (key) { speakWithElevenLabs(text, key); }
+      else { speakWithWebSpeech(text); }
+    }
+
+    async function speakWithElevenLabs(text, key) {
+      const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel — warm female
+      try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+          method: 'POST',
+          headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, model_id: 'eleven_monolingual_v1' }),
+        });
+        if (!response.ok) throw new Error('TTS failed');
+        const audio = new Audio(URL.createObjectURL(await response.blob()));
+        audio.play();
+      } catch (e) {
+        speakWithWebSpeech(text);
+      }
+    }
+
+    function speakWithWebSpeech(text) {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      speechSynthesis.speak(u);
+    }
+
+    // ---- Avatar Studio (Higgsfield via local proxy) ----
+    async function generateAvatarStill() {
+      const proxyUrl = localStorage.getItem('proxy-url') || 'http://localhost:3001';
+      const prompt = document.getElementById('avatar-prompt').value
+        || `A friendly portrait of ${BUDDY_DATA.name}, warm and approachable nutrition coach, professional headshot style.`;
+      try {
+        const response = await fetch(`${proxyUrl}/api/higgsfield-generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, model: 'soul', size: '512x512' }),
+        });
+        if (!response.ok) throw new Error('Generation failed');
+        const data = await response.json();
+        localStorage.setItem(`avatar-${BUDDY_DATA.name}`, data.imageUrl);
+        alert('Avatar generated! ✨');
+      } catch (err) {
+        alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')');
+      }
+    }
+
+    async function animateAvatar() {
+      const proxyUrl = localStorage.getItem('proxy-url') || 'http://localhost:3001';
+      const imageUrl = localStorage.getItem(`avatar-${BUDDY_DATA.name}`);
+      if (!imageUrl) { alert('Generate a face first'); return; }
+      try {
+        const response = await fetch(`${proxyUrl}/api/higgsfield-animate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl, model: 'dop', motion: 'talking-head' }),
+        });
+        if (!response.ok) throw new Error('Animation failed');
+        const data = await response.json();
+        localStorage.setItem(`avatar-video-${BUDDY_DATA.name}`, data.videoUrl);
+        alert('Avatar brought to life! 🎬');
+      } catch (err) {
+        alert('Avatar proxy not reachable. Start avatar-proxy-local.mjs on your Mac. (' + err.message + ')');
+      }
+    }
+
+    function matchIngredients() {
+      const ingredients = document.getElementById('available-ingredients').value;
+      if (!ingredients.trim()) {
+        alert('Please enter some ingredients');
+        return;
+      }
+
+      const matches = [
+        `Recipe matching "${ingredients}": Prepare dish A`,
+        `Alternative with "${ingredients}": Prepare dish B`,
+        `Quick meal with "${ingredients}": Prepare dish C`
+      ];
+
+      const output = document.getElementById('ingredient-matches');
+      output.innerHTML = matches.map((m, i) => `<div class="ingredient-card"><h4>Option ${i+1}</h4><p>${m}</p></div>`).join('');
+      document.getElementById('ingredients-output').style.display = 'block';
+    }
+
+    function generateMealPlan() {
+      alert('Premium feature: Upgrade to unlock personalized meal planning');
+    }
+
+    function saveSettings() {
+      const apiKey = document.getElementById('api-key').value;
+      if (apiKey && !apiKey.startsWith('••')) localStorage.setItem('apiKey', apiKey);
+
+      const elKey = document.getElementById('elevenlabs-key');
+      if (elKey && elKey.value && !elKey.value.startsWith('••')) localStorage.setItem('elevenlabs-key', elKey.value);
+
+      const proxy = document.getElementById('proxy-url');
+      if (proxy && proxy.value) localStorage.setItem('proxy-url', proxy.value);
+
+      localStorage.setItem('medicalProfile', JSON.stringify({
+        conditions: document.getElementById('medical-conditions').value,
+        restrictions: document.getElementById('dietary-restrictions').value,
+        familyMembers: document.getElementById('family-members').value
+      }));
+      alert('Settings saved! 💾');
+    }
+
+    function loadSettings() {
+      const apiKey = localStorage.getItem('apiKey');
+      const elKey = localStorage.getItem('elevenlabs-key');
+      const proxy = localStorage.getItem('proxy-url');
+      if (apiKey) document.getElementById('api-key').value = '••••••••' + apiKey.slice(-4);
+      if (elKey) document.getElementById('elevenlabs-key').value = '••••••••' + elKey.slice(-4);
+      if (proxy) document.getElementById('proxy-url').value = proxy;
+      const profile = JSON.parse(localStorage.getItem('medicalProfile') || '{}');
+      if (profile.conditions) document.getElementById('medical-conditions').value = profile.conditions;
+      if (profile.restrictions) document.getElementById('dietary-restrictions').value = profile.restrictions;
+      if (profile.familyMembers) document.getElementById('family-members').value = profile.familyMembers;
+    }
+
+    function showPremium() {
+      alert('Premium features coming soon! Support this project and get early access.');
+    }
+
+    // Cover screen → enter app (first tap also unlocks audio so the coach can greet aloud)
+    (function () {
+      var btn = document.getElementById('cover-enter');
+      var cover = document.getElementById('cover');
+      if (!btn || !cover) return;
+      btn.addEventListener('click', function () {
+        cover.classList.add('hidden');
+        setTimeout(function () { cover.style.display = 'none'; }, 750);
+        try {
+          if (typeof speakText === 'function') {
+            speakText("Hi, I'm " + BUDDY_DATA.name + ". Let's eat well and feel great together.");
+          }
+        } catch (e) {}
+      });
+    })();
+
+    // Initialize
+    loadSettings();
+    document.getElementById('greeting').textContent = `Hi! I'm ${BUDDY_DATA.name}. ${BUDDY_DATA.specialization}. Let's work together to help you eat well.`;
+    document.getElementById('daily-message').textContent = BUDDY_DATA.affirmations[Math.floor(Math.random() * BUDDY_DATA.affirmations.length)];
+  </script>
+</body>
+</html>

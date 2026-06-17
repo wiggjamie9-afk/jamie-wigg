@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#0d1117" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Roomtone" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="description" content="Real-time environmental EQ for your hearing aids. Listens to the room and re-tunes on the fly." />
+<title>Roomtone</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px)" href="icons/splash-iphone-se.png" />
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px)" href="icons/splash-iphone-portrait.png" />
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px)" href="icons/splash-iphone-pro-max.png" />
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b25;
+    --surface-2: #1f2735;
+    --line: #2a3344;
+    --accent: #f4a942;
+    --accent-2: #ffd58a;
+    --accent-soft: rgba(244, 169, 66, 0.14);
+    --text: #e6edf3;
+    --text-dim: #8b96a8;
+    --danger: #f85149;
+    --ok: #3fb950;
+    --shadow: 0 10px 30px rgba(0,0,0,0.4);
+    --radius: 18px;
+  }
+  @media (prefers-contrast: more) {
+    :root { --text-dim: #c2c9d4; --line: #4a5365; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 18px;
+    line-height: 1.4;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow-x: hidden;
+    background:
+      radial-gradient(60vw 60vw at 50% -10%, rgba(244,169,66,0.08), transparent 60%),
+      var(--bg);
+  }
+  main {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 16px 18px 120px;
+  }
+  /* brand */
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 4px 18px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 3px solid var(--accent);
+    position: relative;
+  }
+  .brand-mark::after {
+    content: ""; position: absolute; inset: 6px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .brand-name { font-weight: 700; letter-spacing: 0.3px; font-size: 22px; }
+  .brand-tag { color: var(--text-dim); font-size: 14px; margin-left: auto; }
+  /* hero scene pill */
+  .scene-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 22px 18px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .scene-card::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(70% 80% at 50% 0%, var(--accent-soft), transparent 70%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .4s ease;
+  }
+  .scene-card.live::before { opacity: 1; }
+  .scene-label {
+    text-transform: uppercase; letter-spacing: 2.5px;
+    color: var(--text-dim); font-size: 13px; font-weight: 600;
+  }
+  .scene-name {
+    font-size: 44px; font-weight: 700; letter-spacing: -0.5px;
+    margin: 8px 0 4px; line-height: 1.05;
+  }
+  .scene-sub { color: var(--text-dim); font-size: 15px; min-height: 22px; }
+  .scene-icon {
+    display: inline-block; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--text-dim);
+    margin-right: 8px; vertical-align: middle;
+    transition: background .3s;
+  }
+  .scene-card.live .scene-icon { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  /* level meter */
+  .meter {
+    display: flex; gap: 3px; height: 10px;
+    margin-top: 16px;
+    background: var(--surface-2);
+    border-radius: 6px;
+    padding: 2px;
+    overflow: hidden;
+  }
+  .meter-bar {
+    flex: 1;
+    border-radius: 3px;
+    background: var(--line);
+    transition: background .08s;
+  }
+  /* big primary action */
+  .live-btn {
+    margin-top: 18px;
+    width: 100%;
+    min-height: 72px;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #1a1206;
+    font-weight: 700;
+    font-size: 22px;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.4px;
+    box-shadow: 0 8px 24px rgba(244,169,66,0.3);
+    transition: transform .1s, background .2s;
+  }
+  .live-btn:active { transform: scale(0.98); }
+  .live-btn.live {
+    background: var(--surface-2);
+    color: var(--text);
+    box-shadow: none;
+    border: 1px solid var(--line);
+  }
+  /* scene chips */
+  .section-h {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin: 28px 4px 12px;
+  }
+  .section-h h2 {
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .section-h .hint { color: var(--text-dim); font-size: 13px; }
+  .chips {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  .chip {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 14px;
+    padding: 16px 14px;
+    font-size: 17px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    min-height: 60px;
+    display: flex; align-items: center; gap: 10px;
+    transition: all .15s;
+  }
+  .chip:active { transform: scale(0.98); }
+  .chip[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-2);
+  }
+  .chip .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--line);
+    flex-shrink: 0;
+  }
+  .chip.detected .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .chip .glyph { font-size: 22px; line-height: 1; opacity: 0.85; margin-right: 2px; }
+  /* compare */
+  .compare {
+    margin-top: 18px;
+    width: 100%;
+    min-height: 64px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .compare.holding {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+  }
+  .compare .glyph { opacity: 0.7; }
+  /* personalize */
+  details.panel {
+    margin-top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  details.panel summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px 20px;
+    font-weight: 600;
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  details.panel summary::-webkit-details-marker { display: none; }
+  details.panel summary::after {
+    content: "▾"; color: var(--text-dim);
+    transition: transform .2s;
+  }
+  details.panel[open] summary::after { transform: rotate(180deg); }
+  .panel-body { padding: 4px 20px 20px; border-top: 1px solid var(--line); }
+  .eq-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+    padding-bottom: 6px;
+  }
+  .eq-band {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px;
+  }
+  .eq-band input[type=range] {
+    -webkit-appearance: slider-vertical;
+    writing-mode: bt-lr;
+    width: 26px;
+    height: 130px;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+  .eq-band .hz { color: var(--text-dim); font-size: 11px; font-weight: 600; }
+  .eq-band .db { font-size: 12px; font-weight: 600; color: var(--accent-2); min-height: 16px; }
+  .panel-row {
+    display: flex; gap: 10px; align-items: center; margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .panel-row label { font-size: 14px; color: var(--text-dim); }
+  .pill-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .pill-btn:active { transform: scale(0.97); }
+  .scene-select {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .help {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: rgba(63, 185, 80, 0.07);
+    border: 1px solid rgba(63, 185, 80, 0.25);
+    color: #b8e1c1;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .help.warn {
+    background: rgba(248, 81, 73, 0.08);
+    border-color: rgba(248, 81, 73, 0.3);
+    color: #f3b5b1;
+  }
+  .help b { color: inherit; }
+  .footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 12px;
+    margin-top: 28px;
+    padding: 0 12px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  /* toast */
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 14px;
+    box-shadow: var(--shadow);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s;
+    max-width: 90vw;
+    text-align: center;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+  /* MVP enhancements */
+  .toast {
+    animation: slideUp .2s ease-out;
+  }
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+  .toast.show {
+    animation: none;
+  }
+
+  /* Better button feedback */
+  button {
+    transition: all 0.12s ease-out;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Focus visible for accessibility */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Error state */
+  [aria-invalid="true"] {
+    border-color: var(--danger) !important;
+  }
+
+  /* Loading state */
+  [aria-busy="true"] {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* small screens */
+  @media (max-width: 360px) {
+    .scene-name { font-size: 36px; }
+    .chips { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true"></div>
+    <div class="brand-name">Roomtone</div>
+    <div class="brand-tag" id="status-tag">standby</div>
+  </div>
+
+  <section class="scene-card" id="scene-card" aria-live="polite">
+    <div class="scene-label"><span class="scene-icon" aria-hidden="true"></span><span id="auto-mode-label">auto • listening</span></div>
+    <div class="scene-name" id="scene-name">Tap to begin</div>
+    <div class="scene-sub" id="scene-sub">Roomtone needs your microphone to detect the room.</div>
+    <div class="meter" id="meter" aria-hidden="true"></div>
+  </section>
+
+  <button class="live-btn" id="live-btn" aria-label="Start Roomtone - Begins real-time environmental audio processing" aria-describedby="scene-sub">Start Roomtone</button>
+
+  <div id="headphone-warn" class="help warn" style="display:none">
+    <b>Use headphones or paired hearing aids.</b> Roomtone routes processed mic audio to your audio output — playing it through the phone speaker will create a feedback loop.
+  </div>
+
+  <div class="section-h">
+    <h2>Scene</h2>
+    <div class="hint" id="scene-hint">Auto-detecting</div>
+  </div>
+  <div class="chips" id="scene-chips" role="group" aria-label="Scene override"></div>
+
+  <button class="compare" id="compare-btn" disabled>
+    <span class="glyph">⊘</span> Hold to compare — hear it without Roomtone
+  </button>
+
+  <details class="panel" id="personalize">
+    <summary>Personalize</summary>
+    <div class="panel-body">
+      <p style="color:var(--text-dim);margin:4px 0 0;font-size:14px">
+        Your hearing profile (audiogram). Boost the frequencies where you've lost sensitivity — your audiologist's report usually gives this directly.
+      </p>
+      <div class="eq-grid" id="audiogram-grid" aria-label="Audiogram editor"></div>
+      <div class="panel-row">
+        <button class="pill-btn" id="audiogram-reset">Reset audiogram</button>
+        <button class="pill-btn" id="audiogram-preset-mild">Mild high-freq loss</button>
+        <button class="pill-btn" id="audiogram-preset-mod">Moderate loss</button>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 14px" />
+
+      <p style="color:var(--text-dim);margin:0;font-size:14px">
+        Fine-tune the EQ for a specific scene. Roomtone learns your preference and uses it whenever it detects this room type.
+      </p>
+      <div class="panel-row" style="margin-top:14px">
+        <label for="scene-tweak-select">Tuning scene:</label>
+        <select class="scene-select" id="scene-tweak-select"></select>
+      </div>
+      <div class="eq-grid" id="scene-tweak-grid" aria-label="Per-scene EQ tweak"></div>
+      <div class="panel-row">
+        <button class="pill-btn" id="scene-tweak-reset">Reset this scene</button>
+        <button class="pill-btn" id="data-clear">Clear all personalization</button>
+      </div>
+    </div>
+  </details>
+
+  <div class="footer">
+    Roomtone v0 demo · processing happens entirely on this device, nothing is uploaded.
+    <br>Best with wired headphones, AirPods, or LE Audio hearing aids paired to your phone.
+    <br><br><a href="test.html">Open classifier test app →</a>
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- constants ----------
+const FREQS = [250, 500, 1000, 2000, 3000, 4000, 6000, 8000];
+const FREQ_LABELS = ['250', '500', '1k', '2k', '3k', '4k', '6k', '8k'];
+
+const SCENES = {
+  quiet:      { name: 'Quiet',       sub: 'Calm room — gentle clarity lift',                      glyph: '○', preset: [ 0,  0,  0, +2, +3, +3, +2,  0] },
+  restaurant: { name: 'Restaurant',  sub: 'Babble suppression, speech presence',                  glyph: '◉', preset: [-6, -4, -2, +2, +4, +3, +1,  0] },
+  car:        { name: 'Car',         sub: 'Road-rumble cut, conversation focus',                  glyph: '◐', preset: [-9, -6, -3, +1, +3, +3, +2,  0] },
+  music:      { name: 'Music',       sub: 'Flat response, wide dynamic range',                    glyph: '♪', preset: [ 0, +1, +1, +1, +1, +1,  0,  0] },
+  outdoor:    { name: 'Outdoors',    sub: 'Wind & traffic notch, comfort gain',                   glyph: '◊', preset: [-12,-8, -4,  0, +2, +2, +1,  0] },
+  reverb:     { name: 'Reverberant', sub: 'De-reflection scoop for halls & churches',             glyph: '⊙', preset: [-2, -3, -4, -2, +1, +2, +1,  0] },
+};
+const SCENE_KEYS = Object.keys(SCENES);
+
+const AUDIOGRAM_PRESETS = {
+  flat:  [ 0, 0, 0, 0, 0, 0, 0, 0],
+  mild:  [ 0, 0, +2, +4, +6, +8,+10,+10],
+  mod:   [+2,+3, +5, +8,+12,+14,+16,+16],
+};
+
+// ---------- state ----------
+const state = {
+  ctx: null,
+  stream: null,
+  mic: null,
+  analyser: null,
+  audiogramFilters: [],
+  sceneFilters: [],
+  limiter: null,
+  master: null,
+  isLive: false,
+  bypass: false,
+  manualScene: null,           // null = auto
+  detectedScene: 'quiet',
+  recentDetections: [],
+  audiogram: load('audiogram') || [0,0,0,0,0,0,0,0],
+  sceneTweaks: load('sceneTweaks') || {},
+  tweakSceneKey: 'restaurant',
+  rafId: null,
+  loopTimer: null,
+};
+
+function save(key, val) {
+  try { localStorage.setItem('roomtone:' + key, JSON.stringify(val)); } catch(_) {}
+}
+function load(key) {
+  try { const v = localStorage.getItem('roomtone:' + key); return v ? JSON.parse(v) : null; } catch(_) { return null; }
+}
+
+// ---------- audio pipeline ----------
+async function startAudio() {
+  if (state.isLive) return;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) {
+    toast("❌ Your browser doesn't support Web Audio. Try Chrome, Safari, or Firefox.");
+    return;
+  }
+  try {
+    state.ctx = new Ctx({ latencyHint: 'interactive' });
+  } catch (e) {
+    state.ctx = new Ctx();
+  }
+  try {
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        channelCount: 1,
+      },
+      video: false,
+    });
+  } catch (err) {
+    if (err.name === 'NotAllowedError') {
+      toast('🔒 Mic permission denied. Go to Settings → Roomtone → Microphone and tap Allow.');
+    } else if (err.name === 'NotFoundError') {
+      toast('❌ No microphone found. Check your device audio settings.');
+    } else {
+      toast(`Mic error: ${err.name}. Try restarting Roomtone.`);
+    }
+    return;
+  }
+  await state.ctx.resume();
+
+  state.mic = state.ctx.createMediaStreamSource(state.stream);
+  state.analyser = state.ctx.createAnalyser();
+  state.analyser.fftSize = 2048;
+  state.analyser.smoothingTimeConstant = 0.4;
+
+  state.audiogramFilters = FREQS.map((f, i) => {
+    const n = state.ctx.createBiquadFilter();
+    n.type = 'peaking';
+    n.frequency.value = f;
+    n.Q.value = 1.2;
+    n.gain.value = state.audiogram[i] || 0;
+    return n;
+  });
+  state.sceneFilters = FREQS.map((f) => {
+    const n = state.ctx.createBiquadFilter();
+    n.type = 'peaking';
+    n.frequency.value = f;
+    n.Q.value = 1.0;
+    n.gain.value = 0;
+    return n;
+  });
+
+  // gentle high-pass to keep rumble & DC out of the chain
+  const hp = state.ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 80;
+  hp.Q.value = 0.7;
+
+  state.limiter = state.ctx.createDynamicsCompressor();
+  state.limiter.threshold.value = -8;
+  state.limiter.knee.value = 6;
+  state.limiter.ratio.value = 14;
+  state.limiter.attack.value = 0.003;
+  state.limiter.release.value = 0.12;
+
+  state.master = state.ctx.createGain();
+  state.master.gain.value = 0.9;
+
+  // tap analyser off the raw mic (so detection uses unprocessed audio)
+  state.mic.connect(state.analyser);
+
+  // processed chain
+  let node = state.mic;
+  node.connect(hp); node = hp;
+  for (const f of state.audiogramFilters) { node.connect(f); node = f; }
+  for (const f of state.sceneFilters) { node.connect(f); node = f; }
+  node.connect(state.limiter);
+  state.limiter.connect(state.master);
+  state.master.connect(state.ctx.destination);
+
+  state.isLive = true;
+  applyEQ();
+  startLoop();
+  updateUI();
+}
+
+function stopAudio() {
+  if (!state.isLive) return;
+  state.isLive = false;
+  if (state.loopTimer) { clearTimeout(state.loopTimer); state.loopTimer = null; }
+  if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+  try { state.stream && state.stream.getTracks().forEach(t => t.stop()); } catch(_) {}
+  try { state.ctx && state.ctx.close(); } catch(_) {}
+  state.ctx = state.stream = state.mic = state.analyser = null;
+  state.audiogramFilters = []; state.sceneFilters = [];
+  state.limiter = state.master = null;
+  state.recentDetections = [];
+  state.detectedScene = 'quiet';
+  state.manualScene = null;
+  state.bypass = false;
+  updateUI();
+}
+
+// ---------- feature extraction & classification ----------
+function extractFeatures() {
+  const a = state.analyser;
+  if (!a) return null;
+  const bins = a.frequencyBinCount;
+  const freq = new Uint8Array(bins);
+  const time = new Uint8Array(bins);
+  a.getByteFrequencyData(freq);
+  a.getByteTimeDomainData(time);
+
+  const sr = state.ctx.sampleRate;
+  const binHz = (sr / 2) / bins;
+
+  let totalE = 0, centroidNum = 0, peak = 0;
+  let lowE = 0, midE = 0, highE = 0;
+  let logSum = 0, arithSum = 0, voicedN = 0;
+  for (let i = 1; i < bins; i++) {
+    const v = freq[i] / 255;
+    const e = v * v;
+    const hz = i * binHz;
+    totalE += e;
+    centroidNum += hz * e;
+    if (hz < 300) lowE += e;
+    else if (hz < 3500) midE += e;
+    else highE += e;
+    if (v > peak) peak = v;
+    if (v > 0.02) { logSum += Math.log(v + 1e-6); arithSum += v; voicedN++; }
+  }
+  const centroid = totalE > 0 ? centroidNum / totalE : 0;
+  const totalBand = lowE + midE + highE || 1e-9;
+  const flatness = voicedN > 4 ? Math.exp(logSum / voicedN) / ((arithSum / voicedN) + 1e-9) : 0;
+
+  // RMS / loudness — uncalibrated, used relative only
+  let rms = 0;
+  for (let i = 0; i < time.length; i++) {
+    const s = (time[i] - 128) / 128;
+    rms += s * s;
+  }
+  rms = Math.sqrt(rms / time.length);
+  const rmsDb = 20 * Math.log10(rms + 1e-6);
+
+  // zero-crossing rate
+  let zc = 0;
+  for (let i = 1; i < time.length; i++) {
+    if ((time[i-1] < 128) !== (time[i] < 128)) zc++;
+  }
+  const zcr = zc / time.length;
+
+  // mid-band power — useful for "is there speech in this signal"
+  const speechBand = midE / totalBand;
+
+  return {
+    rmsDb, peak, centroid, zcr, flatness,
+    lowR: lowE / totalBand,
+    midR: midE / totalBand,
+    highR: highE / totalBand,
+    speechBand,
+    totalE,
+  };
+}
+
+function classify(f) {
+  // rule-based ensemble — each rule contributes evidence, winner takes all.
+  const s = { quiet: 0, restaurant: 0, car: 0, music: 0, outdoor: 0, reverb: 0 };
+
+  // QUIET — low energy dominates
+  if (f.rmsDb < -52) s.quiet += 4;
+  else if (f.rmsDb < -42) s.quiet += 2;
+  else if (f.rmsDb < -36) s.quiet += 1;
+
+  // CAR — low-band heavy, low centroid, steady (low zcr), high overall loudness
+  if (f.lowR > 0.62 && f.centroid < 700) s.car += 3;
+  if (f.lowR > 0.55 && f.zcr < 0.04 && f.rmsDb > -38) s.car += 2;
+  if (f.lowR > 0.5 && f.centroid < 1000 && f.flatness > 0.25) s.car += 1;
+
+  // RESTAURANT / BABBLE — mid-band rich, zcr in speech range, flatness moderate
+  if (f.midR > 0.5 && f.zcr > 0.07 && f.zcr < 0.18 && f.rmsDb > -38) s.restaurant += 3;
+  if (f.midR > 0.42 && f.flatness > 0.22 && f.flatness < 0.55 && f.rmsDb > -35) s.restaurant += 2;
+  if (f.speechBand > 0.45 && f.rmsDb > -32) s.restaurant += 1;
+
+  // MUSIC — tonal (low flatness), wide energy, strong peaks
+  if (f.flatness < 0.14 && f.peak > 0.6 && f.rmsDb > -38) s.music += 3;
+  if (f.flatness < 0.18 && f.midR > 0.3 && f.lowR > 0.25 && f.highR > 0.1) s.music += 2;
+
+  // OUTDOOR / WIND — low-band heavy AND high flatness (noise-like, not tonal car)
+  if (f.lowR > 0.5 && f.flatness > 0.45) s.outdoor += 3;
+  if (f.lowR > 0.4 && f.flatness > 0.55 && f.zcr < 0.06) s.outdoor += 2;
+
+  // REVERB — energy spread broadly + sustained, mid-high tail
+  if (f.highR > 0.18 && f.midR > 0.4 && f.zcr > 0.05 && f.zcr < 0.12 && f.flatness > 0.2 && f.flatness < 0.4) s.reverb += 2;
+
+  // strong loudness override → if it's loud and mid-band-y, can't be quiet
+  if (f.rmsDb > -32) s.quiet = 0;
+
+  let best = 'quiet', bestScore = 0;
+  for (const k of SCENE_KEYS) if (s[k] > bestScore) { best = k; bestScore = s[k]; }
+  const total = SCENE_KEYS.reduce((a,k) => a + s[k], 0) || 1;
+  return { scene: best, score: bestScore, confidence: bestScore / total, all: s };
+}
+
+// ---------- loop ----------
+function startLoop() {
+  const tick = () => {
+    if (!state.isLive) return;
+    const f = extractFeatures();
+    if (f) {
+      const { scene, confidence, score } = classify(f);
+      // require some minimum evidence — otherwise treat as quiet
+      const candidate = (score >= 2) ? scene : 'quiet';
+      state.recentDetections.push(candidate);
+      if (state.recentDetections.length > 3) state.recentDetections.shift();
+      const last2 = state.recentDetections.slice(-2);
+      if (last2.length === 2 && last2[0] === last2[1] && last2[0] !== state.detectedScene) {
+        state.detectedScene = last2[0];
+        if (!state.manualScene) {
+          applyEQ();
+          flashSceneChange();
+        }
+      }
+      updateLive(f, confidence);
+    }
+    state.loopTimer = setTimeout(tick, 700);
+  };
+  tick();
+  drawMeter();
+}
+
+function drawMeter() {
+  if (!state.isLive) return;
+  state.rafId = requestAnimationFrame(drawMeter);
+  const a = state.analyser;
+  if (!a) return;
+  const bins = a.frequencyBinCount;
+  const data = new Uint8Array(bins);
+  a.getByteFrequencyData(data);
+  const meter = document.getElementById('meter');
+  const bars = meter.querySelectorAll('.meter-bar');
+  // 16-band visual
+  const buckets = bars.length;
+  const step = Math.floor(bins / buckets);
+  for (let i = 0; i < buckets; i++) {
+    let avg = 0;
+    for (let j = 0; j < step; j++) avg += data[i*step + j];
+    avg /= step;
+    const v = avg / 255;
+    const bar = bars[i];
+    if (v > 0.05) {
+      const hue = 38;
+      const sat = 90;
+      const light = 50 + v * 12;
+      bar.style.background = `hsl(${hue} ${sat}% ${light}%)`;
+    } else {
+      bar.style.background = '';
+    }
+  }
+}
+
+// ---------- EQ application ----------
+function applyEQ() {
+  if (!state.ctx) return;
+  const t = state.ctx.currentTime;
+  const targetScene = state.manualScene || state.detectedScene;
+  const preset = state.bypass ? [0,0,0,0,0,0,0,0] : (SCENES[targetScene].preset);
+  const tweaks = (!state.bypass && state.sceneTweaks[targetScene]) || [0,0,0,0,0,0,0,0];
+  for (let i = 0; i < 8; i++) {
+    const sceneTotal = (preset[i] || 0) + (tweaks[i] || 0);
+    state.sceneFilters[i].gain.setTargetAtTime(sceneTotal, t, 0.18);
+    const audGain = state.bypass ? 0 : (state.audiogram[i] || 0);
+    state.audiogramFilters[i].gain.setTargetAtTime(audGain, t, 0.12);
+  }
+}
+
+// ---------- UI ----------
+function flashSceneChange() {
+  const card = document.getElementById('scene-card');
+  card.animate(
+    [{ background: 'var(--accent-soft)' }, { background: 'var(--surface)' }],
+    { duration: 700, easing: 'ease-out' }
+  );
+}
+
+function updateLive(f, confidence) {
+  // tag update
+  const tag = document.getElementById('status-tag');
+  if (state.bypass) tag.textContent = 'bypass • A/B';
+  else if (state.manualScene) tag.textContent = 'manual override';
+  else tag.textContent = 'live • auto';
+
+  // mode label
+  document.getElementById('auto-mode-label').textContent =
+    state.bypass ? 'bypass — no processing' :
+    state.manualScene ? `manual: ${SCENES[state.manualScene].name.toLowerCase()}` :
+    'auto • listening';
+
+  // chip detection state
+  for (const k of SCENE_KEYS) {
+    const chip = document.querySelector(`.chip[data-scene="${k}"]`);
+    if (chip) {
+      chip.classList.toggle('detected', k === state.detectedScene && !state.bypass);
+    }
+  }
+  document.getElementById('scene-hint').textContent =
+    state.manualScene ? 'Override active' :
+    state.bypass ? 'Bypass — raw input' :
+    `Auto · ${Math.round(confidence * 100)}% confidence`;
+}
+
+function updateUI() {
+  const card = document.getElementById('scene-card');
+  const btn = document.getElementById('live-btn');
+  const cmp = document.getElementById('compare-btn');
+  const warn = document.getElementById('headphone-warn');
+  if (state.isLive) {
+    card.classList.add('live');
+    btn.textContent = 'Stop';
+    btn.classList.add('live');
+    cmp.disabled = false;
+    warn.style.display = 'block';
+    const showScene = state.bypass ? null : (state.manualScene || state.detectedScene);
+    if (showScene) {
+      document.getElementById('scene-name').textContent = SCENES[showScene].name;
+      document.getElementById('scene-sub').textContent = SCENES[showScene].sub;
+    } else {
+      document.getElementById('scene-name').textContent = 'Bypass';
+      document.getElementById('scene-sub').textContent = 'Hearing the raw room — no processing.';
+    }
+  } else {
+    card.classList.remove('live');
+    btn.textContent = 'Start Roomtone';
+    btn.classList.remove('live');
+    cmp.disabled = true;
+    warn.style.display = 'none';
+    document.getElementById('scene-name').textContent = 'Tap to begin';
+    document.getElementById('scene-sub').textContent = 'Roomtone needs your microphone to detect the room.';
+    document.getElementById('auto-mode-label').textContent = 'standby';
+    document.getElementById('status-tag').textContent = 'standby';
+    document.getElementById('scene-hint').textContent = 'Auto-detecting';
+    for (const chip of document.querySelectorAll('.chip')) {
+      chip.classList.remove('detected');
+      chip.setAttribute('aria-pressed', 'false');
+    }
+  }
+  for (const chip of document.querySelectorAll('.chip')) {
+    const k = chip.dataset.scene;
+    chip.setAttribute('aria-pressed', String(state.manualScene === k));
+  }
+  const autoChip = document.querySelector('.chip[data-scene="__auto"]');
+  if (autoChip) autoChip.setAttribute('aria-pressed', String(state.manualScene === null));
+}
+
+// ---------- build chips & EQ grids ----------
+function buildChips() {
+  const wrap = document.getElementById('scene-chips');
+  wrap.innerHTML = '';
+
+  // Auto chip first
+  const auto = document.createElement('button');
+  auto.className = 'chip';
+  auto.dataset.scene = '__auto';
+  auto.setAttribute('aria-pressed', 'true');
+  auto.innerHTML = `<span class="glyph">⟳</span><span class="dot"></span>Auto`;
+  auto.addEventListener('click', () => {
+    state.manualScene = null;
+    applyEQ();
+    updateUI();
+    toast('Auto mode — Roomtone picks the scene');
+  });
+  wrap.appendChild(auto);
+
+  for (const k of SCENE_KEYS) {
+    const def = SCENES[k];
+    const c = document.createElement('button');
+    c.className = 'chip';
+    c.dataset.scene = k;
+    c.setAttribute('aria-pressed', 'false');
+    c.innerHTML = `<span class="glyph">${def.glyph}</span><span class="dot"></span>${def.name}`;
+    c.addEventListener('click', () => {
+      state.manualScene = (state.manualScene === k) ? null : k;
+      applyEQ();
+      updateUI();
+      if (state.manualScene) toast(`Forced: ${def.name}`);
+      else toast('Back to auto');
+    });
+    wrap.appendChild(c);
+  }
+}
+
+function buildEqGrid(gridId, getValues, setValue) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  const vals = getValues();
+  for (let i = 0; i < FREQS.length; i++) {
+    const band = document.createElement('div');
+    band.className = 'eq-band';
+    const db = document.createElement('div');
+    db.className = 'db';
+    db.textContent = formatDb(vals[i] || 0);
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = '-18'; input.max = '18'; input.step = '1';
+    input.value = String(vals[i] || 0);
+    input.setAttribute('aria-label', `${FREQ_LABELS[i]} Hz`);
+    input.addEventListener('input', (e) => {
+      const v = parseInt(e.target.value, 10);
+      db.textContent = formatDb(v);
+      setValue(i, v);
+    });
+    const hz = document.createElement('div');
+    hz.className = 'hz';
+    hz.textContent = FREQ_LABELS[i];
+    band.appendChild(db);
+    band.appendChild(input);
+    band.appendChild(hz);
+    grid.appendChild(band);
+  }
+}
+
+function formatDb(v) {
+  if (v === 0) return '0';
+  return (v > 0 ? '+' : '') + v;
+}
+
+function refreshAudiogramGrid() {
+  buildEqGrid(
+    'audiogram-grid',
+    () => state.audiogram,
+    (i, v) => {
+      state.audiogram = state.audiogram.slice();
+      state.audiogram[i] = v;
+      save('audiogram', state.audiogram);
+      applyEQ();
+    }
+  );
+}
+
+function refreshSceneTweakGrid() {
+  const k = state.tweakSceneKey;
+  buildEqGrid(
+    'scene-tweak-grid',
+    () => state.sceneTweaks[k] || [0,0,0,0,0,0,0,0],
+    (i, v) => {
+      const cur = (state.sceneTweaks[k] || [0,0,0,0,0,0,0,0]).slice();
+      cur[i] = v;
+      state.sceneTweaks = { ...state.sceneTweaks, [k]: cur };
+      save('sceneTweaks', state.sceneTweaks);
+      applyEQ();
+    }
+  );
+}
+
+function buildSceneSelect() {
+  const sel = document.getElementById('scene-tweak-select');
+  sel.innerHTML = '';
+  for (const k of SCENE_KEYS) {
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = SCENES[k].name;
+    if (k === state.tweakSceneKey) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', (e) => {
+    state.tweakSceneKey = e.target.value;
+    refreshSceneTweakGrid();
+  });
+}
+
+// ---------- toast ----------
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ---------- wire ----------
+function init() {
+  // meter bars
+  const meter = document.getElementById('meter');
+  for (let i = 0; i < 16; i++) {
+    const b = document.createElement('div');
+    b.className = 'meter-bar';
+    meter.appendChild(b);
+  }
+
+  buildChips();
+  buildSceneSelect();
+  refreshAudiogramGrid();
+  refreshSceneTweakGrid();
+
+  document.getElementById('live-btn').addEventListener('click', async () => {
+    if (state.isLive) stopAudio();
+    else await startAudio();
+  });
+
+  // hold-to-bypass A/B compare
+  const cmp = document.getElementById('compare-btn');
+  const startCompare = (e) => {
+    if (!state.isLive) return;
+    e.preventDefault();
+    state.bypass = true;
+    cmp.classList.add('holding');
+    applyEQ();
+    updateUI();
+  };
+  const endCompare = (e) => {
+    if (!state.isLive) return;
+    state.bypass = false;
+    cmp.classList.remove('holding');
+    applyEQ();
+    updateUI();
+  };
+  cmp.addEventListener('pointerdown', startCompare);
+  cmp.addEventListener('pointerup', endCompare);
+  cmp.addEventListener('pointerleave', endCompare);
+  cmp.addEventListener('pointercancel', endCompare);
+
+  document.getElementById('audiogram-reset').addEventListener('click', () => {
+    state.audiogram = AUDIOGRAM_PRESETS.flat.slice();
+    save('audiogram', state.audiogram);
+    refreshAudiogramGrid();
+    applyEQ();
+    toast('Audiogram reset to flat');
+  });
+  document.getElementById('audiogram-preset-mild').addEventListener('click', () => {
+    state.audiogram = AUDIOGRAM_PRESETS.mild.slice();
+    save('audiogram', state.audiogram);
+    refreshAudiogramGrid();
+    applyEQ();
+    toast('Loaded: mild high-frequency loss');
+  });
+  document.getElementById('audiogram-preset-mod').addEventListener('click', () => {
+    state.audiogram = AUDIOGRAM_PRESETS.mod.slice();
+    save('audiogram', state.audiogram);
+    refreshAudiogramGrid();
+    applyEQ();
+    toast('Loaded: moderate loss');
+  });
+
+  document.getElementById('scene-tweak-reset').addEventListener('click', () => {
+    const k = state.tweakSceneKey;
+    const ts = { ...state.sceneTweaks };
+    delete ts[k];
+    state.sceneTweaks = ts;
+    save('sceneTweaks', state.sceneTweaks);
+    refreshSceneTweakGrid();
+    applyEQ();
+    toast(`${SCENES[k].name} scene reset`);
+  });
+  document.getElementById('data-clear').addEventListener('click', async () => {
+    // Confirm before destructive action
+    if (!confirm('Clear all personalization settings? This cannot be undone.')) {
+      return;
+    }
+    state.audiogram = [0,0,0,0,0,0,0,0];
+    state.sceneTweaks = {};
+    save('audiogram', state.audiogram);
+    save('sceneTweaks', state.sceneTweaks);
+    refreshAudiogramGrid();
+    refreshSceneTweakGrid();
+    applyEQ();
+    toast('✓ Personalization cleared');
+  });
+
+  updateUI();
+
+  // hint about output routing
+  if (!localStorage.getItem('roomtone:seen-intro')) {
+    setTimeout(() => {
+      toast('Pair your headphones or hearing aids first, then tap Start.');
+      localStorage.setItem('roomtone:seen-intro', '1');
+    }, 600);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+// ---------- service worker (offline shell) ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* offline mode not available, no problem */ });
+  });
+}
+
+// ---------- one-time install hint on iOS Safari ----------
+function showInstallHintIfNeeded() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) return;
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) && !window.MSStream;
+  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  if (!(isIOS && isSafari)) return;
+  if (localStorage.getItem('roomtone:seen-install')) return;
+  const hint = document.createElement('div');
+  hint.style.cssText = `
+    margin: 16px 0 0; padding: 14px 16px;
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    color: var(--accent-2); border-radius: 14px; font-size: 14px;
+    line-height: 1.5;
+  `;
+  hint.innerHTML = `
+    <b>Install Roomtone:</b> tap <b>Share</b> &nbsp;⬆&nbsp; then <b>Add to Home Screen</b> —
+    runs fullscreen, no browser bars, launches like a real app.
+    <div style="margin-top:10px"><button id="roomtone-dismiss-install" style="background:transparent;border:1px solid var(--accent);color:var(--accent-2);padding:6px 12px;border-radius:10px;font-weight:600">Got it</button></div>
+  `;
+  const after = document.querySelector('.brand');
+  after.parentNode.insertBefore(hint, after.nextSibling);
+  document.getElementById('roomtone-dismiss-install').addEventListener('click', () => {
+    hint.remove();
+    localStorage.setItem('roomtone:seen-install', '1');
+  });
+}
+setTimeout(showInstallHintIfNeeded, 200);
+
+// ========== ROOMTONE MVP ENHANCEMENTS ==========
+// Better error handling, confirmations, and accessibility
+
+(function() {
+  // Enhanced feedback for settings changes
+  const originalSave = (typeof window.save !== 'undefined') ? window.save : null;
+
+  // Wrap audiogram changes with feedback
+  if (window.FREQS) {
+    const sliders = document.querySelectorAll('.eq-band input[type="range"]');
+    sliders.forEach((slider, idx) => {
+      slider.addEventListener('change', () => {
+        setTimeout(() => {
+          toast('✓ Audiogram updated');
+        }, 100);
+      });
+    });
+  }
+
+  // Scene tweaks feedback
+  const sceneSelects = document.querySelectorAll('.scene-select');
+  sceneSelects.forEach((select) => {
+    select.addEventListener('change', () => {
+      setTimeout(() => {
+        toast('✓ Scene settings saved');
+      }, 100);
+    });
+  });
+
+  // Compare button accessibility
+  const compareBtn = document.getElementById('compare-btn');
+  if (compareBtn) {
+    compareBtn.setAttribute('aria-label', 'Compare - Hold to bypass all audio processing and hear raw microphone. Release to return to processed audio.');
+    compareBtn.setAttribute('role', 'button');
+  }
+
+  // Scene chips accessibility
+  const chips = document.querySelectorAll('.chip');
+  chips.forEach((chip) => {
+    const text = chip.textContent.trim();
+    chip.setAttribute('aria-label', `${text} - Tap to force this scene. Tap again to return to auto detection.`);
+    chip.setAttribute('role', 'button');
+  });
+
+  // Panel accessibility
+  const panels = document.querySelectorAll('details.panel');
+  panels.forEach((panel) => {
+    const summary = panel.querySelector('summary');
+    if (summary) {
+      summary.setAttribute('role', 'button');
+      summary.setAttribute('aria-expanded', panel.hasAttribute('open'));
+    }
+    panel.addEventListener('toggle', () => {
+      summary.setAttribute('aria-expanded', panel.hasAttribute('open'));
+    });
+  });
+
+  // Live button feedback
+  const liveBtn = document.getElementById('live-btn');
+  if (liveBtn) {
+    const originalOnClick = liveBtn.onclick;
+    liveBtn.addEventListener('click', () => {
+      if (!state.isLive) {
+        setTimeout(() => {
+          if (state.isLive) {
+            toast('🎤 Roomtone is now listening');
+          }
+        }, 500);
+      }
+    });
+  }
+
+  // Keyboard support hint
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '?') {
+      toast('🎧 Pair headphones first • Start listening • Compare (hold) • Choose scene • Personalize in settings');
+    }
+  });
+
+  // Accessibility: Announce state changes
+  const statusTag = document.getElementById('status-tag');
+  const originalUpdateUI = window.updateUI;
+  if (typeof originalUpdateUI === 'function') {
+    window.updateUI = function() {
+      originalUpdateUI.apply(this, arguments);
+      if (statusTag) {
+        const liveBtn = document.getElementById('live-btn');
+        const newStatus = liveBtn?.textContent || 'standby';
+        if (statusTag.textContent !== newStatus) {
+          statusTag.setAttribute('aria-live', 'polite');
+          statusTag.textContent = newStatus;
+        }
+      }
+    };
+  }
+
+  // Better error recovery: suggest next steps
+  window.onbeforeunload = (e) => {
+    // Soft warning only if audio is actively running
+    if (window.state && window.state.isLive) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  };
+
+  console.log('[Roomtone] MVP enhancements loaded');
+})();
+
+})();
+</script>
+</body>
+</html>

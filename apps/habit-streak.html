@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Streak – Build Good Habits</title>
+    <style>
+        :root { --primary: #B39AC9; --bg: #0F172A; --light: #1E293B; --text: #F1F5F9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+        .container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #8B5BA6 100%); padding: 24px 20px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: var(--light); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid var(--primary); }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+        input { width: 100%; padding: 10px 12px; background: var(--bg); border: 2px solid #334155; border-radius: 8px; color: var(--text); margin-bottom: 10px; font-size: 13px; }
+        input:focus { outline: none; border-color: var(--primary); }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+        button:hover { background: #8B5BA6; }
+        .habit { background: var(--bg); padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #334155; }
+        .habit.active { border-left-color: var(--primary); }
+        .habit-info { flex: 1; }
+        .habit-name { font-weight: 600; }
+        .streak { font-size: 18px; font-weight: 700; color: var(--primary); }
+        .label { display: block; font-size: 12px; color: #CBD5E1; margin-bottom: 4px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 HABIT STREAK</h1>
+            <p style="font-size: 12px;">Build unstoppable habits</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>➕ New Habit</h2>
+                <label>Habit name</label>
+                <input type="text" id="habitName" placeholder="E.g., Exercise, Read, Meditate">
+                <button onclick="addHabit()">Create Habit</button>
+            </div>
+
+            <div class="card">
+                <h2>🔥 Your Habits</h2>
+                <div id="habitList">No habits yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addHabit() {
+            const name = document.getElementById('habitName').value;
+            if (!name) { alert('Enter habit name'); return; }
+
+            let habits = JSON.parse(localStorage.getItem('habits') || '[]');
+            habits.push({ name, streak: 0, lastDate: null, id: Date.now() });
+            localStorage.setItem('habits', JSON.stringify(habits));
+            document.getElementById('habitName').value = '';
+            displayHabits();
+        }
+
+        function checkIn(id) {
+            let habits = JSON.parse(localStorage.getItem('habits') || '[]');
+            const habit = habits.find(h => h.id === id);
+            const today = new Date().toISOString().split('T')[0];
+
+            if (habit) {
+                if (habit.lastDate === today) {
+                    alert('Already checked in today!');
+                    return;
+                }
+                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                if (habit.lastDate === yesterday) {
+                    habit.streak++;
+                } else if (!habit.lastDate) {
+                    habit.streak = 1;
+                } else {
+                    habit.streak = 1;
+                }
+                habit.lastDate = today;
+                localStorage.setItem('habits', JSON.stringify(habits));
+                displayHabits();
+            }
+        }
+
+        function deleteHabit(id) {
+            let habits = JSON.parse(localStorage.getItem('habits') || '[]');
+            habits = habits.filter(h => h.id !== id);
+            localStorage.setItem('habits', JSON.stringify(habits));
+            displayHabits();
+        }
+
+        function displayHabits() {
+            const habits = JSON.parse(localStorage.getItem('habits') || '[]');
+            const today = new Date().toISOString().split('T')[0];
+            const list = document.getElementById('habitList');
+
+            if (habits.length === 0) {
+                list.innerHTML = '<p style="color: #CBD5E1; font-size: 12px;">No habits yet. Create one!</p>';
+                return;
+            }
+
+            list.innerHTML = habits.map(h => {
+                const doneToday = h.lastDate === today;
+                return `<div class="habit ${doneToday ? 'active' : ''}">
+                    <div class="habit-info">
+                        <div class="habit-name">${h.name}</div>
+                        <div class="streak">🔥 ${h.streak} day streak</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="checkIn(${h.id})" style="width: auto; padding: 8px 12px; margin: 0; background: ${doneToday ? '#CBD5E1' : 'var(--primary)'}; color: ${doneToday ? '#0F172A' : 'white'};">${doneToday ? '✓' : 'Check'}</button>
+                        <button onclick="deleteHabit(${h.id})" style="width: auto; padding: 8px 10px; margin: 0; background: #DC2626; color: white;">×</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        displayHabits();
+    </script>
+</body>
+</html>

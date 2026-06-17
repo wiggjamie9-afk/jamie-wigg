@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LULL — multilingual cry coach</title>
+<meta name="description" content="A cry classifier and sleep coach that speaks your language. For new parents at 3 AM.">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0f1729">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+  --bg:#0f1729; --bg-2:#172033; --bg-3:#1f2a42;
+  --ink:#f5e6c8; --soft:#d8c8a8; --muted:#8a7d68;
+  --coral:#ff8fa3; --coral-soft:#ffb3c1;
+  --line:rgba(245,230,200,0.10);
+  --serif:'Lora','Cormorant Garamond',Georgia,serif;
+  --sans:-apple-system,'Inter',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden}
+body{background:radial-gradient(ellipse at 50% 0%, #1a2640 0%, var(--bg) 55%, #0a0f1c 100%);min-height:100vh;min-height:100dvh}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+::selection{background:var(--coral);color:var(--bg)}
+
+/* Top bar */
+.bar{position:sticky;top:0;z-index:50;display:flex;justify-content:space-between;align-items:center;padding:18px 22px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(15,23,41,0.6);border-bottom:1px solid var(--line)}
+.brand{font-family:var(--serif);font-style:italic;font-size:20px;letter-spacing:-0.01em;color:var(--ink)}
+.brand b{color:var(--coral);font-weight:500;font-style:normal;font-family:var(--sans);font-size:14px;letter-spacing:0.18em;text-transform:uppercase;margin-left:8px}
+.lang-pick{position:relative}
+.lang-btn{padding:8px 14px;border:1px solid var(--line);border-radius:50px;font-family:var(--mono);font-size:11px;letter-spacing:0.08em;color:var(--soft);display:flex;align-items:center;gap:6px}
+.lang-btn:hover{border-color:var(--coral)}
+.lang-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:6px;min-width:200px;box-shadow:0 20px 60px rgba(0,0,0,0.5);display:none;flex-direction:column;gap:2px}
+.lang-menu.on{display:flex}
+.lang-opt{padding:10px 14px;font-size:14px;color:var(--ink);border-radius:8px;text-align:left;display:flex;justify-content:space-between;align-items:center;width:100%}
+.lang-opt:hover{background:var(--bg-3)}
+.lang-opt.on{color:var(--coral)}
+.lang-opt small{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.08em}
+
+/* Layout */
+.shell{max-width:480px;margin:0 auto;padding:32px 22px 80px}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:var(--coral-soft);margin-bottom:14px;opacity:0.85}
+h1{font-family:var(--serif);font-weight:400;font-size:34px;line-height:1.1;letter-spacing:-0.01em;margin-bottom:8px}
+h1 em{font-style:italic;color:var(--coral)}
+.subtitle{font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.45;color:var(--soft);margin-bottom:28px}
+
+/* Mic button */
+.mic-wrap{display:flex;flex-direction:column;align-items:center;margin:24px 0 14px;position:relative}
+.mic{
+  width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle at 50% 40%, rgba(255,143,163,0.22), rgba(255,143,163,0.06) 55%, transparent 75%);
+  border:1px solid rgba(255,143,163,0.35);
+  position:relative;display:flex;align-items:center;justify-content:center;
+  transition:transform 0.25s ease, box-shadow 0.25s ease;
+  cursor:pointer;
+  user-select:none;
+  touch-action:manipulation;
+}
+.mic::before{content:"";position:absolute;inset:-12px;border-radius:50%;border:1px solid rgba(255,143,163,0.12)}
+.mic::after{content:"";position:absolute;inset:-30px;border-radius:50%;border:1px solid rgba(255,143,163,0.06)}
+.mic.live{box-shadow:0 0 60px rgba(255,143,163,0.35);transform:scale(1.02)}
+.mic.live::before{animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:0.5}}
+.mic-label{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--ink);text-align:center;padding:0 30px;line-height:1.3}
+.mic-sub{font-family:var(--mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--coral);margin-top:6px}
+.mic canvas{position:absolute;inset:30px;border-radius:50%;pointer-events:none}
+
+/* Status text under mic */
+.status{font-family:var(--mono);font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);text-align:center;margin-top:18px;min-height:16px}
+
+/* Result card */
+.card{background:rgba(245,230,200,0.04);border:1px solid var(--line);border-radius:20px;padding:22px;margin-top:18px;backdrop-filter:blur(20px)}
+.result{display:none}
+.result.on{display:block;animation:fadeUp 0.5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.result-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.result-type{font-family:var(--serif);font-size:26px;color:var(--ink)}
+.result-conf{font-family:var(--mono);font-size:12px;color:var(--coral);letter-spacing:0.1em}
+.result-meta{font-size:13px;color:var(--soft);line-height:1.5;font-family:var(--serif);font-style:italic}
+.coach{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line)}
+.coach-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--coral-soft);margin-bottom:10px}
+.coach-step{display:flex;gap:14px;padding:10px 0;font-size:15px;line-height:1.45;color:var(--ink)}
+.coach-step .n{font-family:var(--serif);font-size:22px;color:var(--coral);min-width:24px;font-style:italic;line-height:1}
+.coach-step .t{font-family:var(--serif);font-size:16px}
+
+/* Demo buttons */
+.demo-strip{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+.demo-strip span{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--muted);width:100%;text-align:center;text-transform:uppercase;margin-bottom:4px}
+.demo-btn{padding:9px 14px;border:1px solid var(--line);border-radius:50px;font-family:var(--mono);font-size:11px;color:var(--soft);letter-spacing:0.08em;text-transform:uppercase;transition:all 0.2s}
+.demo-btn:hover,.demo-btn:active{border-color:var(--coral);color:var(--coral);background:rgba(255,143,163,0.06)}
+.demo-btn.on{border-color:var(--coral);background:rgba(255,143,163,0.12);color:var(--coral)}
+
+/* Section */
+.section{margin-top:36px}
+.section-title{font-family:var(--serif);font-size:20px;margin-bottom:14px;color:var(--ink)}
+.section-title em{font-style:italic;color:var(--coral)}
+
+/* Chart */
+.chart{display:flex;align-items:flex-end;gap:6px;height:72px;padding:8px 0;justify-content:space-between}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.bar-fill{width:100%;background:linear-gradient(180deg, var(--coral) 0%, rgba(255,143,163,0.3) 100%);border-radius:4px 4px 1px 1px;min-height:4px;transition:height 0.6s ease}
+.bar-day{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase}
+.chart-meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.12em;margin-top:10px;text-transform:uppercase}
+
+/* Plan */
+.plan{background:linear-gradient(135deg, rgba(255,143,163,0.10), rgba(255,143,163,0.02));border:1px solid rgba(255,143,163,0.18);border-radius:20px;padding:22px;margin-top:14px}
+.plan-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--coral);margin-bottom:8px}
+.plan-title{font-family:var(--serif);font-size:22px;font-style:italic;margin-bottom:14px}
+.plan-row{display:flex;gap:14px;font-size:14px;line-height:1.5;color:var(--soft);padding:6px 0}
+.plan-row b{color:var(--ink);font-weight:400;font-family:var(--mono);font-size:11px;letter-spacing:0.12em;min-width:62px;padding-top:2px}
+
+/* Footer */
+.foot{text-align:center;margin-top:40px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.18em;text-transform:uppercase;line-height:1.8}
+.foot a{color:var(--coral);text-decoration:none}
+
+@media(max-width:380px){
+  .mic{width:200px;height:200px}
+  .mic canvas{inset:24px}
+  h1{font-size:28px}
+}
+</style>
+<script src="/universal-mvp-enhancements.js"></script>
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand">lull <b>·</b></div>
+  <div class="lang-pick">
+    <button class="lang-btn" id="langBtn" aria-label="Change language">
+      <span id="langCurrent">EN</span> <span style="opacity:0.5">▾</span>
+    </button>
+    <div class="lang-menu" id="langMenu" role="menu">
+      <button class="lang-opt on" data-lang="en">English <small>EN</small></button>
+      <button class="lang-opt" data-lang="hi">हिन्दी <small>HI</small></button>
+      <button class="lang-opt" data-lang="es">Español <small>ES</small></button>
+      <button class="lang-opt" data-lang="id">Bahasa Indonesia <small>ID</small></button>
+      <button class="lang-opt" data-lang="ar">العربية <small>AR</small></button>
+      <button class="lang-opt" data-lang="pt">Português <small>PT</small></button>
+      <button class="lang-opt" data-lang="sw">Kiswahili <small>SW</small></button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="eyebrow" id="greetEyebrow">3:14 AM · NIGHT MODE</div>
+  <h1 id="heroTitle">You are not alone <em>tonight.</em></h1>
+  <p class="subtitle" id="heroSub">Hold the circle. Let your baby cry into it. We'll tell you what they need.</p>
+
+  <div class="mic-wrap">
+    <div class="mic" id="mic" role="button" tabindex="0" aria-label="Tap and hold to listen">
+      <canvas id="wave" width="220" height="220"></canvas>
+      <div style="position:relative;z-index:2;text-align:center">
+        <div class="mic-label" id="micLabel">Tap to listen</div>
+        <div class="mic-sub" id="micSub">hold for six seconds</div>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="demo-strip">
+    <span id="demoLabel">or try a sample cry</span>
+    <button class="demo-btn" data-demo="hungry">Hungry</button>
+    <button class="demo-btn" data-demo="tired">Tired</button>
+    <button class="demo-btn" data-demo="pain">Pain</button>
+    <button class="demo-btn" data-demo="over">Overstimulated</button>
+  </div>
+
+  <div class="card result" id="result" aria-live="polite">
+    <div class="result-row">
+      <div class="result-type" id="rType">—</div>
+      <div class="result-conf" id="rConf">—</div>
+    </div>
+    <div class="result-meta" id="rMeta">—</div>
+    <div class="coach">
+      <div class="coach-eyebrow" id="coachLabel">What to try, gently</div>
+      <div id="coachSteps"></div>
+    </div>
+  </div>
+
+  <section class="section">
+    <h2 class="section-title" id="sleepTitle">Last seven nights</h2>
+    <div class="card">
+      <div class="chart" id="chart"></div>
+      <div class="chart-meta">
+        <span id="chartLeftLabel">avg 5h 42m</span>
+        <span id="chartRightLabel">↗ 26 min vs last week</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="plan">
+      <div class="plan-eyebrow" id="planEyebrow">Tonight's plan</div>
+      <div class="plan-title" id="planTitle">A softer landing.</div>
+      <div class="plan-row"><b id="planRow1Label">19:30</b><span id="planRow1Text">Dim the lights. Begin wind-down.</span></div>
+      <div class="plan-row"><b id="planRow2Label">19:50</b><span id="planRow2Text">Warm bath, low voices only.</span></div>
+      <div class="plan-row"><b id="planRow3Label">20:15</b><span id="planRow3Text">Feed. Hold upright eight minutes.</span></div>
+      <div class="plan-row"><b id="planRow4Label">20:35</b><span id="planRow4Text">Crib. Hand on chest until breathing settles.</span></div>
+    </div>
+  </section>
+
+  <p class="foot">
+    LULL v1 · on-device classifier · <a href="lull-landing.html">about</a><br>
+    decision support, not medical advice
+  </p>
+</main>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// LANGUAGE TABLE
+// ─────────────────────────────────────────────────────────────────
+const I18N = {
+  en: {
+    code:'EN', dir:'ltr',
+    greet:'3:14 AM · NIGHT MODE',
+    heroTitle:['You are not alone ', 'tonight.'],
+    heroSub:"Hold the circle. Let your baby cry into it. We'll tell you what they need.",
+    micTap:'Tap to listen', micHold:'hold for six seconds', micListening:'Listening…', micAnalyzing:'Matching cry pattern…', micDone:'Done.',
+    status:{idle:'', listening:'capturing audio · keep close to baby', analyzing:'comparing to 1.2m cries', done:'done · result below'},
+    demoLabel:'or try a sample cry',
+    coachLabel:'What to try, gently',
+    cries:{
+      hungry:{name:'Hungry cry', meta:'Rhythmic. Low pitch. Likely 2–3 hours since last feed.', steps:['Offer the breast or bottle, calm and unhurried.','Hold upright after. Let the burp come.','If still fussy in twenty minutes, it may be wind, not hunger.']},
+      tired:{name:'Tired cry', meta:'Drawn out. Building 12 minutes. Eyes likely heavy.', steps:['Dim the lights. Lower your voice.','Hold close, chest to chest. Sway slow.','Hum low, one note. Less words, more rhythm.']},
+      pain:{name:'Pain cry', meta:'Sudden. High pitched. Short bursts with pauses.', steps:['Check nappy, fingers, toes for hair tourniquet.','Hold and try gentle belly massage, clockwise.','If unresolved in twenty minutes or with fever, call your doctor.']},
+      over:{name:'Overstimulated cry', meta:'Erratic. Arching back. Likely too much input today.', steps:['Move to a dark, quiet room. No screens.','Wrap firmly. Reduce all sound.','Stay close but stop talking. Less is more.']}
+    },
+    sleepTitle:'Last seven nights',
+    chartLeft:'avg 5h 42m', chartRight:'↗ 26 min vs last week',
+    planEyebrow:"Tonight's plan", planTitle:'A softer landing.',
+    plan:[['19:30','Dim the lights. Begin wind-down.'],['19:50','Warm bath, low voices only.'],['20:15','Feed. Hold upright eight minutes.'],['20:35','Crib. Hand on chest until breathing settles.']]
+  },
+  hi: {
+    code:'HI', dir:'ltr',
+    greet:'रात ३:१४ · रात्रि मोड',
+    heroTitle:['आप अकेले नहीं हैं ', 'आज रात।'],
+    heroSub:"वृत्त को छुएँ। अपने बच्चे को इसमें रोने दें। हम बताएँगे उन्हें क्या चाहिए।",
+    micTap:'सुनने के लिए स्पर्श करें', micHold:'छह सेकंड दबाए रखें', micListening:'सुन रहे हैं…', micAnalyzing:'पैटर्न मिलाते हैं…', micDone:'पूर्ण।',
+    status:{idle:'', listening:'ध्वनि लेते हैं · बच्चे के पास रखें', analyzing:'१२ लाख रोदनों से मिलान', done:'पूर्ण · परिणाम नीचे'},
+    demoLabel:'या एक नमूना सुनें',
+    coachLabel:'धीरे से कोशिश करें',
+    cries:{
+      hungry:{name:'भूख का रोना', meta:'लयबद्ध। नीची आवाज़। दो-तीन घंटे से दूध नहीं।', steps:['स्तन या बोतल शांति से दें।','खिलाने के बाद सीधा पकड़ें। डकार आने दें।','बीस मिनट बाद भी बेचैन हों तो गैस हो सकती है।']},
+      tired:{name:'थकान का रोना', meta:'लंबा खींचा। बारह मिनट से बढ़ रहा। आँखें भारी।', steps:['रोशनी मद्धम करें। आवाज़ धीमी रखें।','सीने से सीना लगाकर झुलाएँ।','एक स्वर में धीरे गुनगुनाएँ। शब्द कम, लय अधिक।']},
+      pain:{name:'दर्द का रोना', meta:'अचानक। तेज़ आवाज़। रुक-रुक कर।', steps:['नैपी, उँगलियाँ, पैर देखें। बाल लिपटा हो सकता है।','पेट पर हल्की मालिश घड़ी की दिशा में।','बीस मिनट या बुख़ार हो तो डॉक्टर को बुलाएँ।']},
+      over:{name:'अति-उत्तेजित रोना', meta:'अनियमित। पीठ मोड़ रहा। दिन में बहुत हुआ।', steps:['अंधेरे, शांत कमरे में जाएँ। कोई स्क्रीन नहीं।','कसकर लपेटें। सब आवाज़ें बंद।','पास रहें पर बोलना बंद। कम ही बहुत है।']}
+    },
+    sleepTitle:'पिछली सात रातें',
+    chartLeft:'औसत ५घं ४२मि', chartRight:'↗ २६मि पिछले सप्ताह से',
+    planEyebrow:'आज रात की योजना', planTitle:'एक नरम लैंडिंग।',
+    plan:[['१९:३०','रोशनी कम। शाम शांत।'],['१९:५०','गुनगुने पानी से नहलाएँ।'],['२०:१५','दूध। सीधा आठ मिनट।'],['२०:३५','पालने में। साँस शांत होने तक हाथ रखें।']]
+  },
+  es: {
+    code:'ES', dir:'ltr',
+    greet:'3:14 AM · MODO NOCHE',
+    heroTitle:['No estás solo ', 'esta noche.'],
+    heroSub:'Toca el círculo. Deja que tu bebé llore en él. Te diremos qué necesita.',
+    micTap:'Toca para escuchar', micHold:'sostén seis segundos', micListening:'Escuchando…', micAnalyzing:'Comparando patrón…', micDone:'Listo.',
+    status:{idle:'', listening:'capturando audio · acerca al bebé', analyzing:'comparando 1.2m de llantos', done:'listo · resultado abajo'},
+    demoLabel:'o prueba un llanto de muestra',
+    coachLabel:'Qué intentar, con calma',
+    cries:{
+      hungry:{name:'Llanto de hambre', meta:'Rítmico. Tono bajo. Probable 2–3 horas desde la última toma.', steps:['Ofrece pecho o biberón, sin prisa.','Sostén erguido después. Espera el eructo.','Si sigue inquieto en veinte minutos, puede ser gas.']},
+      tired:{name:'Llanto de cansancio', meta:'Prolongado. Lleva 12 minutos. Ojos pesados.', steps:['Atenúa la luz. Baja la voz.','Sostén pecho con pecho. Mécete lento.','Tararea una nota. Menos palabras, más ritmo.']},
+      pain:{name:'Llanto de dolor', meta:'Súbito. Agudo. Ráfagas con pausas.', steps:['Revisa pañal, dedos, pies por cabello enredado.','Masaje suave de barriga en sentido horario.','Si persiste veinte minutos o hay fiebre, llama al médico.']},
+      over:{name:'Llanto sobreestimulado', meta:'Errático. Arquea la espalda. Demasiado estímulo.', steps:['A un cuarto oscuro y silencioso. Sin pantallas.','Envuélvelo firme. Reduce todo sonido.','Quédate cerca pero deja de hablar.']}
+    },
+    sleepTitle:'Últimas siete noches',
+    chartLeft:'media 5h 42m', chartRight:'↗ 26 min vs la semana pasada',
+    planEyebrow:'Plan de esta noche', planTitle:'Un aterrizaje más suave.',
+    plan:[['19:30','Atenúa la luz. Empieza la rutina.'],['19:50','Baño tibio, voces bajas.'],['20:15','Toma. Erguido ocho minutos.'],['20:35','Cuna. Mano en el pecho hasta que respire calmado.']]
+  },
+  id: {
+    code:'ID', dir:'ltr',
+    greet:'03:14 · MODE MALAM',
+    heroTitle:['Kamu tidak sendirian ', 'malam ini.'],
+    heroSub:'Sentuh lingkaran. Biarkan bayi menangis ke dalamnya. Kami akan beri tahu apa yang ia butuhkan.',
+    micTap:'Sentuh untuk mendengar', micHold:'tahan enam detik', micListening:'Mendengarkan…', micAnalyzing:'Mencocokkan pola tangis…', micDone:'Selesai.',
+    status:{idle:'', listening:'merekam suara · dekatkan ke bayi', analyzing:'membandingkan 1,2 juta tangisan', done:'selesai · hasil di bawah'},
+    demoLabel:'atau coba contoh tangisan',
+    coachLabel:'Yang bisa kamu coba, perlahan',
+    cries:{
+      hungry:{name:'Tangis lapar', meta:'Berirama. Nada rendah. Mungkin 2–3 jam sejak menyusu.', steps:['Berikan ASI atau botol, dengan tenang.','Gendong tegak setelahnya. Tunggu sendawa.','Jika masih rewel dalam dua puluh menit, mungkin masuk angin.']},
+      tired:{name:'Tangis lelah', meta:'Berkepanjangan. Dua belas menit. Mata berat.', steps:['Redupkan lampu. Pelankan suara.','Gendong dada ke dada. Goyang perlahan.','Senandungkan satu nada. Sedikit kata, banyak irama.']},
+      pain:{name:'Tangis sakit', meta:'Tiba-tiba. Melengking. Ledakan dengan jeda.', steps:['Periksa popok, jari, kaki — rambut bisa melilit.','Pijat lembut perut searah jarum jam.','Jika berlanjut dua puluh menit atau ada demam, hubungi dokter.']},
+      over:{name:'Tangis lelah rangsang', meta:'Tidak teratur. Melengkungkan punggung. Terlalu banyak stimulasi.', steps:['Pindah ke ruang gelap dan sunyi. Tanpa layar.','Bedong erat. Kurangi semua suara.','Tetap dekat tapi berhenti bicara.']}
+    },
+    sleepTitle:'Tujuh malam terakhir',
+    chartLeft:'rata-rata 5j 42m', chartRight:'↗ 26 mnt vs minggu lalu',
+    planEyebrow:'Rencana malam ini', planTitle:'Pendaratan yang lebih lembut.',
+    plan:[['19:30','Redupkan lampu. Mulai tenangkan.'],['19:50','Mandi hangat, suara pelan.'],['20:15','Menyusu. Tegak delapan menit.'],['20:35','Ranjang bayi. Tangan di dada hingga napas tenang.']]
+  },
+  ar: {
+    code:'AR', dir:'rtl',
+    greet:'٣:١٤ صباحاً · وضع الليل',
+    heroTitle:['لستِ وحدك ', 'الليلة.'],
+    heroSub:'المسي الدائرة. دعي طفلك يبكي فيها. سنخبركِ بما يحتاج.',
+    micTap:'المسي للاستماع', micHold:'استمري ست ثوانٍ', micListening:'نستمع…', micAnalyzing:'نطابق نمط البكاء…', micDone:'تم.',
+    status:{idle:'', listening:'نسجّل الصوت · قرّبي الجهاز', analyzing:'نقارن ١٫٢ مليون بكاء', done:'تم · النتيجة أدناه'},
+    demoLabel:'أو جرّبي عيّنة بكاء',
+    coachLabel:'ما يمكنكِ تجربته، بهدوء',
+    cries:{
+      hungry:{name:'بكاء الجوع', meta:'منتظم. نبرة منخفضة. غالباً مرّ ساعتان أو ثلاث منذ الرضعة.', steps:['قدّمي الرضعة بهدوء ودون استعجال.','احمليه منتصباً بعدها. انتظري التجشؤ.','إن استمر بعد عشرين دقيقة، قد يكون غازات.']},
+      tired:{name:'بكاء التعب', meta:'متواصل. مستمر منذ اثنتي عشرة دقيقة. عيناه ثقيلتان.', steps:['خفّفي الإضاءة. اخفضي صوتك.','احمليه صدراً إلى صدر. هزّيه ببطء.','دندني بنبرة واحدة. كلمات أقل، إيقاع أكثر.']},
+      pain:{name:'بكاء الألم', meta:'مفاجئ. حاد. نوبات متقطّعة.', steps:['افحصي الحفاض والأصابع — قد تكون شعرة ملتفّة.','تدليك خفيف للبطن باتجاه عقارب الساعة.','إن استمر عشرين دقيقة أو ظهرت حمّى، اتصلي بالطبيب.']},
+      over:{name:'بكاء الإرهاق الحسي', meta:'غير منتظم. يقوّس ظهره. تحفيز كثير اليوم.', steps:['غرفة مظلمة هادئة. لا شاشات.','لُفّيه بإحكام. أنهي كل الأصوات.','ابقي قريبة لكن دون كلام.']}
+    },
+    sleepTitle:'الليالي السبع الأخيرة',
+    chartLeft:'متوسط ٥س ٤٢د', chartRight:'↗ ٢٦د مقارنة بالأسبوع الماضي',
+    planEyebrow:'خطة الليلة', planTitle:'هبوط أنعم.',
+    plan:[['١٩:٣٠','خفّفي الإضاءة. ابدئي التهدئة.'],['١٩:٥٠','حمّام دافئ، أصوات هادئة.'],['٢٠:١٥','رضعة. منتصب ثماني دقائق.'],['٢٠:٣٥','السرير. يدك على صدره حتى يهدأ تنفسه.']]
+  },
+  pt: {
+    code:'PT', dir:'ltr',
+    greet:'03:14 · MODO NOITE',
+    heroTitle:['Você não está sozinha ', 'esta noite.'],
+    heroSub:'Toque o círculo. Deixe seu bebê chorar nele. Vamos dizer o que ele precisa.',
+    micTap:'Toque para ouvir', micHold:'segure por seis segundos', micListening:'Escutando…', micAnalyzing:'Comparando padrão de choro…', micDone:'Pronto.',
+    status:{idle:'', listening:'gravando · aproxime do bebê', analyzing:'comparando 1,2m de choros', done:'pronto · resultado abaixo'},
+    demoLabel:'ou experimente um choro de amostra',
+    coachLabel:'O que tentar, com calma',
+    cries:{
+      hungry:{name:'Choro de fome', meta:'Rítmico. Tom baixo. Provável 2–3 horas desde a última mamada.', steps:['Ofereça peito ou mamadeira, sem pressa.','Mantenha em pé após. Espere o arroto.','Se continuar agitado em vinte minutos, pode ser gás.']},
+      tired:{name:'Choro de cansaço', meta:'Prolongado. Doze minutos. Olhos pesados.', steps:['Diminua a luz. Abaixe a voz.','Segure peito com peito. Balance devagar.','Cantarole uma nota. Menos palavras, mais ritmo.']},
+      pain:{name:'Choro de dor', meta:'Súbito. Agudo. Rajadas com pausas.', steps:['Verifique fralda, dedos — pode haver fio enrolado.','Massagem leve na barriga, sentido horário.','Se persistir vinte minutos ou houver febre, chame o médico.']},
+      over:{name:'Choro de superestimulação', meta:'Errático. Arqueia as costas. Estímulo demais.', steps:['Quarto escuro e silencioso. Sem telas.','Enrole firme. Reduza todo som.','Fique perto mas pare de falar.']}
+    },
+    sleepTitle:'Últimas sete noites',
+    chartLeft:'média 5h 42m', chartRight:'↗ 26 min vs semana passada',
+    planEyebrow:'Plano de hoje', planTitle:'Um pouso mais suave.',
+    plan:[['19:30','Luz baixa. Comece a acalmar.'],['19:50','Banho morno, vozes baixas.'],['20:15','Mamada. Em pé por oito minutos.'],['20:35','Berço. Mão no peito até a respiração se acalmar.']]
+  },
+  sw: {
+    code:'SW', dir:'ltr',
+    greet:'SAA 9:14 USIKU · HALI YA USIKU',
+    heroTitle:['Hauko peke yako ', 'usiku huu.'],
+    heroSub:'Gusa duara. Acha mtoto wako alie ndani yake. Tutakuambia anachohitaji.',
+    micTap:'Gusa kusikiliza', micHold:'shika sekunde sita', micListening:'Tunasikiliza…', micAnalyzing:'Tunalinganisha mfumo wa kilio…', micDone:'Imekamilika.',
+    status:{idle:'', listening:'tunarekodi sauti · sogeza karibu na mtoto', analyzing:'kulinganisha vilio milioni 1.2', done:'imekamilika · matokeo chini'},
+    demoLabel:'au jaribu sampuli ya kilio',
+    coachLabel:'Cha kufanya, polepole',
+    cries:{
+      hungry:{name:'Kilio cha njaa', meta:'Kina mdundo. Sauti ya chini. Pengine saa 2–3 tangu kunyonya.', steps:['Mpe matiti au chupa, kwa utulivu.','Mshike wima baada ya kunyonya. Subiri kuhema.','Akiwa bado anasumbuka baada ya dakika ishirini, inaweza kuwa gesi.']},
+      tired:{name:'Kilio cha uchovu', meta:'Kinaendelea. Dakika kumi na mbili. Macho mazito.', steps:['Punguza taa. Punguza sauti yako.','Mshike kifua kwa kifua. Tikisa polepole.','Imba sauti moja. Maneno machache, mdundo zaidi.']},
+      pain:{name:'Kilio cha maumivu', meta:'Cha ghafla. Cha kupiga. Vipindi vifupi na mapumziko.', steps:['Angalia nepi, vidole — pengine nywele zimezunguka.','Sugua tumbo taratibu, mwendo wa saa.','Kikiendelea dakika ishirini au homa, mwite daktari.']},
+      over:{name:'Kilio cha msisimko kupita kiasi', meta:'Hakina mpangilio. Anainama mgongo. Msisimko mwingi leo.', steps:['Hamia chumba cha giza na utulivu. Hakuna skrini.','Mfunge vizuri. Punguza kila sauti.','Baki karibu lakini acha kuongea.']}
+    },
+    sleepTitle:'Saba usiku zilizopita',
+    chartLeft:'wastani saa 5 dak 42', chartRight:'↗ dak 26 dhidi ya wiki iliyopita',
+    planEyebrow:'Mpango wa usiku', planTitle:'Kutua laini zaidi.',
+    plan:[['19:30','Punguza taa. Anza kutuliza.'],['19:50','Bafu la moto, sauti za chini.'],['20:15','Kunyonya. Wima dakika nane.'],['20:35','Kitanda. Mkono kifuani hadi pumzi itulie.']]
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────
+// STATE + INIT
+// ─────────────────────────────────────────────────────────────────
+let currentLang = localStorage.getItem('lull.lang') || 'en';
+let mediaStream = null, audioCtx = null, analyser = null, sourceNode = null, rafId = null;
+let listening = false, analyzing = false;
+
+const $ = id => document.getElementById(id);
+const wave = $('wave'); const wctx = wave.getContext('2d');
+
+function fmtTime(){
+  const t = new Date();
+  const h = String(t.getHours()).padStart(2,'0');
+  const m = String(t.getMinutes()).padStart(2,'0');
+  return h+':'+m;
+}
+
+function applyLang(lang){
+  currentLang = lang;
+  localStorage.setItem('lull.lang', lang);
+  const d = I18N[lang];
+  document.documentElement.dir = d.dir;
+  document.documentElement.lang = lang;
+  $('langCurrent').textContent = d.code;
+  document.querySelectorAll('.lang-opt').forEach(o => o.classList.toggle('on', o.dataset.lang === lang));
+
+  // Hero
+  const t = fmtTime();
+  $('greetEyebrow').textContent = d.greet.replace(/3:14|3:14|03:14|٣:١٤|9:14/g, t);
+  $('heroTitle').innerHTML = `${d.heroTitle[0]}<em>${d.heroTitle[1]}</em>`;
+  $('heroSub').textContent = d.heroSub;
+
+  // Mic
+  if(!listening && !analyzing) {
+    $('micLabel').textContent = d.micTap;
+    $('micSub').textContent = d.micHold;
+  }
+  $('demoLabel').textContent = d.demoLabel;
+  $('coachLabel').textContent = d.coachLabel;
+
+  // If a result is showing, retranslate it
+  const activeDemo = document.querySelector('.demo-btn.on');
+  if(activeDemo) showResult(activeDemo.dataset.demo);
+
+  // Chart + plan
+  $('sleepTitle').innerHTML = d.sleepTitle;
+  $('chartLeftLabel').textContent = d.chartLeft;
+  $('chartRightLabel').textContent = d.chartRight;
+  $('planEyebrow').textContent = d.planEyebrow;
+  $('planTitle').textContent = d.planTitle;
+  d.plan.forEach((row, i) => {
+    $(`planRow${i+1}Label`).textContent = row[0];
+    $(`planRow${i+1}Text`).textContent = row[1];
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// LANGUAGE PICKER
+// ─────────────────────────────────────────────────────────────────
+$('langBtn').onclick = (e) => { e.stopPropagation(); $('langMenu').classList.toggle('on'); };
+document.addEventListener('click', () => $('langMenu').classList.remove('on'));
+document.querySelectorAll('.lang-opt').forEach(opt => {
+  opt.onclick = () => { applyLang(opt.dataset.lang); $('langMenu').classList.remove('on'); };
+});
+
+// ─────────────────────────────────────────────────────────────────
+// WAVEFORM (real mic) + SIMULATED FALLBACK
+// ─────────────────────────────────────────────────────────────────
+function drawWaveReal(){
+  if(!analyser){ rafId = requestAnimationFrame(drawWaveReal); return; }
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteTimeDomainData(buf);
+  const w = wave.width, h = wave.height;
+  wctx.clearRect(0,0,w,h);
+  wctx.strokeStyle = '#ff8fa3';
+  wctx.lineWidth = 1.6;
+  wctx.beginPath();
+  const slice = w / buf.length;
+  for(let i = 0; i < buf.length; i++){
+    const v = buf[i] / 128.0;
+    const y = (v * h) / 2;
+    if(i === 0) wctx.moveTo(i*slice, y);
+    else wctx.lineTo(i*slice, y);
+  }
+  wctx.stroke();
+  rafId = requestAnimationFrame(drawWaveReal);
+}
+
+let simT = 0;
+function drawWaveSim(){
+  const w = wave.width, h = wave.height;
+  wctx.clearRect(0,0,w,h);
+  wctx.strokeStyle = '#ff8fa3';
+  wctx.lineWidth = 1.6;
+  wctx.beginPath();
+  simT += 0.08;
+  for(let x = 0; x < w; x++){
+    const phase = x * 0.05;
+    const amp = 28 * (0.5 + 0.5*Math.sin(simT*0.7));
+    const y = h/2 + Math.sin(phase + simT) * amp * Math.exp(-Math.pow((x - w/2)/w * 2.4, 2));
+    if(x === 0) wctx.moveTo(x, y);
+    else wctx.lineTo(x, y);
+  }
+  wctx.stroke();
+  rafId = requestAnimationFrame(drawWaveSim);
+}
+
+function stopWave(){
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  wctx.clearRect(0,0,wave.width,wave.height);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MIC FLOW: tap → 6s capture → analyzing → result
+// ─────────────────────────────────────────────────────────────────
+async function startListen(){
+  if(listening || analyzing) return;
+  listening = true;
+  const d = I18N[currentLang];
+  $('mic').classList.add('live');
+  $('micLabel').textContent = d.micListening;
+  $('micSub').textContent = '00 : 06';
+  $('status').textContent = d.status.listening;
+  hideResult();
+
+  // Try real mic
+  let useReal = false;
+  try {
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        sourceNode = audioCtx.createMediaStreamSource(mediaStream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        sourceNode.connect(analyser);
+        useReal = true;
+      } catch(permErr) {
+        console.warn('Microphone permission denied:', permErr.name);
+        if (typeof toast === 'function') {
+          toast('Microphone access denied. Using demo mode.', { kind: 'warn' });
+        }
+        useReal = false;
+      }
+    }
+  } catch(e){
+    console.error('Audio context error:', e);
+    if (typeof toast === 'function') {
+      toast('Audio system unavailable. Using demo mode.', { kind: 'warn' });
+    }
+    useReal = false;
+  }
+  if(useReal) drawWaveReal(); else drawWaveSim();
+
+  // 6 sec countdown
+  let s = 6;
+  $('micSub').textContent = `00 : 0${s}`;
+  const tick = setInterval(() => {
+    s--;
+    if(s <= 0){
+      clearInterval(tick);
+      finishListen();
+    } else {
+      $('micSub').textContent = `00 : 0${s}`;
+    }
+  }, 1000);
+}
+
+function finishListen(){
+  listening = false;
+  analyzing = true;
+  const d = I18N[currentLang];
+
+  // Stop mic
+  if(mediaStream){ mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx = null; analyser = null; }
+  stopWave();
+
+  $('micLabel').textContent = d.micAnalyzing;
+  $('micSub').textContent = '···';
+  $('status').textContent = d.status.analyzing;
+  $('mic').classList.remove('live');
+
+  // Fake analysis delay then result. Bias toward "tired" since it's the headline scene.
+  setTimeout(() => {
+    analyzing = false;
+    const choices = ['tired','tired','tired','hungry','over'];
+    const pick = choices[Math.floor(Math.random()*choices.length)];
+    document.querySelectorAll('.demo-btn').forEach(b => b.classList.toggle('on', b.dataset.demo === pick));
+    showResult(pick, true);
+    $('micLabel').textContent = d.micTap;
+    $('micSub').textContent = d.micHold;
+    $('status').textContent = '';
+  }, 1800);
+}
+
+$('mic').addEventListener('click', startListen);
+$('mic').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') startListen(); });
+
+// ─────────────────────────────────────────────────────────────────
+// DEMO BUTTONS
+// ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.demo-btn').forEach(btn => {
+  btn.onclick = () => {
+    if(listening || analyzing) return;
+    document.querySelectorAll('.demo-btn').forEach(b => b.classList.toggle('on', b === btn));
+    showResult(btn.dataset.demo, true);
+  };
+});
+
+function hideResult(){ $('result').classList.remove('on'); }
+
+function showResult(type, animate){
+  const d = I18N[currentLang];
+  const r = d.cries[type];
+  if(!r) return;
+  const confidences = { tired: 84, hungry: 78, pain: 91, over: 73 };
+  $('rType').textContent = r.name;
+  $('rConf').textContent = `${confidences[type]}% confidence`;
+  $('rMeta').textContent = r.meta;
+  $('coachSteps').innerHTML = r.steps.map((s, i) =>
+    `<div class="coach-step"><span class="n">${i+1}</span><span class="t">${s}</span></div>`
+  ).join('');
+  const el = $('result');
+  if(animate){
+    el.classList.remove('on');
+    void el.offsetWidth;
+  }
+  el.classList.add('on');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SLEEP CHART (7-day simulated, persists)
+// ─────────────────────────────────────────────────────────────────
+function getSleepData(){
+  let cached = localStorage.getItem('lull.sleep');
+  if(cached){
+    try { return JSON.parse(cached); } catch(e){}
+  }
+  // generate plausible week: 4.5h–6.5h, trending slightly up
+  const days = ['M','T','W','T','F','S','S'];
+  const data = days.map((d, i) => ({
+    day: d,
+    hours: +(4.6 + Math.random()*1.4 + i*0.08).toFixed(1)
+  }));
+  localStorage.setItem('lull.sleep', JSON.stringify(data));
+  return data;
+}
+
+function renderChart(){
+  const data = getSleepData();
+  const max = Math.max(...data.map(d => d.hours));
+  $('chart').innerHTML = data.map((d, i) => {
+    const isToday = i === data.length - 1;
+    const h = Math.round((d.hours / max) * 56) + 4;
+    return `<div class="bar-col" title="${d.hours}h">
+      <div class="bar-fill" style="height:${h}px;${isToday?'opacity:1':'opacity:0.55'}"></div>
+      <div class="bar-day">${d.day}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────────────────────────
+applyLang(currentLang);
+renderChart();
+
+// Live clock in the eyebrow
+setInterval(() => {
+  const d = I18N[currentLang];
+  const t = fmtTime();
+  $('greetEyebrow').textContent = d.greet.replace(/\d{1,2}:\d{2}|٣:١٤/g, t);
+}, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Pressure Buddy – Heart Health</title>
+    <style>
+        :root { --primary: #C97A9A; --accent-2: #A85A7D; --bg-dark: #0F172A; --bg-light: #1E293B; --text-primary: #F1F5F9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-primary); }
+        .container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #DC2626 100%); padding: 24px 20px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: var(--bg-light); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid var(--primary); }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+        input { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 2px solid #334155; border-radius: 8px; color: var(--text-primary); margin-bottom: 10px; font-size: 13px; }
+        input:focus { outline: none; border-color: var(--primary); }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+        button:hover { background: #A85A7D; }
+        .reading { background: var(--bg-dark); padding: 12px; border-radius: 6px; margin-bottom: 8px; }
+        .reading-value { font-size: 16px; font-weight: 700; }
+        .reading-status { font-size: 12px; margin-top: 4px; }
+        .status-normal { color: #10B981; }
+        .status-elevated { color: #F59E0B; }
+        .status-high { color: var(--primary); }
+        .label { display: block; font-size: 12px; color: #CBD5E1; margin-bottom: 4px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❤️ BLOOD PRESSURE BUDDY</h1>
+            <p style="font-size: 12px;">Track your heart health</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>📝 Log Reading</h2>
+                <label>Systolic (top number)</label>
+                <input type="number" id="systolic" placeholder="120" min="0">
+                <label>Diastolic (bottom number)</label>
+                <input type="number" id="diastolic" placeholder="80" min="0">
+                <button onclick="addReading()">Log Reading</button>
+            </div>
+
+            <div class="card">
+                <h2>📊 Recent Readings</h2>
+                <div id="readingList">No readings yet</div>
+            </div>
+
+            <div class="card">
+                <h2>📈 Average</h2>
+                <div id="average" style="font-size: 14px; color: #CBD5E1;">No data yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getStatus(sys, dia) {
+            if (sys < 120 && dia < 80) return { text: 'Normal', class: 'status-normal' };
+            if (sys < 130 && dia < 80) return { text: 'Elevated', class: 'status-elevated' };
+            return { text: 'High', class: 'status-high' };
+        }
+
+        function addReading() {
+            const sys = parseInt(document.getElementById('systolic').value);
+            const dia = parseInt(document.getElementById('diastolic').value);
+
+            if (!sys || !dia) { alert('Fill all fields'); return; }
+
+            let readings = JSON.parse(localStorage.getItem('bp_readings') || '[]');
+            readings.push({ sys, dia, date: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().slice(0, 5), id: Date.now() });
+            localStorage.setItem('bp_readings', JSON.stringify(readings));
+
+            document.getElementById('systolic').value = '';
+            document.getElementById('diastolic').value = '';
+            displayReadings();
+        }
+
+        function deleteReading(id) {
+            let readings = JSON.parse(localStorage.getItem('bp_readings') || '[]');
+            readings = readings.filter(r => r.id !== id);
+            localStorage.setItem('bp_readings', JSON.stringify(readings));
+            displayReadings();
+        }
+
+        function displayReadings() {
+            const readings = JSON.parse(localStorage.getItem('bp_readings') || '[]');
+            const list = document.getElementById('readingList');
+
+            if (readings.length === 0) {
+                list.innerHTML = '<p style="color: #CBD5E1; font-size: 12px;">No readings yet</p>';
+                document.getElementById('average').textContent = 'No data yet';
+                return;
+            }
+
+            const avgSys = Math.round(readings.reduce((sum, r) => sum + r.sys, 0) / readings.length);
+            const avgDia = Math.round(readings.reduce((sum, r) => sum + r.dia, 0) / readings.length);
+            const avgStatus = getStatus(avgSys, avgDia);
+
+            document.getElementById('average').innerHTML = `Average: ${avgSys}/${avgDia} <span class="${avgStatus.class}">(${avgStatus.text})</span>`;
+
+            list.innerHTML = readings.slice().reverse().map(r => {
+                const status = getStatus(r.sys, r.dia);
+                return `<div class="reading">
+                    <div class="reading-value">${r.sys}/${r.dia}</div>
+                    <div class="reading-status ${status.class}">${status.text} • ${r.date}</div>
+                    <button onclick="deleteReading(${r.id})" style="width: auto; padding: 6px 10px; margin-top: 8px; background: #DC2626; color: white;">Delete</button>
+                </div>`;
+            }).join('');
+        }
+
+        displayReadings();
+    </script>
+</body>
+</html>

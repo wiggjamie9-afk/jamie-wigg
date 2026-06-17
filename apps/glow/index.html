@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0608">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="GLOW — Know your skin. Love your routine. Skincare tracker and ingredient scanner.">
+  <title>GLOW — Skincare Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <script src="/universal-mvp-enhancements.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #0a0608;
+      --bg2:           #130a10;
+      --bg3:           #1c0f19;
+      --glass:         rgba(255,255,255,0.04);
+      --glass-b:       rgba(255,255,255,0.08);
+      --glass-hover:   rgba(255,255,255,0.07);
+      --primary:       #db2777;
+      --primary-light: #f472b6;
+      --primary-glow:  rgba(219,39,119,0.25);
+      --primary-deep:  rgba(219,39,119,0.12);
+      --accent:        #fdf2f8;
+      --green:         #34d399;
+      --green-glow:    rgba(52,211,153,0.2);
+      --amber:         #fbbf24;
+      --red:           #f87171;
+      --red-glow:      rgba(248,113,113,0.2);
+      --text:          #fdf2f8;
+      --muted:         #9d7a90;
+      --muted2:        #c4a3b8;
+      --radius:        20px;
+      --tab-h:         72px;
+      --safe-b:        env(safe-area-inset-bottom, 16px);
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── AMBIENT BG ── */
+    #bg-canvas {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── APP SHELL ── */
+    #app {
+      position: relative; z-index: 1;
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 8px;
+      padding-top: calc(16px + env(safe-area-inset-top, 0px));
+      flex-shrink: 0;
+    }
+    .logo {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 26px; font-weight: 400; letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo-tag {
+      font-size: 10px; font-weight: 500; color: var(--muted);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-top: -2px;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .pro-badge {
+      background: linear-gradient(135deg, var(--primary), #be185d);
+      color: #fff; font-size: 10px; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px;
+      cursor: pointer; white-space: nowrap;
+    }
+    .pro-badge.active {
+      background: linear-gradient(135deg, var(--green), #059669);
+    }
+    .streak-pill {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 12px; font-weight: 600; color: var(--primary-light);
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── VIEWS ── */
+    .view {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 0 16px;
+      padding-bottom: calc(var(--tab-h) + var(--safe-b) + 20px);
+      display: none;
+    }
+    .view.active { display: flex; flex-direction: column; }
+    .view::-webkit-scrollbar { display: none; }
+    .view { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ── SECTION HEADERS ── */
+    .view-header { margin: 12px 0 20px; }
+    .view-header h2 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 26px; font-weight: 400; letter-spacing: 0.3px;
+    }
+    .view-header p { font-size: 13px; color: var(--muted2); margin-top: 3px; }
+
+    .section-title {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin: 20px 0 10px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: var(--radius); padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card:last-child { margin-bottom: 0; }
+
+    /* ── TOGGLE SWITCH ── */
+    .toggle {
+      width: 44px; height: 26px; border-radius: 13px;
+      background: var(--glass-b); position: relative;
+      cursor: pointer; transition: background 0.3s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--primary); }
+    .toggle::after {
+      content: ''; position: absolute;
+      top: 3px; left: 3px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #fff; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .toggle.on::after { transform: translateX(18px); }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #be185d);
+      color: #fff; border: none; border-radius: 14px;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      padding: 14px 20px; cursor: pointer; width: 100%;
+      box-shadow: 0 6px 24px var(--primary-glow);
+      transition: all 0.2s; letter-spacing: 0.2px;
+    }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-ghost {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      color: var(--muted2); border-radius: 12px;
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      padding: 10px 16px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-ghost:active { background: var(--glass-hover); }
+    .btn-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid var(--glass-b); background: var(--glass);
+      color: var(--muted2); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .btn-icon:active { transform: scale(0.92); background: var(--glass-hover); }
+    .btn-icon.danger { color: var(--red); border-color: rgba(248,113,113,0.2); }
+    .btn-icon.success { color: var(--green); background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.2); }
+
+    /* ── FORM ELEMENTS ── */
+    .input {
+      width: 100%; padding: 12px 14px;
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 12px; color: var(--text);
+      font-family: inherit; font-size: 14px;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .input::placeholder { color: var(--muted); }
+    .input:focus {
+      border-color: rgba(219,39,119,0.5);
+      box-shadow: 0 0 0 3px var(--primary-deep);
+    }
+    select.input {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239d7a90' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    textarea.input { resize: none; min-height: 80px; line-height: 1.5; }
+
+    /* ── AM/PM TABS ── */
+    .time-tabs {
+      display: flex; gap: 6px;
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 14px; padding: 4px;
+      margin-bottom: 16px;
+    }
+    .time-tab {
+      flex: 1; padding: 10px 8px;
+      border: none; background: transparent; color: var(--muted2);
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      border-radius: 10px; cursor: pointer; transition: all 0.25s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .time-tab.active {
+      background: linear-gradient(135deg, var(--primary), #be185d);
+      color: #fff; box-shadow: 0 4px 16px var(--primary-glow);
+    }
+
+    /* ── STREAK BANNER ── */
+    .streak-cards {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 4px;
+    }
+    .streak-card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 16px; padding: 14px;
+      position: relative; overflow: hidden;
+    }
+    .streak-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--primary-deep); opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .streak-card.lit::before { opacity: 1; }
+    .streak-card.lit { border-color: rgba(219,39,119,0.3); }
+    .streak-num {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 36px; color: var(--primary-light); line-height: 1;
+    }
+    .streak-card .label { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: 0.3px; }
+    .streak-icon { font-size: 22px; margin-bottom: 6px; }
+
+    /* ── ROUTINE PRODUCT STEP ── */
+    .step-item {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 14px; padding: 12px 14px;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 12px;
+      transition: all 0.25s;
+    }
+    .step-item.done {
+      opacity: 0.6; background: rgba(52,211,153,0.05);
+      border-color: rgba(52,211,153,0.15);
+    }
+    .step-done-btn {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--glass-b); background: transparent;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; transition: all 0.2s; color: transparent;
+    }
+    .step-item.done .step-done-btn {
+      background: var(--green); border-color: var(--green); color: #fff;
+    }
+    .step-emoji { font-size: 22px; flex-shrink: 0; line-height: 1; }
+    .step-info { flex: 1; min-width: 0; }
+    .step-name { font-size: 14px; font-weight: 600; truncate: ellipsis; white-space: nowrap; overflow: hidden; }
+    .step-brand { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .step-badge {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 20px; flex-shrink: 0; letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .step-reorder {
+      display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;
+    }
+    .reorder-btn {
+      width: 24px; height: 20px; border: none; background: transparent;
+      color: var(--muted); font-size: 11px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.15s;
+    }
+    .reorder-btn:active { color: var(--primary-light); }
+
+    /* category badge colors */
+    .badge-cleanser   { background: rgba(96,165,250,0.15);  color: #60a5fa; }
+    .badge-toner      { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    .badge-serum      { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+    .badge-moisturiser{ background: rgba(52,211,153,0.15);  color: #34d399; }
+    .badge-spf        { background: rgba(249,115,22,0.15);  color: #f97316; }
+    .badge-treatment  { background: rgba(219,39,119,0.15);  color: var(--primary-light); }
+    .badge-eye        { background: rgba(244,114,182,0.2);  color: #f9a8d4; }
+    .badge-other      { background: var(--glass);           color: var(--muted2); }
+
+    /* ── ADD PRODUCT FORM ── */
+    .add-form {
+      background: var(--bg2); border: 1px solid rgba(219,39,119,0.2);
+      border-radius: var(--radius); padding: 16px; margin-top: 12px;
+      display: none;
+    }
+    .add-form.open { display: block; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .form-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 5px; display: block;
+    }
+    .emoji-grid {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+    }
+    .emoji-opt {
+      width: 40px; height: 40px; border-radius: 10px;
+      border: 1px solid var(--glass-b); background: var(--glass);
+      font-size: 20px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .emoji-opt.selected {
+      border-color: var(--primary); background: var(--primary-deep);
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    /* ── COMPLETE ROUTINE BUTTON ── */
+    .complete-btn {
+      width: 100%; padding: 14px; border-radius: 14px;
+      border: none; font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.25s; margin-top: 12px;
+      letter-spacing: 0.2px;
+    }
+    .complete-btn:not(.done) {
+      background: linear-gradient(135deg, var(--primary), #be185d);
+      color: #fff; box-shadow: 0 6px 24px var(--primary-glow);
+    }
+    .complete-btn.done {
+      background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3);
+      color: var(--green);
+    }
+    .complete-btn:active { transform: scale(0.97); }
+
+    /* ── INGREDIENT SCANNER ── */
+    .scan-textarea {
+      width: 100%; min-height: 120px; padding: 14px;
+      background: var(--bg2); border: 1px solid var(--glass-b);
+      border-radius: 14px; color: var(--text);
+      font-family: 'Inter', monospace; font-size: 12px; line-height: 1.6;
+      outline: none; resize: none; transition: border-color 0.2s;
+    }
+    .scan-textarea:focus {
+      border-color: rgba(219,39,119,0.4);
+      box-shadow: 0 0 0 3px var(--primary-deep);
+    }
+    .scan-result {
+      display: none; margin-top: 16px;
+    }
+    .scan-result.show { display: block; }
+    .result-section { margin-bottom: 14px; }
+    .result-title {
+      font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .result-title.good { color: var(--green); }
+    .result-title.bad { color: var(--red); }
+    .result-title.warn { color: var(--amber); }
+    .ingredient-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px;
+      font-weight: 500; margin: 3px 3px 3px 0;
+    }
+    .chip-good { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+    .chip-bad  { background: rgba(248,113,113,0.12); color: var(--red);  border: 1px solid rgba(248,113,113,0.2); }
+    .chip-warn { background: rgba(251,191,36,0.12);  color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+    .conflict-card {
+      background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2);
+      border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+    }
+    .conflict-title { font-size: 13px; font-weight: 600; color: var(--amber); margin-bottom: 3px; }
+    .conflict-msg { font-size: 12px; color: var(--muted2); }
+    .scan-empty {
+      text-align: center; padding: 32px 20px;
+      color: var(--muted); font-size: 14px;
+    }
+
+    /* ── JOURNAL ── */
+    .journal-entry-form {
+      background: var(--bg2); border: 1px solid var(--glass-b);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 20px;
+    }
+    .mood-row {
+      display: flex; gap: 8px; margin-bottom: 14px;
+    }
+    .mood-btn {
+      flex: 1; padding: 8px 4px;
+      border: 1px solid var(--glass-b); background: var(--glass);
+      border-radius: 12px; cursor: pointer; text-align: center;
+      transition: all 0.2s;
+    }
+    .mood-btn .mood-emoji { font-size: 20px; display: block; }
+    .mood-btn .mood-label { font-size: 9px; color: var(--muted); margin-top: 2px; display: block; letter-spacing: 0.3px; }
+    .mood-btn.selected {
+      border-color: var(--primary); background: var(--primary-deep);
+    }
+    .mood-btn.selected .mood-label { color: var(--primary-light); }
+    .calendar-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+    }
+    .cal-day-hdr {
+      font-size: 9px; font-weight: 600; color: var(--muted);
+      text-align: center; letter-spacing: 0.5px; text-transform: uppercase;
+      padding-bottom: 4px;
+    }
+    .cal-day {
+      aspect-ratio: 1; border-radius: 8px;
+      background: var(--glass); border: 1px solid var(--glass-b);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--muted2); cursor: pointer;
+      transition: all 0.15s; position: relative;
+    }
+    .cal-day.today {
+      border-color: rgba(219,39,119,0.4); color: var(--primary-light); font-weight: 700;
+    }
+    .cal-day.has-entry { cursor: pointer; }
+    .cal-day .mood-dot {
+      position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+      width: 4px; height: 4px; border-radius: 50%;
+    }
+    .cal-day.empty-slot { background: transparent; border-color: transparent; }
+    .mood-great .mood-dot { background: var(--green); }
+    .mood-good  .mood-dot { background: #86efac; }
+    .mood-ok    .mood-dot { background: var(--amber); }
+    .mood-bad   .mood-dot { background: #fb923c; }
+    .mood-terrible .mood-dot { background: var(--red); }
+    .journal-log { margin-top: 20px; }
+    .journal-item {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 14px; padding: 14px; margin-bottom: 8px;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .journal-mood-icon { font-size: 24px; flex-shrink: 0; line-height: 1; }
+    .journal-date { font-size: 12px; color: var(--muted); }
+    .journal-note { font-size: 14px; margin-top: 3px; line-height: 1.4; }
+
+    /* ── PRODUCTS VIEW ── */
+    .product-item {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 14px; padding: 14px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .product-emoji { font-size: 28px; flex-shrink: 0; }
+    .product-info { flex: 1; min-width: 0; }
+    .product-name { font-size: 14px; font-weight: 600; }
+    .product-brand { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .product-meta {
+      font-size: 11px; color: var(--muted2); margin-top: 4px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .low-flag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 20px; background: rgba(251,191,36,0.15); color: var(--amber);
+      border: 1px solid rgba(251,191,36,0.2);
+    }
+
+    /* ── BOTTOM TAB BAR ── */
+    .tab-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(var(--tab-h) + var(--safe-b));
+      background: rgba(10,6,8,0.90);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-top: 1px solid var(--glass-b);
+      display: flex; align-items: flex-start;
+      padding: 10px 0 0; z-index: 50;
+    }
+    .tab-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 4px; padding: 8px 4px;
+      border: none; background: transparent;
+      color: var(--muted); cursor: pointer;
+      transition: color 0.2s; position: relative;
+    }
+    .tab-btn.active { color: var(--primary-light); }
+    .tab-icon { font-size: 22px; transition: transform 0.2s; }
+    .tab-btn.active .tab-icon { transform: scale(1.1); }
+    .tab-label { font-size: 10px; font-weight: 500; letter-spacing: 0.3px; }
+    .tab-indicator {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 20px; height: 2px; border-radius: 2px;
+      background: var(--primary); opacity: 0; transition: opacity 0.2s;
+    }
+    .tab-btn.active .tab-indicator { opacity: 1; }
+
+    /* ── MODALS ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(10px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .modal-sheet {
+      width: 100%; max-width: 480px;
+      background: linear-gradient(to bottom, var(--bg2), var(--bg));
+      border: 1px solid var(--glass-b); border-radius: 28px 28px 0 0;
+      padding: 28px 20px calc(28px + var(--safe-b));
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      max-height: 90dvh; overflow-y: auto;
+    }
+    .modal-sheet::-webkit-scrollbar { display: none; }
+    .modal-overlay.show .modal-sheet { transform: translateY(0); }
+    .modal-handle {
+      width: 40px; height: 4px; background: var(--glass-b);
+      border-radius: 2px; margin: 0 auto 24px;
+    }
+    .modal-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px; text-align: center; margin-bottom: 8px;
+    }
+    .modal-sub { font-size: 14px; color: var(--muted2); text-align: center; margin-bottom: 20px; }
+
+    /* ── PAYWALL ── */
+    .paywall-hero { text-align: center; margin-bottom: 20px; }
+    .paywall-icon { font-size: 56px; margin-bottom: 12px; display: block; }
+    .paywall-price {
+      font-family: 'DM Serif Display', serif; font-size: 48px;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin: 8px 0 2px;
+    }
+    .paywall-once { font-size: 12px; color: var(--muted2); letter-spacing: 0.5px; text-transform: uppercase; }
+    .feature-list { list-style: none; margin: 16px 0 20px; }
+    .feature-list li {
+      padding: 8px 0; font-size: 14px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--glass-b);
+    }
+    .feature-list li:last-child { border-bottom: none; }
+    .feature-list li::before { content: '✦'; color: var(--primary-light); font-size: 9px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; top: calc(env(safe-area-inset-top,0px) + 16px);
+      left: 50%; transform: translateX(-50%) translateY(-80px);
+      background: linear-gradient(135deg, var(--primary), #be185d);
+      color: #fff; padding: 12px 22px; border-radius: 20px;
+      font-size: 13px; font-weight: 600; z-index: 300;
+      box-shadow: 0 8px 32px var(--primary-glow);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── JOURNAL PEEK SHEET ── */
+    .journal-detail {
+      background: var(--bg2); border: 1px solid var(--glass-b);
+      border-radius: 14px; padding: 14px; margin-top: 12px;
+    }
+    .journal-detail-date { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .journal-detail-note { font-size: 14px; line-height: 1.5; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fade-up 0.35s ease forwards; }
+
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    .pop { animation: pop 0.3s ease; }
+
+    /* ── EMPTY STATES ── */
+    .empty-state {
+      text-align: center; padding: 40px 20px; color: var(--muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
+    .empty-text { font-size: 14px; line-height: 1.6; }
+
+    /* ── FREE LIMIT BANNER ── */
+    .limit-banner {
+      background: rgba(219,39,119,0.08); border: 1px solid rgba(219,39,119,0.2);
+      border-radius: 12px; padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 14px;
+    }
+    .limit-text { font-size: 12px; color: var(--muted2); flex: 1; }
+    .limit-cta {
+      font-size: 12px; font-weight: 700; color: var(--primary-light);
+      background: none; border: none; cursor: pointer; white-space: nowrap;
+    }
+
+    .spacer { height: 8px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="logo">GLOW</div>
+      <div class="logo-tag">Know your skin. Love your routine.</div>
+    </div>
+    <div class="header-right">
+      <div class="streak-pill" id="header-streak">🔥 0</div>
+      <div class="pro-badge" id="pro-badge" onclick="openPaywall()">UNLOCK</div>
+    </div>
+  </div>
+
+  <!-- ═══ ROUTINE VIEW ═══ -->
+  <div class="view active" id="view-routine">
+    <!-- Streak Cards -->
+    <div class="streak-cards fade-up" style="margin-top:4px">
+      <div class="streak-card" id="am-streak-card">
+        <div class="streak-icon">☀️</div>
+        <div class="streak-num" id="am-streak-num">0</div>
+        <div class="label">AM streak</div>
+      </div>
+      <div class="streak-card" id="pm-streak-card">
+        <div class="streak-icon">🌙</div>
+        <div class="streak-num" id="pm-streak-num">0</div>
+        <div class="label">PM streak</div>
+      </div>
+    </div>
+
+    <!-- AM / PM Tabs -->
+    <div class="time-tabs" style="margin-top:16px">
+      <button class="time-tab active" id="tab-am" onclick="switchRoutineTab('am')">
+        ☀️ Morning
+      </button>
+      <button class="time-tab" id="tab-pm" onclick="switchRoutineTab('pm')">
+        🌙 Evening
+      </button>
+    </div>
+
+    <!-- Steps List -->
+    <div id="steps-list"></div>
+
+    <!-- Free limit notice -->
+    <div class="limit-banner" id="limit-banner" style="display:none">
+      <span class="limit-text">Free plan: 5 products max. Upgrade for unlimited.</span>
+      <button class="limit-cta" onclick="openPaywall()">$3.99 →</button>
+    </div>
+
+    <!-- Add Product Button -->
+    <button class="btn-ghost" id="add-product-btn" onclick="toggleAddForm()" style="width:100%;margin-top:4px">
+      + Add product
+    </button>
+
+    <!-- Add Product Form -->
+    <div class="add-form" id="add-form">
+      <div class="form-label">Product name</div>
+      <input class="input" id="form-name" type="text" placeholder="e.g. CeraVe Moisturising Cream" maxlength="60" style="margin-bottom:10px">
+      <div class="form-row">
+        <div>
+          <div class="form-label">Brand</div>
+          <input class="input" id="form-brand" type="text" placeholder="Brand" maxlength="40">
+        </div>
+        <div>
+          <div class="form-label">Category</div>
+          <select class="input" id="form-category">
+            <option value="cleanser">Cleanser</option>
+            <option value="toner">Toner</option>
+            <option value="serum">Serum</option>
+            <option value="moisturiser" selected>Moisturiser</option>
+            <option value="spf">SPF</option>
+            <option value="treatment">Treatment</option>
+            <option value="eye">Eye cream</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-label" style="margin-bottom:8px">Pick an icon</div>
+      <div class="emoji-grid" id="emoji-grid"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn-ghost" onclick="cancelAddForm()" style="flex:1">Cancel</button>
+        <button class="btn-primary" onclick="saveProduct()" style="flex:2">Save product</button>
+      </div>
+    </div>
+
+    <!-- Complete Routine Button -->
+    <button class="complete-btn" id="complete-btn" onclick="completeRoutine()">
+      Mark routine complete ✓
+    </button>
+
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ═══ SCAN VIEW ═══ -->
+  <div class="view" id="view-scan">
+    <div class="view-header fade-up">
+      <h2>Ingredient Scanner</h2>
+      <p>Paste an ingredient list to decode what's in your products</p>
+    </div>
+
+    <div class="card" style="padding:14px">
+      <div class="form-label" style="margin-bottom:8px">Paste ingredients below</div>
+      <textarea class="scan-textarea" id="scan-input"
+        aria-label="Paste ingredient list"
+        maxlength="2000"
+        placeholder="e.g. Water, Niacinamide, Glycerin, Ceramide NP, Hyaluronic Acid, Sodium Lauryl Sulfate..."></textarea>
+      <button class="btn-primary" onclick="analyseIngredients()" style="margin-top:10px">
+        Analyse ingredients
+      </button>
+    </div>
+
+    <div class="scan-result" id="scan-result"></div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ═══ JOURNAL VIEW ═══ -->
+  <div class="view" id="view-journal">
+    <div class="view-header fade-up">
+      <h2>Skin Journal</h2>
+      <p>Track how your skin feels day to day</p>
+    </div>
+
+    <!-- Log Today -->
+    <div class="journal-entry-form">
+      <div class="form-label" style="margin-bottom:10px">How's your skin today?</div>
+      <div class="mood-row" id="mood-row">
+        <button class="mood-btn" data-mood="great" aria-label="Great skin" onclick="selectMood('great')">
+          <span class="mood-emoji">✨</span>
+          <span class="mood-label">Great</span>
+        </button>
+        <button class="mood-btn" data-mood="good" aria-label="Good skin" onclick="selectMood('good')">
+          <span class="mood-emoji">😊</span>
+          <span class="mood-label">Good</span>
+        </button>
+        <button class="mood-btn" data-mood="ok" aria-label="OK skin" onclick="selectMood('ok')">
+          <span class="mood-emoji">😐</span>
+          <span class="mood-label">OK</span>
+        </button>
+        <button class="mood-btn" data-mood="bad" aria-label="Bad skin day" onclick="selectMood('bad')">
+          <span class="mood-emoji">😟</span>
+          <span class="mood-label">Bad</span>
+        </button>
+        <button class="mood-btn" data-mood="terrible" aria-label="Terrible skin day" onclick="selectMood('terrible')">
+          <span class="mood-emoji">😫</span>
+          <span class="mood-label">Ugh</span>
+        </button>
+      </div>
+      <div class="form-label" style="margin-bottom:5px">Note (optional)</div>
+      <textarea class="input" id="journal-note" placeholder="Breakout on chin, skin feels dry, tried new serum…" style="min-height:60px;margin-bottom:12px"></textarea>
+      <button class="btn-primary" onclick="saveJournalEntry()">Save entry</button>
+    </div>
+
+    <!-- 30-day Calendar -->
+    <div class="section-title">Last 30 days</div>
+    <div class="card">
+      <div class="calendar-grid" id="calendar-grid"></div>
+    </div>
+
+    <!-- Recent Log -->
+    <div class="section-title">Recent entries</div>
+    <div id="journal-log"></div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ═══ PRODUCTS VIEW ═══ -->
+  <div class="view" id="view-products">
+    <div class="view-header fade-up">
+      <h2>My Products</h2>
+      <p>All products in your routine</p>
+    </div>
+    <div id="products-list"></div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- BOTTOM TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="routine" onclick="switchTab('routine')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">☀️</span>
+      <span class="tab-label">Routine</span>
+    </button>
+    <button class="tab-btn" data-tab="scan" onclick="switchTab('scan')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">🔬</span>
+      <span class="tab-label">Scan</span>
+    </button>
+    <button class="tab-btn" data-tab="journal" onclick="switchTab('journal')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">📔</span>
+      <span class="tab-label">Journal</span>
+    </button>
+    <button class="tab-btn" data-tab="products" onclick="switchTab('products')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">💧</span>
+      <span class="tab-label">Products</span>
+    </button>
+  </div>
+</div>
+
+<!-- PAYWALL MODAL -->
+<div class="modal-overlay" id="paywall-modal" onclick="closeModalOutside(event,'paywall-modal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="paywall-hero">
+      <span class="paywall-icon">✨</span>
+      <div class="modal-title">GLOW Unlimited</div>
+      <div class="modal-sub">Everything you need for your best skin ever</div>
+      <div class="paywall-price">$3.99</div>
+      <div class="paywall-once">ONE-TIME PURCHASE · NO SUBSCRIPTION</div>
+    </div>
+    <ul class="feature-list">
+      <li>Unlimited products in your routine</li>
+      <li>Full ingredient scanner — save results</li>
+      <li>30-day skin journal with insights</li>
+      <li>AM &amp; PM streak tracking</li>
+      <li>Running low product alerts</li>
+      <li>All future updates included</li>
+    </ul>
+    <button class="btn-primary" onclick="activatePro()">Unlock for $3.99</button>
+    <br>
+    <button class="btn-ghost" onclick="restorePurchase()" style="width:100%;margin-top:8px;text-align:center">Restore purchase</button>
+    <br>
+    <button class="btn-ghost" onclick="closeModal('paywall-modal')" style="width:100%;margin-top:6px;text-align:center">Maybe later</button>
+  </div>
+</div>
+
+<!-- JOURNAL PEEK MODAL -->
+<div class="modal-overlay" id="peek-modal" onclick="closeModalOutside(event,'peek-modal')">
+  <div class="modal-sheet" id="peek-sheet">
+    <div class="modal-handle"></div>
+    <div id="peek-content"></div>
+    <button class="btn-ghost" onclick="closeModal('peek-modal')" style="width:100%;margin-top:16px">Close</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+//  GLOW — Skincare Tracker
+//  © 2026 · Pure JS · localStorage PWA
+// ════════════════════════════════════════
+
+// ── INGREDIENT LISTS ──────────────────
+const IRRITANTS = [
+  'alcohol denat','denatured alcohol','fragrance','parfum',
+  'sodium lauryl sulfate','essential oil','sls','sodium laureth sulfate',
+  'methylisothiazolinone','benzalkonium chloride','formaldehyde',
+];
+const BENEFICIAL = [
+  'niacinamide','retinol','retinal','hyaluronic acid','ceramide',
+  'peptide','vitamin c','ascorbic acid','glycolic acid','salicylic acid',
+  'lactic acid','azelaic acid','tranexamic acid','kojic acid','arbutin',
+  'bakuchiol','coenzyme q10','resveratrol','ferulic acid','panthenol',
+  'allantoin','centella asiatica','madecassoside','squalane',
+];
+const CONFLICTS = [
+  ['retinol','glycolic acid','Retinol + AHA can cause irritation and barrier damage'],
+  ['retinol','lactic acid','Retinol + AHA can cause irritation and barrier damage'],
+  ['retinol','salicylic acid','Retinol + BHA: may increase sensitivity'],
+  ['vitamin c','niacinamide','May reduce efficacy of vitamin C — use at different times'],
+  ['ascorbic acid','niacinamide','May reduce efficacy of vitamin C — use at different times'],
+  ['benzoyl peroxide','retinol','Benzoyl peroxide oxidises retinol, reducing its effectiveness'],
+];
+
+// ── PRODUCT EMOJIS ───────────────────
+const PRODUCT_EMOJIS = [
+  '🧴','💧','🌸','🌿','✨','🍯','🫧','💊','🌙','☀️',
+  '🫐','🥒','🌺','🧪','💎','🍋','🌱','🧬','🪷','🫙',
+];
+
+// ── CATEGORY LABELS ──────────────────
+const CAT_LABEL = {
+  cleanser:'Cleanser', toner:'Toner', serum:'Serum',
+  moisturiser:'Moisturiser', spf:'SPF', treatment:'Treatment',
+  eye:'Eye cream', other:'Other',
+};
+
+// ── MOOD CONFIG ───────────────────────
+const MOOD_EMOJI = {
+  great:'✨', good:'😊', ok:'😐', bad:'😟', terrible:'😫',
+};
+const MOOD_LABEL = {
+  great:'Great skin', good:'Looking good', ok:'OK day',
+  bad:'Rough day', terrible:'Struggling',
+};
+
+// ── STATE ─────────────────────────────
+let S = {
+  isPro: false,
+  activeRoutineTab: 'am',
+  selectedEmoji: '🧴',
+  selectedMood: null,
+};
+
+// ── PERSISTENCE HELPERS ───────────────
+function load(key, def) {
+  try { return JSON.parse(localStorage.getItem('glow_'+key)) ?? def; }
+  catch { return def; }
+}
+function save(key, val) {
+  localStorage.setItem('glow_'+key, JSON.stringify(val));
+}
+
+// Data structures
+let products  = load('products', []);   // {id, name, brand, category, emoji, amOrder, pmOrder, lastUsed, runningLow}
+let routine   = load('routine', {am:[], pm:[]});  // {am:[productId…], pm:[productId…]}
+let done      = load('done', {am:[], pm:[], date:''});  // which steps done today
+let streaks   = load('streaks', {am:0, pm:0, amLast:'', pmLast:''});
+let journal   = load('journal', []);    // [{date, mood, note}]
+let scanHistory = load('scans', []);    // [{date, ingredients, results}]
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+// Reset daily done list if new day
+function checkDayReset() {
+  if (done.date !== todayStr()) {
+    done = {am:[], pm:[], date: todayStr()};
+    save('done', done);
+  }
+}
+
+// ── BACKGROUND CANVAS ─────────────────
+(function initBg() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let t = 0;
+  function resize() { canvas.width=innerWidth; canvas.height=innerHeight; }
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    // Primary pink glow top-right
+    const r1 = canvas.height * (0.45 + 0.04 * Math.sin(t));
+    const g1 = ctx.createRadialGradient(cx*1.3, cy*0.3, 0, cx*1.3, cy*0.3, r1);
+    g1.addColorStop(0, 'rgba(219,39,119,0.10)');
+    g1.addColorStop(1, 'rgba(219,39,119,0)');
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Secondary soft glow bottom-left
+    const r2 = canvas.height * (0.3 + 0.03 * Math.sin(t + 1.5));
+    const g2 = ctx.createRadialGradient(cx*0.2, canvas.height*0.9, 0, cx*0.2, canvas.height*0.9, r2);
+    g2.addColorStop(0, 'rgba(244,114,182,0.06)');
+    g2.addColorStop(1, 'rgba(244,114,182,0)');
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    t += 0.004;
+    requestAnimationFrame(draw);
+  }
+  resize(); window.addEventListener('resize', resize); draw();
+})();
+
+// ── EMOJI GRID ────────────────────────
+function initEmojiGrid() {
+  const grid = document.getElementById('emoji-grid');
+  grid.innerHTML = '';
+  PRODUCT_EMOJIS.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-opt' + (e === S.selectedEmoji ? ' selected' : '');
+    btn.textContent = e;
+    btn.onclick = () => {
+      S.selectedEmoji = e;
+      grid.querySelectorAll('.emoji-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+    grid.appendChild(btn);
+  });
+}
+
+// ── TAB NAVIGATION ────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelector('[data-tab="'+name+'"]').classList.add('active');
+  if (name === 'journal')  renderJournal();
+  if (name === 'products') renderProductsList();
+  if (name === 'routine')  renderRoutine();
+}
+
+function switchRoutineTab(tab) {
+  S.activeRoutineTab = tab;
+  document.getElementById('tab-am').classList.toggle('active', tab === 'am');
+  document.getElementById('tab-pm').classList.toggle('active', tab === 'pm');
+  cancelAddForm();
+  renderRoutine();
+}
+
+// ── ADD PRODUCT FORM ──────────────────
+function toggleAddForm() {
+  // Pro gate: max 5 products free
+  const totalProducts = products.length;
+  if (!S.isPro && totalProducts >= 5) { openPaywall(); return; }
+  const form = document.getElementById('add-form');
+  if (form.classList.contains('open')) { cancelAddForm(); return; }
+  form.classList.add('open');
+  document.getElementById('form-name').focus();
+  initEmojiGrid();
+}
+
+function cancelAddForm() {
+  const form = document.getElementById('add-form');
+  form.classList.remove('open');
+  document.getElementById('form-name').value = '';
+  document.getElementById('form-brand').value = '';
+  document.getElementById('form-category').value = 'moisturiser';
+  S.selectedEmoji = '🧴';
+}
+
+function saveProduct() {
+  const name = document.getElementById('form-name').value.trim();
+  if (!name) { showToast('Enter a product name first'); return; }
+  const brand    = document.getElementById('form-brand').value.trim();
+  const category = document.getElementById('form-category').value;
+
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const product = { id, name, brand, category, emoji: S.selectedEmoji,
+                    lastUsed: null, runningLow: false };
+  products.push(product);
+  save('products', products);
+
+  // Add to current routine tab
+  if (!routine[S.activeRoutineTab]) routine[S.activeRoutineTab] = [];
+  routine[S.activeRoutineTab].push(id);
+  save('routine', routine);
+
+  cancelAddForm();
+  renderRoutine();
+  showToast('✨ Product added to '+S.activeRoutineTab.toUpperCase());
+}
+
+// ── ROUTINE RENDER ────────────────────
+function renderRoutine() {
+  const tab  = S.activeRoutineTab;
+  const list = document.getElementById('steps-list');
+  const ids  = (routine[tab] || []).filter(id => products.find(p => p.id === id));
+  // Sync routine to only valid product ids
+  routine[tab] = ids;
+  save('routine', routine);
+
+  list.innerHTML = '';
+
+  if (!ids.length) {
+    list.innerHTML = `<div class="empty-state fade-up">
+      <div class="empty-icon">🧴</div>
+      <div class="empty-text">No ${tab === 'am' ? 'morning' : 'evening'} products yet.<br>Add your first step below.</div>
+    </div>`;
+  } else {
+    ids.forEach((id, idx) => {
+      const p = products.find(x => x.id === id);
+      if (!p) return;
+      const isDone = done[tab].includes(id);
+      const el = document.createElement('div');
+      el.className = 'step-item fade-up' + (isDone ? ' done' : '');
+      el.style.animationDelay = (idx * 0.04) + 's';
+      el.innerHTML = `
+        <button class="step-done-btn" onclick="toggleStep('${id}')" title="Mark done">
+          ${isDone ? '✓' : ''}
+        </button>
+        <span class="step-emoji">${p.emoji}</span>
+        <div class="step-info">
+          <div class="step-name">${escHtml(p.name)}</div>
+          ${p.brand ? `<div class="step-brand">${escHtml(p.brand)}</div>` : ''}
+        </div>
+        <span class="step-badge badge-${p.category}">${CAT_LABEL[p.category] || 'Other'}</span>
+        <div class="step-reorder">
+          <button class="reorder-btn" onclick="moveStep('${id}','up')" title="Move up">▲</button>
+          <button class="reorder-btn" onclick="moveStep('${id}','down')" title="Move down">▼</button>
+        </div>
+        <button class="btn-icon danger" onclick="removeStep('${id}')" title="Remove">✕</button>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // Limit banner
+  const banner = document.getElementById('limit-banner');
+  banner.style.display = (!S.isPro && products.length >= 4) ? 'flex' : 'none';
+
+  // Complete button state
+  const allDone = ids.length > 0 && ids.every(id => done[tab].includes(id));
+  const btn = document.getElementById('complete-btn');
+  btn.className = 'complete-btn' + (allDone ? ' done' : '');
+  btn.textContent = allDone ? '✓ Routine complete!' : 'Mark routine complete ✓';
+
+  updateStreakDisplay();
+}
+
+function toggleStep(id) {
+  const tab = S.activeRoutineTab;
+  const idx = done[tab].indexOf(id);
+  if (idx === -1) {
+    done[tab].push(id);
+    // Update last used
+    const p = products.find(x => x.id === id);
+    if (p) { p.lastUsed = todayStr(); save('products', products); }
+  } else {
+    done[tab].splice(idx, 1);
+  }
+  save('done', done);
+  renderRoutine();
+}
+
+function completeRoutine() {
+  const tab = S.activeRoutineTab;
+  const ids = (routine[tab] || []).filter(id => products.find(p => p.id === id));
+  if (!ids.length) { showToast('Add some products first'); return; }
+  const allDone = ids.every(id => done[tab].includes(id));
+  if (allDone) { showToast('Already complete! 🌟'); return; }
+  ids.forEach(id => {
+    if (!done[tab].includes(id)) done[tab].push(id);
+    const p = products.find(x => x.id === id);
+    if (p) { p.lastUsed = todayStr(); }
+  });
+  save('done', done);
+  save('products', products);
+  updateStreak(tab);
+  renderRoutine();
+  showToast(tab === 'am' ? '☀️ Morning routine done!' : '🌙 Evening routine done!');
+}
+
+function removeStep(id) {
+  const tab = S.activeRoutineTab;
+  const product = products.find(p => p.id === id);
+  const productName = product ? product.name : 'product';
+
+  MVPEnhancements.confirm(
+    `Remove "${productName}" from this routine?`,
+    { label: 'Remove', isDangerous: true },
+    () => {
+      try {
+        routine[tab] = (routine[tab] || []).filter(x => x !== id);
+        save('routine', routine);
+        renderRoutine();
+        showToast('✓ Removed from routine');
+      } catch (e) {
+        showToast('⚠️ Error removing product');
+      }
+    }
+  );
+}
+
+function moveStep(id, dir) {
+  const tab = S.activeRoutineTab;
+  const arr = routine[tab] || [];
+  const idx = arr.indexOf(id);
+  if (idx === -1) return;
+  if (dir === 'up' && idx > 0) {
+    [arr[idx-1], arr[idx]] = [arr[idx], arr[idx-1]];
+  } else if (dir === 'down' && idx < arr.length - 1) {
+    [arr[idx], arr[idx+1]] = [arr[idx+1], arr[idx]];
+  }
+  routine[tab] = arr;
+  save('routine', routine);
+  renderRoutine();
+}
+
+// ── STREAK TRACKING ───────────────────
+function updateStreak(tab) {
+  const today = todayStr();
+  const last = streaks[tab+'Last'];
+  if (last === today) return; // already counted today
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yStr = yesterday.toISOString().slice(0,10);
+  if (last === yStr) {
+    streaks[tab] = (streaks[tab] || 0) + 1;
+  } else if (!last) {
+    streaks[tab] = 1;
+  } else {
+    streaks[tab] = 1; // broken streak
+  }
+  streaks[tab+'Last'] = today;
+  save('streaks', streaks);
+  updateStreakDisplay();
+}
+
+function updateStreakDisplay() {
+  document.getElementById('am-streak-num').textContent = streaks.am || 0;
+  document.getElementById('pm-streak-num').textContent = streaks.pm || 0;
+
+  const totalStreak = Math.max(streaks.am || 0, streaks.pm || 0);
+  document.getElementById('header-streak').textContent = '🔥 ' + totalStreak;
+
+  // Lit up cards
+  document.getElementById('am-streak-card').classList.toggle('lit', (streaks.am || 0) > 0);
+  document.getElementById('pm-streak-card').classList.toggle('lit', (streaks.pm || 0) > 0);
+}
+
+// ── INGREDIENT SCANNER ────────────────
+function analyseIngredients() {
+  try {
+    const raw = document.getElementById('scan-input').value.trim();
+    if (!raw) { showToast('Paste an ingredient list first'); return; }
+
+    const lower = raw.toLowerCase();
+    // Split by comma or newline
+    const parts = lower.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+
+    const found = { good: [], bad: [], conflicts: [] };
+
+    BENEFICIAL.forEach(b => {
+      if (parts.some(p => p.includes(b)) && !found.good.includes(b)) {
+        found.good.push(b);
+      }
+    });
+    IRRITANTS.forEach(i => {
+      if (parts.some(p => p.includes(i)) && !found.bad.includes(i)) {
+        found.bad.push(i);
+      }
+    });
+    CONFLICTS.forEach(([a, b, msg]) => {
+      const hasA = found.good.includes(a) || found.bad.includes(a) ||
+                   parts.some(p => p.includes(a));
+      const hasB = found.good.includes(b) || found.bad.includes(b) ||
+                   parts.some(p => p.includes(b));
+      if (hasA && hasB) {
+        found.conflicts.push({ pair: [a, b], msg });
+      }
+    });
+
+    renderScanResult(found);
+  } catch (e) {
+    showToast('⚠️ Error analysing ingredients');
+  }
+}
+
+function renderScanResult(r) {
+  const el = document.getElementById('scan-result');
+  el.classList.add('show');
+  let html = '';
+
+  if (!r.good.length && !r.bad.length && !r.conflicts.length) {
+    html = `<div class="scan-empty">
+      <div style="font-size:32px;margin-bottom:8px">🔍</div>
+      <div>No recognisable ingredients found.<br><span style="font-size:12px;color:var(--muted)">Try pasting the full ingredient list from the product packaging.</span></div>
+    </div>`;
+    el.innerHTML = html; return;
+  }
+
+  if (r.good.length) {
+    html += `<div class="result-section">
+      <div class="result-title good">✦ Beneficial (${r.good.length})</div>
+      <div>${r.good.map(i => `<span class="ingredient-chip chip-good">✓ ${titleCase(i)}</span>`).join('')}</div>
+    </div>`;
+  }
+  if (r.bad.length) {
+    html += `<div class="result-section">
+      <div class="result-title bad">⚠ Potential irritants (${r.bad.length})</div>
+      <div>${r.bad.map(i => `<span class="ingredient-chip chip-bad">! ${titleCase(i)}</span>`).join('')}</div>
+    </div>`;
+  }
+  if (r.conflicts.length) {
+    html += `<div class="result-section">
+      <div class="result-title warn">⚡ Conflicts detected</div>
+      ${r.conflicts.map(c => `
+        <div class="conflict-card">
+          <div class="conflict-title">${titleCase(c.pair[0])} + ${titleCase(c.pair[1])}</div>
+          <div class="conflict-msg">${c.msg}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // Summary line
+  const score = r.good.length - r.bad.length * 0.5 - r.conflicts.length;
+  const summary = score >= 3 ? { icon:'✨', text:'Looks like a solid formula', cls:'good' }
+                : score >= 1 ? { icon:'👍', text:'Decent formula, minor watch items', cls:'good' }
+                : score >= 0 ? { icon:'😐', text:'Neutral — check irritants for your skin type', cls:'warn' }
+                :              { icon:'⚠️', text:'Several concerns — patch test recommended', cls:'bad' };
+  html = `<div class="card" style="margin-bottom:12px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:28px">${summary.icon}</span>
+    <div>
+      <div style="font-size:14px;font-weight:600;color:var(--${summary.cls === 'good' ? 'green' : summary.cls === 'bad' ? 'red' : 'amber'})">${summary.text}</div>
+      <div style="font-size:12px;color:var(--muted2);margin-top:2px">${r.good.length} beneficial · ${r.bad.length} irritants · ${r.conflicts.length} conflicts</div>
+    </div>
+  </div>` + html;
+
+  el.innerHTML = html;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── JOURNAL ───────────────────────────
+let selectedMood = null;
+
+function selectMood(m) {
+  selectedMood = m;
+  document.querySelectorAll('.mood-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.mood === m);
+  });
+}
+
+function saveJournalEntry() {
+  if (!selectedMood) { showToast('Pick a mood first'); return; }
+  const note = document.getElementById('journal-note').value.trim();
+  const today = todayStr();
+
+  // Replace existing entry for today
+  const existingIdx = journal.findIndex(e => e.date === today);
+  const entry = { date: today, mood: selectedMood, note };
+  if (existingIdx >= 0) journal[existingIdx] = entry;
+  else journal.unshift(entry);
+
+  // Keep last 365 entries
+  if (journal.length > 365) journal = journal.slice(0, 365);
+  save('journal', journal);
+
+  // Reset form
+  selectedMood = null;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('journal-note').value = '';
+
+  renderJournal();
+  showToast('Journal entry saved 📔');
+}
+
+function renderJournal() {
+  renderCalendar();
+  renderJournalLog();
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+  const today = new Date();
+  const dayHeaders = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  dayHeaders.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'cal-day-hdr'; h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  // Build 30-day window ending today
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+
+  // Fill blank cells before first day
+  const firstDow = days[0].getDay();
+  for (let i = 0; i < firstDow; i++) {
+    const blank = document.createElement('div');
+    blank.className = 'cal-day empty-slot';
+    grid.appendChild(blank);
+  }
+
+  const todayStr_ = todayStr();
+  days.forEach(d => {
+    const key = d.toISOString().slice(0,10);
+    const entry = journal.find(e => e.date === key);
+    const cell = document.createElement('div');
+    cell.className = 'cal-day' + (key === todayStr_ ? ' today' : '') + (entry ? ' has-entry mood-'+entry.mood : '');
+    cell.textContent = d.getDate();
+    if (entry) {
+      const dot = document.createElement('div');
+      dot.className = 'mood-dot'; cell.appendChild(dot);
+      cell.onclick = () => peekEntry(entry);
+    }
+    grid.appendChild(cell);
+  });
+}
+
+function renderJournalLog() {
+  const log = document.getElementById('journal-log');
+  const recent = journal.slice(0, 10);
+  if (!recent.length) {
+    log.innerHTML = `<div class="empty-state"><div class="empty-icon">📔</div><div class="empty-text">No entries yet.<br>Log your first skin check-in above.</div></div>`;
+    return;
+  }
+  log.innerHTML = recent.map(e => {
+    const d = new Date(e.date);
+    const label = d.toLocaleDateString('en-AU', { weekday:'short', month:'short', day:'numeric' });
+    return `<div class="journal-item fade-up">
+      <span class="journal-mood-icon">${MOOD_EMOJI[e.mood] || '😐'}</span>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:13px;font-weight:600">${MOOD_LABEL[e.mood] || e.mood}</div>
+          <div class="journal-date">${label}</div>
+        </div>
+        ${e.note ? `<div class="journal-note">${escHtml(e.note)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function peekEntry(entry) {
+  const d = new Date(entry.date);
+  const label = d.toLocaleDateString('en-AU', { weekday:'long', month:'long', day:'numeric' });
+  document.getElementById('peek-content').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:48px;margin-bottom:8px">${MOOD_EMOJI[entry.mood]}</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:20px">${MOOD_LABEL[entry.mood]}</div>
+      <div style="font-size:13px;color:var(--muted2);margin-top:4px">${label}</div>
+    </div>
+    ${entry.note ? `<div class="journal-detail"><div class="journal-detail-note">${escHtml(entry.note)}</div></div>` : '<div style="text-align:center;color:var(--muted);font-size:13px">No note recorded</div>'}
+    <button class="btn-ghost" onclick="deleteJournalEntry('${entry.date}')" style="width:100%;margin-top:16px;color:var(--red);border-color:rgba(248,113,113,0.2)">Delete entry</button>
+  `;
+  openModal('peek-modal');
+}
+
+function deleteJournalEntry(date) {
+  MVPEnhancements.confirm(
+    'Delete this journal entry? This action cannot be undone.',
+    { label: 'Delete', isDangerous: true },
+    () => {
+      try {
+        journal = journal.filter(e => e.date !== date);
+        save('journal', journal);
+        closeModal('peek-modal');
+        renderJournal();
+        showToast('✓ Entry deleted');
+      } catch (e) {
+        showToast('⚠️ Error deleting entry');
+      }
+    }
+  );
+}
+
+// ── PRODUCTS LIST ─────────────────────
+function renderProductsList() {
+  const list = document.getElementById('products-list');
+  if (!products.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">💧</div><div class="empty-text">No products yet.<br>Add products from the Routine tab.</div></div>`;
+    return;
+  }
+  list.innerHTML = products.map(p => {
+    const lastUsed = p.lastUsed
+      ? new Date(p.lastUsed).toLocaleDateString('en-AU', { month:'short', day:'numeric' })
+      : 'Never used';
+    return `<div class="product-item fade-up">
+      <span class="product-emoji">${p.emoji}</span>
+      <div class="product-info">
+        <div class="product-name">${escHtml(p.name)}</div>
+        ${p.brand ? `<div class="product-brand">${escHtml(p.brand)}</div>` : ''}
+        <div class="product-meta">
+          <span class="step-badge badge-${p.category}">${CAT_LABEL[p.category]}</span>
+          <span>Last: ${lastUsed}</span>
+          ${p.runningLow ? `<span class="low-flag">⚠ Running low</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <button class="btn-icon${p.runningLow ? ' success' : ''}"
+          onclick="toggleRunningLow('${p.id}')"
+          title="${p.runningLow ? 'Mark stocked' : 'Mark running low'}">
+          ${p.runningLow ? '✓' : '⚠'}
+        </button>
+        <button class="btn-icon danger" onclick="deleteProduct('${p.id}')" title="Delete product">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleRunningLow(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.runningLow = !p.runningLow;
+  save('products', products);
+  renderProductsList();
+  showToast(p.runningLow ? '⚠ Marked as running low' : '✓ Marked as stocked');
+}
+
+function deleteProduct(id) {
+  const product = products.find(p => p.id === id);
+  const productName = product ? product.name : 'product';
+
+  MVPEnhancements.confirm(
+    `Delete "${productName}"? This will affect all routines this product is in.`,
+    { label: 'Delete', isDangerous: true },
+    () => {
+      try {
+        products = products.filter(p => p.id !== id);
+        routine.am = (routine.am || []).filter(x => x !== id);
+        routine.pm = (routine.pm || []).filter(x => x !== id);
+        done.am = (done.am || []).filter(x => x !== id);
+        done.pm = (done.pm || []).filter(x => x !== id);
+        save('products', products);
+        save('routine', routine);
+        save('done', done);
+        renderProductsList();
+        showToast('✓ Product deleted');
+      } catch (e) {
+        showToast('⚠️ Error deleting product');
+      }
+    }
+  );
+}
+
+// ── MODALS ────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+function closeModalOutside(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+function openPaywall() { openModal('paywall-modal'); }
+
+function activatePro() {
+  S.isPro = true;
+  save('pro', true);
+  const badge = document.getElementById('pro-badge');
+  badge.textContent = '✦ GLOW+';
+  badge.classList.add('active');
+  closeModal('paywall-modal');
+  document.getElementById('limit-banner').style.display = 'none';
+  showToast('✨ Welcome to GLOW Unlimited!');
+}
+
+function restorePurchase() {
+  if (load('pro', false)) { activatePro(); }
+  else { showToast('No purchase found'); }
+}
+
+// ── TOAST ─────────────────────────────
+let toastTimeout;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ── UTILS ─────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function titleCase(s) {
+  return s.split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+}
+
+// ── INIT ──────────────────────────────
+function init() {
+  // Restore pro status
+  if (load('pro', false)) {
+    S.isPro = true;
+    const badge = document.getElementById('pro-badge');
+    badge.textContent = '✦ GLOW+';
+    badge.classList.add('active');
+  }
+
+  checkDayReset();
+  updateStreakDisplay();
+  renderRoutine();
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  // Wake lock on routine tab
+  if ('wakeLock' in navigator) {
+    document.getElementById('complete-btn').addEventListener('click', async () => {
+      try { await navigator.wakeLock.request('screen'); } catch(_) {}
+    });
+  }
+}
+
+init();
+</script>
+</body>
+</html>

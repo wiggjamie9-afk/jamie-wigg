@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DREAMS: Sleep tracking and meditation for better rest. Free forever.">
+    <meta name="theme-color" content="#3B82F6">
+    <title>DREAMS – Sleep & Rest</title>
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --secondary: #8B5CF6;
+            --accent: #10B981;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 24px 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary);
+        }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; display: flex; gap: 8px; }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; }
+        input[type="number"], input[type="range"], input[type="date"] {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-dark);
+            border: 2px solid #334155;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+        input:focus { outline: none; border-color: var(--primary); }
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--primary);
+            color: white;
+            width: 100%;
+        }
+        button:hover { background: #2563EB; }
+        .sleep-entry {
+            background: var(--bg-dark);
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .quality-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .quality-low { background: #EF4444; color: white; }
+        .quality-high { background: var(--accent); color: white; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-light);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            z-index: 100;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💤 DREAMS – Sleep Tracker</h1>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>📝 Log Your Sleep</h2>
+                <div class="input-group">
+                    <label>Hours slept</label>
+                    <input type="number" id="hours" min="0" max="24" step="0.5" value="8">
+                </div>
+                <div class="input-group">
+                    <label>Sleep quality (1-10)</label>
+                    <input type="range" id="quality" min="1" max="10" value="7">
+                </div>
+                <div class="input-group">
+                    <label>Date</label>
+                    <input type="date" id="date">
+                </div>
+                <button onclick="logSleep()">Log Sleep</button>
+            </div>
+
+            <div class="card">
+                <h2>📊 Recent Logs</h2>
+                <div id="sleepLog" style="max-height: 200px; overflow-y: auto;">No logs yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('date').valueAsDate = new Date();
+
+        function logSleep() {
+            const hours = parseFloat(document.getElementById('hours').value);
+            const quality = parseInt(document.getElementById('quality').value);
+            const date = document.getElementById('date').value;
+
+            if (!hours || !date) {
+                showToast('Please fill in all fields');
+                return;
+            }
+
+            const entry = { date, hours, quality };
+            let logs = JSON.parse(localStorage.getItem('dreams_logs') || '[]');
+            logs.push(entry);
+            localStorage.setItem('dreams_logs', JSON.stringify(logs));
+
+            showToast('Sleep logged! 💤');
+            document.getElementById('hours').value = '8';
+            document.getElementById('quality').value = '7';
+            displayLogs();
+        }
+
+        function displayLogs() {
+            const logs = JSON.parse(localStorage.getItem('dreams_logs') || '[]');
+            const logEl = document.getElementById('sleepLog');
+
+            if (logs.length === 0) {
+                logEl.innerHTML = '<p style="color: var(--text-secondary); font-size: 12px;">No sleep logs yet</p>';
+                return;
+            }
+
+            logEl.innerHTML = logs.slice().reverse().map((log) => {
+                const qualityClass = log.quality <= 5 ? 'quality-low' : 'quality-high';
+                return `<div class="sleep-entry"><div><strong>${log.hours} hours</strong><br><small>${new Date(log.date).toLocaleDateString()}</small></div><span class="quality-badge ${qualityClass}">${log.quality}/10</span></div>`;
+            }).join('');
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        displayLogs();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#040a06">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="VAULT — Secure private notes. Biometric lock. No cloud. No account.">
+  <title>VAULT — Your thoughts. Yours only.</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #040a06;
+      --bg2:           #071009;
+      --bg3:           #0a160c;
+      --glass:         rgba(5,150,105,0.06);
+      --glass-border:  rgba(52,211,153,0.12);
+      --primary:       #059669;
+      --primary-light: #34d399;
+      --accent:        #ecfdf5;
+      --glow:          rgba(5,150,105,0.35);
+      --glow-soft:     rgba(5,150,105,0.15);
+      --text:          #e2fef0;
+      --text2:         #9fc4ab;
+      --muted:         #4d7a5e;
+      --danger:        #ef4444;
+      --danger-glow:   rgba(239,68,68,0.3);
+      --radius:        20px;
+      --safe-top:      env(safe-area-inset-top, 0px);
+      --safe-bottom:   env(safe-area-inset-bottom, 16px);
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── SCREENS ── */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      transform: translateY(12px);
+      z-index: 1;
+    }
+    .screen.active {
+      opacity: 1; pointer-events: all;
+      transform: translateY(0);
+      z-index: 2;
+    }
+    .screen.exit {
+      opacity: 0; transform: translateY(-12px);
+      pointer-events: none; z-index: 1;
+    }
+
+    /* ── AMBIENT GLOW ── */
+    .ambient {
+      position: fixed; inset: 0; pointer-events: none;
+      overflow: hidden; z-index: 0;
+    }
+    .ambient::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(5,150,105,0.12) 0%, transparent 70%);
+      top: -200px; left: 50%; transform: translateX(-50%);
+      animation: ambientPulse 8s ease-in-out infinite;
+    }
+    .ambient::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 70%);
+      bottom: -100px; right: -100px;
+      animation: ambientPulse 10s ease-in-out infinite reverse;
+    }
+    @keyframes ambientPulse {
+      0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+    }
+
+    /* ── SETUP SCREEN ── */
+    #screen-setup {
+      background: var(--bg);
+      align-items: center; justify-content: center;
+      padding: 40px 32px;
+      padding-top: calc(40px + var(--safe-top));
+    }
+    .setup-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 48px; font-weight: 700;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -2px; margin-bottom: 8px;
+    }
+    .setup-tagline {
+      font-size: 15px; color: var(--text2);
+      text-align: center; margin-bottom: 48px;
+      font-style: italic;
+    }
+    .setup-step {
+      width: 100%; max-width: 360px;
+      display: none; flex-direction: column; align-items: center; gap: 24px;
+    }
+    .setup-step.active { display: flex; }
+    .setup-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700; text-align: center;
+    }
+    .setup-sub {
+      font-size: 13px; color: var(--text2); text-align: center; margin-top: -16px;
+    }
+    .pin-dots {
+      display: flex; gap: 18px; justify-content: center; margin: 8px 0;
+    }
+    .pin-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid var(--primary);
+      transition: all 0.2s ease;
+      background: transparent;
+    }
+    .pin-dot.filled {
+      background: var(--primary-light);
+      border-color: var(--primary-light);
+      box-shadow: 0 0 12px rgba(52,211,153,0.5);
+    }
+    .pin-dot.error {
+      background: var(--danger);
+      border-color: var(--danger);
+      box-shadow: 0 0 12px var(--danger-glow);
+    }
+
+    /* ── PIN PAD ── */
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px; width: 100%; max-width: 300px;
+    }
+    .pin-key {
+      height: 72px; border-radius: 18px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px; font-weight: 700;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 2px;
+      -webkit-tap-highlight-color: transparent;
+      position: relative; overflow: hidden;
+    }
+    .pin-key::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at center, rgba(52,211,153,0.2) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .pin-key:active::after { opacity: 1; }
+    .pin-key:active { transform: scale(0.92); background: rgba(5,150,105,0.15); }
+    .pin-key .sub-letters {
+      font-size: 9px; letter-spacing: 1.5px; color: var(--muted);
+      font-family: 'Inter', sans-serif; font-weight: 500;
+    }
+    .pin-key.empty { background: transparent; border-color: transparent; pointer-events: none; }
+    .pin-key.action {
+      font-size: 16px; background: transparent;
+      border-color: transparent; color: var(--text2);
+    }
+    .pin-key.action:active { background: var(--glass); }
+    .pin-key.bio-key svg { pointer-events: none; }
+
+    /* Scramble mode — same grid, numbers just reorder */
+    .scrambled .pin-key { transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+
+    /* ── LOCK SCREEN ── */
+    #screen-lock {
+      background: var(--bg);
+      align-items: center; justify-content: center;
+      gap: 0;
+      padding: 0 24px;
+      padding-top: calc(40px + var(--safe-top));
+      padding-bottom: calc(24px + var(--safe-bottom));
+    }
+    .lock-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 32px; font-weight: 700;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -1.5px; margin-bottom: 6px;
+    }
+    .lock-tagline {
+      font-size: 13px; color: var(--muted);
+      margin-bottom: 40px; letter-spacing: 0.3px;
+    }
+    .lock-pin-area {
+      display: flex; flex-direction: column; align-items: center; gap: 32px;
+      width: 100%; max-width: 320px;
+    }
+    .lockout-msg {
+      font-size: 14px; color: var(--danger);
+      text-align: center; min-height: 20px;
+      transition: all 0.3s;
+    }
+    .lockout-timer {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 36px; font-weight: 700;
+      color: var(--danger); display: none;
+      margin-bottom: 12px;
+    }
+    .bio-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 14px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass); color: var(--text2);
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; margin-top: 8px;
+    }
+    .bio-btn:active { transform: scale(0.96); background: rgba(5,150,105,0.12); }
+    .hint-link {
+      font-size: 12px; color: var(--muted); margin-top: 8px;
+      cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+    }
+
+    /* Shake animation */
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      15% { transform: translateX(-10px); }
+      30% { transform: translateX(10px); }
+      45% { transform: translateX(-8px); }
+      60% { transform: translateX(8px); }
+      75% { transform: translateX(-4px); }
+      90% { transform: translateX(4px); }
+      100% { transform: translateX(0); }
+    }
+    .shake { animation: shake 0.5s ease; }
+
+    /* Success pulse */
+    @keyframes successPulse {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    /* ── NOTES LIST SCREEN ── */
+    #screen-notes {
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .notes-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 8px;
+      padding-top: calc(16px + var(--safe-top));
+      flex-shrink: 0;
+      gap: 12px;
+    }
+    .notes-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      flex-shrink: 0;
+    }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .icon-btn {
+      width: 40px; height: 40px; border-radius: 12px;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      color: var(--text2); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+    }
+    .icon-btn:active { transform: scale(0.92); background: rgba(5,150,105,0.15); }
+    .icon-btn svg { pointer-events: none; }
+    .free-badge {
+      font-size: 11px; font-weight: 600; padding: 4px 10px;
+      background: linear-gradient(135deg, rgba(5,150,105,0.2), rgba(52,211,153,0.1));
+      border: 1px solid rgba(52,211,153,0.2); border-radius: 20px;
+      color: var(--primary-light); letter-spacing: 0.3px; white-space: nowrap;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .free-badge:active { transform: scale(0.96); }
+    .pro-badge {
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      border-radius: 20px; color: var(--bg);
+      letter-spacing: 0.5px; cursor: default;
+    }
+
+    /* Search */
+    .search-bar {
+      margin: 0 20px 12px; position: relative; flex-shrink: 0;
+    }
+    .search-input {
+      width: 100%; padding: 11px 16px 11px 40px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 14px; color: var(--text);
+      font-family: inherit; font-size: 14px; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus {
+      border-color: rgba(52,211,153,0.3);
+      box-shadow: 0 0 0 3px var(--glow-soft);
+    }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+
+    /* Tag filter */
+    .tag-filter {
+      display: flex; gap: 8px; padding: 0 20px 12px;
+      overflow-x: auto; flex-shrink: 0;
+      scrollbar-width: none;
+    }
+    .tag-filter::-webkit-scrollbar { display: none; }
+    .tag-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      color: var(--text2); font-size: 12px; font-weight: 500;
+      cursor: pointer; white-space: nowrap; transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .tag-chip:active { transform: scale(0.96); }
+    .tag-chip.active {
+      border-color: var(--primary-light);
+      background: rgba(52,211,153,0.12);
+      color: var(--primary-light);
+    }
+    .tag-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+
+    /* Notes grid */
+    .notes-scroll {
+      flex: 1; overflow-y: auto; padding: 0 16px;
+      padding-bottom: calc(90px + var(--safe-bottom));
+    }
+    .notes-scroll::-webkit-scrollbar { display: none; }
+    .notes-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; padding-bottom: 8px;
+    }
+    @media (min-width: 420px) {
+      .notes-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .note-card {
+      background: var(--bg3); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 16px;
+      cursor: pointer; transition: all 0.2s;
+      position: relative; overflow: hidden;
+      min-height: 120px; display: flex; flex-direction: column;
+    }
+    .note-card::before {
+      content: ''; position: absolute;
+      inset: 0; border-radius: var(--radius);
+      background: radial-gradient(circle at top left, var(--glow-soft) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .note-card:active::before { opacity: 1; }
+    .note-card:active { transform: scale(0.97); border-color: rgba(52,211,153,0.25); }
+    .note-card-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 8px; gap: 6px;
+    }
+    .note-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; font-weight: 700; line-height: 1.3;
+      color: var(--text); flex: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .note-lock-icon { color: var(--muted); flex-shrink: 0; margin-top: 1px; }
+    .note-preview {
+      font-size: 12px; color: var(--text2); line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden; flex: 1;
+    }
+    .note-preview mark {
+      background: rgba(52,211,153,0.25); color: var(--primary-light);
+      border-radius: 2px;
+    }
+    .note-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px;
+    }
+    .note-date { font-size: 10px; color: var(--muted); }
+    .note-tag-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+
+    /* Empty state */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 40vh; gap: 16px;
+      color: var(--muted); text-align: center; padding: 32px;
+    }
+    .empty-state svg { opacity: 0.3; }
+    .empty-state h3 { font-size: 18px; color: var(--text2); }
+    .empty-state p { font-size: 14px; line-height: 1.5; max-width: 240px; }
+
+    /* FAB */
+    .fab {
+      position: fixed; right: 20px;
+      bottom: calc(24px + var(--safe-bottom));
+      width: 60px; height: 60px; border-radius: 20px;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      border: none; color: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 32px var(--glow);
+      cursor: pointer; transition: all 0.2s;
+      z-index: 10;
+    }
+    .fab:active { transform: scale(0.92); box-shadow: 0 4px 16px var(--glow); }
+    .fab svg { pointer-events: none; }
+
+    /* ── NOTE EDITOR SCREEN ── */
+    #screen-editor {
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .editor-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px 8px;
+      padding-top: calc(12px + var(--safe-top));
+      flex-shrink: 0; border-bottom: 1px solid var(--glass-border);
+    }
+    .editor-back {
+      display: flex; align-items: center; gap: 4px;
+      color: var(--primary-light); font-size: 14px; font-weight: 500;
+      cursor: pointer; padding: 6px; border-radius: 10px;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .editor-back:active { background: var(--glass); }
+    .editor-save-status {
+      flex: 1; text-align: center;
+      font-size: 12px; color: var(--muted); letter-spacing: 0.3px;
+    }
+    .editor-actions { display: flex; gap: 6px; }
+    .editor-scroll {
+      flex: 1; overflow-y: auto; padding: 20px 20px 120px;
+    }
+    .editor-scroll::-webkit-scrollbar { display: none; }
+    .editor-title-input {
+      width: 100%; background: transparent; border: none; outline: none;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px; font-weight: 700; color: var(--text);
+      margin-bottom: 16px; resize: none; height: auto;
+      overflow: hidden;
+    }
+    .editor-title-input::placeholder { color: var(--muted); }
+    .editor-body-input {
+      width: 100%; background: transparent; border: none; outline: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px; line-height: 1.7; color: var(--text2);
+      resize: none; min-height: 300px; user-select: text;
+    }
+    .editor-body-input::placeholder { color: var(--muted); }
+    .editor-toolbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 10px 16px;
+      padding-bottom: calc(10px + var(--safe-bottom));
+      background: rgba(4,10,6,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--glass-border);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; z-index: 5;
+    }
+    .toolbar-left { display: flex; gap: 8px; }
+    .fmt-btn {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      color: var(--text2); font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+      font-family: serif;
+    }
+    .fmt-btn.active { background: rgba(52,211,153,0.15); border-color: var(--primary-light); color: var(--primary-light); }
+    .fmt-btn:active { transform: scale(0.92); }
+    .tag-select-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; border-radius: 10px;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      color: var(--text2); font-size: 12px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tag-select-btn:active { background: rgba(52,211,153,0.12); }
+    .word-count {
+      font-size: 11px; color: var(--muted);
+      white-space: nowrap; margin-left: auto;
+    }
+
+    /* ── SETTINGS SCREEN ── */
+    #screen-settings {
+      background: var(--bg); overflow: hidden;
+    }
+    .settings-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px;
+      padding-top: calc(16px + var(--safe-top));
+      flex-shrink: 0;
+    }
+    .settings-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700; flex: 1;
+    }
+    .settings-scroll {
+      flex: 1; overflow-y: auto; padding: 0 20px 40px;
+    }
+    .settings-scroll::-webkit-scrollbar { display: none; }
+    .settings-section {
+      margin-bottom: 32px;
+    }
+    .settings-section-label {
+      font-size: 11px; color: var(--muted);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 10px; padding-left: 4px;
+    }
+    .settings-card {
+      background: var(--bg3); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px; gap: 12px;
+      border-bottom: 1px solid var(--glass-border);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row:active { background: var(--glass); }
+    .settings-row-left { display: flex; flex-direction: column; gap: 2px; }
+    .settings-row-title { font-size: 15px; font-weight: 500; }
+    .settings-row-sub { font-size: 12px; color: var(--muted); }
+    .settings-row-right { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+    /* Toggle */
+    .toggle {
+      width: 50px; height: 28px; border-radius: 14px;
+      background: var(--glass-border); border: 1px solid var(--glass-border);
+      position: relative; cursor: pointer; transition: background 0.25s;
+      flex-shrink: 0;
+    }
+    .toggle.on { background: var(--primary); border-color: var(--primary); }
+    .toggle::after {
+      content: ''; position: absolute;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #fff; top: 2px; left: 2px;
+      transition: transform 0.25s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .toggle.on::after { transform: translateX(22px); }
+    /* Select */
+    .settings-select {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      color: var(--text); font-family: inherit; font-size: 14px;
+      padding: 6px 12px; border-radius: 10px; outline: none; cursor: pointer;
+    }
+    .settings-select option { background: #071009; }
+
+    /* Tag manager in settings */
+    .tags-manager { padding: 16px; }
+    .tags-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .tag-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-radius: 20px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      font-size: 13px; cursor: pointer; transition: all 0.2s;
+    }
+    .tag-item .tag-item-del {
+      color: var(--muted); font-size: 14px; transition: color 0.2s;
+      margin-left: 2px;
+    }
+    .tag-item:active .tag-item-del { color: var(--danger); }
+    .tag-add-row {
+      display: flex; gap: 8px;
+    }
+    .tag-name-input {
+      flex: 1; padding: 10px 14px; background: var(--glass);
+      border: 1px solid var(--glass-border); border-radius: 12px;
+      color: var(--text); font-family: inherit; font-size: 13px; outline: none;
+    }
+    .tag-name-input:focus { border-color: rgba(52,211,153,0.3); }
+    .tag-color-input {
+      width: 44px; height: 40px; border: none; background: none;
+      cursor: pointer; border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--glass-border);
+      padding: 3px;
+    }
+    .btn-add-tag {
+      padding: 10px 18px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: var(--bg); font-weight: 600; font-size: 13px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-add-tag:active { transform: scale(0.96); opacity: 0.85; }
+
+    /* ── PAYWALL OVERLAY ── */
+    #paywall {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(4,10,6,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      display: none; align-items: center; justify-content: center;
+      padding: 32px; flex-direction: column;
+    }
+    #paywall.show { display: flex; }
+    .paywall-card {
+      background: var(--bg3); border: 1px solid var(--glass-border);
+      border-radius: 28px; padding: 36px 28px;
+      max-width: 360px; width: 100%; text-align: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    }
+    .paywall-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+    .paywall-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px; font-weight: 700; margin-bottom: 8px;
+    }
+    .paywall-sub { font-size: 15px; color: var(--text2); margin-bottom: 28px; line-height: 1.5; }
+    .paywall-price {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 42px; font-weight: 700; color: var(--primary-light);
+      margin-bottom: 4px;
+    }
+    .paywall-once { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+    .paywall-features { text-align: left; margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+    .paywall-feature { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .paywall-feature::before { content: '✓'; color: var(--primary-light); font-weight: 700; }
+    .btn-pay {
+      width: 100%; padding: 18px; border-radius: 18px; border: none;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      color: var(--bg); font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 32px var(--glow);
+      transition: all 0.2s; margin-bottom: 12px;
+    }
+    .btn-pay:active { transform: scale(0.97); }
+    .btn-dismiss {
+      width: 100%; padding: 14px; border-radius: 14px;
+      border: 1px solid var(--glass-border); background: transparent;
+      color: var(--text2); font-size: 14px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-dismiss:active { background: var(--glass); }
+
+    /* ── MODAL / SHEET ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(4,10,6,0.7);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: none; align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-sheet {
+      background: var(--bg2); border-top: 1px solid var(--glass-border);
+      border-radius: 28px 28px 0 0; padding: 24px 24px;
+      padding-bottom: calc(24px + var(--safe-bottom));
+      width: 100%; max-width: 480px;
+      animation: slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .sheet-handle {
+      width: 40px; height: 4px; border-radius: 2px;
+      background: var(--glass-border); margin: -12px auto 20px;
+    }
+    .sheet-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 700; margin-bottom: 16px;
+    }
+
+    /* Hint modal */
+    .hint-display {
+      background: var(--bg3); border: 1px solid var(--glass-border);
+      border-radius: 14px; padding: 16px 20px;
+      font-size: 15px; color: var(--text2); text-align: center;
+      font-style: italic; margin-bottom: 16px;
+    }
+    .modal-close-btn {
+      width: 100%; padding: 14px; border-radius: 14px; border: none;
+      background: var(--primary); color: var(--bg);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .modal-close-btn:active { transform: scale(0.97); }
+
+    /* Tag picker in editor */
+    .tag-picker-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .tag-picker-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: 20px;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      font-size: 13px; cursor: pointer; transition: all 0.2s;
+    }
+    .tag-picker-item.active {
+      border-color: var(--primary-light);
+      background: rgba(52,211,153,0.12); color: var(--primary-light);
+    }
+    .tag-picker-item:active { transform: scale(0.96); }
+
+    /* ── MISC ── */
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    input, textarea, button { -webkit-tap-highlight-color: transparent; }
+    textarea { resize: none; }
+
+    /* ── INPUT HINT IN SETUP ── */
+    .hint-input-wrap { width: 100%; }
+    .hint-input {
+      width: 100%; padding: 14px 18px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 14px; color: var(--text);
+      font-family: inherit; font-size: 15px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .hint-input:focus { border-color: rgba(52,211,153,0.3); }
+    .hint-input::placeholder { color: var(--muted); }
+    .btn-primary {
+      width: 100%; padding: 18px; border-radius: 18px; border: none;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      color: var(--bg); font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 32px var(--glow);
+      transition: all 0.2s; letter-spacing: 0.3px;
+    }
+    .btn-primary:active { transform: scale(0.97); box-shadow: 0 4px 16px var(--glow); }
+    .btn-secondary {
+      width: 100%; padding: 14px; border-radius: 14px;
+      border: 1px solid var(--glass-border); background: transparent;
+      color: var(--text2); font-size: 15px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-secondary:active { background: var(--glass); }
+    .bio-setup-row {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 16px 18px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 16px;
+    }
+    .bio-setup-label { font-size: 15px; font-weight: 500; }
+    .bio-setup-sub { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<div class="ambient"></div>
+
+<!-- ══════════════════════════════════
+     SETUP SCREEN
+══════════════════════════════════ -->
+<div id="screen-setup" class="screen">
+  <div class="setup-logo">VAULT</div>
+  <div class="setup-tagline">Your thoughts. Yours only.</div>
+
+  <!-- Step 1: Set PIN -->
+  <div class="setup-step active" id="setup-step-1">
+    <div class="setup-title">Create your PIN</div>
+    <div class="setup-sub">6 digits. Never stored in plain text.</div>
+    <div class="pin-dots" id="setup-dots-1">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-pad" id="setup-pad-1"><!-- filled by JS --></div>
+  </div>
+
+  <!-- Step 2: Confirm PIN -->
+  <div class="setup-step" id="setup-step-2">
+    <div class="setup-title">Confirm your PIN</div>
+    <div class="setup-sub">Enter the same 6 digits again.</div>
+    <div class="pin-dots" id="setup-dots-2">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-pad" id="setup-pad-2"><!-- filled by JS --></div>
+  </div>
+
+  <!-- Step 3: Hint + biometrics -->
+  <div class="setup-step" id="setup-step-3">
+    <div class="setup-title">Almost done</div>
+    <div class="hint-input-wrap">
+      <input class="hint-input" id="hint-input" type="text" maxlength="60" placeholder="PIN hint (optional, visible on lock screen)">
+    </div>
+    <div class="bio-setup-row" id="bio-setup-row" style="display:none">
+      <div>
+        <div class="bio-setup-label">Enable Face / Touch ID</div>
+        <div class="bio-setup-sub">Unlock with biometrics instead of PIN</div>
+      </div>
+      <div class="toggle" id="bio-toggle-setup"></div>
+    </div>
+    <button class="btn-primary" id="setup-finish-btn">Open VAULT</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     LOCK SCREEN
+══════════════════════════════════ -->
+<div id="screen-lock" class="screen">
+  <div class="lock-logo">VAULT</div>
+  <div class="lock-tagline">Your thoughts. Yours only.</div>
+
+  <div class="lock-pin-area">
+    <div class="lockout-timer" id="lockout-timer">30</div>
+    <div class="pin-dots" id="lock-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="lockout-msg" id="lockout-msg"></div>
+    <div class="pin-pad" id="lock-pad"><!-- filled by JS --></div>
+    <button class="bio-btn" id="bio-unlock-btn" style="display:none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1C8.676 1 6 3.676 6 7v1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-1V7c0-3.324-2.676-6-6-6zm0 2c2.279 0 4 1.721 4 4v1H8V7c0-2.279 1.721-4 4-4zm0 9a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
+      Use Face / Touch ID
+    </button>
+    <div class="hint-link" id="hint-link" style="display:none">Show hint</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     NOTES LIST SCREEN
+══════════════════════════════════ -->
+<div id="screen-notes" class="screen">
+  <div class="notes-header">
+    <div class="notes-logo">VAULT</div>
+    <div class="header-actions">
+      <div class="free-badge" id="tier-badge" onclick="App.showPaywall()">3/3 free</div>
+      <div class="icon-btn" onclick="App.showScreen('screen-settings')" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" id="search-input" type="search" placeholder="Search notes…" oninput="App.filterNotes()">
+  </div>
+
+  <div class="tag-filter" id="tag-filter">
+    <div class="tag-chip active" data-tag="all" onclick="App.filterByTag('all')">All</div>
+    <!-- dynamic tags injected here -->
+  </div>
+
+  <div class="notes-scroll">
+    <div class="notes-grid" id="notes-grid"><!-- filled by JS --></div>
+  </div>
+
+  <button class="fab" onclick="App.newNote()">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- ══════════════════════════════════
+     EDITOR SCREEN
+══════════════════════════════════ -->
+<div id="screen-editor" class="screen">
+  <div class="editor-header">
+    <div class="editor-back" onclick="App.closeEditor()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      Notes
+    </div>
+    <div class="editor-save-status" id="save-status">All changes saved</div>
+    <div class="editor-actions">
+      <div class="icon-btn" id="note-lock-btn" title="Lock note" onclick="App.toggleNoteLock()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="icon-btn" title="Delete note" onclick="App.deleteCurrentNote()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="editor-scroll">
+    <textarea class="editor-title-input" id="editor-title" placeholder="Title" rows="1" oninput="App.autoResizeTitle(this); App.scheduleSave();"></textarea>
+    <textarea class="editor-body-input" id="editor-body" placeholder="Start writing…" oninput="App.updateWordCount(); App.scheduleSave();"></textarea>
+  </div>
+  <div class="editor-toolbar">
+    <div class="toolbar-left">
+      <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="App.formatText('bold')"><b>B</b></button>
+      <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="App.formatText('italic')"><i>I</i></button>
+      <button class="tag-select-btn" onclick="App.showTagPicker()">
+        <span id="editor-tag-dot" style="display:none; width:8px; height:8px; border-radius:50%;"></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Tag
+      </button>
+    </div>
+    <div class="word-count" id="word-count">0 words</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SETTINGS SCREEN
+══════════════════════════════════ -->
+<div id="screen-settings" class="screen">
+  <div class="settings-header">
+    <div class="icon-btn" onclick="App.showScreen('screen-notes')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="settings-title">Settings</div>
+  </div>
+  <div class="settings-scroll">
+
+    <div class="settings-section">
+      <div class="settings-section-label">Security</div>
+      <div class="settings-card">
+        <div class="settings-row" onclick="App.changePIN()">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Change PIN</div>
+            <div class="settings-row-sub">Update your 6-digit access code</div>
+          </div>
+          <div class="settings-row-right">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div class="settings-row" id="bio-settings-row" style="display:none" onclick="App.toggleBio()">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Face / Touch ID</div>
+            <div class="settings-row-sub">Unlock without entering PIN</div>
+          </div>
+          <div class="settings-row-right">
+            <div class="toggle" id="bio-toggle-settings"></div>
+          </div>
+        </div>
+        <div class="settings-row" onclick="App.toggleScramble()">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Scramble PIN pad</div>
+            <div class="settings-row-sub">Randomise key positions each time</div>
+          </div>
+          <div class="settings-row-right">
+            <div class="toggle" id="scramble-toggle"></div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Auto-lock after</div>
+            <div class="settings-row-sub">Lock on inactivity</div>
+          </div>
+          <div class="settings-row-right">
+            <select class="settings-select" id="autolock-select" onchange="App.setAutolock(this.value)">
+              <option value="1">1 min</option>
+              <option value="5" selected>5 min</option>
+              <option value="15">15 min</option>
+              <option value="30">30 min</option>
+              <option value="0">Never</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Tags</div>
+      <div class="settings-card">
+        <div class="tags-manager">
+          <div class="tags-list" id="settings-tags-list"></div>
+          <div class="tag-add-row">
+            <input class="tag-name-input" id="new-tag-name" type="text" placeholder="Tag name" maxlength="20">
+            <input class="tag-color-input" id="new-tag-color" type="color" value="#34d399">
+            <button class="btn-add-tag" onclick="App.addTag()">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Account</div>
+      <div class="settings-card">
+        <div class="settings-row" onclick="App.showPaywall()">
+          <div class="settings-row-left">
+            <div class="settings-row-title" id="upgrade-row-title">Upgrade to VAULT Pro</div>
+            <div class="settings-row-sub" id="upgrade-row-sub">Unlimited notes — $4.99 one-time</div>
+          </div>
+          <div class="settings-row-right">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div class="settings-row" onclick="App.exportNotes()">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Export notes</div>
+            <div class="settings-row-sub">Download as plain text</div>
+          </div>
+          <div class="settings-row-right">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div class="settings-row" onclick="App.confirmReset()">
+          <div class="settings-row-left">
+            <div class="settings-row-title" style="color:var(--danger)">Reset VAULT</div>
+            <div class="settings-row-sub">Erase all notes and settings</div>
+          </div>
+          <div class="settings-row-right">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center; color:var(--muted); font-size:12px; padding:8px 0 32px;">
+      VAULT v1.0 · No cloud · No account · Private by default
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PAYWALL OVERLAY
+══════════════════════════════════ -->
+<div id="paywall">
+  <div class="paywall-card">
+    <span class="paywall-icon">🔐</span>
+    <div class="paywall-title">Unlock VAULT Pro</div>
+    <div class="paywall-sub">You've used all 3 free notes. One small payment, unlimited privacy.</div>
+    <div class="paywall-price">$4.99</div>
+    <div class="paywall-once">Pay once. Keep forever. No subscriptions.</div>
+    <div class="paywall-features">
+      <div class="paywall-feature">Unlimited notes</div>
+      <div class="paywall-feature">Biometric lock</div>
+      <div class="paywall-feature">Individual note locks</div>
+      <div class="paywall-feature">Custom tags &amp; categories</div>
+      <div class="paywall-feature">Export your data</div>
+    </div>
+    <button class="btn-pay" onclick="App.purchasePro()">Get VAULT Pro — $4.99</button>
+    <button class="btn-dismiss" onclick="App.hidePaywall()">Maybe later</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: HINT
+══════════════════════════════════ -->
+<div class="modal-overlay" id="hint-modal">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">PIN Hint</div>
+    <div class="hint-display" id="hint-display"></div>
+    <button class="modal-close-btn" onclick="App.closeModal('hint-modal')">Got it</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: TAG PICKER (editor)
+══════════════════════════════════ -->
+<div class="modal-overlay" id="tag-picker-modal">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Choose a tag</div>
+    <div class="tag-picker-list" id="tag-picker-list"></div>
+    <button class="modal-close-btn" onclick="App.closeModal('tag-picker-modal')">Done</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: CONFIRM RESET
+══════════════════════════════════ -->
+<div class="modal-overlay" id="reset-modal">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" style="color:var(--danger)">Reset VAULT?</div>
+    <p style="color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:20px;">This will permanently erase ALL notes, your PIN, tags, and settings. This cannot be undone.</p>
+    <button class="btn-pay" style="background:linear-gradient(135deg,#ef4444,#b91c1c);margin-bottom:10px;" onclick="App.doReset()">Yes, erase everything</button>
+    <button class="btn-dismiss" onclick="App.closeModal('reset-modal')">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// VAULT — Pure JS / localStorage / WebAuthn
+//
+// PIN SECURITY NOTE:
+//   Current implementation uses XOR + base64 for demo/prototype.
+//   Production: use WebCrypto PBKDF2 with a random salt —
+//     const key = await crypto.subtle.importKey('raw', enc.encode(pin), {name:'PBKDF2'}, false, ['deriveBits']);
+//     const bits = await crypto.subtle.deriveBits({name:'PBKDF2',salt,hash:'SHA-256',iterations:310000}, key, 256);
+//   Store salt + derived bits; compare on unlock.
+// ═══════════════════════════════════════════════════════════════
+
+const STORE_KEY      = 'vault_data';
+const FREE_LIMIT     = 3;
+const KEY_LABELS     = ['','ABC','DEF','GHI','JKL','MNO','PQRS','TU','VWXY',''];
+const AUTOLOCK_DEFAULT = 5; // minutes
+
+// ── Simple XOR hash (demo only — see note above) ──
+function hashPIN(pin) {
+  const magic = [7,13,3,19,11,17];
+  let out = '';
+  for (let i = 0; i < pin.length; i++) {
+    out += String.fromCharCode(pin.charCodeAt(i) ^ magic[i % magic.length]);
+  }
+  return btoa(out);
+}
+
+// ── State ──
+let state = {
+  pin: '',           // hashed
+  hint: '',
+  biometric: false,
+  scramble: false,
+  autolock: AUTOLOCK_DEFAULT,
+  pro: false,
+  tags: [
+    { id: 't1', name: 'Personal', color: '#059669' },
+    { id: 't2', name: 'Work',     color: '#3b82f6' },
+    { id: 't3', name: 'Ideas',    color: '#8b5cf6' },
+  ],
+  notes: [],         // [{id, title, body, tagId, locked, createdAt, updatedAt}]
+};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) state = { ...state, ...JSON.parse(raw) };
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+
+// ── Auto-lock ──
+let autolockTimer = null;
+function resetAutolockTimer() {
+  clearTimeout(autolockTimer);
+  if (!state.autolock) return;
+  autolockTimer = setTimeout(() => {
+    App.lock();
+  }, state.autolock * 60 * 1000);
+}
+document.addEventListener('touchstart', resetAutolockTimer, {passive:true});
+document.addEventListener('mousedown', resetAutolockTimer);
+
+// ── Screen manager ──
+let currentScreen = null;
+
+const App = {
+  // ── Boot ──
+  init() {
+    loadState();
+    this._applySettings();
+
+    if (!state.pin) {
+      this.showScreen('screen-setup');
+      buildPad('setup-pad-1', 'setup1');
+      buildPad('setup-pad-2', 'setup2');
+      this._checkBioAvailable();
+    } else {
+      this.showScreen('screen-lock');
+      buildPad('lock-pad', 'lock');
+      this._applyScramble('lock-pad');
+      this._setupBioBtn();
+      this._setupHintLink();
+    }
+  },
+
+  _applySettings() {
+    // autolock select
+    const sel = document.getElementById('autolock-select');
+    if (sel) sel.value = String(state.autolock);
+    // scramble toggle
+    this._setToggle('scramble-toggle', state.scramble);
+    // bio toggle
+    this._setToggle('bio-toggle-settings', state.biometric);
+    this._setToggle('bio-toggle-setup', state.biometric);
+    // bio row visibility
+    if (state._bioAvailable) {
+      const bioRow = document.getElementById('bio-settings-row');
+      if (bioRow) bioRow.style.display = '';
+    }
+  },
+
+  showScreen(id) {
+    const next = document.getElementById(id);
+    if (!next) return;
+    if (currentScreen) {
+      currentScreen.classList.remove('active');
+      currentScreen.classList.add('exit');
+      const prev = currentScreen;
+      setTimeout(() => prev.classList.remove('exit'), 400);
+    }
+    next.classList.add('active');
+    currentScreen = next;
+    if (id === 'screen-notes') {
+      this.renderNotes();
+      this.renderTagFilter();
+      this.updateTierBadge();
+      resetAutolockTimer();
+    }
+    if (id === 'screen-settings') {
+      this.renderSettingsTags();
+      this._applySettings();
+    }
+  },
+
+  // ── Setup flow ──
+  _setupPIN1: '',
+  _setupStep: 1,
+  _checkBioAvailable() {
+    if (window.PublicKeyCredential) {
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(ok => {
+        if (ok) {
+          state._bioAvailable = true;
+          document.getElementById('bio-setup-row').style.display = 'flex';
+        }
+      }).catch(() => {});
+    }
+  },
+  _bioEnabled: false,
+
+  handleSetup1(digit) {
+    if (this._setupPIN1.length >= 6) return;
+    this._setupPIN1 += digit;
+    updateDots('setup-dots-1', this._setupPIN1.length);
+    if (this._setupPIN1.length === 6) {
+      setTimeout(() => this._goToSetupStep2(), 250);
+    }
+  },
+  handleSetup1Delete() {
+    if (!this._setupPIN1.length) return;
+    this._setupPIN1 = this._setupPIN1.slice(0, -1);
+    updateDots('setup-dots-1', this._setupPIN1.length);
+  },
+
+  _setupPIN2: '',
+  handleSetup2(digit) {
+    if (this._setupPIN2.length >= 6) return;
+    this._setupPIN2 += digit;
+    updateDots('setup-dots-2', this._setupPIN2.length);
+    if (this._setupPIN2.length === 6) {
+      setTimeout(() => this._checkConfirm(), 250);
+    }
+  },
+  handleSetup2Delete() {
+    if (!this._setupPIN2.length) return;
+    this._setupPIN2 = this._setupPIN2.slice(0, -1);
+    updateDots('setup-dots-2', this._setupPIN2.length);
+  },
+
+  _goToSetupStep2() {
+    document.getElementById('setup-step-1').classList.remove('active');
+    document.getElementById('setup-step-2').classList.add('active');
+    this._setupStep = 2;
+  },
+  _checkConfirm() {
+    if (this._setupPIN1 === this._setupPIN2) {
+      document.getElementById('setup-step-2').classList.remove('active');
+      document.getElementById('setup-step-3').classList.add('active');
+      this._setupStep = 3;
+    } else {
+      shakeDots('setup-dots-2');
+      this._setupPIN2 = '';
+      updateDots('setup-dots-2', 0);
+      flashError('setup-dots-2');
+    }
+  },
+
+  finishSetup() {
+    state.pin = hashPIN(this._setupPIN1);
+    state.hint = document.getElementById('hint-input').value.trim();
+    state.biometric = document.getElementById('bio-toggle-setup').classList.contains('on');
+    saveState();
+    this._setupPIN1 = '';
+    this._setupPIN2 = '';
+    this.showScreen('screen-notes');
+    buildPad('lock-pad', 'lock');
+  },
+
+  // ── Lock / Unlock ──
+  lock() {
+    clearTimeout(autolockTimer);
+    _lockAttempts = 0;
+    _lockInput = '';
+    updateDots('lock-dots', 0);
+    document.getElementById('lockout-msg').textContent = '';
+    document.getElementById('lockout-timer').style.display = 'none';
+    this._applyScramble('lock-pad');
+    this.showScreen('screen-lock');
+    // Try biometric auto-prompt if enabled
+    if (state.biometric && state._bioAvailable) {
+      setTimeout(() => this.biometricUnlock(), 600);
+    }
+  },
+
+  _applyScramble(padId) {
+    if (!state.scramble) return;
+    const pad = document.getElementById(padId);
+    if (!pad) return;
+    // Collect digit keys (0-9), shuffle, reassign labels
+    const keys = Array.from(pad.querySelectorAll('.pin-key[data-digit]'));
+    const digits = keys.map(k => k.dataset.digit);
+    // Fisher-Yates
+    for (let i = digits.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [digits[i], digits[j]] = [digits[j], digits[i]];
+    }
+    keys.forEach((k, i) => {
+      const d = digits[i];
+      k.dataset.digit = d;
+      k.querySelector('.dig-num').textContent = d;
+      const sub = k.querySelector('.sub-letters');
+      if (sub) sub.textContent = d === '0' ? '' : (KEY_LABELS[parseInt(d)] || '');
+    });
+  },
+
+  _setupBioBtn() {
+    const btn = document.getElementById('bio-unlock-btn');
+    if (state.biometric && state._bioAvailable) {
+      btn.style.display = 'flex';
+    }
+  },
+
+  _setupHintLink() {
+    const link = document.getElementById('hint-link');
+    if (state.hint) {
+      link.style.display = 'block';
+    }
+  },
+
+  biometricUnlock() {
+    if (!window.PublicKeyCredential) return;
+    // WebAuthn get — uses platform authenticator (Face ID / Touch ID / Windows Hello)
+    // For a fresh installation without a registered credential, we use a user-presence check.
+    // In production: register a credential on first biometric enable, then use allowCredentials.
+    navigator.credentials.get({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        timeout: 60000,
+        userVerification: 'required',
+        rpId: location.hostname || 'localhost',
+      }
+    }).then(() => {
+      this._unlockSuccess();
+    }).catch(err => {
+      // User cancelled or not enrolled — fall back silently to PIN
+      console.log('WebAuthn:', err.message);
+    });
+  },
+
+  _lockInput: '',
+  handleLockDigit(digit) {
+    if (_lockLocked) return;
+    if (_lockInput.length >= 6) return;
+    _lockInput += digit;
+    updateDots('lock-dots', _lockInput.length);
+    if (_lockInput.length === 6) {
+      setTimeout(() => this._checkPIN(), 200);
+    }
+  },
+  handleLockDelete() {
+    if (_lockLocked) return;
+    if (!_lockInput.length) return;
+    _lockInput = _lockInput.slice(0, -1);
+    updateDots('lock-dots', _lockInput.length);
+  },
+
+  _checkPIN() {
+    if (hashPIN(_lockInput) === state.pin) {
+      this._unlockSuccess();
+    } else {
+      _lockAttempts++;
+      shakeDots('lock-dots');
+      flashError('lock-dots');
+      _lockInput = '';
+      updateDots('lock-dots', 0);
+      if (_lockAttempts >= 3) {
+        this._startLockout();
+      } else {
+        document.getElementById('lockout-msg').textContent =
+          `Wrong PIN (${3 - _lockAttempts} attempt${3 - _lockAttempts !== 1 ? 's' : ''} remaining)`;
+      }
+    }
+  },
+
+  _unlockSuccess() {
+    _lockInput = '';
+    _lockAttempts = 0;
+    updateDots('lock-dots', 0);
+    document.getElementById('lockout-msg').textContent = '';
+    // Pulse the dots green before transitioning
+    const dots = document.querySelectorAll('#lock-dots .pin-dot');
+    dots.forEach(d => { d.style.background = 'var(--primary-light)'; d.style.borderColor = 'var(--primary-light)'; d.style.boxShadow = '0 0 12px rgba(52,211,153,0.5)'; });
+    setTimeout(() => {
+      this.showScreen('screen-notes');
+      buildPad('lock-pad', 'lock');
+      this._applyScramble('lock-pad');
+      this._setupHintLink();
+    }, 350);
+  },
+
+  _startLockout() {
+    _lockLocked = true;
+    let secs = 30;
+    const timerEl = document.getElementById('lockout-timer');
+    const msgEl = document.getElementById('lockout-msg');
+    timerEl.style.display = 'block';
+    timerEl.textContent = secs;
+    msgEl.textContent = 'Too many attempts. Wait…';
+    const iv = setInterval(() => {
+      secs--;
+      timerEl.textContent = secs;
+      if (secs <= 0) {
+        clearInterval(iv);
+        _lockLocked = false;
+        _lockAttempts = 0;
+        timerEl.style.display = 'none';
+        msgEl.textContent = '';
+        this._applyScramble('lock-pad');
+      }
+    }, 1000);
+  },
+
+  // ── Notes ──
+  _currentNoteId: null,
+  _saveTimer: null,
+  _activeTag: 'all',
+
+  newNote() {
+    if (!state.pro && state.notes.length >= FREE_LIMIT) {
+      this.showPaywall();
+      return;
+    }
+    const id = 'n' + Date.now();
+    const note = { id, title: '', body: '', tagId: null, locked: false, createdAt: Date.now(), updatedAt: Date.now() };
+    state.notes.unshift(note);
+    saveState();
+    this.openNote(id);
+  },
+
+  openNote(id) {
+    const note = state.notes.find(n => n.id === id);
+    if (!note) return;
+    this._currentNoteId = id;
+
+    const titleEl = document.getElementById('editor-title');
+    const bodyEl = document.getElementById('editor-body');
+    titleEl.value = note.title;
+    bodyEl.value = note.body;
+    this.autoResizeTitle(titleEl);
+    this.updateWordCount();
+    this._updateEditorTag(note.tagId);
+    this._updateNoteLockBtn(note.locked);
+    document.getElementById('save-status').textContent = 'All changes saved';
+
+    this.showScreen('screen-editor');
+    setTimeout(() => {
+      if (!note.title) titleEl.focus();
+      else bodyEl.focus();
+    }, 400);
+  },
+
+  closeEditor() {
+    this._flushSave();
+    this.showScreen('screen-notes');
+  },
+
+  scheduleSave() {
+    document.getElementById('save-status').textContent = 'Saving…';
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => this._flushSave(), 2000);
+  },
+
+  _flushSave() {
+    clearTimeout(this._saveTimer);
+    const note = state.notes.find(n => n.id === this._currentNoteId);
+    if (!note) return;
+    note.title = document.getElementById('editor-title').value;
+    note.body  = document.getElementById('editor-body').value;
+    note.updatedAt = Date.now();
+    saveState();
+    document.getElementById('save-status').textContent = 'All changes saved';
+  },
+
+  deleteCurrentNote() {
+    if (!this._currentNoteId) return;
+    state.notes = state.notes.filter(n => n.id !== this._currentNoteId);
+    clearTimeout(this._saveTimer);
+    saveState();
+    this.showScreen('screen-notes');
+  },
+
+  toggleNoteLock() {
+    const note = state.notes.find(n => n.id === this._currentNoteId);
+    if (!note) return;
+    note.locked = !note.locked;
+    saveState();
+    this._updateNoteLockBtn(note.locked);
+  },
+
+  _updateNoteLockBtn(locked) {
+    const btn = document.getElementById('note-lock-btn');
+    btn.style.borderColor = locked ? 'rgba(52,211,153,0.4)' : '';
+    btn.style.color = locked ? 'var(--primary-light)' : '';
+  },
+
+  autoResizeTitle(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  },
+
+  updateWordCount() {
+    const body = document.getElementById('editor-body').value.trim();
+    const count = body ? body.split(/\s+/).filter(Boolean).length : 0;
+    document.getElementById('word-count').textContent = count + (count === 1 ? ' word' : ' words');
+  },
+
+  formatText(type) {
+    const ta = document.getElementById('editor-body');
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const sel   = ta.value.substring(start, end);
+    const wrap  = type === 'bold' ? '**' : '_';
+    if (!sel) return;
+    const before = ta.value.substring(0, start);
+    const after  = ta.value.substring(end);
+    ta.value = before + wrap + sel + wrap + after;
+    ta.selectionStart = start;
+    ta.selectionEnd   = end + wrap.length * 2;
+    ta.focus();
+    this.scheduleSave();
+  },
+
+  renderNotes() {
+    const grid = document.getElementById('notes-grid');
+    const q = document.getElementById('search-input').value.toLowerCase().trim();
+    const tag = this._activeTag;
+
+    let notes = [...state.notes];
+    if (tag !== 'all') notes = notes.filter(n => n.tagId === tag);
+    if (q) notes = notes.filter(n =>
+      n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q)
+    );
+
+    if (!notes.length) {
+      grid.innerHTML = '';
+      const empty = document.querySelector('.empty-state') || (() => {
+        const d = document.createElement('div');
+        d.className = 'empty-state'; return d;
+      })();
+      empty.innerHTML = `
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <h3>${q ? 'No results' : 'No notes yet'}</h3>
+        <p>${q ? 'Try a different search term.' : 'Tap + to create your first private note.'}</p>
+      `;
+      grid.parentElement.appendChild(empty);
+      return;
+    }
+
+    document.querySelector('.empty-state')?.remove();
+    grid.innerHTML = notes.map(note => this._renderNoteCard(note, q)).join('');
+  },
+
+  _renderNoteCard(note, q) {
+    const tag = state.tags.find(t => t.id === note.tagId);
+    const date = relativeTime(note.updatedAt);
+    const titleHl = q ? highlight(note.title, q) : escHtml(note.title) || '<span style="color:var(--muted)">Untitled</span>';
+    const preview = note.locked ? '<span style="color:var(--muted)">🔒 Locked</span>' : (q ? highlight(note.body.slice(0,120), q) : escHtml(note.body.slice(0,120)));
+    return `
+      <div class="note-card" onclick="App.openNote('${note.id}')">
+        <div class="note-card-header">
+          <div class="note-title">${titleHl}</div>
+          ${note.locked ? '<svg class="note-lock-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : ''}
+        </div>
+        <div class="note-preview">${preview}</div>
+        <div class="note-footer">
+          <div class="note-date">${date}</div>
+          ${tag ? `<div class="note-tag-dot" style="background:${tag.color}"></div>` : ''}
+        </div>
+      </div>
+    `;
+  },
+
+  filterNotes() {
+    this.renderNotes();
+  },
+
+  filterByTag(tagId) {
+    this._activeTag = tagId;
+    document.querySelectorAll('.tag-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.tag === tagId);
+    });
+    this.renderNotes();
+  },
+
+  renderTagFilter() {
+    const filter = document.getElementById('tag-filter');
+    // Remove all except "All"
+    Array.from(filter.children).forEach(c => { if (c.dataset.tag !== 'all') c.remove(); });
+    state.tags.forEach(tag => {
+      const chip = document.createElement('div');
+      chip.className = 'tag-chip' + (this._activeTag === tag.id ? ' active' : '');
+      chip.dataset.tag = tag.id;
+      chip.onclick = () => this.filterByTag(tag.id);
+      chip.innerHTML = `<div class="tag-dot" style="background:${tag.color}"></div>${escHtml(tag.name)}`;
+      filter.appendChild(chip);
+    });
+  },
+
+  updateTierBadge() {
+    const badge = document.getElementById('tier-badge');
+    if (state.pro) {
+      badge.textContent = 'PRO';
+      badge.className = 'pro-badge';
+      badge.onclick = null;
+      // Update settings row
+      document.getElementById('upgrade-row-title').textContent = 'VAULT Pro — Active';
+      document.getElementById('upgrade-row-sub').textContent = 'Thanks for your support ♥';
+    } else {
+      const used = state.notes.length;
+      badge.textContent = `${Math.min(used, FREE_LIMIT)}/${FREE_LIMIT} free`;
+      badge.className = 'free-badge';
+      badge.onclick = () => App.showPaywall();
+    }
+  },
+
+  // ── Tag editor ──
+  showTagPicker() {
+    const list = document.getElementById('tag-picker-list');
+    const note = state.notes.find(n => n.id === this._currentNoteId);
+    const currentTagId = note?.tagId;
+    list.innerHTML = `
+      <div class="tag-picker-item ${!currentTagId ? 'active' : ''}" onclick="App.setNoteTag(null)">
+        <div class="tag-dot" style="background:var(--muted)"></div>None
+      </div>
+      ${state.tags.map(t => `
+        <div class="tag-picker-item ${currentTagId === t.id ? 'active' : ''}" onclick="App.setNoteTag('${t.id}')">
+          <div class="tag-dot" style="background:${t.color}"></div>${escHtml(t.name)}
+        </div>
+      `).join('')}
+    `;
+    document.getElementById('tag-picker-modal').classList.add('show');
+  },
+
+  setNoteTag(tagId) {
+    const note = state.notes.find(n => n.id === this._currentNoteId);
+    if (!note) return;
+    note.tagId = tagId;
+    this._updateEditorTag(tagId);
+    this.closeModal('tag-picker-modal');
+    this.scheduleSave();
+  },
+
+  _updateEditorTag(tagId) {
+    const dot = document.getElementById('editor-tag-dot');
+    const tag = state.tags.find(t => t.id === tagId);
+    if (tag) {
+      dot.style.display = 'block';
+      dot.style.background = tag.color;
+    } else {
+      dot.style.display = 'none';
+    }
+  },
+
+  // ── Settings ──
+  renderSettingsTags() {
+    const list = document.getElementById('settings-tags-list');
+    list.innerHTML = state.tags.map(t => `
+      <div class="tag-item">
+        <div class="tag-dot" style="background:${t.color}"></div>
+        ${escHtml(t.name)}
+        <span class="tag-item-del" onclick="App.deleteTag('${t.id}')">✕</span>
+      </div>
+    `).join('') || '<span style="color:var(--muted);font-size:13px;">No tags yet</span>';
+  },
+
+  addTag() {
+    if (state.tags.length >= 5 && !state.pro) {
+      alert('Up to 5 custom tags in free tier.'); return;
+    }
+    const name  = document.getElementById('new-tag-name').value.trim();
+    const color = document.getElementById('new-tag-color').value;
+    if (!name) return;
+    state.tags.push({ id: 't' + Date.now(), name, color });
+    saveState();
+    document.getElementById('new-tag-name').value = '';
+    this.renderSettingsTags();
+    this.renderTagFilter();
+  },
+
+  deleteTag(id) {
+    state.tags = state.tags.filter(t => t.id !== id);
+    state.notes.forEach(n => { if (n.tagId === id) n.tagId = null; });
+    saveState();
+    this.renderSettingsTags();
+    this.renderTagFilter();
+  },
+
+  toggleScramble() {
+    state.scramble = !state.scramble;
+    this._setToggle('scramble-toggle', state.scramble);
+    saveState();
+  },
+
+  setAutolock(val) {
+    state.autolock = parseInt(val);
+    saveState();
+    resetAutolockTimer();
+  },
+
+  toggleBio() {
+    state.biometric = !state.biometric;
+    this._setToggle('bio-toggle-settings', state.biometric);
+    saveState();
+  },
+
+  _setToggle(id, on) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('on', !!on);
+  },
+
+  changePIN() {
+    // Re-route to setup flow for PIN change
+    this._setupPIN1 = '';
+    this._setupPIN2 = '';
+    document.getElementById('setup-step-1').classList.add('active');
+    document.getElementById('setup-step-2').classList.remove('active');
+    document.getElementById('setup-step-3').classList.remove('active');
+    updateDots('setup-dots-1', 0);
+    updateDots('setup-dots-2', 0);
+    this.showScreen('screen-setup');
+  },
+
+  // ── Bio toggle in settings ──
+  async checkBioAvailable() {
+    if (!window.PublicKeyCredential) return false;
+    try {
+      return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    } catch { return false; }
+  },
+
+  // ── Paywall ──
+  showPaywall() {
+    if (state.pro) return;
+    document.getElementById('paywall').classList.add('show');
+  },
+  hidePaywall() {
+    document.getElementById('paywall').classList.remove('show');
+  },
+  purchasePro() {
+    // In production: integrate with Stripe / RevenueCat / in-app purchase
+    // Demo: simulate instant purchase
+    state.pro = true;
+    saveState();
+    this.hidePaywall();
+    this.updateTierBadge();
+    alert('Welcome to VAULT Pro! Unlimited notes unlocked.');
+  },
+
+  // ── Export ──
+  exportNotes() {
+    const lines = state.notes.map(n =>
+      `# ${n.title || 'Untitled'}\n${n.body}\n---`
+    ).join('\n\n');
+    const blob = new Blob([lines], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'vault-notes.txt'; a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // ── Reset ──
+  confirmReset() {
+    document.getElementById('reset-modal').classList.add('show');
+  },
+  doReset() {
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+  },
+
+  // ── Modal helper ──
+  closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+  },
+};
+
+// ── PIN pad builder ──
+// mode: 'setup1' | 'setup2' | 'lock'
+function buildPad(padId, mode) {
+  const pad = document.getElementById(padId);
+  if (!pad) return;
+  // Standard layout: 1–9, then *, 0, del
+  const stdOrder = [1,2,3,4,5,6,7,8,9,'*',0,'del'];
+  pad.innerHTML = stdOrder.map(k => {
+    if (k === '*') return `<div class="pin-key empty"></div>`;
+    if (k === 'del') return `<div class="pin-key action" onclick="App.${mode === 'lock' ? 'handleLockDelete' : (mode === 'setup1' ? 'handleSetup1Delete' : 'handleSetup2Delete')}()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+    </div>`;
+    const handler = mode === 'lock' ? `App.handleLockDigit('${k}')`
+                  : mode === 'setup1' ? `App.handleSetup1('${k}')`
+                  : `App.handleSetup2('${k}')`;
+    const letters = k === 0 ? '' : KEY_LABELS[k] || '';
+    return `<div class="pin-key" data-digit="${k}" onclick="${handler}">
+      <span class="dig-num">${k}</span>
+      ${letters ? `<span class="sub-letters">${letters}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Dot helpers ──
+function updateDots(dotsId, count) {
+  const dots = document.querySelectorAll(`#${dotsId} .pin-dot`);
+  dots.forEach((d, i) => {
+    d.classList.toggle('filled', i < count);
+    d.classList.remove('error');
+  });
+}
+function flashError(dotsId) {
+  const dots = document.querySelectorAll(`#${dotsId} .pin-dot`);
+  dots.forEach(d => d.classList.add('error'));
+  setTimeout(() => dots.forEach(d => d.classList.remove('error')), 600);
+}
+function shakeDots(dotsId) {
+  const el = document.getElementById(dotsId);
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+  el.addEventListener('animationend', () => el.classList.remove('shake'), {once:true});
+}
+
+// ── Lock screen internals ──
+let _lockInput    = '';
+let _lockAttempts = 0;
+let _lockLocked   = false;
+
+// Override App methods to use module-level vars
+App.handleLockDigit = function(digit) {
+  if (_lockLocked) return;
+  if (_lockInput.length >= 6) return;
+  _lockInput += digit;
+  updateDots('lock-dots', _lockInput.length);
+  if (_lockInput.length === 6) {
+    setTimeout(() => App._checkPIN(), 200);
+  }
+};
+App.handleLockDelete = function() {
+  if (_lockLocked) return;
+  if (!_lockInput.length) return;
+  _lockInput = _lockInput.slice(0, -1);
+  updateDots('lock-dots', _lockInput.length);
+};
+App._checkPIN = function() {
+  if (hashPIN(_lockInput) === state.pin) {
+    App._unlockSuccess();
+  } else {
+    _lockAttempts++;
+    shakeDots('lock-dots');
+    flashError('lock-dots');
+    _lockInput = '';
+    updateDots('lock-dots', 0);
+    if (_lockAttempts >= 3) {
+      App._startLockout();
+    } else {
+      document.getElementById('lockout-msg').textContent =
+        `Wrong PIN — ${3 - _lockAttempts} attempt${3 - _lockAttempts !== 1 ? 's' : ''} remaining`;
+    }
+  }
+};
+App._startLockout = function() {
+  _lockLocked = true;
+  let secs = 30;
+  const timerEl = document.getElementById('lockout-timer');
+  const msgEl   = document.getElementById('lockout-msg');
+  timerEl.style.display = 'block';
+  timerEl.textContent = secs;
+  msgEl.textContent = 'Too many attempts';
+  const iv = setInterval(() => {
+    secs--;
+    timerEl.textContent = secs;
+    if (secs <= 0) {
+      clearInterval(iv);
+      _lockLocked = false;
+      _lockAttempts = 0;
+      timerEl.style.display = 'none';
+      msgEl.textContent = '';
+      App._applyScramble('lock-pad');
+    }
+  }, 1000);
+};
+App._unlockSuccess = function() {
+  _lockInput = '';
+  _lockAttempts = 0;
+  updateDots('lock-dots', 0);
+  document.getElementById('lockout-msg').textContent = '';
+  const dots = document.querySelectorAll('#lock-dots .pin-dot');
+  dots.forEach(d => {
+    d.style.background = 'var(--primary-light)';
+    d.style.borderColor = 'var(--primary-light)';
+    d.style.boxShadow = '0 0 12px rgba(52,211,153,0.5)';
+  });
+  setTimeout(() => {
+    dots.forEach(d => { d.style.background = ''; d.style.borderColor = ''; d.style.boxShadow = ''; });
+    App.showScreen('screen-notes');
+    buildPad('lock-pad', 'lock');
+    App._applyScramble('lock-pad');
+    App._setupHintLink();
+  }, 380);
+};
+
+// Hint link handler
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('hint-link').addEventListener('click', () => {
+    const display = document.getElementById('hint-display');
+    display.textContent = state.hint || '(No hint set)';
+    document.getElementById('hint-modal').classList.add('show');
+  });
+  // Bio setup toggle
+  document.getElementById('bio-toggle-setup').addEventListener('click', function() {
+    this.classList.toggle('on');
+  });
+  // Setup finish
+  document.getElementById('setup-finish-btn').addEventListener('click', () => App.finishSetup());
+  // Bio unlock button
+  document.getElementById('bio-unlock-btn').addEventListener('click', () => App.biometricUnlock());
+  // Check bio on settings screen load
+  App.checkBioAvailable().then(ok => {
+    if (ok) {
+      state._bioAvailable = true;
+      document.getElementById('bio-settings-row').style.display = '';
+      document.getElementById('bio-setup-row').style.display = 'flex';
+    }
+  });
+  // Close modals by tapping overlay
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => {
+      if (e.target === m) m.classList.remove('show');
+    });
+  });
+  // Paywall close on overlay
+  document.getElementById('paywall').addEventListener('click', e => {
+    if (e.target === document.getElementById('paywall')) App.hidePaywall();
+  });
+  // Keyboard support for editor
+  document.getElementById('editor-body').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') { e.preventDefault(); App.formatText('bold'); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'i') { e.preventDefault(); App.formatText('italic'); }
+  });
+  // PWA install
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    window._pwaPrompt = e;
+  });
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+});
+
+// ── Utility functions ──
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function highlight(text, q) {
+  if (!q) return escHtml(text);
+  const escaped = escHtml(text);
+  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return escaped.replace(re, '<mark>$1</mark>');
+}
+function relativeTime(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  if (diff < 604800000) return Math.floor(diff/86400000) + 'd ago';
+  return new Date(ts).toLocaleDateString([], {month:'short', day:'numeric'});
+}
+
+// ── Boot ──
+App.init();
+</script>
+</body>
+</html>

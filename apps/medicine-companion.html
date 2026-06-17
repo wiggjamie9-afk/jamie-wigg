@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicine Companion – Medication Tracker</title>
+    <style>
+        :root {
+            --primary: #C97A9A;
+            --accent-2: #A85A7D;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-primary); }
+        .container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #A85A7D 100%); padding: 24px 20px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: var(--bg-light); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid var(--primary); }
+        .card h2 { font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+        input { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 2px solid #334155; border-radius: 8px; color: var(--text-primary); margin-bottom: 10px; font-size: 13px; }
+        input:focus { outline: none; border-color: var(--primary); }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+        button:hover { background: #A85A7D; }
+        .med { background: var(--bg-dark); padding: 12px; border-radius: 6px; margin-bottom: 8px; }
+        .med-name { font-weight: 600; }
+        .med-info { font-size: 12px; color: #CBD5E1; margin-top: 4px; }
+        .med-action { display: flex; gap: 8px; margin-top: 8px; }
+        .med-action button { flex: 1; padding: 8px; font-size: 12px; }
+        .label { display: block; font-size: 12px; color: #CBD5E1; margin-bottom: 4px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💊 MEDICINE COMPANION</h1>
+            <p style="font-size: 12px;">Never miss a dose</p>
+        </div>
+        <div class="content">
+            <div class="card">
+                <h2>➕ Add Medication</h2>
+                <label>Medication name</label>
+                <input type="text" id="medName" placeholder="E.g., Aspirin">
+                <label>Dosage</label>
+                <input type="text" id="dosage" placeholder="E.g., 500mg">
+                <label>Frequency</label>
+                <select id="frequency" style="width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 2px solid #334155; border-radius: 8px; color: var(--text-primary); margin-bottom: 10px;">
+                    <option>Daily</option>
+                    <option>Twice daily</option>
+                    <option>Three times daily</option>
+                    <option>As needed</option>
+                </select>
+                <button onclick="addMed()">Add Medication</button>
+            </div>
+
+            <div class="card">
+                <h2>📋 Your Medications</h2>
+                <div id="medList">No medications yet</div>
+            </div>
+
+            <div class="card">
+                <h2>✅ Today's Log</h2>
+                <div id="todayLog" style="font-size: 12px; color: #CBD5E1;">No doses logged today</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addMed() {
+            const name = document.getElementById('medName').value;
+            const dosage = document.getElementById('dosage').value;
+            const freq = document.getElementById('frequency').value;
+
+            if (!name || !dosage) { alert('Fill all fields'); return; }
+
+            let meds = JSON.parse(localStorage.getItem('meds') || '[]');
+            meds.push({ name, dosage, freq, id: Date.now(), taken: [] });
+            localStorage.setItem('meds', JSON.stringify(meds));
+
+            document.getElementById('medName').value = '';
+            document.getElementById('dosage').value = '';
+            displayMeds();
+        }
+
+        function logTaken(id) {
+            let meds = JSON.parse(localStorage.getItem('meds') || '[]');
+            const med = meds.find(m => m.id === id);
+            if (med) {
+                const today = new Date().toISOString().split('T')[0];
+                if (!med.taken) med.taken = [];
+                med.taken.push(today);
+                localStorage.setItem('meds', JSON.stringify(meds));
+                displayMeds();
+            }
+        }
+
+        function deleteMed(id) {
+            let meds = JSON.parse(localStorage.getItem('meds') || '[]');
+            meds = meds.filter(m => m.id !== id);
+            localStorage.setItem('meds', JSON.stringify(meds));
+            displayMeds();
+        }
+
+        function displayMeds() {
+            const meds = JSON.parse(localStorage.getItem('meds') || '[]');
+            const list = document.getElementById('medList');
+
+            if (meds.length === 0) {
+                list.innerHTML = '<p style="color: #CBD5E1; font-size: 12px;">No medications yet</p>';
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            let todayCount = 0;
+
+            list.innerHTML = meds.map(m => {
+                const taken = m.taken && m.taken.includes(today);
+                if (taken) todayCount++;
+                return `<div class="med" style="border-left: 3px solid ${taken ? 'var(--primary)' : '#334155'};">
+                    <div class="med-name">${m.name}</div>
+                    <div class="med-info">${m.dosage} • ${m.freq}</div>
+                    <div class="med-action">
+                        <button onclick="logTaken(${m.id})" style="background: ${taken ? 'var(--primary)' : '#334155'}; color: ${taken ? '#0F172A' : 'var(--text-primary)'};">${taken ? '✓ Done' : 'Log Dose'}</button>
+                        <button onclick="deleteMed(${m.id})" style="background: #DC2626; color: white; flex: 0.3;">🗑</button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('todayLog').textContent = `${todayCount}/${meds.length} doses taken today`;
+        }
+
+        displayMeds();
+    </script>
+</body>
+</html>

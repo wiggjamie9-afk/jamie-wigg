@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#060e0e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="TRIM — Stop paying for things you forgot about. Subscription tracker.">
+  <title>TRIM — Subscription Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #060e0e;
+      --bg2: #0c1a1a;
+      --glass: rgba(13,148,136,0.07);
+      --glass-border: rgba(13,148,136,0.15);
+      --glass-white: rgba(255,255,255,0.04);
+      --glass-white-border: rgba(255,255,255,0.08);
+      --primary: #0d9488;
+      --primary-light: #5eead4;
+      --primary-glow: rgba(13,148,136,0.3);
+      --accent: #f0fdfa;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --text: #f0fdfa;
+      --muted: #4b7272;
+      --muted2: #94a3b8;
+      --radius: 20px;
+      --tab-h: 72px;
+      --safe-bottom: env(safe-area-inset-bottom, 16px);
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #bg-canvas {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+    }
+
+    #app {
+      position: relative; z-index: 1;
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 8px;
+      padding-top: calc(16px + env(safe-area-inset-top, 0px));
+      flex-shrink: 0;
+    }
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .pro-badge {
+      background: linear-gradient(135deg, var(--amber), #ef4444);
+      color: #fff; font-size: 10px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+      letter-spacing: 0.5px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pro-badge.active-pro {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    }
+    .pro-badge:active { transform: scale(0.95); }
+
+    /* ── VIEWS ── */
+    .view {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 0 20px;
+      padding-bottom: calc(var(--tab-h) + var(--safe-bottom) + 16px);
+      display: none;
+    }
+    .view.active { display: flex; flex-direction: column; }
+    .view::-webkit-scrollbar { display: none; }
+    .view { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ── VIEW HEADER ── */
+    .view-header {
+      width: 100%; margin-bottom: 20px; margin-top: 8px;
+    }
+    .view-header h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px; font-weight: 700;
+    }
+    .view-header p { font-size: 13px; color: var(--muted2); margin-top: 4px; }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 11px; color: var(--muted);
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* ═══════════════════════════════════════════
+       DASHBOARD VIEW
+    ═══════════════════════════════════════════ */
+    #view-dashboard {
+      align-items: stretch;
+    }
+
+    /* Hero cost card */
+    .hero-card {
+      background: linear-gradient(135deg, rgba(13,148,136,0.18), rgba(13,148,136,0.06));
+      border: 1px solid rgba(94,234,212,0.2);
+      border-radius: var(--radius); padding: 28px 24px 24px;
+      margin-bottom: 12px; position: relative; overflow: hidden;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute; top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(94,234,212,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-label {
+      font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--primary-light); margin-bottom: 8px;
+    }
+    .hero-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(44px, 14vw, 64px);
+      font-weight: 700; letter-spacing: -2px; line-height: 1;
+      background: linear-gradient(135deg, #fff 40%, var(--primary-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-period {
+      font-size: 15px; color: var(--muted2); margin-top: 4px;
+    }
+    .hero-row {
+      display: flex; gap: 12px; margin-top: 20px;
+    }
+    .hero-stat {
+      flex: 1;
+      background: rgba(0,0,0,0.25); border-radius: 14px;
+      padding: 12px 14px;
+    }
+    .hero-stat-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+    }
+    .hero-stat-val.warn { color: var(--amber); }
+    .hero-stat-val.danger { color: var(--red); }
+    .hero-stat-label { font-size: 11px; color: var(--muted2); margin-top: 3px; }
+
+    /* Renewal alerts */
+    .alerts-section { margin-bottom: 4px; }
+    .alert-card {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 14px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+      animation: fade-up 0.35s ease forwards;
+    }
+    .alert-emoji { font-size: 24px; flex-shrink: 0; }
+    .alert-info { flex: 1; min-width: 0; }
+    .alert-name {
+      font-size: 15px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .alert-detail { font-size: 12px; color: var(--muted2); margin-top: 2px; }
+    .alert-badge {
+      background: var(--amber); color: #000;
+      font-size: 10px; font-weight: 700;
+      padding: 3px 8px; border-radius: 8px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .alert-badge.today { background: var(--red); color: #fff; }
+
+    /* Sub list */
+    .sub-list { display: flex; flex-direction: column; gap: 8px; }
+    .sub-card {
+      background: var(--glass-white); border: 1px solid var(--glass-white-border);
+      border-radius: 16px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; transition: all 0.2s;
+      animation: fade-up 0.35s ease both;
+    }
+    .sub-card:active { transform: scale(0.98); background: rgba(255,255,255,0.07); }
+    .sub-emoji {
+      font-size: 28px; flex-shrink: 0;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(13,148,136,0.12); border-radius: 12px;
+    }
+    .sub-info { flex: 1; min-width: 0; }
+    .sub-name {
+      font-size: 15px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sub-meta { font-size: 12px; color: var(--muted2); margin-top: 3px; }
+    .sub-right { text-align: right; flex-shrink: 0; }
+    .sub-price {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 700;
+    }
+    .sub-renewal {
+      font-size: 11px; color: var(--muted2); margin-top: 3px;
+    }
+    .sub-renewal.soon { color: var(--amber); }
+    .sub-renewal.today-r { color: var(--red); }
+
+    .empty-state {
+      text-align: center; padding: 48px 20px; color: var(--muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-title { font-size: 18px; font-weight: 600; color: var(--muted2); margin-bottom: 8px; }
+    .empty-desc { font-size: 14px; line-height: 1.5; }
+
+    /* ═══════════════════════════════════════════
+       ADD VIEW
+    ═══════════════════════════════════════════ */
+    #view-add { align-items: stretch; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block; font-size: 12px; font-weight: 600;
+      color: var(--muted2); letter-spacing: 0.5px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .form-input {
+      width: 100%; padding: 14px 16px;
+      background: var(--glass-white); border: 1px solid var(--glass-white-border);
+      border-radius: 14px; color: var(--text);
+      font-family: inherit; font-size: 16px;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+    .form-input::placeholder { color: var(--muted); }
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    select.form-input {
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234b7272' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+    select.form-input option { background: #0c1a1a; color: var(--text); }
+
+    /* Price row */
+    .price-row { display: flex; gap: 10px; }
+    .price-row .form-group { flex: 1; margin-bottom: 0; }
+    .price-row .form-group:first-child { flex: 0 0 140px; }
+
+    /* Emoji picker */
+    .emoji-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    }
+    .emoji-btn {
+      aspect-ratio: 1; border-radius: 12px; border: 1.5px solid transparent;
+      background: var(--glass-white); font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .emoji-btn:active { transform: scale(0.88); }
+    .emoji-btn.selected {
+      border-color: var(--primary);
+      background: rgba(13,148,136,0.15);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+
+    /* Last used row */
+    .last-used-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--glass-white); border: 1px solid var(--glass-white-border);
+      border-radius: 14px; cursor: pointer;
+    }
+    .last-used-row h4 { font-size: 15px; font-weight: 500; }
+    .last-used-row p { font-size: 12px; color: var(--muted2); margin-top: 2px; }
+    .toggle {
+      width: 48px; height: 28px; border-radius: 14px;
+      background: var(--glass-white-border); position: relative;
+      cursor: pointer; transition: background 0.3s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--primary); }
+    .toggle::after {
+      content: ''; position: absolute;
+      top: 3px; left: 3px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #fff; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .toggle.on::after { transform: translateX(20px); }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%; padding: 17px; border: none; border-radius: 16px;
+      background: linear-gradient(135deg, var(--primary), #0f766e);
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 32px var(--primary-glow);
+      transition: all 0.2s; letter-spacing: 0.3px;
+    }
+    .btn-primary:active { transform: scale(0.97); box-shadow: 0 4px 16px var(--primary-glow); }
+    .btn-secondary {
+      width: 100%; padding: 15px; border: 1px solid var(--glass-white-border);
+      border-radius: 16px; background: var(--glass-white);
+      color: var(--muted2); font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; margin-top: 10px;
+    }
+    .btn-secondary:active { transform: scale(0.97); }
+
+    /* ═══════════════════════════════════════════
+       INSIGHTS VIEW
+    ═══════════════════════════════════════════ */
+    #view-insights { align-items: stretch; }
+
+    .insight-card {
+      background: var(--glass-white); border: 1px solid var(--glass-white-border);
+      border-radius: var(--radius); padding: 20px;
+      margin-bottom: 12px;
+      animation: fade-up 0.35s ease both;
+    }
+    .insight-icon { font-size: 28px; margin-bottom: 10px; }
+    .insight-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 700; margin-bottom: 6px;
+    }
+    .insight-body { font-size: 14px; color: var(--muted2); line-height: 1.55; }
+    .insight-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px; font-weight: 700; margin: 10px 0 4px;
+      color: var(--red);
+    }
+    .insight-amount.ok { color: var(--primary-light); }
+
+    /* Category bars */
+    .cat-list { margin-top: 4px; }
+    .cat-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px;
+    }
+    .cat-emoji { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+    .cat-info { flex: 1; min-width: 0; }
+    .cat-name { font-size: 13px; font-weight: 500; margin-bottom: 5px; }
+    .cat-bar-wrap {
+      height: 6px; background: var(--glass-white-border);
+      border-radius: 3px; overflow: hidden;
+    }
+    .cat-bar {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .cat-amount {
+      font-size: 13px; font-weight: 600; flex-shrink: 0;
+      min-width: 48px; text-align: right;
+    }
+
+    /* ═══════════════════════════════════════════
+       SETTINGS VIEW
+    ═══════════════════════════════════════════ */
+    #view-settings { align-items: stretch; }
+
+    .settings-section {
+      width: 100%; margin-bottom: 16px;
+      background: var(--glass-white); border: 1px solid var(--glass-white-border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px; border-bottom: 1px solid var(--glass-white-border);
+      cursor: pointer;
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-left h4 { font-size: 15px; font-weight: 500; }
+    .settings-row-left p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .settings-chevron { color: var(--muted); font-size: 14px; }
+
+    .unlock-card {
+      background: linear-gradient(135deg, rgba(13,148,136,0.2), rgba(94,234,212,0.08));
+      border: 1px solid rgba(94,234,212,0.25);
+      border-radius: var(--radius); padding: 24px 20px;
+      text-align: center; margin-bottom: 16px;
+    }
+    .unlock-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .unlock-features { list-style: none; text-align: left; margin: 16px 0; }
+    .unlock-features li {
+      padding: 5px 0; font-size: 14px;
+      display: flex; align-items: center; gap: 10px; color: var(--muted2);
+    }
+    .unlock-features li::before { content: '✦'; color: var(--primary-light); font-size: 10px; }
+    .unlock-price {
+      font-size: 36px; font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      margin: 12px 0 4px;
+    }
+    .unlock-once { font-size: 13px; color: var(--muted2); margin-bottom: 16px; }
+    .restore-btn {
+      background: none; border: none; color: var(--muted2);
+      font-size: 13px; margin-top: 12px; cursor: pointer;
+      text-decoration: underline; font-family: inherit;
+    }
+
+    /* App version row */
+    .app-version {
+      text-align: center; padding: 16px;
+      font-size: 12px; color: var(--muted);
+    }
+
+    /* ═══════════════════════════════════════════
+       BOTTOM TAB BAR
+    ═══════════════════════════════════════════ */
+    .tab-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(var(--tab-h) + var(--safe-bottom));
+      background: rgba(6,14,14,0.88);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-top: 1px solid var(--glass-white-border);
+      display: flex; align-items: flex-start;
+      padding: 10px 0 0;
+      z-index: 50;
+    }
+    .tab-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 4px; padding: 8px 4px;
+      border: none; background: transparent;
+      color: var(--muted); cursor: pointer;
+      transition: color 0.2s; position: relative;
+    }
+    .tab-btn.active { color: var(--primary-light); }
+    .tab-icon { font-size: 22px; transition: transform 0.2s; }
+    .tab-btn.active .tab-icon { transform: scale(1.1); }
+    .tab-label { font-size: 10px; font-weight: 500; letter-spacing: 0.3px; }
+    .tab-indicator {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 20px; height: 2px; border-radius: 2px;
+      background: var(--primary); opacity: 0; transition: opacity 0.2s;
+    }
+    .tab-btn.active .tab-indicator { opacity: 1; }
+
+    /* ═══════════════════════════════════════════
+       MODALS
+    ═══════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .modal-sheet {
+      width: 100%; max-width: 520px;
+      background: linear-gradient(to bottom, #0c1f1f, #060e0e);
+      border: 1px solid var(--glass-white-border);
+      border-radius: 28px 28px 0 0; padding: 28px 24px;
+      padding-bottom: calc(28px + var(--safe-bottom));
+      transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      max-height: 90dvh; overflow-y: auto;
+    }
+    .modal-overlay.show .modal-sheet { transform: translateY(0); }
+    .modal-handle {
+      width: 40px; height: 4px; background: var(--glass-white-border);
+      border-radius: 2px; margin: 0 auto 24px;
+    }
+
+    /* Sub detail modal */
+    .modal-emoji {
+      font-size: 52px; text-align: center; margin-bottom: 12px;
+    }
+    .modal-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px; font-weight: 700;
+      text-align: center; margin-bottom: 4px;
+    }
+    .modal-meta { text-align: center; color: var(--muted2); font-size: 14px; margin-bottom: 24px; }
+    .modal-detail-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 0; border-bottom: 1px solid var(--glass-white-border);
+    }
+    .modal-detail-row:last-of-type { border-bottom: none; }
+    .modal-detail-label { font-size: 14px; color: var(--muted2); }
+    .modal-detail-val { font-size: 14px; font-weight: 600; }
+
+    .btn-danger {
+      width: 100%; padding: 15px; border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 16px; background: rgba(239,68,68,0.1);
+      color: var(--red); font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; margin-top: 8px;
+    }
+    .btn-danger:active { transform: scale(0.97); }
+
+    /* Last used toggle in detail */
+    .last-used-update {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; margin-bottom: 12px;
+      background: rgba(13,148,136,0.1); border: 1px solid rgba(13,148,136,0.2);
+      border-radius: 14px; cursor: pointer;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; top: calc(env(safe-area-inset-top,0px) + 16px);
+      left: 50%; transform: translateX(-50%) translateY(-100px);
+      background: linear-gradient(135deg, var(--primary), #0f766e);
+      color: #fff; padding: 12px 24px; border-radius: 20px;
+      font-size: 14px; font-weight: 600; z-index: 300;
+      box-shadow: 0 8px 32px var(--primary-glow);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fade-up 0.35s ease forwards; }
+
+    @keyframes number-pop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.06); }
+      70% { transform: scale(0.97); }
+      100% { transform: scale(1); }
+    }
+    .pop { animation: number-pop 0.4s ease; }
+
+    /* ── SPACER ── */
+    .spacer { height: 20px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">TRIM</div>
+    <div class="pro-badge" id="pro-badge" onclick="openPaywall()">UPGRADE</div>
+  </div>
+
+  <!-- ═══════════════ DASHBOARD VIEW ═══════════════ -->
+  <div class="view active" id="view-dashboard">
+
+    <!-- Hero card -->
+    <div class="hero-card fade-up">
+      <div class="hero-label">Monthly spend</div>
+      <div class="hero-amount" id="hero-monthly">$0</div>
+      <div class="hero-period">/ month</div>
+      <div class="hero-row">
+        <div class="hero-stat">
+          <div class="hero-stat-val" id="hero-yearly">$0</div>
+          <div class="hero-stat-label">per year</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val warn" id="hero-count">0</div>
+          <div class="hero-stat-label">subscriptions</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val danger" id="hero-renewing">0</div>
+          <div class="hero-stat-label">renewing soon</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alerts-section" id="alerts-section"></div>
+
+    <!-- Subscriptions list -->
+    <div class="section-label" id="subs-section-label" style="margin-top:4px">All Subscriptions</div>
+    <div class="sub-list" id="sub-list"></div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ═══════════════ ADD VIEW ═══════════════ -->
+  <div class="view" id="view-add">
+    <div class="view-header fade-up" id="add-header">
+      <h2 id="add-title">Add Subscription</h2>
+      <p id="add-subtitle">Track a new recurring payment</p>
+    </div>
+
+    <!-- Name -->
+    <div class="form-group">
+      <label class="form-label">Service Name</label>
+      <input class="form-input" id="field-name" type="text" placeholder="e.g. Netflix, Spotify…" autocomplete="off" autocorrect="off" autocapitalize="words">
+    </div>
+
+    <!-- Price + Cycle -->
+    <div class="price-row">
+      <div class="form-group">
+        <label class="form-label">Price ($)</label>
+        <input class="form-input" id="field-price" type="number" step="0.01" min="0" placeholder="0.00" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Billing Cycle</label>
+        <select class="form-input" id="field-cycle">
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Category -->
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select class="form-input" id="field-category">
+        <option value="streaming">🎬 Streaming</option>
+        <option value="software">💻 Software</option>
+        <option value="fitness">💪 Fitness</option>
+        <option value="food">🍕 Food & Delivery</option>
+        <option value="music">🎵 Music</option>
+        <option value="gaming">🎮 Gaming</option>
+        <option value="news">📰 News & Media</option>
+        <option value="cloud">☁️ Cloud Storage</option>
+        <option value="other">📦 Other</option>
+      </select>
+    </div>
+
+    <!-- Renewal date -->
+    <div class="form-group">
+      <label class="form-label">Next Renewal Date</label>
+      <input class="form-input" id="field-renewal" type="date">
+    </div>
+
+    <!-- Emoji -->
+    <div class="form-group">
+      <label class="form-label">Icon</label>
+      <div class="emoji-grid" id="emoji-grid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Last used toggle -->
+    <div class="form-group">
+      <label class="form-label">Last Used Today?</label>
+      <div class="last-used-row" onclick="toggleLastUsed()">
+        <div>
+          <h4>Mark as used today</h4>
+          <p>Tracks which subs you're actually using</p>
+        </div>
+        <div class="toggle" id="toggle-lastused"></div>
+      </div>
+    </div>
+
+    <!-- Save -->
+    <button class="btn-primary" id="save-btn" onclick="saveSub()">Add Subscription</button>
+    <button class="btn-secondary" id="cancel-btn" onclick="cancelEdit()">Cancel</button>
+
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ═══════════════ INSIGHTS VIEW ═══════════════ -->
+  <div class="view" id="view-insights">
+    <div class="view-header fade-up">
+      <h2>Insights</h2>
+      <p>Where your money is really going</p>
+    </div>
+    <div id="insights-content"></div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ═══════════════ SETTINGS VIEW ═══════════════ -->
+  <div class="view" id="view-settings">
+    <div class="view-header fade-up">
+      <h2>Settings</h2>
+    </div>
+
+    <div id="settings-unlock-card"></div>
+
+    <div class="settings-section">
+      <div class="settings-row" onclick="exportData()">
+        <div class="settings-row-left">
+          <h4>Export Data</h4>
+          <p>Download your subscriptions as CSV</p>
+        </div>
+        <span class="settings-chevron">›</span>
+      </div>
+      <div class="settings-row" onclick="clearAllData()">
+        <div class="settings-row-left">
+          <h4 style="color:var(--red)">Clear All Data</h4>
+          <p>Remove all subscriptions</p>
+        </div>
+        <span class="settings-chevron">›</span>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-row" onclick="showToast('Built with ❤️ — Version 1.0')">
+        <div class="settings-row-left">
+          <h4>About TRIM</h4>
+          <p>Stop paying for forgotten subscriptions</p>
+        </div>
+        <span class="settings-chevron">›</span>
+      </div>
+    </div>
+
+    <div class="app-version">TRIM v1.0 · All data stored locally on device</div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- BOTTOM TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">💳</span>
+      <span class="tab-label">Dashboard</span>
+    </button>
+    <button class="tab-btn" data-tab="add" onclick="switchTab('add')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">＋</span>
+      <span class="tab-label">Add</span>
+    </button>
+    <button class="tab-btn" data-tab="insights" onclick="switchTab('insights')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">Insights</span>
+    </button>
+    <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
+      <div class="tab-indicator"></div>
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label">Settings</span>
+    </button>
+  </div>
+</div>
+
+<!-- PAYWALL MODAL -->
+<div class="modal-overlay" id="paywall-modal" onclick="closeModalOutside(event,'paywall-modal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:52px;margin-bottom:14px">✂️</div>
+      <div class="unlock-title">Unlock TRIM</div>
+      <p style="color:var(--muted2);font-size:14px;margin-top:6px">
+        One-time purchase. Yours forever.
+      </p>
+    </div>
+    <ul class="unlock-features">
+      <li>Unlimited subscriptions (free: 5)</li>
+      <li>Hidden cost detector — spot unused subs</li>
+      <li>Full category breakdown analytics</li>
+      <li>Yearly waste projections</li>
+      <li>CSV export of all your data</li>
+      <li>Lifetime updates included</li>
+    </ul>
+    <div style="text-align:center">
+      <div class="unlock-price">$3.99</div>
+      <div class="unlock-once">One-time · No subscription · No irony</div>
+    </div>
+    <button class="btn-primary" onclick="activateUnlock()" style="margin-top:4px">
+      Unlock for $3.99
+    </button>
+    <br>
+    <button class="restore-btn" onclick="restorePurchase()">Restore purchase</button>
+    <br>
+    <button class="restore-btn" style="margin-top:4px" onclick="closeModal('paywall-modal')">Not now</button>
+  </div>
+</div>
+
+<!-- SUB DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal" onclick="closeModalOutside(event,'detail-modal')">
+  <div class="modal-sheet" id="detail-modal-content"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  TRIM — Subscription Tracker
+//  © 2026 — Mobile-first PWA
+// ══════════════════════════════════════════════
+
+// ── EMOJI SETS ──
+const EMOJIS = [
+  '📺','🎵','🎮','💻','☁️','🏋️','📰','🍕','🎬','📱',
+  '🔒','📧','🗂️','🎨','📚','🎧','🛒','✈️','🏠','💡',
+];
+
+const CATEGORY_META = {
+  streaming: { label: 'Streaming',      emoji: '🎬' },
+  software:  { label: 'Software',       emoji: '💻' },
+  fitness:   { label: 'Fitness',        emoji: '💪' },
+  food:      { label: 'Food & Delivery',emoji: '🍕' },
+  music:     { label: 'Music',          emoji: '🎵' },
+  gaming:    { label: 'Gaming',         emoji: '🎮' },
+  news:      { label: 'News & Media',   emoji: '📰' },
+  cloud:     { label: 'Cloud Storage',  emoji: '☁️' },
+  other:     { label: 'Other',          emoji: '📦' },
+};
+
+// ── STATE ──
+let subs = [];
+let isUnlocked = false;
+let editingId = null;
+let lastUsedToday = false;
+let selectedEmoji = EMOJIS[0];
+
+const FREE_LIMIT = 5;
+
+// ── PERSISTENCE ──
+function loadData() {
+  try { subs = JSON.parse(localStorage.getItem('trim_subs') || '[]'); } catch { subs = []; }
+  isUnlocked = localStorage.getItem('trim_unlocked') === '1';
+}
+function saveData() {
+  localStorage.setItem('trim_subs', JSON.stringify(subs));
+}
+
+// ── HELPERS ──
+function fmt(n) {
+  return '$' + n.toFixed(2).replace(/\.00$/, '');
+}
+function fmtBig(n) {
+  if (n >= 1000) return '$' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return '$' + n.toFixed(0);
+}
+
+function toMonthly(price, cycle) {
+  if (cycle === 'weekly')  return price * 52 / 12;
+  if (cycle === 'yearly')  return price / 12;
+  return price; // monthly
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d   = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+
+function formatRenewal(dateStr) {
+  const days = daysUntil(dateStr);
+  if (days === null) return 'No date set';
+  if (days < 0)     return `Overdue ${Math.abs(days)}d`;
+  if (days === 0)   return 'Renews TODAY';
+  if (days === 1)   return 'Renews tomorrow';
+  if (days <= 7)    return `Renews in ${days} days`;
+  const d = new Date(dateStr);
+  return 'Renews ' + d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+}
+
+function cycleLabel(cycle) {
+  return { monthly: 'monthly', yearly: 'yearly', weekly: 'weekly' }[cycle] || cycle;
+}
+
+function daysSinceUsed(lastUsed) {
+  if (!lastUsed) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d   = new Date(lastUsed); d.setHours(0,0,0,0);
+  return Math.round((now - d) / 86400000);
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+
+// ── COMPUTED TOTALS ──
+function computeTotals() {
+  const monthly = subs.reduce((sum, s) => sum + toMonthly(s.price, s.cycle), 0);
+  const yearly  = monthly * 12;
+  const renewing = subs.filter(s => {
+    const d = daysUntil(s.renewal);
+    return d !== null && d >= 0 && d <= 7;
+  }).length;
+  return { monthly, yearly, renewing };
+}
+
+// ── RENDER DASHBOARD ──
+function renderDashboard() {
+  const { monthly, yearly, renewing } = computeTotals();
+
+  // Hero
+  const heroEl = document.getElementById('hero-monthly');
+  heroEl.textContent = fmtBig(monthly);
+  heroEl.classList.remove('pop'); void heroEl.offsetWidth; heroEl.classList.add('pop');
+
+  document.getElementById('hero-yearly').textContent   = fmtBig(yearly);
+  document.getElementById('hero-count').textContent    = subs.length;
+  document.getElementById('hero-renewing').textContent = renewing;
+
+  // Alerts
+  const alertsEl = document.getElementById('alerts-section');
+  const alertSubs = subs
+    .filter(s => { const d = daysUntil(s.renewal); return d !== null && d >= 0 && d <= 7; })
+    .sort((a, b) => daysUntil(a.renewal) - daysUntil(b.renewal));
+
+  if (alertSubs.length) {
+    const heading = `<div class="section-label">⚠️ Renewing Soon</div>`;
+    const cards = alertSubs.map(s => {
+      const days = daysUntil(s.renewal);
+      const badgeClass = days === 0 ? 'alert-badge today' : 'alert-badge';
+      const badgeText  = days === 0 ? 'TODAY' : days === 1 ? 'TOMORROW' : `${days} DAYS`;
+      return `<div class="alert-card" onclick="openDetail('${s.id}')">
+        <div class="alert-emoji">${s.emoji}</div>
+        <div class="alert-info">
+          <div class="alert-name">${esc(s.name)}</div>
+          <div class="alert-detail">${fmt(s.price)} / ${cycleLabel(s.cycle)} · ${fmt(toMonthly(s.price, s.cycle))}/mo</div>
+        </div>
+        <div class="${badgeClass}">${badgeText}</div>
+      </div>`;
+    }).join('');
+    alertsEl.innerHTML = heading + cards;
+  } else {
+    alertsEl.innerHTML = '';
+  }
+
+  // Sub list
+  const listEl = document.getElementById('sub-list');
+  const labelEl = document.getElementById('subs-section-label');
+
+  if (!subs.length) {
+    labelEl.style.display = 'none';
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✂️</div>
+        <div class="empty-title">No subscriptions yet</div>
+        <div class="empty-desc">Add your first subscription to start tracking what you're spending.</div>
+      </div>`;
+    return;
+  }
+
+  labelEl.style.display = '';
+  const sorted = [...subs].sort((a, b) => toMonthly(b.price, b.cycle) - toMonthly(a.price, a.cycle));
+
+  listEl.innerHTML = sorted.map((s, i) => {
+    const days = daysUntil(s.renewal);
+    let renewClass = '';
+    if (days !== null && days <= 0) renewClass = 'today-r';
+    else if (days !== null && days <= 7) renewClass = 'soon';
+    return `<div class="sub-card" style="animation-delay:${i * 0.04}s" onclick="openDetail('${s.id}')">
+      <div class="sub-emoji">${s.emoji}</div>
+      <div class="sub-info">
+        <div class="sub-name">${esc(s.name)}</div>
+        <div class="sub-meta">${CATEGORY_META[s.category]?.label || 'Other'} · ${cycleLabel(s.cycle)}</div>
+      </div>
+      <div class="sub-right">
+        <div class="sub-price">${fmt(toMonthly(s.price, s.cycle))}<span style="font-size:11px;font-weight:400;color:var(--muted2)">/mo</span></div>
+        <div class="sub-renewal ${renewClass}">${formatRenewal(s.renewal)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER INSIGHTS ──
+function renderInsights() {
+  const el = document.getElementById('insights-content');
+
+  if (!subs.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">No data yet</div>
+      <div class="empty-desc">Add subscriptions to see insights about your spending.</div>
+    </div>`;
+    return;
+  }
+
+  // Hidden cost insight — unused in 30+ days
+  const unusedSubs = subs.filter(s => {
+    const days = daysSinceUsed(s.lastUsed);
+    return days === null || days > 30;
+  });
+  const unusedMonthlyCost = unusedSubs.reduce((sum, s) => sum + toMonthly(s.price, s.cycle), 0);
+  const unusedYearlyCost  = unusedMonthlyCost * 12;
+
+  // Category breakdown
+  const catTotals = {};
+  subs.forEach(s => {
+    const cat = s.category || 'other';
+    catTotals[cat] = (catTotals[cat] || 0) + toMonthly(s.price, s.cycle);
+  });
+  const maxCat = Math.max(...Object.values(catTotals), 0.01);
+  const sortedCats = Object.entries(catTotals).sort((a,b) => b[1]-a[1]);
+
+  // Avg per sub
+  const { monthly, yearly } = computeTotals();
+  const avgPerSub = subs.length ? monthly / subs.length : 0;
+
+  // Most expensive sub
+  const mostExp = [...subs].sort((a,b) => toMonthly(b.price, b.cycle) - toMonthly(a.price, a.cycle))[0];
+
+  // Build HTML
+  let html = '';
+
+  // Hidden cost card
+  html += `<div class="insight-card fade-up" style="animation-delay:0s">
+    <div class="insight-icon">🕵️</div>
+    <div class="insight-title">Hidden Cost Detector</div>
+    <div class="insight-amount ${unusedYearlyCost === 0 ? 'ok' : ''}">${fmtBig(unusedYearlyCost)}/yr</div>
+    <div class="insight-body">${
+      unusedSubs.length === 0
+        ? "You're using all your subscriptions. Great job staying on top of your spending."
+        : `You're spending <strong style="color:var(--red)">${fmt(unusedMonthlyCost)}/mo</strong> (${fmt(unusedYearlyCost)}/yr) on ${unusedSubs.length} subscription${unusedSubs.length > 1 ? 's' : ''} you haven't used in 30+ days: ${unusedSubs.map(s => `<strong>${esc(s.name)}</strong>`).join(', ')}.`
+    }</div>
+  </div>`;
+
+  // Category breakdown
+  html += `<div class="insight-card fade-up" style="animation-delay:0.07s">
+    <div class="insight-icon">🗂️</div>
+    <div class="insight-title">Spend by Category</div>
+    <div class="cat-list" style="margin-top:12px">
+      ${sortedCats.map(([cat, amt]) => `
+        <div class="cat-row">
+          <div class="cat-emoji">${CATEGORY_META[cat]?.emoji || '📦'}</div>
+          <div class="cat-info">
+            <div class="cat-name">${CATEGORY_META[cat]?.label || 'Other'}</div>
+            <div class="cat-bar-wrap">
+              <div class="cat-bar" style="width:${Math.round((amt/maxCat)*100)}%"></div>
+            </div>
+          </div>
+          <div class="cat-amount">${fmt(amt)}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+
+  // Yearly projection
+  html += `<div class="insight-card fade-up" style="animation-delay:0.14s">
+    <div class="insight-icon">📅</div>
+    <div class="insight-title">Yearly Projection</div>
+    <div class="insight-amount">${fmtBig(yearly)}</div>
+    <div class="insight-body">At your current rate you'll spend <strong style="color:var(--text)">${fmtBig(yearly)}</strong> on subscriptions this year — that's <strong style="color:var(--primary-light)">${fmt(yearly/52)}/week</strong> or <strong style="color:var(--primary-light)">${fmt(yearly/365)}/day</strong>.</div>
+  </div>`;
+
+  // Most expensive + avg
+  html += `<div class="insight-card fade-up" style="animation-delay:0.21s">
+    <div class="insight-icon">💸</div>
+    <div class="insight-title">Spending Snapshot</div>
+    <div class="insight-body" style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--glass-white-border)">
+        <span>Average per subscription</span>
+        <strong>${fmt(avgPerSub)}/mo</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--glass-white-border)">
+        <span>Most expensive</span>
+        <strong>${mostExp ? mostExp.emoji + ' ' + esc(mostExp.name) : '—'}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0">
+        <span>Unused subscriptions</span>
+        <strong style="color:${unusedSubs.length ? 'var(--red)' : 'var(--primary-light)'}">${unusedSubs.length}</strong>
+      </div>
+    </div>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+// ── RENDER SETTINGS ──
+function renderSettings() {
+  const el = document.getElementById('settings-unlock-card');
+  if (isUnlocked) {
+    el.innerHTML = `<div class="insight-card" style="background:linear-gradient(135deg,rgba(13,148,136,0.18),rgba(13,148,136,0.06));border-color:rgba(94,234,212,0.25);text-align:center;margin-bottom:16px">
+      <div style="font-size:28px;margin-bottom:8px">✂️</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--primary-light)">TRIM Unlocked</div>
+      <div style="font-size:13px;color:var(--muted2);margin-top:6px">Full access · Unlimited subscriptions</div>
+    </div>`;
+  } else {
+    el.innerHTML = `<div class="unlock-card">
+      <div class="unlock-title">Unlock Full Access</div>
+      <p style="color:var(--muted2);font-size:13px">One-time $3.99 · No subscriptions (ironic, we know)</p>
+      <ul class="unlock-features">
+        <li>Unlimited subscriptions (free: 5)</li>
+        <li>Hidden cost detector</li>
+        <li>Full analytics & insights</li>
+        <li>CSV export</li>
+      </ul>
+      <button class="btn-primary" onclick="openPaywall()">Unlock for $3.99</button>
+      <br><button class="restore-btn" onclick="restorePurchase()">Restore purchase</button>
+    </div>`;
+  }
+}
+
+// ── EMOJI PICKER ──
+function buildEmojiPicker() {
+  const grid = document.getElementById('emoji-grid');
+  grid.innerHTML = EMOJIS.map(e =>
+    `<button class="emoji-btn${e === selectedEmoji ? ' selected' : ''}" onclick="selectEmoji('${e}')">${e}</button>`
+  ).join('');
+}
+
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.toggle('selected', b.textContent === e));
+}
+
+// ── ADD / EDIT FORM ──
+function resetForm() {
+  editingId = null;
+  lastUsedToday = false;
+  selectedEmoji = EMOJIS[0];
+  document.getElementById('field-name').value     = '';
+  document.getElementById('field-price').value    = '';
+  document.getElementById('field-cycle').value    = 'monthly';
+  document.getElementById('field-category').value = 'streaming';
+  // Default renewal = 1 month from today
+  const d = new Date(); d.setMonth(d.getMonth() + 1);
+  document.getElementById('field-renewal').value  = d.toISOString().slice(0,10);
+  document.getElementById('toggle-lastused').classList.remove('on');
+  document.getElementById('add-title').textContent    = 'Add Subscription';
+  document.getElementById('add-subtitle').textContent = 'Track a new recurring payment';
+  document.getElementById('save-btn').textContent     = 'Add Subscription';
+  buildEmojiPicker();
+}
+
+function loadEditForm(sub) {
+  editingId = sub.id;
+  selectedEmoji = sub.emoji || EMOJIS[0];
+  document.getElementById('field-name').value     = sub.name;
+  document.getElementById('field-price').value    = sub.price;
+  document.getElementById('field-cycle').value    = sub.cycle;
+  document.getElementById('field-category').value = sub.category || 'other';
+  document.getElementById('field-renewal').value  = sub.renewal || '';
+  lastUsedToday = sub.lastUsed === todayStr();
+  document.getElementById('toggle-lastused').classList.toggle('on', lastUsedToday);
+  document.getElementById('add-title').textContent    = 'Edit Subscription';
+  document.getElementById('add-subtitle').textContent = 'Update your details';
+  document.getElementById('save-btn').textContent     = 'Save Changes';
+  buildEmojiPicker();
+}
+
+function toggleLastUsed() {
+  lastUsedToday = !lastUsedToday;
+  document.getElementById('toggle-lastused').classList.toggle('on', lastUsedToday);
+}
+
+function saveSub() {
+  const name    = document.getElementById('field-name').value.trim();
+  const price   = parseFloat(document.getElementById('field-price').value);
+  const cycle   = document.getElementById('field-cycle').value;
+  const category= document.getElementById('field-category').value;
+  const renewal = document.getElementById('field-renewal').value;
+
+  if (!name)         { showToast('Please enter a service name'); return; }
+  if (isNaN(price) || price < 0) { showToast('Please enter a valid price'); return; }
+
+  // Paywall gate
+  if (!isUnlocked && !editingId && subs.length >= FREE_LIMIT) {
+    openPaywall(); return;
+  }
+
+  if (editingId) {
+    // Update existing
+    const idx = subs.findIndex(s => s.id === editingId);
+    if (idx !== -1) {
+      subs[idx] = {
+        ...subs[idx],
+        name, price, cycle, category, renewal,
+        emoji: selectedEmoji,
+        lastUsed: lastUsedToday ? todayStr() : (subs[idx].lastUsed || null),
+      };
+    }
+    showToast(`✓ ${name} updated`);
+  } else {
+    const newSub = {
+      id:       Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+      name, price, cycle, category, renewal,
+      emoji:    selectedEmoji,
+      lastUsed: lastUsedToday ? todayStr() : null,
+      addedAt:  todayStr(),
+    };
+    subs.push(newSub);
+    showToast(`✓ ${name} added`);
+  }
+
+  saveData();
+  resetForm();
+  switchTab('dashboard');
+}
+
+function cancelEdit() {
+  resetForm();
+  switchTab('dashboard');
+}
+
+// ── DETAIL MODAL ──
+function openDetail(id) {
+  const s = subs.find(x => x.id === id);
+  if (!s) return;
+  const days = daysUntil(s.renewal);
+  const daysUsed = daysSinceUsed(s.lastUsed);
+  const monthly = toMonthly(s.price, s.cycle);
+
+  document.getElementById('detail-modal-content').innerHTML = `
+    <div class="modal-handle"></div>
+    <div class="modal-emoji">${s.emoji}</div>
+    <div class="modal-name">${esc(s.name)}</div>
+    <div class="modal-meta">${CATEGORY_META[s.category]?.label || 'Other'} · ${cycleLabel(s.cycle)}</div>
+
+    <div class="last-used-update" onclick="markUsedNow('${id}')">
+      <div>
+        <div style="font-size:15px;font-weight:500">Mark as used today</div>
+        <div style="font-size:12px;color:var(--muted2);margin-top:2px">${
+          s.lastUsed ? `Last used: ${formatLastUsed(daysUsed)}` : 'Never marked as used'
+        }</div>
+      </div>
+      <div style="font-size:22px">🔄</div>
+    </div>
+
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Price</div>
+      <div class="modal-detail-val">${fmt(s.price)} / ${cycleLabel(s.cycle)}</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Monthly equivalent</div>
+      <div class="modal-detail-val">${fmt(monthly)}/mo</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Yearly cost</div>
+      <div class="modal-detail-val" style="color:var(--amber)">${fmt(monthly * 12)}/yr</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Next renewal</div>
+      <div class="modal-detail-val ${days !== null && days <= 7 ? 'style="color:var(--amber)"' : ''}">${formatRenewal(s.renewal)}</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Last used</div>
+      <div class="modal-detail-val" style="color:${daysUsed === null || daysUsed > 30 ? 'var(--red)' : 'var(--primary-light)'}">${
+        daysUsed === null ? 'Never tracked' : formatLastUsed(daysUsed)
+      }</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Added</div>
+      <div class="modal-detail-val">${s.addedAt || '—'}</div>
+    </div>
+
+    <button class="btn-primary" style="margin-top:20px" onclick="editSub('${id}')">Edit Subscription</button>
+    <button class="btn-danger" onclick="deleteSub('${id}')">Delete</button>
+    <button class="btn-secondary" onclick="closeModal('detail-modal')">Close</button>
+  `;
+  openModal('detail-modal');
+}
+
+function formatLastUsed(days) {
+  if (days === 0)  return 'Used today';
+  if (days === 1)  return 'Used yesterday';
+  if (days <= 30)  return `${days} days ago`;
+  return `${days} days ago ⚠️`;
+}
+
+function markUsedNow(id) {
+  const s = subs.find(x => x.id === id);
+  if (!s) return;
+  s.lastUsed = todayStr();
+  saveData();
+  closeModal('detail-modal');
+  showToast(`✓ ${s.name} marked as used today`);
+  renderDashboard();
+}
+
+function editSub(id) {
+  const s = subs.find(x => x.id === id);
+  if (!s) return;
+  closeModal('detail-modal');
+  loadEditForm(s);
+  switchTab('add');
+}
+
+function deleteSub(id) {
+  const s = subs.find(x => x.id === id);
+  if (!s) return;
+  subs = subs.filter(x => x.id !== id);
+  saveData();
+  closeModal('detail-modal');
+  showToast(`${s.name} removed`);
+  renderDashboard();
+}
+
+// ── PAYWALL ──
+function openPaywall() {
+  openModal('paywall-modal');
+}
+function activateUnlock() {
+  // In production: hook into RevenueCat / App Store / Stripe
+  isUnlocked = true;
+  localStorage.setItem('trim_unlocked', '1');
+  closeModal('paywall-modal');
+  showToast('🎉 TRIM unlocked — welcome!');
+  updateProBadge();
+  renderSettings();
+  renderDashboard();
+}
+function restorePurchase() {
+  if (localStorage.getItem('trim_unlocked') === '1') {
+    activateUnlock();
+  } else {
+    showToast('No purchase found to restore');
+  }
+}
+
+// ── MODAL HELPERS ──
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+function closeModalOutside(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
+// ── TAB NAVIGATION ──
+function switchTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'insights')  renderInsights();
+  if (name === 'settings')  renderSettings();
+  if (name === 'add' && !editingId) resetForm();
+}
+
+// ── SETTINGS ACTIONS ──
+function exportData() {
+  if (!isUnlocked) { openPaywall(); return; }
+  const rows = [
+    ['Name','Price','Cycle','Category','Renewal','LastUsed','Monthly'].join(','),
+    ...subs.map(s => [
+      `"${s.name.replace(/"/g,'""')}"`,
+      s.price, s.cycle, s.category,
+      s.renewal || '', s.lastUsed || '',
+      toMonthly(s.price, s.cycle).toFixed(2),
+    ].join(','))
+  ].join('\n');
+  const blob = new Blob([rows], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'trim-subscriptions.csv';
+  a.click();
+  showToast('CSV exported');
+}
+
+function clearAllData() {
+  if (!confirm('Delete all subscriptions? This cannot be undone.')) return;
+  subs = [];
+  saveData();
+  showToast('All data cleared');
+  renderDashboard();
+}
+
+function updateProBadge() {
+  const badge = document.getElementById('pro-badge');
+  if (isUnlocked) {
+    badge.textContent = '✂️ FULL';
+    badge.classList.add('active-pro');
+    badge.onclick = null;
+  }
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── ESCAPE ──
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════
+//  BACKGROUND CANVAS (ambient teal mesh)
+// ══════════════════════════════════════════════
+(function initBg() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let t = 0;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+
+    // Primary teal glow top
+    const r1 = canvas.height * (0.45 + 0.04 * Math.sin(t));
+    const g1 = ctx.createRadialGradient(cx, cy * 0.5, 0, cx, cy * 0.5, r1);
+    g1.addColorStop(0, 'rgba(13,148,136,0.10)');
+    g1.addColorStop(1, 'rgba(13,148,136,0)');
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Accent glow bottom-right
+    const r2 = canvas.height * (0.28 + 0.025 * Math.sin(t + 1.5));
+    const g2 = ctx.createRadialGradient(canvas.width * 0.8, canvas.height * 0.9, 0,
+                                         canvas.width * 0.8, canvas.height * 0.9, r2);
+    g2.addColorStop(0, 'rgba(94,234,212,0.06)');
+    g2.addColorStop(1, 'rgba(94,234,212,0)');
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    t += 0.004;
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+function init() {
+  loadData();
+
+  // Seed some example data if fresh install
+  if (!subs.length && !localStorage.getItem('trim_seeded')) {
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 6);
+    const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1);
+    subs = [
+      {
+        id: 'seed1', name: 'Netflix', price: 22.99, cycle: 'monthly',
+        category: 'streaming', emoji: '📺',
+        renewal: tomorrow.toISOString().slice(0,10),
+        lastUsed: todayStr(), addedAt: todayStr(),
+      },
+      {
+        id: 'seed2', name: 'Spotify', price: 12.99, cycle: 'monthly',
+        category: 'music', emoji: '🎵',
+        renewal: nextWeek.toISOString().slice(0,10),
+        lastUsed: new Date(Date.now() - 45*86400000).toISOString().slice(0,10),
+        addedAt: todayStr(),
+      },
+      {
+        id: 'seed3', name: 'iCloud Storage', price: 1.49, cycle: 'monthly',
+        category: 'cloud', emoji: '☁️',
+        renewal: nextMonth.toISOString().slice(0,10),
+        lastUsed: todayStr(), addedAt: todayStr(),
+      },
+    ];
+    saveData();
+    localStorage.setItem('trim_seeded', '1');
+  }
+
+  if (isUnlocked) updateProBadge();
+  renderDashboard();
+  buildEmojiPicker();
+
+  // Set default renewal date
+  const d = new Date(); d.setMonth(d.getMonth() + 1);
+  document.getElementById('field-renewal').value = d.toISOString().slice(0,10);
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+
+init();
+</script>
+</body>
+</html>

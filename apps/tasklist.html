@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TaskList: Organize tasks and stay productive">
+    <meta name="theme-color" content="#3B82F6">
+    <title>TaskList – Get things done</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --primary: #B39AC9;
+            --secondary: #8B5BA6;
+            --accent: #B39AC9;
+            --bg-dark: #0F172A;
+            --bg-light: #1E293B;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: system-ui, sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .header h1 { font-size: 28px; margin-bottom: 4px; }
+
+        .task-form {
+            display: flex;
+            gap: 8px;
+            padding: 16px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 2px solid var(--primary);
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            background: #0F172A;
+            color: var(--text-primary);
+            border: 1px solid var(--secondary);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input[type="text"]::placeholder { color: var(--text-secondary); }
+        input[type="text"]:focus { outline: none; border-color: var(--primary); }
+
+        button {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-light);
+            border-left: 4px solid var(--secondary);
+            border-radius: 4px;
+            transition: opacity 0.2s;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            padding: 6px 10px;
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover { opacity: 0.9; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✓ TaskList</h1>
+        </div>
+
+        <div class="task-form">
+            <input type="text" id="taskInput" placeholder="Add a new task...">
+            <button onclick="addTask()">Add</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="totalTasks">0</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="completedTasks">0</div>
+                <div class="stat-label">Done</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="pendingTasks">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+        </div>
+
+        <div id="tasksList" class="tasks-list"></div>
+        <div id="emptyState" class="empty-state">
+            <p>No tasks yet. Start by adding one! 🚀</p>
+        </div>
+    </div>
+
+    <script>
+        const appState = {
+            tasks: JSON.parse(localStorage.getItem('tasks')) || [],
+
+            save() {
+                localStorage.setItem('tasks', JSON.stringify(this.tasks));
+            }
+        };
+
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const text = input.value.trim();
+
+            if (!text) {
+                showToast('Task cannot be empty', 'error');
+                return;
+            }
+
+            const task = {
+                id: Date.now(),
+                text: text,
+                completed: false
+            };
+
+            appState.tasks.push(task);
+            appState.save();
+            input.value = '';
+
+            showToast('Task added!', 'success');
+            render();
+        }
+
+        function toggleTask(id) {
+            const task = appState.tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                appState.save();
+                render();
+            }
+        }
+
+        function deleteTask(id) {
+            appState.tasks = appState.tasks.filter(t => t.id !== id);
+            appState.save();
+            showToast('Task deleted', 'info');
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('tasksList');
+            const empty = document.getElementById('emptyState');
+            const total = document.getElementById('totalTasks');
+            const completed = document.getElementById('completedTasks');
+            const pending = document.getElementById('pendingTasks');
+
+            const completedCount = appState.tasks.filter(t => t.completed).length;
+            const pendingCount = appState.tasks.filter(t => !t.completed).length;
+
+            total.textContent = appState.tasks.length;
+            completed.textContent = completedCount;
+            pending.textContent = pendingCount;
+
+            if (appState.tasks.length === 0) {
+                list.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            list.style.display = 'flex';
+            empty.style.display = 'none';
+            list.innerHTML = appState.tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                    <span class="task-text">${task.text}</span>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 12px 20px;
+                background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#6366F1'};
+                color: white;
+                border-radius: 6px;
+                font-size: 14px;
+                z-index: 1000;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        render();
+    </script>
+</body>
+</html>
