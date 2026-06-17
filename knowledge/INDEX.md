@@ -66,9 +66,10 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 
 ---
 
-### 🎯 Design Patterns for AI Workflows (1 article)
+### 🎯 Design Patterns for AI Workflows (2 articles)
 
 - **Scheduled Agent Loops** (`patterns/scheduled-agent-loops.md`) — Five-step pattern (Schedule, Context, Decide, Act, Verify) for turning one-shot prompts into hands-off, repeating outcomes. Covers three implementations: Claude Code scheduled tasks, n8n no-code workflows, cron+agent service. Best practices: define done first, feed right context, add guardrails, human-in-loop for risky steps, start small. Worked example: morning sales loop (identify follow-ups, draft emails, approve, send).
+- **Anthropic Agent Skills** (`references/anthropic-agent-skills.md`) — Agent Skills standard (agentskills.io) for dynamic instruction sets that teach Claude specialized tasks. SKILL.md format (YAML frontmatter + markdown). Anthropic's open repository of 100+ skills (creative, development, enterprise, document editing). Integration: Claude Code (plugins), Claude.ai (paid), Claude API. Source-available document skills (DOCX, PDF, PPTX, XLSX) as production reference. How to create custom skills + skill patterns. Related to this repo's `.claude/skills/` (100+ skills installed).
 
 ---
 
