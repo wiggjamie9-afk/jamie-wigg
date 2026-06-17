@@ -39,6 +39,7 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 - **Andrej Karpathy Skills** — CLAUDE.md config fixing LLM coding errors; 4 core principles (think first, simplicity, precise edits, goal-driven)
 
 #### LLM Gateways & Provider Access
+- **CC Switch** (`cc-switch.md`) — Desktop config manager (Tauri 2) for 7 AI coding tools (Claude Code/Desktop, Codex, Gemini CLI, OpenCode, OpenClaw, Hermes); unified MCP/Skills/prompt sync, provider switching, cost dashboard, atomic SQLite writes. ⚠️ sponsor wall of discount API-relays = same reverse-eng/credential-routing risk as kimi-free-api — use with official channels only. Desktop, not sandbox
 - **GPT4Free (g4f)** (`gpt4free.md`) — Multi-provider LLM aggregator; OpenAI-compatible Python/JS client + FastAPI + MCP server; web search + image gen; local inference (Ollama/vLLM). GPLv3
 - **OpenClaw Zero Token** (`openclaw-zero-token.md`) — Free gateway to 13 web LLMs (ChatGPT/Claude/Gemini/DeepSeek/Kimi/Qwen/Grok/GLM…) via browser login; tool calling on 11/13; local credential storage. MIT
 - **kimi-free-api (fix)** (`kimi-free-api.md`) — ⚠️ Reverse-engineered Kimi API; documented with supply-chain-attack warnings; NOT recommended — prefer official API / OpenClaw Zero Token

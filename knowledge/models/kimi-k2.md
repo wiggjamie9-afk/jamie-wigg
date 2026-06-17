@@ -2,7 +2,18 @@
 
 State-of-the-art mixture-of-experts (MoE) language model by Moonshot AI with 32B activated parameters and 1T total parameters. Specifically optimized for agentic capabilities, tool use, and reasoning.
 
-## Model Specifications
+## Update: Kimi K2.6 (latest)
+
+**Kimi K2.6** is the newest revision — an **open-source, native multimodal agentic** model built for:
+- **Long-horizon coding** — complex end-to-end engineering across front-end, DevOps, performance optimization, and full-stack workflows
+- **Coding-driven design** — generating UI/design from code intent
+- **Swarm-based task orchestration** — coordinating large groups of specialized agents to plan → implement → test → iterate on real coding tasks
+
+Versus the base K2 documented below (text-centric agentic LLM), K2.6 adds **native multimodality** and is explicitly tuned for **multi-agent swarm coordination** on sustained engineering work. This maps directly onto two things already in this ecosystem: the **ruflo** swarm/hive-mind MCP and the **Nucleus/Mary** multi-agent orchestration loop — K2.6 is a candidate runtime for both. Model IDs/availability evolve on Moonshot's platform (https://platform.moonshot.ai); treat the specs below as the K2 baseline and expect K2.6 to match or exceed them with added vision + swarm tuning.
+
+K2-family lineage in this knowledge base: **K2** (agentic base, below) → **K2.5** (the model behind Kimi's production agents, see `kimi-agent-internals.md`) → **K2.6** (native multimodal + swarm). The autonomous writer (`kimi-k2-thinking`) and KimiK2Manim both ride on this family.
+
+## Model Specifications (K2 baseline)
 
 | Property | Value |
 |----------|-------|
