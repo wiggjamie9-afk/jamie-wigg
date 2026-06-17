@@ -17,7 +17,7 @@ const SUITE = [
   'beatmap', 'tuner', 'stemmix', 'metro', 'tabplayer', 'setlist', 'lrcsync', 'harmony',
   'calving', 'herdlog', 'feedcost', 'vaxtrack', 'herdgene', 'graze',
   'breathe', 'achelog', 'stretch', 'rehab',
-  'statline', 'hrzones',
+  'statline', 'hrzones', 'protocol',
   'prompter', 'thumbforge', 'brandkit', 'newsletter',
   'wordstreak', 'askform', 'contentcal', 'timeblock', 'samplevault',
   'waveedit', 'podclip', 'moodatlas',
