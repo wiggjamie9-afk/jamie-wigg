@@ -379,6 +379,79 @@ Note: `@claude-flow/cli`'s `@claude-flow/memory` dep pinned to `^3.0.0-alpha.20`
 
 ---
 
+## v3.8.0
+
+**Subject:** Full rvagent integration with MCP tools, WASM agent composability, and SOTA performance
+
+### Features
+
+**ADR-129 — Full rvagent integration (PR #2123)**
+
+**16 new MCP tools** for WASM agent gallery & introspection:
+- 10 CRUD operations
+- 6 query operations
+
+**wasm_agent_compose with addMcpTools bridge** unlocking all 314 MCP tools to WASM agents.
+
+**JsModelProvider real provider routing** (replaces the echo-stub bypass).
+
+**Plugin contract:** `rvagent` field on plugin manifest + `includePlugins` option in compose.
+
+### Fixes
+
+**#2120 — getBridge() bridge-disable honor**
+
+`getBridge()` now honors `CLAUDE_FLOW_DISABLE_BRIDGE=1`, fixing the legacy-DB status backfill regression that caused ruflo memory stats to report 0 entries against pre-status-column databases.
+
+### Performance (PR #2124 — SOTA comparator benchmarks)
+
+**4 production speedups on wasm_agent_compose hot path** (all in `wasm-agent-tools.ts`):
+
+1. Plugin manifest cache — 21-plugin overhead: 0.196ms → 0.001ms
+2. isDestructiveTool fast-path — suffix check before 8-regex battery
+3. Hoisted Buffer import — eliminates `await import('node:buffer')` microtask per call
+4. Memoized loadAgentWasm() — module-level promise singleton for all 20 MCP handlers
+
+**Cumulative compose_50_tools: 0.351ms → 0.146ms (2.4× improvement)**
+
+#### SOTA Benchmark Matrix
+
+Verified against LangGraph 1.2.1, AutoGen 0.4.9, CrewAI 0.80.0 on darwin-arm64 + linux-x64:
+
+| Dimension | ruflo | AutoGen | LangGraph | CrewAI |
+|-----------|-------|---------|-----------|--------|
+| Cold start | 3.93ms | 185ms | 534ms | 2527ms |
+| Single turn | 0.012ms | 6.13ms | 37.1ms | proxy† |
+| N=10 parallel | 1.27ms | 61ms | 393ms | proxy† |
+| RSS | 61.6MB | 78.7MB | 80.3MB | 265.7MB |
+
+† CrewAI dispatch proxied (requires real LLM).
+
+**Full methodology, Linux numbers, concurrency scale, v3.7→v3.8 delta:** https://gist.github.com/ruvnet/298f8c668c8859b369f91734a0e9cbbe
+
+#### Benchmark Results (5-trial median, bench-rvagent.mjs)
+
+- Provider routing: 0.025ms (fake key, router only)
+- Compose 100 tools: 0.215ms
+- Gallery CRUD cycle: 0.094ms
+- Plugin enum (absent): 0.035ms
+
+### Witness Manifest
+
+ADR-129 P1–P4 fix entries registered (verification/witness-fixes.json, 117/117 verified).
+
+### Packages
+
+| Package | Version |
+|---------|---------|
+| @claude-flow/cli | 3.8.0 |
+| claude-flow | 3.8.0 |
+| ruflo | 3.8.0 |
+
+All three packages available across `latest`, `alpha`, `v3alpha` dist-tags.
+
+---
+
 ## v3.10.6
 
 **Subject:** Silent write loss on Node 24/26, pattern store/search mismatch, route feedback, statusline version, flashAttention state
