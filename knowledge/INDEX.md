@@ -23,6 +23,7 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 - **Finalrun** — AI-powered mobile app testing via visual recognition; no selectors needed
 
 #### Content Generation & Automation
+- **KREA** (`krea.md`) — Hosted creative AI: illusion-diffusion Patterns/Logos (embed text/logo into images), real-time sketch→image, image→video. Includes "is it the same tech?" answer (yes — one conditioned-diffusion engine; Real-Time = distilled low-latency model). Approximate via Replicate/FLUX+ControlNet → SkyReels-I2V
 - **Reddit Video Maker Bot** — One-command YouTube/TikTok creation from Reddit posts; Python 3.10 + Playwright
 - **SEO Machine** — Claude Code workspace with `/research` `/write` `/optimize` commands; 10+ agents + 26 marketing skills; GA4+GSC integration
 - **Carousel Generator** (`carousel-generator.md`) — Text-to-carousel skill: 12 slide types, 6 platforms, 880 style combos (5 fonts × 8 surfaces × 11 accents × 2 purposes); PNG + PDF export; live preview toolbar
