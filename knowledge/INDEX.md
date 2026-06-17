@@ -36,6 +36,7 @@ Curated business cases, technical deep dives, and tool references for AI agent d
 - **GitNexus** — Graph RAG agent for code analysis; browser-based knowledge graph; zero-server
 - **Kimi CLI** (`kimi-cli.md`) — Terminal-first AI agent + shell (Moonshot AI); Ctrl-X toggle agent ↔ shell; VS Code/ACP/Zsh integration; 100+ MCP tools support
 - **MiroFlow** (`miroflow.md`) — SOTA multi-step research agent (MiroMind); #1 FutureX, GAIA 82.4%, xBench-DeepSearch 72.0%; hierarchical sub-agents; MiroThinker runs on single RTX 4090
+- **MindSearch** (`mindsearch.md`) — Deep web research agent by InternLM; query decomposition → iterative search → synthesis; built on Lagent v0.5 (lightweight agent framework); multiple search engines (DuckDuckGo/Bing/Brave/Google); local (InternLM2.5-7b) or GPT-4 backends. Micro-agent for Nucleus fact-checking + competitive intelligence
 - **Andrej Karpathy Skills** — CLAUDE.md config fixing LLM coding errors; 4 core principles (think first, simplicity, precise edits, goal-driven)
 
 #### LLM Gateways & Provider Access
