@@ -539,9 +539,10 @@
             buddyData: {},
             claudeApiKey: '',
             elevenLabsKey: '',
+            replicateToken: '',
             voiceSpeed: 1.0,
             selectedCountry: 'US',
-            // Higgsfield avatar proxy (runs on the user's machine; secret can't live in the browser)
+            // FLUX avatar generation via Replicate API
             proxyUrl: 'http://localhost:3001',
         };
 
@@ -564,6 +565,7 @@
             }
             state.claudeApiKey = localStorage.getItem('claudeApiKey') || '';
             state.elevenLabsKey = localStorage.getItem('elevenLabsKey') || '';
+            state.replicateToken = localStorage.getItem('replicateToken') || '';
             state.proxyUrl = localStorage.getItem('avatarProxyUrl') || 'http://localhost:3001';
             state.voiceSpeed = parseFloat(localStorage.getItem('voiceSpeed') || '1.0');
             state.selectedCountry = localStorage.getItem('selectedCountry') || 'US';
@@ -833,6 +835,12 @@
                         <button class="mood-btn" style="width: 100%; padding: 8px; font-size: 12px; margin-bottom: 12px;" onclick="saveClaude()">Save Claude Key</button>
 
                         <div class="settings-item">
+                            <span class="settings-label">Replicate API Key (for FLUX avatars)</span>
+                        </div>
+                        <input type="password" class="settings-input" id="replicate-key" style="width: 100%; margin-bottom: 8px;" placeholder="r8_...">
+                        <button class="mood-btn" style="width: 100%; padding: 8px; font-size: 12px; margin-bottom: 12px;" onclick="saveReplicate()">Save Replicate Key</button>
+
+                        <div class="settings-item">
                             <span class="settings-label">ElevenLabs API Key</span>
                         </div>
                         <input type="password" class="settings-input" id="eleven-key" style="width: 100%; margin-bottom: 8px;" placeholder="sk_...">
@@ -885,6 +893,9 @@
             // Populate settings
             const claudeKeyInput = screen.querySelector('#claude-key');
             if (claudeKeyInput) claudeKeyInput.value = state.claudeApiKey;
+
+            const replicateKeyInput = screen.querySelector('#replicate-key');
+            if (replicateKeyInput) replicateKeyInput.value = state.replicateToken;
 
             const elevenKeyInput = screen.querySelector('#eleven-key');
             if (elevenKeyInput) elevenKeyInput.value = state.elevenLabsKey;
@@ -1473,6 +1484,15 @@
             }
         }
 
+        function saveReplicate() {
+            const key = document.getElementById('replicate-key')?.value;
+            if (key) {
+                state.replicateToken = key;
+                localStorage.setItem('replicateToken', key);
+                showToast('Replicate API key saved!', 'success');
+            }
+        }
+
         function saveElevenLabs() {
             const key = document.getElementById('eleven-key')?.value;
             if (key) {
@@ -1516,46 +1536,64 @@
             const prompt = buildAvatarPrompt(buddy, custom);
             setAvatarStatus(buddyId, 'Generating a photoreal face…', true);
             try {
-                const res = await fetch(`${state.proxyUrl}/api/higgsfield-generate`, {
+                if (!state.replicateToken) {
+                    throw new Error('Replicate API key not set. Add it in Settings.');
+                }
+                const res = await fetch('https://api.replicate.com/v1/predictions', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, model: 'soul', size: '512x512' }),
+                    headers: {
+                        'Authorization': `Token ${state.replicateToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        version: 'a6c0a88c938389d82189bde97b2bad471ebc77ba33490b62eef01964f3807acf',
+                        input: {
+                            prompt: `Portrait headshot, ${prompt}. Professional, photorealistic, friendly expression.`,
+                            aspect_ratio: '1:1',
+                            num_outputs: 1,
+                            output_format: 'jpg',
+                            safety_tolerance: 2,
+                        }
+                    }),
                 });
-                const data = await res.json();
-                if (!res.ok || !data.imageUrl) throw new Error(data.error || 'No image returned');
-                state.buddyData[buddyId].avatarUrl = data.imageUrl;
-                state.buddyData[buddyId].avatarPrompt = prompt;
-                state.buddyData[buddyId].avatarVideoUrl = ''; // new face → clear old talking head
-                saveState();
-                refreshAvatarUI(buddyId);
-                setAvatarStatus(buddyId, '✓ Face ready. Now bring it to life ↓', false);
-                showToast('Face generated!', 'success');
+                const prediction = await res.json();
+                if (!res.ok || !prediction.id) throw new Error(prediction.detail || 'Prediction failed');
+
+                // Poll for completion
+                let completed = false;
+                let attempts = 0;
+                while (!completed && attempts < 60) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    const checkRes = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+                        headers: { 'Authorization': `Token ${state.replicateToken}` }
+                    });
+                    const checkData = await checkRes.json();
+                    if (checkData.status === 'succeeded') {
+                        const imageUrl = checkData.output?.[0];
+                        if (!imageUrl) throw new Error('No output image');
+                        state.buddyData[buddyId].avatarUrl = imageUrl;
+                        state.buddyData[buddyId].avatarPrompt = prompt;
+                        state.buddyData[buddyId].avatarVideoUrl = '';
+                        saveState();
+                        refreshAvatarUI(buddyId);
+                        setAvatarStatus(buddyId, '✓ Face ready!', false);
+                        showToast('Face generated!', 'success');
+                        completed = true;
+                    } else if (checkData.status === 'failed') {
+                        throw new Error(checkData.error || 'Generation failed');
+                    }
+                    attempts++;
+                }
+                if (!completed) throw new Error('Generation timeout');
             } catch (err) {
-                setAvatarStatus(buddyId, `⚠️ ${err.message}. Is the proxy running?`, false);
+                setAvatarStatus(buddyId, `⚠️ ${err.message}`, false);
                 showToast('Avatar generation failed', 'error');
             }
         }
         async function animateAvatar(buddyId) {
             const bd = state.buddyData[buddyId];
             if (!bd.avatarUrl) { setAvatarStatus(buddyId, 'Generate a face first ↑', false); return; }
-            setAvatarStatus(buddyId, 'Bringing the face to life (talking head)…', true);
-            try {
-                const res = await fetch(`${state.proxyUrl}/api/higgsfield-animate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageUrl: bd.avatarUrl, model: 'dop', motion: 'talking-head' }),
-                });
-                const data = await res.json();
-                if (!res.ok || !data.videoUrl) throw new Error(data.error || 'No video returned');
-                state.buddyData[buddyId].avatarVideoUrl = data.videoUrl;
-                saveState();
-                refreshAvatarUI(buddyId);
-                setAvatarStatus(buddyId, '✓ Talking head ready!', false);
-                showToast('Talking-head avatar ready!', 'success');
-            } catch (err) {
-                setAvatarStatus(buddyId, `⚠️ ${err.message}. Is the proxy running?`, false);
-                showToast('Animation failed', 'error');
-            }
+            showToast('Talking-head animation coming soon! (use HeyGen or similar for video avatars)', 'info');
         }
 
         function changeCountry(event) {
