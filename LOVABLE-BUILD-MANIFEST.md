@@ -12,11 +12,17 @@ Priority: Reading + Math (premium) + 3 free companions
 
 | # | App | Type | Status | Notes |
 |---|-----|------|--------|-------|
-| 1 | **bookreader-pro** | Premium/Reading | Queued | OCR + TTS for dyslexic readers; scanning, audio playback, dark mode |
-| 2 | **mathtutor-pro** | Premium/Math | Queued | Step-by-step solver, visual explanations, practice problems, dark mode |
-| 3 | **buddy-1** | Companion/Free | Queued | Mood journal, affirmations, breathing, unplugged core |
-| 4 | **food-buddy-1** | Nutrition/Free | Queued | Food logging, hydration, meal plan suggestions |
-| 5 | **fitcoach-pro** | Premium/Fitness | Queued | Workout logging, streaks, progress charts, 2026 dark mode |
+| 1 | **bookreader-pro** | Premium/Reading | PWA-ready | OCR + TTS for dyslexic readers. Manifest + SW added, contrast verified. Ready for Capacitor packaging. |
+| 2 | **mathtutor-pro** | Premium/Math | PWA-ready | Step-by-step solver. Manifest + SW added, contrast verified. Ready for Capacitor packaging. |
+| 3 | **buddy-1** | Companion/Free | PWA-ready | Mood journal, affirmations, breathing. Already PWA; bundled into App Factory. |
+| 4 | **food-buddy-1** | Nutrition/Free | PWA-ready | Food/water/macros logging. Already PWA; bundled into App Factory. |
+| 5 | **fitcoach-pro** | Premium/Fitness | PWA-ready | Workout logging, streaks, charts. Manifest + SW added, contrast verified. Ready for Capacitor packaging. |
+
+**Batch 1 packaging:** all 5 apps are bundled by `app-factory/` (run
+`cd app-factory && npm install && npm run build` on your Mac, then
+`npm run add:ios` / `npm run add:android`). Web versions auto-deploy to
+`rhythmixapp.com.au/apps/<slug>.html`. Remaining manual step (needs a Mac with
+Xcode/Android Studio): generate the native projects and build the IPA/APK.
 
 ---
 
