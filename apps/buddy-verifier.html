@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buddy Receipt Verifier — Don't Trust. Verify.</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: ui-monospace, 'SF Mono', Menlo, monospace; background:#0a0e1a; color:#f4f7fc; padding:32px; line-height:1.6; }
+  .wrap { max-width:860px; margin:0 auto; }
+  h1 { font-size:24px; margin-bottom:4px; }
+  .sub { color:#b0b8c6; font-size:14px; margin-bottom:24px; }
+  .drop { border:2px dashed rgba(255,255,255,0.2); border-radius:12px; padding:32px; text-align:center; color:#b0b8c6; cursor:pointer; transition:.2s; }
+  .drop:hover { border-color:#7c3aed; background:rgba(124,58,237,0.05); }
+  input[type=file] { display:none; }
+  .summary { margin:24px 0; padding:16px; border-radius:10px; font-weight:700; font-size:16px; display:none; }
+  .summary.pass { background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.4); color:#86efac; display:block; }
+  .summary.fail { background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; display:block; }
+  .row { display:flex; gap:8px; align-items:center; padding:10px 12px; border:1px solid rgba(255,255,255,0.08); border-radius:8px; margin-bottom:8px; font-size:13px; }
+  .ok { color:#86efac; } .bad { color:#fca5a5; }
+  .chk { font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.05); }
+  .chk.y { color:#86efac; } .chk.n { color:#fca5a5; background:rgba(239,68,68,0.15); }
+  .meta { color:#b0b8c6; margin-left:auto; font-size:11px; }
+  .note { font-size:12px; color:#7c8596; margin-top:24px; border-top:1px solid rgba(255,255,255,0.08); padding-top:16px; }
+  code { color:#c4b5fd; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔍 Buddy Receipt Verifier</h1>
+  <div class="sub">Load an exported ledger. This page recomputes every hash and signature in your browser. We can't fake a pass — the math either checks out or it doesn't.</div>
+
+  <label class="drop" for="file">
+    <div>Drop an exported ledger JSON here, or click to choose</div>
+    <div style="font-size:12px; margin-top:8px;">(the file from "Export for audit")</div>
+  </label>
+  <input type="file" id="file" accept="application/json">
+
+  <div class="summary" id="summary"></div>
+  <div id="results"></div>
+
+  <div class="note">
+    <strong>What this checks, honestly:</strong><br>
+    1. <code>hash</code> — recomputes SHA-256 of each receipt body; proves contents weren't edited.<br>
+    2. <code>sig</code> — verifies the ECDSA P-256 signature against the public key in the file; proves it was signed by the key that built the ledger.<br>
+    3. <code>chain</code> — checks each receipt links to the previous one's hash; proves nothing was deleted or reordered.<br><br>
+    <strong>What it does NOT claim:</strong> it can't prove the response text came from Anthropic (that needs Anthropic to sign their output). It proves the <em>log</em> is honest and unaltered.
+  </div>
+</div>
+
+<script src="buddy-receipts.js"></script>
+<script>
+  const fileInput = document.getElementById('file');
+  document.querySelector('.drop').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
+  document.querySelector('.drop').addEventListener('dragover', e => { e.preventDefault(); });
+  document.querySelector('.drop').addEventListener('drop', e => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+
+  async function loadFile(file) {
+    if (!file) return;
+    const text = await file.text();
+    let data;
+    try { data = JSON.parse(text); } catch { return showError('Not valid JSON.'); }
+    if (!data.publicJwk || !data.receipts) return showError('Missing publicJwk or receipts — is this an exported ledger?');
+
+    const ledger = new window.BuddyReceipts.ReceiptLedger({
+      publicJwk: data.publicJwk, privateJwk: null, receipts: data.receipts,
+    });
+
+    const report = await ledger.verify();
+    render(report, ledger);
+  }
+
+  function render(report, ledger) {
+    const summary = document.getElementById('summary');
+    summary.className = 'summary ' + (report.allPass ? 'pass' : 'fail');
+    const cost = ledger.receipts.reduce((s,r)=> s + (r.body.cost?.totalCost || 0), 0);
+    summary.textContent = report.allPass
+      ? `✓ VERIFIED — all ${report.total} receipts pass. Audited spend: $${cost.toFixed(4)}`
+      : `✗ TAMPERING DETECTED — ${report.results.filter(r=>!r.pass).length} of ${report.total} receipts failed.`;
+
+    const out = document.getElementById('results');
+    out.innerHTML = report.results.map((r,i) => {
+      const b = ledger.receipts[i].body;
+      return `<div class="row ${r.pass?'ok':'bad'}">
+        <span>#${r.seq}</span>
+        <span>${r.pass?'✓':'✗'} ${b.purpose||'call'}</span>
+        <span class="chk ${r.hashOk?'y':'n'}">hash</span>
+        <span class="chk ${r.sigOk?'y':'n'}">sig</span>
+        <span class="chk ${r.chainOk?'y':'n'}">chain</span>
+        <span class="chk ${r.seqOk?'y':'n'}">order</span>
+        <span class="meta">${b.inputTokens||0}+${b.outputTokens||0} tok · $${(b.cost?.totalCost||0).toFixed(4)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function showError(msg) {
+    const summary = document.getElementById('summary');
+    summary.className = 'summary fail';
+    summary.textContent = '✗ ' + msg;
+    document.getElementById('results').innerHTML = '';
+  }
+</script>
+</body>
+</html>
