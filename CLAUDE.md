@@ -4,6 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Start (For Claude)
 
+- **Do anything across the whole ecosystem** → run `/nexus <request>` (the `nexus` skill, `.claude/skills/nexus/SKILL.md`). It's the master orchestrator / single front door: interprets the request, routes to the right model/tool/skill/pipeline (chaining several when needed), executes end-to-end, verifies, and reports. Use it whenever the user wants an outcome without naming a specific tool. It reads `knowledge/INDEX.md` as its inventory.
 - **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
 - **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
 - **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.

@@ -2,6 +2,22 @@
 
 Curated business cases, technical deep dives, and tool references for AI agent development and one-person company operations.
 
+## 🌟 START HERE — NEXUS (master orchestrator)
+
+**`/nexus <anything you want>`** is the single front door to this entire ecosystem.
+You don't need to remember which model, tool, or skill does the job — NEXUS reads
+your request, routes it to the right capability (or chains several), runs it
+end-to-end, verifies, and reports back. It knows the full inventory below.
+
+- **Skill**: `.claude/skills/nexus/SKILL.md`
+- **Covers**: create (video/image/audio/carousels/art), research, build/ship
+  (sites/apps/specs/code), secure (audit/pentest/detect), optimize (cost/context).
+- **Examples**: `/nexus make a 30s promo + matching carousel` ·
+  `/nexus research top 3 competitors and draft a positioning doc` ·
+  `/nexus spec out offline playback and build it`
+
+Everything below is the inventory NEXUS routes across.
+
 ## Categories
 
 ### 🎯 OPC/AI Earning Cases (6 articles)
