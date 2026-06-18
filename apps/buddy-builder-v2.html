@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buddy Builder — Create & Improve AI Companions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #7c3aed;
+            --bg: #0a0e1a;
+            --bg-card: rgba(255,255,255,0.04);
+            --border: rgba(255,255,255,0.1);
+            --text: #f4f7fc;
+            --text-mute: #b0b8c6;
+            --success: #34d399;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0e1a 0%, #0f1628 100%);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(8,12,22,0.6);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #fbbf24, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-btn {
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-mute);
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .nav-btn:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(99,102,241,0.1));
+            border: 1px solid rgba(124,58,237,0.4);
+            color: var(--text);
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-mute);
+            margin-bottom: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1200px;
+        }
+
+        .form-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-mute);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255,255,255,0.08);
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+
+        .emoji-btn {
+            aspect-ratio: 1;
+            border: 2px solid var(--border);
+            background: rgba(255,255,255,0.02);
+            border-radius: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .emoji-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .emoji-btn.selected {
+            border-color: var(--primary);
+            background: rgba(124,58,237,0.2);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #a78bfa);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .preview-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        .preview-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .preview-emoji {
+            font-size: 32px;
+        }
+
+        .preview-name {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .preview-role {
+            font-size: 12px;
+            color: var(--text-mute);
+            margin-bottom: 12px;
+        }
+
+        .preview-personality {
+            font-size: 13px;
+            color: var(--text-mute);
+            line-height: 1.6;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .app-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .app-card:hover {
+            border-color: var(--primary);
+            background: rgba(124,58,237,0.1);
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .app-emoji {
+            font-size: 28px;
+        }
+
+        .app-name {
+            font-weight: 600;
+        }
+
+        .app-role {
+            font-size: 12px;
+            color: var(--text-mute);
+            margin-bottom: 12px;
+        }
+
+        .app-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.02);
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            color: var(--text-mute);
+            font-size: 11px;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .app-action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: rgba(124,58,237,0.2);
+            border: 1px solid rgba(124,58,237,0.3);
+            color: #c4b5fd;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .app-action-btn:active {
+            background: rgba(124,58,237,0.3);
+        }
+
+        .status {
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: rgba(52,211,153,0.1);
+            border: 1px solid rgba(52,211,153,0.3);
+            color: #86efac;
+            font-size: 13px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-box-value {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .stat-box-label {
+            font-size: 12px;
+            color: var(--text-mute);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .improvement-timeline {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-mute);
+        }
+
+        .improvement-step {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .improvement-step:last-child {
+            border-bottom: none;
+        }
+
+        .improvement-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(52,211,153,0.2);
+            border-radius: 4px;
+            color: #86efac;
+            font-size: 11px;
+            margin-right: 8px;
+        }
+
+        .winner-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(251,191,36,0.2);
+            border-radius: 4px;
+            color: #fbbf24;
+            font-size: 11px;
+        }
+
+        .trigger-improvement {
+            margin-top: 12px;
+            padding: 8px 12px;
+            font-size: 11px;
+            background: rgba(124,58,237,0.2);
+            border: 1px solid rgba(124,58,237,0.3);
+            color: #c4b5fd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .trigger-improvement:active {
+            background: rgba(124,58,237,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <div class="sidebar-title">Buddy Builder</div>
+
+            <button class="nav-btn active" onclick="nav('create')">➕ Create</button>
+            <button class="nav-btn" onclick="nav('library')">📚 Library</button>
+            <button class="nav-btn" onclick="nav('analytics')">📊 Analytics</button>
+
+            <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px;">
+                <button class="nav-btn" onclick="openSettings()" style="width: 100%;">⚙️ Settings</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="content">
+                <!-- Create Screen -->
+                <div class="screen active" id="createScreen">
+                    <h1>Create Your Companion</h1>
+                    <p class="subtitle">Define personality → AI generates 3 variants → pick the best</p>
+
+                    <div class="form-grid">
+                        <div class="form-card">
+                            <div class="form-group">
+                                <div class="form-label">Choose Emoji</div>
+                                <div class="emoji-grid" id="emojiGrid"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-label">Name</div>
+                                <input type="text" class="form-input" id="nameInput" placeholder="e.g., Anxiety Relief" oninput="updatePreview()">
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-label">Role</div>
+                                <input type="text" class="form-input" id="roleInput" placeholder="e.g., Calming Guide" oninput="updatePreview()">
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-label">Personality Traits</div>
+                                <input type="text" class="form-input" id="personalityInput" placeholder="e.g., compassionate, patient, grounding" oninput="updatePreview()">
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-label">What They Help With</div>
+                                <input type="text" class="form-input" id="purposeInput" placeholder="e.g., Managing anxiety with mindfulness" oninput="updatePreview()">
+                            </div>
+
+                            <button class="btn btn-primary" onclick="generateApp()">Generate 3 Variants</button>
+                            <div class="status" id="status"></div>
+                        </div>
+
+                        <div class="form-card">
+                            <div class="form-label">Live Preview</div>
+                            <div class="preview-card">
+                                <div class="preview-title">
+                                    <span class="preview-emoji" id="previewEmoji">🤖</span>
+                                    <div>
+                                        <div class="preview-name" id="previewName">Your Buddy</div>
+                                        <div class="preview-role" id="previewRole">AI Companion</div>
+                                    </div>
+                                </div>
+                                <div class="preview-personality" id="previewPersonality">
+                                    Define your buddy's personality and purpose
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 20px; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 10px; font-size: 12px; color: var(--text-mute); line-height: 1.6;">
+                                <strong style="color: var(--text);">What happens:</strong><br/>
+                                ✓ AI generates 3 app variants<br/>
+                                ✓ All deploy to web simultaneously<br/>
+                                ✓ Variants tracked separately<br/>
+                                ✓ Pick winner or let AI decide<br/>
+                                ✓ Auto-improves every week
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Library Screen -->
+                <div class="screen" id="libraryScreen">
+                    <h1>Your Companions</h1>
+                    <p class="subtitle">All companions you've created. Apps improve weekly automatically.</p>
+
+                    <div class="apps-grid" id="appsGrid">
+                        <div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-mute);">
+                            No companions yet. Create one to get started!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Screen -->
+                <div class="screen" id="analyticsScreen">
+                    <h1>Performance Analytics</h1>
+                    <p class="subtitle">How your companions are performing in the wild</p>
+
+                    <div class="dashboard-stats">
+                        <div class="stat-box">
+                            <div class="stat-box-value" id="totalApps">0</div>
+                            <div class="stat-box-label">Apps Created</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-value" id="totalVariants">0</div>
+                            <div class="stat-box-label">Variants Deployed</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-value" id="avgEngagement">0%</div>
+                            <div class="stat-box-label">Avg Engagement</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-value" id="improvements">0</div>
+                            <div class="stat-box-label">Auto-Improvements</div>
+                        </div>
+                    </div>
+
+                    <div id="analyticsContent" style="color: var(--text-mute); text-align: center; padding: 40px;">
+                        Create companions and deploy them to see analytics
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EMOJIS = ['🧘', '💼', '🤝', '💪', '🎨', '📚', '🌸', '⭐', '😴', '🥗', '💕', '💻', '💰', '🦁', '✈️', '🐕'];
+        const CLAUDE_API_KEY = ''; // User provides via modal
+        let selectedEmoji = '🧘';
+        let apps = JSON.parse(localStorage.getItem('buddyApps')) || [];
+
+        // Simulate variant engagement scores (in real implementation, comes from live app metrics)
+        function simulateVariantPerformance(app) {
+            return app.variants.map(v => ({
+                ...v,
+                stats: {
+                    messages: Math.floor(Math.random() * 500) + 100,
+                    satisfaction: Math.floor(Math.random() * 100),
+                    sentiment: ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)]
+                }
+            }));
+        }
+
+        // Find winning variant based on engagement
+        function findWinningVariant(variants) {
+            return variants.reduce((best, v) =>
+                v.stats.satisfaction > best.stats.satisfaction ? v : best
+            );
+        }
+
+        // Claude analyzes performance and generates next improvement prompt
+        async function generateNextVariant(app, winningVariant, claudeKey) {
+            if (!claudeKey) {
+                showStatus('Set Claude API key in settings to enable auto-improvement');
+                return null;
+            }
+
+            try {
+                const analysisPrompt = `You are analyzing an AI companion app's performance.
+
+Companion: ${app.name} (${app.emoji})
+Role: ${app.role}
+Personality traits: ${app.personality}
+Purpose: ${app.purpose}
+
+Winning variant style: ${winningVariant.style}
+Performance: ${winningVariant.stats.satisfaction}% satisfaction, ${winningVariant.stats.messages} conversations
+
+Based on this winning variant, generate an IMPROVED version for the next generation. Keep the core personality but enhance:
+1. The strongest trait from the winning variant
+2. Add one new capability observed to help users
+3. Refine communication style based on sentiment
+
+Return: A JSON object with:
+{
+  "enhancedTraits": "string describing the evolved personality",
+  "newCapability": "string describing new feature",
+  "communicationStyle": "string describing refined tone"
+}`;
+
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': claudeKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-5-sonnet-20241022',
+                        max_tokens: 500,
+                        messages: [{
+                            role: 'user',
+                            content: analysisPrompt
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.content && data.content[0]) {
+                    const responseText = data.content[0].text;
+                    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        return JSON.parse(jsonMatch[0]);
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('Claude API error:', error);
+                return null;
+            }
+        }
+
+        // Auto-improvement: analyze winner, generate next generation
+        async function autoImproveApp(appId) {
+            const app = apps.find(a => a.id === appId);
+            if (!app) return;
+
+            showStatus('Analyzing variants... <div class="loading"></div>', 'loading');
+
+            // Step 1: Simulate performance data
+            const performedVariants = simulateVariantPerformance(app);
+            const winner = findWinningVariant(performedVariants);
+
+            // Step 2: Generate next improvement via Claude
+            const improvement = await generateNextVariant(app, winner, CLAUDE_API_KEY);
+
+            // Step 3: Create next generation
+            if (improvement) {
+                const nextGen = {
+                    id: app.variants.length + 1,
+                    name: `${app.name} v${app.variants.length + 1}`,
+                    style: 'enhanced',
+                    deployed: new Date().toISOString(),
+                    generatedFrom: winner.id,
+                    improvement: improvement,
+                    stats: { messages: 0, satisfaction: 0, sentiment: 'neutral' }
+                };
+
+                app.variants.push(nextGen);
+                app.winner = winner.id;
+                app.stats = {
+                    users: performedVariants.reduce((sum, v) => sum + v.stats.messages, 0),
+                    engagement: Math.round(performedVariants.reduce((sum, v) => sum + v.stats.satisfaction, 0) / performedVariants.length),
+                    sentiment: 'positive'
+                };
+
+                localStorage.setItem('buddyApps', JSON.stringify(apps));
+                showStatus(`✓ Generated v${nextGen.id}! Enhanced: ${improvement.enhancedTraits}`);
+                renderLibrary();
+                updateAnalytics();
+            } else {
+                showStatus('Could not generate next variant. Check API key.');
+            }
+        }
+
+        function init() {
+            CLAUDE_API_KEY = localStorage.getItem('claudeApiKey') || '';
+            renderEmojis();
+            renderLibrary();
+            updateAnalytics();
+        }
+
+        function renderEmojis() {
+            const grid = document.getElementById('emojiGrid');
+            grid.innerHTML = EMOJIS.map(e => `
+                <button class="emoji-btn ${e === selectedEmoji ? 'selected' : ''}" onclick="selectEmoji('${e}')">
+                    ${e}
+                </button>
+            `).join('');
+        }
+
+        function selectEmoji(emoji) {
+            selectedEmoji = emoji;
+            renderEmojis();
+            updatePreview();
+        }
+
+        function updatePreview() {
+            document.getElementById('previewEmoji').textContent = selectedEmoji;
+            document.getElementById('previewName').textContent = document.getElementById('nameInput').value || 'Your Buddy';
+            document.getElementById('previewRole').textContent = document.getElementById('roleInput').value || 'AI Companion';
+
+            const traits = document.getElementById('personalityInput').value;
+            const purpose = document.getElementById('purposeInput').value;
+            document.getElementById('previewPersonality').textContent = [traits, purpose].filter(Boolean).join(' • ') || 'Define personality and purpose';
+        }
+
+        async function generateApp() {
+            const name = document.getElementById('nameInput').value.trim();
+            const role = document.getElementById('roleInput').value.trim();
+            const personality = document.getElementById('personalityInput').value.trim();
+            const purpose = document.getElementById('purposeInput').value.trim();
+
+            if (!name || !role || !personality) {
+                showStatus('Fill in Name, Role, and Personality', 'error');
+                return;
+            }
+
+            showStatus('Generating 3 variants... <div class="loading"></div>', 'loading');
+
+            const appData = {
+                id: Date.now(),
+                name, role, emoji: selectedEmoji, personality, purpose,
+                created: new Date().toISOString(),
+                variants: [],
+                winner: null,
+                stats: { users: 0, engagement: 0, sentiment: 'neutral' }
+            };
+
+            // Simulate 3 variants
+            for (let i = 0; i < 3; i++) {
+                appData.variants.push({
+                    id: i + 1,
+                    name: `${name} v${i + 1}`,
+                    style: ['conservative', 'bold', 'playful'][i],
+                    deployed: new Date().toISOString(),
+                    stats: { messages: 0, satisfaction: 0 }
+                });
+            }
+
+            apps.push(appData);
+            localStorage.setItem('buddyApps', JSON.stringify(apps));
+
+            showStatus(`✓ 3 variants generated and deployed! Pick your favorite or let AI choose the winner.`);
+
+            setTimeout(() => {
+                document.getElementById('nameInput').value = '';
+                document.getElementById('roleInput').value = '';
+                document.getElementById('personalityInput').value = '';
+                document.getElementById('purposeInput').value = '';
+                updatePreview();
+                renderLibrary();
+                updateAnalytics();
+            }, 2000);
+        }
+
+        function renderLibrary() {
+            const grid = document.getElementById('appsGrid');
+
+            if (apps.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-mute);">No companions yet. Create one to get started!</div>';
+                return;
+            }
+
+            grid.innerHTML = apps.map(app => `
+                <div class="app-card">
+                    <div class="app-header">
+                        <span class="app-emoji">${app.emoji}</span>
+                        <div class="app-name">${app.name}</div>
+                    </div>
+                    <div class="app-role">${app.role}</div>
+                    <div class="app-stats">
+                        <div class="stat">
+                            <div class="stat-label">Variants</div>
+                            <div class="stat-value">${app.variants.length}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Status</div>
+                            <div class="stat-value">${app.winner ? 'Won' : 'Running'}</div>
+                        </div>
+                    </div>
+
+                    <div class="improvement-timeline">
+                        <strong style="color: var(--text);">Timeline:</strong>
+                        ${app.variants.map(v => `
+                            <div class="improvement-step">
+                                ${v.id === app.winner ? '<span class="winner-badge">Winner</span>' : ''}
+                                <span class="improvement-badge">v${v.id}</span>
+                                <span>${v.style}</span>
+                                ${v.improvement ? ' → enhanced' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="app-actions">
+                        <button class="app-action-btn" onclick="autoImproveApp(${app.id})">Improve</button>
+                        <button class="app-action-btn" onclick="deployApp(${app.id})">Deploy</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deployApp(appId) {
+            const app = apps.find(a => a.id === appId);
+            if (app) {
+                showStatus(`Deploying ${app.name} to Vercel... Check back in a minute!`);
+                // TODO: Actual Vercel deployment
+            }
+        }
+
+        function viewStats(appId) {
+            const app = apps.find(a => a.id === appId);
+            if (app) {
+                alert(`Stats for ${app.name}:\nVariants: ${app.variants.length}\nCreated: ${new Date(app.created).toLocaleDateString()}`);
+            }
+        }
+
+        function updateAnalytics() {
+            document.getElementById('totalApps').textContent = apps.length;
+            document.getElementById('totalVariants').textContent = apps.reduce((sum, a) => sum + a.variants.length, 0);
+
+            const avgEngagement = apps.length > 0
+                ? Math.round(apps.reduce((sum, a) => sum + a.stats.engagement, 0) / apps.length)
+                : 0;
+            document.getElementById('avgEngagement').textContent = avgEngagement + '%';
+
+            // Count improvements (variants with enhancement data)
+            const improvementCount = apps.reduce((sum, a) =>
+                sum + a.variants.filter(v => v.improvement).length, 0
+            );
+            document.getElementById('improvements').textContent = improvementCount;
+        }
+
+        function openSettings() {
+            const key = prompt('Enter your Claude API key:', CLAUDE_API_KEY);
+            if (key !== null) {
+                CLAUDE_API_KEY = key;
+                localStorage.setItem('claudeApiKey', key);
+                showStatus('Claude API key saved!');
+            }
+        }
+
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.innerHTML = message;
+            status.classList.add('show');
+
+            if (type !== 'loading') {
+                setTimeout(() => status.classList.remove('show'), 4000);
+            }
+        }
+
+        function nav(screen) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(screen + 'Screen').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        init();
+    </script>
+</body>
+</html>
