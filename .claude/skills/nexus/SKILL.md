@@ -69,6 +69,7 @@ relevant `knowledge/` file first**.
 | Music / voice / TTS | `creative-stack` MCP, Kokoro, ElevenLabs, MiniMax MCP |
 | One-shot "just make me X asset" | `/dream <description>` (auto-routes modality) |
 | Full launch (cover+track+video+landing in parallel) | `/album-launch <brief>` |
+| **A YouTube video / channel (end-to-end)** | **YouTube Ecosystem pipeline** (`patterns/nexus-youtube-ecosystem.md`) — research→script→assets(parallel)→assemble→thumbnail→SEO→Shorts→virality check. Strong for faceless/explainer/AI-cinematic/talking-head/shorts. Gaps: timeline editing (use ffmpeg/CapCut), rigged cartoons |
 
 ### 🔎 RESEARCH (web, facts, competitive intel)
 
