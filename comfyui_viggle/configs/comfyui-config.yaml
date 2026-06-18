@@ -1,0 +1,200 @@
+# ComfyUI Viggle Configuration
+
+# Service Configuration
+service:
+  name: ComfyUI Viggle
+  version: "1.0.0"
+  description: Motion generation and video animation workflows
+  enabled: false  # Enable after Docker/local setup
+
+# API Configuration
+api:
+  host: localhost
+  port: 8188
+  base_url: http://localhost:8188/api
+  timeout: 300  # 5 minutes for long-running workflows
+  max_retries: 3
+  retry_delay: 5
+
+# Workflow Configuration
+workflows:
+  lama-inpaint:
+    name: "LAMA Inpainting (Character Removal)"
+    file: "workflows/workflow1_lama_inpaint.json"
+    gpu_vram_required: 4  # GB
+    estimated_time: 30  # seconds
+    input_formats: ["png", "jpg"]
+    output_format: "png"
+    parameters:
+      dilate_mask:
+        type: int
+        default: 15
+        min: 0
+        max: 50
+      inpaint_model:
+        type: enum
+        default: lama
+        options: [lama]
+
+  animatediff:
+    name: "AnimateDiff Motion Synthesis"
+    file: "workflows/workflow2_animatediff.json"
+    gpu_vram_required: 8  # GB
+    estimated_time: 45  # seconds
+    input_formats: ["png", "jpg"]
+    output_format: "mp4"
+    parameters:
+      motion_scale:
+        type: float
+        default: 1.0
+        min: 0.5
+        max: 2.0
+      steps:
+        type: int
+        default: 25
+        min: 16
+        max: 50
+      cfg_scale:
+        type: float
+        default: 7.5
+        min: 1.0
+        max: 20.0
+      seed:
+        type: int
+        default: -1  # -1 = random
+
+  animatediff-alt:
+    name: "AnimateDiff Alternative"
+    file: "workflows/workflow2_2_animatediff_alt.json"
+    gpu_vram_required: 8
+    estimated_time: 45
+    input_formats: ["png", "jpg"]
+    output_format: "mp4"
+    parameters:
+      motion_scale:
+        type: float
+        default: 1.0
+        min: 0.5
+        max: 2.0
+      steps:
+        type: int
+        default: 25
+        min: 16
+        max: 50
+
+  sdxl:
+    name: "SDXL + AnimateDiff"
+    file: "workflows/workflow3_animatediff_sdxl.json"
+    gpu_vram_required: 12  # GB
+    estimated_time: 180  # seconds
+    input_formats: ["text", "png", "jpg"]
+    output_format: "mp4"
+    parameters:
+      positive_prompt:
+        type: string
+        default: "a person, elegant motion"
+      negative_prompt:
+        type: string
+        default: "blurry, distorted"
+      width:
+        type: int
+        default: 1024
+        min: 512
+        max: 1024
+      height:
+        type: int
+        default: 1024
+        min: 512
+        max: 1024
+      motion_lora:
+        type: enum
+        default: "default"
+        options: ["default", "aggressive", "subtle"]
+
+# Model Configuration
+models:
+  paths:
+    lama: "models/lama/"
+    animatediff: "models/animatediff/"
+    checkpoints: "models/checkpoints/"
+
+  required:
+    - name: "stable-diffusion-v1.5"
+      type: "checkpoint"
+      size: "4GB"
+      url: "huggingface.co/runwayml/stable-diffusion-v1-5"
+      path: "models/checkpoints/sd-v1-5.safetensors"
+
+    - name: "lama"
+      type: "inpainting"
+      size: "350MB"
+      url: "github.com/advimman/lama"
+      path: "models/lama/lama.ckpt"
+
+    - name: "animatediff-motion-lora"
+      type: "lora"
+      size: "100MB"
+      url: "huggingface.co/guoyww/animatediff"
+      path: "models/animatediff/motion_lora_default.safetensors"
+
+# Output Configuration
+output:
+  base_path: "comfyui_viggle/outputs"
+  video_codec: "h264"
+  video_bitrate: "8M"  # 8 Mbps
+  fps: 30
+  max_resolution: "1080p"  # 1920x1080
+  formats:
+    - format: "mp4"
+      codec: "h264"
+      container: "mp4"
+    - format: "webm"
+      codec: "vp9"
+      container: "webm"
+
+# Batch Processing
+batch:
+  max_parallel: 4
+  job_timeout: 600  # 10 minutes
+  queue_path: "comfyui_viggle/configs/job_queue.json"
+  retry_failed: true
+  max_retries: 3
+
+# Integration
+integration:
+  hyperframes:
+    enabled: true
+    auto_compose: false  # Manual composition with /rhythmix-compose
+    metadata_format: "json"
+
+  ruflo_v3:
+    enabled: true
+    agent: "viggle-motion-agent"
+    memory_backend: "hybrid"
+    skill: "viggle-animate"
+
+  rhythmix_studio:
+    enabled: false  # Enable when API implemented
+    api_endpoint: "/api/viggle/generate"
+    webhook_callback: "http://localhost:3000/api/viggle/completed"
+
+# Logging
+logging:
+  level: "info"  # debug, info, warn, error
+  file: "comfyui_viggle/logs/comfyui.log"
+  max_file_size: "100MB"
+  retention_days: 30
+
+# Performance
+performance:
+  gpu_memory_optimization: true
+  precision: "fp32"  # fp32, fp16 (half-precision)
+  attention_splitting: false  # Enable for lower VRAM
+  sequential_batch_processing: false
+
+# Status
+status:
+  last_initialized: null
+  models_downloaded: false
+  service_running: false
+  last_health_check: null
