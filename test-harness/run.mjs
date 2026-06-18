@@ -197,6 +197,20 @@ async function testApp(slug) {
   try { window.localStorage.setItem('__t', '1'); lsOk = window.localStorage.getItem('__t') === '1'; } catch {}
   ok('localStorage usable', lsOk);
 
+  // 8. carousel swipe (only for screen-based tab apps: buddy/food)
+  const screens = document.querySelectorAll('.screen');
+  if (screens.length > 1 && document.querySelector('.tab-btn')) {
+    const before = (document.querySelector('.screen.active') || {}).id;
+    const touch = (t, x) => {
+      const e = new window.Event(t);
+      Object.defineProperty(e, 'changedTouches', { value: [{ clientX: x, clientY: 200 }] });
+      window.dispatchEvent(e);
+    };
+    touch('touchstart', 300); touch('touchend', 60); // swipe left → next screen
+    const after = (document.querySelector('.screen.active') || {}).id;
+    ok('swipe changes screen', !!before && !!after && before !== after, `${before}→${after}`);
+  }
+
   // capture any errors triggered by clicks
   await sleep(50);
   if (jsErrors.length) result.errors = jsErrors.slice(0, 5);

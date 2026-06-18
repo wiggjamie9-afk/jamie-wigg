@@ -39,14 +39,35 @@ const JS = `<script><!-- ${MARKER} -->
 (function(){
   if (window.__afCarousel) return; window.__afCarousel = true;
   function activeScreen(){ return document.querySelector('.screen.active'); }
-  function tabBtns(){ var s = activeScreen(); return s ? Array.prototype.slice.call(s.querySelectorAll('.tab-btn')) : []; }
+  function tabOf(btn){ var m = (btn.getAttribute('onclick')||'').match(/switchTab\\('([^']+)'\\)/); return m ? m[1] : null; }
+  // Tab buttons live either inside each screen (buddy apps) or in one shared
+  // bar outside the screens (food apps). Prefer the active screen's buttons;
+  // fall back to the global bar.
+  function tabBtns(){
+    var s = activeScreen();
+    var inScreen = s ? s.querySelectorAll('.tab-btn') : [];
+    if (inScreen.length) return Array.prototype.slice.call(inScreen);
+    return Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
+  }
+  // Do the screen switch ourselves — robust, no reliance on the app's global
+  // 'event' (which only exists during a real tap). Mirrors switchTab().
+  function selfSwitch(tab, dir){
+    var scr = document.getElementById('screen-' + tab); if (!scr) return false;
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.documentElement.style.setProperty('--af-dx', (dir > 0 ? 28 : -28) + 'px');
+    scr.classList.add('active');
+    // mark the matching tab button(s) active wherever they live
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', tabOf(b) === tab); });
+    try { if (window.state) window.state.currentTab = tab; } catch(e){}
+    syncDots(); return true;
+  }
   function go(dir){
     var list = tabBtns(); if (!list.length) return;
     var cur = list.findIndex(function(b){ return b.classList.contains('active'); });
     if (cur < 0) cur = 0;
     var ni = cur + dir; if (ni < 0 || ni >= list.length) return;
-    document.documentElement.style.setProperty('--af-dx', (dir > 0 ? 28 : -28) + 'px');
-    list[ni].click(); syncDots();
+    var tab = tabOf(list[ni]);
+    if (tab) selfSwitch(tab, dir); else { list[ni].click(); syncDots(); }
   }
   // page dots reflecting active tab
   var dots;
@@ -72,8 +93,9 @@ const JS = `<script><!-- ${MARKER} -->
   }, {passive:true});
   // keep dots in sync when tabs are tapped too
   window.addEventListener('click', function(e){ if (e.target.closest && e.target.closest('.tab-btn')) setTimeout(syncDots, 0); }, true);
-  if (document.readyState !== 'loading') buildDots();
-  else document.addEventListener('DOMContentLoaded', buildDots);
+  function boot(){ buildDots(); }
+  if (document.readyState !== 'loading') boot();
+  else { document.addEventListener('DOMContentLoaded', boot); window.addEventListener('load', boot); }
 })();
 </script>`;
 
@@ -85,11 +107,14 @@ function processApp(slug) {
     console.log(`• ${slug}: not the screen/switchTab template — skipped`);
     return true;
   }
-  if (html.includes(MARKER)) { console.log(`• ${slug}: already has carousel`); return true; }
+  const had = html.includes(MARKER);
+  // update-safe: strip any previously injected block before re-injecting
+  html = html.replace(/\s*<style id="af-carousel">[\s\S]*?<\/style>/g, '');
+  html = html.replace(/\s*<script><!-- app-factory:carousel -->[\s\S]*?<\/script>/g, '');
   html = html.replace(/<\/head>/, `${CSS}\n</head>`);
   html = html.replace(/<\/body>/, `${JS}\n</body>`);
   writeFileSync(file, html);
-  console.log(`✓ ${slug}: swipe carousel + dots added`);
+  console.log(`${had ? '↻' : '✓'} ${slug}: swipe carousel + dots ${had ? 'updated' : 'added'}`);
   return true;
 }
 
