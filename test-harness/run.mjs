@@ -81,6 +81,11 @@ function makeStubs(window, flags) {
   window.scrollTo = () => {};
   window.open = () => null; // jsdom doesn't implement; apps use it for official links
   window.print = () => {}; // jsdom doesn't implement
+  // jsdom lacks element scroll methods used by carousel/snap navigation
+  if (window.Element) {
+    window.Element.prototype.scrollTo = window.Element.prototype.scrollTo || function () {};
+    window.Element.prototype.scrollIntoView = window.Element.prototype.scrollIntoView || function () {};
+  }
   window.alert = () => {}; window.confirm = () => true; window.prompt = () => null;
   window.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 0);
   window.cancelAnimationFrame = () => {};
