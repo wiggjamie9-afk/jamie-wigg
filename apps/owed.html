@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#48A9A6">
+  <!-- app-factory:pwa -->
+  <link rel="manifest" href="owed.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Owed">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20fill%3D'%2348A9A6'%20width%3D'192'%20height%3D'192'%20rx%3D'42'%2F%3E%3Ctext%20x%3D'96'%20y%3D'96'%20text-anchor%3D'middle'%20dominant-baseline%3D'central'%20font-size%3D'106'%3E%F0%9F%92%B0%3C%2Ftext%3E%3C%2Fsvg%3E">
+<title>Owed — Find Money You're Owed</title>
+<meta name="description" content="Privacy-first class action settlement finder. Match settlements you qualify for, track deadlines, and prep claims — all on your device. We never read your inbox.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #48A9A6;          /* finance teal */
+    --accent-deep: #2F807E;
+    --accent-soft: #E6F4F3;
+    --gold: #E0A23B;            /* "money" highlight */
+    --bg: #F6F8F8;
+    --card: #FFFFFF;
+    --card-2: #FBFCFC;
+    --text: #16201F;           /* near-black, high contrast */
+    --text-soft: #4C5957;
+    --text-mute: #7C8987;
+    --line: #E4EAE9;
+    --ok: #2E9E6B;
+    --warn: #D98324;
+    --danger: #D1495B;
+    --shadow: 0 1px 2px rgba(20,40,38,.06), 0 8px 24px rgba(20,40,38,.06);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+    line-height: 1.5;
+  }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; letter-spacing: -.01em; margin: 0; }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 0 16px; }
+
+  /* top bar */
+  header.app {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(246,248,248,.92); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    padding: max(12px, env(safe-area-inset-top)) 0 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mark {
+    width: 38px; height: 38px; border-radius: 11px; flex: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    display: grid; place-items: center; color: #fff; font-size: 20px;
+    box-shadow: 0 4px 12px rgba(72,169,166,.4);
+  }
+  .brand b { font-size: 1.18rem; font-weight: 800; letter-spacing: -.02em; }
+  .brand .priv {
+    margin-left: auto; font-size: .72rem; font-weight: 600; color: var(--accent-deep);
+    background: var(--accent-soft); border: 1px solid #cfe8e7; padding: 5px 9px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+
+  /* hero summary */
+  .summary {
+    margin: 16px 0; background: linear-gradient(145deg, #173d3b, #0f2a29);
+    color: #eafaf9; border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+  }
+  .summary .label { font-size: .8rem; color: #9dc6c3; font-weight: 600; }
+  .summary .big { font-family: 'Fraunces', serif; font-size: 2.3rem; font-weight: 700; color: #fff; line-height: 1.1; margin: 2px 0 10px; }
+  .summary .big .cur { color: var(--gold); }
+  .summary .row { display: flex; gap: 10px; }
+  .summary .stat { flex: 1; background: rgba(255,255,255,.08); border-radius: 12px; padding: 10px 12px; }
+  .summary .stat span { display: block; font-size: .68rem; color: #9dc6c3; }
+  .summary .stat b { font-size: 1.05rem; }
+
+  /* tabs */
+  .filters { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 12px; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; font-size: .82rem; font-weight: 600; color: var(--text-soft);
+    background: var(--card); border: 1px solid var(--line); padding: 8px 13px; border-radius: 999px; cursor: pointer;
+  }
+  .chip.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .chip.easy.active { background: var(--gold); border-color: var(--gold); color: #3a2a06; }
+
+  .search { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 12px;
+    padding: 12px 14px; font-size: .95rem; color: var(--text); margin-bottom: 4px; }
+  .search:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+  /* settlement card */
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow);
+  }
+  .card .top { display: flex; align-items: flex-start; gap: 12px; }
+  .card .ico { width: 42px; height: 42px; border-radius: 11px; flex: none; display: grid; place-items: center;
+    font-size: 20px; background: var(--accent-soft); }
+  .card h3 { font-size: 1.06rem; color: var(--text); font-weight: 700; }
+  .card .cat { font-size: .74rem; color: var(--text-mute); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .card p.desc { color: var(--text-soft); font-size: .9rem; margin: 9px 0 0; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+  .badge { font-size: .73rem; font-weight: 600; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-soft); background: var(--card-2); }
+  .badge.match { background: #eafaf2; color: #1c7a4f; border-color: #bfe9d3; }
+  .badge.easy { background: #fdf3e0; color: #9a6512; border-color: #f3d9a6; }
+  .badge.money { background: #f0f7f7; color: var(--accent-deep); border-color: #cfe8e7; }
+  .badge.proof { background: #fbeef0; color: #a83444; border-color: #f1c9d0; }
+  .card .acts { display: flex; gap: 8px; margin-top: 13px; }
+  .btn {
+    font-family: inherit; font-size: .86rem; font-weight: 600; cursor: pointer; border-radius: 11px;
+    padding: 10px 14px; border: 1px solid var(--line); background: var(--card); color: var(--text);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 1;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:active { background: var(--accent-deep); }
+  .btn.ghost { flex: none; }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  /* claims */
+  .claim { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 15px; margin-bottom: 11px; box-shadow: var(--shadow); }
+  .claim .crow { display: flex; align-items: center; gap: 10px; }
+  .claim h3 { font-size: 1rem; flex: 1; }
+  .pipeline { display: flex; gap: 4px; margin: 12px 0 8px; }
+  .pstep { flex: 1; text-align: center; font-size: .66rem; font-weight: 600; color: var(--text-mute);
+    padding: 6px 2px; border-radius: 8px; background: var(--card-2); border: 1px solid var(--line); cursor: pointer; }
+  .pstep.done { background: var(--accent-soft); color: var(--accent-deep); border-color: #cfe8e7; }
+  .pstep.cur { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .claim .meta { display: flex; gap: 14px; font-size: .8rem; color: var(--text-soft); flex-wrap: wrap; }
+  .claim .due.soon { color: var(--danger); font-weight: 700; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+  .field label { font-size: .76rem; font-weight: 600; color: var(--text-soft); }
+  .field input, .field textarea, .field select {
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: .9rem; font-family: inherit; color: var(--text); background: var(--card); }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+  /* profile */
+  .group { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 15px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .group h3 { font-size: .98rem; margin-bottom: 4px; }
+  .group .hint { font-size: .8rem; color: var(--text-mute); margin-bottom: 10px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt { font-size: .82rem; font-weight: 500; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--card-2); color: var(--text-soft); cursor: pointer; user-select: none; }
+  .opt.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-deep); font-weight: 600; }
+
+  /* section heading */
+  .shead { display: flex; align-items: center; gap: 8px; margin: 18px 0 10px; }
+  .shead h2 { font-size: 1.25rem; }
+  .shead .count { font-size: .8rem; color: var(--text-mute); font-weight: 600; }
+
+  .empty { text-align: center; color: var(--text-mute); padding: 40px 20px; }
+  .empty .e { font-size: 38px; }
+
+  /* trust strip */
+  .trust { background: var(--accent-soft); border: 1px solid #cfe8e7; border-radius: 14px; padding: 12px 14px;
+    font-size: .82rem; color: var(--accent-deep); margin: 12px 0; display: flex; gap: 10px; align-items: flex-start; }
+  .trust b { color: var(--accent-deep); }
+
+  /* bottom nav */
+  nav.tabs {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: rgba(255,255,255,.94); backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+    display: flex; padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+  nav.tabs button {
+    flex: 1; background: none; border: 0; cursor: pointer; color: var(--text-mute);
+    font-size: .68rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: inherit; padding: 4px;
+  }
+  nav.tabs button .i { font-size: 20px; }
+  nav.tabs button.active { color: var(--accent-deep); }
+
+  /* modal */
+  .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: flex-end; justify-content: center;
+    background: rgba(15,30,29,.5); backdrop-filter: blur(2px); }
+  .modal.open { display: flex; }
+  .sheet { background: var(--bg); width: 100%; max-width: 620px; border-radius: 22px 22px 0 0; padding: 20px 18px calc(24px + env(safe-area-inset-bottom)); max-height: 92vh; overflow-y: auto; }
+  .sheet h2 { font-size: 1.35rem; margin-bottom: 4px; }
+  .sheet .x { float: right; background: var(--card); border: 1px solid var(--line); border-radius: 999px; width: 32px; height: 32px; font-size: 18px; cursor: pointer; color: var(--text-soft); }
+  .price { display: flex; gap: 10px; margin: 14px 0; }
+  .plan { flex: 1; border: 1.5px solid var(--line); border-radius: 16px; padding: 16px; background: var(--card); }
+  .plan.best { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .plan .pname { font-weight: 700; }
+  .plan .amt { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; margin: 6px 0; }
+  .plan ul { margin: 8px 0 0; padding-left: 18px; font-size: .82rem; color: var(--text-soft); }
+  .plan ul li { margin-bottom: 4px; }
+  .disc { font-size: .72rem; color: var(--text-mute); margin-top: 14px; line-height: 1.5; }
+  a.link { color: var(--accent-deep); font-weight: 600; }
+  .hidden { display: none !important; }
+
+  @media print {
+    header.app, nav.tabs, .filters, .summary, #view-discover, #view-profile, #view-premium, .no-print { display: none !important; }
+    body { padding: 0; background: #fff; }
+    #printArea { display: block !important; }
+  }
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="wrap brand">
+    <div class="mark">$</div>
+    <b>Owed</b>
+    <span class="priv">🔒 On-device only</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- DISCOVER -->
+  <section id="view-discover">
+    <div class="summary">
+      <div class="label">You may be owed (matched, est.)</div>
+      <div class="big"><span class="cur">$</span><span id="sumOwed">0</span></div>
+      <div class="row">
+        <div class="stat"><span>Matches</span><b id="sumMatches">0</b></div>
+        <div class="stat"><span>Tracking</span><b id="sumTracking">0</b></div>
+        <div class="stat"><span>Received</span><b>$<span id="sumReceived">0</span></b></div>
+      </div>
+    </div>
+
+    <input class="search" id="search" placeholder="Search settlements (e.g. data breach, bank fees)…">
+    <div class="filters" id="filters"></div>
+
+    <div class="shead"><h2>Settlements</h2><span class="count" id="discCount"></span></div>
+    <div id="list"></div>
+
+    <div class="trust">
+      <span>🛡️</span>
+      <div><b>Only file if you truly qualify.</b> Filing false claims is fraud. We link you to the official court-approved administrator — always confirm current eligibility, amounts, and deadlines there before you file.</div>
+    </div>
+  </section>
+
+  <!-- MY CLAIMS -->
+  <section id="view-claims" class="hidden">
+    <div class="shead"><h2>My Claims</h2><span class="count" id="claimCount"></span></div>
+    <div id="claims"></div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="view-profile" class="hidden">
+    <div class="shead"><h2>Match Profile</h2></div>
+    <div class="trust"><span>🔒</span><div>Everything here stays <b>on this device</b>. Owed never uploads your profile, never reads your email, and never asks for your bank login. Tick what applies to you to surface settlements you're likely eligible for.</div></div>
+    <div id="profileGroups"></div>
+    <button class="btn ghost no-print" style="width:100%;color:var(--danger);border-color:#f1c9d0" onclick="resetAll()">Erase all my data</button>
+  </section>
+
+  <!-- PREMIUM -->
+  <section id="view-premium" class="hidden">
+    <div class="shead"><h2>Owed Lifetime</h2></div>
+    <p style="color:var(--text-soft);font-size:.92rem">Competitors charge <b>$14/month</b>. Owed is free to find &amp; track. Unlock everything <b>once</b>, keep it forever.</p>
+    <div class="price">
+      <div class="plan">
+        <div class="pname">Free</div>
+        <div class="amt">$0</div>
+        <ul><li>Match settlements</li><li>Track up to 3 claims</li><li>Claim prep sheet</li><li>Official source links</li></ul>
+      </div>
+      <div class="plan best">
+        <div class="pname">Lifetime 🌟</div>
+        <div class="amt">$29 <span style="font-size:.8rem;color:var(--text-mute);font-weight:500">once</span></div>
+        <ul><li><b>Unlimited</b> claims</li><li>Deadline alerts + calendar export</li><li>Full settlement catalog</li><li>AI eligibility assistant</li><li>All future updates</li></ul>
+      </div>
+    </div>
+    <button class="btn primary" style="width:100%" id="buyBtn" onclick="goPremium()">Unlock Lifetime — $29</button>
+    <p class="disc"><b>Not legal advice.</b> Owed is an information &amp; organization tool, not a law firm and not a claims filing service. We don't guarantee any payout. Settlement availability, amounts, and deadlines change — always verify with the official administrator. Owed never sees your personal data; claim prep happens on your device.</p>
+  </section>
+</main>
+
+<!-- printable claim sheet -->
+<div id="printArea" style="display:none;padding:30px;font-family:Inter,sans-serif;color:#000">
+  <h2 style="font-family:Fraunces,serif">Claim Preparation Sheet</h2>
+  <div id="printBody"></div>
+</div>
+
+<!-- CLAIM PREP MODAL -->
+<div class="modal" id="prepModal">
+  <div class="sheet">
+    <button class="x" onclick="closeModal('prepModal')">×</button>
+    <h2>Prep your claim</h2>
+    <p style="color:var(--text-soft);font-size:.85rem" id="prepFor"></p>
+    <div id="prepFields"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn primary" onclick="savePrep()">Save &amp; add to My Claims</button>
+      <button class="btn ghost" onclick="printPrep()">🖨️ Print / PDF</button>
+    </div>
+    <p class="disc">Your details are saved only on this device, so you can reuse them. Bring the printed sheet when you file on the official site.</p>
+  </div>
+</div>
+
+<!-- AI MODAL -->
+<div class="modal" id="aiModal">
+  <div class="sheet">
+    <button class="x" onclick="closeModal('aiModal')">×</button>
+    <h2>Eligibility assistant</h2>
+    <p style="color:var(--text-soft);font-size:.85rem">Plain-English help. Uses your own Claude key (stored on device). Not legal advice.</p>
+    <div class="field"><label>Your Claude API key</label><input id="aiKey" type="password" placeholder="sk-ant-…"></div>
+    <div class="field"><label>Question</label><textarea id="aiQ" rows="3" placeholder="Do I qualify for the data breach settlement if I shopped there in 2019?"></textarea></div>
+    <button class="btn primary" style="width:100%" onclick="askAI()">Ask</button>
+    <div id="aiOut" style="margin-top:12px;font-size:.9rem;color:var(--text-soft);white-space:pre-wrap"></div>
+  </div>
+</div>
+
+<nav class="tabs">
+  <button data-view="discover" class="active" onclick="switchView('discover')"><span class="i">🔎</span>Discover</button>
+  <button data-view="claims" onclick="switchView('claims')"><span class="i">📋</span>My Claims</button>
+  <button data-view="profile" onclick="switchView('profile')"><span class="i">🔒</span>Profile</button>
+  <button data-view="premium" onclick="switchView('premium')"><span class="i">🌟</span>Lifetime</button>
+</nav>
+
+<script>
+/* ---------------- Owed — privacy-first settlement finder ----------------
+   All state is on-device (localStorage). No network calls except the optional
+   AI assistant (user's own key) and outbound links to official admins. */
+const BRAND = 'Owed';
+const LS = { profile: 'owed_profile', claims: 'owed_claims', me: 'owed_me', pro: 'owed_pro' };
+
+/* Settlement catalog. Illustrative, real categories. Amounts/deadlines are
+   intentionally shown as ranges/"verify" — confirm on the official source. */
+const CATALOG = [
+  { id:'databreach', ico:'🛡️', name:'Data breach settlements', cat:'Privacy', easy:true, proof:false,
+    desc:'Companies that leaked customer data often pay cash to anyone whose info was exposed — frequently with no proof required.',
+    pay:[25,150], who:['retail','bank','telecom','health','tech'], states:['any'],
+    url:'https://www.classaction.org/data-breach-lawsuits' },
+  { id:'overdraft', ico:'🏦', name:'Bank overdraft / junk fees', cat:'Banking', easy:true, proof:false,
+    desc:'Banks sued for surprise overdraft and “junk” fees settle with affected account holders.',
+    pay:[15,100], who:['bank'], states:['any'], url:'https://topclassactions.com/lawsuit-settlements/open-lawsuit-settlements/' },
+  { id:'tcpa', ico:'📵', name:'Robocall / spam text (TCPA)', cat:'Telecom', easy:true, proof:false,
+    desc:'Unwanted robocalls and spam texts can mean $ per call/text under the TCPA.',
+    pay:[20,500], who:['telecom'], states:['any'], url:'https://www.classaction.org/telephone-consumer-protection-act-lawsuits' },
+  { id:'autorenew', ico:'🔁', name:'Subscription auto-renewal', cat:'Subscriptions', easy:true, proof:false,
+    desc:'Services that made cancelling hard, or auto-renewed without clear consent, have paid out to subscribers.',
+    pay:[10,90], who:['streaming','tech'], states:['california','any'], url:'https://topclassactions.com/' },
+  { id:'biometric', ico:'🫆', name:'Biometric privacy (BIPA)', cat:'Privacy', easy:false, proof:false,
+    desc:'Illinois residents whose fingerprints or face scans were collected without consent have won large payouts.',
+    pay:[100,400], who:['tech','retail'], states:['illinois'], url:'https://www.classaction.org/biometric-privacy-lawsuits' },
+  { id:'productdefect', ico:'📦', name:'Defective product / false ads', cat:'Products', easy:false, proof:true,
+    desc:'Bought something that didn’t work as advertised? Defect & mislabeling settlements refund purchasers.',
+    pay:[10,75], who:['retail'], states:['any'], url:'https://topclassactions.com/lawsuit-settlements/' },
+  { id:'pharma', ico:'💊', name:'Drug / medical device claims', cat:'Health', easy:false, proof:true,
+    desc:'Recalled medications and devices that caused harm have dedicated settlement funds.',
+    pay:[100,1000], who:['health'], states:['any'], url:'https://www.classaction.org/' },
+  { id:'emissions', ico:'🚗', name:'Vehicle / emissions settlements', cat:'Auto', easy:false, proof:true,
+    desc:'Owners of affected vehicles (emissions, defects, safety) may be owed buybacks or cash.',
+    pay:[100,2000], who:['auto'], states:['any'], url:'https://topclassactions.com/lawsuit-settlements/' },
+  { id:'isp', ico:'🌐', name:'ISP throttling / overbilling', cat:'Telecom', easy:true, proof:false,
+    desc:'Internet providers that throttled speeds or overcharged have refunded customers.',
+    pay:[15,120], who:['telecom'], states:['any'], url:'https://www.ftc.gov/enforcement/refunds' },
+  { id:'giftcard', ico:'🎁', name:'Gift card / pricing settlements', cat:'Retail', easy:true, proof:false,
+    desc:'Deceptive pricing, shrinkflation and gift-card practices have led to consumer refunds.',
+    pay:[5,50], who:['retail'], states:['any'], url:'https://www.ftc.gov/enforcement/refunds' },
+  { id:'appprivacy', ico:'📱', name:'App / smart-device privacy', cat:'Privacy', easy:true, proof:false,
+    desc:'Apps and smart devices that shared data without consent have settled with users.',
+    pay:[20,150], who:['tech'], states:['any'], url:'https://www.classaction.org/' },
+  { id:'wages', ico:'💼', name:'Unpaid wages / overtime', cat:'Employment', easy:false, proof:true,
+    desc:'Misclassified workers and unpaid overtime claims can return significant back pay.',
+    pay:[100,3000], who:['employer'], states:['any'], url:'https://topclassactions.com/' },
+];
+
+/* Profile dimensions → drive matching via the `who`/`states` tags above */
+const PROFILE_GROUPS = [
+  { key:'who', title:'Companies & services you’ve used', hint:'Pick the kinds of businesses you’ve dealt with.',
+    opts:[['bank','Banks'],['telecom','Phone / internet'],['streaming','Streaming / subscriptions'],['retail','Big retailers / online shops'],['tech','Apps / smart devices'],['health','Pharmacies / health'],['auto','Owned a car'],['employer','Worked hourly / contract']] },
+  { key:'states', title:'Where you’ve lived', hint:'Some settlements are state-specific.',
+    opts:[['california','California'],['illinois','Illinois'],['any','Other US state']] },
+];
+
+/* ---------- state ---------- */
+const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+let profile = get(LS.profile, { who:[], states:[] });
+let claims = get(LS.claims, []);
+let me = get(LS.me, {});
+let isPro = get(LS.pro, false);
+let activeFilter = 'all';
+let searchTerm = '';
+
+const STATUSES = ['Matched','Reviewing','Filed','Approved','Paid'];
+const fmt = (n) => Math.round(n).toLocaleString();
+
+/* ---------- matching ---------- */
+function matchScore(s) {
+  const whoHit = s.who.some(w => profile.who.includes(w));
+  const stateHit = s.states.includes('any') || s.states.some(st => profile.states.includes(st));
+  if (!profile.who.length && !profile.states.length) return 0.5; // neutral before profiling
+  return (whoHit ? 0.6 : 0) + (stateHit ? 0.4 : 0);
+}
+function isMatch(s) { return matchScore(s) >= 0.6; }
+function estPayout(s) { return (s.pay[0] + s.pay[1]) / 2; }
+
+/* ---------- discover ---------- */
+function renderFilters() {
+  const cats = ['all','Easy money', ...[...new Set(CATALOG.map(c => c.cat))]];
+  document.getElementById('filters').innerHTML = cats.map(c => {
+    const id = c === 'all' ? 'all' : c;
+    const cls = 'chip' + (c === 'Easy money' ? ' easy' : '') + (activeFilter === id ? ' active' : '');
+    return `<div class="${cls}" onclick="setFilter('${id.replace(/'/g,"")}')">${c === 'all' ? 'All' : c}</div>`;
+  }).join('');
+}
+function setFilter(f) { activeFilter = f; renderFilters(); renderList(); }
+window.setFilter = setFilter;
+
+function visibleSettlements() {
+  return CATALOG.filter(s => {
+    if (activeFilter === 'Easy money' && !s.easy) return false;
+    if (activeFilter !== 'all' && activeFilter !== 'Easy money' && s.cat !== activeFilter) return false;
+    if (searchTerm) {
+      const hay = (s.name + ' ' + s.desc + ' ' + s.cat).toLowerCase();
+      if (!hay.includes(searchTerm)) return false;
+    }
+    return true;
+  }).sort((a,b) => (isMatch(b) - isMatch(a)) || (estPayout(b) - estPayout(a)));
+}
+
+function renderList() {
+  const items = visibleSettlements();
+  document.getElementById('discCount').textContent = items.length + ' shown';
+  const tracked = new Set(claims.map(c => c.sid));
+  document.getElementById('list').innerHTML = items.map(s => {
+    const matched = isMatch(s);
+    return `<div class="card">
+      <div class="top">
+        <div class="ico">${s.ico}</div>
+        <div style="flex:1">
+          <div class="cat">${s.cat}</div>
+          <h3>${s.name}</h3>
+        </div>
+      </div>
+      <p class="desc">${s.desc}</p>
+      <div class="badges">
+        ${matched ? '<span class="badge match">✓ Likely match</span>' : ''}
+        ${s.easy ? '<span class="badge easy">⚡ Easy claim</span>' : ''}
+        <span class="badge money">~$${s.pay[0]}–$${s.pay[1]}</span>
+        <span class="badge ${s.proof ? 'proof' : ''}">${s.proof ? 'Proof needed' : 'Usually no proof'}</span>
+      </div>
+      <div class="acts">
+        <button class="btn primary" onclick="openPrep('${s.id}')">${tracked.has(s.id) ? 'Prep again' : 'Track & prep'}</button>
+        <button class="btn ghost" onclick="openOfficial('${s.id}')">Official ↗</button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty"><div class="e">🔍</div><p>No settlements match that filter.</p></div>`;
+  updateSummary();
+}
+
+function openOfficial(id) {
+  const s = CATALOG.find(x => x.id === id);
+  if (s) window.open(s.url, '_blank', 'noopener');
+}
+window.openOfficial = openOfficial;
+
+/* ---------- summary ---------- */
+function updateSummary() {
+  const matches = CATALOG.filter(isMatch);
+  const owed = matches.reduce((t,s) => t + estPayout(s), 0);
+  document.getElementById('sumOwed').textContent = fmt(owed);
+  document.getElementById('sumMatches').textContent = matches.length;
+  document.getElementById('sumTracking').textContent = claims.filter(c => c.status !== 'Paid').length;
+  const received = claims.filter(c => c.status === 'Paid').reduce((t,c) => t + (+c.received || 0), 0);
+  document.getElementById('sumReceived').textContent = fmt(received);
+}
+
+/* ---------- claim prep ---------- */
+let prepSid = null;
+function openPrep(id) {
+  prepSid = id;
+  const s = CATALOG.find(x => x.id === id);
+  document.getElementById('prepFor').textContent = 'For: ' + s.name;
+  const f = me;
+  document.getElementById('prepFields').innerHTML = `
+    <div class="field"><label>Full name</label><input id="p_name" value="${(f.name||'').replace(/"/g,'&quot;')}"></div>
+    <div class="field"><label>Email</label><input id="p_email" value="${(f.email||'').replace(/"/g,'&quot;')}"></div>
+    <div class="field"><label>Mailing address</label><input id="p_addr" value="${(f.addr||'').replace(/"/g,'&quot;')}"></div>
+    <div class="field"><label>Claim ID (from official site, optional)</label><input id="p_claim" placeholder="leave blank if none"></div>
+    <div class="field"><label>Est. payout you’re claiming ($)</label><input id="p_amt" type="number" value="${Math.round(estPayout(s))}"></div>
+    <div class="field"><label>Deadline (optional)</label><input id="p_due" type="date"></div>`;
+  openModal('prepModal');
+}
+window.openPrep = openPrep;
+
+function savePrep() {
+  const s = CATALOG.find(x => x.id === prepSid);
+  me = { name: val('p_name'), email: val('p_email'), addr: val('p_addr') };
+  set(LS.me, me);
+  if (!isPro && claims.length >= 3) { alert('Free plan tracks up to 3 claims. Unlock Lifetime for unlimited.'); switchView('premium'); return; }
+  claims.unshift({
+    id: 'c' + Date.now(), sid: s.id, name: s.name, ico: s.ico, url: s.url,
+    status: 'Matched', amount: +val('p_amt') || 0, received: 0,
+    claimId: val('p_claim'), due: val('p_due'), notes: ''
+  });
+  set(LS.claims, claims);
+  closeModal('prepModal');
+  switchView('claims');
+}
+window.savePrep = savePrep;
+const val = (id) => (document.getElementById(id)?.value || '').trim();
+
+function printPrep() {
+  const s = CATALOG.find(x => x.id === prepSid);
+  document.getElementById('printBody').innerHTML = `
+    <p><b>Settlement:</b> ${s.name} (${s.cat})</p>
+    <p><b>Name:</b> ${val('p_name')||'—'}</p>
+    <p><b>Email:</b> ${val('p_email')||'—'}</p>
+    <p><b>Address:</b> ${val('p_addr')||'—'}</p>
+    <p><b>Claim ID:</b> ${val('p_claim')||'—'}</p>
+    <p><b>Amount claimed (est.):</b> $${val('p_amt')||'0'}</p>
+    <p><b>Official site:</b> ${s.url}</p>
+    <hr><p style="font-size:12px;color:#555">Prepared with Owed. Not legal advice. Verify all details on the official administrator site before filing.</p>`;
+  window.print();
+}
+window.printPrep = printPrep;
+
+/* ---------- claims view ---------- */
+function renderClaims() {
+  document.getElementById('claimCount').textContent = claims.length + ' total';
+  const box = document.getElementById('claims');
+  if (!claims.length) { box.innerHTML = `<div class="empty"><div class="e">📋</div><p>No claims yet. Find a match in <b>Discover</b> and tap “Track &amp; prep”.</p></div>`; return; }
+  box.innerHTML = claims.map(c => {
+    const ci = STATUSES.indexOf(c.status);
+    const dueInfo = c.due ? daysUntil(c.due) : null;
+    return `<div class="claim">
+      <div class="crow"><div class="ico" style="width:34px;height:34px;font-size:17px">${c.ico}</div>
+        <h3>${c.name}</h3>
+        <button class="btn ghost" style="padding:6px 10px" onclick="delClaim('${c.id}')">🗑️</button></div>
+      <div class="pipeline">${STATUSES.map((st,i) =>
+        `<div class="pstep ${i<ci?'done':''} ${i===ci?'cur':''}" onclick="setStatus('${c.id}','${st}')">${st}</div>`).join('')}</div>
+      <div class="meta">
+        <span>💵 Est. $${fmt(c.amount)}</span>
+        ${c.status==='Paid'?`<span>✅ Got $${fmt(c.received||c.amount)}</span>`:''}
+        ${dueInfo!==null?`<span class="due ${dueInfo<=14?'soon':''}">⏰ ${dueInfo<0?'Past due':dueInfo+' days left'}</span>`:''}
+        <a class="link" href="${c.url}" target="_blank" rel="noopener">Official ↗</a>
+      </div>
+      ${c.status==='Paid'?`<div class="field"><label>Amount received ($)</label><input type="number" value="${c.received||''}" onchange="setReceived('${c.id}',this.value)"></div>`:''}
+      <div class="field"><label>Notes</label><textarea rows="2" onchange="setNotes('${c.id}',this.value)" placeholder="confirmation #, dates…">${c.notes||''}</textarea></div>
+      ${!isPro?'':`<button class="btn ghost no-print" style="width:100%" onclick="exportICS('${c.id}')">📅 Add deadline to calendar</button>`}
+    </div>`;
+  }).join('');
+}
+function setStatus(id, st) { const c = claims.find(x=>x.id===id); if(c){c.status=st; if(st==='Paid'&&!c.received)c.received=c.amount; set(LS.claims,claims); renderClaims(); updateSummary();} }
+function setReceived(id,v){ const c=claims.find(x=>x.id===id); if(c){c.received=+v||0; set(LS.claims,claims); updateSummary();} }
+function setNotes(id,v){ const c=claims.find(x=>x.id===id); if(c){c.notes=v; set(LS.claims,claims);} }
+function delClaim(id){ claims=claims.filter(x=>x.id!==id); set(LS.claims,claims); renderClaims(); updateSummary(); }
+window.setStatus=setStatus; window.setReceived=setReceived; window.setNotes=setNotes; window.delClaim=delClaim;
+function daysUntil(d){ return Math.ceil((new Date(d) - new Date())/(1000*60*60*24)); }
+
+function exportICS(id){
+  const c = claims.find(x=>x.id===id);
+  if(!c||!c.due){ alert('Add a deadline to this claim first.'); return; }
+  const dt = c.due.replace(/-/g,'');
+  const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Owed//EN\nBEGIN:VEVENT\nUID:${c.id}@owed\nDTSTART;VALUE=DATE:${dt}\nSUMMARY:File claim: ${c.name}\nDESCRIPTION:Deadline to file your ${c.name} claim. Official: ${c.url}\nEND:VEVENT\nEND:VCALENDAR`;
+  const a = document.createElement('a');
+  a.href = 'data:text/calendar;charset=utf8,' + encodeURIComponent(ics);
+  a.download = 'owed-deadline.ics'; a.click();
+}
+window.exportICS = exportICS;
+
+/* ---------- profile ---------- */
+function renderProfile() {
+  document.getElementById('profileGroups').innerHTML = PROFILE_GROUPS.map(g => `
+    <div class="group"><h3>${g.title}</h3><div class="hint">${g.hint}</div>
+      <div class="opts">${g.opts.map(([v,l]) =>
+        `<div class="opt ${profile[g.key].includes(v)?'on':''}" onclick="toggleOpt('${g.key}','${v}')">${l}</div>`).join('')}</div>
+    </div>`).join('');
+}
+function toggleOpt(key, v) {
+  const arr = profile[key];
+  const i = arr.indexOf(v);
+  if (i >= 0) arr.splice(i,1); else arr.push(v);
+  set(LS.profile, profile); renderProfile(); renderList();
+}
+window.toggleOpt = toggleOpt;
+
+function resetAll() {
+  if (!confirm('Erase your profile, claims, and saved details from this device?')) return;
+  [LS.profile, LS.claims, LS.me].forEach(k => localStorage.removeItem(k));
+  profile = { who:[], states:[] }; claims = []; me = {};
+  renderProfile(); renderClaims(); renderList(); updateSummary();
+}
+window.resetAll = resetAll;
+
+/* ---------- premium ---------- */
+function goPremium() {
+  // Payment link goes here (Gumroad/Stripe). For now, unlock + thank.
+  isPro = true; set(LS.pro, true);
+  document.getElementById('buyBtn').textContent = '✓ Lifetime unlocked';
+  document.getElementById('buyBtn').disabled = true;
+  alert('Lifetime unlocked on this device. (Wire a Gumroad/Stripe link here to charge $29.)');
+  renderClaims();
+}
+window.goPremium = goPremium;
+
+/* ---------- AI (optional) ---------- */
+async function askAI() {
+  const key = val('aiKey'); const q = val('aiQ');
+  const out = document.getElementById('aiOut');
+  if (!key || !q) { out.textContent = 'Enter your key and a question.'; return; }
+  out.textContent = 'Thinking…';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:600,
+        system:'You help people understand US class-action settlement eligibility in plain English. You are NOT a lawyer; always say to verify on the official settlement site and never encourage filing false claims.',
+        messages:[{role:'user',content:q}] })
+    });
+    const d = await r.json();
+    out.textContent = d?.content?.[0]?.text || ('Error: ' + (d?.error?.message || 'no response'));
+  } catch (e) { out.textContent = 'Network error: ' + e.message; }
+}
+window.askAI = askAI;
+
+/* ---------- nav ---------- */
+function switchView(v) {
+  ['discover','claims','profile','premium'].forEach(x =>
+    document.getElementById('view-'+x).classList.toggle('hidden', x !== v));
+  document.querySelectorAll('nav.tabs button').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === v));
+  if (v === 'claims') renderClaims();
+  if (v === 'profile') renderProfile();
+  window.scrollTo(0,0);
+}
+window.switchView = switchView;
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+window.openModal = openModal; window.closeModal = closeModal;
+
+document.getElementById('search').addEventListener('input', e => { searchTerm = e.target.value.toLowerCase().trim(); renderList(); });
+
+/* ---------- init ---------- */
+renderFilters(); renderList(); renderProfile(); updateSummary();
+if (isPro) { const b=document.getElementById('buyBtn'); if(b){b.textContent='✓ Lifetime unlocked'; b.disabled=true;} }
+</script>
+<!-- app-factory:pwa -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('owed-sw.js').catch((err) =>
+        console.warn('[app-factory] SW registration failed:', err)
+      );
+    });
+  }
+</script>
+</body>
+</html>

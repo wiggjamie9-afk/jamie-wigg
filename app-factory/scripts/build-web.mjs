@@ -21,7 +21,12 @@ const ROOT = join(FACTORY, '..');
 const APPS = join(ROOT, 'apps');
 const WWW = join(FACTORY, 'www');
 
-const batch = JSON.parse(readFileSync(join(FACTORY, 'batch.json'), 'utf8'));
+// Which batch file to build (default batch.json). Pass a filename or set
+// APP_FACTORY_BATCH to build a different batch / a standalone app, e.g.:
+//   node scripts/build-web.mjs owed.batch.json
+//   APP_FACTORY_BATCH=owed.batch.json node scripts/build-web.mjs
+const batchFile = process.argv[2] || process.env.APP_FACTORY_BATCH || 'batch.json';
+const batch = JSON.parse(readFileSync(join(FACTORY, batchFile), 'utf8'));
 
 // fresh www/
 rmSync(WWW, { recursive: true, force: true });
@@ -48,6 +53,19 @@ for (const app of batch.apps) {
     copyFileSync(buddyManifest, join(WWW, 'manifest.webmanifest'));
 
   (htmlOk ? copied : missing).push(app.slug);
+}
+
+// Standalone (single-app) build: the app IS the home screen — copy it to
+// index.html instead of generating a launcher.
+if (batch.apps.length === 1) {
+  const only = batch.apps[0];
+  const src = join(WWW, `${only.slug}.html`);
+  if (existsSync(src)) {
+    copyFileSync(src, join(WWW, 'index.html'));
+    console.log(`App Factory standalone bundle → app-factory/www/ (${only.slug})`);
+    console.log(`  ✓ ${only.slug} → index.html`);
+    process.exit(missing.length ? 1 : 0);
+  }
 }
 
 // launcher index.html

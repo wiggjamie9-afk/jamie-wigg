@@ -20,6 +20,16 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - batch: batch.json
+            artifact: app-factory-batch1-apk
+          - batch: owed.batch.json
+            artifact: owed-apk
+    env:
+      APP_FACTORY_BATCH: ${{ matrix.batch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,16 +48,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: PWA-ify batch apps
+      - name: PWA-ify apps
         run: node scripts/app-factory/pwa-inject.mjs
 
       - name: Install App Factory deps
         working-directory: app-factory
         run: npm install
 
-      - name: Bundle web (www/)
+      - name: Bundle web (www/) for ${{ matrix.batch }}
         working-directory: app-factory
-        run: npm run build:web
+        run: node scripts/build-web.mjs "$APP_FACTORY_BATCH"
 
       - name: Add Android platform
         working-directory: app-factory
@@ -61,10 +71,10 @@ jobs:
         working-directory: app-factory/android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK (${{ matrix.artifact }})
         uses: actions/upload-artifact@v4
         with:
-          name: app-factory-batch-apk
+          name: ${{ matrix.artifact }}
           path: app-factory/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30

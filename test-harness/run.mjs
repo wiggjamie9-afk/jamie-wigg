@@ -26,7 +26,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const APPS = join(ROOT, 'apps');
 
 // Apps under test (the App Factory batch apps). Override via argv.
-const DEFAULT = ['bookreader-pro', 'mathtutor-pro', 'fitcoach-pro', 'buddy-1', 'food-buddy-1'];
+const DEFAULT = ['bookreader-pro', 'mathtutor-pro', 'fitcoach-pro', 'buddy-1', 'food-buddy-1', 'owed'];
 
 const slugs = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT;
 
@@ -79,6 +79,8 @@ function makeStubs(window, flags) {
     proto.toDataURL = () => 'data:,';
   }
   window.scrollTo = () => {};
+  window.open = () => null; // jsdom doesn't implement; apps use it for official links
+  window.print = () => {}; // jsdom doesn't implement
   window.alert = () => {}; window.confirm = () => true; window.prompt = () => null;
   window.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 0);
   window.cancelAnimationFrame = () => {};

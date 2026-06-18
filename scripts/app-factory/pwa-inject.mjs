@@ -58,6 +58,16 @@ const REGISTRY = {
     categories: ['health', 'fitness', 'lifestyle'],
     extraCache: [],
   },
+  'owed': {
+    appName: "Owed — Find Money You're Owed",
+    shortName: 'Owed',
+    description: 'Privacy-first class action settlement finder. Match settlements you qualify for, track deadlines, and prep claims — all on your device. We never read your inbox.',
+    themeColor: '#48A9A6',
+    bgColor: '#F6F8F8',
+    emoji: '💰',
+    categories: ['finance', 'productivity', 'utilities'],
+    extraCache: [],
+  },
 };
 
 const enc = encodeURIComponent;
