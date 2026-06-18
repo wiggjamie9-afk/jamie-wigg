@@ -91,6 +91,7 @@ relevant `knowledge/` file first**.
 | Design → code from Figma | Framelink MCP (`framelink-mcp-figma.md`) |
 | Production UI (no generic AI look) | `frontend-design` skill |
 | Scaffold a SaaS | `saas-scaffolder` skill |
+| **A state-of-the-art iOS / Android app (2026 style)** | **App Factory pipeline** (`patterns/app-factory-2026.md`) — Capacitor hybrid (default) / PWA / native; Liquid Glass (Apple) + Material 3 Expressive (Google); spec→design→build→verify→package→ship |
 | Implement a planned spec in parallel | `/spec-run` (waves of isolated Agents) |
 | Build/verify the app runs | `run` / `verify` skills |
 | Multi-agent swarm execution | ruflo swarm/hive-mind MCP; Kimi K2.6 as runtime |
@@ -148,6 +149,10 @@ NEXUS shines when one request needs several capabilities. Common chains:
   clear messages; push only when the work is complete. Don't open a PR unless
   asked.
 - **Respect ADRs** — e.g. new Promos use HyperFrames, not Remotion (ADR-0001).
+- **No app-store spam** — refuse to mass-produce near-identical apps; warn on
+  reskins. Apple Guideline 4.3 / Google repetitive-content = whole-account ban.
+  Cadence: 1 distinct quality app/week to start, 2–3/week ceiling once systematized
+  (see `patterns/app-factory-2026.md`). Quality over volume, always.
 - **Reverse-engineered / relay tools** — kimi-free-api, CC Switch discount relays:
   flagged as supply-chain risk. Prefer official channels; don't route production
   keys/traffic through them.
