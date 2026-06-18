@@ -30,11 +30,13 @@ What "App Factory standard" got each app:
 
 ## 📲 To get the installable apps
 
-### Android (no desktop needed)
-1. On GitHub → **Actions** tab → "App Factory · Android APK" → latest run.
-2. Download the **`app-factory-batch-apk`** artifact (a `.apk`).
+### Android (no desktop needed) — ✅ VERIFIED WORKING
+The cloud build is green and produced a real **5.6 MB APK** with all 5 apps.
+1. On GitHub → **Actions** tab → "App Factory · Android APK" → latest run
+   (the green one, "use JDK 21").
+2. Download the **`app-factory-batch-apk`** artifact and unzip → `app-debug.apk`.
 3. Send it to your phone and install (enable "install unknown apps").
-   - If the run failed, tell me and I'll fix it — it's the first build.
+   - Artifact stays available for 30 days; re-run the workflow anytime for a fresh build.
 
 ### iOS (needs a Mac with Xcode — Apple requires it)
 ```bash
