@@ -7,8 +7,11 @@ import { readFileSync } from 'node:fs';
  *   APP_FACTORY_BATCH=owed.batch.json npx cap sync
  * Defaults to batch.json. appId/appName come straight from the batch file.
  */
+// Cap runs from the app-factory/ dir, so read the batch file relative to cwd
+// (avoids import.meta, which can break when the .ts config is loaded as CJS).
 const batchFile = process.env.APP_FACTORY_BATCH || 'batch.json';
-const batch = JSON.parse(readFileSync(new URL(`./${batchFile}`, import.meta.url), 'utf8'));
+let batch: { appId?: string; appName?: string } = {};
+try { batch = JSON.parse(readFileSync(batchFile, 'utf8')); } catch { /* fall back to defaults */ }
 
 const config: CapacitorConfig = {
   appId: batch.appId || 'au.rhythmix.appfactory.batch1',
