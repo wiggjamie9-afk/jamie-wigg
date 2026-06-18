@@ -1,0 +1,70 @@
+name: App Factory · Android APK
+
+# Builds an installable Android APK from the current App Factory batch
+# (app-factory/batch.json) and uploads it as a downloadable artifact.
+# Manual by default so it never fires unexpectedly; also runs when the
+# App Factory inputs change on this branch.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'app-factory/**'
+      - 'scripts/app-factory/**'
+      - 'apps/**'
+      - '.github/workflows/app-factory-android.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: PWA-ify batch apps
+        run: node scripts/app-factory/pwa-inject.mjs
+
+      - name: Install App Factory deps
+        working-directory: app-factory
+        run: npm install
+
+      - name: Bundle web (www/)
+        working-directory: app-factory
+        run: npm run build:web
+
+      - name: Add Android platform
+        working-directory: app-factory
+        run: npx cap add android
+
+      - name: Sync Capacitor
+        working-directory: app-factory
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: app-factory/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-factory-batch-apk
+          path: app-factory/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
