@@ -289,6 +289,7 @@
       </div>
     </div>
     <button class="btn primary" style="width:100%" id="buyBtn" onclick="goPremium()">Unlock Lifetime — $29</button>
+    <button class="btn ghost" style="width:100%;margin-top:10px" onclick="openAI()">🤖 Try the eligibility assistant</button>
     <p class="disc"><b>Not legal advice.</b> Owed is an information &amp; organization tool, not a law firm and not a claims filing service. We don't guarantee any payout. Settlement availability, amounts, and deadlines change — always verify with the official administrator. Owed never sees your personal data; claim prep happens on your device.</p>
   </section>
 </main>
@@ -342,6 +343,11 @@
    AI assistant (user's own key) and outbound links to official admins. */
 const BRAND = 'Owed';
 const LS = { profile: 'owed_profile', claims: 'owed_claims', me: 'owed_me', pro: 'owed_pro' };
+// 👉 GO LIVE: paste your Gumroad/Stripe $29 checkout link here. When set, the
+//    Lifetime button opens real checkout. Leave blank for the demo unlock.
+const PAYMENT_URL = '';
+// Shared ecosystem Claude key (same names the Ultimate Claude hub writes)
+const sharedKey = () => { try { return localStorage.getItem('claude-key') || localStorage.getItem('apiKey') || ''; } catch { return ''; } };
 
 /* Settlement catalog. Illustrative, real categories. Amounts/deadlines are
    intentionally shown as ranges/"verify" — confirm on the official source. */
@@ -607,20 +613,29 @@ window.resetAll = resetAll;
 
 /* ---------- premium ---------- */
 function goPremium() {
-  // Payment link goes here (Gumroad/Stripe). For now, unlock + thank.
+  if (PAYMENT_URL) { window.open(PAYMENT_URL, '_blank', 'noopener'); return; }
+  // No checkout wired yet → demo unlock on this device.
   isPro = true; set(LS.pro, true);
   document.getElementById('buyBtn').textContent = '✓ Lifetime unlocked';
   document.getElementById('buyBtn').disabled = true;
-  alert('Lifetime unlocked on this device. (Wire a Gumroad/Stripe link here to charge $29.)');
+  alert('Lifetime unlocked on this device. (Set PAYMENT_URL to your Gumroad/Stripe link to charge $29.)');
   renderClaims();
 }
 window.goPremium = goPremium;
 
 /* ---------- AI (optional) ---------- */
+function openAI() {
+  const k = document.getElementById('aiKey');
+  if (k && !k.value) k.value = sharedKey();
+  openModal('aiModal');
+}
+window.openAI = openAI;
 async function askAI() {
-  const key = val('aiKey'); const q = val('aiQ');
+  const key = val('aiKey') || sharedKey(); const q = val('aiQ');
   const out = document.getElementById('aiOut');
-  if (!key || !q) { out.textContent = 'Enter your key and a question.'; return; }
+  if (!key) { out.textContent = 'Add your Claude key (or set it once in the Ultimate Claude hub).'; return; }
+  if (!q) { out.textContent = 'Type a question first.'; return; }
+  try { localStorage.setItem('claude-key', key); } catch {}   // share across the ecosystem
   out.textContent = 'Thinking…';
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
