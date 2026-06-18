@@ -28,7 +28,19 @@ const APPS = join(ROOT, 'apps');
 // Apps under test (the App Factory batch apps). Override via argv.
 const DEFAULT = ['bookreader-pro', 'mathtutor-pro', 'fitcoach-pro', 'buddy-1', 'food-buddy-1', 'owed'];
 
-const slugs = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT;
+const args = process.argv.slice(2);
+let slugs;
+if (args.includes('--all')) {
+  // every real shipping app (excludes templates/launchers like buddy-system)
+  slugs = readdirSync(APPS)
+    .filter(f => /^(buddy-\d+|food-buddy-\d+|bookreader-pro|mathtutor-pro|fitcoach-pro|owed)\.html$/.test(f))
+    .map(f => f.replace(/\.html$/, ''))
+    .sort();
+} else if (args.length) {
+  slugs = args;
+} else {
+  slugs = DEFAULT;
+}
 
 function makeStubs(window, flags) {
   // localStorage (jsdom has it, but make sure it's there)
