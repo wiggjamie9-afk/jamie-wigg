@@ -60,10 +60,17 @@ function generateApp(spec) {
   const role = spec.role || 'AI Companion';
   const systemPrompt = buildSystemPrompt(spec, style);
 
+  // backend: 'claude' (cloud, needs key) or 'ollama' (local on your Mac, no key)
+  const backend = spec.backend === 'ollama' ? 'ollama' : 'claude';
+  const ollamaModel = spec.ollamaModel || 'llama3.2';
+
   // Config the app reads at runtime. JSON.stringify is safe (no backticks).
   const config = JSON.stringify({
     name, emoji, role, accent,
+    backend,
     model: 'claude-3-5-sonnet-20241022',
+    ollamaModel,
+    ollamaEndpoint: 'http://localhost:11434/api/chat',
     systemPrompt,
     crisisTerms: CRISIS_TERMS,
     storageKey: 'buddy_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
@@ -104,7 +111,11 @@ function generateApp(spec) {
   L.push('<div id="crisis">It sounds like you may be going through something serious. You deserve support right now. <strong>Call or text 988</strong> (US Suicide &amp; Crisis Lifeline), text HOME to 741741, or find a line near you at <a href="https://findahelpline.com" target="_blank" rel="noopener">findahelpline.com</a>.</div>');
   L.push('<div id="chat"></div>');
   L.push('<div class="composer"><input id="input" placeholder="Message ' + esc(name) + '..." autocomplete="off"><button id="send">Send</button></div>');
-  L.push('<div class="setup"><span>Claude API key:</span><input id="apikey" type="password" placeholder="sk-ant-..."><button id="savekey" style="padding:8px 12px;font-size:12px;">Save</button></div>');
+  if (backend === 'ollama') {
+    L.push('<div class="setup"><span>🔒 Running locally on your Mac via Ollama (model: ' + esc(ollamaModel) + ') — nothing sent to any server.</span></div>');
+  } else {
+    L.push('<div class="setup"><span>Claude API key:</span><input id="apikey" type="password" placeholder="sk-ant-..."><button id="savekey" style="padding:8px 12px;font-size:12px;">Save</button></div>');
+  }
 
   // ---- inline app script: NO backticks, NO ${ } — pure concatenation ----
   L.push('<script>');
@@ -115,7 +126,7 @@ function generateApp(spec) {
   L.push('var messages = [];');
   L.push('function load(){');
   L.push('  try{ messages = JSON.parse(localStorage.getItem(CONFIG.storageKey)) || []; }catch(e){ messages = []; }');
-  L.push('  var k = localStorage.getItem(CONFIG.storageKey + "_key"); if(k){ document.getElementById("apikey").value = k; }');
+  L.push('  if(CONFIG.backend === "claude"){ var k = localStorage.getItem(CONFIG.storageKey + "_key"); if(k){ document.getElementById("apikey").value = k; } }');
   L.push('  if(messages.length === 0){ addBot("Hi, I\\u2019m " + CONFIG.name + ". " + "How can I help you today?", false); }');
   L.push('  else { messages.forEach(function(m){ render(m.role, m.content); }); }');
   L.push('}');
@@ -134,30 +145,45 @@ function generateApp(spec) {
   L.push('async function callClaude(){');
   L.push('  var key = localStorage.getItem(CONFIG.storageKey + "_key");');
   L.push('  if(!key){ addBot("Please add your Claude API key below to enable replies.", false); return; }');
+  L.push('  var res = await fetch("https://api.anthropic.com/v1/messages", {');
+  L.push('    method:"POST",');
+  L.push('    headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},');
+  L.push('    body: JSON.stringify({ model: CONFIG.model, max_tokens: 1024, system: CONFIG.systemPrompt, messages: apiMessages() })');
+  L.push('  });');
+  L.push('  var data = await res.json();');
+  L.push('  if(data.content && data.content[0]){ addBot(data.content[0].text); }');
+  L.push('  else if(data.error){ addBot("Error: " + data.error.message, false); }');
+  L.push('  else { addBot("Sorry, I could not generate a reply.", false); }');
+  L.push('}');
+  L.push('async function callOllama(){');
+  L.push('  var msgs = [{role:"system",content:CONFIG.systemPrompt}].concat(apiMessages());');
+  L.push('  var res = await fetch(CONFIG.ollamaEndpoint, {');
+  L.push('    method:"POST",');
+  L.push('    headers:{"Content-Type":"application/json"},');
+  L.push('    body: JSON.stringify({ model: CONFIG.ollamaModel, messages: msgs, stream: false })');
+  L.push('  });');
+  L.push('  var data = await res.json();');
+  L.push('  if(data.message && data.message.content){ addBot(data.message.content); }');
+  L.push('  else if(data.error){ addBot("Ollama error: " + data.error + " (is Ollama running? try: ollama run " + CONFIG.ollamaModel + ")", false); }');
+  L.push('  else { addBot("No reply from local model.", false); }');
+  L.push('}');
+  L.push('async function callModel(){');
   L.push('  sendBtn.disabled = true;');
-  L.push('  try{');
-  L.push('    var res = await fetch("https://api.anthropic.com/v1/messages", {');
-  L.push('      method:"POST",');
-  L.push('      headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},');
-  L.push('      body: JSON.stringify({ model: CONFIG.model, max_tokens: 1024, system: CONFIG.systemPrompt, messages: apiMessages() })');
-  L.push('    });');
-  L.push('    var data = await res.json();');
-  L.push('    if(data.content && data.content[0]){ addBot(data.content[0].text); }');
-  L.push('    else if(data.error){ addBot("Error: " + data.error.message, false); }');
-  L.push('    else { addBot("Sorry, I could not generate a reply.", false); }');
-  L.push('  }catch(e){ addBot("Network error: " + e.message, false); }');
+  L.push('  try{ if(CONFIG.backend === "ollama"){ await callOllama(); } else { await callClaude(); } }');
+  L.push('  catch(e){ addBot("Connection error: " + e.message, false); }');
   L.push('  sendBtn.disabled = false;');
   L.push('}');
   L.push('function send(){');
   L.push('  var t = input.value.trim(); if(!t) return; input.value = "";');
-  L.push('  addUser(t); checkCrisis(t); callClaude();');
+  L.push('  addUser(t); checkCrisis(t); callModel();');
   L.push('}');
   L.push('sendBtn.addEventListener("click", send);');
   L.push('input.addEventListener("keydown", function(e){ if(e.key === "Enter"){ send(); } });');
-  L.push('document.getElementById("savekey").addEventListener("click", function(){');
+  L.push('var saveKeyBtn = document.getElementById("savekey");');
+  L.push('if(saveKeyBtn){ saveKeyBtn.addEventListener("click", function(){');
   L.push('  var k = document.getElementById("apikey").value.trim();');
   L.push('  localStorage.setItem(CONFIG.storageKey + "_key", k); addBot("API key saved. Ready to chat.", false);');
-  L.push('});');
+  L.push('}); }');
   L.push('load();');
   L.push('<\/script>');
   L.push('</body>');
