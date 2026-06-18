@@ -64,6 +64,7 @@ relevant `knowledge/` file first**.
 | Reference-to-video / talking avatar | SkyReels V3 (`skyreels-v3.md`) — apifree.ai |
 | Image generation / illusion brand frames | `replicate` skill (FLUX) or KREA (`krea.md`) |
 | Math / explainer animation | KimiK2Manim (`kimik2manim.md`) → render |
+| Anime / cartoon (characters, stylization, animation) | Anime/Manga map (`references/anime-manga-datasets.md`) — photo→anime, reference colorization, pose→character animation via Replicate/HF |
 | Social carousel (multi-slide) | `carousel-generation` skill (`carousel-generator.md`) |
 | Generative / algorithmic art | `algorithmic-art` skill + p5.js (`p5js-generative-art.md`) |
 | Music / voice / TTS | `creative-stack` MCP, Kokoro, ElevenLabs, MiniMax MCP |

@@ -56,23 +56,22 @@ devcontainer) and the video-gen MCP's `personal_clipper` / `reframe` / `upscale`
   *around* the edit (assets, thumbnail, SEO, repurposing). NEXUS can also generate an
   ffmpeg edit-decision script you run locally.
 
-### Gap 2 — 2D cartoon / character animation
-There's **no dedicated cartoon/character animation tool** (Toon Boom / rigged 2D /
-controllable character pipelines). What exists:
-- KimiK2Manim → math/diagram animation (not characters)
-- HyperFrames/GSAP → motion graphics, simple animated shapes/text
-- SkyReels / Higgsfield → AI video (can do stylized/animated *looks*, but not
-  controllable cartoon characters with consistent design across shots)
+### Gap 2 — 2D cartoon / character animation → **NOW MAPPED**
+Previously no dedicated cartoon pipeline. **Now covered by the Anime/Manga research
+map** (`references/anime-manga-datasets.md`), which provides deployable models for:
+- **Photo/sketch/face → anime** translation (AnimeGAN-class, via Replicate) — stylized look
+- **Reference-based line-art colorization** — consistent character colors across frames
+- **Pose estimation → character animation** — drive characters from a motion source
+- **Text-to-anime + few-shot/reference** — lock a character design across shots
+- **3D character creation** + anime **speech synthesis** (pairs with audio stack)
 
-- **Fine for**: motion-graphic "explainer cartoon" style, animated infographics,
-  AI-stylized animated footage.
-- **Not covered**: true character-driven 2D cartoons with model sheets, rigging,
-  consistent characters across episodes.
-- **Recommendation**: For cartoon channels, either (a) lean into the
-  motion-graphic/AI-stylized look the stack does well, or (b) add a dedicated tool
-  to the stack — candidates to install next: an AI character-animation model
-  (e.g. via Replicate), or a pipeline tool. **Flag for NEXUS to install when you go
-  cartoon-first.**
+- **Fine now for**: anime/cartoon channels with stylized look, colorized 2D frames,
+  pose-driven character motion, manga-style panels.
+- **Still real work**: these are research models (GPU + setup); *episodic* character
+  consistency is iterative, not one-click.
+- **Recommended install order when cartoon-first**: AnimeGAN/photo→anime + reference
+  colorizer (easy, high-impact) → then pose-driven character animation once the look
+  is locked. NEXUS picks the specific Replicate/HF model per task.
 
 ## Channel Archetypes — What's Fully Covered Today
 
@@ -84,7 +83,7 @@ controllable character pipelines). What exists:
 | **Talking-head / avatar presenter** | ✅ Covered (SkyReels V3 / Higgsfield / HeyGen) |
 | **Shorts-first** (TikTok/Reels/Shorts cross-post) | ✅ Fully covered |
 | **Hand-edited vlog / multicam** | ⚠️ Edit locally (CapCut/Resolve); NEXUS does everything around it |
-| **Character cartoon series** | ⚠️ Partial — motion-graphic style yes; rigged characters need a new tool |
+| **Anime / cartoon series** | ✅ Now mapped — anime generation, stylization, reference colorization, pose-driven character animation (`references/anime-manga-datasets.md`); episodic consistency iterative |
 
 ## NEXUS YouTube Pipeline (what one command runs)
 
