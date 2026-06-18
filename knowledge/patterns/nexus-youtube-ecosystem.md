@@ -21,7 +21,7 @@ Invoke via `/nexus start a youtube channel about X` or `/nexus make a youtube vi
 | **8. Talking-head / avatar** | Presenter, character on camera | SkyReels V3 talking avatar (audio→lip-sync ≤200s), Higgsfield talking-head, HeyGen | ✅ Good |
 | **9. Motion graphics** | Animated text, transitions, intros/outros | HyperFrames (HTML/GSAP), `gsap` skill | ✅ Strong |
 | **10. Explainer animation** | Math/diagram/data animation | KimiK2Manim (Manim) | ✅ Good (math/diagram) |
-| **11. Video assembly / editing** | Timeline cut, trim, sequence, sync | ffmpeg (programmatic), video-gen MCP `personal_clipper` (long→shorts), `reframe` (aspect), `upscale_video` | ⚠️ **GAP — see below** |
+| **11. Video assembly / editing** | Timeline cut, trim, sequence, sync, multicam | **Timeline Studio** (`tools/timeline-studio.md`) — headless CLI/`render-job` for automated, Tauri desktop for hands-on; ffmpeg + video-gen MCP `personal_clipper`/`reframe`/`upscale` as fallback | ✅ **Now covered** |
 | **12. Thumbnails** | Click-optimized cover art | `thumbnail-designer` agent, KREA, FLUX, canvas-design | ✅ Strong |
 | **13. SEO / metadata** | Title, description, tags, chapters | `youtube-seo` agent | ✅ Strong |
 | **14. Publishing** | Upload, schedule | Manual (you) or Zapier/n8n YouTube nodes | ⚠️ Needs your channel auth |
@@ -41,20 +41,20 @@ Invoke via `/nexus start a youtube channel about X` or `/nexus make a youtube vi
 
 ## ⚠️ The Two Real Gaps (honest)
 
-### Gap 1 — Timeline video editing (NLE)
-There is **no Premiere/CapCut/DaVinci-style timeline editor** here. The ecosystem
-*generates* clips and *programmatically* assembles via **ffmpeg** (installed in the
-devcontainer) and the video-gen MCP's `personal_clipper` / `reframe` / `upscale`.
+### Gap 1 — Timeline video editing (NLE) → **NOW CLOSED**
+Closed by **Timeline Studio** (`tools/timeline-studio.md`) — an open-source
+AI video editor (Tauri + Next.js + Rust) with 100+ Claude-powered AI tools, GPU
+acceleration, and **headless CLI/entrypoints** (`timeline`, `render-job`,
+`bot-workflow`) so NEXUS can automate editing + rendering, not just use a GUI.
 
-- **Fine for**: AI-generated/automated videos, faceless channels, compilation/clip
-  channels, motion-graphic explainers, shorts.
-- **Not covered**: hands-on frame-by-frame timeline editing, multicam, manual
-  color grading, the tactile "scrub and cut" workflow.
-- **Recommendation**: For automated/faceless channels, the programmatic path (ffmpeg
-  + MCP) is enough and NEXUS can script it. For hand-edited long-form, edit in
-  **CapCut/DaVinci Resolve (both free)** on your Mac and use NEXUS for everything
-  *around* the edit (assets, thumbnail, SEO, repurposing). NEXUS can also generate an
-  ffmpeg edit-decision script you run locally.
+- **Automated assembly**: NEXUS builds a `ProjectSchema` and drives the Rust
+  `timeline` CLI / `render-job` headlessly — scene detection, music sync,
+  best-moment selection, GPU render, per-platform export.
+- **Hands-on editing**: the Tauri desktop app on the Mac for manual timeline work.
+- **One source → many platforms**: TikTok/YouTube/Vimeo/Telegram direct upload,
+  Instagram manual — upgrades the repurposing stage.
+- **Caveats**: runs on the Mac (not this sandbox); alpha (97.5%); commercial license
+  for business use. ffmpeg path still available as a lightweight fallback.
 
 ### Gap 2 — 2D cartoon / character animation → **NOW MAPPED**
 Previously no dedicated cartoon pipeline. **Now covered by the Anime/Manga research
@@ -82,7 +82,7 @@ map** (`references/anime-manga-datasets.md`), which provides deployable models f
 | **AI-cinematic** (generated footage, music videos, ambient) | ✅ Covered (SkyReels/Higgsfield, hosted GPU) |
 | **Talking-head / avatar presenter** | ✅ Covered (SkyReels V3 / Higgsfield / HeyGen) |
 | **Shorts-first** (TikTok/Reels/Shorts cross-post) | ✅ Fully covered |
-| **Hand-edited vlog / multicam** | ⚠️ Edit locally (CapCut/Resolve); NEXUS does everything around it |
+| **Hand-edited vlog / multicam** | ✅ Now covered — Timeline Studio (`tools/timeline-studio.md`); automated via headless CLI or hands-on in the desktop app |
 | **Anime / cartoon series** | ✅ Now mapped — anime generation, stylization, reference colorization, pose-driven character animation (`references/anime-manga-datasets.md`); episodic consistency iterative |
 
 ## NEXUS YouTube Pipeline (what one command runs)
