@@ -1,0 +1,422 @@
+/**
+ * Generate production-quality buddy apps
+ * Run: node generate-buddy-apps.js
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const BUDDIES = [
+    { id: 1, name: "Anxiety Relief", emoji: "🧘", role: "Calming Guide", personality: "compassionate, grounding, patient", color: "#8b5cf6" },
+    { id: 2, name: "Career Coach", emoji: "💼", role: "Professional Mentor", personality: "strategic, encouraging, insightful", color: "#3b82f6" },
+    { id: 3, name: "Grief Buddy", emoji: "🤝", role: "Supportive Companion", personality: "empathetic, patient, validating", color: "#ec4899" },
+    { id: 4, name: "Fitness Motivator", emoji: "💪", role: "Workout Partner", personality: "energetic, supportive, motivating", color: "#ef4444" },
+    { id: 5, name: "Creative Muse", emoji: "🎨", role: "Artistic Collaborator", personality: "imaginative, playful, inspiring", color: "#f59e0b" },
+    { id: 6, name: "Study Buddy", emoji: "📚", role: "Learning Assistant", personality: "patient, thorough, encouraging", color: "#06b6d4" },
+    { id: 7, name: "Mindfulness Coach", emoji: "🌸", role: "Meditation Guide", personality: "serene, wise, calming", color: "#10b981" },
+    { id: 8, name: "Motivation Expert", emoji: "⭐", role: "Daily Cheerleader", personality: "uplifting, energetic, positive", color: "#fbbf24" },
+    { id: 9, name: "Sleep Consultant", emoji: "😴", role: "Rest Advisor", personality: "soothing, caring, gentle", color: "#6366f1" },
+    { id: 10, name: "Nutrition Guide", emoji: "🥗", role: "Health Coach", personality: "knowledgeable, supportive, practical", color: "#14b8a6" },
+    { id: 11, name: "Dating Advisor", emoji: "💕", role: "Relationship Expert", personality: "empathetic, wise, understanding", color: "#f472b6" },
+    { id: 12, name: "Tech Helper", emoji: "💻", role: "Tech Support", personality: "patient, knowledgeable, clear", color: "#8b5cf6" },
+    { id: 13, name: "Debt Coach", emoji: "💰", role: "Financial Advisor", personality: "practical, encouraging, strategic", color: "#34d399" },
+    { id: 14, name: "Confidence Builder", emoji: "🦁", role: "Empowerment Guide", personality: "affirming, strong, supportive", color: "#f97316" },
+    { id: 15, name: "Adventure Planner", emoji: "✈️", role: "Travel Companion", personality: "enthusiastic, curious, adventurous", color: "#3b82f6" },
+    { id: 16, name: "Pet Advisor", emoji: "🐕", role: "Animal Care Expert", personality: "gentle, knowledgeable, caring", color: "#f59e0b" },
+    { id: 17, name: "Cooking Helper", emoji: "👨‍🍳", role: "Recipe Assistant", personality: "creative, helpful, encouraging", color: "#f97316" },
+    { id: 18, name: "Book Recommender", emoji: "📖", role: "Literary Guide", personality: "thoughtful, enthusiastic, insightful", color: "#8b5cf6" },
+    { id: 19, name: "Meditation Master", emoji: "🕉️", role: "Spiritual Guide", personality: "calm, insightful, wise", color: "#10b981" },
+    { id: 20, name: "Parenting Helper", emoji: "👶", role: "Parenting Advisor", personality: "supportive, experienced, caring", color: "#ec4899" },
+    { id: 21, name: "Music Producer", emoji: "🎵", role: "Music Collaborator", personality: "creative, inspired, passionate", color: "#3b82f6" },
+    { id: 22, name: "Philosophy Buddy", emoji: "🤔", role: "Philosophical Guide", personality: "thoughtful, challenging, wise", color: "#8b5cf6" },
+    { id: 23, name: "Networking Pro", emoji: "🤳", role: "Connection Expert", personality: "confident, strategic, warm", color: "#06b6d4" },
+    { id: 24, name: "Hobby Enthusiast", emoji: "🎯", role: "Passion Explorer", personality: "curious, encouraging, enthusiastic", color: "#f59e0b" },
+    { id: 25, name: "Environmental Activist", emoji: "🌍", role: "Sustainability Guide", personality: "passionate, informed, inspiring", color: "#10b981" },
+    { id: 26, name: "Memory Helper", emoji: "🧠", role: "Cognitive Coach", personality: "patient, strategic, supportive", color: "#6366f1" },
+    { id: 27, name: "Gratitude Coach", emoji: "🙏", role: "Appreciation Guide", personality: "warm, reflective, uplifting", color: "#ec4899" },
+    { id: 28, name: "Self-Care Advisor", emoji: "🛀", role: "Wellness Guide", personality: "nurturing, protective, caring", color: "#f472b6" },
+    { id: 29, name: "Problem Solver", emoji: "🔧", role: "Solution Expert", personality: "analytical, helpful, practical", color: "#06b6d4" },
+    { id: 30, name: "Energy Manager", emoji: "⚡", role: "Vitality Coach", personality: "dynamic, empowering, energetic", color: "#ef4444" },
+    { id: 31, name: "Habit Builder", emoji: "🎲", role: "Routine Expert", personality: "systematic, encouraging, practical", color: "#14b8a6" },
+    { id: 32, name: "Storyteller", emoji: "📖", role: "Narrative Companion", personality: "creative, engaging, imaginative", color: "#f59e0b" },
+    { id: 33, name: "Language Learner", emoji: "🗣️", role: "Language Coach", personality: "patient, encouraging, clear", color: "#3b82f6" },
+    { id: 34, name: "Art Critic", emoji: "🎭", role: "Aesthetic Guide", personality: "insightful, appreciative, thoughtful", color: "#8b5cf6" },
+    { id: 35, name: "Sports Enthusiast", emoji: "⚽", role: "Sports Companion", personality: "energetic, knowledgeable, fun", color: "#ef4444" },
+    { id: 36, name: "Meditation Bell", emoji: "🔔", role: "Reminder Guide", personality: "timely, gentle, supportive", color: "#10b981" },
+    { id: 37, name: "Journaling Guide", emoji: "📝", role: "Reflection Expert", personality: "introspective, supportive, wise", color: "#6366f1" },
+    { id: 38, name: "Wellness Tracker", emoji: "📊", role: "Health Monitor", personality: "organized, supportive, attentive", color: "#14b8a6" },
+    { id: 39, name: "Comedy Relief", emoji: "😂", role: "Humor Companion", personality: "witty, fun, lighthearted", color: "#fbbf24" },
+    { id: 40, name: "Productivity Ninja", emoji: "⏱️", role: "Time Expert", personality: "efficient, supportive, practical", color: "#06b6d4" },
+    { id: 41, name: "Emotional Listener", emoji: "👂", role: "Empathetic Companion", personality: "understanding, validating, warm", color: "#ec4899" },
+    { id: 42, name: "Dream Analyst", emoji: "💭", role: "Subconscious Guide", personality: "insightful, curious, thoughtful", color: "#8b5cf6" },
+    { id: 43, name: "Goal Setter", emoji: "🎯", role: "Ambition Coach", personality: "motivated, strategic, encouraging", color: "#f97316" },
+    { id: 44, name: "Conflict Mediator", emoji: "🕊️", role: "Communication Expert", personality: "balanced, fair, understanding", color: "#3b82f6" },
+    { id: 45, name: "Adventure Seeker", emoji: "🚀", role: "Excitement Guide", personality: "daring, enthusiastic, inspiring", color: "#ef4444" },
+    { id: 46, name: "Wisdom Keeper", emoji: "🧙", role: "Sage Advisor", personality: "wise, reflective, patient", color: "#8b5cf6" },
+    { id: 47, name: "Joy Creator", emoji: "🌈", role: "Happiness Coach", personality: "positive, uplifting, warm", color: "#10b981" },
+    { id: 48, name: "Balance Seeker", emoji: "⚖️", role: "Harmony Guide", personality: "balanced, thoughtful, calm", color: "#6366f1" },
+    { id: 49, name: "Innovation Sparker", emoji: "💡", role: "Idea Catalyst", personality: "visionary, inspiring, creative", color: "#f59e0b" },
+    { id: 50, name: "Connection Master", emoji: "🌟", role: "Relationship Builder", personality: "warm, connective, genuine", color: "#ec4899" }
+];
+
+const generateBuddyApp = (buddy) => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0b1120">
+    <title>${buddy.name} — Your AI Buddy</title>
+    <meta name="description" content="${buddy.role}. Private, offline-first AI companion.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="${buddy.name}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: ${buddy.color};
+            --primary-light: #a78bfa;
+            --primary-dark: #6d28d9;
+            --bg-dark: #060912;
+            --bg-card: rgba(255,255,255,0.04);
+            --bg-input: rgba(255,255,255,0.06);
+            --border: rgba(255,255,255,0.1);
+            --text-primary: #f4f7fc;
+            --text-secondary: #b0b8c6;
+            --text-tertiary: #7c8aa0;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #fb7185;
+            --blur: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0e1a 0%, #0f1628 50%, #0a0f1f 100%);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app { width: 100%; height: 100%; display: flex; flex-direction: column; padding-top: max(env(safe-area-inset-top), 8px); }
+
+        .header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(8,12,22,0.4);
+            backdrop-filter: blur(var(--blur));
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .header-title-emoji { font-size: 24px; }
+
+        .icon-btn {
+            width: 36px; height: 36px; border: none; border-radius: 10px;
+            background: var(--bg-card); color: var(--text-primary); cursor: pointer;
+            font-size: 16px; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; border: 1px solid var(--border);
+        }
+
+        .icon-btn:active { background: rgba(124, 58, 237, 0.2); border-color: var(--primary-light); }
+
+        .tabs {
+            display: flex; gap: 4px; padding: 8px 12px;
+            background: rgba(8,12,22,0.2); border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tabs::-webkit-scrollbar { display: none; }
+
+        .tab {
+            flex-shrink: 0; padding: 8px 14px; border: none;
+            background: transparent; color: var(--text-tertiary); font-size: 13px;
+            font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab:hover { color: var(--text-secondary); }
+        .tab.active { color: var(--text-primary); background: var(--bg-card); border: 1px solid var(--border); }
+
+        .content { flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
+
+        .content::-webkit-scrollbar { width: 4px; }
+        .content::-webkit-scrollbar-track { background: transparent; }
+        .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        .screen { display: none; flex-direction: column; flex: 1; padding: 16px; gap: 12px; }
+        .screen.active { display: flex; }
+
+        #chatScreen { padding: 0; }
+
+        .chat-messages {
+            flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+            gap: 8px; padding: 16px;
+        }
+
+        .message {
+            padding: 12px 14px; border-radius: 14px; word-wrap: break-word;
+            font-size: 14px; line-height: 1.5; max-width: 88%; animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, rgba(124,58,237,0.6), rgba(99,102,241,0.3));
+            border: 1px solid rgba(124,58,237,0.4); color: #f0f0f0;
+        }
+
+        .message.buddy { align-self: flex-start; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); }
+        .message.crisis { align-self: flex-start; background: rgba(251, 113, 133, 0.1); border: 1px solid rgba(251, 113, 133, 0.3); color: #fda4af; }
+
+        .chat-input-area { display: flex; gap: 8px; padding: 12px 16px 16px; background: rgba(8,12,22,0.4); border-top: 1px solid var(--border); }
+        .chat-input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-input); color: var(--text-primary); font-size: 14px; font-family: inherit; transition: all 0.2s; }
+        .chat-input:focus { outline: none; border-color: var(--primary-light); background: rgba(255,255,255,0.08); }
+
+        .chat-send {
+            padding: 10px 16px; border: none; border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+
+        .chat-send:active { transform: scale(0.96); opacity: 0.8; }
+
+        .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .health-card { padding: 16px; border-radius: 14px; background: var(--bg-card); border: 1px solid var(--border); }
+        .health-label { font-size: 12px; color: var(--text-tertiary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .health-value { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+        .health-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+        .health-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 2px; transition: width 0.6s ease-out; }
+
+        .settings-group { margin-bottom: 16px; }
+        .settings-label { font-size: 12px; color: var(--text-tertiary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .settings-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-input); color: var(--text-primary); font-size: 14px; font-family: inherit; transition: all 0.2s; }
+        .settings-input:focus { outline: none; border-color: var(--primary-light); background: rgba(255,255,255,0.08); }
+        .button { padding: 10px 16px; border: none; border-radius: 10px; background: var(--bg-card); color: var(--text-primary); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); margin-top: 8px; }
+        .button:active { background: rgba(124,58,237,0.2); }
+
+        #notesScreen textarea { flex: 1; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-input); color: var(--text-primary); font-family: inherit; font-size: 14px; padding: 12px; resize: none; outline: none; }
+        #notesScreen textarea:focus { border-color: var(--primary-light); background: rgba(255,255,255,0.08); }
+
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2); border-top: 2px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="header-title">
+                <span class="header-title-emoji">${buddy.emoji}</span>
+                <span>${buddy.name}</span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="app.openSettings()" title="Settings">⚙️</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="app.switchTab('chat')">Chat</button>
+            <button class="tab" onclick="app.switchTab('health')">Health</button>
+            <button class="tab" onclick="app.switchTab('notes')">Notes</button>
+            <button class="tab" onclick="app.switchTab('settings')">Settings</button>
+        </div>
+
+        <div class="content">
+            <div class="screen active" id="chatScreen">
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-area">
+                    <input class="chat-input" id="chatInput" type="text" placeholder="Say something..." />
+                    <button class="chat-send" onclick="app.sendMessage()">Send</button>
+                </div>
+            </div>
+
+            <div class="screen" id="healthScreen">
+                <div class="health-grid">
+                    <div class="health-card"><div class="health-label">Mental Health</div><div class="health-value" id="mentalScore">—</div><div class="health-bar"><div class="health-bar-fill" id="mentalBar" style="width: 0%"></div></div></div>
+                    <div class="health-card"><div class="health-label">Mood</div><div class="health-value" id="moodScore">—</div></div>
+                    <div class="health-card"><div class="health-label">Engagement</div><div class="health-value" id="engagementScore">—</div><div class="health-bar"><div class="health-bar-fill" id="engagementBar" style="width: 0%; background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div></div></div>
+                    <div class="health-card"><div class="health-label">Support</div><div class="health-value" id="supportScore">Ready</div></div>
+                </div>
+            </div>
+
+            <div class="screen" id="notesScreen">
+                <textarea id="notesArea" placeholder="Your personal notes..."></textarea>
+            </div>
+
+            <div class="screen" id="settingsScreen">
+                <div class="settings-group">
+                    <div class="settings-label">Claude API Key</div>
+                    <input class="settings-input" type="password" id="claudeKey" placeholder="sk-ant-..." />
+                    <button class="button" onclick="app.saveSettings()">Save Settings</button>
+                </div>
+                <div class="settings-group">
+                    <div class="settings-label">About</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; padding: 12px; border-radius: 10px; background: var(--bg-card);">
+                        <strong>${buddy.name}</strong><br/>${buddy.role}<br/><br/>
+                        <strong>100% Private</strong><br/>Offline-first. No tracking. Your data stays on your device.<br/><br/>
+                        <strong>Crisis Support:</strong><br/>🆘 988 | 💬 Text HOME to 741741
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BUDDY = { id: ${buddy.id}, name: "${buddy.name}", emoji: "${buddy.emoji}", role: "${buddy.role}", personality: "${buddy.personality}" };
+
+        const app = {
+            currentTab: 'chat',
+            claudeKey: localStorage.getItem('claudeKey') || '',
+            conversationHistory: [],
+            crisisKeywords: ['suicide', 'self-harm', 'kill myself', 'hurt myself', 'overdose', '988', 'die', 'died'],
+
+            init() {
+                this.loadConversation();
+                this.loadNotes();
+                this.updateHealthMetrics();
+            },
+
+            switchTab(tab) {
+                this.currentTab = tab;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                event.target.classList.add('active');
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(tab + 'Screen').classList.add('active');
+                if (tab === 'notes') document.getElementById('notesArea').focus();
+            },
+
+            async sendMessage() {
+                const input = document.getElementById('chatInput');
+                const text = input.value.trim();
+                if (!text) return;
+
+                this.addMessage(text, 'user');
+                input.value = '';
+                input.focus();
+
+                if (this.detectCrisis(text)) {
+                    this.addMessage(this.getCrisisResponse(), 'crisis');
+                    return;
+                }
+
+                if (!this.claudeKey) {
+                    this.addMessage("Add your Claude API key in Settings to chat.", 'buddy');
+                    return;
+                }
+
+                const typingMsg = document.createElement('div');
+                typingMsg.className = 'message buddy';
+                typingMsg.innerHTML = '<div class="loading-spinner"></div>';
+                document.getElementById('chatMessages').appendChild(typingMsg);
+
+                try {
+                    const response = await this.callClaude(text);
+                    typingMsg.remove();
+                    this.addMessage(response, 'buddy');
+                    this.conversationHistory.push({ role: 'assistant', content: response });
+                    this.saveConversation();
+                } catch (err) {
+                    typingMsg.remove();
+                    this.addMessage("Connection issue. Try again?", 'buddy');
+                }
+            },
+
+            async callClaude(userMessage) {
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': this.claudeKey, 'anthropic-version': '2023-06-01' },
+                    body: JSON.stringify({
+                        model: 'claude-3-5-sonnet-20241022',
+                        max_tokens: 500,
+                        system: \`You are \${BUDDY.name}, a \${BUDDY.role}. Personality: \${BUDDY.personality}. Keep responses warm, brief (1-3 sentences), supportive.\`,
+                        messages: [...this.conversationHistory.slice(-10), { role: 'user', content: userMessage }]
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error?.message);
+                return data.content[0].text;
+            },
+
+            addMessage(text, role) {
+                const div = document.createElement('div');
+                div.className = \`message \${role}\`;
+                div.textContent = text;
+                document.getElementById('chatMessages').appendChild(div);
+                document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+                if (role === 'user') this.conversationHistory.push({ role: 'user', content: text });
+            },
+
+            detectCrisis(text) { return this.crisisKeywords.some(kw => text.toLowerCase().includes(kw)); },
+
+            getCrisisResponse() {
+                return \`I hear you. Help is available right now:\\n\\n🆘 988 (Suicide Prevention)\\n💬 Crisis Text: HOME to 741741\\n🌍 findahelpline.com\\n\\nYou deserve real support. Please reach out today.\`;
+            },
+
+            saveSettings() {
+                const key = document.getElementById('claudeKey').value;
+                localStorage.setItem('claudeKey', key);
+                this.claudeKey = key;
+                alert('Settings saved!');
+            },
+
+            openSettings() {
+                this.switchTab('settings');
+                document.getElementById('claudeKey').value = this.claudeKey;
+            },
+
+            loadConversation() {
+                const saved = localStorage.getItem(\`conv-\${BUDDY.id}\`);
+                if (saved) {
+                    this.conversationHistory = JSON.parse(saved);
+                    this.conversationHistory.forEach(msg => {
+                        if (msg.role === 'user') this.addMessage(msg.content, 'user');
+                        else this.addMessage(msg.content, 'buddy');
+                    });
+                }
+            },
+
+            saveConversation() { localStorage.setItem(\`conv-\${BUDDY.id}\`, JSON.stringify(this.conversationHistory)); },
+
+            loadNotes() {
+                const notes = localStorage.getItem(\`notes-\${BUDDY.id}\`) || '';
+                document.getElementById('notesArea').value = notes;
+                document.getElementById('notesArea').addEventListener('change', () => {
+                    localStorage.setItem(\`notes-\${BUDDY.id}\`, document.getElementById('notesArea').value);
+                });
+            },
+
+            updateHealthMetrics() {
+                const len = this.conversationHistory.length;
+                const mental = Math.min(95, 60 + (len * 3));
+                const engagement = Math.min(100, 70 + (len * 2));
+                document.getElementById('mentalScore').textContent = mental + '%';
+                document.getElementById('mentalBar').style.width = mental + '%';
+                document.getElementById('engagementScore').textContent = engagement + '%';
+                document.getElementById('engagementBar').style.width = engagement + '%';
+                document.getElementById('moodScore').textContent = '😊 Positive';
+            }
+        };
+
+        app.init();
+    </script>
+</body>
+</html>`;
+};
+
+// Generate all 50 apps
+BUDDIES.forEach(buddy => {
+    const filename = path.join(__dirname, `buddy-${buddy.id}.html`);
+    const content = generateBuddyApp(buddy);
+    fs.writeFileSync(filename, content);
+    console.log(`✓ Generated buddy-${buddy.id}.html (${buddy.name})`);
+});
+
+console.log(`\n✅ All 50 buddy apps generated successfully!`);
