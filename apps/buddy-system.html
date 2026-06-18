@@ -539,10 +539,10 @@
             buddyData: {},
             claudeApiKey: '',
             elevenLabsKey: '',
-            replicateToken: '',
+            huggingFaceToken: '',
             voiceSpeed: 1.0,
             selectedCountry: 'US',
-            // FLUX avatar generation via Replicate API
+            // Stable Diffusion avatar generation via Hugging Face API
             proxyUrl: 'http://localhost:3001',
         };
 
@@ -565,7 +565,7 @@
             }
             state.claudeApiKey = localStorage.getItem('claudeApiKey') || '';
             state.elevenLabsKey = localStorage.getItem('elevenLabsKey') || '';
-            state.replicateToken = localStorage.getItem('replicateToken') || '';
+            state.huggingFaceToken = localStorage.getItem('huggingFaceToken') || '';
             state.proxyUrl = localStorage.getItem('avatarProxyUrl') || 'http://localhost:3001';
             state.voiceSpeed = parseFloat(localStorage.getItem('voiceSpeed') || '1.0');
             state.selectedCountry = localStorage.getItem('selectedCountry') || 'US';
@@ -835,10 +835,10 @@
                         <button class="mood-btn" style="width: 100%; padding: 8px; font-size: 12px; margin-bottom: 12px;" onclick="saveClaude()">Save Claude Key</button>
 
                         <div class="settings-item">
-                            <span class="settings-label">Replicate API Key (for FLUX avatars)</span>
+                            <span class="settings-label">Hugging Face API Key (for avatar generation)</span>
                         </div>
-                        <input type="password" class="settings-input" id="replicate-key" style="width: 100%; margin-bottom: 8px;" placeholder="r8_...">
-                        <button class="mood-btn" style="width: 100%; padding: 8px; font-size: 12px; margin-bottom: 12px;" onclick="saveReplicate()">Save Replicate Key</button>
+                        <input type="password" class="settings-input" id="hf-key" style="width: 100%; margin-bottom: 8px;" placeholder="hf_...">
+                        <button class="mood-btn" style="width: 100%; padding: 8px; font-size: 12px; margin-bottom: 12px;" onclick="saveHuggingFace()">Save HF Key</button>
 
                         <div class="settings-item">
                             <span class="settings-label">ElevenLabs API Key</span>
@@ -894,8 +894,8 @@
             const claudeKeyInput = screen.querySelector('#claude-key');
             if (claudeKeyInput) claudeKeyInput.value = state.claudeApiKey;
 
-            const replicateKeyInput = screen.querySelector('#replicate-key');
-            if (replicateKeyInput) replicateKeyInput.value = state.replicateToken;
+            const hfKeyInput = screen.querySelector('#hf-key');
+            if (hfKeyInput) hfKeyInput.value = state.huggingFaceToken;
 
             const elevenKeyInput = screen.querySelector('#eleven-key');
             if (elevenKeyInput) elevenKeyInput.value = state.elevenLabsKey;
@@ -1484,12 +1484,12 @@
             }
         }
 
-        function saveReplicate() {
-            const key = document.getElementById('replicate-key')?.value;
+        function saveHuggingFace() {
+            const key = document.getElementById('hf-key')?.value;
             if (key) {
-                state.replicateToken = key;
-                localStorage.setItem('replicateToken', key);
-                showToast('Replicate API key saved!', 'success');
+                state.huggingFaceToken = key;
+                localStorage.setItem('huggingFaceToken', key);
+                showToast('Hugging Face API key saved!', 'success');
             }
         }
 
@@ -1536,55 +1536,35 @@
             const prompt = buildAvatarPrompt(buddy, custom);
             setAvatarStatus(buddyId, 'Generating a photoreal face…', true);
             try {
-                if (!state.replicateToken) {
-                    throw new Error('Replicate API key not set. Add it in Settings.');
+                if (!state.huggingFaceToken) {
+                    throw new Error('Hugging Face API key not set. Add it in Settings.');
                 }
-                const res = await fetch('https://api.replicate.com/v1/predictions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Token ${state.replicateToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        version: 'a6c0a88c938389d82189bde97b2bad471ebc77ba33490b62eef01964f3807acf',
-                        input: {
-                            prompt: `Portrait headshot, ${prompt}. Professional, photorealistic, friendly expression.`,
-                            aspect_ratio: '1:1',
-                            num_outputs: 1,
-                            output_format: 'jpg',
-                            safety_tolerance: 2,
-                        }
-                    }),
-                });
-                const prediction = await res.json();
-                if (!res.ok || !prediction.id) throw new Error(prediction.detail || 'Prediction failed');
-
-                // Poll for completion
-                let completed = false;
-                let attempts = 0;
-                while (!completed && attempts < 60) {
-                    await new Promise(r => setTimeout(r, 1000));
-                    const checkRes = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
-                        headers: { 'Authorization': `Token ${state.replicateToken}` }
-                    });
-                    const checkData = await checkRes.json();
-                    if (checkData.status === 'succeeded') {
-                        const imageUrl = checkData.output?.[0];
-                        if (!imageUrl) throw new Error('No output image');
-                        state.buddyData[buddyId].avatarUrl = imageUrl;
-                        state.buddyData[buddyId].avatarPrompt = prompt;
-                        state.buddyData[buddyId].avatarVideoUrl = '';
-                        saveState();
-                        refreshAvatarUI(buddyId);
-                        setAvatarStatus(buddyId, '✓ Face ready!', false);
-                        showToast('Face generated!', 'success');
-                        completed = true;
-                    } else if (checkData.status === 'failed') {
-                        throw new Error(checkData.error || 'Generation failed');
+                const res = await fetch(
+                    'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium',
+                    {
+                        headers: { Authorization: `Bearer ${state.huggingFaceToken}` },
+                        method: 'POST',
+                        body: JSON.stringify({
+                            inputs: `Portrait headshot, ${prompt}. Professional, photorealistic, friendly expression. Award-winning photo.`,
+                        }),
                     }
-                    attempts++;
+                );
+
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.error || `API error: ${res.status}`);
                 }
-                if (!completed) throw new Error('Generation timeout');
+
+                const blob = await res.blob();
+                const imageUrl = URL.createObjectURL(blob);
+
+                state.buddyData[buddyId].avatarUrl = imageUrl;
+                state.buddyData[buddyId].avatarPrompt = prompt;
+                state.buddyData[buddyId].avatarVideoUrl = '';
+                saveState();
+                refreshAvatarUI(buddyId);
+                setAvatarStatus(buddyId, '✓ Face ready!', false);
+                showToast('Face generated!', 'success');
             } catch (err) {
                 setAvatarStatus(buddyId, `⚠️ ${err.message}`, false);
                 showToast('Avatar generation failed', 'error');
