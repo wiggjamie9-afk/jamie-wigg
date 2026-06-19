@@ -265,6 +265,15 @@ docker compose up -d
 
 Requires: VPS with public IP, domain A-record pointing at it, Caddy config in `infra/Caddyfile`.
 
+`infra/selfhosted/` — curated Awesome-Selfhosted stack: 21 apps (dashboard, Vaultwarden, Memos, Linkding, Miniflux, Gitea, Jellyfin, SearXNG, Stirling-PDF, Uptime Kuma, Mealie, Readeck, Open WebUI + Ollama, Syncthing, Filebrowser, IT-Tools, Dozzle, n8n, Umami, PrivateBin, Chhoto URL) behind one Caddy reverse proxy, served at `<sub>.${DOMAIN}`. Three DB-backed apps share one Postgres. `make secrets && nano .env && make up`. Needs a **wildcard** DNS A-record (`*.domain → VPS IP`). See `infra/selfhosted/README.md`.
+
+```bash
+cd infra/selfhosted
+make secrets        # .env with random secrets
+nano .env           # set DOMAIN + ADMIN_EMAIL
+make up             # pull + start all 24 services
+```
+
 ## Skills
 
 Skills live in two shapes:

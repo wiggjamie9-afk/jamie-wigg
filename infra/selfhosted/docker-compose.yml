@@ -1,0 +1,385 @@
+name: selfhosted
+
+# ---------------------------------------------------------------------------
+# RHYTHMIX self-hosted platform — curated Awesome-Selfhosted stack.
+#
+# One Caddy reverse proxy (auto-HTTPS) fronts ~21 apps across the major
+# categories: dashboard, passwords, notes, bookmarks, RSS, git, media,
+# search, PDF tools, monitoring, URL shortener, pastebin, recipes,
+# read-it-later, AI chat, file sync, file manager, dev tools, log viewer,
+# automation, and web analytics.
+#
+# Each app is reached at  https://<sub>.${DOMAIN}  (see the Caddyfile).
+# DB-backed apps (Miniflux, Gitea, Umami) share one Postgres instance.
+#
+# Deploy:  cp .env.example .env && nano .env && docker compose up -d
+# Full instructions in README.md.
+# ---------------------------------------------------------------------------
+
+x-restart: &restart
+  restart: unless-stopped
+
+networks:
+  web:        # public-facing apps <-> Caddy
+  db:         # apps <-> Postgres only
+    internal: true
+
+volumes:
+  caddy-data:
+  caddy-config:
+  pg-data:
+  vaultwarden-data:
+  memos-data:
+  linkding-data:
+  gitea-data:
+  jellyfin-config:
+  jellyfin-cache:
+  stirling-configs:
+  stirling-tessdata:
+  uptimekuma-data:
+  chhoto-data:
+  privatebin-data:
+  mealie-data:
+  readeck-data:
+  openwebui-data:
+  ollama-data:
+  syncthing-data:
+  filebrowser-config:
+  filebrowser-srv:
+  n8n-data:
+
+services:
+  # ========================================================================
+  # Edge: reverse proxy + shared database
+  # ========================================================================
+  caddy:
+    image: caddy:2-alpine
+    <<: *restart
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [web]
+
+  postgres:
+    image: postgres:16-alpine
+    <<: *restart
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [db]
+
+  # ========================================================================
+  # Personal Dashboard
+  # ========================================================================
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    <<: *restart
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: home.${DOMAIN}
+      HOMEPAGE_VAR_DOMAIN: ${DOMAIN}
+    volumes:
+      - ./homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [web]
+
+  # ========================================================================
+  # Password Manager — Vaultwarden (Bitwarden-compatible)
+  # ========================================================================
+  vaultwarden:
+    image: vaultwarden/server:latest
+    <<: *restart
+    environment:
+      DOMAIN: https://vault.${DOMAIN}
+      SIGNUPS_ALLOWED: ${VAULTWARDEN_SIGNUPS:-true}
+      ADMIN_TOKEN: ${VAULTWARDEN_ADMIN_TOKEN:?set VAULTWARDEN_ADMIN_TOKEN in .env}
+    volumes:
+      - vaultwarden-data:/data
+    networks: [web]
+
+  # ========================================================================
+  # Notes — Memos
+  # ========================================================================
+  memos:
+    image: neosmemo/memos:stable
+    <<: *restart
+    volumes:
+      - memos-data:/var/opt/memos
+    networks: [web]
+
+  # ========================================================================
+  # Bookmarks — Linkding
+  # ========================================================================
+  linkding:
+    image: sissbruecker/linkding:latest
+    <<: *restart
+    environment:
+      LD_SUPERUSER_NAME: ${LINKDING_USER:-admin}
+      LD_SUPERUSER_PASSWORD: ${LINKDING_PASSWORD:?set LINKDING_PASSWORD in .env}
+    volumes:
+      - linkding-data:/etc/linkding/data
+    networks: [web]
+
+  # ========================================================================
+  # Feed Reader — Miniflux (Postgres)
+  # ========================================================================
+  miniflux:
+    image: miniflux/miniflux:latest
+    <<: *restart
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres/miniflux?sslmode=disable
+      RUN_MIGRATIONS: "1"
+      CREATE_ADMIN: "1"
+      ADMIN_USERNAME: ${MINIFLUX_USER:-admin}
+      ADMIN_PASSWORD: ${MINIFLUX_PASSWORD:?set MINIFLUX_PASSWORD in .env}
+      BASE_URL: https://rss.${DOMAIN}/
+    networks: [web, db]
+
+  # ========================================================================
+  # Git Forge — Gitea (Postgres)
+  # ========================================================================
+  gitea:
+    image: gitea/gitea:1
+    <<: *restart
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: postgres:5432
+      GITEA__database__NAME: gitea
+      GITEA__database__USER: postgres
+      GITEA__database__PASSWD: ${POSTGRES_PASSWORD}
+      GITEA__server__DOMAIN: git.${DOMAIN}
+      GITEA__server__ROOT_URL: https://git.${DOMAIN}/
+      GITEA__server__SSH_DOMAIN: git.${DOMAIN}
+      GITEA__server__SSH_PORT: "2222"
+      USER_UID: "1000"
+      USER_GID: "1000"
+    volumes:
+      - gitea-data:/data
+    ports:
+      - "2222:22"   # git over SSH
+    networks: [web, db]
+
+  # ========================================================================
+  # Media Streaming — Jellyfin
+  # ========================================================================
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    <<: *restart
+    environment:
+      JELLYFIN_PublishedServerUrl: https://media.${DOMAIN}
+    volumes:
+      - jellyfin-config:/config
+      - jellyfin-cache:/cache
+      - ${MEDIA_DIR:-./media}:/media
+    networks: [web]
+
+  # ========================================================================
+  # Metasearch — SearXNG
+  # ========================================================================
+  searxng:
+    image: searxng/searxng:latest
+    <<: *restart
+    environment:
+      SEARXNG_BASE_URL: https://search.${DOMAIN}/
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    networks: [web]
+
+  # ========================================================================
+  # Document Tools — Stirling-PDF
+  # ========================================================================
+  stirling-pdf:
+    image: ghcr.io/stirling-tools/stirling-pdf:latest
+    <<: *restart
+    environment:
+      DOCKER_ENABLE_SECURITY: "false"
+    volumes:
+      - stirling-tessdata:/usr/share/tessdata
+      - stirling-configs:/configs
+    networks: [web]
+
+  # ========================================================================
+  # Monitoring / Status — Uptime Kuma
+  # ========================================================================
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    <<: *restart
+    volumes:
+      - uptimekuma-data:/app/data
+    networks: [web]
+
+  # ========================================================================
+  # URL Shortener — Chhoto URL
+  # ========================================================================
+  chhoto-url:
+    image: sintan1729/chhoto-url:latest
+    <<: *restart
+    environment:
+      db_url: /db/urls.sqlite
+      password: ${CHHOTO_PASSWORD:?set CHHOTO_PASSWORD in .env}
+      site_url: https://s.${DOMAIN}
+    volumes:
+      - chhoto-data:/db
+    networks: [web]
+
+  # ========================================================================
+  # Pastebin — PrivateBin
+  # ========================================================================
+  privatebin:
+    image: privatebin/nginx-fpm-alpine:latest
+    <<: *restart
+    volumes:
+      - privatebin-data:/srv/data
+    networks: [web]
+
+  # ========================================================================
+  # Recipes — Mealie
+  # ========================================================================
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:latest
+    <<: *restart
+    environment:
+      BASE_URL: https://recipes.${DOMAIN}
+      ALLOW_SIGNUP: "false"
+    volumes:
+      - mealie-data:/app/data
+    networks: [web]
+
+  # ========================================================================
+  # Read-it-later — Readeck
+  # ========================================================================
+  readeck:
+    image: codeberg.org/readeck/readeck:latest
+    <<: *restart
+    environment:
+      READECK_SERVER_HOST: 0.0.0.0
+      READECK_SERVER_PORT: "8000"
+      READECK_PUBLIC_URL: https://read.${DOMAIN}
+      READECK_SECRET_KEY: ${READECK_SECRET_KEY:?set READECK_SECRET_KEY in .env}
+    volumes:
+      - readeck-data:/readeck
+    networks: [web]
+
+  # ========================================================================
+  # AI Chat — Open WebUI + Ollama
+  # ========================================================================
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    <<: *restart
+    depends_on: [ollama]
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_SECRET_KEY: ${OPENWEBUI_SECRET_KEY:?set OPENWEBUI_SECRET_KEY in .env}
+    volumes:
+      - openwebui-data:/app/backend/data
+    networks: [web]
+
+  ollama:
+    image: ollama/ollama:latest
+    <<: *restart
+    volumes:
+      - ollama-data:/root/.ollama
+    networks: [web]
+
+  # ========================================================================
+  # File Sync — Syncthing
+  # ========================================================================
+  syncthing:
+    image: syncthing/syncthing:latest
+    <<: *restart
+    hostname: selfhosted-sync
+    environment:
+      STGUIADDRESS: 0.0.0.0:8384
+    volumes:
+      - syncthing-data:/var/syncthing
+    ports:
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+      - "21027:21027/udp"
+    networks: [web]
+
+  # ========================================================================
+  # Web File Manager — Filebrowser
+  # ========================================================================
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    <<: *restart
+    environment:
+      FB_DATABASE: /config/filebrowser.db
+      FB_ROOT: /srv
+    volumes:
+      - filebrowser-config:/config
+      - filebrowser-srv:/srv
+    networks: [web]
+
+  # ========================================================================
+  # Developer Tools — IT-Tools
+  # ========================================================================
+  it-tools:
+    image: corentinth/it-tools:latest
+    <<: *restart
+    networks: [web]
+
+  # ========================================================================
+  # Container Log Viewer — Dozzle
+  # ========================================================================
+  dozzle:
+    image: amir20/dozzle:latest
+    <<: *restart
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [web]
+
+  # ========================================================================
+  # Automation — n8n
+  # ========================================================================
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    <<: *restart
+    environment:
+      N8N_HOST: flows.${DOMAIN}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://flows.${DOMAIN}/
+      N8N_EDITOR_BASE_URL: https://flows.${DOMAIN}/
+      N8N_PROXY_HOPS: "1"
+      N8N_RUNNERS_ENABLED: "true"
+      GENERIC_TIMEZONE: ${TZ:-UTC}
+    volumes:
+      - n8n-data:/home/node/.n8n
+    networks: [web]
+
+  # ========================================================================
+  # Web Analytics — Umami (Postgres)
+  # ========================================================================
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    <<: *restart
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_TYPE: postgresql
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:?set UMAMI_APP_SECRET in .env}
+    networks: [web, db]
