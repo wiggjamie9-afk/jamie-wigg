@@ -71,6 +71,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `SETUP-HERMES.md` — Hermes Agent CLI setup
 - `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
 - `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
+- `SETUP-LORE.md` — Lore compounding-memory gateway (external runtime; dormant in repo)
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
 
@@ -308,6 +309,7 @@ Skills live in two shapes:
 - `/tdd` — red-green-refactor cycle.
 - `/improve-codebase-architecture`, `/zoom-out` — refactor/navigation.
 - `/prototype`, `/grill-me`, `/handoff`, `/caveman`, `/write-a-skill` — productivity.
+- `/caveman` family (JuliusBrussee/skills, sourced in `.agents/skills/`, tracked in `skills-lock.json`): `caveman` (token-compressed replies), `context-canary` (detect context rot), `fuck-slop` (strip AI-writing tells), `interface-kit` (UI implementation guide), `junior-to-senior` (adversarial senior review of plans), `loop-factory` (spec-driven agent loop). Note: `grill-me` and `caveman` were re-pointed to this upstream bundle.
 - `/claude-api` — build/debug Claude API / Anthropic SDK apps with prompt caching.
 - `/frontend-design` — production-grade UI, avoids generic AI aesthetics.
 - `/apple-hig-expert` — Apple HIG guidance (iOS/macOS/visionOS, Liquid Glass aesthetics).
@@ -364,6 +366,7 @@ The `.claude/agents/` directory contains sub-agent definition files for FleetVie
 | `claude-playwright` | `node node_modules/claude-playwright/dist/mcp/server.cjs` | Session/profile/test management on top of Playwright. Run `npm install` first. |
 | `context7` | HTTP `https://mcp.context7.com/mcp` | Current library documentation. Prefer over training knowledge. |
 | `openmanus` | `python -m app.mcp.server` (from `/tmp/OpenManus`) | LLM-driven browser automation agent. Tools: navigate, click, fill, extract, screenshot, search. Config: `.mcp.json`. Setup: `OPENMANUS-MCP-INTEGRATION.md`. |
+| `minimax` | `node .claude/mcp/minimax/server.mjs` | Extended-reasoning backend for the `/m3-think` skill. Multi-provider (OpenAI-compatible): `minimax` (local SGLang/vLLM or MiniMax cloud), `openrouter`, `groq`. Pick via `MINIMAX_PROVIDER` or `--provider`. Keys in `.env`. |
 
 **Rule:** Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging. Use OpenManus for autonomous browser tasks, research automation, and multi-step web workflows — particularly useful for RHYTHMIX content research and market intelligence gathering.
 

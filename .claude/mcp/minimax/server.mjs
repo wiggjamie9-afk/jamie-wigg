@@ -1,22 +1,66 @@
 #!/usr/bin/env node
 
 /**
- * MiniMax M3 MCP Server
- * Provides extended reasoning and million-token context support
+ * MiniMax M3 MCP Server (multi-provider)
+ *
+ * Primary backend: MiniMax M3 (local SGLang/vLLM or MiniMax cloud) for extended
+ * reasoning and million-token contexts. Also routes to OpenAI-compatible free
+ * gateways (OpenRouter, Groq) so a single skill can fall back across providers.
+ *
+ * All providers are called over the OpenAI-compatible `/chat/completions` shape.
+ * Provider-specific knobs (MiniMax `thinking`, `top_k`) are only sent to
+ * providers that accept them.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+/**
+ * Provider registry. Each entry resolves from env at process start.
+ * - supportsThinking: send MiniMax-style `thinking` param (reasoning budget)
+ * - supportsTopK: include `top_k` in the request body
+ * - extraHeaders: provider-specific headers (e.g. OpenRouter ranking headers)
+ */
+const providers = {
+  minimax: {
+    apiBase: process.env.MINIMAX_API_BASE || "https://api.minimaxi.com/v1",
+    apiKey: process.env.MINIMAX_API_KEY,
+    defaultModel: process.env.MINIMAX_MODEL || "MiniMax-M3-text",
+    supportsThinking: true,
+    supportsTopK: true,
+    setupHint:
+      "Set MINIMAX_API_KEY in .env (cloud), or run a local server and set MINIMAX_API_BASE=http://localhost:8000/v1 with MINIMAX_API_KEY=local",
+  },
+  openrouter: {
+    apiBase: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY,
+    defaultModel:
+      process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct:free",
+    supportsThinking: false,
+    supportsTopK: true,
+    extraHeaders: {
+      "HTTP-Referer": "https://rhythmixapp.com.au",
+      "X-Title": "RHYTHMIX Studio",
+    },
+    setupHint:
+      "Get a free key at https://openrouter.ai and set OPENROUTER_API_KEY in .env",
+  },
+  groq: {
+    apiBase: process.env.GROQ_API_BASE || "https://api.groq.com/openai/v1",
+    apiKey: process.env.GROQ_API_KEY,
+    defaultModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+    supportsThinking: false,
+    supportsTopK: false, // Groq's OpenAI-compatible endpoint rejects top_k
+    setupHint:
+      "Get a free key at https://console.groq.com and set GROQ_API_KEY in .env",
+  },
+};
 
-const minimax = {
-  apiKey: process.env.MINIMAX_API_KEY,
-  apiBase: process.env.MINIMAX_API_BASE || "https://api.minimaxi.com/v1",
-  model: process.env.MINIMAX_MODEL || "MiniMax-M3-text",
+const defaults = {
+  provider: process.env.MINIMAX_PROVIDER || "minimax",
   reasoning: process.env.MINIMAX_REASONING || "adaptive",
 };
 
 /**
- * MCP Server: MiniMax M3 Reasoning
- * Handles requests for extended reasoning and million-token contexts
+ * MCP Server: M3 Reasoning
+ * Handles requests for extended reasoning and million-token contexts.
  */
 async function handleRequest(request) {
   const { type, name, arguments: args } = request;
@@ -38,12 +82,14 @@ async function handleRequest(request) {
 }
 
 /**
- * M3 Extended Reasoning
+ * Extended reasoning across any configured provider.
  */
 async function m3Reasoning(args) {
   const {
     query,
-    reasoning = minimax.reasoning,
+    provider = defaults.provider,
+    model,
+    reasoning = defaults.reasoning,
     context_size = 32768,
     temperature = 1.0,
     top_p = 0.95,
@@ -51,20 +97,32 @@ async function m3Reasoning(args) {
     max_tokens = 4096,
   } = args;
 
-  if (!minimax.apiKey) {
+  const cfg = providers[provider];
+  if (!cfg) {
     return {
-      error: "MINIMAX_API_KEY not configured",
-      setup:
-        "Set MINIMAX_API_KEY in .env or environment variables",
+      error: `Unknown provider: ${provider}`,
+      available: Object.keys(providers),
     };
   }
 
+  if (!cfg.apiKey) {
+    return {
+      error: `${provider}: API key not configured`,
+      setup: cfg.setupHint,
+    };
+  }
+
+  const targetModel = model || cfg.defaultModel;
+
   try {
     console.error(
-      `[M3] Reasoning query (${reasoning} mode, ${context_size}k tokens)`
+      `[M3] ${provider}/${targetModel} (${reasoning} mode, ~${Math.round(
+        context_size / 1000
+      )}k context)`
     );
 
-    // Construct system prompt based on reasoning mode
+    // Reasoning mode is conveyed via system prompt for every provider, and
+    // additionally via the native `thinking` param where supported.
     const reasoningPrompts = {
       enabled:
         "You are an expert reasoning engine. Think deeply about the problem, showing your reasoning process. Provide comprehensive analysis with justification for each conclusion.",
@@ -76,35 +134,54 @@ async function m3Reasoning(args) {
 
     const systemPrompt = reasoningPrompts[reasoning] || reasoningPrompts.adaptive;
 
-    // Call M3 API (uses OpenAI-compatible endpoint structure)
-    const response = await fetch(`${minimax.apiBase}/chat/completions`, {
+    const body = {
+      model: targetModel,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: query },
+      ],
+      temperature,
+      top_p,
+      max_tokens,
+    };
+
+    if (cfg.supportsTopK) {
+      body.top_k = top_k;
+    }
+
+    if (cfg.supportsThinking) {
+      if (reasoning === "enabled") {
+        body.thinking = {
+          type: "enabled",
+          budget_tokens: Math.floor(context_size / 4),
+        };
+      } else if (reasoning === "adaptive") {
+        body.thinking = { type: "adaptive" };
+      }
+    }
+
+    const response = await fetch(`${cfg.apiBase}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${minimax.apiKey}`,
+        Authorization: `Bearer ${cfg.apiKey}`,
+        ...(cfg.extraHeaders || {}),
       },
-      body: JSON.stringify({
-        model: minimax.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: query },
-        ],
-        temperature,
-        top_p,
-        top_k,
-        max_tokens,
-        thinking:
-          reasoning === "enabled"
-            ? { type: "enabled", budget_tokens: Math.floor(context_size / 4) }
-            : reasoning === "adaptive"
-              ? { type: "adaptive" }
-              : undefined,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.message || "M3 API error" };
+      let detail;
+      try {
+        const err = await response.json();
+        detail = err.error?.message || err.message;
+      } catch {
+        detail = await response.text();
+      }
+      return {
+        error: `${provider} API error (${response.status})`,
+        detail: detail || response.statusText,
+      };
     }
 
     const data = await response.json();
@@ -112,18 +189,19 @@ async function m3Reasoning(args) {
 
     return {
       success: true,
+      provider,
+      model: targetModel,
       reasoning_mode: reasoning,
       result,
       tokens_used: data.usage || {},
-      model: minimax.model,
     };
   } catch (error) {
-    return { error: error.message };
+    return { error: error.message, provider, model: targetModel };
   }
 }
 
 /**
- * M3 Deep Analysis (for large documents)
+ * Deep analysis for large documents.
  */
 async function m3Analysis(args) {
   const {
@@ -132,6 +210,8 @@ async function m3Analysis(args) {
     focus_areas = [],
     context_size = 500000, // Up to 1M tokens
     reasoning = "enabled",
+    provider = defaults.provider,
+    model,
   } = args;
 
   const analysisPrompts = {
@@ -153,11 +233,13 @@ async function m3Analysis(args) {
     query: `${analysisPrompt}${focusAddition}\n\nContent:\n${document}`,
     reasoning,
     context_size,
+    provider,
+    model,
   });
 }
 
 /**
- * M3 Generation with Context Awareness
+ * Context-aware generation.
  */
 async function m3Generate(args) {
   const {
@@ -166,6 +248,8 @@ async function m3Generate(args) {
     style = "technical",
     length = "medium",
     reasoning = "adaptive",
+    provider = defaults.provider,
+    model,
   } = args;
 
   const fullPrompt = context
@@ -183,34 +267,46 @@ async function m3Generate(args) {
     query: fullPrompt,
     reasoning,
     max_tokens: lengthTokens[length] || 2000,
+    provider,
+    model,
   });
 }
 
 /**
- * Start MCP server
+ * Start MCP server.
  */
 async function start() {
-  console.error("[MiniMax M3 MCP Server] Starting...");
-  console.error(`[Config] Model: ${minimax.model}`);
-  console.error(`[Config] Reasoning: ${minimax.reasoning}`);
-  console.error(`[Config] API Base: ${minimax.apiBase}`);
+  console.error("[M3 MCP Server] Starting (multi-provider)...");
+  console.error(`[Config] Default provider: ${defaults.provider}`);
+  console.error(`[Config] Default reasoning: ${defaults.reasoning}`);
 
-  if (!minimax.apiKey) {
-    console.error(
-      "[Warning] MINIMAX_API_KEY not configured. Some features will be unavailable."
-    );
-    console.error("         Set MINIMAX_API_KEY=sk-... in .env");
-    console.error("         Or deploy locally: see .claude/agents/m3-reasoning-agent.md");
+  const configured = [];
+  const missing = [];
+  for (const [name, cfg] of Object.entries(providers)) {
+    const line = `${name} → ${cfg.apiBase} (${cfg.defaultModel})`;
+    if (cfg.apiKey) configured.push(line);
+    else missing.push(name);
   }
 
-  console.error("[Ready] MiniMax M3 MCP Server listening for requests\n");
+  if (configured.length) {
+    console.error("[Providers configured]");
+    for (const line of configured) console.error(`  ✓ ${line}`);
+  }
+  if (missing.length) {
+    console.error(`[Providers not configured] ${missing.join(", ")}`);
+    console.error(
+      "         Add the matching *_API_KEY to .env to enable. See .env.example"
+    );
+  }
 
-  // In a real MCP setup, this would handle stdio/network communication
-  // For now, tools are available for direct invocation
+  console.error("[Ready] M3 MCP Server listening for requests\n");
+
+  // In a real MCP setup, this would handle stdio/network communication.
+  // For now, tools are available for direct invocation.
 }
 
 // Export for direct invocation
-export { handleRequest, m3Reasoning, m3Analysis, m3Generate, start };
+export { handleRequest, m3Reasoning, m3Analysis, m3Generate, providers, start };
 
 // Start if run directly
 if (import.meta.url === `file://${process.argv[1]}`) {

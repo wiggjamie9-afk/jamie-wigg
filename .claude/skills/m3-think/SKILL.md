@@ -34,13 +34,38 @@ Extended reasoning with MiniMax M3 for million-token contexts and complex analys
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
+| `--provider` | enum | minimax | Backend: `minimax` (local/cloud), `openrouter`, `groq` |
+| `--model` | string | provider default | Override the model id for the chosen provider |
 | `--reasoning` | enum | adaptive | Mode: `enabled`, `adaptive`, `disabled` |
 | `--context` | int | 32k | Context size in tokens (up to 1M) |
 | `--temperature` | float | 1.0 | Reasoning consistency (0.0-2.0) |
 | `--top-p` | float | 0.95 | Diversity (0.0-1.0) |
-| `--top-k` | int | 40 | Token filtering |
+| `--top-k` | int | 40 | Token filtering (minimax/openrouter only; ignored by groq) |
 | `--max-tokens` | int | 4096 | Max output tokens |
 | `--timeout` | int | 60 | Timeout in seconds |
+
+## Providers
+
+The M3 MCP server (`.claude/mcp/minimax/server.mjs`) routes to any
+OpenAI-compatible backend. The default provider is `MINIMAX_PROVIDER` (env),
+falling back to `minimax`.
+
+| Provider | Default model | Notes |
+|----------|---------------|-------|
+| `minimax` | `MiniMax-M3-text` | Local SGLang/vLLM or MiniMax cloud. Supports native `thinking` budget. |
+| `openrouter` | `meta-llama/llama-3.3-70b-instruct:free` | Free tier, 50 req/day. Set `OPENROUTER_API_KEY`. |
+| `groq` | `llama-3.3-70b-versatile` | Ultra-fast free tier. Set `GROQ_API_KEY`. `top_k` not supported. |
+
+```bash
+# Use the local MiniMax server (default)
+/m3-think "Analyze this architecture" --reasoning enabled
+
+# Route to OpenRouter's free Llama 3.3 70B
+/m3-think "Summarize these release notes" --provider openrouter
+
+# Route to Groq for fast throughput, pick a specific model
+/m3-think "Draft 20 taglines" --provider groq --model openai/gpt-oss-120b --reasoning disabled
+```
 
 ## Reasoning Modes
 
