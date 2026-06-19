@@ -271,6 +271,22 @@ Requires: VPS with public IP, domain A-record pointing at it, Caddy config in `i
 
 ## Skills
 
+**External marketplace** → `buildwithclaude` (davepoon/buildwithclaude): 117 agents, 175 commands, 28 hooks, 26 skills. Install globally in your own Claude Code client (general dev tools, not committed to this repo):
+```
+/plugin marketplace add davepoon/buildwithclaude
+/plugin install all-agents@buildwithclaude
+/plugin install all-commands@buildwithclaude
+/plugin install all-hooks@buildwithclaude
+```
+
+**Code-minimalism ruleset** → `ponytail` (DietrichGebert/ponytail), tracked in `skills-lock.json` + `AGENTS.md`. Lazy-senior-dev mode: YAGNI, stdlib-first, deletion over addition. Commands: `/ponytail [lite|full|ultra|off]`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt`. Active by default. Current branch audit: `PONYTAIL-AUDIT.md`.
+
+**Large external skill library (reference, NOT bulk-installed)** → `antigravity-awesome-skills` (sickn33/antigravity-awesome-skills): 1,646+ installable `SKILL.md` playbooks for Claude Code/Cursor/Codex/Gemini/Antigravity. Installer: `npx antigravity-awesome-skills [--claude|--codex|--cursor|--gemini]`. **Do NOT bulk-install into this repo** — it already carries ~849 skills in `.claude/skills/`, and the upstream's own `docs/users/agent-overload-recovery.md` warns that too many active skills causes context-overload crash loops. If a specific skill is wanted, vendor it individually into `.agents/skills/<name>/` and record it in `skills-lock.json` (per the repo's synced-skill convention). Specialized plugin packs (Web App Builder, Security Engineer, Data Analytics, Agent & MCP Builder, etc.) are the preferred entry point over the full catalog.
+
+**App-automation skills (reference, NOT bulk-installed)** → `awesome-claude-skills` (ComposioHQ/awesome-claude-skills): 1,000+ curated Claude Skills, including 78 SaaS-app automation skills (Gmail, Slack, GitHub, Notion, Stripe, Linear, etc.) that drive real actions via Rube MCP / Composio. The `connect-apps` plugin (`claude --plugin-dir ./connect-apps-plugin` → `/connect-apps:setup`) brokers auth to 500+ apps. Treat as a discovery index: pull individual `SKILL.md` files when a concrete workflow needs them; do not vendor the whole catalog (same context-overload caveat as `antigravity-awesome-skills`). Composio is a **third-party** broker — review its auth scope before connecting any account.
+
+**Cost routing** → `model-hierarchy` (`.agents/skills/model-hierarchy/`): route 80% routine → Tier 1 (Haiku/DeepSeek/Gemini Flash), 15% moderate → Tier 2 (Sonnet/GPT-4o), 5% complex → Tier 3 (Opus). ~10x cheaper than pure-premium. Never route vision tasks to text-only models.
+
 Skills live in two shapes:
 
 - **Synced / hand-written** — source in `.agents/skills/<name>/`, symlinked into `.claude/skills/<name>`. Do not hand-edit synced skills; update upstream and re-record the hash in `skills-lock.json`.
