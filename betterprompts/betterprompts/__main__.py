@@ -12,12 +12,21 @@ def main():
     if args.port:
         config.set_session_port(args.port)
 
+    import gradio as gr
+    from .app import DARK_GLASS_CSS
+
     app = create_app()
     host = config.session_host or config.betterprompts_host or "127.0.0.1"
     port = config.session_port or config.betterprompts_port or 7860
 
     print(f"🚀 BetterPrompts running at http://{host}:{port}")
-    app.launch(server_name=host, server_port=port, share=False)
+    app.launch(
+        server_name=host,
+        server_port=port,
+        share=False,
+        css=DARK_GLASS_CSS,
+        theme=gr.themes.Soft(primary_hue="indigo"),
+    )
 
 
 if __name__ == "__main__":

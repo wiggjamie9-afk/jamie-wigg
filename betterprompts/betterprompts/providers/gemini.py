@@ -1,4 +1,6 @@
-import google.generativeai as genai
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.*")
+import google.generativeai as genai  # noqa: E402
 from google.api_core.exceptions import ResourceExhausted
 from .base import ProviderError, RateLimitError
 

@@ -200,7 +200,7 @@ def create_app():
         except Exception as e:
             return "", f"❌ Error: {str(e)}"
 
-    with gr.Blocks(css=DARK_GLASS_CSS, theme=gr.themes.Soft(primary_hue="indigo")) as demo:
+    with gr.Blocks() as demo:
         gr.HTML("""
         <div style="text-align: center; margin-bottom: 32px;">
             <h1 style="color: #f3f4f6; margin: 0; font-size: 2.5rem;">✨ BetterPrompts</h1>
