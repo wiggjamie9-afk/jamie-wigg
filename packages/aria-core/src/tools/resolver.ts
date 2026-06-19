@@ -1,9 +1,21 @@
-import { ToolRegistry, ToolRegistryEntry } from './schema.js';
+import { ToolRegistryEntry } from './schema.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+/**
+ * In-memory shape after loading: the on-disk registry stores `byId` as a
+ * JSON object, but at runtime we index it as a Map for O(1) lookups. This is
+ * intentionally distinct from the Zod `ToolRegistry` (whose `byId` is a Record).
+ */
+interface LoadedRegistry {
+  version: string;
+  lastSync: Date;
+  categories: Record<string, { count: number; tools: ToolRegistryEntry[] }>;
+  byId: Map<string, ToolRegistryEntry>;
+}
+
 export class ToolResolver {
-  private registry: ToolRegistry;
+  private registry: LoadedRegistry;
   private categoryIndex: Map<string, ToolRegistryEntry[]>;
 
   constructor(registryPath?: string) {
@@ -15,7 +27,7 @@ export class ToolResolver {
       version: registryJSON.version,
       lastSync: new Date(registryJSON.lastSync),
       categories: registryJSON.categories,
-      byId: new Map(Object.entries(registryJSON.byId || {})),
+      byId: new Map(Object.entries(registryJSON.byId || {})) as Map<string, ToolRegistryEntry>,
     };
 
     // Build category index

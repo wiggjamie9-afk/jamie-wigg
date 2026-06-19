@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { ToolRegistry, ToolRegistryEntry } from './schema.js';
+import { BuiltRegistry } from './types.js';
 
 export interface ValidationResult {
   valid: boolean;
@@ -9,7 +9,7 @@ export interface ValidationResult {
 }
 
 export async function validateRegistry(
-  registry: ToolRegistry,
+  registry: BuiltRegistry,
   sampleSize: number = 15,
   verbose = false
 ): Promise<ValidationResult> {

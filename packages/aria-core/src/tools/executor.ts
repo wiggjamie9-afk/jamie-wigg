@@ -1,6 +1,6 @@
 import { ToolRegistryEntry } from './schema.js';
 import { ToolResolver } from './resolver.js';
-import fetch from 'node-fetch';
+import fetch, { Response as FetchResponse } from 'node-fetch';
 
 export class ToolError extends Error {
   constructor(
@@ -179,7 +179,7 @@ export class ToolExecutor {
     tool: ToolRegistryEntry,
     params: Record<string, any>,
     timeout: number,
-  ): Promise<Response> {
+  ): Promise<FetchResponse> {
     const url = new URL(tool.endpoint);
 
     // Add parameters to query string

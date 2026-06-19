@@ -1,4 +1,4 @@
-import { hash } from '@noble/hashes/sha3';
+import { sha3_256 } from '@noble/hashes/sha3';
 import { randomBytes } from 'crypto';
 
 export class CryptoProvider {
@@ -7,7 +7,7 @@ export class CryptoProvider {
    */
   static hashSHA3(data: string | Buffer): string {
     const buffer = typeof data === 'string' ? Buffer.from(data, 'utf-8') : data;
-    const digest = hash.sha3_256(buffer);
+    const digest = sha3_256(buffer);
     return Buffer.from(digest).toString('hex');
   }
 

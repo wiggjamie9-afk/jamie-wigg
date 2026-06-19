@@ -26,15 +26,13 @@ export class GroqProvider extends BaseProvider {
     outputTokens: number;
   }> {
     try {
-      const systemMessages = messages.filter((m) => m.role === 'system').map((m) => m.content);
-      const otherMessages = messages.filter((m) => m.role !== 'system');
-
+      // Groq is OpenAI-compatible: the system prompt is a system-role message,
+      // not a top-level param. Pass all messages through in order.
       const response = await this.client.chat.completions.create({
         model: modelId,
         max_tokens: options?.maxTokens || 4096,
         temperature: options?.temperature || 0.7,
-        system: systemMessages.length > 0 ? systemMessages.join('\n\n') : undefined,
-        messages: otherMessages.map((m) => ({
+        messages: messages.map((m) => ({
           role: m.role,
           content: m.content,
         })) as any,

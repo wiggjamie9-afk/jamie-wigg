@@ -5,8 +5,9 @@ import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { scrapPublicAPIs } from './scraper.js';
 import { buildToolRegistry } from './builder.js';
-import { validateRegistry } from './validator.js';
-import { validateRegistry as validateSchema } from './schema.js';
+import { validateRegistry, ValidationResult } from './validator.js';
+import { validateRegistry as validateSchema, ToolRegistryEntry } from './schema.js';
+import type { BuiltRegistry } from './types.js';
 
 const DEFAULT_OUTPUT_PATH = join(process.cwd(), 'packages/aria-core/data/tool-registry.json');
 
@@ -32,7 +33,7 @@ program
       const registry = await buildToolRegistry(rawAPIs, opts.verbose);
 
       // Step 3: Validate (optional)
-      let validationResult = { valid: true, errors: [], warnings: [], tested: 0 };
+      let validationResult: ValidationResult = { valid: true, errors: [], warnings: [], tested: 0 };
       if (!opts.skipValidation) {
         console.log();
         validationResult = await validateRegistry(
@@ -86,21 +87,21 @@ program
 
       const registryJSON = JSON.parse(readFileSync(opts.input, 'utf-8'));
 
-      // Reconstruct registry
-      const registry = {
-        version: registryJSON.version,
-        lastSync: new Date(registryJSON.lastSync),
-        categories: registryJSON.categories,
-        byId: new Map(Object.entries(registryJSON.byId)),
-      };
-
-      // Validate schema
-      const schemaResult = validateSchema(registry);
+      // Validate the on-disk JSON shape (byId is an object here) against the schema
+      const schemaResult = validateSchema(registryJSON);
       if (!schemaResult.success) {
         console.error('❌ Schema validation failed:');
         console.error(schemaResult.error.errors);
         process.exit(1);
       }
+
+      // Reconstruct the in-memory registry (byId as a Map) for endpoint checks
+      const registry: BuiltRegistry = {
+        version: registryJSON.version,
+        lastSync: new Date(registryJSON.lastSync),
+        categories: registryJSON.categories,
+        byId: new Map(Object.entries(registryJSON.byId)) as Map<string, ToolRegistryEntry>,
+      };
 
       // Validate endpoints
       const result = await validateRegistry(registry, parseInt(opts.sampleSize, 10), opts.verbose);
@@ -127,11 +128,11 @@ program
   .action((opts) => {
     try {
       const registryJSON = JSON.parse(readFileSync(opts.input, 'utf-8'));
-      const registry = {
+      const registry: BuiltRegistry = {
         version: registryJSON.version,
         lastSync: new Date(registryJSON.lastSync),
         categories: registryJSON.categories,
-        byId: new Map(Object.entries(registryJSON.byId)),
+        byId: new Map(Object.entries(registryJSON.byId)) as Map<string, ToolRegistryEntry>,
       };
 
       console.log('\n📊 Registry Info:');

@@ -1,3 +1,17 @@
+import type { ToolRegistryEntry } from './schema.js';
+
+/**
+ * In-memory registry produced by the builder. `byId` is a Map for O(1)
+ * insert/lookup while building; it is serialized to a plain object (matching
+ * the Zod `ToolRegistry` shape) when written to disk.
+ */
+export interface BuiltRegistry {
+  version: string;
+  lastSync: Date;
+  categories: Record<string, { count: number; tools: ToolRegistryEntry[] }>;
+  byId: Map<string, ToolRegistryEntry>;
+}
+
 export interface RawAPI {
   name: string;
   description: string;

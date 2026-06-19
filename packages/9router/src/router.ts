@@ -3,6 +3,7 @@ import { BaseProvider } from './providers/base.js';
 import { ClaudeProvider } from './providers/claude.js';
 import { GeminiProvider } from './providers/gemini.js';
 import { GroqProvider } from './providers/groq.js';
+import { OpenMonoProvider } from './providers/openmono.js';
 import { getModelsByTier, getModel } from './models.js';
 import {
   Message,
@@ -41,8 +42,20 @@ export class LLMRouter {
       this.providers.set('groq', new GroqProvider(groqKey));
     }
 
+    // OpenMono is the last-resort local fallback: register it whenever a URL
+    // is configured (defaults to the local server). No API key required.
+    const openmonoUrl = config.openmonoUrl || process.env.OPENMONO_URL;
+    if (openmonoUrl) {
+      this.providers.set(
+        'openmono',
+        new OpenMonoProvider(openmonoUrl, config.openmonoApiKey || process.env.OPENMONO_API_KEY),
+      );
+    }
+
     if (this.providers.size === 0) {
-      throw new Error('At least one API key required: ANTHROPIC_API_KEY, GOOGLE_API_KEY, or GROQ_API_KEY');
+      throw new Error(
+        'At least one provider required: set ANTHROPIC_API_KEY, GOOGLE_API_KEY, GROQ_API_KEY, or OPENMONO_URL',
+      );
     }
   }
 

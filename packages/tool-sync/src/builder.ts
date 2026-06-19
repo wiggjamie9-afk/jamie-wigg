@@ -1,6 +1,6 @@
 import slugify from 'slugify';
-import { RawAPI } from './types.js';
-import { ToolRegistryEntry, ToolRegistry } from './schema.js';
+import { RawAPI, BuiltRegistry } from './types.js';
+import { ToolRegistryEntry } from './schema.js';
 
 const ENDPOINT_PATTERNS: Record<string, string> = {
   'OpenWeatherMap': 'https://api.openweathermap.org/data/2.5/weather',
@@ -62,10 +62,10 @@ function findEquivalents(toolId: string): string[] {
   return EQUIVALENCE_MAP[toolId] || [];
 }
 
-export async function buildToolRegistry(rawAPIs: RawAPI[], verbose = false): Promise<ToolRegistry> {
+export async function buildToolRegistry(rawAPIs: RawAPI[], verbose = false): Promise<BuiltRegistry> {
   if (verbose) console.log('🏗️  Building tool registry...');
 
-  const registry: ToolRegistry = {
+  const registry: BuiltRegistry = {
     version: '1.0.0',
     lastSync: new Date(),
     categories: {},
@@ -111,6 +111,7 @@ export async function buildToolRegistry(rawAPIs: RawAPI[], verbose = false): Pro
         type: 'object',
         properties: {},
         required: [],
+        additionalProperties: false,
       },
       outputSchema: {
         type: 'object',
@@ -122,6 +123,7 @@ export async function buildToolRegistry(rawAPIs: RawAPI[], verbose = false): Pro
       enabled: true,
       lastUpdated: new Date(),
       equivalentTools: findEquivalents(toolId),
+      tags: [],
     };
 
     // Register by ID
