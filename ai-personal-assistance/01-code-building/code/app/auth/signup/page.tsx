@@ -153,6 +153,12 @@ export default function SignupPage() {
             Log in
           </Link>
         </p>
+
+        <div className="mt-8 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 text-center">
+          <p className="text-xs text-blue-300">
+            After signing up, you'll be guided through creating your first sandbox
+          </p>
+        </div>
       </div>
     </div>
   );

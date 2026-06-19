@@ -46,7 +46,7 @@ asyncio.run(main())`}</code>
 
           <div className="flex gap-4 justify-center mb-16">
             <Link
-              href="/auth/signup"
+              href="/onboarding"
               className="px-8 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
             >
               Get Started Free
