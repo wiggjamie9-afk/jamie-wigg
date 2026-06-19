@@ -115,7 +115,7 @@ export async function completeWithLLM(
   });
 
   const text = resp.choices[0]?.message?.content || "";
-  const provider = resp.headers?.get?.("x-routed-via") || "unknown";
+  const provider = (resp as any).headers?.get?.("x-routed-via") || "unknown";
 
   return { text, provider };
 }
