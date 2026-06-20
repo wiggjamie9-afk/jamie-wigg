@@ -412,6 +412,7 @@ See `sites/README.md`.
 - `docs/agents/domain.md`, `issue-tracker.md`, `triage-labels.md` — agent operating procedures for GitHub Issues.
 - `docs/security/shannon.md` — Shannon AI pentester (Keygraph) reference. Relevant for auditing the Studio Workers or license endpoint, **not** for static marketing pages.
 - `docs/refs/` — Reference copy and voiceover scripts.
+- `docs/LEARNING-LLMS.md` — Vendored "From Zero to Hero with LLMs" learning guide (Louis Bouchard). External reference for ramping up on LLMs; not project-specific.
 
 ## Conventions
 
