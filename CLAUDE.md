@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Start (For Claude)
 
-- **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
+- **Master control file → `GARY.md`** at repo root is the single source of truth for the whole ecosystem: every command that builds something, every asset already owned (114 apps, kids-channel, agent-builder SaaS, 52 videos, monetization stack), the GitHub picture, and the prioritized list of what to build next. When the user says *"Gary, build me ___"* or asks what they have / what to build, **read `GARY.md` first**, then invoke the relevant existing pipeline rather than re-deriving it.
 - **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
 - **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.
 - **Plan a feature with a spec** → `/spec-quick <description>` produces `specs/<slug>/{requirements,design,tasks}.md` in one pass. Then `/spec-analyze <slug>` to surface ambiguities/contradictions, and `/spec-run <slug>` to execute tasks in parallel waves (each task in an isolated `Agent` context, sequenced by file overlap + explicit `depends:`). For RHYTHMIX campaigns (multi-video / launch / series), use `/rhythmix-spec <brief>` instead — same flow with pre-filled brand-specific clarifying questions.
