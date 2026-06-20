@@ -25,6 +25,8 @@
 
 **Golden rule:** Gary should *invoke the existing skill*, not re-derive the work. The pipelines below already exist.
 
+**Quality rule:** Every build clears `GARY-BUILD-PROTOCOL.md` — 2026, polished-MVP, brand-locked, verified with a real browser screenshot before it's called done.
+
 ---
 
 ## 1. THE ENGINE — what Claude (Gary) can do
@@ -67,6 +69,7 @@ Marketing (ad-copywriter, seo-writer, social-media, x-twitter-growth), creative 
 ## 2. THE INVENTORY — what you already own
 
 ### 2a. Apps — 114 HTML files in `apps/` 🟢 built
+- **🟢 App Hub — `apps.html`** (live at `rhythmixapp.com.au/apps.html`) — the single front door linking all 114 apps across 10 categories, with search + category filter. Regenerable: `python3 scripts/build-apps-hub.py` (template: `scripts/apps-hub.template.html`). Rebuild it whenever `apps/` changes.
 - **59 `buddy-*.html`** — AI companion apps (the "Buddy" portfolio). System docs: `apps/BUDDY_SYSTEM_GUIDE.md`, `BUDDY_BUILDER_COMPLETE_SYSTEM.md`
 - **28-app launch portfolio** — heartbeat, mood-journal, meditation-guide, dreams, medicine-companion, blood-pressure-buddy, calorie-counter, weight-tracker, vendor/expense/savings/loan/goal/budget trackers, english-pocket, math-helper, study-planner, trivia-quiz, notes, tasklist, reminders, daily-planner + more. Index: `INDEX_MASTER.md`, `20_TRENDING_APPS_COMPLETE.md`, `APPS_PORTFOLIO_SUMMARY.md`
 - **`apps/untapped/`** — 10 named concepts (TYMPAN/HERD/AXLE/DOCKET/LULL/PLUMB/RACK/SOLE/SPOT/STACK), each with prototype + landing + brief
@@ -116,7 +119,7 @@ Stripe, Gumroad, Play-Store IAP, freemium model, payout compliance, analytics se
 You have **breadth** (100+ apps/assets). What's missing is **depth + distribution**: turning built assets into shipped, monetized, discoverable products. Priorities:
 
 ### 🥇 Priority 1 — Ship what's already built (highest ROI, lowest effort)
-1. **One App Hub page** — single index linking all 114 apps with categories + screenshots. (`apps-hub-page` branch already exists — finish it.)
+1. ✅ **App Hub page — SHIPPED.** `apps.html` links all 114 apps (10 categories, search + filter, brand-locked, verified). Deploys to `rhythmixapp.com.au/apps.html` on push to `main`. Rebuild: `python3 scripts/build-apps-hub.py`. → *Next: link it from `index.html` nav and wire monetization (Priority 1.2).*
 2. **Wire monetization into the top 5 apps** — the Stripe/Gumroad/IAP docs exist; actually connect them to heartbeat, NutriAI, CodeMentor, StoryStudio, VoiceJournal.
 3. **Submit 3–5 apps to Play Store** — APK build files already manifested (`APK_BUILD_INDEX.md`). Pick the 5 with highest "profit potential" and ship.
 
