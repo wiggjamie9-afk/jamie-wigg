@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0e0a1a">
+    <title>BookReader Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #a78bfa;
+            --primary-bright: #c4b5fd;
+            --accent: #f472b6;
+            --tutor: #38bdf8;
+            --tutor-deep: #0ea5e9;
+
+            --bg: #0e0a1a;
+            --bg-elev: #17122a;
+            --surface: rgba(255,255,255,0.045);
+            --surface-2: rgba(255,255,255,0.07);
+            --border: rgba(255,255,255,0.09);
+            --border-bright: rgba(255,255,255,0.16);
+
+            --text: #f5f3fb;
+            --text-soft: #cfc8e0;
+            --text-mute: #9489aa;
+
+            --ok: #4ade80;
+            --warn: #fbbf24;
+            --err: #fb7185;
+
+            --r-sm: 12px; --r-md: 18px; --r-lg: 26px; --r-xl: 34px;
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --smooth: cubic-bezier(0.22, 1, 0.36, 1);
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-read: 'Lexend', sans-serif;
+        }
+        body.dys { --font-read: 'OpenDyslexic','Comic Sans MS',sans-serif; letter-spacing:0.02em; word-spacing:0.14em; }
+        body.dys .reader { line-height: 2.3; }
+        @font-face { font-family:'OpenDyslexic'; src:url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff') format('woff'); font-display:swap; }
+
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; }
+        html, body { width:100%; height:100%; overflow:hidden; }
+        body {
+            font-family: var(--font-ui); color: var(--text); -webkit-font-smoothing:antialiased;
+            background:
+                radial-gradient(1100px 560px at 85% -8%, rgba(244,114,182,0.16), transparent 60%),
+                radial-gradient(1000px 520px at -10% 8%, rgba(167,139,250,0.18), transparent 58%),
+                linear-gradient(160deg, var(--bg) 0%, #120c24 100%);
+        }
+        .app { width:100%; height:100%; display:flex; flex-direction:column; padding-top:max(env(safe-area-inset-top),10px); }
+
+        .header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px 14px; }
+        .brand { display:flex; align-items:center; gap:10px; }
+        .brand-mark { width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,var(--primary),var(--accent)); display:grid; place-items:center; font-size:20px; box-shadow:0 6px 18px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.4); }
+        .brand-name { font-size:19px; font-weight:800; letter-spacing:-0.4px; }
+        .brand-name span { background:linear-gradient(135deg,var(--primary-bright),var(--accent)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        .streak { display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); padding:7px 12px; border-radius:999px; font-size:13px; font-weight:600; color:var(--text-soft); }
+        .streak b { color:var(--warn); }
+
+        .carousel-container { flex:1; overflow:hidden; position:relative; width:100%; }
+        .carousel { display:flex; height:100%; width:100%; transition:transform 0.45s var(--spring); touch-action:pan-y; }
+        .screen { flex-shrink:0; width:100%; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:4px 20px 110px; }
+        .screen::-webkit-scrollbar { width:0; }
+
+        .eyebrow { font-size:12px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-mute); margin-bottom:6px; }
+        .title { font-size:30px; font-weight:800; letter-spacing:-0.7px; margin-bottom:4px; }
+        .subtitle { font-size:15px; color:var(--text-soft); margin-bottom:22px; line-height:1.5; }
+
+        .hero { margin-bottom:18px; padding:22px; background:linear-gradient(135deg,rgba(167,139,250,0.2),rgba(244,114,182,0.12)); border:1px solid var(--border-bright); border-radius:var(--r-lg); }
+        .hero h2 { font-size:21px; font-weight:800; letter-spacing:-0.4px; margin-bottom:6px; }
+        .hero p { font-size:14px; color:var(--text-soft); line-height:1.5; }
+
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:22px; position:relative; overflow:hidden; transition:transform 0.25s var(--spring), border-color 0.25s; }
+        .card.tap { cursor:pointer; user-select:none; } .card.tap:active { transform:scale(0.975); border-color:var(--border-bright); }
+        .card + .card { margin-top:14px; }
+        .home-card { display:flex; align-items:center; gap:16px; }
+        .home-ico { width:54px; height:54px; flex-shrink:0; border-radius:16px; display:grid; place-items:center; font-size:26px; background:linear-gradient(135deg,rgba(167,139,250,0.24),rgba(244,114,182,0.18)); border:1px solid var(--border-bright); }
+        .home-card.blue .home-ico { background:linear-gradient(135deg,rgba(56,189,248,0.24),rgba(14,165,233,0.18)); }
+        .home-txt h3 { font-size:17px; font-weight:700; margin-bottom:3px; } .home-txt p { font-size:13.5px; color:var(--text-mute); line-height:1.4; }
+        .home-arrow { margin-left:auto; color:var(--text-mute); font-size:20px; }
+
+        .label { font-size:12px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:var(--text-mute); margin-bottom:9px; display:block; }
+        textarea, input[type="text"], input[type="password"] { width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:14px; color:var(--text); font-family:var(--font-ui); font-size:16px; resize:none; transition:border-color 0.2s, background 0.2s; }
+        textarea:focus, input:focus { outline:none; border-color:var(--primary); background:rgba(167,139,250,0.08); }
+        input::placeholder, textarea::placeholder { color:var(--text-mute); }
+
+        .btn { display:flex; align-items:center; justify-content:center; gap:9px; width:100%; border:none; cursor:pointer; user-select:none;
+            background:linear-gradient(135deg,var(--primary),var(--accent)); color:#1a0b2e; font-family:var(--font-ui); font-size:16px; font-weight:700;
+            border-radius:var(--r-md); padding:15px; min-height:54px; box-shadow:0 8px 22px rgba(167,139,250,0.32), inset 0 1px 0 rgba(255,255,255,0.35);
+            transition:transform 0.2s var(--spring), box-shadow 0.2s, opacity 0.2s; }
+        .btn:active { transform:scale(0.965); } .btn:disabled { opacity:0.5; cursor:default; }
+        .btn.ghost { background:var(--surface-2); color:var(--text); border:1px solid var(--border-bright); box-shadow:none; }
+        .btn.blue { background:linear-gradient(135deg,var(--tutor),var(--tutor-deep)); color:#04222e; box-shadow:0 8px 22px rgba(56,189,248,0.32), inset 0 1px 0 rgba(255,255,255,0.3); }
+        .btn-row { display:flex; gap:11px; } .btn-row .btn { flex:1; }
+        .btn-icon { width:54px; min-width:54px; padding:0; flex:0 0 auto; font-size:20px; }
+
+        .upload { border:2px dashed var(--border-bright); border-radius:var(--r-lg); padding:40px 18px; text-align:center; cursor:pointer; user-select:none; background:var(--surface); transition:all 0.2s var(--spring); }
+        .upload:active { transform:scale(0.985); background:var(--surface-2); }
+        .upload .uico { font-size:48px; margin-bottom:12px; animation:float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
+        .upload h4 { font-size:18px; font-weight:700; margin-bottom:5px; } .upload p { font-size:13px; color:var(--text-mute); }
+        input[type="file"] { display:none; }
+
+        .reader-bar { display:flex; gap:11px; margin-bottom:16px; align-items:center; }
+        .reader { font-family:var(--font-read); font-size:20px; line-height:2.1; color:var(--text-soft); }
+        .reader .w { transition:background 0.15s, color 0.15s; border-radius:5px; padding:1px 2px; cursor:pointer; }
+        .reader .w.on { background:linear-gradient(135deg,var(--primary),var(--accent)); color:#1a0b2e; font-weight:600; }
+        .reader .w:active { background:var(--surface-2); }
+        .empty { text-align:center; color:var(--text-mute); padding:60px 20px; }
+        .empty .ei { font-size:46px; margin-bottom:14px; }
+
+        .chat { display:flex; flex-direction:column; gap:12px; margin-bottom:16px; min-height:40px; }
+        .bubble { max-width:86%; padding:13px 16px; border-radius:20px; font-size:15px; line-height:1.55; font-family:var(--font-read); animation:rise 0.35s var(--smooth) both; }
+        @keyframes rise { from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+        .bubble.me { align-self:flex-end; background:linear-gradient(135deg,var(--tutor),var(--tutor-deep)); color:#04222e; font-weight:500; border-bottom-right-radius:6px; }
+        .bubble.ai { align-self:flex-start; background:var(--surface-2); border:1px solid var(--border); border-bottom-left-radius:6px; }
+        .bubble.ai b { color:var(--primary-bright); }
+        .typing { display:inline-flex; gap:4px; align-items:center; }
+        .typing i { width:7px; height:7px; border-radius:50%; background:var(--tutor); animation:blink 1.2s infinite both; }
+        .typing i:nth-child(2){ animation-delay:0.2s; } .typing i:nth-child(3){ animation-delay:0.4s; }
+        @keyframes blink { 0%,80%,100%{ opacity:0.25; transform:translateY(0);} 40%{ opacity:1; transform:translateY(-3px);} }
+        .composer { display:flex; gap:10px; align-items:flex-end; }
+        .composer textarea { min-height:54px; max-height:120px; }
+        .chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+        .chip { padding:9px 14px; border-radius:999px; font-size:13px; font-weight:600; background:var(--surface-2); border:1px solid var(--border); cursor:pointer; color:var(--text-soft); }
+        .chip:active { transform:scale(0.96); }
+
+        .set-group { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:6px 18px; margin-bottom:16px; }
+        .set-row { display:flex; align-items:center; justify-content:space-between; padding:16px 0; border-bottom:1px solid var(--border); gap:14px; }
+        .set-row:last-child { border-bottom:none; }
+        .set-row .sl { font-size:15px; font-weight:600; } .set-row .sd { font-size:12.5px; color:var(--text-mute); margin-top:2px; }
+        .toggle { width:52px; height:31px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border-bright); position:relative; cursor:pointer; flex-shrink:0; transition:background 0.25s; }
+        .toggle::after { content:''; position:absolute; top:2px; left:2px; width:25px; height:25px; border-radius:50%; background:#fff; transition:transform 0.25s var(--spring); }
+        .toggle.on { background:var(--primary); } .toggle.on::after { transform:translateX(21px); }
+        .pill-select { display:flex; gap:7px; }
+        .pill-opt { padding:8px 13px; border-radius:999px; font-size:13px; font-weight:600; background:var(--surface-2); border:1px solid var(--border); cursor:pointer; color:var(--text-soft); }
+        .pill-opt.on { background:rgba(167,139,250,0.16); border-color:var(--primary); color:var(--primary-bright); }
+        .key-status { font-size:12.5px; margin-top:8px; font-weight:600; } .key-status.ok { color:var(--ok);} .key-status.no { color:var(--warn);}
+        .mini { font-size:12px; color:var(--text-mute); line-height:1.5; margin-top:8px; } .mini a { color:var(--accent); }
+
+        /* ========== AVATAR STYLES ========== */
+        .avatar-intro { display:flex; flex-direction:column; align-items:center; text-align:center; padding:24px 0; margin-bottom:18px; }
+        .avatar-img { width:200px; height:200px; border-radius:50%; object-fit:cover; margin-bottom:16px; box-shadow:0 12px 32px rgba(0,0,0,0.3); animation:avatarFadeIn 0.6s var(--smooth); }
+        @keyframes avatarFadeIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+        .avatar-intro h3 { font-size:20px; font-weight:800; margin-bottom:8px; background:linear-gradient(135deg,var(--primary-bright),var(--accent)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        .avatar-intro p { font-size:14px; color:var(--text-soft); line-height:1.6; max-width:280px; }
+
+        .progress { width:100%; height:5px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin:14px 0; }
+        .progress > i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--primary),var(--accent)); transition:width 0.2s; }
+
+        .pagination { position:fixed; left:50%; transform:translateX(-50%); bottom:max(env(safe-area-inset-bottom),18px); display:flex; gap:9px; padding:11px 16px; z-index:100; background:rgba(23,18,42,0.7); backdrop-filter:blur(18px) saturate(140%); border:1px solid var(--border); border-radius:999px; box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+        .dot { width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,0.22); cursor:pointer; transition:all 0.3s var(--spring); }
+        .dot.active { background:linear-gradient(135deg,var(--primary),var(--accent)); width:30px; border-radius:5px; }
+
+        .toast { position:fixed; left:50%; bottom:92px; transform:translateX(-50%) translateY(20px); background:var(--bg-elev); border:1px solid var(--border-bright); color:var(--text); padding:12px 20px; border-radius:999px; font-size:14px; font-weight:600; opacity:0; pointer-events:none; transition:all 0.35s var(--spring); z-index:200; box-shadow:0 12px 30px rgba(0,0,0,0.5); }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="brand"><div class="brand-mark">📖</div><div class="brand-name">Book<span>Reader</span></div></div>
+            <div class="streak">🔥 <b id="streakNum">0</b> day streak</div>
+        </div>
+
+        <div class="carousel-container">
+            <div class="carousel" id="carousel">
+
+                <!-- 0 · HOME -->
+                <section class="screen">
+                    <div class="hero">
+                        <h2 id="greeting">Hey there 👋</h2>
+                        <p id="greetSub">Point your camera at any page and let's read it together.</p>
+                    </div>
+                    <div class="avatar-intro">
+                        <img class="avatar-img" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAKICAGIDXKZWZZPGOGICAGICA8bGluZWFyR3JhZGllbnQgaWQ9ImJ1ZGR5QmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNhNzhiZmE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjQ3MmI2O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICA8ZmlsdGVyIGlkPSJidWRkeUdsb3ciPgogICAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjMiIHJlc3VsdD0iY29sb3JlZEJsdXIiLz4KICAgICAgICA8ZmVNZXJnZT4KICAgICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iY29sb3JlZEJsdXIiLz4KICAgICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPgogICAgICAgIDwvZmVNZXJnZT4KICAgICAgPC9maWx0ZXI+CiAgICA8L2RlZnM+CiAgICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0idXJsKCNidWRkeUJnKSIvPgogICAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMTIwIiByPSI5NSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjE1KSIgZmlsdGVyPSJ1cmwoI2J1ZGR5R2xvdykiLz4KICAGIDXKZGLMAAALX2NaYiIgY3g9IjIwMCIgY3k9IjEyMCIgcj0iODUiIGZpbGw9IiNmNWYzZmIiLz4KICAGIDXLBGJSAAAL7MTMwIDkwIFEgMjAwIDUwIDI3MCA5MCBMIDI3MCAxNjAgUSAyMDAgMTgwIDEzMCAxNjAgWiIgZmlsbD0iIzhiNWNmNiIvPgogICAgPHBhdGggZD0iTSAxNzAgMTQ1IFEgMjAwIDE2MCAyMzAgMTQ1IiBzdHJva2U9IiNlYzQ4OTkiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8Y2lyY2xlIGN4PSIxNzAiIGN5PSIxMTUiIHI9IjkiIGZpbGw9IiM4YjVjZjYiLz4KICAGIDXKZGLMAAALX2NzIiBjeD0iMTcxIiBjeT0iMTEyIiByPSI0IiBmaWxsPSIjZmZmIi8+CiAgICA8Y2lyY2xlIGN4PSIxNzMiIGN5PSIxMTQiIHI9IjIiIGZpbGw9IiM4YjVjZjYiLz4KICAGIDXKZGLMAAALX2NaYiIgY3g9IjIzMCIgY3k9IjExNSIgcj0iOSIgZmlsbD0iIzhiNWNmNiIvPgogICAgPGNpcmNsZSBjeD0iMjMxIiBjeT0iMTEyIiByPSI0IiBmaWxsPSIjZmZmIi8+CiAgICA8Y2lyY2xlIGN4PSIyMzMiIGN5PSIxMTQiIHI9IjIiIGZpbGw9IiM4YjVjZjYiLz4KICAGIDXLAAFMAAALX2NzIiBjeD0iMTQwIiBjeT0iMTM1IiByPSIxOCIgZmlsbD0icmdiYSgyNDQsMTE0LDE4MiwwLjQpIi8+CiAgICA8Y2lyY2xlIGN4PSIyNjAiIGN5PSIxMzUiIHI9IjE4IiBmaWxsPSJyZ2JhKDI0NCwxMTQsMTgyLDAuNCkiLz4KICAGIDXLBGFYBJCJSJOHJQJU0IFEgMTcwIDk1IDE4NSA5OCIgc3Ryb2tlPSIjOGI1Y2Y2IiBzdHJva2Utd2lkdGg9IjIuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8cGF0aCBkPSJNIDIxNSA5OCBRIDIzMCA5NSAyNDUgMTAwIiBzdHJva2U9IiM4YjVjZjYiIHN0cm9rZS13aWR0aD0iMi41IiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAGIDXLBCBJCJRSVGJNJAAAVMTWDDDVMDA1IiIgZmlsbD0iI2M0YjVmZCIvPgogICAgPHBhdGggZD0iTSAxMjAgMjAwIEwgMTEwIDI5MCBRIDExMCAzMTAgMTM1IDMxMCBMIDI2NSAzMTAgUSAyOTAgMzEwIDI5MCAyOTAgTCAyODAgMjAwIFoiIGZpbGw9IiNjNGI1ZmQiLz4KICAGIDXKZGLMAAALX2NaYiIgY3g9IjIwMCIgY3k9IjI0MCIgcj0iMyIgZmlsbD0icmdiYSgxNjcsMTM5LDI1MCwwLjUpIi8+CiAgICA8Y2lyY2xlIGN4PSIxNzAiIGN5PSIyNjAiIHI9IjIuNSIgZmlsbD0icmdiYSgxNjcsMTM5LDI1MCwwLjUpIi8+CiAgICA8Y2lyY2xlIGN4PSIyMzAiIGN5PSIyNzAiIHI9IjIuNSIgZmlsbD0icmdiYSgxNjcsMTM5LDI1MCwwLjUpIi8+CiAgICA8cGF0aCBkPSJNIDIwMCAyODAgQyAyMDAgMjgwIDE4NSAyNzAgMTg1IDI2MCBDIDE4NSAyNTAgMTk1IDI0NSAyMDAgMjUwIEMgMjA1IDI0NSAyMTUgMjUwIDIxNSAyNjAgQyAyMTUgMjcwIDIwMCAyODAgMjAwIDI4MCIgZmlsbD0iI2Y0NzJiNiIgb3BhY2l0eT0iMC42Ii8+CiAgICA8ZyBvcGFjaXR5PSIwLjgiPgogICAgICA8Y2lyY2xlIGN4PSIyOTAiIGN5PSI5MCIgcj0iMy41IiBmaWxsPSIjZmJiZjI0Ii8+CiAgICAgIDxjaXJjbGUgY3g9IjEyMCIgY3k9IjExMCIgcj0iMi41IiBmaWxsPSIjZmJiZjI0Ii8+CiAgICAgIDxjaXJjbGUgY3g9IjMxMCIgY3k9IjE3MCIgcj0iMiIgZmlsbD0iI2ZiYmYyNCIvPgogICAgPC9nPgo8L3N2Zz4=" alt="Your Reading Buddy">
+                        <h3>Meet your reading buddy 💜</h3>
+                        <p>Warm, encouraging, and always ready to help. Discover new words, understand tricky sentences together.</p>
+                    </div>
+                    <div class="card tap home-card" onclick="go(1)">
+                        <div class="home-ico">📸</div>
+                        <div class="home-txt"><h3>Scan a page</h3><p>Snap any book and hear it read aloud, word by word</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                    <div class="card tap home-card blue" onclick="go(3)">
+                        <div class="home-ico">💬</div>
+                        <div class="home-txt"><h3>Ask about words</h3><p>What does it mean? Your reading buddy explains simply</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                    <div class="card tap home-card" onclick="renderLibrary(); go(2)">
+                        <div class="home-ico">📚</div>
+                        <div class="home-txt"><h3>Library</h3><p>Everything you've scanned, ready to read again</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                    <div class="card tap home-card" onclick="go(4)">
+                        <div class="home-ico">⚙️</div>
+                        <div class="home-txt"><h3>Settings</h3><p>Voice, reading font, and your reading-buddy key</p></div>
+                        <div class="home-arrow">›</div>
+                    </div>
+                </section>
+
+                <!-- 1 · SCAN -->
+                <section class="screen">
+                    <div class="eyebrow">Scan</div>
+                    <h1 class="title">Let's read a page</h1>
+                    <p class="subtitle">Snap a photo — I'll turn it into clear, spoken words.</p>
+                    <div class="upload" onclick="document.getElementById('fileInput').click()">
+                        <div class="uico">📸</div><h4>Tap to scan</h4><p>Take or upload a photo of any page</p>
+                        <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
+                    </div>
+                    <div id="ocrBox" style="display:none; margin-top:16px;">
+                        <div class="progress"><i id="ocrFill"></i></div>
+                        <p style="text-align:center; font-size:13px; color:var(--text-mute);">Reading the page… <span id="ocrPct">0</span>%</p>
+                    </div>
+                </section>
+
+                <!-- 2 · READER / LIBRARY -->
+                <section class="screen">
+                    <div class="eyebrow">Reading</div>
+                    <h1 class="title" id="readerTitle">Your book</h1>
+                    <div class="reader-bar">
+                        <button class="btn btn-icon" id="playBtn" onclick="togglePlay()">▶️</button>
+                        <button class="btn ghost btn-icon" onclick="stopRead()">⏹️</button>
+                        <button class="btn ghost btn-icon" onclick="go(3)" title="Ask about this">💬</button>
+                        <button class="btn ghost btn-icon" onclick="renderLibrary()" title="Library">📚</button>
+                    </div>
+                    <div class="reader" id="reader"><div class="empty"><div class="ei">📖</div>Scan a page to start reading</div></div>
+                </section>
+
+                <!-- 3 · TUTOR -->
+                <section class="screen">
+                    <div class="eyebrow">Reading buddy</div>
+                    <h1 class="title">What can I explain?</h1>
+                    <p class="subtitle">Hard word? Confusing sentence? Tap a quick question or ask your own.</p>
+                    <img class="avatar-img" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAKICAGIDXKZWZZPGOGICAGICA8bGluZWFyR3JhZGllbnQgaWQ9ImJ1ZGR5QmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNhNzhiZmE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjQ3MmI2O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICA8ZmlsdGVyIGlkPSJidWRkeUdsb3ciPgogICAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjMiIHJlc3VsdD0iY29sb3JlZEJsdXIiLz4KICAgICAgICA8ZmVNZXJnZT4KICAgICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iY29sb3JlZEJsdXIiLz4KICAgICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPgogICAgICAgIDwvZmVNZXJnZT4KICAgICAgPC9maWx0ZXI+CiAgICA8L2RlZnM+CiAgICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0idXJsKCNidWRkeUJnKSIvPgogICAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMTIwIiByPSI5NSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjE1KSIgZmlsdGVyPSJ1cmwoI2J1ZGR5R2xvdykiLz4KICAGIDXKZGLMAAALX2NaYiIgY3g9IjIwMCIgY3k9IjEyMCIgcj0iODUiIGZpbGw9IiNmNWYzZmIiLz4KICAGIDXLBGJSAAAL7MTMwIDkwIFEgMjAwIDUwIDI3MCA5MCBMIDI3MCAxNjAgUSAyMDAgMTgwIDEzMCAxNjAgWiIgZmlsbD0iIzhiNWNmNiIvPgogICAgPHBhdGggZD0iTSAxNzAgMTQ1IFEgMjAwIDE2MCAyMzAgMTQ1IiBzdHJva2U9IiNlYzQ4OTkiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8Y2lyY2xlIGN4PSIxNzAiIGN5PSIxMTUiIHI9IjkiIGZpbGw9IiM4YjVjZjYiLz4KICAGIDXKZGLMAAALX2NzIiBjeD0iMTcxIiBjeT0iMTEyIiByPSI0IiBmaWxsPSIjZmZmIi8+CiAgICA8Y2lyY2xlIGN4PSIxNzMiIGN5PSIxMTQiIHI9IjIiIGZpbGw9IiM4YjVjZjYiLz4KICAGIDXKZGLMAAALX2NaYiIgY3g9IjIzMCIgY3k9IjExNSIgcj0iOSIgZmlsbD0iIzhiNWNmNiIvPgogICAgPGNpcmNsZSBjeD0iMjMxIiBjeT0iMTEyIiByPSI0IiBmaWxsPSIjZmZmIi8+CiAgICA8Y2lyY2xlIGN4PSIyMzMiIGN5PSIxMTQiIHI9IjIiIGZpbGw9IiM4YjVjZjYiLz4KICAGIDXLAAFMAAALX2NzIiBjeD0iMTQwIiBjeT0iMTM1IiByPSIxOCIgZmlsbD0icmdiYSgyNDQsMTE0LDE4MiwwLjQpIi8+CiAgICA8Y2lyY2xlIGN4PSIyNjAiIGN5PSIxMzUiIHI9IjE4IiBmaWxsPSJyZ2JhKDI0NCwxMTQsMTgyLDAuNCkiLz4KICAGIDXLBGFYBJCJSJOHJQJU0IFEgMTcwIDk1IDE4NSA5OCIgc3Ryb2tlPSIjOGI1Y2Y2IiBzdHJva2Utd2lkdGg9IjIuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8cGF0aCBkPSJNIDIxNSA5OCBRIDIzMCA5NSAyNDUgMTAwIiBzdHJva2U9IiM4YjVjZjYiIHN0cm9rZS13aWR0aD0iMi41IiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAGIDXLBCBJCJRSVGJNJAAAVMTWDDDVMDA1IiIgZmlsbD0iI2M0YjVmZCIvPgogICAgPHBhdGggZD0iTSAxMjAgMjAwIEwgMTEwIDI5MCBRIDExMCAzMTAgMTM1IDMxMCBMIDI2NSAzMTAgUSAyOTAgMzEwIDI5MCAyOTAgTCAyODAgMjAwIFoiIGZpbGw9IiNjNGI1ZmQiLz4KICAGIDXKZGLMAAALX2NaYiIgY3g9IjIwMCIgY3k9IjI0MCIgcj0iMyIgZmlsbD0icmdiYSgxNjcsMTM5LDI1MCwwLjUpIi8+CiAgICA8Y2lyY2xlIGN4PSIxNzAiIGN5PSIyNjAiIHI9IjIuNSIgZmlsbD0icmdiYSgxNjcsMTM5LDI1MCwwLjUpIi8+CiAgICA8Y2lyY2xlIGN4PSIyMzAiIGN5PSIyNzAiIHI9IjIuNSIgZmlsbD0icmdiYSgxNjcsMTM5LDI1MCwwLjUpIi8+CiAgICA8cGF0aCBkPSJNIDIwMCAyODAgQyAyMDAgMjgwIDE4NSAyNzAgMTg1IDI2MCBDIDE4NSAyNTAgMTk1IDI0NSAyMDAgMjUwIEMgMjA1IDI0NSAyMTUgMjUwIDIxNSAyNjAgQyAyMTUgMjcwIDIwMCAyODAgMjAwIDI4MCIgZmlsbD0iI2Y0NzJiNiIgb3BhY2l0eT0iMC42Ii8+CiAgICA8ZyBvcGFjaXR5PSIwLjgiPgogICAgICA8Y2lyY2xlIGN4PSIyOTAiIGN5PSI5MCIgcj0iMy41IiBmaWxsPSIjZmJiZjI0Ii8+CiAgICAgIDxjaXJjbGUgY3g9IjEyMCIgY3k9IjExMCIgcj0iMi41IiBmaWxsPSIjZmJiZjI0Ii8+CiAgICAgIDxjaXJjbGUgY3g9IjMxMCIgY3k9IjE3MCIgcj0iMiIgZmlsbD0iI2ZiYmYyNCIvPgogICAgPC9nPgo8L3N2Zz4=" alt="Reading Buddy" style="width: 120px; height: 120px; margin-bottom: 12px;">
+                    <div class="chips">
+                        <div class="chip" onclick="quick('What does this page mean in simple words?')">Explain the page</div>
+                        <div class="chip" onclick="quick('Summarise what I just read in 2 sentences.')">Quick summary</div>
+                        <div class="chip" onclick="quick('Are there any hard words on this page? Explain them simply.')">Hard words</div>
+                    </div>
+                    <div class="chat" id="chat"></div>
+                    <div class="composer">
+                        <textarea id="chatInput" placeholder="Ask me anything…" rows="1"></textarea>
+                        <button class="btn blue btn-icon" onclick="sendChat()">➤</button>
+                    </div>
+                </section>
+
+                <!-- 4 · SETTINGS -->
+                <section class="screen">
+                    <div class="eyebrow">Settings</div>
+                    <h1 class="title">Make it yours</h1>
+                    <p class="subtitle">Set it up once. Everything stays on your device.</p>
+
+                    <div class="set-group">
+                        <div class="set-row" style="display:block; padding-bottom:18px;">
+                            <div><div class="sl">Your name</div><div class="sd">So your reading buddy knows you</div></div>
+                            <input type="text" id="nameInput" placeholder="What should I call you?" style="margin-top:10px;" oninput="saveName(this.value)">
+                        </div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-row" style="display:block;">
+                            <div><div class="sl">Reading-buddy key (Claude API)</div><div class="sd">Powers the AI helper. Stored only on this device.</div></div>
+                            <input type="password" id="keyInput" placeholder="sk-ant-…" style="margin-top:10px;" oninput="saveKey(this.value)">
+                            <div class="key-status no" id="keyStatus">No key yet — scanning &amp; reading aloud still work without it</div>
+                            <div class="mini">Get a key free at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>.</div>
+                        </div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-row">
+                            <div><div class="sl">Read aloud</div><div class="sd">Hear every word, highlighted as it's spoken</div></div>
+                            <div class="toggle on" id="tgVoice" onclick="toggleVoice()"></div>
+                        </div>
+                        <div class="set-row">
+                            <div><div class="sl">Voice speed</div><div class="sd">Slower is often easier to follow</div></div>
+                            <div class="pill-select" id="speedSelect">
+                                <div class="pill-opt" data-sp="0.7" onclick="setSpeed(0.7)">Slow</div>
+                                <div class="pill-opt on" data-sp="0.9" onclick="setSpeed(0.9)">Calm</div>
+                                <div class="pill-opt" data-sp="1.1" onclick="setSpeed(1.1)">Quick</div>
+                            </div>
+                        </div>
+                        <div class="set-row">
+                            <div><div class="sl">Dyslexia-friendly font</div><div class="sd">Heavier, easier-to-track letters</div></div>
+                            <div class="toggle" id="tgDys" onclick="toggleDys()"></div>
+                        </div>
+                        <div class="set-row">
+                            <div><div class="sl">Bigger text</div><div class="sd">More room between every word</div></div>
+                            <div class="toggle" id="tgBig" onclick="toggleBig()"></div>
+                        </div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-row">
+                            <div><div class="sl">Buddy brain</div><div class="sd">Fast is cheap; Smart is for tricky text</div></div>
+                            <div class="pill-select" id="modelSelect">
+                                <div class="pill-opt on" data-model="claude-haiku-4-5" onclick="setModel('claude-haiku-4-5')">Fast</div>
+                                <div class="pill-opt" data-model="claude-opus-4-8" onclick="setModel('claude-opus-4-8')">Smart</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mini" style="text-align:center; padding-bottom:8px;">BookReader Pro · built to help the whole world read 🌍</div>
+                </section>
+
+            </div>
+        </div>
+
+        <div class="pagination">
+            <div class="dot active" onclick="go(0)"></div>
+            <div class="dot" onclick="go(1)"></div>
+            <div class="dot" onclick="go(2)"></div>
+            <div class="dot" onclick="go(3)"></div>
+            <div class="dot" onclick="go(4)"></div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    const store = {
+        get key()    { return localStorage.getItem('br_key') || ''; },
+        get name()   { return localStorage.getItem('br_name') || ''; },
+        get model()  { return localStorage.getItem('br_model') || 'claude-haiku-4-5'; },
+        get voice()  { return localStorage.getItem('br_voice') !== '0'; },
+        get speed()  { return parseFloat(localStorage.getItem('br_speed') || '0.9'); },
+        get dys()    { return localStorage.getItem('br_dys') === '1'; },
+        get big()    { return localStorage.getItem('br_big') === '1'; },
+        get streak() { return parseInt(localStorage.getItem('br_streak') || '0'); },
+        get lastDay(){ return localStorage.getItem('br_lastday') || ''; },
+        get books()  { try { return JSON.parse(localStorage.getItem('br_books')||'[]'); } catch { return []; } },
+        set books(v) { localStorage.setItem('br_books', JSON.stringify(v)); }
+    };
+    const chatHistory = [];
+    let words = [], currentText = '';
+
+    /* Carousel */
+    const carousel = document.getElementById('carousel');
+    const SCREENS = 5;
+    let idx=0, startX=0, startY=0, curX=0, dragging=false, locked=null;
+    carousel.addEventListener('touchstart', e=>{ startX=curX=e.touches[0].clientX; startY=e.touches[0].clientY; dragging=true; locked=null; carousel.style.transition='none'; }, {passive:true});
+    carousel.addEventListener('touchmove', e=>{
+        if(!dragging) return; curX=e.touches[0].clientX;
+        const dx=curX-startX, dy=e.touches[0].clientY-startY;
+        if(locked===null) locked=Math.abs(dx)>Math.abs(dy)?'x':'y';
+        if(locked!=='x') return;
+        let move=dx; if((idx===0&&dx>0)||(idx===SCREENS-1&&dx<0)) move=dx*0.32;
+        carousel.style.transform=`translateX(calc(-${idx*100}% + ${move}px))`;
+    }, {passive:true});
+    carousel.addEventListener('touchend', ()=>{
+        if(!dragging) return; dragging=false; if(locked!=='x') return;
+        const dx=curX-startX;
+        if(dx<-55 && idx<SCREENS-1) idx++; else if(dx>55 && idx>0) idx--;
+        render();
+    });
+    function go(i){ idx=Math.max(0,Math.min(SCREENS-1,i)); render(); }
+    function render(){ carousel.style.transition='transform 0.45s cubic-bezier(0.34,1.56,0.64,1)'; carousel.style.transform=`translateX(-${idx*100}%)`; document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===idx)); }
+
+    /* Claude */
+    async function askClaude(messages, system, { onToken } = {}) {
+        const key = store.key; if(!key) throw new Error('NO_KEY');
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method:'POST',
+            headers:{ 'content-type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+            body: JSON.stringify({ model: store.model, max_tokens:1024, system, messages, stream:true })
+        });
+        if(!res.ok){ const t=await res.text().catch(()=> ''); throw new Error(res.status===401?'BAD_KEY':('HTTP_'+res.status+' '+t.slice(0,120))); }
+        const reader=res.body.getReader(), dec=new TextDecoder(); let buf='', full='';
+        while(true){ const {value,done}=await reader.read(); if(done) break;
+            buf+=dec.decode(value,{stream:true}); const parts=buf.split('\n\n'); buf=parts.pop();
+            for(const part of parts){ const line=part.split('\n').find(l=>l.startsWith('data:')); if(!line) continue;
+                const data=line.slice(5).trim(); if(data==='[DONE]') continue;
+                try{ const ev=JSON.parse(data); if(ev.type==='content_block_delta'&&ev.delta?.text){ full+=ev.delta.text; onToken&&onToken(ev.delta.text,full); } }catch{}
+            }
+        }
+        return full;
+    }
+    const BUDDY_SYSTEM = () => `You are a warm, patient reading buddy for a learner${store.name?' named '+store.name:''}. Many of your readers are dyslexic or struggle with reading and have lost confidence. Rebuild it.
+Rules:
+- Talk like a kind friend, never a textbook. Short, warm sentences.
+- Explain words and meaning in the simplest plain language. Use everyday examples.
+- Be encouraging. Reading is hard for them — never make them feel slow.
+- Keep replies short and easy to read aloud.
+${currentText ? 'Here is the page they are reading, for context:\n"""'+currentText.slice(0,1500)+'"""' : ''}`;
+
+    /* Scan */
+    async function handlePhoto(e){
+        const file=e.target.files[0]; if(!file) return;
+        const box=document.getElementById('ocrBox'); box.style.display='block';
+        const r=new FileReader();
+        r.onload=async ev=>{
+            try{
+                const out=await Tesseract.recognize(ev.target.result,'eng',{ logger:m=>{ if(m.status==='recognizing text'){ const p=Math.round(m.progress*100); document.getElementById('ocrPct').textContent=p; document.getElementById('ocrFill').style.width=p+'%'; } } });
+                const text=out.data.text.trim().replace(/\s+/g,' ');
+                box.style.display='none';
+                if(!text){ toast('Couldn’t find words — try a clearer photo'); return; }
+                const title='Page '+new Date().toLocaleDateString();
+                loadText(text, title);
+                const books=store.books; books.unshift({ id:Date.now(), title, text, date:new Date().toLocaleDateString() }); store.books=books.slice(0,30);
+                bumpStreak(); go(2);
+                if(store.voice) setTimeout(togglePlay, 500);
+            }catch{ box.style.display='none'; toast('Hmm, couldn’t read that. Try again?'); }
+        };
+        r.readAsDataURL(file);
+    }
+    function loadText(text, title){
+        currentText=text; words=text.split(/\s+/).filter(Boolean);
+        document.getElementById('readerTitle').textContent=title||'Your book';
+        document.getElementById('reader').innerHTML=words.map((w,i)=>`<span class="w" data-i="${i}" onclick="defineWord(${i})">${esc(w)}</span>`).join(' ');
+    }
+    function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+    function renderLibrary(){
+        const books=store.books;
+        document.getElementById('readerTitle').textContent='Library';
+        const reader=document.getElementById('reader');
+        if(!books.length){ reader.innerHTML='<div class="empty"><div class="ei">📚</div>No books yet — scan your first page</div>'; return; }
+        reader.style.fontFamily='var(--font-ui)'; reader.style.fontSize='';
+        reader.innerHTML='<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">'+books.map(b=>`<div onclick="openBook(${b.id})" style="background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px 14px; text-align:center; cursor:pointer;"><div style="font-size:30px; margin-bottom:8px;">📖</div><div style="font-size:13.5px; font-weight:600; margin-bottom:3px;">${esc(b.title)}</div><div style="font-size:11.5px; color:var(--text-mute);">${b.text.split(' ').length} words</div></div>`).join('')+'</div>';
+    }
+    function openBook(id){ const b=store.books.find(x=>x.id===id); if(!b) return; const reader=document.getElementById('reader'); reader.style.fontFamily=''; reader.style.fontSize=store.big?'24px':''; loadText(b.text,b.title); go(2); if(store.voice) setTimeout(togglePlay,400); }
+
+    /* Read aloud with word highlight */
+    let speaking=false, paused=false;
+    function togglePlay(){
+        if(!('speechSynthesis' in window)){ toast('Read-aloud isn’t supported here'); return; }
+        if(!words.length){ toast('Scan a page first'); return; }
+        if(speaking && !paused){ speechSynthesis.pause(); paused=true; document.getElementById('playBtn').textContent='▶️'; return; }
+        if(paused){ speechSynthesis.resume(); paused=false; document.getElementById('playBtn').textContent='⏸️'; return; }
+        startRead();
+    }
+    function startRead(){
+        speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(words.join(' '));
+        if(bestVoice) u.voice=bestVoice; u.rate=store.speed; u.pitch=1.02;
+        const starts=[]; let pos=0; words.forEach(w=>{ starts.push(pos); pos+=w.length+1; });
+        u.onboundary=ev=>{ if(ev.name && ev.name!=='word') return; let i=0; while(i<starts.length-1 && starts[i+1]<=ev.charIndex) i++; highlight(i); };
+        u.onstart=()=>{ speaking=true; paused=false; document.getElementById('playBtn').textContent='⏸️'; };
+        u.onend=()=>{ speaking=false; paused=false; document.getElementById('playBtn').textContent='▶️'; clearHi(); };
+        speechSynthesis.speak(u);
+    }
+    function highlight(i){ clearHi(); const el=document.querySelector(`.w[data-i="${i}"]`); if(el){ el.classList.add('on'); el.scrollIntoView({behavior:'smooth', block:'center'}); } }
+    function clearHi(){ document.querySelectorAll('.reader .w.on').forEach(e=>e.classList.remove('on')); }
+    function stopRead(){ speechSynthesis.cancel(); speaking=false; paused=false; document.getElementById('playBtn').textContent='▶️'; clearHi(); }
+
+    function defineWord(i){ const w=words[i].replace(/[^A-Za-z'-]/g,''); if(!w) return; go(3); document.getElementById('chatInput').value=`What does "${w}" mean?`; sendChat(); }
+
+    /* Chat */
+    function addBubble(who, html){ const c=document.getElementById('chat'); const b=document.createElement('div'); b.className='bubble '+who; b.innerHTML=html; c.appendChild(b); b.scrollIntoView({behavior:'smooth',block:'nearest'}); return b; }
+    function quick(q){ document.getElementById('chatInput').value=q; sendChat(); }
+    async function sendChat(){
+        const inp=document.getElementById('chatInput'); const msg=inp.value.trim(); if(!msg) return; inp.value=''; inp.style.height='auto';
+        addBubble('me', esc(msg)); chatHistory.push({role:'user',content:msg}); bumpStreak();
+        if(!store.key){ addBubble('ai','Add your reading-buddy key in <b>Settings</b> and I can explain anything you read 💬'); return; }
+        const bubble=addBubble('ai','<span class="typing"><i></i><i></i><i></i></span>');
+        try{
+            const reply=await askClaude(chatHistory.slice(-8), BUDDY_SYSTEM(), { onToken:(_,full)=>{ bubble.innerHTML=fmt(full); bubble.scrollIntoView({behavior:'smooth',block:'nearest'}); } });
+            bubble.innerHTML=fmt(reply); chatHistory.push({role:'assistant',content:reply});
+            if(store.voice) speak(reply);
+        }catch(err){ bubble.innerHTML = err.message==='BAD_KEY'?'That key didn’t work — check Settings.':'I hit a snag. Try once more?'; }
+    }
+    function fmt(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); }
+
+    /* Voice out */
+    let bestVoice=null;
+    function pickVoice(){ const vs=speechSynthesis.getVoices(); const prefer=['Google UK English Female','Samantha','Google US English','Microsoft Aria','Microsoft Jenny','Karen','Serena']; bestVoice=vs.find(v=>prefer.includes(v.name))||vs.find(v=>/en[-_]/i.test(v.lang)&&/female|aria|jenny|samantha/i.test(v.name))||vs.find(v=>/^en/i.test(v.lang))||vs[0]; }
+    if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged=pickVoice; pickVoice(); }
+    function speak(text){ if(!('speechSynthesis' in window)||!store.voice) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text.replace(/[*`#]/g,'')); if(bestVoice) u.voice=bestVoice; u.rate=store.speed; u.pitch=1.02; speechSynthesis.speak(u); }
+
+    /* Assistant memory + streak */
+    function todayStr(){ return new Date().toISOString().slice(0,10); }
+    function bumpStreak(){ const today=todayStr(); if(store.lastDay===today) return; const yest=new Date(Date.now()-86400000).toISOString().slice(0,10); const next=store.lastDay===yest?store.streak+1:1; localStorage.setItem('br_streak',next); localStorage.setItem('br_lastday',today); document.getElementById('streakNum').textContent=next; }
+    function greet(){ const h=new Date().getHours(); const part=h<12?'Good morning':h<18?'Good afternoon':'Good evening'; const name=store.name?', '+store.name:''; document.getElementById('greeting').textContent=`${part}${name} 👋`; const s=store.streak; document.getElementById('greetSub').textContent= s>1?`${s} days reading in a row — amazing. Let's keep going.`:'Point your camera at any page and let\'s read it together.'; document.getElementById('streakNum').textContent=s; }
+
+    /* Settings */
+    function saveName(v){ localStorage.setItem('br_name', v.trim()); greet(); }
+    function saveKey(v){ localStorage.setItem('br_key', v.trim()); const ok=v.trim().startsWith('sk-ant'); const el=document.getElementById('keyStatus'); el.className='key-status '+(ok?'ok':'no'); el.textContent= ok?'✓ Your reading buddy is awake':(v.trim()?'That doesn’t look like a Claude key':'No key yet — scanning & reading aloud still work without it'); }
+    function toggleVoice(){ const on=!store.voice; localStorage.setItem('br_voice',on?'1':'0'); document.getElementById('tgVoice').classList.toggle('on',on); if(!on) speechSynthesis.cancel(); }
+    function setSpeed(s){ localStorage.setItem('br_speed',s); document.querySelectorAll('#speedSelect .pill-opt').forEach(p=>p.classList.toggle('on',parseFloat(p.dataset.sp)===s)); }
+    function toggleDys(){ const on=!store.dys; localStorage.setItem('br_dys',on?'1':'0'); document.body.classList.toggle('dys',on); document.getElementById('tgDys').classList.toggle('on',on); }
+    function toggleBig(){ const on=!store.big; localStorage.setItem('br_big',on?'1':'0'); document.getElementById('reader').style.fontSize=on?'24px':''; document.getElementById('tgBig').classList.toggle('on',on); }
+    function setModel(m){ localStorage.setItem('br_model',m); document.querySelectorAll('#modelSelect .pill-opt').forEach(p=>p.classList.toggle('on',p.dataset.model===m)); }
+    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
+
+    /* Boot */
+    (function init(){
+        document.getElementById('nameInput').value=store.name;
+        document.getElementById('keyInput').value=store.key;
+        if(store.key) saveKey(store.key);
+        document.getElementById('tgVoice').classList.toggle('on',store.voice);
+        document.getElementById('tgDys').classList.toggle('on',store.dys);
+        document.getElementById('tgBig').classList.toggle('on',store.big);
+        document.body.classList.toggle('dys',store.dys);
+        if(store.big) document.getElementById('reader').style.fontSize='24px';
+        document.querySelectorAll('#speedSelect .pill-opt').forEach(p=>p.classList.toggle('on',parseFloat(p.dataset.sp)===store.speed));
+        document.querySelectorAll('#modelSelect .pill-opt').forEach(p=>p.classList.toggle('on',p.dataset.model===store.model));
+        const ci=document.getElementById('chatInput');
+        ci.addEventListener('input',()=>{ ci.style.height='auto'; ci.style.height=Math.min(ci.scrollHeight,120)+'px'; });
+        ci.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChat(); } });
+        greet();
+        addBubble('ai', store.name?`Hi ${esc(store.name)}! I'm your reading buddy. Scan a page and I'll help with any word 💛`:`Hi! I'm your reading buddy. Scan a page and I'll help you with any word or sentence 💛`);
+    })();
+    </script>
+</body>
+</html>
