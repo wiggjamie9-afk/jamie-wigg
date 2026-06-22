@@ -2,6 +2,14 @@
 
 # Session startup health check
 
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🎯 PRIMARY GOAL — NON-NEGOTIABLE"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Ship one flagship app to Google Play + Apple App Store."
+echo "Stop. No other work until this is done."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "🚀 Jamie Wigg Workspace - Session Started"
 echo ""
 echo "📁 Projects:"

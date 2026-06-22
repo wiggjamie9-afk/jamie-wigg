@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Start (For Claude)
 
-- **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
+- **Master control file → `GARY.md`** at repo root is the single source of truth for the whole ecosystem: every command that builds something, every asset already owned (114 apps, kids-channel, agent-builder SaaS, 52 videos, monetization stack), the GitHub picture, and the prioritized list of what to build next. When the user says *"Gary, build me ___"* or asks what they have / what to build, **read `GARY.md` first**, then invoke the relevant existing pipeline rather than re-deriving it.
 - **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
 - **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.
 - **Plan a feature with a spec** → `/spec-quick <description>` produces `specs/<slug>/{requirements,design,tasks}.md` in one pass. Then `/spec-analyze <slug>` to surface ambiguities/contradictions, and `/spec-run <slug>` to execute tasks in parallel waves (each task in an isolated `Agent` context, sequenced by file overlap + explicit `depends:`). For RHYTHMIX campaigns (multi-video / launch / series), use `/rhythmix-spec <brief>` instead — same flow with pre-filled brand-specific clarifying questions.
@@ -412,6 +412,7 @@ See `sites/README.md`.
 - `docs/agents/domain.md`, `issue-tracker.md`, `triage-labels.md` — agent operating procedures for GitHub Issues.
 - `docs/security/shannon.md` — Shannon AI pentester (Keygraph) reference. Relevant for auditing the Studio Workers or license endpoint, **not** for static marketing pages.
 - `docs/refs/` — Reference copy and voiceover scripts.
+- `docs/LEARNING-LLMS.md` — Vendored "From Zero to Hero with LLMs" learning guide (Louis Bouchard). External reference for ramping up on LLMs; not project-specific.
 
 ## Conventions
 
@@ -443,3 +444,47 @@ When spawning subagents via the `Agent` tool, default to **Haiku** for simple me
 - **Issue tracker** → GitHub Issues on `wiggjamie9-afk/jamie-wigg`. See `docs/agents/issue-tracker.md`.
 - **Triage labels** → `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 - **Domain docs** → `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`. Read before introducing new terms.
+
+## Engineering Discipline (Karpathy-Inspired Guidelines)
+
+Derived from Andrej Karpathy's observations on LLM coding pitfalls. These apply
+to all non-trivial code work in this repo. For trivial changes (typo fixes,
+obvious one-liners), use judgment — not every change needs the full rigor.
+The same guidelines are mirrored in `.cursor/rules/karpathy-guidelines.mdc` for
+Cursor.
+
+### 1. Think Before Coding
+Don't assume. Don't hide confusion. Surface tradeoffs.
+- State assumptions explicitly; if uncertain, ask rather than guess.
+- Present multiple interpretations when ambiguity exists — don't pick silently.
+- Push back when a simpler approach exists.
+- Stop when confused: name what's unclear and ask for clarification.
+
+### 2. Simplicity First
+Minimum code that solves the problem. Nothing speculative.
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility"/"configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If 200 lines could be 50, rewrite it.
+- The test: would a senior engineer call this overcomplicated? If yes, simplify.
+
+### 3. Surgical Changes
+Touch only what you must. Clean up only your own mess.
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+- Remove imports/variables/functions that YOUR changes made unused; leave
+  pre-existing dead code unless asked.
+- The test: every changed line should trace directly to the request.
+
+### 4. Goal-Driven Execution
+Define success criteria. Loop until verified.
+- "Add validation" → "Write tests for invalid inputs, then make them pass."
+- "Fix the bug" → "Write a test that reproduces it, then make it pass."
+- "Refactor X" → "Ensure tests pass before and after."
+- For multi-step tasks, state a brief plan with a verify step for each:
+  `1. [Step] → verify: [check]`
+- Strong success criteria let the work loop independently; weak criteria
+  ("make it work") require constant clarification.
