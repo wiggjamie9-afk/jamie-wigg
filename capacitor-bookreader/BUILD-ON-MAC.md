@@ -38,6 +38,16 @@ npm install
 
 ---
 
+## 1.5. Vendor CDN dependencies (offline + App Store compliance)
+
+```bash
+bash vendor-deps.sh
+```
+
+This downloads tesseract.js (OCR engine) and OpenDyslexic font (accessibility) locally, so BookReader Pro works fully offline and passes App Store review without external dependencies.
+
+---
+
 ## 2. Build the ANDROID app (Google Play) — easiest, do this first
 
 ```bash
