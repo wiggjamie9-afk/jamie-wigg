@@ -1,17 +1,46 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, Video, Music, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Video, Music, Image as ImageIcon, AlertCircle, CheckCircle } from 'lucide-react';
+import { useContent } from '@/lib/hooks';
+import { useAuth } from '@/lib/hooks';
 
 export default function Generate() {
   const [contentType, setContentType] = useState<'video' | 'music' | 'image' | null>(null);
   const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [duration, setDuration] = useState('60');
+  const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [localError, setLocalError] = useState('');
+
+  const { user } = useAuth();
+  const { generate, loading, error } = useContent();
 
   const handleGenerate = async () => {
-    setLoading(true);
-    // API call here
-    setLoading(false);
+    setLocalError('');
+    setGeneratedContent(null);
+
+    if (!user?.id) {
+      setLocalError('You must be logged in to generate content');
+      return;
+    }
+
+    if (!prompt.trim()) {
+      setLocalError('Please enter a description for your content');
+      return;
+    }
+
+    try {
+      const options = contentType === 'video'
+        ? { duration: parseInt(duration), aspectRatio }
+        : undefined;
+
+      const content = await generate(contentType as any, prompt, user.id, options);
+      setGeneratedContent(content);
+      setPrompt('');
+    } catch (err: any) {
+      setLocalError(err.message || 'Failed to generate content. Please try again.');
+    }
   };
 
   const contentOptions = [
@@ -44,8 +73,28 @@ export default function Generate() {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 p-8">
+          {(error || localError) && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-gap-2">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <p className="text-red-200 text-sm">{error || localError}</p>
+            </div>
+          )}
+
+          {generatedContent && (
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-gap-2">
+              <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-green-200 text-sm font-medium">Content generated successfully!</p>
+                <p className="text-green-300 text-xs mt-1">Your {contentType} is ready to use in the Schedule page.</p>
+              </div>
+            </div>
+          )}
+
           <button
-            onClick={() => setContentType(null)}
+            onClick={() => {
+              setContentType(null);
+              setGeneratedContent(null);
+            }}
             className="text-brand-600 hover:text-brand-700 font-medium mb-6"
           >
             ← Back to types
@@ -63,6 +112,7 @@ export default function Generate() {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
+                disabled={loading}
                 placeholder={
                   contentType === 'video'
                     ? 'E.g., A fast-paced 60 second promotional video for a tech startup, upbeat music, modern design...'
@@ -70,7 +120,7 @@ export default function Generate() {
                     ? 'E.g., Upbeat lo-fi hip hop track, 120 BPM, chill vibes...'
                     : 'E.g.: A minimalist cover art for a podcast, blue and white, modern design...'
                 }
-                className="w-full border border-gray-300 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-32"
+                className="w-full border border-gray-300 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-32 disabled:bg-gray-50"
               />
             </div>
 
@@ -78,18 +128,28 @@ export default function Generate() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
-                  <select className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    <option>15 seconds</option>
-                    <option>30 seconds</option>
-                    <option>60 seconds</option>
+                  <select
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    disabled={loading}
+                    className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-50"
+                  >
+                    <option value="15">15 seconds</option>
+                    <option value="30">30 seconds</option>
+                    <option value="60">60 seconds</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Aspect Ratio</label>
-                  <select className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    <option>16:9 (Landscape)</option>
-                    <option>9:16 (Portrait)</option>
-                    <option>1:1 (Square)</option>
+                  <select
+                    value={aspectRatio}
+                    onChange={(e) => setAspectRatio(e.target.value)}
+                    disabled={loading}
+                    className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-50"
+                  >
+                    <option value="16:9">16:9 (Landscape)</option>
+                    <option value="9:16">9:16 (Portrait)</option>
+                    <option value="1:1">1:1 (Square)</option>
                   </select>
                 </div>
               </div>
@@ -97,11 +157,11 @@ export default function Generate() {
 
             <button
               onClick={handleGenerate}
-              disabled={!prompt || loading}
+              disabled={!prompt || loading || !!generatedContent}
               className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-gray-300 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
-              {loading ? 'Generating...' : 'Generate'}
+              {loading ? 'Generating...' : generatedContent ? 'Generated!' : 'Generate'}
             </button>
           </div>
 
