@@ -15,7 +15,8 @@ if not API_KEY:
     sys.exit("Set GOOGLE_TTS_API_KEY in your environment first.")
 URL = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={API_KEY}"
 HERE = Path(__file__).parent
-OUT = HERE / "audio-ep2"
+EP = os.environ.get("EPISODE", "ep2")  # e.g. ep2, ep3
+OUT = HERE / f"audio-{EP}"
 MAX_BYTES = 4500
 
 # podcast_key : (google_voice, speaking_rate)
@@ -44,7 +45,7 @@ VOICES = {
 
 
 def read_body(podcast_key):
-    path = HERE / f"{podcast_key}-ep2.txt"
+    path = HERE / f"{podcast_key}-{EP}.txt"
     lines = path.read_text(encoding="utf-8").splitlines()
     start = next((i + 1 for i, l in enumerate(lines) if l.strip() == "---"), 0)
     body = "\n".join(lines[start:])
@@ -91,10 +92,10 @@ def main():
             for c in chunks:
                 audio += synth(c, voice, rate)
                 time.sleep(0.2)
-            out = OUT / f"ep2-{num}.mp3"
+            out = OUT / f"{EP}-{num}.mp3"
             out.write_bytes(audio)
             kb = len(audio) // 1024
-            print(f"  OK  ep2-{num}.mp3  {voice:18} {kb:4}KB  ({len(chunks)} chunk)  {key}")
+            print(f"  OK  {EP}-{num}.mp3  {voice:18} {kb:4}KB  ({len(chunks)} chunk)  {key}")
             done += 1
         except Exception as e:
             print(f"  FAIL {key}: {e}", file=sys.stderr)
