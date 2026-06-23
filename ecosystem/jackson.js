@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
+import { textToMusicWithFallback, generateMusicPlaylist } from './music-generator.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const configPath = path.join(__dirname, 'config.json');
@@ -129,46 +130,32 @@ async function textToVoiceDefault(text) {
 }
 
 // ============================================================================
-// STAGE 3: TEXT-TO-MUSIC
+// STAGE 3: TEXT-TO-MUSIC (with OpenMontage + Replicate fallback)
 // ============================================================================
-async function textToMusic(text, model = 'musicgen-large') {
-  console.log(`\n🎵 [STAGE 3] TEXT-TO-MUSIC (${model})`);
+async function textToMusic(text, options = {}) {
+  const {
+    model = 'musicgen-large',
+    preferPixabay = true,  // Try Pixabay Music first (via OpenMontage)
+  } = options;
 
-  if (!config.replicate_token) {
-    console.error('❌ Replicate token not configured');
-    return null;
-  }
-
-  const outputPath = path.join(outputDir, `music-${Date.now()}.wav`);
-  console.log(`📍 Replicate MusicGen → ${outputPath}`);
+  console.log(`\n🎵 [STAGE 3] TEXT-TO-MUSIC`);
+  console.log(`   Prefer: ${preferPixabay ? 'Pixabay (OpenMontage)' : 'Replicate MusicGen'}`);
 
   try {
-    // Call Replicate API
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${config.replicate_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        version: '671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36ff9bec53f6',
-        input: {
-          prompt: text,
-          duration: 30,
-        },
-      }),
+    // Use the new music-generator with OpenMontage support
+    const result = await textToMusicWithFallback(text, {
+      preferPixabay,
+      duration: 30,
     });
 
-    if (!response.ok) throw new Error(await response.text());
+    if (result) {
+      console.log(`✅ Music generated via ${result.source}`);
+      return result;
+    }
 
-    const prediction = await response.json();
-    console.log(`✅ Music generation queued: ${prediction.id}`);
-    console.log(`   (Poll for completion at: https://api.replicate.com/v1/predictions/${prediction.id})`);
-
-    // For now, return the prediction ID; in production would poll for completion
-    return { prediction_id: prediction.id, output_path: outputPath };
+    throw new Error('All music generation methods failed');
   } catch (err) {
-    console.error(`❌ Replicate error: ${err.message}`);
+    console.error(`❌ Music generation error: ${err.message}`);
     return null;
   }
 }
