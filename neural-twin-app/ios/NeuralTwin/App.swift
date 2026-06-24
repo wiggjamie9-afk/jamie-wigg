@@ -85,6 +85,8 @@ struct MainTabView: View {
           case 3:
             CoherenceView()
           case 4:
+            MetacognitionView()
+          case 5:
             SettingsView()
           default:
             HomeView()
@@ -96,7 +98,7 @@ struct MainTabView: View {
 
         // Bottom tab bar
         HStack(spacing: 0) {
-          ForEach(0..<5, id: \.self) { index in
+          ForEach(0..<6, id: \.self) { index in
             VStack(spacing: DesignTokens.spacing8) {
               Image(systemName: tabIcon(index))
                 .font(.system(size: 24, weight: .semibold))
@@ -133,7 +135,8 @@ struct MainTabView: View {
     case 1: return "waveform.circle.fill"
     case 2: return "person.2.fill"
     case 3: return "heart.fill"
-    case 4: return "gear"
+    case 4: return "brain.head.profile"
+    case 5: return "gear"
     default: return "house.fill"
     }
   }
@@ -144,7 +147,8 @@ struct MainTabView: View {
     case 1: return "Voice"
     case 2: return "Twins"
     case 3: return "Coherence"
-    case 4: return "Settings"
+    case 4: return "Thinking"
+    case 5: return "Settings"
     default: return "Home"
     }
   }
@@ -480,7 +484,8 @@ struct TwinsCarouselView: View {
     ("Relationship", "🤝", "Social coherence"),
     ("Financial", "💰", "Money psychology"),
     ("Creative", "🎨", "Flow & inspiration"),
-    ("Research", "🔬", "Knowledge synthesis")
+    ("Research", "🔬", "Knowledge synthesis"),
+    ("Metacognition", "🪞", "Thinking about thinking")
   ]
 
   var body: some View {
@@ -683,7 +688,8 @@ struct CoherenceView: View {
     ("Vagal Tone", 0.81, DesignTokens.accentPink),
     ("Circadian", 0.88, DesignTokens.warningOrange),
     ("Biofield", 0.71, DesignTokens.brandBlue),
-    ("Decision", 0.79, DesignTokens.successGreen)
+    ("Decision", 0.79, DesignTokens.successGreen),
+    ("Metacognition", 0.76, DesignTokens.accentPurple)
   ]
 
   var body: some View {
@@ -743,7 +749,7 @@ struct CoherenceView: View {
 
         // Metrics carousel
         VStack(alignment: .leading, spacing: DesignTokens.spacing12) {
-          Text("7 Coherence Layers")
+          Text("8 Coherence Layers")
             .font(.system(size: 16, weight: .semibold))
             .padding(.horizontal, DesignTokens.spacing16)
 
@@ -1095,6 +1101,144 @@ extension Edge.Set {
   }
 
   var rawValue: Int
+}
+
+// ============================================================================
+// METACOGNITION VIEW - 8TH COHERENCE LAYER
+// ============================================================================
+
+struct MetacognitionView: View {
+  @State private var planningScore: Float = 0.7
+  @State private var monitoringScore: Float = 0.65
+  @State private var evaluatingScore: Float = 0.72
+  @State private var reflectingScore: Float = 0.68
+
+  var metacognitiveCoherence: Float {
+    ((planningScore + monitoringScore + evaluatingScore + reflectingScore) / 4) * 100
+  }
+
+  var body: some View {
+    ScrollView {
+      VStack(spacing: DesignTokens.spacing24) {
+        // Header
+        VStack(alignment: .leading, spacing: DesignTokens.spacing8) {
+          Text("Thinking About Your Thinking")
+            .font(.system(size: 32, weight: .bold))
+            .foregroundColor(DesignTokens.textPrimary)
+
+          Text("Metacognitive awareness")
+            .font(.system(size: 16, weight: .regular))
+            .foregroundColor(DesignTokens.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, DesignTokens.spacing16)
+        .padding(.top, DesignTokens.spacing16)
+
+        // Metacognitive Coherence Card
+        VStack(spacing: DesignTokens.spacing12) {
+          Text("Metacognitive Coherence")
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(DesignTokens.textSecondary)
+
+          Text(String(format: "%.0f%%", metacognitiveCoherence))
+            .font(.system(size: 48, weight: .bold))
+            .foregroundColor(DesignTokens.brandBlue)
+
+          Text("Your thinking clarity across all domains")
+            .font(.system(size: 12, weight: .regular))
+            .foregroundColor(DesignTokens.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(DesignTokens.spacing24)
+        .background(
+          ZStack {
+            Color.black.opacity(0.6).blur(radius: 20)
+            Color.white.opacity(0.05)
+          }
+        )
+        .border(1, color: Color.white.opacity(0.1))
+        .cornerRadius(DesignTokens.radiusMedium)
+        .padding(.horizontal, DesignTokens.spacing16)
+
+        // 4 Pillars
+        VStack(alignment: .leading, spacing: DesignTokens.spacing12) {
+          Text("4 Pillars of Thinking")
+            .font(.system(size: 18, weight: .semibold))
+            .padding(.horizontal, DesignTokens.spacing16)
+
+          ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: DesignTokens.spacing12) {
+              MetacognitiveScorePillar(
+                title: "Planning",
+                emoji: "🎯",
+                score: planningScore,
+                description: "Goal clarity"
+              )
+              MetacognitiveScorePillar(
+                title: "Monitoring",
+                emoji: "👁️",
+                score: monitoringScore,
+                description: "Self-awareness"
+              )
+              MetacognitiveScorePillar(
+                title: "Evaluating",
+                emoji: "⚖️",
+                score: evaluatingScore,
+                description: "Critical thinking"
+              )
+              MetacognitiveScorePillar(
+                title: "Reflecting",
+                emoji: "🪞",
+                score: reflectingScore,
+                description: "Learning"
+              )
+            }
+            .padding(.horizontal, DesignTokens.spacing16)
+          }
+          .scrollTargetBehavior(.viewAligned)
+        }
+
+        Spacer(minLength: DesignTokens.spacing24)
+      }
+    }
+  }
+}
+
+struct MetacognitiveScorePillar: View {
+  let title: String
+  let emoji: String
+  let score: Float
+  let description: String
+
+  var body: some View {
+    VStack(alignment: .center, spacing: DesignTokens.spacing8) {
+      Text(emoji)
+        .font(.system(size: 28))
+
+      Text(title)
+        .font(.system(size: 14, weight: .semibold))
+        .foregroundColor(DesignTokens.textPrimary)
+
+      Text(String(format: "%.0f%%", score * 100))
+        .font(.system(size: 20, weight: .bold))
+        .foregroundColor(score > 0.7 ? DesignTokens.successGreen : DesignTokens.brandBlue)
+
+      Text(description)
+        .font(.system(size: 10, weight: .regular))
+        .foregroundColor(DesignTokens.textSecondary)
+        .lineLimit(1)
+    }
+    .frame(width: 140, height: 160)
+    .padding(DesignTokens.spacing12)
+    .background(
+      ZStack {
+        Color.black.opacity(0.6).blur(radius: 20)
+        Color.white.opacity(0.05)
+      }
+    )
+    .border(1, color: DesignTokens.brandBlue.opacity(0.3))
+    .cornerRadius(DesignTokens.radiusMedium)
+  }
 }
 
 #Preview {

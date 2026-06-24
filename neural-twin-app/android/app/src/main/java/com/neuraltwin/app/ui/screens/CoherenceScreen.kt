@@ -30,7 +30,8 @@ val COHERENCE_METRICS = listOf(
     CoherenceMetric("Vagal Tone", 81f, "Parasympathetic tone"),
     CoherenceMetric("Circadian", 88f, "Sleep-wake alignment"),
     CoherenceMetric("Biofield", 71f, "Resonance frequency"),
-    CoherenceMetric("Decision", 79f, "Decision coherence")
+    CoherenceMetric("Decision", 79f, "Decision coherence"),
+    CoherenceMetric("Metacognition", 76f, "Thinking about thinking")
 )
 
 @Composable
@@ -105,7 +106,7 @@ fun CoherenceScreen() {
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            "7-Layer Coherence Metrics",
+            "8-Layer Coherence Metrics",
             style = MaterialTheme.typography.titleMedium,
             color = DesignTokens.TextPrimary,
             modifier = Modifier

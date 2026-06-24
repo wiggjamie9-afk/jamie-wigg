@@ -35,7 +35,8 @@ val TWINS_LIST = listOf(
     Twin("relationship", "❤️", "Relationship Twin", "Connection", "Strengthen your relationships"),
     Twin("financial", "💰", "Financial Twin", "Money", "Transform your financial life"),
     Twin("creative", "🎨", "Creative Twin", "Expression", "Unlock your creative flow"),
-    Twin("research", "🔬", "Research Twin", "Knowledge", "Synthesize and learn faster")
+    Twin("research", "🔬", "Research Twin", "Knowledge", "Synthesize and learn faster"),
+    Twin("metacognition", "🪞", "Metacognition Twin", "Self-Awareness", "Master your thinking processes")
 )
 
 @Composable
@@ -55,7 +56,7 @@ fun TwinsListScreen() {
         )
 
         Text(
-            "8 specialist AI companions",
+            "9 specialist AI companions",
             style = MaterialTheme.typography.bodySmall,
             color = DesignTokens.TextSecondary,
             modifier = Modifier.padding(bottom = 20.dp)

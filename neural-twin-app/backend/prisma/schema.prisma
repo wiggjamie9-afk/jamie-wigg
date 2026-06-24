@@ -42,6 +42,7 @@ model User {
   biometricData     BiometricData[]
   twinInteractions  TwinInteraction[]
   coherenceMetrics  CoherenceMetric[]
+  metacognitiveMetrics MetacognitiveMetric[]
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -101,6 +102,14 @@ model Decision {
   category          String?   // personal, professional, health, financial, relationship, creative, research, growth
   confidence        Float?    // how confident in the decision (0-1)
 
+  // Metacognitive tracking
+  planningClarity   Int?      // 1-10, how clear was the planning phase
+  strategyChosen    String?   // what strategy was used to decide
+  monitoringComprehension Int? // 1-10, did they monitor their thinking
+  evaluationEffectiveness Int? // 1-10, how effective was the decision
+  reflectionInsights String? // what was learned from reflection
+  metacognitiveScore Float?  // 0-1, overall metacognitive quality of this decision
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -159,7 +168,7 @@ model Twin {
   userId            String
 
   // Twin identity
-  type              String    // task, coach, growth, health, relationship, financial, creative, research
+  type              String    // task, coach, growth, health, relationship, financial, creative, research, metacognition
   name              String    // personalized name
   personality       String    // how this twin communicates
 
@@ -171,6 +180,10 @@ model Twin {
   // Stats
   interactionCount  Int       @default(0)
   lastInteraction   DateTime?
+
+  // Specialization data (for metacognition twin)
+  specialization    String?   // e.g., "metacognition", "task-management", "health-coaching"
+  focusAreas        String[]  // areas this twin specializes in
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -185,7 +198,7 @@ model TwinInteraction {
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Interaction
-  twinType          String    // task, coach, growth, health, relationship, financial, creative, research
+  twinType          String    // task, coach, growth, health, relationship, financial, creative, research, metacognition
   userMessage       String
   twinResponse      String
 
@@ -193,10 +206,17 @@ model TwinInteraction {
   contextData       Json      // voice emotion, biometrics, time of day, etc.
   coherenceState    String?   // coherent, stressed, shutdown
 
+  // Metacognitive coaching (if twinType = "metacognition" or coach)
+  metacognitivePhase String?   // planning, monitoring, evaluating, reflecting
+  coachingFocus     String?   // what metacognitive skill is being coached
+  userInsight       String?   // what the user realized
+  actionTaken       String?   // what action the user took based on coaching
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@index([userId, twinType, createdAt])
+  @@index([userId, metacognitivePhase])
 }
 
 // ============================================================================
@@ -309,6 +329,45 @@ model CoherenceMetric {
 }
 
 // ============================================================================
+// METACOGNITIVE METRICS (8th Coherence Layer)
+// ============================================================================
+
+model MetacognitiveMetric {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 4-Step Metacognitive Process
+  planningScore     Float?    // 0-1, clarity of goal setting and strategy formation
+  monitoringScore   Float?    // 0-1, awareness of own thought processes during task
+  evaluatingScore   Float?    // 0-1, critical assessment of decisions and outcomes
+  reflectingScore   Float?    // 0-1, quality of insights and learning integration
+
+  // Metacognitive Sub-skills
+  selfAwareness     Float?    // 0-1, understanding of own strengths/weaknesses
+  executionAlignment Float?   // 0-1, how well actions match intentions
+  errorCorrection   Float?    // 0-1, ability to identify and fix mistakes
+  learningIntegration Float?  // 0-1, how well lessons integrate into future thinking
+
+  // Composite score
+  metacognitiveCoherence Float // 0-100, weighted average of all metacognitive dimensions
+
+  // Context
+  contextData       Json?     // decision category, time of day, emotional state, biometrics
+  decisionCategory  String?   // which domain (personal, professional, health, etc)
+
+  // Progression
+  timeSpent         Int?      // seconds spent thinking about the decision
+  iterationCount    Int?      // how many times did they revisit their thinking
+
+  timestamp         DateTime
+  createdAt         DateTime  @default(now())
+
+  @@index([userId, timestamp])
+  @@index([userId, decisionCategory])
+}
+
+// ============================================================================
 // FINE-TUNING PIPELINE
 // ============================================================================
 
@@ -353,6 +412,12 @@ model LearningLoop {
   // Learning summary
   keyInsights       String[]
   patternsDetected  Json      // patterns found this cycle
+
+  // Metacognitive insights
+  metacognitiveInsights String? // how thinking patterns evolved this cycle
+  metacognitiveProgress Json?   // progress on each of 4 pillars (planning, monitoring, evaluating, reflecting)
+  metacognitiveCoherence Float?  // overall metacognitive coherence score for the cycle
+  thinkingPatterns  Json?     // emergent patterns in how the person thinks
 
   // Re-training triggered
   retrainingNeeded  Boolean   @default(false)
