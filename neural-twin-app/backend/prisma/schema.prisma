@@ -1,0 +1,380 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// USER & AUTHENTICATION
+// ============================================================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String
+  passwordHash      String?
+  appleId           String?   @unique
+  googleId          String?   @unique
+
+  // Profile
+  avatar            String?
+  bio               String?
+
+  // Subscription
+  tier              String    @default("free") // free, starter, pro, agency, enterprise
+  subscriptionEndsAt DateTime?
+
+  // Privacy & settings
+  privacyMode       String    @default("encrypted") // encrypted, local-only, synced
+  dataExportAllowed Boolean   @default(true)
+
+  // Relationships
+  voiceCorpus       VoiceRecording[]
+  decisions         Decision[]
+  values            Value[]
+  knowledgeBase     KnowledgeEntry[]
+  biometricData     BiometricData[]
+  twinInteractions  TwinInteraction[]
+  coherenceMetrics  CoherenceMetric[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// ============================================================================
+// PHASE 1: DATA FOUNDATION
+// ============================================================================
+
+model VoiceRecording {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Voice data
+  audioUrl          String    // S3 or equivalent
+  duration          Float     // seconds
+  waveform          Json?     // for visualization
+
+  // Emotion analysis
+  primaryEmotion    String?   // happy, sad, angry, neutral, surprised, fearful, disgusted
+  emotionScore      Float?    // 0-1 confidence
+  acousticFeatures  Json      // pitch, speech_rate, jitter, formants, mfcc, prosody
+
+  // Transcription
+  transcript        String?
+
+  // Context
+  context           String?   // what was being discussed
+  location          String?   // optional location tag
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model Decision {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Decision details
+  title             String
+  description       String
+  context           String?
+  options           Json      // {option1: description, option2: description, ...}
+  chosenOption      String
+  reasoning         String
+
+  // Impact
+  expectedOutcome   String?
+  actualOutcome     String?
+  learnings         String?
+
+  // Pattern analysis
+  category          String?   // personal, professional, health, financial, relationship, creative, research, growth
+  confidence        Float?    // how confident in the decision (0-1)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId, category, createdAt])
+}
+
+model Value {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Core value
+  name              String    // e.g., "Authenticity", "Growth", "Coherence"
+  description       String
+  importance        Float     // 1-10 scale
+  examples          String[]  // how this shows up in life
+
+  // How it guides decisions
+  decisionFit       String?   // how this value affects choices
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model KnowledgeEntry {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Knowledge
+  topic             String
+  insight           String
+  source            String?   // book, experience, conversation, research
+  evidence          String?   // how you know this
+
+  // Related to other knowledge
+  relatedTopics     String[]
+
+  // Utility
+  applicability     String[]  // areas where this helps
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId, topic])
+}
+
+// ============================================================================
+// 8 SPECIALIST TWINS
+// ============================================================================
+
+model Twin {
+  id                String    @id @default(cuid())
+  userId            String
+
+  // Twin identity
+  type              String    // task, coach, growth, health, relationship, financial, creative, research
+  name              String    // personalized name
+  personality       String    // how this twin communicates
+
+  // Fine-tuning
+  modelId           String?   // fine-tuned Claude model ID
+  lastTrained       DateTime?
+  trainingStatus    String    @default("pending") // pending, in_progress, completed, failed
+
+  // Stats
+  interactionCount  Int       @default(0)
+  lastInteraction   DateTime?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+
+model TwinInteraction {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Interaction
+  twinType          String    // task, coach, growth, health, relationship, financial, creative, research
+  userMessage       String
+  twinResponse      String
+
+  // Context
+  contextData       Json      // voice emotion, biometrics, time of day, etc.
+  coherenceState    String?   // coherent, stressed, shutdown
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId, twinType, createdAt])
+}
+
+// ============================================================================
+// ECOSYSTEM BRAIN & KNOWLEDGE GRAPH
+// ============================================================================
+
+model KnowledgeGraph {
+  id                String    @id @default(cuid())
+  userId            String
+
+  // Nodes (concepts)
+  nodes             Json      // {id: {name, type, importance}, ...}
+
+  // Edges (relationships)
+  edges             Json      // {source_target: {type, strength}, ...}
+
+  // Emerging patterns
+  clusters          Json?     // topic clusters discovered
+  leveragePoints    Json?     // high-impact intervention points
+
+  lastUpdated       DateTime  @default(now())
+
+  @@unique([userId])
+}
+
+// ============================================================================
+// BIOMETRIC INTEGRATION
+// ============================================================================
+
+model BiometricData {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Heart metrics
+  heartRate         Float?
+  hrv               Float?    // heart rate variability (RMSSD)
+  heartRateMax      Float?
+  heartRateMin      Float?
+
+  // Breath metrics
+  breathingRate     Float?
+  breathCoherence   Float?    // 0-1, how coherent breath is
+
+  // Sleep metrics
+  sleepDuration     Float?    // hours
+  sleepStages       Json?     // deep, light, rem percentages
+  sleepQuality      Float?    // 0-100
+
+  // Activity metrics
+  steps             Int?
+  activeMinutes     Int?
+  caloriesBurned    Float?
+
+  // Body metrics
+  temperature       Float?
+  bloodPressure     Json?     // {systolic, diastolic}
+  weight            Float?
+
+  // Environmental context
+  timeOfDay         String?   // morning, afternoon, evening, night
+  lightExposure     Float?    // lux
+  airQuality        String?   // good, moderate, poor
+  temperature_env   Float?    // environmental temperature
+
+  // Computer vision analysis
+  posture           String?   // good, slouched, tense
+  postureScore      Float?    // 0-100
+  movement          String?   // static, light, moderate, active
+
+  // Source
+  source            String?   // apple_health, oura, withings, apple_watch, google_fit, manual
+
+  timestamp         DateTime
+  createdAt         DateTime  @default(now())
+
+  @@index([userId, timestamp])
+}
+
+// ============================================================================
+// COHERENCE METRICS (Consciousness Layer)
+// ============================================================================
+
+model CoherenceMetric {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 7 Coherence layers
+  heartBrainCoh     Float?    // 0-1, heart-brain coherence @ 0.1 Hz
+  breathCoh         Float?    // 0-1, breathing synchronized to HRV
+  brainCoh          Float?    // 0-1, alpha/theta coherence (EEG if available)
+  vagalTone         Float?    // 0-1, parasympathetic nervous system strength
+  circadianAlign    Float?    // 0-1, sleep/wake alignment
+  biofieldCoh       Float?    // 0-1, electromagnetic coherence (Tesla principle)
+  decisionCoh       Float?    // 0-1, choices aligned with values
+
+  // Composite
+  overallCoherence  Float     // 0-100, weighted average of above
+  coherenceState    String    // coherent, transitioning, stressed, shutdown
+
+  // Recommendations
+  nextAction        String?   // what to do to improve coherence
+  resonanceFreq     Float?    // personalized harmonic frequency (Hz)
+
+  timestamp         DateTime
+  createdAt         DateTime  @default(now())
+
+  @@index([userId, timestamp])
+}
+
+// ============================================================================
+// FINE-TUNING PIPELINE
+// ============================================================================
+
+model FineTuningJob {
+  id                String    @id @default(cuid())
+  userId            String
+
+  // Job details
+  twinType          String    // which Twin is being trained
+  status            String    // pending, processing, completed, failed
+
+  // Anthropic API
+  anthropicJobId    String?   @unique
+  modelId           String?   // resulting fine-tuned model
+
+  // Training data
+  trainingDataSize  Int       // number of samples
+
+  // Results
+  accuracy          Float?    // 0-1
+  error             String?   // if failed
+
+  createdAt         DateTime  @default(now())
+  completedAt       DateTime?
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId, twinType])
+}
+
+// ============================================================================
+// LEARNING LOOP
+// ============================================================================
+
+model LearningLoop {
+  id                String    @id @default(cuid())
+  userId            String
+
+  // Cycle
+  cycle             Int       // week 1, week 2, etc.
+  cycleType         String    // weekly, monthly
+
+  // Learning summary
+  keyInsights       String[]
+  patternsDetected  Json      // patterns found this cycle
+
+  // Re-training triggered
+  retrainingNeeded  Boolean   @default(false)
+
+  createdAt         DateTime  @default(now())
+
+  @@unique([userId, cycle, cycleType])
+  @@index([userId, cycleType])
+}
+
+// ============================================================================
+// AUDIT & LOGS
+// ============================================================================
+
+model AuditLog {
+  id                String    @id @default(cuid())
+  userId            String
+
+  action            String    // login, data_export, deletion_request, etc.
+  details           Json?
+
+  createdAt         DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
