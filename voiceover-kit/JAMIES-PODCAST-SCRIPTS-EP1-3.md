@@ -5,6 +5,10 @@
 
 ## Episode 1: Season Premiere — Welcome to Dad's Code
 
+**Description:** Welcome to jamie's Podcast, where fatherhood meets real life. In this premiere, I introduce "Dad's Code"—my personal memoir about becoming a father, navigating ADHD, managing anxiety, and learning that presence matters infinitely more than perfection. Over the next 26 episodes, you'll hear stories from my journey: the joy and chaos of raising kids, the challenges of managing ADHD as a parent, the vulnerability of admitting struggle, and the resilience that comes from showing up, even when you're not sure how. This podcast is for fathers, for parents, for anyone navigating the beautiful mess of family. Welcome.
+
+---
+
 **[INTRO — Warm, conversational tone]**
 
 Hey, I'm Jamie. Welcome to jamie's Podcast. If you're here, you're probably a parent, thinking about becoming one, or you've just stumbled in by accident—either way, I'm glad you're here.
@@ -40,6 +44,10 @@ Thanks for being here. Let's do this.
 ---
 
 ## Episode 2: Becoming Dad — The Moment Everything Changed
+
+**Description:** The first time I held my daughter, my world shifted permanently. In this episode, I share the moment I became a dad—the excitement, the fear, the overwhelming responsibility, and the love that changed everything. Becoming a father isn't something you prepare for; it's something you experience and learn from. I explore what that first moment taught me about what matters, what doesn't, and why the pressure to be the "perfect dad" was actually the biggest obstacle to becoming a good one.
+
+---
 
 **[OPENING]**
 
@@ -80,6 +88,10 @@ If you're about to become a parent, or you just became one, know this: you don't
 ---
 
 ## Episode 3: Twins and Chaos — Doubling Down
+
+**Description:** Finding out we were having twins completely flipped my world upside down. In this episode, I talk about the moment we discovered twins were coming, the panic that followed, and the beautiful chaos that ensued. Parenting became nappies, bottles, sleepless nights, and unforgettable memories—multiplied by two. I share what I learned about resilience, support, and the fact that perfect parenting isn't possible, but present parenting absolutely is. Twins taught me more about my own limits than anything else ever has.
+
+---
 
 **[OPENING]**
 
