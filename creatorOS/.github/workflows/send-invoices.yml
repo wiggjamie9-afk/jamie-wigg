@@ -1,0 +1,94 @@
+name: Send Monthly Invoices & Receipts
+
+on:
+  schedule:
+    # Run on 1st of every month at 6 AM UTC
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
+jobs:
+  send-invoices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Generate and Send Invoices
+        run: |
+          npm install @supabase/supabase-js resend
+          node - <<'EOF'
+          const { createClient } = require('@supabase/supabase-js');
+          const { Resend } = require('resend');
+
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+          );
+          const resend = new Resend(process.env.RESEND_API_KEY);
+
+          (async () => {
+            // Get all paying users
+            const { data: users } = await supabase
+              .from('users')
+              .select('id, email, name, subscription_tier, subscription_status')
+              .neq('subscription_tier', 'free')
+              .eq('subscription_status', 'active');
+
+            console.log(`Sending invoices to ${users?.length || 0} users`);
+
+            if (users) {
+              for (const user of users) {
+                const amount = user.subscription_tier === 'pro' ? 49 : 199;
+
+                // Send invoice email
+                await resend.emails.send({
+                  from: 'CreatorOS <billing@creatorOS.dev>',
+                  to: user.email,
+                  subject: `Your CreatorOS Invoice - ${new Date().toLocaleDateString()}`,
+                  html: `
+                    <h2>Invoice</h2>
+                    <p>Hi ${user.name},</p>
+                    <p>Thank you for being a ${user.subscription_tier.toUpperCase()} member!</p>
+                    <table style="border: 1px solid #ddd; padding: 10px;">
+                      <tr>
+                        <td>Plan</td>
+                        <td>${user.subscription_tier.toUpperCase()}</td>
+                      </tr>
+                      <tr>
+                        <td>Amount</td>
+                        <td>$${amount}.00</td>
+                      </tr>
+                      <tr>
+                        <td>Billing Date</td>
+                        <td>${new Date().toLocaleDateString()}</td>
+                      </tr>
+                    </table>
+                    <p>Your subscription has been renewed. Thank you for supporting CreatorOS!</p>
+                  `,
+                });
+
+                console.log(`✅ Invoice sent to ${user.email}`);
+              }
+            }
+
+            console.log('All invoices sent');
+          })();
+          EOF
+
+      - name: Notify on Success
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "📧 Monthly invoices sent successfully"
+            }'

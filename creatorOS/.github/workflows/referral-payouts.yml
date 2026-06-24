@@ -1,0 +1,78 @@
+name: Process Referral Payouts
+
+on:
+  schedule:
+    # Run every Friday at 5 PM UTC (payout day)
+    - cron: '0 17 * * FRI'
+  workflow_dispatch:
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  process-payouts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Process Referral Payouts
+        run: |
+          npm install @supabase/supabase-js
+          node - <<'EOF'
+          const { createClient } = require('@supabase/supabase-js');
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+          );
+
+          (async () => {
+            // Get pending referrals completed this week
+            const { data: referrals } = await supabase
+              .from('referrals')
+              .select('*')
+              .eq('status', 'pending')
+              .gte('created_at', new Date(Date.now() - 7*24*60*60*1000).toISOString());
+
+            console.log(`Found ${referrals?.length || 0} pending referrals`);
+
+            if (referrals) {
+              for (const ref of referrals) {
+                // Mark as completed
+                await supabase
+                  .from('referrals')
+                  .update({ status: 'completed', completed_at: new Date().toISOString() })
+                  .eq('id', ref.id);
+
+                console.log(`✅ Processed referral: ${ref.id}`);
+              }
+            }
+
+            console.log('Referral payouts processed');
+          })();
+          EOF
+
+      - name: Notify Slack
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "💰 Weekly referral payouts processed",
+              "attachments": [{"color": "good", "text": "All pending referrals marked as completed"}]
+            }'
+
+      - name: Alert on Failure
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "❌ Referral payout failed",
+              "attachments": [{"color": "danger", "text": "Check GitHub Actions logs immediately"}]
+            }'

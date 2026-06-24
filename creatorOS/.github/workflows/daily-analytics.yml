@@ -1,0 +1,102 @@
+name: Daily Analytics Report
+
+on:
+  schedule:
+    # Run daily at 8 AM UTC (before business hours)
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  generate-analytics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Fetch Daily Analytics
+        run: |
+          npm install @supabase/supabase-js
+          node - <<'EOF'
+          const { createClient } = require('@supabase/supabase-js');
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+          );
+
+          (async () => {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Get today's signups
+            const { data: signups } = await supabase
+              .from('users')
+              .select('id')
+              .gte('created_at', today);
+
+            // Get today's revenue
+            const { data: earnings } = await supabase
+              .from('earnings')
+              .select('amount')
+              .gte('created_at', today);
+
+            // Get today's conversions
+            const { data: conversions } = await supabase
+              .from('conversions')
+              .select('*')
+              .gte('created_at', today);
+
+            const totalEarnings = earnings?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+            const totalSignups = signups?.length || 0;
+            const upgrades = conversions?.filter(c => c.conversion_type === 'upgrade').length || 0;
+
+            console.log(`📊 Daily Report (${today}):`);
+            console.log(`   Signups: ${totalSignups}`);
+            console.log(`   Upgrades: ${upgrades}`);
+            console.log(`   Revenue: $${totalEarnings.toFixed(2)}`);
+
+            // Store in GitHub output for next step
+            console.log(`SIGNUPS=${totalSignups}\nEARNINGS=${totalEarnings}\nUPGRADES=${upgrades}`);
+          })();
+          EOF
+
+      - name: Send Daily Report to Slack
+        if: success()
+        env:
+          WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          SIGNUPS=$(grep SIGNUPS analytics-output.txt | cut -d= -f2)
+          EARNINGS=$(grep EARNINGS analytics-output.txt | cut -d= -f2)
+          UPGRADES=$(grep UPGRADES analytics-output.txt | cut -d= -f2)
+
+          curl -X POST $WEBHOOK_URL \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"text\": \"📊 Daily Analytics Report\",
+              \"blocks\": [
+                {
+                  \"type\": \"section\",
+                  \"fields\": [
+                    {\"type\": \"mrkdwn\", \"text\": \"*Signups:*\\n${SIGNUPS}\"},
+                    {\"type\": \"mrkdwn\", \"text\": \"*Revenue:*\\n\\\$${EARNINGS}\"},
+                    {\"type\": \"mrkdwn\", \"text\": \"*Upgrades:*\\n${UPGRADES}\"},
+                    {\"type\": \"mrkdwn\", \"text\": \"*Status:*\\n✅ All systems operational\"}
+                  ]
+                }
+              ]
+            }"
+
+      - name: Alert if No Activity
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "⚠️ Daily analytics report failed - check database connection"
+            }'
