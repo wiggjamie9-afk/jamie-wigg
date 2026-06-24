@@ -195,6 +195,9 @@ export async function textToMusicWithFallback(description, options = {}) {
     preferPixabay = true,
     preferMusicGen = false,
     duration = 30,
+    pixabayApiKey,
+    replicateToken,
+    outputDir,
   } = options;
 
   console.log('\n🎵 [TEXT-TO-MUSIC] Starting music generation');
@@ -204,26 +207,42 @@ export async function textToMusicWithFallback(description, options = {}) {
   // Try preferred source first
   if (preferPixabay) {
     console.log('\n🔍 Attempt 1: Pixabay Music (free, instant)');
-    const pixabayResult = await musicFromPixabay(description, { duration });
+    const pixabayResult = await musicFromPixabay(description, {
+      duration,
+      outputDir,
+      pixabayApiKey,
+    });
     if (pixabayResult) {
       return { ...pixabayResult, attempt: 1 };
     }
 
     console.log('\n🔄 Fallback: Replicate MusicGen (AI, higher quality)');
-    const musicgenResult = await musicFromMusicGen(description, { duration });
+    const musicgenResult = await musicFromMusicGen(description, {
+      duration,
+      outputDir,
+      replicateToken,
+    });
     if (musicgenResult) {
       return { ...musicgenResult, attempt: 2 };
     }
   } else {
     // Prefer MusicGen
     console.log('\n🔍 Attempt 1: Replicate MusicGen (AI)');
-    const musicgenResult = await musicFromMusicGen(description, { duration });
+    const musicgenResult = await musicFromMusicGen(description, {
+      duration,
+      outputDir,
+      replicateToken,
+    });
     if (musicgenResult) {
       return { ...musicgenResult, attempt: 1 };
     }
 
     console.log('\n🔄 Fallback: Pixabay Music (free, instant)');
-    const pixabayResult = await musicFromPixabay(description, { duration });
+    const pixabayResult = await musicFromPixabay(description, {
+      duration,
+      outputDir,
+      pixabayApiKey,
+    });
     if (pixabayResult) {
       return { ...pixabayResult, attempt: 2 };
     }

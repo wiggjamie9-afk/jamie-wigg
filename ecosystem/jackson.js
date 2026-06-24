@@ -146,6 +146,9 @@ async function textToMusic(text, options = {}) {
     const result = await textToMusicWithFallback(text, {
       preferPixabay,
       duration: 30,
+      pixabayApiKey: config.pixabay_api_key,
+      replicateToken: config.replicate_token,
+      outputDir: outputDir,
     });
 
     if (result) {
