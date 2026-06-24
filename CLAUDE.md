@@ -1,445 +1,535 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Quick Start (For Claude)
-
-- **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
-- **Generate a single creative asset (image / video / music / voice)** → run `/dream <description>` — auto-routes to the right modality.
-- **Orchestrate a full album/single launch (cover + track + promo + landing section in parallel)** → run `/album-launch <brief>`.
-- **Plan a feature with a spec** → `/spec-quick <description>` produces `specs/<slug>/{requirements,design,tasks}.md` in one pass. Then `/spec-analyze <slug>` to surface ambiguities/contradictions, and `/spec-run <slug>` to execute tasks in parallel waves (each task in an isolated `Agent` context, sequenced by file overlap + explicit `depends:`). For RHYTHMIX campaigns (multi-video / launch / series), use `/rhythmix-spec <brief>` instead — same flow with pre-filled brand-specific clarifying questions.
-- **Build a landing page or microsite** → `/site-build <brief>` runs the four-stage pipeline (sitemap → wireframe → styleguide → design) end-to-end, with parallel fan-out across pages at stages 2 and 4. Output lands in `sites/<slug>/` as self-contained HTML files. For RHYTHMIX-branded work, use `/rhythmix-site <brief>` instead — it locks the styleguide to `rhythmix-teaser-60s/DESIGN.md` and pre-fills the brand-specific clarifying questions. Or run any single stage in isolation: `/site-sitemap`, `/site-wireframe`, `/site-styleguide`, `/site-design`.
-- **Reference for video pipeline** → `rhythmix-overview-60s/` is the canonical 60s landscape example.
-- **Brand identity** → `rhythmix-teaser-60s/DESIGN.md` (palette, typography, motion eases).
-- **Cloud-AI tools the user actually uses** → `CREATIVE-AI-STACK.md` (iPhone-driven; user has no desktop).
-- **Step 3.7 Flash MCP server (script & story generation)** → `.claude/mcp/stepfun/server.mjs`, registered in `.mcp.json` as `stepfun`. Put `STEP_API_KEY` and `STEP_BASE_URL` in `.env` (see `.env.example`). Exposes three tools: `flash_script` (RHYTHMIX-aware narration/pitch-deck copy, format options: narration/dialogue/shot-list/pitch-deck), `flash_chat` (long-context story dev, multimodal via `user_images`), `flash_episode_brief` (structured episode brief → logline + act structure + promo copy, ready to feed into `/site-build` or `/rhythmix-author`). Use reasoning='high' for multi-act episode briefs, 'low' for quick shot-list drafts. **For animated TV series / pitch deck work, always start with `flash_episode_brief` to generate the episode structure, then pass its output into `/rhythmix-site` or `/site-build` for the animated promo site.**
-- **Replicate + ElevenLabs MCP server (image/video/music/voice tools)** → `.claude/mcp/creative-stack/`. Deps installed; registered in `.mcp.json`. To use, copy `.claude/settings.local.json.example` → `.claude/settings.local.json` and fill in `REPLICATE_API_TOKEN` + `ELEVENLABS_API_KEY`. The `replicate` skill picks the right tool/model for image, video, or music assets in this repo's style.
-- **Domain language + decisions** → `CONTEXT.md` (Promo, Cut, Narration, Hook) and `docs/adr/` (current: ADR-0001 HyperFrames over Remotion). Read these before reasoning about the pipeline — they prevent re-inventing terms or "fixing" the dormant Remotion setup in `video/`.
-- **Higgsfield AI MCP server (Soul text-to-image, DOP image-to-video, talking-head, character refs)** → registered in `.mcp.json` as `higgsfield`. Install with `pip install git+https://github.com/geopopos/geo_higgsfield_ai_mcp`. Put `HIGGSFIELD_API_KEY` and `HIGGSFIELD_SECRET` in `.env` at the repo root (gitignored — see `.env.example`). To use it *with* HyperFrames in a single flow, invoke the `higgsfield-to-hyperframes` skill.
-- **Pollinations AI MCP server (free anonymous tier — image, text, audio, TTS, music)** → registered in `.mcp.json` as `pollinations`. Installed globally via `npm install -g @pollinations/model-context-protocol`. No API key required. ⚠️ The sandbox egress allowlist blocks `*.pollinations.ai` — tools register fine; only runtime is gated.
-- **Browser automation (two MCP servers)** → `playwright` (`@playwright/mcp@latest`, runs via `npx -y`) and `claude-playwright` (devDependency at repo root — run `npm install`, then launches via `node node_modules/claude-playwright/dist/mcp/server.cjs`). Default `BASE_URL` is `http://localhost:8000`.
-- **Frontend design skill** → `frontend-design` is available as a Claude Code skill. Use for production-grade UI that avoids generic AI aesthetics.
-- **Context7 docs MCP** → registered in `.mcp.json` as `context7` (`https://mcp.context7.com/mcp`). **Rule:** Always use Context7 when you need library/API documentation, code generation, setup, or configuration steps — without the user having to ask. Free API key: put `CONTEXT7_API_KEY` in `.env`.
-- **Hugging Face skills** → `hf-cli`, `huggingface-best`, `huggingface-papers`, `huggingface-datasets` synced from `huggingface/skills`. Tracked in `skills-lock.json`.
-- **Zapier workflows skill** → `zapier-workflows` in `.claude/skills/`. Dormant until the Zapier MCP server is connected at `https://mcp.zapier.com/mcp/servers`.
-- **OpenClaw CLI skills** → installed via `bash scripts/openclaw-install.sh` on a machine with unrestricted egress (ClawHub blocked from the cloud sandbox). Queue: `ai-video-editor-motion-graphics`, `self-improving-agent`, `voice-wake-say`, `voice-ai-voices`, `azure-ai-voicelive-py`, `app-builder`, `deploy-agent`.
-- **Agent TARS / UI-TARS** → vision-language GUI agent (ByteDance). See `SETUP-AGENT-TARS.md`. Best for click-stream automation; not a fit for the LLM-driven content pipeline.
-- **Hermes Agent** → Nous Research open-source agent CLI with messaging gateways (Telegram/Discord). See `SETUP-HERMES.md`. Useful for driving renders from phone/cron; RHYTHMIX skills are not ported to it.
-- **Voicebox (local TTS)** → runs on-device Mac, clones your voice from a sample, zero API cost. See `VOICEBOX-SETUP.md`. Voice profile name: `Jamie`. Default endpoint: `http://127.0.0.1:17493`.
-- **Kokoro TTS (HyperFrames narration)** → lightweight, fast, multi-language text-to-speech. Generates `.wav` narration for RHYTHMIX promos. 30+ voices (English, French, Italian, Japanese, Chinese); voice blending supported. See `KOKORO-SETUP.md`. Install: `uv tool install kokoro-tts` or `pip install kokoro-tts`. Used by: `npx --yes hyperframes@0.4.42 tts`.
-- **OpenManus Agent Framework (autonomous browser automation)** → LLM-driven browser agent for web tasks, research, and automation. Installation: `bash scripts/setup-openmanus.sh` or `python scripts/setup-openmanus.py`. Setup guide: `SETUP-OPENMANUS.md`. Configuration examples in `config/openmanus-*.toml` (Claude, OpenAI, Ollama, Azure). MCP integration: `OPENMANUS-MCP-INTEGRATION.md`. Use cases: automated content research, web scraping, multi-step browser workflows. Supports multiple LLM backends (Claude, GPT-4, Ollama local, Azure, Bedrock). Browser automation via `playwright` + `browser-use`, search via Google/Baidu/DuckDuckGo.
-- **Permission allowlist + session-start health check** → `.claude/settings.json` and `.claude/hooks/session-start.sh`.
+This file provides guidance to Claude Code when working with code in this repository. **Last updated: 2026-06-24**
 
 ## Repository Overview
 
-This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo videos, web apps, and the STARLIGHTMIX Studio web application. The live site is at **`rhythmixapp.com.au`** (GitHub Pages, deploying the repo root).
+This is a **multi-product ecosystem** combining:
 
-### Top-level layout
+1. **BUDDY BUILDER** — AI companion app generator. Create fully-functional buddy apps with a single prompt. Primary focus area with rapid evolution.
+2. **STARLIGHTMIX STUDIO** — AI music video generator with zero-cost LLM captions (free tier aggregation: Groq, Gemini, Mistral, +13 more).
+3. **RHYTHMIX** — 50+ promo videos (HyperFrames compositions) for STARLIGHTMIX product.
+4. **Standalone Apps** — HerdCheck (livestock screening PWA), Reset (recovery app), Codex (learning PWA), plus 50+ buddy app variants.
+5. **Marketing Infrastructure** — Email sequences, templates, monetization layer, analytics.
+6. **Mobile Wrappers** — Capacitor iOS/Android builds for multiple apps.
 
-| Path | What it is |
+The repo hosts:
+- **98 directories** across products
+- **104+ markdown docs** (specs, guides, research)
+- **Multiple monorepos** with independent package.json/lock files
+- **GitHub Pages deployment** (repo root → `rhythmixapp.com.au`)
+- **Cloudflare Pages** for Studio (`studio.starlightmix.com`)
+
+---
+
+## 🚀 Quick Start (For Claude)
+
+### Buddy Builder (Primary Focus)
+
+- **Generate a buddy app** → Run `/dream create a <description> buddy app` or use `agent-builder/` directory
+- **Create spec** → `/spec-quick <description>` → `specs/<slug>/{requirements,design,tasks}.md`
+- **Execute spec** → `/spec-run <slug>` spawns parallel `Agent` calls per task
+- **Publish buddy app** → App lands in `apps/buddy-<name>/index.html` with full Tailwind + shadcn/ui styling
+- **Connect to Claude API** → Buddies use Anthropic SDK with Messages API; see `agent-builder/AUTH-SETUP.md`
+- **Deploy buddy** → Buddy apps are standalone HTML/JS. Deploy via Vercel, Netlify, or Capacitor wrapper.
+
+### STARLIGHTMIX Studio
+
+- **Build Studio locally** → `cd studio && pnpm install && pnpm dev` (Next.js 15, static export)
+- **Deploy to Cloudflare** → Studio CI/CD via `.github/workflows/studio-deploy.yml`
+- **Cost model** → User brings Replicate token; metadata is free (aggregated LLM tier fallback)
+- **Storage** → No server-side audio storage. Everything in `localStorage` + IndexedDB.
+
+### RHYTHMIX Videos
+
+- **Reference** → `rhythmix-overview-60s/` is the canonical 60s HyperFrames example
+- **Create new promo** → `rhythmix-author` skill or `/rhythmix-new [duration] [aspect]`
+- **Brand reference** → `rhythmix-teaser-60s/DESIGN.md` (palette, type, motion, easing)
+- **Script generation** → Step3.7 Flash MCP (`.claude/mcp/stepfun/server.mjs`) or `flash_episode_brief` for TV series
+
+### General Creative Assets
+
+- **Single asset (image/video/music/voice)** → `/dream <description>` auto-routes to right tool
+- **Album/single launch** → `/album-launch <brief>` orchestrates cover + track + promo + landing page in parallel
+- **Landing page/site** → `/site-build <brief>` (sitemap → wireframe → styleguide → design)
+- **RHYTHMIX-branded site** → `/rhythmix-site <brief>` (locks styleguide to brand template)
+
+---
+
+## Directory Structure
+
+### Core Products
+
+| Path | Purpose | Status |
+|---|---|---|
+| **`agent-builder/`** | Buddy Builder platform. Next.js 15 + TypeScript + Tailwind v4 + Vitest. Generates ~50 buddy app variants. | 🔥 **Active development** |
+| **`studio/`** | STARLIGHTMIX Studio. Next.js 15, static export → Cloudflare Pages. Free-tier LLM aggregation for captions. | ✅ Production |
+| **`livestock/`** | HerdCheck — offline PWA for livestock health screening (lameness, mastitis, calving prediction). Full service worker. | ✅ Stable |
+| **`recovery/`** | Reset — recovery app prototype for team sport. iOS-style, full PWA. | ✅ Stable |
+| **`capacitor/`** | Capacitor iOS/Android wrapper for STARLIGHTMIX Studio. Wraps `studio/out/`. | ⚙️ Maintained |
+| **`capacitor-buddies/`** | Capacitor wrapper for buddy apps (multi-app iOS/Android). | ⚙️ Maintained |
+| **`capacitor-herdcheck/`** | Capacitor wrapper for HerdCheck (livestock screening PWA). | ⚙️ Maintained |
+
+### Content & Marketing
+
+| Path | Purpose |
 |---|---|
-| `studio/` | **STARLIGHTMIX Studio** web app — Next.js 15 static export → Cloudflare Pages. Primary software project. |
-| `rhythmix-<name>-<length>/` | HyperFrames video Promo/Cut folders (50+ folders). `rhythmix-overview-60s/` is the canonical example. |
-| `rhythmix-teaser-60s/DESIGN.md` | Brand design system (palette, type, motion). Lock all styleguides to this. |
-| `apps/` | Small standalone HTML apps: `dreams.html`, `hum.html`, `live.html`, `resonate.html`, plus `roomtone/` (PWA) and `untapped/` (portfolio of 10 app concepts with landing pages). |
-| `livestock/` | **HerdCheck** — livestock screening PWA (lameness, mastitis, calving predictor for smallholders). Full offline PWA with service worker, `scoring.js`, `vision.js`, `i18n.js`. |
-| `recovery/` | **Reset** — recovery app prototype for team sport (iOS-style, full PWA). |
-| `recovery-ios/` | Capacitor iOS wrapper for the Reset recovery app. Used by Codemagic iOS build (`codemagic.yaml`). |
-| `capacitor/` | Capacitor iOS wrapper for STARLIGHTMIX Studio. Wraps `studio/out/` via `www/` sync. |
-| `sites/<slug>/` | Site-build pipeline output (sitemap → wireframe → styleguide → HTML pages). |
-| `infra/` | Self-hosted wiki setup: Wiki.js + Postgres + Caddy via Docker Compose (`infra/wiki/`). |
-| `specs/<slug>/` | Spec-driven feature folders (`requirements.md` + `design.md` + `tasks.md`). Current specs: `rhythmix-app/`, `roomtone/`, `codex-app/`. |
-| `launch-kit/` | Launch kit assets for `codex/`, `hum/`, `rhythmix/`. |
-| `video/` | Dormant Remotion 4 + React 19 starter. `MyComposition` returns `null`. Not used for Promos (see ADR-0001). |
-| `text.txt`, `text 2.txt`, `text 3.txt` | Legacy RHYTHMIX landing-page HTML/CSS fragments (pre-pipeline). Reference only. |
-| `*.html` at root | Live marketing site pages served at `rhythmixapp.com.au` (see full list below). |
-| `thumbnails/` | Rendered thumbnail PNGs for the frequency/story video series. |
-| `videos/` | Rendered MP4s linked from `README.md`. |
-| `.agents/skills/` | Source-of-truth skill bundles (hand-edited / synced from upstreams). |
-| `.claude/skills/` | Mostly symlinks into `.agents/skills/` plus local-only skills. |
-| `.claude/agents/` | FleetView sub-agent definition files (one `.md` per agent type). |
-| `docs/` | ADRs (`docs/adr/`), agent docs (`docs/agents/`), security notes (`docs/security/shannon.md`), reference copy (`docs/refs/`). |
-| `scripts/` | Repo-level scripts: `openclaw-install.sh`, `render-thumbnails.mjs`, `build-announcement.mjs`, `build-manifesto.mjs`. |
-| `graphify-out/` | Generated knowledge-graph snapshot. Do not hand-edit. |
-| `content/` | Additional content assets. |
+| **`rhythmix-*-<length>/`** | 50+ HyperFrames video compositions. `rhythmix-overview-60s/` is the canonical reference. Aspect ratios: 16:9 (landscape), 9:16 (portrait `-f` suffix), 1:1 (square). |
+| **`apps/`** | Standalone app concept pages: `dreams.html`, `hum.html`, `live.html`, `resonate.html`, `roomtone/`, `untapped/` (10-app portfolio). |
+| **`sites/<slug>/`** | Site-build pipeline output. Self-contained HTML files with inline CSS + token variables. |
+| **`email-sequences/`** | Email campaign sequences (automation workflows). |
+| **`email-templates/`** | Reusable email templates for transactional + marketing sends. |
+| **`landing/`** | Landing page assets and boilerplate. |
+| **`monetization/`** | Stripe integration, license validation, receipt generation. |
+| **`kids-channel/`** | Bedtime stories and kids-focused content assets. |
+| **`design/`**, **`assets/`**, **`avatars/`** | Design tokens, image assets, character avatars for apps. |
 
-**Reference docs at root:**
-- `CONTEXT.md` — domain language (Promo, Cut, Narration, Hook)
-- `CREATIVE-AI-STACK.md` — iPhone-oriented creative AI toolchain
-- `KOKORO-SETUP.md` — Kokoro TTS installation & usage for HyperFrames narration
-- `SETUP-AGENT-TARS.md` — Agent TARS / UI-TARS desktop setup
-- `SETUP-HERMES.md` — Hermes Agent CLI setup
-- `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
-- `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
-- `AWESOME-AI-HARDWARE.md` — AI hardware reference
-- `SCRIPT.md`, `VIDEOS.md` — script and video asset references
+### Infrastructure & Configuration
 
-## STARLIGHTMIX Studio Web App (`studio/`)
+| Path | Purpose |
+|---|---|
+| **`.claude/`** | Claude Code settings, skills (local + symlinks), agents (FleetView), hooks. |
+| **`.agents/skills/`** | Source-of-truth skill bundles (synced from upstream or hand-edited). |
+| **`.mcp.json`** | MCP server registrations (Replicate, ElevenLabs, Higgsfield, Playwright, Context7, etc.). |
+| **`.github/workflows/`** | CI/CD: GitHub Pages deploy, Studio Cloudflare deploy, Codemagic iOS builds. |
+| **`config/`** | OpenManus TOML configs, deployment configs, environment templates. |
+| **`docs/adr/`** | Architecture Decision Records. **ADR-0001:** HyperFrames over Remotion for Promos. |
+| **`docs/agents/`** | Agent operating docs: issue tracker, triage labels, domain language. |
+| **`docs/security/`** | Security notes, audit guidance. |
+| **`infra/`** | Self-hosted infrastructure: Wiki.js + Postgres + Caddy via Docker Compose. |
+| **`scripts/`** | Repo-level utilities: APK builds, render thumbnails, manifesto generation, license tools. |
+| **`lib/`** | Shared JavaScript/TypeScript utilities (scoring, vision, i18n, etc.). |
 
-A mobile-first web wrapper around the STARLIGHTMIX Studio Node CLI. Lifetime buyers paste their own Replicate token, upload a track, pick a theme, and get a generated AI music video — no installs, no server-side audio storage.
+### Reference Documentation
 
-### Stack
+| File | What it is |
+|---|---|
+| **`CONTEXT.md`** | Domain language (Promo, Cut, Narration, Hook, Buddy, etc.) + key metaphors. Read before proposing changes to messaging. |
+| **`CREATIVE-AI-STACK.md`** | iPhone-driven creative AI toolchain. Free and freemium tools user actually uses. |
+| **`BUDDY-SYSTEM-INTEGRATION.md`** | Buddy system architecture: long-term memory, anonymous telemetry, Claude API integration. |
+| **`BUDDY-FREEMIUM-QUICK-START.md`** | Quick start for Buddy freemium tier (limited API calls, localStorage persistence). |
+| **`EXECUTION_MASTER_GUIDE.md`** | High-level execution and sequencing guide across all projects. |
+| **`COMPLETE_SETUP_GUIDE.md`** | Full setup including all optional dependencies (Kokoro, Voicebox, OpenManus, etc.). |
+| **`KOKORO-SETUP.md`** | Kokoro TTS (lightweight multi-language TTS for HyperFrames narration). |
+| **`VOICEBOX-SETUP.md`** | Voicebox local voice cloning (on-device Mac, zero API cost). |
+| **`SETUP-OPENMANUS.md`** | OpenManus agent framework (autonomous browser automation). |
+| **`MORNING.md`** | Codex of Reality morning brief quickstart. |
+| **`AWESOME-AI-HARDWARE.md`** | AI hardware reference (GPUs, TPUs, edge devices). |
+| **`SCRIPT.md`**, **`VIDEOS.md`** | Script and video asset references. |
 
-- **Next.js 15** (App Router), `output: "export"` (static HTML/JS bundle, no server runtime)
-- **React 19.2.3**, **TypeScript 5.9**, **Tailwind v4**
-- **Vitest** for unit tests
-- Build output → `studio/out/`
-- Deployed to **Cloudflare Pages** (`starlightmix-studio` project) at `studio.starlightmix.com`
+---
 
-### Commands (run from `studio/`)
+## Product Details
 
+### 🤖 Buddy Builder (agent-builder/)
+
+**What it is:** AI companion app generator. Write a one-sentence prompt → get a full working buddy app with UI, Claude API integration, long-term memory, and optional offline Ollama backend.
+
+**Stack:**
+- Next.js 15 (App Router)
+- React 19.2.3, TypeScript 5.9
+- Tailwind v4 + shadcn/ui
+- Vitest for tests
+- Cloudflare Workers (license validation)
+
+**Key files:**
+- `app/` — Next.js app directory (routes, API, layouts)
+- `components/` — React components (inputs, outputs, chat, settings)
+- `lib/` — Utilities (Claude SDK, auth, storage, memory)
+- `templates/` — Buddy app code templates (React/HTML/CSS)
+- `migrations/` — Database schema migrations
+
+**Commands (from `agent-builder/`):**
 ```bash
 pnpm install
-pnpm dev          # next dev — http://localhost:3000
-pnpm build        # static export → studio/out/
-pnpm lint         # next lint + tsc --noEmit
-pnpm test         # vitest run
+pnpm dev              # http://localhost:3000
+pnpm build            # Next.js static export → out/
+pnpm lint             # ESLint + TypeScript check
+pnpm test             # Vitest
 ```
 
-Node 20 + pnpm 9 are the supported toolchain.
+**Deployment:**
+- Preview: any non-main branch → `https://<branch>.starlightmix-studio.pages.dev`
+- Production: `main` branch with manual approval on `production` GitHub Environment
 
-### Cloudflare Workers (`studio/workers/`)
+**Generated buddy apps:**
+- Live at `apps/buddy-<name>/index.html`
+- Standalone HTML/JS files with inline Tailwind + shadcn/ui
+- Copy to Capacitor wrapper for iOS/Android
 
-Two sibling Workers deployed independently of the Pages app:
+**Claude API Integration:**
+- Users paste their own API key in settings
+- Buddies use Anthropic SDK with `useChat` or `useCompletion` hooks
+- Long-term memory persisted in localStorage (encrypted with user's password)
+- Optional: Ollama backend for private local inference
 
-- `studio/workers/license/` — License validation Worker at `license.studio.starlightmix.com/api/license`. Uses a KV namespace (`LICENSE_CACHE`) and a Gumroad product secret set via `wrangler secret put GUMROAD_PRODUCT_ID`.
-- `studio/workers/replicate-proxy/` — Optional CORS proxy to Replicate for the browser client.
+### 🎵 STARLIGHTMIX Studio (studio/)
 
-Each worker has its own `wrangler.toml`. Deploy with `wrangler deploy` from the worker's directory.
+**What it is:** Web wrapper for STARLIGHTMIX Studio CLI. Users upload a track, pick a theme → get an AI music video with free captions.
 
-### Studio deployment
+**Cost model:**
+- Caption + metadata generation: **$0** (free tier aggregation)
+- Video generation: user's Replicate token (~$0.05-0.50 per video)
+- UI shows: "You saved $0.02!"
 
-Deploys are driven by `.github/workflows/studio-deploy.yml` (Cloudflare wrangler-action):
+**Tech Stack:**
+- Next.js 15 with static export (`output: "export"`)
+- React 19, TypeScript, Tailwind v4
+- Vitest tests
+- No server-side audio storage
+- Cloudflare Workers for license validation (`studio/workers/license/`)
 
-| Trigger | Result |
-|---|---|
-| Push to any non-`main` branch touching `studio/**` | Auto preview at `https://<branch>.starlightmix-studio.pages.dev` |
-| Push to `main` touching `studio/**` | Build runs; deploy waits for manual approval on the `production` GitHub Environment, then publishes to `studio.starlightmix.com` |
+**Commands (from `studio/`):**
+```bash
+pnpm install
+pnpm dev              # http://localhost:3000
+pnpm build            # → out/ (static HTML/JS)
+pnpm test             # Vitest
+```
 
-Required GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`. Required GitHub Environment: `production` with required reviewers.
+**Free LLM tier aggregation:**
+- Primary: Groq LPU inference (free tier)
+- Fallback chain: Gemini, Mistral, Grok-2, Pplx, +8 more
+- Graceful degradation: if all free tiers exhausted, request Claude API call (costs $0.01-0.05)
 
-### What Studio is NOT
+**Deployment:**
+- Cloudflare Pages at `studio.starlightmix.com`
+- CI/CD: `.github/workflows/studio-deploy.yml`
+- Auto preview on PR; production requires manual approval
 
-- Not a hosted music generator — Replicate fees are on the user's own token.
-- Not a content host — no audio, plans, or MP4s uploaded to our infra; everything in `localStorage` + IndexedDB.
+### 🎬 RHYTHMIX Promo Videos
 
-## Marketing Site (GitHub Pages — `rhythmixapp.com.au`)
+**Canon:** `rhythmix-overview-60s/` — 60s landscape HyperFrames composition. Copy structure for new promos.
 
-The repo root IS the site. GitHub Pages serves it directly via `.github/workflows/deploy-pages.yml` (push to `main` → deploy). All root `.html` files are live pages:
-
-- `index.html` — main landing page
-- `studio.html` — Studio product page
-- `features.html`, `rhythmix.html` — feature/product overview
-- `resonance.html` — RESONANCE frequency healing PWA
-- `frequency.html` — Frequency app
-- `downloads.html` — video download page
-- `download.html` — single-item download page
-- `dreams-app.html`, `hum-app.html`, `hum.html`, `live-app.html`, `resonate-app.html` — individual app pages
-- `launch.html`, `launch-section.html` — launch campaign pages
-- `ltx-studio.html` — LTX Studio page
-- `members.html` — members / community page
-- `install.html` — install guide
-- `rhythmix-preview.html`, `thumbnail.html` — preview/thumbnail utilities
-- `founder.html`, `privacy.html`, `terms.html`, `refunds.html`, `thank-you.html` — supporting pages
-
-CNAME: `rhythmixapp.com.au`.
-
-## Apps (`apps/`)
-
-Standalone web apps (separate from the main marketing site):
-
-- `apps/dreams.html`, `apps/hum.html`, `apps/live.html`, `apps/resonate.html` — individual app concept pages
-- `apps/roomtone/` — Roomtone PWA (full service worker, manifest, icons)
-- `apps/untapped/` — Portfolio of 10 app concepts: TYMPAN, HERD, AXLE, DOCKET, LULL, PLUMB, RACK, SOLE, SPOT, STACK. Each has a `*.html` prototype, `*-landing.html`, and `*.md` brief.
-
-## Standalone Projects
-
-### HerdCheck (`livestock/`)
-
-Phone-camera screening app for smallholder dairy and small-ruminant farmers. Targets ~500M smallholders globally with no existing tooling. Built as an offline-first PWA.
-
-**Checks**: lameness (Sprecher 5-point locomotion scale), mastitis (Canvas image heuristics + visual signs), calving predictor (gestation day + behavioural signs).
-
-**Key files**: `index.html`, `app.js`, `app.css`, `db.js`, `i18n.js`, `scoring.js`, `vision.js`, `sw.js`, `manifest.webmanifest`.
-
-**Species supported**: cattle (283d), buffalo (310d), sheep (147d), goat (150d).
-
-### Reset — Recovery App (`recovery/`)
-
-iOS-style recovery tracking prototype for team sport. Full PWA with `index.html` and offline capability. Served at `/recovery/` from repo root.
-
-### Codex of Reality (`sites/codex-of-reality/`)
-
-Full site and PWA built via the site-build pipeline. Includes:
-- `home.html` — 9-section landing page with embedded Coherence Engine demo
-- `app.html` — full app
-- `launch/` — launch video assets and voice generation scripts
-- `sw.js`, `PRIVACY.md`, `TERMS.md`, `sitemap.md`, `styleguide.md`, `wireframes/`
-
-See `MORNING.md` for a quickstart guide to running it locally.
-
-## HyperFrames Video Pipeline
-
-Promos are authored as HyperFrames HTML compositions (per ADR-0001 — do NOT reach for Remotion for new Promos).
-
-### Anatomy of a Cut folder
-
+**File structure (per cut):**
 ```
 rhythmix-<name>-<length>/
-├── index.html          # GSAP + CSS composition
-├── script.txt          # spoken narration text
-├── narration.wav       # TTS audio (ElevenLabs)
-├── hyperframes.json    # {"id":"...", "width":1920, "height":1080}
-├── meta.json           # {"version":"0.4.42"}
-├── package.json        # scripts: dev, check, render, publish
-├── gsap.min.js         # local GSAP bundle
-├── renders/            # optional: named render outputs
-├── DESIGN.md           # optional: cut-specific design notes (venue series)
-└── rhythmix-<name>.mp4 # rendered output (if present)
+├── index.html           # GSAP + CSS composition
+├── script.txt           # Spoken narration text
+├── narration.wav        # TTS audio (Kokoro or ElevenLabs)
+├── hyperframes.json     # {"id":"...", "width":1920, "height":1080}
+├── meta.json            # {"version":"0.4.42"}
+├── package.json         # Scripts: dev, check, render, publish
+├── gsap.min.js          # GSAP library bundle
+├── DESIGN.md            # Optional: cut-specific design notes
+├── renders/             # Optional: named render outputs
+└── rhythmix-<name>.mp4  # Rendered output (if present)
 ```
 
-### HyperFrames commands (run from the Cut folder)
-
+**HyperFrames commands (from cut folder):**
 ```bash
-npx --yes hyperframes@0.4.42 preview   # browser preview
-npx --yes hyperframes@0.4.42 lint      # validate composition
-npx --yes hyperframes@0.4.42 tts       # generate narration.wav (needs kokoro-onnx)
-npx --yes hyperframes@0.4.42 render    # render to MP4 (needs ffmpeg)
-npx --yes hyperframes@0.4.42 publish   # push to registry
+npx --yes hyperframes@0.4.42 preview   # Browser preview
+npx --yes hyperframes@0.4.42 lint      # Validate composition
+npx --yes hyperframes@0.4.42 tts       # Generate narration.wav (needs Kokoro)
+npx --yes hyperframes@0.4.42 render    # Render to MP4 (needs ffmpeg)
+npx --yes hyperframes@0.4.42 publish   # Push to registry
 ```
 
-### Aspect ratios
+**Cut naming conventions:**
+- `rhythmix-<name>-60s` — Standard 60s landscape promo
+- `rhythmix-<name>-30s` — 30s landscape cut
+- `rhythmix-<name>-f` — Portrait variant (TikTok/Reels, 9:16)
+- `rhythmix-s1-` through `rhythmix-s5-` — 5-scene series (landscape)
+- `rhythmix-s1-*-f` through `rhythmix-s5-*-f` — Portrait variants
+- `rhythmix-venue-*` — Venue sub-brand cuts (each has own `DESIGN.md`)
 
-| Cut style | Width × Height | Usage |
-|---|---|---|
-| Landscape 16:9 | 1920×1080 | YouTube, LinkedIn |
-| Portrait 9:16 | 1080×1920 | TikTok, Reels, Shorts |
-| Square 1:1 | 1080×1080 | Instagram feed |
+**Aspect ratios:**
+- **16:9** (1920×1080) — YouTube, LinkedIn
+- **9:16** (1080×1920) — TikTok, Reels, Shorts
+- **1:1** (1080×1080) — Instagram feed
 
-`rhythmix-overview-60s/` (landscape) is the canonical reference.
+**Brand reference:**
+- Design system: `rhythmix-teaser-60s/DESIGN.md`
+- Palette, typography, motion eases locked in brand doc
+- All new styleguides → inherit brand system
 
-### Cut series conventions
+---
 
-| Series prefix | Description |
-|---|---|
-| `rhythmix-<name>-60s` | Standard 60s landscape Promo |
-| `rhythmix-<name>-30s` | 30s landscape cut |
-| `rhythmix-<name>-f` | Suffix `-f` = portrait/vertical (TikTok/Reels) variant of a landscape cut |
-| `rhythmix-s1-` through `rhythmix-s5-` | 5-scene series (overview, money, tools, vs, pricing) — landscape |
-| `rhythmix-s1-*-f` through `rhythmix-s5-*-f` | Portrait variants of the S-series |
-| `rhythmix-v1-` through `rhythmix-v5-` | V-series (alternate cuts of same scenes) |
-| `rhythmix-venue-*` | Venue sub-brand cuts (disco, jazz, rave, rock) — each has its own `DESIGN.md` |
+## 🛠 Tools, MCP Servers & Skills
 
-## Remotion Video Project (`video/`) — Dormant
-
-Remotion 4 + React 19 + Tailwind v4 starter. `MyComposition` returns `null`. Kept as an experiment. Do not add new Promos here — see ADR-0001.
-
-```bash
-# Run from video/
-npm i && npm run dev   # Remotion Studio preview
-```
-
-## iOS / Capacitor
-
-Two separate Capacitor iOS wrappers exist:
-
-| Directory | Wraps | Used by |
-|---|---|---|
-| `recovery-ios/` | `recovery/` app | Codemagic iOS build (`codemagic.yaml`) |
-| `capacitor/` | `studio/out/` (STARLIGHTMIX Studio) | Manual or Appflow |
-
-**capacitor commands** (run from `capacitor/`):
-
-```bash
-pnpm build:web    # build studio → studio/out/
-pnpm sync:web     # copy studio/out/ to www/ and cap sync
-pnpm build        # both above
-pnpm open:ios     # open in Xcode
-```
-
-## Self-hosted Infrastructure (`infra/`)
-
-`infra/wiki/` — Wiki.js + Postgres behind Caddy (auto-HTTPS) via Docker Compose.
-
-```bash
-# On a VPS with Docker installed:
-cd infra/wiki
-docker compose up -d
-```
-
-Requires: VPS with public IP, domain A-record pointing at it, Caddy config in `infra/Caddyfile`.
-
-## Skills
-
-Skills live in two shapes:
-
-- **Synced / hand-written** — source in `.agents/skills/<name>/`, symlinked into `.claude/skills/<name>`. Do not hand-edit synced skills; update upstream and re-record the hash in `skills-lock.json`.
-- **Local-only** — live directly in `.claude/skills/<name>/` with no counterpart in `.agents/skills/`.
-
-### Pipeline skills (video / creative)
-
-- `hyperframes`, `hyperframes-cli`, `hyperframes-registry` — HyperFrames HTML video workflow.
-- `remotion`, `remotion-to-hyperframes` — Remotion authoring + porting to HyperFrames.
-- `website-to-hyperframes` — capture a website into a HyperFrames video.
-- `higgsfield-to-hyperframes` — Higgsfield MCP → HyperFrames: prompt → poll → download → wire-in.
-- `replicate` — Replicate MCP model picker (FLUX 1.1 Pro / HunyuanVideo / MusicGen defaults).
-- `gsap` — GSAP animation reference for HyperFrames.
-- `rhythmix-author` — End-to-end RHYTHMIX promo: script → TTS → composition → render → publish.
-
-### Site-build skills
-
-- `/site-build <brief>` — four-stage pipeline orchestrator.
-- `/site-sitemap`, `/site-wireframe`, `/site-styleguide`, `/site-design` — individual stages.
-- `/rhythmix-site <brief>` — RHYTHMIX-aware wrapper (locks styleguide to `rhythmix-teaser-60s/DESIGN.md`).
-
-### Spec / planning skills
-
-- `/spec-quick <description>` — generate `specs/<slug>/{requirements,design,tasks}.md`.
-- `/spec-analyze <slug>` — surface ambiguities/contradictions; rewrites `requirements.md` in place.
-- `/spec-run <slug>` — execute tasks in parallel waves of isolated `Agent` calls.
-- `/spec-to-repo` — scaffold a repo from an existing spec.
-- `/rhythmix-spec <brief>` — RHYTHMIX campaign spec wrapper.
-- `/to-prd`, `/to-issues`, `/triage` — chat → PRD → GitHub issues.
-
-### Engineering skills
-
-- `/grill-with-docs` — interview a plan; updates `CONTEXT.md` + `docs/adr/`.
-- `/diagnose` — disciplined bug/perf-regression loop.
-- `/tdd` — red-green-refactor cycle.
-- `/improve-codebase-architecture`, `/zoom-out` — refactor/navigation.
-- `/prototype`, `/grill-me`, `/handoff`, `/caveman`, `/write-a-skill` — productivity.
-- `/claude-api` — build/debug Claude API / Anthropic SDK apps with prompt caching.
-- `/frontend-design` — production-grade UI, avoids generic AI aesthetics.
-- `/apple-hig-expert` — Apple HIG guidance (iOS/macOS/visionOS, Liquid Glass aesthetics).
-- `/docker-development` — Docker-based dev workflow.
-- `/using-git-worktrees` — git worktree workflow for parallel feature branches.
-- `/finishing-a-development-branch` — pre-merge checklist: lint, tests, changelog, PR.
-- `/verification-before-completion` — verify changes actually work before reporting done.
-- `/dispatching-parallel-agents` — fan-out pattern for 2+ independent tasks.
-- `/subagent-driven-development` — orchestrate multi-agent development tasks.
-- `/executing-plans` — structured plan-then-execute workflow.
-
-### Product / SaaS skills
-
-- `/product-analytics`, `/product-discovery`, `/product-strategist` — product thinking.
-- `/saas-metrics-coach`, `/saas-scaffolder` — SaaS-specific development.
-- `/seo-audit`, `/slo-architect` — SEO and reliability engineering.
-- `/experiment-designer`, `/feature-flags-architect` — experimentation.
-- `/observability-designer`, `/runbook-generator` — ops.
-- `/landing`, `/landing-page-generator` — landing page creation.
-- `/ui-design-system` — design system authoring.
-- `/revenue-operations`, `/financial-analyst` — business analytics.
-- `/competitive-teardown`, `/customer-success-manager` — go-to-market.
-- `/env-secrets-manager` — environment and secrets management.
-- `/prompt-governance`, `/llm-cost-optimizer` — LLM operations.
-- `/dependency-auditor`, `/data-quality-auditor` — code/data hygiene.
-- `/gdpr-audit-prep` — compliance.
-
-### Creative / launch slash commands
-
-- `/dream <description>` — one-shot asset (image, video, music, voice, site) routed to the right tool.
-- `/album-launch <brief>` — fan-out four parallel agents: cover art, music track, 60s video, landing section.
-- `/rhythmix-new [duration] [aspect] [angle]` — end-to-end promo: script → TTS → HyperFrames → render → downloads page.
-
-### Hugging Face skills
-
-`hf-cli`, `huggingface-best`, `huggingface-papers`, `huggingface-datasets` — synced from `huggingface/skills` into `.agents/skills/`. Tracked in `skills-lock.json`.
-
-### OpenClaw CLI skills
-
-Installed via `bash scripts/openclaw-install.sh` on a machine with unrestricted egress (ClawHub blocked from cloud sandbox). Queue: `ai-video-editor-motion-graphics`, `self-improving-agent`, `voice-wake-say`, `voice-ai-voices`, `azure-ai-voicelive-py`, `app-builder`, `deploy-agent`.
-
-## FleetView Sub-agents (`.claude/agents/`)
-
-The `.claude/agents/` directory contains sub-agent definition files for FleetView's specialized agent roster (ab-test-analyzer, code-reviewer, seo-writer, social-media, etc.). These are loaded by the Claude Code harness and appear as selectable sub-agent types when spawning `Agent` tool calls. Do not hand-edit these — they are managed by the FleetView platform. When spawning subagents, pick the type whose description matches the task.
-
-## MCP Servers (`.mcp.json`)
+### MCP Servers (`.mcp.json`)
 
 | Key | Command | Purpose |
 |---|---|---|
-| `creative-stack` | `node .claude/mcp/creative-stack/server.mjs` | Replicate + ElevenLabs tools (image, video, music, TTS). Enabled in `settings.json`. |
-| `higgsfield` | `higgsfield-mcp` | Higgsfield Soul (text-to-image) + DOP (image-to-video). Needs `.env`: `HIGGSFIELD_API_KEY`, `HIGGSFIELD_SECRET`. |
-| `pollinations` | `npx -y @pollinations/model-context-protocol` | Free tier: FLUX, Sana, Nova Reel, Suno v5, Qwen3-TTS. Egress-gated in sandbox. |
-| `playwright` | `npx -y @playwright/mcp@latest` | Base Playwright browser automation. |
-| `claude-playwright` | `node node_modules/claude-playwright/dist/mcp/server.cjs` | Session/profile/test management on top of Playwright. Run `npm install` first. |
-| `context7` | HTTP `https://mcp.context7.com/mcp` | Current library documentation. Prefer over training knowledge. |
-| `openmanus` | `python -m app.mcp.server` (from `/tmp/OpenManus`) | LLM-driven browser automation agent. Tools: navigate, click, fill, extract, screenshot, search. Config: `.mcp.json`. Setup: `OPENMANUS-MCP-INTEGRATION.md`. |
+| **creative-stack** | `node .claude/mcp/creative-stack/server.mjs` | Replicate + ElevenLabs (image, video, music, TTS). Enable in settings.json |
+| **higgsfield** | `pip install git+https://github.com/geopopos/geo_higgsfield_ai_mcp` | Soul (text→image), DOP (image→video), talking-head, character refs. Env: `HIGGSFIELD_API_KEY`, `HIGGSFIELD_SECRET` |
+| **pollinations** | `npx -y @pollinations/model-context-protocol` | Free tier: FLUX, Sana, Nova Reel, Suno v5, Qwen3-TTS. No key required. (⚠️ Sandbox egress-gated) |
+| **playwright** | `npx -y @playwright/mcp@latest` | Base browser automation. DEFAULT_BASE_URL: `http://localhost:8000` |
+| **claude-playwright** | `node node_modules/claude-playwright/dist/mcp/server.cjs` | Advanced Playwright (session, profile, test mgmt). Run `npm install` first |
+| **context7** | HTTP `https://mcp.context7.com/mcp` | Real-time library/API documentation. **Always prefer Context7 for setup, version-specific code, API calls** — without user asking. Free key: `CONTEXT7_API_KEY` in `.env` |
+| **openmanus** | `python -m app.mcp.server` (from `/tmp/OpenManus`) | LLM-driven browser agent. Tools: navigate, click, fill, extract, screenshot, search. Setup: `OPENMANUS-MCP-INTEGRATION.md` |
+| **stepfun** | `.claude/mcp/stepfun/server.mjs` | Step3.7 Flash API (script + story generation). Tools: `flash_script`, `flash_chat`, `flash_episode_brief`. Env: `STEP_API_KEY`, `STEP_BASE_URL` |
 
-**Rule:** Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging. Use OpenManus for autonomous browser tasks, research automation, and multi-step web workflows — particularly useful for RHYTHMIX content research and market intelligence gathering.
+### Claude Code Skills
 
-## CI / Deployment
+**Video/Creative Pipeline:**
+- `/rhythmix-new [duration] [aspect] [angle]` — End-to-end promo (script → TTS → HyperFrames → render)
+- `/rhythmix-author` — Script → composition → render workflow
+- `/dream <description>` — One-shot asset (routes to image/video/music/voice/site tool)
+- `/album-launch <brief>` — Fan-out 4 agents: cover + track + promo + landing page
+- `rhythmix-site`, `site-build`, `/site-sitemap`, `/site-wireframe`, `/site-styleguide`, `/site-design` — Landing page pipeline
 
-### GitHub Pages (`deploy-pages.yml`)
+**Spec & Planning:**
+- `/spec-quick <description>` — Generate `specs/<slug>/{requirements,design,tasks}.md`
+- `/spec-analyze <slug>` — Surface ambiguities, rewrite requirements
+- `/spec-run <slug>` — Execute tasks in parallel Agent waves
+- `/spec-to-repo` — Scaffold repo from spec
+- `/rhythmix-spec <brief>` — RHYTHMIX campaign spec wrapper
 
-Triggers on push to `main` or `workflow_dispatch`. Deploys the entire repo root to GitHub Pages → `rhythmixapp.com.au`.
+**Engineering:**
+- `/code-review`, `/simplify` — Code quality & refactoring
+- `/verify` — Manual testing (run app, test changes)
+- `/frontend-design` — Production UI (avoids generic AI aesthetics)
+- `/apple-hig-expert` — Apple HIG guidance (iOS/macOS)
+- `/docker-development` — Docker-based dev workflow
+- `/using-git-worktrees` — git worktree workflow for parallel branches
+- `/finishing-a-development-branch` — Pre-merge checklist
+- `/tdd` — Red-green-refactor cycle
+- `/diagnose` — Disciplined bug/perf regression loop
 
-### Studio (`studio-deploy.yml`)
+**Product & SaaS:**
+- `/product-analytics`, `/product-discovery`, `/seo-audit`, `/slo-architect`
+- `/experiment-designer`, `/feature-flags-architect`, `/landing-page-generator`
+- `/llm-cost-optimizer`, `/prompt-governance`
 
-Deploys `studio/out/` (Next.js static export) to Cloudflare Pages `starlightmix-studio`. Preview on any non-main branch; production requires manual approval on the `production` GitHub Environment.
+**Hugging Face:**
+- `hf-cli`, `huggingface-best`, `huggingface-papers`, `huggingface-datasets` (synced from upstream; tracked in `skills-lock.json`)
 
-### Codemagic (`codemagic.yaml`)
+---
 
-iOS Capacitor build for `recovery-ios/`. Unsigned debug build on `mac_mini_m2`. Artifacts emailed to `wiggjamie9@gmail.com`. Triggered manually or via Codemagic dashboard.
+## Development Workflows
 
-## Dev Container (`.devcontainer/`)
+### Adding a New Buddy App
 
-VS Code / GitHub Codespace container based on `mcr.microsoft.com/devcontainers/javascript-node:20`. Post-create script (`post-create.sh`) installs `ffmpeg` + `aubio-tools` and sets up the RHYTHMIX Studio CLI for a one-command demo (`bash rhythmix-studio/demo.sh`).
+1. **Create spec** → `/spec-quick "Create a meditation buddy app for sleep"`
+2. **Review & refine** → `/spec-analyze <slug>` to surface contradictions
+3. **Execute** → `/spec-run <slug>` spawns parallel Agent per task
+4. **Generate** → Run `/dream <description> buddy app` or manually edit `agent-builder/templates/`
+5. **Deploy** → Output → `apps/buddy-<name>/index.html`
+6. **Wrap (optional)** → Copy to `capacitor-buddies/` for iOS/Android
 
-## Specs (`specs/`)
+### Adding a New RHYTHMIX Promo
 
-Each `specs/<slug>/` contains `requirements.md` (stable IDs `R1`, `R2`, …), `design.md`, `tasks.md` (stable IDs `T1`, `T2`, …).
+1. **Write script** → Step3.7 Flash (`flash_script` tool) or manual script in `script.txt`
+2. **Generate TTS** → `npx --yes hyperframes@0.4.42 tts` (needs Kokoro)
+3. **Compose** → Copy `rhythmix-overview-60s/` structure, edit `index.html` (GSAP + CSS)
+4. **Preview** → `npx --yes hyperframes@0.4.42 preview`
+5. **Render** → `npx --yes hyperframes@0.4.42 render` (needs ffmpeg)
+6. **Publish** → Commit to repo; GitHub Actions auto-deploys
 
-Current specs:
-- `specs/rhythmix-app/` — STARLIGHTMIX Studio web app (has `lighthouse.md`, `spike-cors.md`).
-- `specs/roomtone/` — Roomtone PWA.
-- `specs/codex-app/` — Codex app concept.
+### Building a Landing Page
 
-See `specs/README.md` for lifecycle and file conventions.
+1. **Define structure** → `/site-sitemap <brief>` → `sites/<slug>/sitemap.md`
+2. **Wireframe pages** → `/site-wireframe <slug>` → `sites/<slug>/wireframes/`
+3. **Design tokens** → `/site-styleguide <slug>` → `sites/<slug>/styleguide.md`
+4. **Render pages** → `/site-design <slug>` → `sites/<slug>/*.html`
+5. **Review** → `python3 -m http.server 8000 --bind 127.0.0.1 --directory sites/<slug>`
+6. **Promote** → Rename to root `.html` when ready for production
 
-## Sites (`sites/`)
+### Email Campaign Workflow
 
-Site-build pipeline output (sitemap → wireframes → styleguide → HTML pages per page). Self-contained HTML files with inline styles and `--token` CSS vars. Preview with `python3 -m http.server 8000 --bind 127.0.0.1 --directory sites/<slug>`.
+1. **Create template** → Write `.html` in `email-templates/`
+2. **Test** → Check responsive rendering (mobile + desktop)
+3. **Sequence** → Link sequences in `email-sequences/campaign-<name>.json`
+4. **Schedule** → Use existing automation (Zapier or webhook-based)
+5. **Monitor** → Analytics tracked in `analytics/` directory
 
-Current sites:
-- `sites/codex-of-reality/` — Codex of Reality PWA (home + app + launch assets). Full production site.
-- `sites/rhythmix/`, `sites/hum/`, `sites/codex/` — earlier pipeline outputs.
+---
 
-See `sites/README.md`.
+## GitHub Workflow
 
-## Docs
+### Deployment Branches
 
-- `docs/adr/0001-hyperframes-over-remotion-for-promos.md` — ADR-0001. Read before reasoning about the video pipeline.
-- `docs/agents/domain.md`, `issue-tracker.md`, `triage-labels.md` — agent operating procedures for GitHub Issues.
-- `docs/security/shannon.md` — Shannon AI pentester (Keygraph) reference. Relevant for auditing the Studio Workers or license endpoint, **not** for static marketing pages.
-- `docs/refs/` — Reference copy and voiceover scripts.
+**Primary branches:**
+- `main` — Production. Push here for immediate GitHub Pages deploy (`rhythmixapp.com.au`).
+- `claude/claude-md-docs-dh1411` — Feature branch (as specified in session context).
 
-## Conventions
+**Pull Requests:**
+- Do NOT create PR unless explicitly asked by user
+- When created: CI runs (lint, tests, build checks)
+- Studio/Agent-Builder require `production` GitHub Environment approval for main deploy
 
-- **New Promos** → HyperFrames folder at repo root (`rhythmix-<name>-<length>/`). Do not use Remotion.
-- **New site pages** → `sites/<slug>/` via pipeline, then promote to root `.html` files when ready for production.
-- **New app concepts** → `apps/<name>/` or `apps/<name>.html`. Standalone non-RHYTHMIX apps (livestock, recovery) go in their own root directory.
-- **Skill edits** → edit in `.agents/skills/<name>/` (the symlink target), never directly in `.claude/skills/` symlinks. Local-only skills are edited directly in `.claude/skills/<name>/`.
-- **Lockfile** → keep `video/package-lock.json` in sync with `video/package.json`. Keep root `package-lock.json` in sync too.
-- **Gitignore** → `node_modules/`, `.remotion/`, `graphify-out/cache/`, `.claude-playwright/` are excluded.
-- **Content warnings** → `README.md` flags that `tiktok-reels-shorts.mp4`, `instagram-facebook.mp4`, `youtube.mp4` contain unverified metrics/testimonials. Only `teaser-coming-soon*.mp4` is safe to publish as-is.
+### CI/CD Workflows
 
-## Subagent Model Routing
+| Workflow | Trigger | Result |
+|---|---|---|
+| **deploy-pages.yml** | Push to `main` or `workflow_dispatch` | Deploy repo root to GitHub Pages (`rhythmixapp.com.au`) |
+| **studio-deploy.yml** | Push touching `studio/**` | Auto preview on PR; production on main with approval |
+| **codemagic.yaml** | Manual or Codemagic dashboard | Unsigned debug iOS build (`recovery-ios/`), emailed to `wiggjamie9@gmail.com` |
 
-When spawning subagents via the `Agent` tool, default to **Haiku** for simple mechanical tasks and **Sonnet** (or omit for default) for tasks requiring judgment or creativity. This keeps parallel-task costs low.
+---
 
-| Use Haiku (`model: "haiku"`) | Use Sonnet (default) |
-|---|---|
-| File reads, grep, directory scans | Writing code or components |
-| Sitemap / README / config edits | Spec generation and analysis |
-| Simple search queries | Video script / copy writing |
-| Dependency / lockfile checks | Design decisions |
-| Formatting, lint fixes | Debugging complex issues |
-| Uploading artifacts, git ops | Any task needing screenshots / vision |
+## Configuration & Setup
 
-**Never** use Haiku for tasks involving images, screenshots, or UI review — it's text-only.
+### Environment Variables
 
-## Agent Skills (GitHub Issues)
+Create `.env` from `.env.example`:
 
-- **Issue tracker** → GitHub Issues on `wiggjamie9-afk/jamie-wigg`. See `docs/agents/issue-tracker.md`.
-- **Triage labels** → `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
-- **Domain docs** → `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`. Read before introducing new terms.
+```bash
+# API Keys
+REPLICATE_API_TOKEN=...              # For Replicate image/video/music
+ELEVENLABS_API_KEY=...               # For ElevenLabs TTS
+HIGGSFIELD_API_KEY=...               # For Higgsfield Soul (text→image)
+HIGGSFIELD_SECRET=...                # Higgsfield API secret
+STEP_API_KEY=...                     # Step3.7 Flash API
+STEP_BASE_URL=https://api.stepfun... # Flash API endpoint
+CONTEXT7_API_KEY=...                 # Context7 docs MCP
+
+# Optional (for local Kokoro TTS)
+KOKORO_ENDPOINT=http://127.0.0.1:8880
+
+# Optional (for local Voicebox)
+VOICEBOX_ENDPOINT=http://127.0.0.1:17493
+
+# Buddy freemium tier
+BUDDY_MAX_API_CALLS_PER_DAY=50
+```
+
+### Claude Code Settings
+
+**`.claude/settings.json`:**
+- Permission allowlist (Bash, MCP tools)
+- Session-start hooks (health checks)
+- MCP server configuration
+
+**`.claude/settings.local.json`:**
+- Local API keys (Replicate, ElevenLabs, etc.)
+- Model overrides
+- Performance tuning
+
+**`.claude/hooks/session-start.sh`:**
+- Auto-checks for missing dependencies (ffmpeg, Kokoro, etc.)
+
+---
+
+## Conventions & Best Practices
+
+### Code Style
+
+- **JavaScript/TypeScript** — Prettier + ESLint (auto-format on save)
+- **React** — Function components + hooks (no class components)
+- **Database** — Migrations in `migrations/` with timestamps
+- **Tests** — Vitest, run via `pnpm test` or `npm test`
+- **Comments** — Minimal; only WHY (not WHAT). No multi-paragraph docstrings.
+
+### File Organization
+
+- **New features** → Create in isolated directory/branch
+- **Shared utilities** → `lib/` (JavaScript) or `components/` (React)
+- **Styles** → Tailwind utility classes (no CSS files, except global)
+- **Tests** → Co-located with code or in `__tests__/` directory
+
+### Git Conventions
+
+- **Commit messages** — Clear, imperative mood. Reference task IDs if applicable.
+- **Branches** — Feature branches → `feature/<name>`, bug fixes → `fix/<name>`, docs → `docs/<name>`
+- **Push** → `git push -u origin <branch>` on first push; retry up to 4 times with exponential backoff on failure
+- **Do NOT** — Force-push to main, skip hooks, disable signing
+
+### Documentation
+
+- **Design decisions** → `docs/adr/` (Architecture Decision Records)
+- **Domain language** → Keep `CONTEXT.md` up-to-date
+- **Setup instructions** → Reference `.env.example` + setup guides
+- **Change logs** → Reference in PRs, not in code comments
+
+### Buddy App Generation
+
+When generating buddy apps:
+1. **Use Claude API**, not mock data
+2. **Long-term memory** — Store in encrypted localStorage, JSON format
+3. **Graceful degradation** — Work offline or with fallback LLMs
+4. **Styling** — Tailwind v4 + shadcn/ui (never write raw CSS)
+5. **Testing** — Basic happy-path test in `__tests__/` folder
+
+### Video Asset Guidelines
+
+- **RHYTHMIX promos** — Lock brand to `rhythmix-teaser-60s/DESIGN.md`
+- **Safe to publish** — Only `teaser-coming-soon*.mp4` (no metrics, testimonials, or pricing)
+- **Aspect ratios** — Match use case (16:9 YouTube, 9:16 TikTok, 1:1 Instagram)
+- **Narration** — Use Kokoro TTS (multi-language, voice blending) or ElevenLabs (studio-grade)
+
+---
+
+## Troubleshooting & Common Tasks
+
+### "HyperFrames composition won't render"
+
+1. Check `hyperframes.json` has correct width/height
+2. Verify `gsap.min.js` is present (copy from another Cut folder if missing)
+3. Run `npx --yes hyperframes@0.4.42 lint` to validate
+4. Ensure ffmpeg is installed: `ffmpeg -version`
+
+### "Studio build fails"
+
+1. `cd studio && pnpm install` (ensure deps up-to-date)
+2. Check for TypeScript errors: `pnpm lint`
+3. Verify Node 20+: `node --version`
+4. Clear cache: `rm -rf .next out`
+
+### "Buddy app won't connect to Claude API"
+
+1. Verify `REPLICATE_API_TOKEN` in `.env` (for Replicate) or `ANTHROPIC_API_KEY` for Claude direct
+2. Check network: `curl https://api.anthropic.com/status`
+3. Review browser console for CORS errors
+4. Test with `/dream` first to verify credentials
+
+### "Missing HyperFrames or Kokoro"
+
+1. HyperFrames: `npx --yes hyperframes@0.4.42 --version`
+2. Kokoro: `pip install kokoro-tts` then `kokoro-tts --version`
+3. ffmpeg: `brew install ffmpeg` (macOS) or `apt-get install ffmpeg` (Linux)
+
+### "Permission denied on git operations"
+
+1. Verify SSH key is added to GitHub: `ssh -T git@github.com`
+2. If using HTTPS: `git config --global credential.helper osxkeychain` (macOS)
+3. For CLI: ensure PAT token has `repo` scope
+
+---
+
+## Model Defaults & Routing
+
+When spawning subagents via the `Agent` tool:
+
+| Task Type | Use Model | Notes |
+|---|---|---|
+| File reads, grep, config edits | Haiku | Low-context mechanical tasks |
+| Video scripts, copy, design | Sonnet or Opus | Creativity & judgment required |
+| Bug debugging, complex logic | Sonnet | Deep reasoning needed |
+| Screenshots, UI review | Sonnet+ | Vision-required tasks (Haiku is text-only) |
+| Parallel mechanical tasks | Haiku | Keep token cost low in fan-out |
+
+**Default:** Omit `model` parameter to use session default (typically Sonnet). Always omit for tasks needing vision.
+
+---
+
+## Reference Documentation at Root
+
+All of these are read by Claude when planning work:
+
+- `CONTEXT.md` — Domain language & key metaphors
+- `BUDDY-SYSTEM-INTEGRATION.md` — Buddy memory, telemetry, API integration
+- `EXECUTION_MASTER_GUIDE.md` — Sequencing across all products
+- `COMPLETE_SETUP_GUIDE.md` — Full optional dependency setup
+- `CREATIVE-AI-STACK.md` — iPhone-driven toolchain reference
+- `KOKORO-SETUP.md` — Lightweight TTS for HyperFrames
+- `VOICEBOX-SETUP.md` — Local voice cloning
+- `SETUP-OPENMANUS.md` — Browser automation agent
+- `AWESOME-AI-HARDWARE.md` — Hardware reference
+- `SCRIPT.md`, `VIDEOS.md` — Asset references
+- `README.md` — Primary product overview (STARLIGHTMIX + RHYTHMIX)
+
+---
+
+## Key Contact
+
+**User Email:** jamie.jack.28@hotmail.com
+
+**Current Working Branch:** `claude/claude-md-docs-dh1411`
+
+---
+
+## Last Updated
+
+**2026-06-24** — Comprehensive restructure to reflect Buddy Builder focus, STARLIGHTMIX Studio production, email/monetization infrastructure, and 98-directory ecosystem.
