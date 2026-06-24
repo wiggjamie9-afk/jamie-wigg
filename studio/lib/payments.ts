@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { supabase } from './auth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20',
+  apiVersion: '2023-10-16',
 });
 
 /**
@@ -196,7 +196,6 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
       'Priority support',
       'No watermark'
     ],
-    limit_videos: null,
     limit_duration: 120,
   },
   studio: {
@@ -212,8 +211,6 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
       'White-label option',
       'Dedicated support'
     ],
-    limit_videos: null,
-    limit_duration: null,
   },
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, signOut } from '@/lib/auth';
 import Link from 'next/link';
@@ -17,19 +17,7 @@ export default function DashboardPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    checkAuth();
-
-    // Check for success query param from Stripe checkout
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
-      setShowSuccess(true);
-      // Clear the success param from URL
-      window.history.replaceState({}, '', '/dashboard');
-    }
-  }, []);
-
-  async function checkAuth() {
+  const checkAuth = useCallback(async () => {
     try {
       const currentUser = await getCurrentUser();
       if (!currentUser) {
@@ -43,7 +31,23 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [router]);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      await checkAuth();
+
+      // Check for success query param from Stripe checkout
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('success') === 'true') {
+        setShowSuccess(true);
+        // Clear the success param from URL
+        window.history.replaceState({}, '', '/dashboard');
+      }
+    };
+
+    initAuth();
+  }, [checkAuth]);
 
   async function handleSignOut() {
     try {

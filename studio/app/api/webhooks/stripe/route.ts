@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { verifyWebhookSignature, syncSubscriptionToDatabase, resetUserToFreeTier } from '@/lib/payments';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20',
+  apiVersion: '2023-10-16',
 });
 
 /**
