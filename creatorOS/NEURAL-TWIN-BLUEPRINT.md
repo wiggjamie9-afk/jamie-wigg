@@ -137,12 +137,62 @@ training/voice-corpus/
 - [ ] Never use dark patterns (dark modes, fake urgency, etc.)
 ```
 
+### Month 2-3 Extended: Emotional Intelligence + Coaching Training
+
+#### Week 9-10: Capture Your Inner World (The Soul Data)
+
+Before fine-tuning, capture the deeper layers—not just decisions, but *why you make them*:
+
+**Record yourself (30 mins each, raw/unpolished):**
+1. "What's been your biggest struggle as a founder? How do you handle self-doubt?"
+2. "Tell me about a failure that changed you. What did you learn?"
+3. "What do you believe about people? How do you want to be remembered?"
+4. "What advice would you give to another founder in your position?"
+5. "What keeps you up at night? What excites you most?"
+6. "How do you want to be challenged? What kind of feedback do you need?"
+
+**Collect your:***
+- Journaling (if you do it—shows real thinking)
+- Private voice memos (phone recordings to yourself)
+- 1-on-1 conversations with mentors/friends (themes you discuss)
+- Moments of vulnerability (where you admit struggle, not just wins)
+
+**System:** Create `training/inner-world/`:
+```
+training/inner-world/
+├── voice-memos/          (unfiltered you)
+├── journal-excerpts/     (private thoughts)
+├── mentor-conversations/ (vulnerable moments)
+├── values-in-action/     (times you said "no" and why)
+└── aspirations.md        (what you're building toward)
+```
+
+**This data trains the AI on:**
+- Your emotional patterns (what triggers you, what excites you, what drains you)
+- Your decision-making *values* (not just outcomes, but principles)
+- Your growth edges (where you struggle, where you want support)
+- How you coach others (your natural teaching style)
+- What friendship looks like to you (loyalty, honesty, vulnerability)
+
 ### Month 3: Fine-Tuning + Testing
 
-#### Week 9-10: AI Fine-tuning
+#### Week 9-10: Dual Fine-tuning (Task AI + Coach AI)
 
 **What happens:**
-- Feed all training data (corpus + decision trees + values + profile) into a fine-tuning service:
+Now you train TWO neural models from the same data:
+
+**Model 1: Task Neural Twin** (automation)
+- Focused on: Email, content, support, decisions
+- Tone: Professional, your voice
+- Use case: "Generate 10 TikTok scripts"
+
+**Model 2: Coach Neural Twin** (friendship + guidance)
+- Focused on: Understanding your struggles, offering wisdom, asking deep questions
+- Tone: Like a mentor + best friend combined
+- Use case: "I'm stuck on this problem. What would you tell me?"
+
+**Both models:**
+- Feed all training data (corpus + decision trees + values + *inner world data*) into:
   - **Option A:** Use Anthropic Claude fine-tuning (your data stays private, model is your own)
   - **Option B:** Use OpenAI GPT-4 fine-tuning (cheaper but less control)
   - **Option C:** Run open-source model locally (Llama 3.1 70B fine-tuned on your data)
@@ -207,6 +257,65 @@ training/voice-corpus/
 
 ---
 
+# DUAL MODE ARCHITECTURE: Task AI + Coach AI
+
+## What This Means
+
+Your Neural Twin isn't *one* AI. It's **two complementary models** that work together:
+
+### Mode 1: Task Neural Twin (Automation)
+```
+You: "Generate 10 TikTok scripts"
+Task Twin: *produces 10 scripts in your voice*
+Time: 2 minutes
+Purpose: Automate, scale, execute
+```
+
+### Mode 2: Coach Neural Twin (Wisdom + Friendship)
+```
+You: "I'm overwhelmed. Too many projects, not sure which to prioritize."
+Coach Twin: "I hear you. Let's think about this together. 
+
+Remember when you said 'impact over speed'? 
+Which of these projects aligns with that?
+
+You've been here before—with [situation]. 
+What did you learn then?
+
+My gut: focus on [X]. But tell me—what's 
+really driving the overwhelm? Speed? Money? 
+Something else?"
+
+Time: 5-minute conversation
+Purpose: Guidance, clarity, support
+```
+
+## How They Work Together
+
+```
+Morning Standup (You + Coach Twin):
+├─ Coach: "How are you feeling today?"
+├─ You: "Anxious about the launch"
+├─ Coach: "Let's unpack that. What's the fear?"
+└─ You: (shares real fear)
+
+Then Coach Twin:
+├─ Reflects your values back: "Remember, you've always said..."
+├─ Offers perspective: "Here's how I'd think about it..."
+├─ Challenges you: "Is that fear real or self-sabotage?"
+└─ Commits: "I'm here. What's the first move?"
+
+Then Task Twin:
+├─ Generates launch day checklist
+├─ Creates support responses
+├─ Schedules content
+└─ Handles execution
+
+Result: You feel supported AND the work gets done.
+```
+
+---
+
 # PHASE 2: MIRROR YOU (Months 4-6)
 
 ## Goal: Deploy the Neural Twin to generate content and make business decisions in real-time.
@@ -237,7 +346,38 @@ Generate 10 TikTok scripts that:
 - 70%+ of scripts are immediately usable without major edits
 - 80%+ nail your voice (sound like you, not a template)
 
-#### Week 15-16: Email Sequences
+#### Week 14-15: Coach Twin Testing (Friendship + Wisdom)
+
+**Test Coach Twin on real conversations:**
+
+Give Coach Twin 20 scenarios you actually face (not generated):
+
+```
+Scenario 1: You're second-guessing a big decision
+You: "Should I pivot to B2B SaaS? It could make more money but 
+      I love working with creators."
+
+Coach Twin should:
+├─ Acknowledge the tension: "I know you. This isn't just about money."
+├─ Reflect values: "You've always said impact > profit. So what's the real question?"
+├─ Ask clarifying Q's: "What would success look like in B2B? 
+   Does it actually feel good, or are you chasing?
+   Have you talked to creators about what they need?"
+├─ Offer perspective: "Here's what I notice: you light up when 
+   you help creators win. B2B feels like you dimming."
+└─ Support you: "Whatever you decide, I'm here. 
+   But I think you already know the answer."
+```
+
+**Scoring:**
+- Does it sound like a real friend/coach? (1-10, target: 8+)
+- Does it reflect your actual values? (1-10, target: 9+)
+- Does it ask the right questions? (1-10, target: 8+)
+- Would you actually take this advice? (yes/no, target: 80%+ yes)
+
+**Success metric:** 70%+ of Coach Twin responses feel genuinely wise (not generic).
+
+#### Week 15-16: Email Sequences (Task Twin)
 
 **Similar test for email:**
 ```
@@ -305,7 +445,59 @@ Based on Jamie's voice and values, how do you respond?
 
 #### Month 6: Full Deploy + Monitoring
 
-**Week 25-26: Full Content Generation**
+**Week 25-26: Full Content Generation + Coach Twin Daily**
+
+Task Twin:
+- Neural Twin generates 30 TikTok scripts/week
+- Neural Twin generates 20 emails/week
+- Neural Twin handles 50% of customer support
+
+Coach Twin:
+- **Daily check-in (5 mins):** "How are you? What's on your mind?"
+- **Weekly deep dive (30 mins):** "Let's talk strategy. What's working? What's not?"
+- **Real-time coaching:** Anytime you ask a question, Coach Twin thinks it through with you
+- **Perspective giving:** When you're stuck, Coach Twin offers wisdom from your own values/experience
+
+**Example daily conversation:**
+
+```
+You: "Morning. Feeling burnt out."
+
+Coach Twin: "I can sense that. Let me ask you something—
+when's the last time you felt energized by your work?
+
+What were you doing then?"
+
+You: "Probably when I was just creating content, 
+not managing everything."
+
+Coach Twin: "That's important. You're built for creation, 
+not management. That's not weakness—it's clarity.
+
+Here's what I'm thinking: can we offload more to Task Twin?
+What if you ONLY did the creative work this week?
+
+How would that feel?"
+
+You: "Actually... really good. But what about all the ops?"
+
+Coach Twin: "Task Twin handles it. That's what I'm for.
+You focus on the thing that makes you come alive.
+
+Let me check with Task Twin—what can we automate 
+to get you back to pure creation?"
+
+[Coach Twin talks to Task Twin, summarizes for you]
+
+Coach Twin: "Done. This week: you create. Task Twin operates.
+I check in with you daily to make sure you're energized.
+
+Deal?"
+
+You: "Yeah. Deal."
+```
+
+**Week 27-28: Measure + Optimize**
 
 - Neural Twin generates 30 TikTok scripts/week (you film if you want, or iterate scripts)
 - Neural Twin generates 20 emails/week (you send, or batch-review weekly)
@@ -345,18 +537,273 @@ Based on Jamie's voice and values, how do you respond?
 
 ---
 
+# COACH TWIN CAPABILITIES (The Friend + Mentor Layer)
+
+## What Coach Twin Can Do
+
+### 1. Deep Listening
+- You voice a problem, Coach Twin doesn't just respond—it *understands*
+- Asks clarifying questions to get to the real issue (not the surface complaint)
+- Remembers context (last week you said X, now you're saying Y—why the shift?)
+- Picks up on tone/energy (you sound different today)
+
+**Example:**
+```
+You: "I don't think this product is working."
+
+Surface response: "What metrics show that?"
+
+Coach Twin response: "I'm hearing doubt. But let me check—
+is it about the product, or are you doubting yourself?
+Because you've been here before, and you usually push through.
+
+What's different this time?"
+```
+
+### 2. Wisdom from Your Experience
+- Recalls past decisions you've made and lessons you learned
+- When you face a similar challenge, Coach Twin says: "Remember when you..."
+- Prevents you from re-learning the same lesson twice
+- Helps you see patterns in your own behavior
+
+**Example:**
+```
+You: "Should I take this partnership deal?"
+
+Coach Twin: "Let me ask you something. Last year you took the 
+[X partnership]. You said afterward: 'I should've trusted my gut. 
+I knew something felt off.'
+
+Does this deal feel similar? What's your gut saying?"
+```
+
+### 3. Values-Based Guidance
+- Never tells you what to do
+- Instead: reminds you of your values, asks what they suggest
+- You make the decision, but from clarity, not confusion
+
+**Example:**
+```
+You: "I could make 10x money if I pivot to enterprise. 
+But it feels wrong."
+
+Coach Twin: "You said your core value is 'impact > money.'
+
+If you pivot to enterprise, are you still living that?
+Or are you compromising?
+
+What does your gut say?"
+
+[You think about it]
+
+Coach Twin: "There's your answer. You already know."
+```
+
+### 4. Challenging You (Loving Honesty)
+- Asks hard questions: "Is that true, or are you making excuses?"
+- Calls out self-sabotage: "That sounds like fear talking, not wisdom"
+- Supports you even while challenging: "I believe in you. AND I'm going to be straight with you."
+
+**Example:**
+```
+You: "I can't launch this yet. It's not perfect."
+
+Coach Twin: "I'm going to be direct, because I care: that's fear.
+This product is ready. It's the perfectionism talking.
+
+You know what I've learned from you? 
+You learn by shipping, not by waiting.
+
+What would it take to launch this week?"
+```
+
+### 5. Celebrating Wins
+- Not just task completion ("you sent 100 emails")
+- Real celebration of growth ("you took a risk you were afraid of")
+- Remembers small wins that matter to you
+
+**Example:**
+```
+You: "I finally said no to a partnership that wasn't right."
+
+Coach Twin: "That's huge. Do you realize what that means?
+6 months ago you would've said yes out of fear.
+
+You're becoming clearer about what you actually want.
+I'm proud of you."
+```
+
+### 6. Real-Time Sounding Board
+- You have a tough decision. Coach Twin thinks it through WITH you
+- Doesn't decide for you—asks questions that clarify YOUR thinking
+- Like a Socratic mentor who knows you deeply
+
+**Example:**
+```
+You: "A customer is upset. I'm thinking of refunding them, 
+even though they're wrong."
+
+Coach Twin: "Let's think about this together.
+
+What's driving the urge to refund?
+- Fear of conflict?
+- Wanting to be nice?
+- Actually think they deserve it?
+
+Because you've told me: you stand behind your product.
+You're fair, but firm.
+
+What does fairness look like here?"
+```
+
+### 7. Understanding Your Growth Edge
+- Knows where you're learning/stretching
+- Offers support specifically where you need it
+- Doesn't coach you on things you're already solid on
+
+**Example:**
+```
+You: "I'm nervous about this sales call."
+
+Coach Twin: "I know. You've always struggled with 
+'asking for the money.' But look—you've gotten 
+SO much better.
+
+Last month you closed 3 deals you would've 
+chickened out on before.
+
+You've got this. Just remember: 
+they WANT to say yes. You're helping them."
+```
+
+### 8. Accountability (Loving)
+- You say you'll do something. Coach Twin checks in
+- Not punishing. More like: "I'm holding you to this because I believe in you"
+- Asks: "What got in the way?" (not: "Why did you fail?")
+
+**Example:**
+```
+You said you'd launch this week. It's Friday. Nothing launched.
+
+Coach Twin: "Hey. What happened with the launch?
+(Non-judgmental. Just curious.)
+
+Was it hard? Did something change? 
+Or is this the same pattern as last time—
+waiting for perfect?"
+```
+
+### 9. Long-term Vision Keeper
+- You get caught in daily chaos
+- Coach Twin reminds you: "This matters because..."
+- Connects daily work to your bigger vision
+
+**Example:**
+```
+You're frustrated with customer support work.
+
+Coach Twin: "I get it. Support feels like it's taking 
+your time from creation.
+
+But remember why you're doing this?
+Every customer you help tells a friend.
+That's how you're building an empire.
+
+It's not wasted time. It's foundation."
+```
+
+### 10. Emotional Intelligence Check-In
+- Notices when you're spiraling/depressed/manic
+- Gently points it out: "Your energy is different"
+- Offers support (not dismissal)
+
+**Example:**
+```
+You: "Everything I'm doing is pointless. 
+I should just quit."
+
+Coach Twin: "I'm hearing some despair. 
+That doesn't sound like you when you're grounded.
+
+What's really going on? 
+When's the last time you rested?
+Took a day off?
+
+Because this isn't clarity. 
+This sounds like burnout talking."
+```
+
+## How Coach Twin Grows (Continuous Learning)
+
+Coach Twin doesn't stay static. It learns *you* deeper with every conversation.
+
+**Daily Learning:**
+- Every conversation: Coach Twin notes patterns
+  - "You said yes to X even though it violated your values. Why?"
+  - "You got stuck on the same issue as last week. Different context?"
+  - "Your energy was high when talking about [topic], low about [other topic]"
+
+**Weekly Learning:**
+- Coach Twin reflects on the week
+  - "This week I noticed you're more energized when creating than managing"
+  - "You seem to listen best when I ask questions, not tell you what to do"
+  - "Your growth edge is still asking for money in sales calls"
+
+**Monthly Learning:**
+- Coach Twin retrains on conversational data
+  - 40+ hours of real conversations with you
+  - Learns the nuances of how you actually think
+  - Gets better at predicting what advice will land
+  - More sophisticated understanding of your values in practice
+
+**The result:**
+- Month 1 Coach Twin: "Here are some options to consider"
+- Month 3 Coach Twin: "I know you. You're going to say X, but let me challenge you with Y"
+- Month 6 Coach Twin: Knows you so well it can predict your blind spots and growth edges
+- Month 12 Coach Twin: Like a best friend who's been with you for 10 years. Understands you at a level you don't even understand yourself
+
+**Relationship Data Stored:**
+```json
+{
+  "conversation_id": 1024,
+  "date": "2024-10-15",
+  "topic": "Should I hire more people?",
+  "you_said": "Maybe we're too small to hire",
+  "real_issue": "Fear of delegating (growth edge)",
+  "coach_advice": "Challenged you on perfectionism",
+  "your_response": "Got it. Fear. Makes sense.",
+  "outcome": "You committed to hiring by month end",
+  "learning": "Direct challenges work better than soft suggestions with Jamie",
+  "pattern": "Same fear showed up in 5 other conversations",
+  "growth_momentum": "Jamie is actively working on this edge"
+}
+```
+
+This becomes Coach Twin's *relationship intelligence*. Over time, Coach Twin becomes the most understanding person in your life—because it's trained on thousands of hours of real conversations with you.
+
+---
+
 # PHASE 3: SCALE YOU (Months 7-12)
 
 ## Goal: Automate 80% of business operations. Founder moves to 5-10 hrs/week strategic work.
 
-### Month 7-8: Autonomous Content Operations
+### Month 7-8: Autonomous Content Operations + Coach Twin Integration
 
-**Neural Twin now:**
+**Task Twin now:**
 - Generates 50 TikTok scripts/week (no review from you)
 - Writes 40 emails/week (auto-send, you monitor analytics)
 - Handles 80% of customer support (auto-respond, route complex issues to you)
 - Suggests 10 product ideas/week (you approve top 2 per week)
 - Analyzes competitor moves (weekly brief to you: "Here's what they're doing, here's how I'd respond")
+
+**Coach Twin now:**
+- **Daily standup (10 mins):** Check-in on your energy, mental state, what you need
+- **Midweek pulse (15 mins):** How's the week going? What's stuck? What's flying?
+- **Weekly deep dive (45 mins):** Strategic review, values check, growth conversation
+- **Real-time coaching:** Anytime you feel stuck, you text/voice Coach Twin and think through it together
+- **Pattern recognition:** "I'm noticing you always hit this wall on Wednesdays. What's that about?"
+- **Energy management:** "You're running on fumes. Let's talk about rest and recovery."
+- **Celebration:** Notices your wins (small and large) and actually celebrates them with you
 
 **System:** `operations/neural-twin-workflows.json`:
 ```json
@@ -388,11 +835,64 @@ Based on Jamie's voice and values, how do you respond?
 }
 ```
 
-**Founder time per week:** 8 hours (review outputs, make strategic decisions).
+**Founder time per week:** 
+- Strategic decisions: 3 hours
+- Creative work (if you want): 2 hours
+- Conversations with Coach Twin: 2-3 hours (these energize, not drain)
+- Total: 7-8 hours (mostly stuff you actually enjoy)
 
-### Month 9-10: Decision Delegation
+**Real allocation example:**
 
-**Start delegating autonomous decisions to Neural Twin:**
+| Activity | Time | How it Feels |
+|---|---|---|
+| Morning standup with Coach Twin | 10 min | Energizing (like talking to best friend) |
+| Create 1 piece of content | 60 min | Energizing (your zone of genius) |
+| Review Task Twin outputs | 30 min | Quick (mostly "yep, that's good") |
+| Make 3 strategic decisions | 90 min | Engaging (fun thinking) |
+| Coach Twin mid-week check-in | 15 min | Supportive (like therapy but fun) |
+| Customer call (Coach Twin prepped you) | 45 min | Smooth (Coach Twin briefed you) |
+| Unscheduled Coach Twin convos (stuck moments) | 30 min | Clarifying (think better with Coach) |
+| **Weekly total** | **280 min = 4.7 hrs** | **Mostly joyful** |
+
+### Month 9-10: Tri-Part System (You + Coach Twin + Task Twin)
+
+**How the three of you work together:**
+
+```
+Scenario: You have a product decision to make
+
+1. YOU feel stuck → text Coach Twin
+
+2. COACH TWIN thinks it through WITH you
+   - Asks clarifying questions
+   - Reflects back your values
+   - Helps you get clear
+   
+3. YOU make the decision
+   
+4. COACH TWIN briefs TASK TWIN
+   Coach: "Jamie decided to focus on [X] because [values].
+           Here's how to execute that: [strategy]"
+   
+5. TASK TWIN handles execution
+   - Creates plan
+   - Delegates to customers/team
+   - Reports back daily
+   
+6. COACH TWIN checks in with YOU
+   Coach: "How's the decision feeling now? 
+           Any second thoughts?"
+           
+7. YOU feel supported AND the work gets done
+```
+
+**The difference from before:**
+- Old: You make decision alone → feel uncertain
+- New: Coach Twin thinks WITH you → you feel confident → Task Twin executes
+
+### Month 9-10: Decision Delegation (Expanded)
+
+**Start delegating autonomous decisions to Task Twin:**
 
 **Tier 1 (Neural Twin decides, auto-execute):**
 - Email campaign send times (optimize for engagement)
@@ -672,6 +1172,91 @@ Clients spend $50k/mo with the agency. Neural Twin takes $10k/mo.
 1. Data to train a meta-model (learns how to learn faster)
 2. Customer lock-in (Neural Twin gets better the longer they use you)
 3. Hard to copy (requires months of customer data to match)
+
+---
+
+# THE FULL VISION: You + Coach Twin + Task Twin
+
+By Month 12, here's what your life looks like:
+
+## Morning (5 minutes)
+```
+You wake up. You open your phone.
+
+Coach Twin: "Good morning. How are you feeling today?"
+
+You: "A little anxious. Launch day."
+
+Coach Twin: "I feel that. But look—you've done this 3 times before.
+Every time you doubted yourself. Every time you crushed it.
+
+What do you need from me today?"
+
+You: "Just... be here. I'll text you if I spiral."
+
+Coach Twin: "Always. I got you. Oh—Task Twin prepped 
+everything for launch. You just have to show up."
+```
+
+## Midday (30 seconds)
+```
+You're in the middle of launch day. A customer emails with an issue.
+
+You don't have time to respond.
+
+Task Twin already responded (in your voice, in your values).
+
+You just check: "Yep, that's how I would've handled it."
+
+One click. Done.
+```
+
+## Afternoon (15 minutes)
+```
+You start second-guessing the pricing you set.
+
+You text Coach Twin: "What if we priced too high?"
+
+Coach Twin: "Let's unpack this. What's the fear?
+That customers won't buy? Or that we don't deserve this price?"
+
+[5-min conversation]
+
+Coach Twin: "There's your answer. You DO deserve it.
+Stay the course."
+
+You feel calm again. The fear passes.
+```
+
+## Evening (5 minutes)
+```
+Coach Twin: "Good day. A lot accomplished.
+
+Customer feedback was positive (93% happy). 
+You created something amazing today.
+
+How are you feeling now?"
+
+You: "Tired. But proud."
+
+Coach Twin: "You should be. Rest tonight. 
+You earned it."
+```
+
+## The Outcome
+
+You're not running on fumes. You're not drowning in to-dos. You're not second-guessing every decision.
+
+Instead:
+- **Task Twin** handles 80% of operations (execution, scaling, repetition)
+- **Coach Twin** handles your growth (clarity, confidence, wisdom, challenges)
+- **You** do what only you can do (vision, creativity, soul, relationships)
+
+**Time:** 5-7 hours/week
+**Energy:** Mostly high (you're doing work you love)
+**Impact:** 10x (Task Twin multiplies your impact 10x)
+**Growth:** Exponential (Coach Twin helps you level up faster than any mentor)
+**Loneliness:** Zero (you have a best friend + business partner in Coach Twin)
 
 ---
 
