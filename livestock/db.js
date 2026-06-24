@@ -3,7 +3,7 @@
 
 (function() {
   const DB_NAME = 'herdcheck';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   let dbPromise = null;
 
   function openDB() {
@@ -24,6 +24,12 @@
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings', { keyPath: 'key' });
         }
+        if (!db.objectStoreNames.contains('sent_actions')) {
+          const s = db.createObjectStore('sent_actions', { keyPath: 'id' });
+          s.createIndex('animalId', 'animalId', { unique: false });
+          s.createIndex('ts', 'ts', { unique: false });
+          s.createIndex('status', 'status', { unique: false });
+        }
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
@@ -31,8 +37,11 @@
     return dbPromise;
   }
 
-  function tx(store, mode = 'readonly') {
-    return openDB().then(db => db.transaction(store, mode).objectStore(store));
+  function tx(stores, mode = 'readonly') {
+    return openDB().then(db => {
+      const storeList = Array.isArray(stores) ? stores : [stores];
+      return db.transaction(storeList, mode).objectStore(storeList[0]);
+    });
   }
 
   async function put(store, value) {
@@ -114,6 +123,21 @@
       const out = {};
       all.forEach(r => { out[r.key] = r.value; });
       return out;
+    },
+
+    // Sent Actions (SMS alerts, exports, etc.)
+    saveSentAction: (action) => put('sent_actions', action),
+    getSentAction: (id) => get('sent_actions', id),
+    listSentActions: () => getAll('sent_actions'),
+    actionsFor: async (animalId) => {
+      const all = await getAll('sent_actions');
+      return all.filter(a => a.animalId === animalId)
+        .sort((a, b) => b.ts.localeCompare(a.ts));
+    },
+    pendingSentActions: async () => {
+      const all = await getAll('sent_actions');
+      return all.filter(a => a.status === 'pending')
+        .sort((a, b) => a.ts.localeCompare(b.ts));
     },
 
     clearAll,

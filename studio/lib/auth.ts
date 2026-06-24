@@ -30,16 +30,76 @@ export async function getCurrentUser(): Promise<User | null> {
   return profile as User | null;
 }
 
-export async function signUp(email: string, password: string): Promise<{ user: any; error: any }> {
-  return supabase.auth.signUp({ email, password });
+export async function signUp(email: string, password: string): Promise<void> {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+
+  if (error) {
+    throw new Error(error.message || 'Failed to sign up');
+  }
+
+  // Create user profile with free tier
+  if (data.user) {
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert([
+        {
+          id: data.user.id,
+          email: data.user.email,
+          subscription_tier: 'free',
+          credits_remaining: 0,
+          created_at: new Date().toISOString(),
+        }
+      ])
+      .single();
+
+    if (profileError) {
+      console.error('Failed to create user profile:', profileError);
+      // Don't throw here as auth user was created; they can try again
+    }
+  }
 }
 
-export async function signIn(email: string, password: string): Promise<{ user: any; error: any }> {
-  return supabase.auth.signInWithPassword({ email, password });
+export async function signIn(email: string, password: string): Promise<void> {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    throw new Error(error.message || 'Failed to sign in');
+  }
+
+  // Ensure user profile exists (migration case)
+  if (data.user) {
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', data.user.id)
+      .single();
+
+    if (!existingUser) {
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: data.user.id,
+            email: data.user.email,
+            subscription_tier: 'free',
+            credits_remaining: 0,
+            created_at: new Date().toISOString(),
+          }
+        ])
+        .single();
+
+      if (profileError) {
+        console.error('Failed to create user profile on login:', profileError);
+      }
+    }
+  }
 }
 
 export async function signOut(): Promise<void> {
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw new Error(error.message || 'Failed to sign out');
+  }
 }
 
 export async function getSubscriptionStatus(): Promise<{ tier: string; active: boolean } | null> {

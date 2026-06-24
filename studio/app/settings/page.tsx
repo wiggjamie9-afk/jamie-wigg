@@ -1,10 +1,10 @@
 /**
- * `/settings` route (T6) — public per R10 (no gate). Composes the four panels
- * stacked vertically. Each panel is its own `"use client"` component so the
- * page itself stays a thin server wrapper compatible with `force-static`
- * export.
+ * `/settings` route — Subscription management + existing settings.
+ * Composes account/billing panels (client-side) + existing settings panels.
+ * Each panel is its own component for modularity.
  */
 
+import { SubscriptionPanel } from "../../components/settings/subscription-panel";
 import { ClearAllPanel } from "../../components/settings/clear-all-panel";
 import { LicensePanel } from "../../components/settings/license-panel";
 import { ReplicateTokenPanel } from "../../components/settings/replicate-token-panel";
@@ -25,12 +25,12 @@ export default function SettingsPage() {
             Settings
           </h1>
           <p className="mt-2 text-sm text-starlightmix-text-soft">
-            Your Replicate token and license stay on this device. Nothing here
-            is sent to our servers.
+            Manage your account, subscription, and preferences.
           </p>
         </header>
 
         <div className="space-y-5 sm:space-y-6">
+          <SubscriptionPanel />
           <ReplicateTokenPanel />
           <LicensePanel />
           <SupportBundlePanel />

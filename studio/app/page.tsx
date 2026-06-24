@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getCurrentUser, signIn, signUp, signOut } from '@/lib/auth';
 import { createCheckoutSession, PRICING_TIERS } from '@/lib/payments';
 
@@ -17,6 +18,8 @@ export default function HomePage() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     checkAuth();
@@ -25,11 +28,17 @@ export default function HomePage() {
   async function checkAuth() {
     try {
       const currentUser = await getCurrentUser();
-      setUser(currentUser);
-    } catch {
+      if (currentUser) {
+        setUser(currentUser);
+        // Redirect authenticated users to dashboard
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      console.error('Auth check failed:', err);
       setUser(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function handleAuth() {
@@ -39,17 +48,22 @@ export default function HomePage() {
       return;
     }
 
+    setAuthLoading(true);
     try {
       if (isSignUp) {
         await signUp(email, password);
       } else {
         await signIn(email, password);
       }
+      // After auth succeeds, check user and redirect
       await checkAuth();
       setEmail('');
       setPassword('');
     } catch (err) {
-      setError(String(err));
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setError(errorMsg);
+    } finally {
+      setAuthLoading(false);
     }
   }
 
@@ -59,12 +73,13 @@ export default function HomePage() {
       return;
     }
 
+    setAuthLoading(true);
     try {
       const { url } = await createCheckoutSession(
         user.id,
         tierId,
-        `${window.location.origin}/dashboard?success=true`,
-        `${window.location.origin}`
+        `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard?success=true`,
+        `${typeof window !== 'undefined' ? window.location.origin : ''}`
       );
 
       if (url) {
@@ -73,7 +88,10 @@ export default function HomePage() {
         setError('Failed to create checkout session');
       }
     } catch (err) {
-      setError(String(err));
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setError(errorMsg);
+    } finally {
+      setAuthLoading(false);
     }
   }
 
@@ -137,9 +155,10 @@ export default function HomePage() {
                       </ul>
                       <button
                         onClick={() => handleCheckout(key)}
-                        className="w-full px-4 py-2 bg-starlightmix-accent hover:opacity-90 rounded-lg font-starlightmix-mono text-sm font-semibold transition"
+                        disabled={authLoading}
+                        className="w-full px-4 py-2 bg-starlightmix-accent hover:opacity-90 disabled:opacity-50 rounded-lg font-starlightmix-mono text-sm font-semibold transition"
                       >
-                        Upgrade to {tier.name}
+                        {authLoading ? 'Processing...' : `Upgrade to ${tier.name}`}
                       </button>
                     </div>
                   ))}
@@ -200,29 +219,33 @@ export default function HomePage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-starlightmix-bg border border-starlightmix-border rounded-lg text-starlightmix-text placeholder-starlightmix-text-muted font-starlightmix-mono"
+                disabled={authLoading}
+                className="w-full px-4 py-3 bg-starlightmix-bg border border-starlightmix-border rounded-lg text-starlightmix-text placeholder-starlightmix-text-muted font-starlightmix-mono disabled:opacity-50"
               />
               <input
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-starlightmix-bg border border-starlightmix-border rounded-lg text-starlightmix-text placeholder-starlightmix-text-muted font-starlightmix-mono"
+                disabled={authLoading}
+                className="w-full px-4 py-3 bg-starlightmix-bg border border-starlightmix-border rounded-lg text-starlightmix-text placeholder-starlightmix-text-muted font-starlightmix-mono disabled:opacity-50"
               />
             </div>
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleAuth}
-                className="w-full px-6 py-3 bg-starlightmix-accent hover:opacity-90 rounded-lg font-starlightmix-mono font-bold transition flex-1"
+                disabled={authLoading}
+                className="w-full px-6 py-3 bg-starlightmix-accent hover:opacity-90 disabled:opacity-50 rounded-lg font-starlightmix-mono font-bold transition flex-1"
               >
-                {isSignUp ? 'Create Account' : 'Sign In'}
+                {authLoading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
               </button>
               <button
                 onClick={() => {
                   setIsSignUp(!isSignUp);
                   setError('');
                 }}
-                className="w-full px-6 py-3 bg-starlightmix-border hover:bg-starlightmix-border/50 rounded-lg font-starlightmix-mono transition"
+                disabled={authLoading}
+                className="w-full px-6 py-3 bg-starlightmix-border hover:bg-starlightmix-border/50 disabled:opacity-50 rounded-lg font-starlightmix-mono transition"
               >
                 {isSignUp ? 'Have account? Sign in' : 'New? Create account'}
               </button>

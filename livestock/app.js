@@ -9,7 +9,9 @@
     currentCheck: null,
     lameness: { score: null, videoBlob: null, notes: '' },
     mastitis: { signs: {}, milk: 'normal', imageBlob: null, imageMetrics: null, notes: '' },
-    calving: { signs: {}, imageBlob: null, notes: '' }
+    calving: { signs: {}, imageBlob: null, notes: '' },
+    lastResult: null,
+    lastResultKind: null
   };
 
   // ---------- Navigation ----------
@@ -423,6 +425,17 @@
       <h3>${t('result.next')}</h3>
       <ul>${result.actions.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul>
     `;
+
+    // Show "Send vet alert" button only on red tier
+    const actionDiv = document.getElementById('result-actions');
+    if (result.tier === 'red') {
+      actionDiv.style.display = 'block';
+      state.lastResult = result;
+      state.lastResultKind = kind;
+    } else {
+      actionDiv.style.display = 'none';
+    }
+
     show('result');
   }
 
@@ -531,10 +544,11 @@
     const s = await db.getSettings();
     document.getElementById('settings-farm').value = s.farm || '';
     document.getElementById('settings-coop').value = s.coop || '';
+    document.getElementById('settings-vet-phone').value = s.vet_phone || '';
     document.getElementById('settings-lang').value = window.HC.lang;
   }
 
-  ['settings-farm', 'settings-coop'].forEach(id => {
+  ['settings-farm', 'settings-coop', 'settings-vet-phone'].forEach(id => {
     document.getElementById(id).addEventListener('change', (e) => {
       db.setSetting(id.replace('settings-', ''), e.target.value);
     });
@@ -636,6 +650,46 @@
     }
     download(text, `herdcheck-summary-${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain');
     toast(t('toast.exported'));
+  });
+
+  // ---------- SMS Vet Alert ----------
+  document.getElementById('send-vet-alert').addEventListener('click', async (e) => {
+    const btn = e.target;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = t('result.sendingAlert');
+
+    try {
+      const settings = await db.getSettings();
+      const vetPhone = settings.vet_phone;
+
+      if (!vetPhone) {
+        toast(t('result.alertError').replace('%e', 'Vet phone not configured in settings'));
+        btn.disabled = false;
+        btn.textContent = originalText;
+        return;
+      }
+
+      // Send the SMS alert
+      const action = await window.HC.sms.sendVetAlert(
+        state.currentAnimal.id,
+        animalLabel(state.currentAnimal),
+        null, // photoUrl (no photo in result flow yet)
+        vetPhone
+      );
+
+      if (action.status === 'sent') {
+        toast(t('result.alertSent'));
+      } else if (action.status === 'pending') {
+        toast(t('result.alertQueued'));
+      }
+    } catch (err) {
+      console.error('SMS send error:', err);
+      toast(t('result.alertError').replace('%e', err.message));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   });
 
   document.getElementById('reset-data').addEventListener('click', async (e) => {

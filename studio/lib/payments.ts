@@ -1,8 +1,163 @@
 import Stripe from 'stripe';
+import { supabase } from './auth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-11-20',
 });
+
+/**
+ * Verify Stripe webhook signature
+ * Must be called before processing any webhook event
+ *
+ * @param body Raw request body as string
+ * @param signature Stripe-Signature header value
+ * @returns Parsed event object if valid
+ * @throws Error if signature is invalid
+ */
+export function verifyWebhookSignature(body: string, signature: string): Stripe.Event {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+
+  if (!webhookSecret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET not configured');
+  }
+
+  try {
+    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    return event;
+  } catch (error) {
+    throw new Error(`Webhook signature verification failed: ${String(error)}`);
+  }
+}
+
+/**
+ * Map Stripe price IDs to subscription tiers
+ * Must match the price IDs configured in PRICING_TIERS
+ */
+export function mapPriceToTier(priceId: string): 'pro' | 'studio' | null {
+  const tierMap: Record<string, 'pro' | 'studio'> = {
+    'price_pro_monthly': 'pro',
+    'price_studio_monthly': 'studio',
+  };
+  return tierMap[priceId] || null;
+}
+
+/**
+ * Sync Stripe subscription to Supabase
+ * Called by webhook handler to update user tier and subscription record
+ *
+ * @param subscription Stripe subscription object
+ * @throws Error if database update fails
+ */
+export async function syncSubscriptionToDatabase(subscription: Stripe.Subscription): Promise<void> {
+  const userId = subscription.metadata?.user_id;
+  if (!userId) {
+    throw new Error('Subscription missing user_id in metadata');
+  }
+
+  const lineItem = subscription.items.data[0];
+  if (!lineItem?.price?.id) {
+    throw new Error('Subscription missing price information');
+  }
+
+  const tier = mapPriceToTier(lineItem.price.id);
+  if (!tier) {
+    throw new Error(`Unknown price ID: ${lineItem.price.id}`);
+  }
+
+  // Update user tier
+  const { error: userError } = await supabase
+    .from('users')
+    .update({
+      subscription_tier: tier,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (userError) {
+    throw new Error(`Failed to update user tier: ${userError.message}`);
+  }
+
+  // Upsert subscription record
+  const subscriptionData = {
+    user_id: userId,
+    stripe_subscription_id: subscription.id,
+    stripe_customer_id: subscription.customer as string,
+    tier,
+    status: subscription.status,
+    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    cancel_at_period_end: subscription.cancel_at_period_end,
+    active: subscription.status === 'active' || subscription.status === 'trialing',
+    updated_at: new Date().toISOString(),
+  };
+
+  // Check if subscription exists
+  const { data: existing } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('stripe_subscription_id', subscription.id)
+    .single();
+
+  if (existing) {
+    const { error: subError } = await supabase
+      .from('subscriptions')
+      .update(subscriptionData)
+      .eq('id', existing.id);
+
+    if (subError) {
+      throw new Error(`Failed to update subscription: ${subError.message}`);
+    }
+  } else {
+    const { error: subError } = await supabase
+      .from('subscriptions')
+      .insert([subscriptionData]);
+
+    if (subError) {
+      throw new Error(`Failed to create subscription: ${subError.message}`);
+    }
+  }
+}
+
+/**
+ * Cancel user subscription and reset tier to free
+ * Called by webhook when subscription.deleted event received
+ *
+ * @param subscription Stripe subscription object
+ * @throws Error if database update fails
+ */
+export async function resetUserToFreeTier(subscription: Stripe.Subscription): Promise<void> {
+  const userId = subscription.metadata?.user_id;
+  if (!userId) {
+    throw new Error('Subscription missing user_id in metadata');
+  }
+
+  // Reset user to free tier
+  const { error: userError } = await supabase
+    .from('users')
+    .update({
+      subscription_tier: 'free',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (userError) {
+    throw new Error(`Failed to reset user tier: ${userError.message}`);
+  }
+
+  // Mark subscription as inactive
+  const { error: subError } = await supabase
+    .from('subscriptions')
+    .update({
+      active: false,
+      status: subscription.status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('stripe_subscription_id', subscription.id);
+
+  if (subError) {
+    throw new Error(`Failed to mark subscription inactive: ${subError.message}`);
+  }
+}
 
 export interface PricingTier {
   id: string;
