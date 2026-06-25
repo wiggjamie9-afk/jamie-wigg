@@ -8,10 +8,19 @@ import os
 import json
 import logging
 import asyncio
-import requests
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-import websocket
+
+# Network deps are optional so this module imports — and its JSON/workflow-prep
+# helpers stay usable — even where they're absent (e.g. the cloud sandbox). The
+# actual server calls raise a clean, actionable error when `requests` is missing.
+try:
+    import requests
+    _REQ_ERR = requests.exceptions.RequestException
+except ModuleNotFoundError:  # pragma: no cover - environment dependent
+    requests = None
+    _REQ_ERR = Exception
+# `websocket-client` is imported lazily inside wait_for_completion().
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,6 +68,12 @@ class ComfyUIClient:
         """Queue a workflow for execution."""
         client_id = client_id or self.client_id
 
+        if requests is None:
+            raise RuntimeError(json.dumps({
+                "error": "requests_not_installed",
+                "hint": "pip install requests websocket-client to talk to ComfyUI.",
+            }))
+
         payload = {
             "prompt": workflow.nodes,
             "client_id": client_id
@@ -74,12 +89,14 @@ class ComfyUIClient:
             result = response.json()
             logger.info(f"Queued workflow '{workflow.name}': prompt_id={result.get('prompt_id')}")
             return result
-        except requests.exceptions.RequestException as e:
+        except _REQ_ERR as e:
             logger.error(f"Failed to queue workflow: {e}")
             raise
 
     async def get_history(self, prompt_id: str) -> Optional[Dict]:
         """Get execution history for a prompt."""
+        if requests is None:
+            return None
         try:
             response = requests.get(
                 f"{self.base_url}/history/{prompt_id}",
@@ -87,12 +104,14 @@ class ComfyUIClient:
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.RequestException as e:
+        except _REQ_ERR as e:
             logger.error(f"Failed to get history: {e}")
             return None
 
     async def get_system_stats(self) -> Dict:
         """Get system statistics (VRAM, load, etc)."""
+        if requests is None:
+            return {}
         try:
             response = requests.get(
                 f"{self.base_url}/system_stats",
@@ -100,7 +119,7 @@ class ComfyUIClient:
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.RequestException as e:
+        except _REQ_ERR as e:
             logger.error(f"Failed to get system stats: {e}")
             return {}
 
@@ -388,9 +407,163 @@ class ComfyUIOrchestrationHandler:
             "system_load": stats.get("system", {}).get("cpu_percent", 0)
         }
 
+    # -- Saved-workflow templates (e.g. HiDream-O1) ------------------------- #
+
+    @staticmethod
+    def load_workflow_json(path: str, name: Optional[str] = None) -> ComfyUIWorkflow:
+        """Load an API-format ComfyUI workflow JSON ({node_id: {...}}) from disk.
+
+        Hand-building exotic graphs (HiDream-O1's custom sampler, the reference-
+        image and seam-smoothing nodes) is fragile — node class_types drift
+        between versions. Loading the official template JSON and overriding a few
+        inputs is version-proof, so that's what this does.
+        """
+        with open(os.path.expanduser(path)) as f:
+            data = json.load(f)
+        # Accept either the API format directly or a {"prompt": {...}} wrapper.
+        nodes = data.get("prompt", data) if isinstance(data, dict) else data
+        return ComfyUIWorkflow(name or os.path.basename(path), nodes)
+
+    @staticmethod
+    def override_inputs(workflow: ComfyUIWorkflow, overrides: List[Dict]) -> int:
+        """Set inputs on nodes matched by class_type and/or _meta title.
+
+        Each override: {class_type?, title?, field, value, all?}. Returns the
+        number of node inputs changed. Matches the first node unless all=True.
+        """
+        changed = 0
+        for ov in overrides:
+            for node in workflow.nodes.values():
+                if not isinstance(node, dict):
+                    continue
+                if ov.get("class_type") and node.get("class_type") != ov["class_type"]:
+                    continue
+                if ov.get("title") and node.get("_meta", {}).get("title") != ov["title"]:
+                    continue
+                node.setdefault("inputs", {})[ov["field"]] = ov["value"]
+                changed += 1
+                if not ov.get("all"):
+                    break
+        return changed
+
+    def prepare_hidream_o1(self, prompt: str, template_path: str,
+                           checkpoint: Optional[str] = None,
+                           reference_image: Optional[str] = None,
+                           seed: Optional[int] = None,
+                           steps: Optional[int] = None,
+                           extra_overrides: Optional[List[Dict]] = None) -> ComfyUIWorkflow:
+        """Load a HiDream-O1 template and patch in prompt/checkpoint/image/seed.
+
+        Pure local file work — no server needed, so it's unit-testable. Submit
+        the returned workflow with `client.queue_prompt`.
+        """
+        wf = self.load_workflow_json(template_path, name="hidream_o1")
+        overrides: List[Dict] = [
+            {"class_type": "CLIPTextEncode", "field": "text", "value": prompt},
+        ]
+        if checkpoint:
+            overrides.append({"class_type": "CheckpointLoaderSimple",
+                              "field": "ckpt_name", "value": checkpoint})
+        if reference_image:
+            # Edit mode: route a reference image into the Load Image node.
+            overrides.append({"class_type": "LoadImage", "field": "image",
+                              "value": reference_image})
+        if seed is not None:
+            # HiDream's sampler carries the noise seed; templates vary on the
+            # node, so try the common seed fields on whatever sampler is present.
+            for fld in ("noise_seed", "seed"):
+                overrides.append({"field": fld, "value": seed, "all": True,
+                                  "class_type": None})
+        if steps is not None:
+            overrides.append({"field": "steps", "value": steps, "all": True})
+        if extra_overrides:
+            overrides.extend(extra_overrides)
+        self.override_inputs(wf, overrides)
+        return wf
+
+    async def handle_hidream_o1(self, prompt: str, template_path: str,
+                                checkpoint: Optional[str] = None,
+                                reference_image: Optional[str] = None,
+                                seed: Optional[int] = None,
+                                steps: Optional[int] = None) -> Dict:
+        """Generate with HiDream-O1 via its official ComfyUI template."""
+        if not os.path.isfile(os.path.expanduser(template_path)):
+            return {"status": "failed", "error": "template_not_found",
+                    "hint": "Download the HiDream-O1 workflow JSON from "
+                            "github.com/Comfy-Org/workflow_templates "
+                            "(image_hidream_o1.json / image_hidream_o1_dev.json) "
+                            "and pass its path as template_path."}
+        try:
+            wf = self.prepare_hidream_o1(prompt, template_path, checkpoint,
+                                         reference_image, seed, steps)
+            result = await self.client.queue_prompt(wf)
+        except Exception as e:
+            msg = str(e)
+            try:
+                parsed = json.loads(msg)
+                if isinstance(parsed, dict):
+                    return {"status": "failed", **parsed}
+            except (json.JSONDecodeError, ValueError):
+                pass
+            return {"status": "failed", "error": msg}
+        prompt_id = result.get("prompt_id")
+        if prompt_id and await self.client.wait_for_completion(prompt_id):
+            return {"status": "completed", "engine": "hidream-o1",
+                    "prompt_id": prompt_id,
+                    "history": await self.client.get_history(prompt_id)}
+        return {"status": "failed", "prompt_id": prompt_id}
+
+    @staticmethod
+    def hidream_o1_download_commands(comfyui_dir: str = "~/ComfyUI",
+                                     dev: bool = False) -> List[str]:
+        """Return wget commands to fetch HiDream-O1 weights into ComfyUI/models."""
+        root = os.path.expanduser(comfyui_dir).rstrip("/") + "/models"
+        manifest = HIDREAM_O1_MODELS_DEV if dev else HIDREAM_O1_MODELS_FULL
+        cmds = []
+        for rel, url in {**manifest, **HIDREAM_O1_SHARED}.items():
+            target = f"{root}/{rel}"
+            cmds.append(f"mkdir -p {os.path.dirname(target)} && "
+                        f"wget -c -O {target} {url}")
+        return cmds
+
+
+# HiDream-O1-Image model download manifests (rel path under ComfyUI/models -> URL).
+# HiDream-O1 (HiDream-ai, MIT, May 2026) is a unified pixel-level transformer:
+# text-to-image, instruction editing, subject personalization, storyboards, up to
+# 2048x2048, with strong long-text rendering. FP8 scaled is the default checkpoint.
+_HF = "https://huggingface.co/Comfy-Org"
+HIDREAM_O1_MODELS_FULL = {
+    "checkpoints/hidream_o1_image_fp8_scaled.safetensors":
+        f"{_HF}/HiDream-O1-Image/resolve/main/checkpoints/hidream_o1_image_fp8_scaled.safetensors",
+}
+HIDREAM_O1_MODELS_DEV = {
+    "checkpoints/hidream_o1_image_dev_fp8_scaled.safetensors":
+        f"{_HF}/HiDream-O1-Image/resolve/main/checkpoints/hidream_o1_image_dev_fp8_scaled.safetensors",
+}
+HIDREAM_O1_SHARED = {
+    "text_encoders/gemma4_e4b_it_fp8_scaled.safetensors":
+        f"{_HF}/gemma-4/resolve/main/text_encoders/gemma4_e4b_it_fp8_scaled.safetensors",
+}
+
 
 # ComfyUI Workflow Templates
 COMFYUI_TEMPLATES = {
+    "hidream_o1_full": {
+        "description": "HiDream-O1 (Full) text-to-image / image-edit, up to 2048px",
+        "params": ["prompt", "template_path", "reference_image", "seed", "steps"],
+        "default_model": "hidream_o1_image_fp8_scaled.safetensors",
+        "default_steps": 50,
+        "workflow_template": "image_hidream_o1.json",
+        "text_encoder": "gemma4_e4b_it_fp8_scaled.safetensors",
+    },
+    "hidream_o1_dev": {
+        "description": "HiDream-O1 (Dev) distilled — 28 steps, CFG 1.0, no negative",
+        "params": ["prompt", "template_path", "reference_image", "seed", "steps"],
+        "default_model": "hidream_o1_image_dev_fp8_scaled.safetensors",
+        "default_steps": 28,
+        "workflow_template": "image_hidream_o1_dev.json",
+        "text_encoder": "gemma4_e4b_it_fp8_scaled.safetensors",
+    },
     "txt2img_sdxl": {
         "description": "Text-to-Image with SDXL",
         "params": ["prompt", "negative_prompt", "width", "height", "steps", "cfg"],
