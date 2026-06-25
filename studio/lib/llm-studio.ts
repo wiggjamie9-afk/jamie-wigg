@@ -7,7 +7,7 @@
  * - Graceful fallback if free tiers are exhausted
  */
 
-import { getLLMClient, completeWithLLM, getActiveLLMMode } from "../../lib/llm-router";
+import { getLLMClient, completeWithLLM, getActiveLLMMode } from "./llm-router";
 
 export type StudioTask =
   | "caption"           // Low-value: generate video captions
@@ -29,7 +29,7 @@ interface StudioLLMRequest {
   };
 }
 
-interface StudioLLMResponse {
+export interface StudioLLMResponse {
   text: string;
   provider: string;
   mode: "free" | "paid";
@@ -122,12 +122,16 @@ export async function routeStudioTask(
       model,
       temperature,
       max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt },
+      ],
     });
 
     const text = resp.choices[0]?.message?.content || "";
-    const provider = resp.headers?.get?.("x-routed-via") || "unknown";
+    const provider =
+      (resp as unknown as { headers?: { get?: (k: string) => string | null } })
+        .headers?.get?.("x-routed-via") || "unknown";
     const activeMode = getActiveLLMMode(mode);
 
     return {
@@ -145,8 +149,10 @@ export async function routeStudioTask(
         model: "claude-opus-4-8",
         temperature,
         max_tokens: maxTokens,
-        system: getSystemPrompt(task),
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: getSystemPrompt(task) },
+          { role: "user", content: prompt },
+        ],
       });
 
       return {
