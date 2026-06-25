@@ -21,9 +21,9 @@
  *            "content":"Plan a 3-asset launch for RHYTHMIX and generate the cover."}]}'
  */
 
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import cortex from "@aj-archipelago/cortex";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,10 +34,8 @@ process.env.CORTEX_PATHWAYS_PATH = path.join(here, "pathways");
 // a group so it can be free local Ollama or a hosted model depending on config.
 const PLANNER_GROUP = process.env.RHYTHMIX_PLANNER_GROUP || "rhythmix-planner";
 
-// Free local planner model (Ollama) + a model group so "the planner" is a
-// strategy. NOTE: the exact Ollama `type` string may differ between Cortex
-// versions — verify against config/default.example.json in your Cortex install
-// and adjust if planning errors with an unknown-model-type.
+// Free local planner model (Ollama). Cortex's OPENAI-CHAT plugin speaks to
+// Ollama's OpenAI-compatible endpoint; any bearer token is accepted.
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
 
@@ -67,6 +65,36 @@ const modelGroups = {
     metadata: { displayName: "RHYTHMIX Planner", provider: "cortex", category: "chat", isAgentic: true },
   },
 };
+
+// --- Merge our Ollama model INTO Cortex's config file -----------------------
+// When CORTEX_CONFIG_FILE is set, Cortex loads models from that file and ignores
+// the `models` passed programmatically below. So we read the base config, splice
+// in our local model + planner group, write a runtime config, and point Cortex
+// at THAT. Result: all of Cortex's defaults PLUS our free local brain, all in
+// one registry. The runtime file is regenerated on every boot (gitignored).
+const baseConfigPath =
+  process.env.CORTEX_BASE_CONFIG_FILE ||
+  path.join(here, "node_modules", "@aj-archipelago", "cortex", "config", "default.example.json");
+
+let baseConfig = {};
+try {
+  baseConfig = JSON.parse(fs.readFileSync(baseConfigPath, "utf8"));
+  console.log(`[rhythmix] merged Ollama model into base config: ${baseConfigPath}`);
+} catch (err) {
+  console.warn(`[rhythmix] could not read base config (${baseConfigPath}): ${err.message}`);
+  console.warn("[rhythmix] continuing with our models only.");
+}
+
+baseConfig.models = { ...(baseConfig.models || {}), ...models };
+baseConfig.modelGroups = { ...(baseConfig.modelGroups || {}), ...modelGroups };
+baseConfig.defaultModelName = process.env.DEFAULT_MODEL_NAME || PLANNER_GROUP;
+
+const runtimeConfigPath = path.join(here, "cortex.runtime.json");
+fs.writeFileSync(runtimeConfigPath, JSON.stringify(baseConfig, null, 2));
+process.env.CORTEX_CONFIG_FILE = runtimeConfigPath;
+
+// Import Cortex only AFTER CORTEX_CONFIG_FILE points at our merged runtime file.
+const { default: cortex } = await import("@aj-archipelago/cortex");
 
 const { startServer } = await cortex({
   PORT: Number(process.env.CORTEX_PORT || 4000),
