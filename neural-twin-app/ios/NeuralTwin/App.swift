@@ -410,12 +410,12 @@ struct VoiceRecordingView: View {
           .foregroundColor(.white)
           .background(
             voiceRecorder.isRecording ?
-            DesignTokens.errorRed :
-            LinearGradient(
+            AnyShapeStyle(DesignTokens.errorRed) :
+            AnyShapeStyle(LinearGradient(
               gradient: Gradient(colors: [DesignTokens.brandBlue, DesignTokens.accentPurple]),
               startPoint: .topLeading,
               endPoint: .bottomTrailing
-            )
+            ))
           )
           .cornerRadius(DesignTokens.radiusMedium)
         }
@@ -502,11 +502,12 @@ struct TwinsCarouselView: View {
         // Carousel
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: DesignTokens.spacing12) {
-            ForEach(twins, id: \.0) { twin, emoji, subtitle in
-              TwinCard(name: twin, emoji: emoji, subtitle: subtitle)
+            ForEach(Array(twins.enumerated()), id: \.offset) { _, item in
+              TwinCard(name: item.0, emoji: item.1, subtitle: item.2)
             }
           }
           .padding(.horizontal, DesignTokens.spacing16)
+          .scrollTargetLayout()
         }
         .scrollTargetBehavior(.viewAligned)
 

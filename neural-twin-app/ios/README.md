@@ -1,116 +1,56 @@
-# Neural Twin iOS App
+# Neural Twin — iOS App
 
-Native iOS application for Neural Twin - your personal AI companion.
+Native SwiftUI app for Neural Twin. The single source file is `NeuralTwin/App.swift`
+(SwiftUI App lifecycle, `@main struct NeuralTwinApp`).
 
-## Setup
+## Project generation
+
+There is **no committed `.xcodeproj`** — it is generated from `project.yml` with
+[XcodeGen](https://github.com/yonaskolb/XcodeGen) so the project file never drifts
+or causes merge conflicts.
 
 ```bash
-# Install dependencies (CocoaPods)
 cd ios
-pod install
-
-# Open Xcode
-open NeuralTwin.xcworkspace
-
-# Build and run
-⌘ + R
+brew install xcodegen      # one-time
+xcodegen generate          # writes NeuralTwin.xcodeproj from project.yml
+open NeuralTwin.xcodeproj   # build & run with ⌘R  (needs Xcode 15+, iOS 17 SDK)
 ```
 
-## Architecture
+In CI (Codemagic), run `xcodegen generate` as a pre-build step, then build the
+`NeuralTwin` scheme.
 
-### Views
-- **MainTabView** — Tab-based navigation (Home, Voice, Twins, Coherence, Settings)
-- **HomeView** — Dashboard with stats and quick actions
-- **VoiceRecordingView** — Real-time voice recording with waveform
-- **TwinsView** — List of 8 Twin specialists
-- **TwinChatView** — Real-time chat with a Twin
-- **CoherenceView** — 7-layer coherence metrics dashboard
-- **SettingsView** — Account and app settings
-- **AuthView** — Sign-in / Sign-up
+## Configuration
 
-### Managers
-- **AuthManager** — JWT token handling, login/logout, OAuth (Apple, Google)
-- **AppState** — Tab selection and global app state
-- **VoiceRecorder** — AVAudioEngine voice recording and processing
+| Setting | Value |
+|---|---|
+| Bundle ID | `com.neuraltwin.app` |
+| Deployment target | iOS 17.0 |
+| Display name | Neural Twin |
+| Signing | Automatic (set your Team in Xcode, or via Codemagic env) |
 
-## Phase Implementation
+Usage strings (in `NeuralTwin/Info.plist`): microphone (voice capture) and camera
+(book scanning). Add an `AppIcon` 1024×1024 image to
+`NeuralTwin/Assets.xcassets/AppIcon.appiconset/` before App Store submission — the
+slot exists but is currently empty (builds run fine without it).
 
-### Phase 1 (MVP)
-- [ ] Voice recording with AVAudioEngine
-- [ ] Voice emotion recognition (Whisper + acoustic features)
-- [ ] Decision logging
-- [ ] Basic Twin chat interface
+## What exists vs. what's next
 
-### Phase 2
-- [ ] All 8 Twins active
-- [ ] Ecosystem Brain knowledge graph
-- [ ] Weekly synthesis
+**Exists:** the full SwiftUI UI — Home, Voice, Twins carousel (9 Twins),
+8-layer Coherence dashboard, Metacognition view, Settings, Auth. All screens
+currently render **mock/hardcoded data**.
 
-### Phase 3
-- [ ] Apple Health integration
-- [ ] Wearable data (Apple Watch, Oura, Withings)
-- [ ] Computer vision (posture, breathing)
+**Next (see repo task tracker):**
+1. Networking layer — `URLSession` API client + `Codable` models pointing at the
+   backend, Keychain token storage.
+2. Real auth (Sign in with Apple via `AuthenticationServices`) replacing the
+   `AuthManager.login` stub.
+3. Replace hardcoded coherence/twin/stat data with live backend responses.
+4. Real voice capture (`AVAudioEngine` + microphone permission) replacing the
+   timer-based placeholder, if voice stays in v1.
 
-### Phase 4
-- [ ] 7-layer coherence dashboard
-- [ ] Real-time coherence coaching
-- [ ] Harmonic frequency resonance
+## Architecture (current)
 
-### Phase 5
-- [ ] Lock screen widgets
-- [ ] Siri Shortcuts
-- [ ] App Store submission
-
-## Dependencies
-
-- **SwiftUI** — Native UI framework
-- **Combine** — Reactive programming
-- **AVFoundation** — Voice recording
-- **HealthKit** — Apple Health integration
-- **Socket.IO** — Real-time communication with backend
-
-## Key Features
-
-### Voice Recording
-- Real-time waveform visualization
-- Emotion analysis (happy, sad, angry, neutral, surprised, fearful, disgusted)
-- Acoustic feature extraction (pitch, speech rate, jitter, formants, MFCC)
-
-### 8 Specialist Twins
-1. **Task Twin** — Productivity & prioritization
-2. **Coach Twin** — Real-time voice-based coaching
-3. **Growth Twin** — Learning & development
-4. **Health Twin** — Biometric optimization
-5. **Relationship Twin** — Social coherence
-6. **Financial Twin** — Money psychology
-7. **Creative Twin** — Flow state & inspiration
-8. **Research Twin** — Knowledge synthesis
-
-### Coherence Metrics
-- Heart-Brain Coherence
-- Breath Coherence
-- Brain Coherence
-- Vagal Tone
-- Circadian Alignment
-- Biofield Coherence
-- Decision Coherence
-
-## Privacy
-
-- Local-first processing (voice emotion on-device)
-- End-to-end encryption for sync
-- User owns all data
-- Can export anytime
-
-## Next Steps
-
-1. Implement AVAudioEngine voice recording (`VoiceRecorder` class)
-2. Integrate Whisper API for transcription
-3. Add acoustic feature extraction library
-4. Wire up backend API calls
-5. Implement real-time chat with Twins
-
----
-
-**Start date:** June 2024
-**Phase 0 complete:** June 24, 2024
+- **Views:** `MainTabView`, `HomeView`, `VoiceRecordingView`, `TwinsCarouselView`,
+  `TwinChatView`, `CoherenceView`, `MetacognitionView`, `SettingsView`, `AuthView`.
+- **State:** `AuthManager`, `AppState`, `VoiceRecorder` (`ObservableObject`s).
+- **Design:** `DesignTokens` (palette, spacing, radii) drives the glassmorphism UI.
