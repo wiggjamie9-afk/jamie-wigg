@@ -18,15 +18,27 @@ remain the reference implementations for how to call each engine.
 
 ```
 automation/cortex/
-├── index.mjs                       # boots Cortex + the `rhythmix` entity
+├── index.mjs                       # boots Cortex + the `rhythmix` entity + model group
 ├── package.json                    # depends on @aj-archipelago/cortex
 └── pathways/
     ├── rhythmix_plan.js            # brief -> JSON task plan (model-agnostic)
+    ├── zimage_image.js             # local fast stills (Z-Image MCP) [tool]
+    ├── comfyui_hidream.js          # local HiDream-O1 image (ComfyUI) [tool]
     ├── modelslab_image.js          # hosted text-to-image (no-GPU path) [tool]
-    └── idlora_talking_video.js     # local talking-head video via ID-LoRA [tool]
+    ├── idlora_talking_video.js     # local talking-head video (ID-LoRA) [tool]
+    ├── whisper_transcribe.js       # on-device transcription (whisper.cpp) [tool]
+    ├── llava_describe.js           # vision / asset QA (local LLaVA) [tool]
+    └── agent_tars_publish.js       # gated GUI publish — never auto-posts [tool]
 ```
 
-Each pathway with a `toolDefinition` becomes a tool the entity agent can call.
+Each pathway with a `toolDefinition` becomes a tool the `rhythmix` entity agent
+can call. Planning runs on a free local Ollama model via the `rhythmix-planner`
+model group configured in `index.mjs` (add a hosted model id as a quality
+fallback when you have a key).
+
+This is the convergence of the Python `../registry.py` onto Cortex: every engine
+the registry routed to now has a Cortex pathway tool. The Python handlers remain
+the reference implementations.
 
 ## Run it (on a real machine, not the iPhone-only flow)
 
@@ -68,11 +80,13 @@ the capability; Cortex picks the healthy/fastest member. See the Cortex docs on
 - [x] Entity + planner pathway
 - [x] ModelsLab tool (hosted, no-GPU)
 - [x] ID-LoRA tool (local CLI)
-- [ ] Z-Image-Turbo pathway (local MCP at :8001)
-- [ ] HiDream-O1 pathway (submit ComfyUI workflow at :8188)
-- [ ] Whisper / LLaVA / Agent TARS as pathways or MCP tools
-- [ ] `rhythmix-planner` model group config + Ollama model entry
-- [ ] Verify end-to-end on a GPU host (brief -> plan -> assets)
+- [x] Z-Image-Turbo pathway (local MCP at :8001)
+- [x] HiDream-O1 pathway (submit ComfyUI workflow at :8188)
+- [x] Whisper + LLaVA + Agent TARS pathways
+- [x] `rhythmix-planner` model group + Ollama model entry (in `index.mjs`)
+- [ ] Verify end-to-end on a GPU host (brief -> plan -> assets) — needs a real
+      machine; all JS is `node --check`-clean but untested against a live runtime
+- [ ] Confirm the Ollama model `type` string matches your Cortex version
 
 > Sandbox note: the Cortex *git repo* can't be cloned from the cloud sandbox
 > (external git egress is blocked). The **npm package** install path is open, so
