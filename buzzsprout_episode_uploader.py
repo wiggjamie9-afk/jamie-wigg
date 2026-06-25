@@ -44,7 +44,7 @@ except ImportError:
 # --------------------------------------------------------------------------
 # Configuration
 # --------------------------------------------------------------------------
-API_KEY = os.environ.get("BUZZSPROUT_API_KEY") or "89b81d4e98a6228ce79c3fa30afd2d5dc"
+API_KEY = os.environ.get("BUZZSPROUT_API_KEY") or "8d981d4c93a623ce79c3fa30afd2d5dc"
 BASE_URL = "https://www.buzzsprout.com/api"
 
 # show number (zero-padded) -> (podcast_id, show name)
