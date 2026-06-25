@@ -1008,9 +1008,10 @@ class VoiceRecorder: NSObject, ObservableObject {
     isRecording = true
     seconds = 0
     timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-      self?.seconds += 1
-      self?.recordingTime = String(format: "%d:%02d", self?.seconds ?? 0 / 60, self?.seconds ?? 0 % 60)
-      self?.waveProgress = Double(Int.random(in: 0...100)) / 100
+      guard let self = self else { return }
+      self.seconds += 1
+      self.recordingTime = String(format: "%d:%02d", self.seconds / 60, self.seconds % 60)
+      self.waveProgress = Double(Int.random(in: 0...100)) / 100
     }
     // TODO: Start AVAudioEngine
   }
@@ -1030,77 +1031,33 @@ class VoiceRecorder: NSObject, ObservableObject {
 // ============================================================================
 
 extension View {
-  func border(_ edges: Edge.Set = .all, _ color: Color, width: CGFloat = 1) -> some View {
+  /// Divider-style hairline on the top edge only.
+  func border(top width: CGFloat, color: Color) -> some View {
     overlay(
-      Group {
-        if edges.contains(.top) {
-          VStack {
-            Divider()
-              .background(color)
-              .frame(height: width)
-            Spacer()
-          }
-        }
-        if edges.contains(.bottom) {
-          VStack {
-            Spacer()
-            Divider()
-              .background(color)
-              .frame(height: width)
-          }
-        }
-        if edges.contains(.leading) {
-          HStack {
-            Divider()
-              .background(color)
-              .frame(width: width)
-            Spacer()
-          }
-        }
-        if edges.contains(.trailing) {
-          HStack {
-            Spacer()
-            Divider()
-              .background(color)
-              .frame(width: width)
-          }
-        }
+      VStack(spacing: 0) {
+        Rectangle().fill(color).frame(height: width)
+        Spacer(minLength: 0)
       }
     )
   }
 
+  /// Divider-style hairline on the bottom edge only.
+  func border(bottom width: CGFloat, color: Color) -> some View {
+    overlay(
+      VStack(spacing: 0) {
+        Spacer(minLength: 0)
+        Rectangle().fill(color).frame(height: width)
+      }
+    )
+  }
+
+  /// Full rounded-rectangle stroke.
   func border(_ thickness: CGFloat, color: Color) -> some View {
     overlay(
       RoundedRectangle(cornerRadius: 16)
         .stroke(color, lineWidth: thickness)
     )
   }
-}
-
-enum Edge: Hashable {
-  case top, bottom, leading, trailing
-}
-
-extension Edge.Set {
-  static let top = Edge.Set(rawValue: 1)
-  static let bottom = Edge.Set(rawValue: 2)
-  static let leading = Edge.Set(rawValue: 4)
-  static let trailing = Edge.Set(rawValue: 8)
-
-  func contains(_ edge: Edge) -> Bool {
-    switch edge {
-    case .top: return rawValue & 1 != 0
-    case .bottom: return rawValue & 2 != 0
-    case .leading: return rawValue & 4 != 0
-    case .trailing: return rawValue & 8 != 0
-    }
-  }
-
-  init(rawValue: Int) {
-    self.rawValue = rawValue
-  }
-
-  var rawValue: Int
 }
 
 // ============================================================================

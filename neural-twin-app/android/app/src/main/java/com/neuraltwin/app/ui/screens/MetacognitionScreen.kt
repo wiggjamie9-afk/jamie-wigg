@@ -2,10 +2,13 @@ package com.neuraltwin.app.ui.screens
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TrendingUp
@@ -511,15 +514,3 @@ fun GrowthAreasCard(modifier: Modifier = Modifier) {
     }
   }
 }
-
-@Composable
-private fun Clickable(enabled: Boolean, onClick: () -> Unit) {
-}
-
-// Import Slider from Material 3
-import androidx.compose.foundation.clickable
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Divider
-import androidx.compose.foundation.border
-import androidx.compose.material3.Card
-import androidx.compose.ui.graphics.RoundedCornerShape

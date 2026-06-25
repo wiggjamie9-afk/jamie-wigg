@@ -58,7 +58,7 @@ fun CoherenceScreen() {
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            Canvas(
+            CoherenceRingCanvas(
                 modifier = Modifier.size(220.dp),
                 onDraw = {
                     val centerX = size.width / 2
@@ -251,7 +251,7 @@ fun StateRow(label: String, value: String, color: Color) {
 }
 
 @Composable
-fun Canvas(
+fun CoherenceRingCanvas(
     modifier: Modifier = Modifier,
     onDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = {}
 ) {

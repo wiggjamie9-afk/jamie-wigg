@@ -2,7 +2,6 @@ package com.neuraltwin.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.neuraltwin.app.data.models.BookScanRequest
 import com.neuraltwin.app.data.network.ApiClient
 import com.neuraltwin.app.data.network.ApiService
 import dagger.hilt.android.lifecycle.HiltViewModel

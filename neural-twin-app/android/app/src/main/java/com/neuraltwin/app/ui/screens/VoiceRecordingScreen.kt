@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
@@ -123,7 +124,7 @@ fun VoiceRecordingScreen(
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Canvas(
+                VoiceWaveCanvas(
                     modifier = Modifier
                         .size(160.dp),
                     onDraw = {
@@ -454,7 +455,7 @@ fun MetacognitivePromptDialog(
 }
 
 @Composable
-fun Canvas(
+fun VoiceWaveCanvas(
     modifier: Modifier = Modifier,
     onDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = {}
 ) {

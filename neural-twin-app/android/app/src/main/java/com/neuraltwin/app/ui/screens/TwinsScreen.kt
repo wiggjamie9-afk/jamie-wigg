@@ -10,7 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -111,7 +111,7 @@ fun TwinDetailItem(twin: Twin) {
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Center
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 modifier = Modifier.weight(1f),
@@ -150,9 +150,9 @@ fun TwinDetailItem(twin: Twin) {
 
 @Composable
 fun TwinChatView(twin: Twin) {
-    var messageText by androidx.compose.runtime.remember { mutableStateOf("") }
+    var messageText by remember { mutableStateOf("") }
     val messages = remember {
-        mutableListOf(
+        mutableStateListOf(
             Pair("Hi! I'm ${twin.name}", false),
             Pair("How can I help you today?", false)
         )

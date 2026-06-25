@@ -1,8 +1,11 @@
 package com.neuraltwin.app.data.network
 
 import com.neuraltwin.app.data.models.*
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class Repository(private val apiService: ApiService = ApiClient.apiService) {
+@Singleton
+class Repository @Inject constructor(private val apiService: ApiService) {
     // ============================================================================
     // Voice Operations
     // ============================================================================
