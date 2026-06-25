@@ -49,8 +49,21 @@ class MetacognitionViewModel @Inject constructor() : ViewModel() {
   private val _thinkingPatterns = MutableStateFlow<Map<String, Any>>(emptyMap())
   val thinkingPatterns: StateFlow<Map<String, Any>> = _thinkingPatterns
 
-  private val _cognitiveLoad = MutableStateFlow(0f)  // 0-1, perceived mental effort
+  private val _cognitiveLoad = MutableStateFlow(0.5f)  // 0-1, perceived mental effort
   val cognitiveLoad: StateFlow<Float> = _cognitiveLoad
+
+  init {
+    // Initialize with planning phase prompt
+    getPhasePrompt("planning")
+    // Set some default metrics for demo
+    _metacognitiveMetrics.value = MetacognitiveMetrics(
+      planningScore = 0.75f,
+      monitoringScore = 0.6f,
+      evaluatingScore = 0.8f,
+      reflectingScore = 0.7f,
+      metacognitiveCoherence = 71.25f
+    )
+  }
 
   fun getPhasePrompt(phase: String) {
     val prompt = when (phase) {

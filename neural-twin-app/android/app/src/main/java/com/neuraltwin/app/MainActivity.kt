@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -88,6 +89,18 @@ fun MainNavigation(navController: NavController, authViewModel: AuthViewModel) {
                 NavigationBarItem(
                     selected = selectedTab == 4,
                     onClick = { selectedTab = 4 },
+                    icon = { Icon(Icons.Default.Psychology, "Thinking") },
+                    label = { Text("Thinking") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 5,
+                    onClick = { selectedTab = 5 },
+                    icon = { Icon(Icons.Default.MenuBook, "Books") },
+                    label = { Text("Books") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 6,
+                    onClick = { selectedTab = 6 },
                     icon = { Icon(Icons.Default.Settings, "Settings") },
                     label = { Text("Settings") }
                 )
@@ -102,7 +115,9 @@ fun MainNavigation(navController: NavController, authViewModel: AuthViewModel) {
                 1 -> VoiceRecordingScreen()
                 2 -> TwinsListScreen()
                 3 -> CoherenceScreen()
-                4 -> SettingsScreen(authViewModel)
+                4 -> MetacognitionScreen()
+                5 -> BookScannerScreen()
+                6 -> SettingsScreen(authViewModel)
             }
         }
     }
