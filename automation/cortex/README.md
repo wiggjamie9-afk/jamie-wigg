@@ -40,7 +40,32 @@ This is the convergence of the Python `../registry.py` onto Cortex: every engine
 the registry routed to now has a Cortex pathway tool. The Python handlers remain
 the reference implementations.
 
-## Run it (on a real machine, not the iPhone-only flow)
+## Quick start: the free brain (2 minutes, on the Mac)
+
+The whole factory boots with nothing but a free local model — no API keys, no
+costs, no terms-of-service risk.
+
+```bash
+# 1. Install Ollama (free local LLM) and pull a small model
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3.2
+
+# 2. Start the backbone
+cd automation/cortex
+cp .env.example .env        # defaults already point at local Ollama
+npm install
+npm start                   # GraphQL :4000/graphql, REST at /v1/*
+```
+
+That's it — planning/copy now runs locally for free. Add engine keys/paths in
+`.env` later to light up image/video/voice tools (see `.env.example`).
+
+> Avoid browser-session "no API key" gateways (e.g. tools that puppet your
+> logged-in ChatGPT/Claude tabs). They violate provider terms of service and get
+> accounts banned — a bad foundation for a business. Use free local Ollama, or a
+> real API key. Both are wired here.
+
+## Run it (full options)
 
 ```bash
 cd automation/cortex
