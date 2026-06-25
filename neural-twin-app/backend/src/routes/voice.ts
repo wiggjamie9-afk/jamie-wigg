@@ -1,12 +1,10 @@
 import express, { Router, Request, Response } from 'express';
 import { prisma } from '../index';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { getAnthropic, CLAUDE_MODEL } from '../lib/anthropic';
 
 const router: Router = express.Router();
-const anthropic = new Anthropic();
 
 interface VoiceUploadRequest {
-  userId: string;
   audioBase64: string;
   context?: string;
   location?: string;
@@ -84,15 +82,16 @@ async function detectEmotion(transcript: string, acousticFeatures: any) {
 // POST /api/voice - Upload voice recording with emotion analysis
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { userId, audioBase64, context, location, decisionTitle, planningClarity } = req.body as VoiceUploadRequest;
+    const { audioBase64, context, location, decisionTitle, planningClarity } = req.body as VoiceUploadRequest;
+    const userId = req.userId!;
 
-    if (!userId || !audioBase64) {
-      return res.status(400).json({ error: 'Missing userId or audioBase64' });
+    if (!audioBase64) {
+      return res.status(400).json({ error: 'Missing audioBase64' });
     }
 
     // Simulate transcription using Anthropic (in production, use Whisper API)
-    const transcriptionResponse = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const transcriptionResponse = await getAnthropic().messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 500,
       messages: [
         {
@@ -144,10 +143,7 @@ router.post('/', async (req: Request, res: Response) => {
 // GET /api/voice - Get user's voice recordings
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
+    const userId = req.userId!;
 
     const recordings = await prisma.voiceRecording.findMany({
       where: { userId },
@@ -176,8 +172,9 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const recording = await prisma.voiceRecording.findUnique({
-      where: { id }
+    const userId = req.userId!;
+    const recording = await prisma.voiceRecording.findFirst({
+      where: { id, userId }
     });
 
     if (!recording) {

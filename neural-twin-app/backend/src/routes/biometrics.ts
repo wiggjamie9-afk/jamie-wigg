@@ -51,7 +51,6 @@ function calculateCoherence(biometrics: any): {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const {
-      userId,
       heartRate,
       hrv,
       breathingRate,
@@ -66,9 +65,7 @@ router.post('/', async (req: Request, res: Response) => {
       timeOfDay
     } = req.body as BiometricDataRequest;
 
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
+    const userId = req.userId!;
 
     const coherence = calculateCoherence({
       heartRate,
@@ -131,12 +128,8 @@ router.post('/', async (req: Request, res: Response) => {
 // GET /api/biometrics - Get user's biometric data
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
+    const userId = req.userId!;
     const timeframe = (req.query.timeframe as string) || '24h'; // 24h, 7d, 30d, all
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
 
     let startDate = new Date();
     switch (timeframe) {
@@ -203,9 +196,10 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = req.userId!;
 
-    const biometric = await prisma.biometricData.findUnique({
-      where: { id }
+    const biometric = await prisma.biometricData.findFirst({
+      where: { id, userId }
     });
 
     if (!biometric) {

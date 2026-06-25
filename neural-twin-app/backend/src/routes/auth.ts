@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcryptjs from 'bcryptjs';
 import { z } from 'zod';
 import { prisma, logger } from '../index';
+import { getJwtSecret } from '../middleware/auth';
 
 const router: Router = express.Router();
 
@@ -74,7 +75,7 @@ router.post('/register', async (req: Request, res: Response) => {
     // Generate JWT
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'dev-secret',
+      getJwtSecret(),
       { expiresIn: '30d' }
     );
 
@@ -117,7 +118,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'dev-secret',
+      getJwtSecret(),
       { expiresIn: '30d' }
     );
 
@@ -191,7 +192,7 @@ router.post('/oauth', async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'dev-secret',
+      getJwtSecret(),
       { expiresIn: '30d' }
     );
 
@@ -220,7 +221,7 @@ router.post('/verify', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as any;
+    const decoded = jwt.verify(token, getJwtSecret()) as any;
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
 
     if (!user) {

@@ -1,12 +1,10 @@
 import express, { Router, Request, Response } from 'express';
 import { prisma } from '../index';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { getAnthropic, CLAUDE_MODEL } from '../lib/anthropic';
 
 const router: Router = express.Router();
-const anthropic = new Anthropic();
 
 interface KnowledgeEntryRequest {
-  userId: string;
   topic: string;
   insight: string;
   source?: string;
@@ -16,7 +14,6 @@ interface KnowledgeEntryRequest {
 }
 
 interface LearningLoopRequest {
-  userId: string;
   cycle: number;
   cycleType: string; // weekly, monthly
   keyInsights: string[];
@@ -37,8 +34,8 @@ async function analyzeLearningPatterns(userId: string) {
       take: 20
     });
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const response = await getAnthropic().messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 1000,
       messages: [
         {
@@ -73,7 +70,6 @@ Keep response concise and actionable.`
 router.post('/', async (req: Request, res: Response) => {
   try {
     const {
-      userId,
       topic,
       insight,
       source,
@@ -81,10 +77,11 @@ router.post('/', async (req: Request, res: Response) => {
       applicability,
       relatedTopics
     } = req.body as KnowledgeEntryRequest;
+    const userId = req.userId!;
 
-    if (!userId || !topic || !insight) {
+    if (!topic || !insight) {
       return res.status(400).json({
-        error: 'Missing required fields: userId, topic, insight'
+        error: 'Missing required fields: topic, insight'
       });
     }
 
@@ -117,12 +114,8 @@ router.post('/', async (req: Request, res: Response) => {
 // GET /api/knowledge - Get user's knowledge base
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
+    const userId = req.userId!;
     const topic = req.query.topic as string;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
 
     const entries = await prisma.knowledgeEntry.findMany({
       where: {
@@ -164,9 +157,10 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = req.userId!;
 
-    const entry = await prisma.knowledgeEntry.findUnique({
-      where: { id }
+    const entry = await prisma.knowledgeEntry.findFirst({
+      where: { id, userId }
     });
 
     if (!entry) {
@@ -187,15 +181,15 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/learning-loop', async (req: Request, res: Response) => {
   try {
     const {
-      userId,
       cycle,
       cycleType,
       keyInsights
     } = req.body as LearningLoopRequest;
+    const userId = req.userId!;
 
-    if (!userId || !cycle || !cycleType) {
+    if (!cycle || !cycleType) {
       return res.status(400).json({
-        error: 'Missing required fields: userId, cycle, cycleType'
+        error: 'Missing required fields: cycle, cycleType'
       });
     }
 
@@ -230,11 +224,7 @@ router.post('/learning-loop', async (req: Request, res: Response) => {
 // GET /api/knowledge/loops - Get user's learning loops
 router.get('/loops/history', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
+    const userId = req.userId!;
 
     const loops = await prisma.learningLoop.findMany({
       where: { userId },

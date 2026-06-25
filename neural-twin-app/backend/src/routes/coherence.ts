@@ -1,9 +1,8 @@
 import express, { Router, Request, Response } from 'express';
 import { prisma } from '../index';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { getAnthropic, CLAUDE_MODEL } from '../lib/anthropic';
 
 const router: Router = express.Router();
-const anthropic = new Anthropic();
 
 // Calculate 8th layer: Metacognitive coherence
 async function calculateMetacognitiveCoherence(userId: string): Promise<number> {
@@ -37,8 +36,8 @@ Provide 2-3 specific, actionable recommendations to improve or maintain coherenc
 
 Keep each recommendation to 1-2 sentences.`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const response = await getAnthropic().messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 300,
       messages: [
         {
@@ -58,11 +57,7 @@ Keep each recommendation to 1-2 sentences.`;
 // GET /api/coherence - Get current 8-layer coherence
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
+    const userId = req.userId!;
 
     const coherenceMetric = await prisma.coherenceMetric.findFirst({
       where: { userId },
@@ -140,12 +135,8 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/coherence/history - Get coherence progression
 router.get('/history', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
+    const userId = req.userId!;
     const timeframe = (req.query.timeframe as string) || '7d'; // 24h, 7d, 30d, all
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
 
     let startDate = new Date();
     switch (timeframe) {
@@ -222,10 +213,11 @@ router.get('/history', async (req: Request, res: Response) => {
 // GET /api/coherence/:id - Get specific coherence metric
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const userId = req.userId!;
     const { id } = req.params;
 
-    const metric = await prisma.coherenceMetric.findUnique({
-      where: { id }
+    const metric = await prisma.coherenceMetric.findFirst({
+      where: { id, userId }
     });
 
     if (!metric) {

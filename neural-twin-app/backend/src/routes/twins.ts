@@ -1,12 +1,10 @@
 import express, { Router, Request, Response } from 'express';
 import { prisma } from '../index';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { getAnthropic, CLAUDE_MODEL } from '../lib/anthropic';
 
 const router: Router = express.Router();
-const anthropic = new Anthropic();
 
 interface TwinInteractionRequest {
-  userId: string;
   twinType: string;
   userMessage: string;
   metacognitivePhase?: string;
@@ -49,8 +47,8 @@ async function getTwinResponse(
   }
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const response = await getAnthropic().messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 500,
       messages: [
         {
@@ -72,16 +70,16 @@ async function getTwinResponse(
 router.post('/interaction', async (req: Request, res: Response) => {
   try {
     const {
-      userId,
       twinType,
       userMessage,
       metacognitivePhase,
       contextData
     } = req.body as TwinInteractionRequest;
+    const userId = req.userId!;
 
-    if (!userId || !twinType || !userMessage) {
+    if (!twinType || !userMessage) {
       return res.status(400).json({
-        error: 'Missing required fields: userId, twinType, userMessage'
+        error: 'Missing required fields: twinType, userMessage'
       });
     }
 
@@ -121,11 +119,7 @@ router.post('/interaction', async (req: Request, res: Response) => {
 // GET /api/twins - Get user's Twins
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
+    const userId = req.userId!;
 
     const twins = [
       { type: 'task', emoji: '✅', name: 'Task Twin', subtitle: 'Productivity', status: 'active' },
@@ -162,12 +156,8 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/twins/:type/history - Get Twin interaction history
 router.get('/:type/history', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
+    const userId = req.userId!;
     const { type } = req.params;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
 
     const interactions = await prisma.twinInteraction.findMany({
       where: { userId, twinType: type },

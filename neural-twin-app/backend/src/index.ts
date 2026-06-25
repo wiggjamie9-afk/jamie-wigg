@@ -18,6 +18,10 @@ import knowledgeRouter from './routes/knowledge';
 import twinsRouter from './routes/twins';
 import biometricsRouter from './routes/biometrics';
 import coherenceRouter from './routes/coherence';
+import accessibilityRouter from './routes/accessibility';
+
+// Middleware
+import { requireAuth } from './middleware/auth';
 
 // Logger
 const logger = winston.createLogger({
@@ -47,8 +51,12 @@ const PORT = process.env.PORT || 3000;
 // ============================================================================
 
 app.use(helmet());
+// CORS: a literal '*' origin is invalid together with credentials:true. When
+// CORS_ORIGIN is unset we reflect the request origin (origin:true); in
+// production set CORS_ORIGIN to a comma-separated allowlist of app origins.
+const corsOrigin = process.env.CORS_ORIGIN;
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: corsOrigin ? corsOrigin.split(',').map((o) => o.trim()) : true,
   credentials: true,
 }));
 
@@ -87,23 +95,29 @@ app.get('/health', async (req: Request, res: Response) => {
 // API ROUTES
 // ============================================================================
 
-// Auth (login, register, token refresh)
+// Auth (login, register, token refresh) — public
 app.use('/api/auth', authRouter);
 
+// All routes below require a valid JWT. requireAuth attaches req.userId, which
+// the routes use as the acting user instead of trusting a client-supplied id.
+
 // Phase 1: Foundation data
-app.use('/api/voice', voiceRouter);
-app.use('/api/decisions', decisionsRouter);
-app.use('/api/values', valuesRouter);
-app.use('/api/knowledge', knowledgeRouter);
+app.use('/api/voice', requireAuth, voiceRouter);
+app.use('/api/decisions', requireAuth, decisionsRouter);
+app.use('/api/values', requireAuth, valuesRouter);
+app.use('/api/knowledge', requireAuth, knowledgeRouter);
 
 // Phase 2: Twins
-app.use('/api/twins', twinsRouter);
+app.use('/api/twins', requireAuth, twinsRouter);
 
 // Phase 3: Biometrics
-app.use('/api/biometrics', biometricsRouter);
+app.use('/api/biometrics', requireAuth, biometricsRouter);
 
 // Phase 4: Coherence
-app.use('/api/coherence', coherenceRouter);
+app.use('/api/coherence', requireAuth, coherenceRouter);
+
+// Accessibility: book scanning (Claude Vision OCR), TTS, reader settings
+app.use('/api/accessibility', requireAuth, accessibilityRouter);
 
 // ============================================================================
 // ERROR HANDLING

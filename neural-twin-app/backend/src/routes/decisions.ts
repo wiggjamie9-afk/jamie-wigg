@@ -1,12 +1,10 @@
 import express, { Router, Request, Response } from 'express';
 import { prisma } from '../index';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { getAnthropic, CLAUDE_MODEL } from '../lib/anthropic';
 
 const router: Router = express.Router();
-const anthropic = new Anthropic();
 
 interface DecisionLogRequest {
-  userId: string;
   title: string;
   description: string;
   options: Record<string, string>;
@@ -39,8 +37,8 @@ function calculateMetacognitiveScore(
 // Analyze decision with Claude to get insights
 async function analyzeDecision(decision: DecisionLogRequest, emotionalState?: string) {
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const response = await getAnthropic().messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 1000,
       messages: [
         {
@@ -81,8 +79,8 @@ Keep response concise and actionable.`
 // POST /api/decisions - Log a decision with metacognitive tracking
 router.post('/', async (req: Request, res: Response) => {
   try {
+    const userId = req.userId!;
     const {
-      userId,
       title,
       description,
       options,
@@ -97,9 +95,9 @@ router.post('/', async (req: Request, res: Response) => {
       reflectionInsights
     } = req.body as DecisionLogRequest;
 
-    if (!userId || !title || !chosenOption || !reasoning) {
+    if (!title || !chosenOption || !reasoning) {
       return res.status(400).json({
-        error: 'Missing required fields: userId, title, chosenOption, reasoning'
+        error: 'Missing required fields: title, chosenOption, reasoning'
       });
     }
 
@@ -113,7 +111,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Analyze decision with Claude
     const analysis = await analyzeDecision(
-      { userId, title, description, options, chosenOption, reasoning, category, confidence, planningClarity, strategyChosen, monitoringComprehension, evaluationEffectiveness, reflectionInsights },
+      { title, description, options, chosenOption, reasoning, category, confidence, planningClarity, strategyChosen, monitoringComprehension, evaluationEffectiveness, reflectionInsights },
       undefined
     );
 
@@ -173,12 +171,8 @@ router.post('/', async (req: Request, res: Response) => {
 // GET /api/decisions - Get user's decisions with pattern analysis
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
+    const userId = req.userId!;
     const category = req.query.category as string;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
 
     const decisions = await prisma.decision.findMany({
       where: {
@@ -211,10 +205,11 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/decisions/:id - Get specific decision with full analysis
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const userId = req.userId!;
     const { id } = req.params;
 
-    const decision = await prisma.decision.findUnique({
-      where: { id }
+    const decision = await prisma.decision.findFirst({
+      where: { id, userId }
     });
 
     if (!decision) {
@@ -234,11 +229,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // GET /api/decisions/patterns/analysis - Analyze decision patterns
 router.get('/patterns/analysis', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
+    const userId = req.userId!;
 
     const decisions = await prisma.decision.findMany({
       where: { userId },

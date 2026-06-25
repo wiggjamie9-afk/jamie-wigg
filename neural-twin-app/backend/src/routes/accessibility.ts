@@ -1,19 +1,16 @@
 import express, { Router, Request, Response } from 'express';
 import { prisma } from '../index';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { getAnthropic, CLAUDE_MODEL } from '../lib/anthropic';
 
 const router: Router = express.Router();
-const anthropic = new Anthropic();
 
 interface BookScanRequest {
-  userId: string;
   imageBase64: string;
   language?: string;
   focusArea?: string; // title, paragraph, specific_section
 }
 
 interface TextToSpeechRequest {
-  userId: string;
   text: string;
   voiceId?: string;
   speed?: number; // 0.5 to 2.0
@@ -22,8 +19,8 @@ interface TextToSpeechRequest {
 // Extract text from image using Claude Vision
 async function extractTextFromImage(imageBase64: string, focusArea: string = 'full'): Promise<string> {
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const response = await getAnthropic().messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 2000,
       messages: [
         {
@@ -73,8 +70,8 @@ async function simplifyForAccessibility(text: string): Promise<{
   readingTime: number;
 }> {
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const response = await getAnthropic().messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 1500,
       messages: [
         {
@@ -126,10 +123,11 @@ READING_TIME:
 // POST /api/accessibility/scan-book - Scan and extract text from book image
 router.post('/scan-book', async (req: Request, res: Response) => {
   try {
-    const { userId, imageBase64, language = 'en', focusArea = 'full' } = req.body as BookScanRequest;
+    const { imageBase64, language = 'en', focusArea = 'full' } = req.body as BookScanRequest;
+    const userId = req.userId!;
 
-    if (!userId || !imageBase64) {
-      return res.status(400).json({ error: 'Missing userId or imageBase64' });
+    if (!imageBase64) {
+      return res.status(400).json({ error: 'Missing imageBase64' });
     }
 
     // Extract text from image
@@ -170,10 +168,11 @@ router.post('/scan-book', async (req: Request, res: Response) => {
 // POST /api/accessibility/tts - Text-to-speech for accessibility
 router.post('/tts', async (req: Request, res: Response) => {
   try {
-    const { userId, text, voiceId = 'neural', speed = 1.0 } = req.body as TextToSpeechRequest;
+    const { text, voiceId = 'neural', speed = 1.0 } = req.body as TextToSpeechRequest;
+    const userId = req.userId!;
 
-    if (!userId || !text) {
-      return res.status(400).json({ error: 'Missing userId or text' });
+    if (!text) {
+      return res.status(400).json({ error: 'Missing text' });
     }
 
     // Validate speed
@@ -202,11 +201,7 @@ router.post('/tts', async (req: Request, res: Response) => {
 // GET /api/accessibility/accessibility-settings - Get user accessibility preferences
 router.get('/settings', async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
+    const userId = req.userId!;
 
     // Get or create default settings
     const settings = {
@@ -244,11 +239,8 @@ router.get('/settings', async (req: Request, res: Response) => {
 // POST /api/accessibility/accessibility-settings - Update accessibility preferences
 router.post('/settings', async (req: Request, res: Response) => {
   try {
-    const { userId, ...settings } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' });
-    }
+    const { userId: _ignoredUserId, ...settings } = req.body;
+    const userId = req.userId!;
 
     // In production, store these preferences to database
     res.json({
