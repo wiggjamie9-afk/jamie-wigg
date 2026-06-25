@@ -3,6 +3,34 @@ package com.neuraltwin.app.data.models
 import java.util.*
 
 // ============================================================================
+// Auth Models
+// ============================================================================
+
+data class RegisterRequest(
+    val email: String,
+    val password: String,
+    val name: String
+)
+
+data class LoginRequest(
+    val email: String,
+    val password: String
+)
+
+/** The user object the backend nests inside the auth response. */
+data class AuthUser(
+    val id: String,
+    val email: String,
+    val name: String
+)
+
+/** Backend response for both /auth/register and /auth/login: { user, token }. */
+data class AuthResponse(
+    val user: AuthUser,
+    val token: String
+)
+
+// ============================================================================
 // Voice Models
 // ============================================================================
 

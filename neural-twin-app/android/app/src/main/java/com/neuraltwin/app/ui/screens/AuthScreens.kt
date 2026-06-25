@@ -24,6 +24,7 @@ fun LoginScreen(viewModel: AuthViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Column(
         modifier = Modifier
@@ -123,6 +124,16 @@ fun LoginScreen(viewModel: AuthViewModel) {
             }
         }
 
+        error?.let { message ->
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = message,
+                color = Color(0xFFEF4444),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         TextButton(onClick = { /* Navigate to signup */ }) {
@@ -141,6 +152,7 @@ fun SignupScreen(viewModel: AuthViewModel) {
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Column(
         modifier = Modifier
@@ -259,6 +271,16 @@ fun SignupScreen(viewModel: AuthViewModel) {
             } else {
                 Text("Create Account", fontSize = 16.sp)
             }
+        }
+
+        error?.let { message ->
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = message,
+                color = Color(0xFFEF4444),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

@@ -5,6 +5,13 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    // Auth endpoints (no Bearer token required — these mint one)
+    @POST("auth/register")
+    suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
+
+    @POST("auth/login")
+    suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
+
     // Voice endpoints
     @POST("voice")
     suspend fun uploadVoiceRecording(@Body request: VoiceRecordingRequest): Response<VoiceRecordingResponse>

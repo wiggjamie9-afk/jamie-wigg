@@ -7,6 +7,16 @@ import javax.inject.Singleton
 @Singleton
 class Repository @Inject constructor(private val apiService: ApiService) {
     // ============================================================================
+    // Auth Operations
+    // ============================================================================
+
+    suspend fun register(request: RegisterRequest) =
+        apiService.register(request)
+
+    suspend fun login(request: LoginRequest) =
+        apiService.login(request)
+
+    // ============================================================================
     // Voice Operations
     // ============================================================================
 
