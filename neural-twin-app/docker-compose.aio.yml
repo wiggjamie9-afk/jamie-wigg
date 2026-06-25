@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+  neural-twin-aio:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: neural-twin-aio
+    ports:
+      - "5000:5000"  # Backend API
+      - "5432:5432"  # PostgreSQL (for external tools if needed)
+    environment:
+      # Database
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: neural_twin
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@localhost:5432/neural_twin
+
+      # API Keys
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # Secrets (auto-generated if not provided)
+      JWT_SECRET: ${JWT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+
+      # Server Config
+      NODE_ENV: ${NODE_ENV:-development}
+      CORS_ORIGIN: http://localhost:3000,http://localhost:8000,http://localhost:19006,http://localhost:8081
+      CLAUDE_MODEL: claude-opus-4-8
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+
+    volumes:
+      - neural_twin_db:/var/lib/postgresql/data
+      - neural_twin_logs:/var/log/supervisor
+
+    healthcheck:
+      test: ["/bin/bash", "-c", "/app/docker-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    restart: unless-stopped
+
+volumes:
+  neural_twin_db:
+    driver: local
+  neural_twin_logs:
+    driver: local
+
+networks:
+  default:
+    name: neural-twin-network
