@@ -829,8 +829,35 @@ struct SettingsView: View {
           .foregroundColor(DesignTokens.textPrimary)
           .padding(.horizontal, DesignTokens.spacing16)
 
+        if let user = authManager.user {
+          VStack(spacing: DesignTokens.spacing12) {
+            HStack(spacing: DesignTokens.spacing12) {
+              Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: 40))
+                .foregroundColor(DesignTokens.brandBlue)
+
+              VStack(alignment: .leading, spacing: DesignTokens.spacing4) {
+                Text(user.name)
+                  .font(.system(size: 16, weight: .semibold))
+                  .foregroundColor(DesignTokens.textPrimary)
+                Text(user.email)
+                  .font(.system(size: 13, weight: .regular))
+                  .foregroundColor(DesignTokens.textSecondary)
+              }
+            }
+            .padding(DesignTokens.spacing16)
+            .background(
+              ZStack {
+                Color.black.opacity(0.6).blur(radius: 20)
+                Color.white.opacity(0.05)
+              }
+            )
+            .border(1, color: Color.white.opacity(0.1))
+            .cornerRadius(DesignTokens.radiusMedium)
+          }
+        }
+
         VStack(spacing: DesignTokens.spacing12) {
-          SettingRow(title: "Account", icon: "person.crop.circle.fill")
           SettingRow(title: "Privacy", icon: "lock.fill")
           SettingRow(title: "Data Export", icon: "arrow.down.doc.fill")
           SettingRow(title: "Accessibility", icon: "accessibility")
@@ -901,6 +928,8 @@ struct AuthView: View {
   @EnvironmentObject var authManager: AuthManager
   @State private var email = ""
   @State private var password = ""
+  @State private var name = ""
+  @State private var isSignup = false
 
   var body: some View {
     ZStack {
@@ -926,6 +955,14 @@ struct AuthView: View {
         Spacer()
 
         VStack(spacing: DesignTokens.spacing12) {
+          if isSignup {
+            TextField("Full Name", text: $name)
+              .textContentType(.name)
+              .padding(DesignTokens.spacing12)
+              .background(DesignTokens.surface1)
+              .cornerRadius(DesignTokens.radiusSmall)
+          }
+
           TextField("Email", text: $email)
             .textContentType(.emailAddress)
             .keyboardType(.emailAddress)
@@ -940,34 +977,60 @@ struct AuthView: View {
             .cornerRadius(DesignTokens.radiusSmall)
         }
 
-        Button(action: {
-          authManager.login(email: email, password: password)
-        }) {
-          Text("Sign In")
-            .font(.system(size: 16, weight: .semibold))
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .foregroundColor(.white)
-            .background(
-              LinearGradient(
-                gradient: Gradient(colors: [DesignTokens.brandBlue, DesignTokens.accentPurple]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-              )
-            )
-            .cornerRadius(DesignTokens.radiusSmall)
+        if let error = authManager.error {
+          Text(error)
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(DesignTokens.errorRed)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+
+        Button(action: {
+          if isSignup {
+            authManager.signup(email: email, password: password, name: name)
+          } else {
+            authManager.login(email: email, password: password)
+          }
+        }) {
+          if authManager.isLoading {
+            ProgressView()
+              .tint(.white)
+              .frame(maxWidth: .infinity)
+              .frame(height: 50)
+          } else {
+            Text(isSignup ? "Create Account" : "Sign In")
+              .font(.system(size: 16, weight: .semibold))
+              .frame(maxWidth: .infinity)
+              .frame(height: 50)
+              .foregroundColor(.white)
+          }
+        }
+        .background(
+          LinearGradient(
+            gradient: Gradient(colors: [DesignTokens.brandBlue, DesignTokens.accentPurple]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          )
+        )
+        .cornerRadius(DesignTokens.radiusSmall)
+        .disabled(authManager.isLoading || email.isEmpty || password.isEmpty || (isSignup && name.isEmpty))
 
         Spacer()
 
-        HStack(spacing: 4) {
-          Text("Don't have an account?")
-            .foregroundColor(DesignTokens.textSecondary)
-          Text("Sign up")
-            .foregroundColor(DesignTokens.brandBlue)
-            .fontWeight(.semibold)
+        Button(action: {
+          withAnimation {
+            isSignup.toggle()
+            authManager.error = nil
+          }
+        }) {
+          HStack(spacing: 4) {
+            Text(isSignup ? "Already have an account?" : "Don't have an account?")
+              .foregroundColor(DesignTokens.textSecondary)
+            Text(isSignup ? "Sign in" : "Sign up")
+              .foregroundColor(DesignTokens.brandBlue)
+              .fontWeight(.semibold)
+          }
+          .font(.system(size: 14, weight: .regular))
         }
-        .font(.system(size: 14, weight: .regular))
       }
       .padding(DesignTokens.spacing24)
     }
@@ -981,14 +1044,74 @@ struct AuthView: View {
 @MainActor
 class AuthManager: ObservableObject {
   @Published var isAuthenticated = false
+  @Published var isLoading = false
+  @Published var error: String?
+  @Published var user: AuthUser?
+
+  init() {
+    if TokenStore.shared.isLoggedIn {
+      self.user = AuthUser(
+        id: TokenStore.shared.userId ?? "",
+        email: TokenStore.shared.email ?? "",
+        name: TokenStore.shared.name ?? ""
+      )
+      self.isAuthenticated = true
+    }
+  }
 
   func login(email: String, password: String) {
-    // TODO: API call to backend
-    isAuthenticated = true
+    isLoading = true
+    error = nil
+
+    Task {
+      do {
+        let response = try await APIClient.shared.login(email: email, password: password)
+        TokenStore.shared.saveSession(
+          token: response.token,
+          userId: response.user.id,
+          email: response.user.email,
+          name: response.user.name
+        )
+        self.user = response.user
+        self.isAuthenticated = true
+      } catch {
+        self.error = error.localizedDescription
+      }
+      self.isLoading = false
+    }
+  }
+
+  func signup(email: String, password: String, name: String) {
+    isLoading = true
+    error = nil
+
+    Task {
+      do {
+        let response = try await APIClient.shared.register(
+          email: email,
+          password: password,
+          name: name
+        )
+        TokenStore.shared.saveSession(
+          token: response.token,
+          userId: response.user.id,
+          email: response.user.email,
+          name: response.user.name
+        )
+        self.user = response.user
+        self.isAuthenticated = true
+      } catch {
+        self.error = error.localizedDescription
+      }
+      self.isLoading = false
+    }
   }
 
   func logout() {
+    TokenStore.shared.clear()
     isAuthenticated = false
+    user = nil
+    error = nil
   }
 }
 
