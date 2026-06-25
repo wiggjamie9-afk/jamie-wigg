@@ -42,8 +42,8 @@ const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
 
 const models = {
-  "rhythmix-ollama": {
-    name: "rhythmix-ollama",
+  "rhythmix-local": {
+    name: "rhythmix-local",
     type: "OLLAMA",
     supportsStreaming: true,
     endpoints: [
@@ -61,7 +61,7 @@ const modelGroups = {
   [PLANNER_GROUP]: {
     // First member wins when healthy; add a hosted model id here (e.g.
     // "oai-gpt54-mini") as a quality fallback when you have a key.
-    members: ["rhythmix-ollama"],
+    members: ["rhythmix-local"],
     metadata: { displayName: "RHYTHMIX Planner", provider: "cortex", category: "chat", isAgentic: true },
   },
 };
