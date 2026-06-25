@@ -73,6 +73,10 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
+- `SETUP-AUTOSHORTS.md` — AutoShorts desktop app (long video → ranked 9:16 short-form clips; Tauri/Rust). Desktop-only; on-brand for the short-form pipeline.
+- `SETUP-PLANE.md` — Plane self-hosted project management (Docker/K8s). Server stack; candidate alongside GitHub Issues.
+- `SETUP-NVIDIA-SKILLS.md` — NVIDIA Agent Skills catalog (`npx skills add nvidia/skills`). GPU/datacenter skills; egress-gated here, not RHYTHMIX-relevant — install selectively.
+- `unity/` — standalone Unity subproject adding **LoopScrollRect** (`me.qiankanglai.loopscrollrect`) + a starter integration (pooled prefab source, data source, recyclable cell). See `unity/README.md`. Isolated from the web/Pages build; portable into a real Unity repo.
 
 ## STARLIGHTMIX Studio Web App (`studio/`)
 
