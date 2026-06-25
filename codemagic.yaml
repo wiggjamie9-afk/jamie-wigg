@@ -42,3 +42,62 @@ workflows:
         notify:
           success: true
           failure: true
+
+  neural-twin-android:
+    name: Neural Twin Android — debug APK
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      java: 17
+    scripts:
+      - name: Generate Gradle wrapper (wrapper jar is not committed)
+        script: |
+          cd neural-twin-app/android
+          gradle wrapper --gradle-version 8.5
+      - name: Build debug APK
+        script: |
+          cd neural-twin-app/android
+          ./gradlew :app:assembleDebug --stacktrace
+    artifacts:
+      - neural-twin-app/android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - wiggjamie9@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  neural-twin-ios:
+    name: Neural Twin iOS — unsigned simulator build
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      xcode: latest
+    scripts:
+      - name: Install XcodeGen
+        script: brew install xcodegen
+      - name: Generate Xcode project from project.yml
+        script: |
+          cd neural-twin-app/ios
+          xcodegen generate
+      - name: Build (unsigned, simulator — proves it compiles)
+        script: |
+          cd neural-twin-app/ios
+          xcodebuild \
+            -project NeuralTwin.xcodeproj \
+            -scheme NeuralTwin \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+    artifacts:
+      - neural-twin-app/ios/build/Build/Products/Debug-iphonesimulator/*.app
+    publishing:
+      email:
+        recipients:
+          - wiggjamie9@gmail.com
+        notify:
+          success: true
+          failure: true
