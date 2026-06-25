@@ -44,12 +44,12 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
 const models = {
   "rhythmix-local": {
     name: "rhythmix-local",
-    type: "OLLAMA",
+    type: "OPENAI",
     supportsStreaming: true,
     endpoints: [
       {
         name: "ollama",
-        url: `${OLLAMA_URL}/api/chat`,
+        url: `${OLLAMA_URL}/v1/chat/completions`,
         params: { model: OLLAMA_MODEL },
       },
     ],
