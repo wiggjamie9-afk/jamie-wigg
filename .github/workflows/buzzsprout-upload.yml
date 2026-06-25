@@ -1,0 +1,52 @@
+name: Buzzsprout Upload
+
+# Runs on GitHub's infrastructure (which can reach buzzsprout.com) whenever
+# new episode audio or the UPLOAD_TARGET marker is pushed to this branch.
+# The cloud dev sandbox is network-blocked from Buzzsprout, so the upload
+# is delegated here.
+
+on:
+  push:
+    branches:
+      - claude/system-prompts-leaks-2sg44g
+    paths:
+      - 'voiceover-kit/audio-ep*/**'
+      - 'UPLOAD_TARGET'
+      - '.github/workflows/buzzsprout-upload.yml'
+  workflow_dispatch:
+    inputs:
+      episode:
+        description: 'Episode number to upload (e.g. 3)'
+        required: true
+        default: '3'
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Determine target episode
+        id: target
+        run: |
+          if [ -n "${{ github.event.inputs.episode }}" ]; then
+            echo "ep=${{ github.event.inputs.episode }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ep=$(cat UPLOAD_TARGET | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload episode to all 20 shows
+        env:
+          BUZZSPROUT_API_KEY: ${{ secrets.BUZZSPROUT_API_KEY }}
+        run: |
+          echo "Uploading episode ${{ steps.target.outputs.ep }} ..."
+          python3 buzzsprout_episode_uploader.py --only-episode "${{ steps.target.outputs.ep }}" --publish-now
