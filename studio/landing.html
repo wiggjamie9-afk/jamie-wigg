@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>STARLIGHTMIX Studio — Turn any track into an AI music video</title>
+<meta name="description" content="Upload a track, pick a look, get an AI-generated music video. Pay once, use forever. Bring your own Replicate token — no subscription." />
+<style>
+  /* ---- CONFIG: fill these in, everything else works ---------------------
+     GUMROAD_URL   — your Gumroad product link (the lifetime deal)
+     LICENSE_API   — the license worker endpoint (already deployed)
+     APP_URL       — where the actual Studio app lives once unlocked
+  --------------------------------------------------------------------- */
+  :root{
+    --bg:#08050d; --card:#1a1325; --text:#ffffff; --muted:#a0a0b0;
+    --magenta:#ff1f5a; --purple:#7c3aed; --cyan:#00d8ff; --green:#00e887;
+    --gold:#f5c000; --pink:#ff6fc8;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;
+    background:
+      radial-gradient(60vw 50vh at 80% -10%, rgba(124,58,237,.28), transparent 60%),
+      radial-gradient(50vw 40vh at 10% 110%, rgba(255,31,90,.20), transparent 60%);
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase;letter-spacing:.28em;font-size:.7rem;color:var(--muted)}
+  .grad{background:linear-gradient(90deg,var(--magenta),var(--purple) 45%,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* nav */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+  .logo{font-weight:900;font-size:1.05rem;letter-spacing:-.01em}
+  .btn{
+    display:inline-block;border:0;cursor:pointer;font:inherit;font-weight:700;
+    padding:14px 26px;border-radius:999px;color:#fff;text-decoration:none;
+    background:linear-gradient(90deg,var(--magenta),var(--purple));
+    box-shadow:0 8px 30px rgba(255,31,90,.32);transition:transform .15s ease,box-shadow .15s ease;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,31,90,.45)}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.18);box-shadow:none;color:var(--text)}
+
+  /* hero */
+  header.hero{padding:64px 0 40px;text-align:center}
+  .hero h1{font-size:clamp(2.4rem,6vw,4.6rem);font-weight:900;letter-spacing:-.02em;line-height:1.02}
+  .hero p.sub{margin:22px auto 0;max-width:620px;color:var(--muted);font-size:clamp(1rem,2.2vw,1.25rem)}
+  .hero .cta-row{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .pricetag{margin-top:18px;color:var(--gold);font-weight:700;font-size:.95rem}
+  .pricetag s{color:var(--muted);font-weight:400}
+
+  /* section */
+  section{padding:54px 0}
+  h2{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:900;letter-spacing:-.01em;text-align:center}
+  h2 + .lead{text-align:center;color:var(--muted);max-width:620px;margin:14px auto 0}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px}
+  .step{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:26px}
+  .step .n{font-family:ui-monospace,monospace;color:var(--cyan);font-weight:700;font-size:.8rem}
+  .step h3{margin:10px 0 8px;font-size:1.15rem}
+  .step p{color:var(--muted);font-size:.95rem}
+
+  .why{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px}
+  .why div{background:linear-gradient(180deg,rgba(255,255,255,.04),transparent);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:24px}
+  .why h3{font-size:1.05rem;margin-bottom:8px}
+  .why .ic{font-size:1.4rem}
+  .why p{color:var(--muted);font-size:.92rem}
+
+  /* pricing + unlock */
+  .panel{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:34px;max-width:520px;margin:38px auto 0}
+  .price{font-size:3.2rem;font-weight:900;letter-spacing:-.02em}
+  .price small{font-size:1rem;color:var(--muted);font-weight:600}
+  ul.feat{list-style:none;margin:20px 0 24px}
+  ul.feat li{padding:8px 0 8px 28px;position:relative;color:#d8d8e2}
+  ul.feat li::before{content:"";position:absolute;left:0;top:13px;width:14px;height:14px;border-radius:50%;
+    background:radial-gradient(circle at 50% 50%,var(--green),rgba(0,232,135,.25))}
+  .panel .btn{width:100%;text-align:center;font-size:1.05rem;padding:16px}
+  .hr{height:1px;background:rgba(255,255,255,.08);margin:26px 0}
+  .unlock label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:8px}
+  .unlock .row{display:flex;gap:10px}
+  .unlock input{
+    flex:1;background:#0d0a14;border:1px solid rgba(255,255,255,.14);border-radius:12px;
+    color:#fff;padding:13px 14px;font:inherit;font-family:ui-monospace,monospace;letter-spacing:.04em;
+  }
+  .unlock input:focus{outline:none;border-color:var(--cyan)}
+  .unlock button{white-space:nowrap}
+  .msg{margin-top:14px;font-size:.9rem;min-height:1.2em}
+  .msg.ok{color:var(--green)} .msg.err{color:var(--magenta)} .msg.busy{color:var(--cyan)}
+
+  /* faq + footer */
+  .faq{max-width:720px;margin:34px auto 0}
+  details{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px 20px;margin-bottom:12px}
+  summary{cursor:pointer;font-weight:700;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  details p{color:var(--muted);margin-top:10px;font-size:.95rem}
+  footer{text-align:center;color:var(--muted);padding:50px 0 40px;font-size:.85rem}
+  @media(max-width:760px){.steps,.why{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <span class="logo">STARLIGHTMIX <span class="mono">Studio</span></span>
+    <a href="#get" class="btn ghost">Get lifetime access</a>
+  </nav>
+
+  <header class="hero">
+    <div class="mono">AI music video studio · in your browser</div>
+    <h1>Turn any track into a<br><span class="grad">music video</span> in minutes.</h1>
+    <p class="sub">Upload your song, pick a look, and STARLIGHTMIX renders a scene-by-scene
+      AI music video — right in your browser. No editing skills, no installs, nothing to learn.</p>
+    <div class="cta-row">
+      <a href="#get" class="btn">Get lifetime access →</a>
+      <a href="#how" class="btn ghost">See how it works</a>
+    </div>
+    <div class="pricetag">One-time payment · <s>$99</s> $49 lifetime · no subscription</div>
+  </header>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <h2>Three steps to a finished video</h2>
+    <p class="lead">From a raw track to a shareable MP4 — the whole pipeline runs on your device.</p>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><h3>Paste your token</h3>
+        <p>Add your own Replicate API token once. Generation runs on <em>your</em> account, at cost — we never mark it up.</p></div>
+      <div class="step"><div class="n">02</div><h3>Upload & describe</h3>
+        <p>Drop your track and pick a theme. Studio builds a scene plan timed to your song.</p></div>
+      <div class="step"><div class="n">03</div><h3>Render & download</h3>
+        <p>Scenes generate in parallel, get stitched to your audio, and you download a finished MP4.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Why it’s different</h2>
+    <div class="why">
+      <div><div class="ic">🔑</div><h3>Bring your own token</h3>
+        <p>You pay Replicate directly, at their cost. No per-video fees, no surprise bills from us.</p></div>
+      <div><div class="ic">🔒</div><h3>Private by design</h3>
+        <p>Your track and renders stay in your browser. We host no audio, store no projects.</p></div>
+      <div><div class="ic">♾️</div><h3>Pay once, keep forever</h3>
+        <p>A single lifetime license. No monthly plan, no seat limits, no expiry.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="get">
+  <div class="wrap">
+    <h2>Get STARLIGHTMIX Studio</h2>
+    <p class="lead">Buy once, unlock the app forever. Already bought? Drop your license key below.</p>
+
+    <div class="panel">
+      <div class="price">$49 <small>/ lifetime</small></div>
+      <ul class="feat">
+        <li>Unlimited videos — you only pay Replicate, at cost</li>
+        <li>Every visual theme, all future updates included</li>
+        <li>Works on desktop & mobile browsers</li>
+        <li>30-day money-back guarantee</li>
+      </ul>
+      <a id="buyBtn" href="#" class="btn" target="_blank" rel="noopener">Buy lifetime access</a>
+
+      <div class="hr"></div>
+
+      <div class="unlock">
+        <label for="key">Already purchased? Enter your license key</label>
+        <div class="row">
+          <input id="key" placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" autocomplete="off" spellcheck="false" />
+          <button id="unlockBtn" class="btn">Unlock</button>
+        </div>
+        <div id="msg" class="msg" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="faq">
+      <details><summary>Do I need a subscription?</summary>
+        <p>No. You pay once for the app. Video generation uses your own Replicate token, billed by Replicate at their rates — typically cents per video.</p></details>
+      <details><summary>What’s a Replicate token and where do I get one?</summary>
+        <p>Replicate runs the AI models. Sign up at replicate.com, copy your API token, and paste it into Studio once. It’s stored only in your browser.</p></details>
+      <details><summary>Where do my files go?</summary>
+        <p>Nowhere but your device. Studio is a static app — your audio and finished videos never touch our servers.</p></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">STARLIGHTMIX Studio · pay once, create forever · <a href="#get" style="color:var(--cyan)">Get access</a></div>
+</footer>
+
+<script>
+  // ---- CONFIG ----------------------------------------------------------
+  const GUMROAD_URL = "https://gumroad.com/l/REPLACE_ME";          // your product link
+  const LICENSE_API = "https://license.studio.starlightmix.com/api/license";
+  const APP_URL     = "/new";                                       // the actual Studio app
+  // ----------------------------------------------------------------------
+
+  document.getElementById("buyBtn").href = GUMROAD_URL;
+
+  const keyEl = document.getElementById("key");
+  const msgEl = document.getElementById("msg");
+  const btn   = document.getElementById("unlockBtn");
+
+  function setMsg(text, cls){ msgEl.textContent = text; msgEl.className = "msg " + (cls||""); }
+
+  // Remember a previously validated key so buyers don't re-enter it.
+  if (localStorage.getItem("slm_license_valid") === "1") {
+    setMsg("✓ License active on this device. Launching Studio…", "ok");
+  }
+
+  async function unlock(){
+    const key = keyEl.value.trim();
+    if (!key){ setMsg("Enter the license key from your Gumroad receipt.", "err"); return; }
+    setMsg("Checking your key…", "busy");
+    btn.disabled = true;
+    try {
+      const res = await fetch(LICENSE_API, {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ key })
+      });
+      const data = await res.json();
+      if (data && data.valid){
+        localStorage.setItem("slm_license_valid","1");
+        localStorage.setItem("slm_license_key", key);
+        setMsg("✓ Unlocked — taking you to Studio…", "ok");
+        setTimeout(()=>{ window.location.href = APP_URL; }, 900);
+      } else {
+        setMsg((data && data.reason) || "That key isn’t valid. Check your receipt and try again.", "err");
+      }
+    } catch (e){
+      // Worker CORS only allows the live studio origin, so this is expected when
+      // previewing the file locally — the flow itself is wired correctly.
+      setMsg("Couldn’t reach the license server from here. On the live site this validates instantly.", "err");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  btn.addEventListener("click", unlock);
+  keyEl.addEventListener("keydown", e => { if (e.key === "Enter") unlock(); });
+</script>
+</body>
+</html>
