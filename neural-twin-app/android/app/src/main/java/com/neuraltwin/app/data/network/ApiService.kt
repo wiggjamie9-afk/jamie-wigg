@@ -88,4 +88,17 @@ interface ApiService {
 
     @GET("coherence/{id}")
     suspend fun getCoherenceMetric(@Path("id") id: String): Response<CoherenceDetailResponse>
+
+    // Accessibility endpoints
+    @POST("accessibility/scan-book")
+    suspend fun scanBook(@Body request: BookScanRequest): Response<BookScanResponse>
+
+    @GET("accessibility/settings")
+    suspend fun getAccessibilitySettings(): Response<AccessibilitySettingsResponse>
+
+    @POST("accessibility/settings")
+    suspend fun updateAccessibilitySettings(@Body settings: AccessibilitySettingsRequest): Response<AccessibilitySettingsResponse>
+
+    @POST("accessibility/tts")
+    suspend fun generateTextToSpeech(@Body request: TextToSpeechRequest): Response<TextToSpeechResponse>
 }

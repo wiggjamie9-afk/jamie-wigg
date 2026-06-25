@@ -446,3 +446,88 @@ data class CoherenceMetricDetail(
     val coherenceState: String,
     val timestamp: Date
 )
+
+// ============================================================================
+// Accessibility Models (Book Scanner & Text-to-Speech)
+// ============================================================================
+
+data class BookScanRequest(
+    val imageBase64: String,
+    val language: String = "en",
+    val focusArea: String = "full"
+)
+
+data class BookScanResponse(
+    val success: Boolean,
+    val scanId: String,
+    val originalText: String,
+    val simplifiedText: String,
+    val sections: List<String>,
+    val readingTime: Int,
+    val characterCount: Int,
+    val wordCount: Int
+)
+
+data class TextToSpeechRequest(
+    val text: String,
+    val voiceId: String = "neural",
+    val speed: Float = 1.0f
+)
+
+data class TextToSpeechResponse(
+    val success: Boolean,
+    val audioUrl: String,
+    val duration: Float,
+    val voice: String,
+    val speed: Float,
+    val characterCount: Int,
+    val wordCount: Int
+)
+
+data class AccessibilitySettingsRequest(
+    val dyslexiaMode: Boolean? = null,
+    val adhdMode: Boolean? = null,
+    val fontSize: Int? = null,
+    val lineSpacing: Float? = null,
+    val fontFamily: String? = null,
+    val backgroundColor: String? = null,
+    val textColor: String? = null,
+    val highContrast: Boolean? = null,
+    val simplifyText: Boolean? = null,
+    val readingPane: Boolean? = null,
+    val ttsEnabled: Boolean? = null,
+    val ttsSpeed: Float? = null,
+    val ttsVoice: String? = null,
+    val focusMode: Boolean? = null,
+    val wordHighlight: Boolean? = null,
+    val sectionBreaks: Boolean? = null,
+    val wordCount: Boolean? = null,
+    val estimatedReadingTime: Boolean? = null
+)
+
+data class AccessibilitySettingsResponse(
+    val success: Boolean,
+    val settings: AccessibilitySettings
+)
+
+data class AccessibilitySettings(
+    val userId: String? = null,
+    val dyslexiaMode: Boolean,
+    val adhdMode: Boolean,
+    val fontSize: Int,
+    val lineSpacing: Float,
+    val fontFamily: String,
+    val backgroundColor: String,
+    val textColor: String,
+    val highContrast: Boolean,
+    val simplifyText: Boolean,
+    val readingPane: Boolean,
+    val ttsEnabled: Boolean,
+    val ttsSpeed: Float,
+    val ttsVoice: String,
+    val focusMode: Boolean,
+    val wordHighlight: Boolean,
+    val sectionBreaks: Boolean,
+    val wordCount: Boolean,
+    val estimatedReadingTime: Boolean
+)
