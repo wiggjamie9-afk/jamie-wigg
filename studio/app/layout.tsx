@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CapabilityGate } from "@/components/fallback-screens/capability-gate";
+import { Analytics } from "./components/Analytics";
 
 export const metadata: Metadata = {
   title: "STARLIGHTMIX Studio",
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <Analytics />
         <CapabilityGate>{children}</CapabilityGate>
       </body>
     </html>
