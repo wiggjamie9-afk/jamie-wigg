@@ -44,12 +44,14 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
 const models = {
   "rhythmix-local": {
     name: "rhythmix-local",
-    type: "OPENAI",
+    type: "OPENAI-CHAT",
     supportsStreaming: true,
     endpoints: [
       {
         name: "ollama",
         url: `${OLLAMA_URL}/v1/chat/completions`,
+        // Ollama's OpenAI-compatible endpoint accepts any bearer token.
+        headers: { Authorization: "Bearer ollama" },
         params: { model: OLLAMA_MODEL },
       },
     ],
