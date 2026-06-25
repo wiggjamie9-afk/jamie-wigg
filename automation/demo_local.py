@@ -6,7 +6,11 @@ This is the ONE thing that actually runs. It proves the orchestration loop with
 only pieces that work locally and for free:
 
     brief (text)  ->  local Ollama plans it  ->  in-memory queue  ->
-    each task executed locally via Ollama  ->  results printed
+    each task executed locally  ->  results printed
+
+Text tasks run on Ollama; image tasks run on a local Z-Image-Turbo MCP server if
+one is up (otherwise they're honestly recorded as skipped). Both are local and
+free — no Redis, no paid API, no per-asset cloud cost.
 
 The production orchestrator (orchestrator.py) needs a Redis server AND a paid
 ANTHROPIC_API_KEY before it can start. This demo deliberately needs neither — it
@@ -31,20 +35,26 @@ import logging
 from collections import deque
 from datetime import datetime
 
-# Local handler — dependency-free (urllib only).
+# Local handlers — dependency-free (urllib only).
 from handlers.ollama_handler import OllamaOrchestrationHandler, local_llm_available
+from handlers.zimage_handler import ZImageOrchestrationHandler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
 logger = logging.getLogger("demo_local")
 
 DEFAULT_BRIEF = "Write a punchy 3-part launch thread announcing RHYTHMIX, an AI music platform."
 
-# Task types this local demo can actually execute (text-only, via Ollama).
-LOCAL_EXECUTABLE = {"text_generation"}
+# Task types this local demo can execute for free, and the local engine for each:
+#   text_generation  -> Ollama        (always, if the server is up)
+#   image_generation -> Z-Image-Turbo (only if its MCP server is up; else skipped)
+LOCAL_TEXT = {"text_generation"}
+LOCAL_IMAGE = {"image_generation"}
 
 
 async def run(brief: str) -> int:
     handler = OllamaOrchestrationHandler()
+    image_handler = ZImageOrchestrationHandler()
+    image_up = image_handler.client.is_available()
 
     if not local_llm_available():
         status = await handler.handle_status()
@@ -68,6 +78,8 @@ async def run(brief: str) -> int:
     logger.info(f"Workflow: {workflow.get('workflow_name', '(unnamed)')} "
                 f"— {len(tasks)} task(s), est. "
                 f"{workflow.get('estimated_duration_minutes', '?')} min")
+    logger.info(f"Local image engine (Z-Image-Turbo): "
+                f"{'up' if image_up else 'down — image tasks will be skipped'}")
 
     # 2) ENQUEUE — in-memory queue stands in for Redis.
     queue = deque(tasks)
@@ -80,22 +92,37 @@ async def run(brief: str) -> int:
         ttype = task.get("type", "text_generation")
         tid = task.get("task_id", "T?")
 
-        if ttype not in LOCAL_EXECUTABLE:
-            # Generation that needs ComfyUI/Replicate/etc. — out of scope for a
-            # free local loop. Record it honestly rather than faking success.
-            logger.info(f"  [{tid}] {ttype}: skipped (needs an external service)")
+        prompt = _task_prompt(task, brief)
+
+        if ttype in LOCAL_TEXT:
+            logger.info(f"  [{tid}] {ttype}: generating (Ollama)…")
+            result = await handler.handle_text_generation(prompt)
+            if result.get("status") == "completed":
+                logger.info(f"  [{tid}] done in {result.get('duration_ms', 0):.0f}ms")
+                completed.append({"task_id": tid, "type": ttype,
+                                  "output": result["output"]})
+            else:
+                logger.info(f"  [{tid}] failed: {result.get('error')}")
+
+        elif ttype in LOCAL_IMAGE and image_up:
+            logger.info(f"  [{tid}] {ttype}: rendering (Z-Image-Turbo)…")
+            result = await image_handler.handle_image_generation(prompt)
+            if result.get("status") == "completed":
+                paths = result.get("output") or []
+                logger.info(f"  [{tid}] done — {len(paths)} image(s)")
+                completed.append({"task_id": tid, "type": ttype,
+                                  "output": ", ".join(paths) or result.get("text", "")})
+            else:
+                logger.info(f"  [{tid}] failed: {result.get('error')}")
+
+        else:
+            # Needs ComfyUI/Replicate/etc., or the local image server is down —
+            # out of scope for this free loop. Record it honestly, don't fake it.
+            reason = ("local image server down" if ttype in LOCAL_IMAGE
+                      else "needs an external service")
+            logger.info(f"  [{tid}] {ttype}: skipped ({reason})")
             skipped.append({"task_id": tid, "type": ttype})
             continue
-
-        prompt = _task_prompt(task, brief)
-        logger.info(f"  [{tid}] {ttype}: generating…")
-        result = await handler.handle_text_generation(prompt)
-        if result.get("status") == "completed":
-            logger.info(f"  [{tid}] done in {result.get('duration_ms', 0):.0f}ms")
-            completed.append({"task_id": tid, "type": ttype,
-                              "output": result["output"]})
-        else:
-            logger.info(f"  [{tid}] failed: {result.get('error')}")
 
     # 4) REPORT.
     logger.info("── Results ─────────────────────────────────────────────")
