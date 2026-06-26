@@ -5,11 +5,16 @@ import androidx.lifecycle.viewModelScope
 import com.neuraltwin.app.data.models.DecisionRequest
 import com.neuraltwin.app.data.models.DecisionsResponse
 import com.neuraltwin.app.data.models.DecisionPatternsResponse
+import com.neuraltwin.app.data.models.DecisionResponse
 import com.neuraltwin.app.data.network.Repository
+import com.neuraltwin.app.ui.screens.DecisionLoggingResponse
+import com.neuraltwin.app.ui.screens.MetacognitiveBreakdown
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,12 +33,15 @@ class DecisionViewModel @Inject constructor(
     private val _patterns = MutableStateFlow<DecisionPatternsResponse?>(null)
     val patterns: StateFlow<DecisionPatternsResponse?> = _patterns
 
+    private val _decisionResponse = MutableStateFlow<DecisionLoggingResponse?>(null)
+    val decisionResponse: StateFlow<DecisionLoggingResponse?> = _decisionResponse
+
     fun logDecision(
         userId: String,
         title: String,
         description: String,
-        options: Map<String, String>,
-        chosenOption: String,
+        options: Map<String, String> = emptyMap(),
+        chosenOption: String = "",
         reasoning: String,
         category: String? = null,
         confidence: Float? = null,
@@ -53,7 +61,7 @@ class DecisionViewModel @Inject constructor(
                     title = title,
                     description = description,
                     options = options,
-                    chosenOption = chosenOption,
+                    chosenOption = chosenOption.ifEmpty { category ?: "decision" },
                     reasoning = reasoning,
                     category = category,
                     confidence = confidence,
@@ -66,6 +74,23 @@ class DecisionViewModel @Inject constructor(
 
                 val response = repository.logDecision(request)
                 if (response.isSuccessful) {
+                    val apiResponse = response.body()
+                    if (apiResponse != null) {
+                        // Transform API response to UI model
+                        val uiResponse = DecisionLoggingResponse(
+                            id = apiResponse.decisionId,
+                            title = title,
+                            description = description,
+                            metacognitiveBreakdown = MetacognitiveBreakdown(
+                                planning = planningClarity,
+                                monitoring = monitoringComprehension,
+                                evaluation = evaluationEffectiveness
+                            ),
+                            insightData = apiResponse.analysis,
+                            timestamp = getCurrentTimestamp()
+                        )
+                        _decisionResponse.value = uiResponse
+                    }
                     _error.value = null
                 } else {
                     _error.value = "Failed to log decision: ${response.code()}"
@@ -120,5 +145,14 @@ class DecisionViewModel @Inject constructor(
 
     fun clearError() {
         _error.value = null
+    }
+
+    fun resetResponse() {
+        _decisionResponse.value = null
+    }
+
+    private fun getCurrentTimestamp(): String {
+        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm")
+        return LocalDateTime.now().format(formatter)
     }
 }
