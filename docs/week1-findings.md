@@ -89,6 +89,21 @@ new number."
 
 ---
 
+## Finding E — AgentShield governance baseline (T1.1 done ✅)
+Ran `ecc-agentshield scan`; full report at `docs/security/agentshield-scan.md`.
+- **Grade D (58/100), 0 Critical, 201 High.** Secrets score **90/100** (healthy).
+- **196 of the 201 Highs are the same thing:** "Agent has no tools restriction"
+  — every FleetView `agents/*.md` lacks a `tools:` allow-list, so each is scored
+  as over-broad. These are platform-managed files (CLAUDE.md says don't hand-edit
+  them), so the right fix is upstream/per-agent scoping, not a mass local edit.
+- Remaining low findings are ECC skill-metadata notes (missing observe/feedback
+  + version/rollback markers on `spec-*` skills) — docs/example severity, not
+  runtime exposure.
+- **Verdict:** no critical security exposure. Grade is dragged down by the
+  unrestricted-agent count, which is a FleetView platform characteristic rather
+  than a leak. Revisit agent tool-scoping when convenient; nothing here blocks
+  shipping.
+
 ## What's green and ready
 - **Test suite (60 tests)** — solid, including token-leak guards. Good safety net
   for any fix to Finding A.
