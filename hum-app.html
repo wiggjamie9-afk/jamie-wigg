@@ -149,6 +149,17 @@ p{font-size:15px;line-height:1.6;color:var(--soft);margin-bottom:14px;max-width:
 
 <div class="panels" id="panels">
 
+  <!-- Panel 0: License/Paywall -->
+  <section class="panel" aria-label="License check" id="licensePanel" style="display:none">
+    <div class="glow-bg"></div>
+    <div class="welcome-hero">
+      <div class="eyebrow" id="licenseStatus">CHECKING LICENSE…</div>
+      <h1 id="licenseTitle">HUM</h1>
+      <p class="lede" id="licenseMsg">Validating your access…</p>
+      <div id="licenseActions" style="margin-top:30px"></div>
+    </div>
+  </section>
+
   <!-- Panel 1: Welcome -->
   <section class="panel" aria-label="Welcome">
     <div class="glow-bg"></div>
@@ -332,6 +343,11 @@ sections.forEach((s, i) => {
   dotsContainer.appendChild(d);
 });
 function goTo(i){
+  // License panel is index 0; all other content requires license
+  if (i > 0 && !isLicensed) {
+    goTo(0); // redirect to license panel
+    return;
+  }
   panels.scrollTo({left: window.innerWidth * i, behavior: 'smooth'});
 }
 panels.addEventListener('scroll', () => {
@@ -622,8 +638,106 @@ function resetAll(){
   refreshHistory();
 }
 
+// ──── License Checking ────
+const productId = 'hum';
+const stripePublicKey = 'pk_live_'; // Set via env var in production
+let isLicensed = false;
+
+async function checkLicense(){
+  const licensePanel = document.getElementById('licensePanel');
+  const licenseStatus = document.getElementById('licenseStatus');
+  const licenseTitle = document.getElementById('licenseTitle');
+  const licenseMsg = document.getElementById('licenseMsg');
+  const licenseActions = document.getElementById('licenseActions');
+
+  licensePanel.style.display = 'flex';
+  panels.scrollLeft = 0;
+
+  // Try URL param first
+  let licenseKey = new URLSearchParams(window.location.search).get('license');
+
+  // Fall back to localStorage
+  if (!licenseKey) {
+    licenseKey = localStorage.getItem(`${productId}.license`);
+  }
+
+  if (!licenseKey) {
+    showPaywall();
+    return;
+  }
+
+  try {
+    // Validate with Supabase (via Supabase JS client or edge function)
+    // For now, we'll show a purchase link with the license key pre-filled
+    const response = await fetch('/api/validate-license', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ license_key: licenseKey })
+    }).catch(() => ({ ok: false }));
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result.valid) {
+        isLicensed = true;
+        localStorage.setItem(`${productId}.license`, licenseKey);
+        licenseStatus.textContent = '✓ Licensed';
+        licenseStatus.style.color = 'var(--violet)';
+        licenseTitle.textContent = 'Welcome back';
+        licenseMsg.textContent = 'Your license is active. Proceed to your practice.';
+        licenseActions.innerHTML = '<button class="btn btn-primary" onclick="goTo(1)" style="margin-top:20px">Start HUM →</button>';
+        return;
+      }
+    }
+  } catch (e) {
+    console.error('License validation error:', e);
+  }
+
+  showPaywall();
+}
+
+function showPaywall(){
+  const licenseStatus = document.getElementById('licenseStatus');
+  const licenseTitle = document.getElementById('licenseTitle');
+  const licenseMsg = document.getElementById('licenseMsg');
+  const licenseActions = document.getElementById('licenseActions');
+
+  isLicensed = false;
+  licenseStatus.textContent = 'License required';
+  licenseStatus.style.color = 'var(--violet-soft)';
+  licenseTitle.textContent = 'Unlock HUM';
+  licenseMsg.innerHTML = '<strong>Daily humming practice</strong><br><br>One-time AU$30 • On-device • Private • No subscriptions<br><br>Coherent breath. A chosen tone (432Hz, 528Hz, or 7.83Hz). Your own voice. Five minutes a day to reset your nervous system.';
+
+  licenseActions.innerHTML = `
+    <div style="margin-top:30px">
+      <button class="btn btn-primary" onclick="goToCheckout()">Purchase Now →</button>
+      <p style="margin-top:20px;font-size:12px;color:var(--muted);text-align:center">
+        Already have a license? <a href="#" onclick="event.preventDefault(); showEnterLicense()" style="color:var(--violet-soft);text-decoration:underline">Enter code</a>
+      </p>
+    </div>
+  `;
+}
+
+function goToCheckout(){
+  // In production, this should redirect to Stripe Checkout
+  // For now, prompt to open Stripe page with metadata
+  const checkoutUrl = `https://buy.stripe.com/test_xxx?client_reference_id=${productId}&prefilled_email=user@example.com`;
+  window.location.href = checkoutUrl;
+}
+
+function showEnterLicense(){
+  const licenseKey = prompt('Enter your license key:');
+  if (licenseKey) {
+    localStorage.setItem(`${productId}.license`, licenseKey);
+    checkLicense();
+  }
+}
+
 // ──── Init ────
-const savedVoice = localStorage.getItem('hum.voiceCues') === '1';
+// Check license before initializing the app
+(async () => {
+  await checkLicense();
+
+  const savedVoice = localStorage.getItem('hum.voiceCues') === '1';
 if (savedVoice){
   state.voiceCues = true;
   document.getElementById('setVoice').classList.add('on');
@@ -644,14 +758,15 @@ if (savedFreq){
 refreshHistory();
 showResult();
 
-// Hide swipe hint after first scroll
-let hintShown = true;
-panels.addEventListener('scroll', () => {
-  if (hintShown){
-    document.getElementById('swipeHint')?.remove();
-    hintShown = false;
-  }
-}, {passive:true, once: true});
+  // Hide swipe hint after first scroll
+  let hintShown = true;
+  panels.addEventListener('scroll', () => {
+    if (hintShown){
+      document.getElementById('swipeHint')?.remove();
+      hintShown = false;
+    }
+  }, {passive:true, once: true});
+})();
 </script>
 </body>
 </html>
