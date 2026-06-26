@@ -1183,10 +1183,23 @@ a { color: inherit; text-decoration: none; }
       <li>No subscription · No renewals</li>
     </ul>
 
-    <a class="btn primary lg" id="claim-cta" style="margin-top:var(--sp-2)">Claim Founding Membership →</a>
+    <a class="btn primary lg" id="claim-cta" href="https://wiggjamie.gumroad.com/l/codex-of-reality" target="_blank" rel="noopener" style="margin-top:var(--sp-2)">Claim Founding Membership →</a>
     <p class="dim" style="margin-top:var(--sp-3); font-size:0.8125rem; max-width:24rem; margin-left:auto; margin-right:auto">
       Secure checkout via Gumroad. International accepted.
     </p>
+
+    <!-- Already bought? Activate the license key Gumroad emailed you. -->
+    <div id="member-box" style="margin-top:var(--sp-4); max-width:24rem; margin-left:auto; margin-right:auto; text-align:center">
+      <div class="mono" style="margin-bottom:var(--sp-1)">ALREADY A MEMBER?</div>
+      <div id="member-status" class="dim" style="font-size:0.875rem; margin-bottom:var(--sp-2)"></div>
+      <div id="activate-row">
+        <input id="license-key" type="text" placeholder="Paste your license key" autocomplete="off"
+               style="width:100%; padding:0.6rem 0.75rem; border-radius:8px; border:1px solid var(--ink-3); background:var(--ink-2); color:var(--parchment); font-family:var(--font-mono); font-size:0.8125rem; margin-bottom:var(--sp-2)" />
+        <button id="activate-btn" class="btn">Activate</button>
+        <div id="activate-msg" style="margin-top:var(--sp-2); font-size:0.8125rem; min-height:1.2em"></div>
+      </div>
+      <button id="signout-btn" class="btn" style="display:none">Sign out</button>
+    </div>
 
     <div style="margin-top:var(--sp-5); padding-top:var(--sp-4); border-top:1px solid var(--ink-3); max-width:24rem; margin-left:auto; margin-right:auto; text-align:center">
       <div class="mono" style="margin-bottom:var(--sp-1)">FEEDBACK · IDEAS · QUESTIONS</div>
@@ -2807,6 +2820,55 @@ if (!state.onboardingDone && !location.hash.startsWith('#/welcome')) {
 navigate();
 renderHome();
 
+})();
+</script>
+
+<!-- Membership / entitlement layer (Gumroad license activation) -->
+<script src="./access.js"></script>
+<script>
+(function () {
+  if (!window.CodexAccess) return;
+  var box = document.getElementById('member-box');
+  if (!box) return;
+  var statusEl = document.getElementById('member-status');
+  var activateRow = document.getElementById('activate-row');
+  var keyInput = document.getElementById('license-key');
+  var activateBtn = document.getElementById('activate-btn');
+  var msg = document.getElementById('activate-msg');
+  var signoutBtn = document.getElementById('signout-btn');
+  var claimCta = document.getElementById('claim-cta');
+
+  function render() {
+    if (CodexAccess.isMember()) {
+      statusEl.textContent = '✓ Lifetime member — thank you.';
+      statusEl.style.color = 'var(--success, #6fcf97)';
+      activateRow.style.display = 'none';
+      signoutBtn.style.display = '';
+      if (claimCta) { claimCta.textContent = '✓ You own this'; claimCta.removeAttribute('href'); }
+    } else {
+      statusEl.textContent = '';
+      activateRow.style.display = '';
+      signoutBtn.style.display = 'none';
+    }
+  }
+
+  if (activateBtn) activateBtn.addEventListener('click', async function () {
+    msg.style.color = 'var(--parchment-dim)';
+    msg.textContent = 'Checking…';
+    try {
+      await CodexAccess.activate(keyInput.value);
+      msg.style.color = 'var(--success, #6fcf97)';
+      msg.textContent = 'Activated. Welcome in.';
+      render();
+    } catch (e) {
+      msg.style.color = 'var(--danger, #e57373)';
+      msg.textContent = (e && e.message) || 'Could not activate.';
+    }
+  });
+
+  if (signoutBtn) signoutBtn.addEventListener('click', function () { CodexAccess.signOut(); render(); });
+
+  render();
 })();
 </script>
 

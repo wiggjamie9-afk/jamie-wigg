@@ -2,13 +2,14 @@
  * Cache-first for the app shell + Google Fonts.
  * Network-first (with cache fallback) for live data feeds. */
 
-const CACHE = 'codex-v6-2026-05-19-voicebox';
+const CACHE = 'codex-v7-2026-06-26-membership';
 
 const SHELL = [
   './',
   './index.html',
   './home.html',
   './app.html',
+  './access.js',
 ];
 
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
