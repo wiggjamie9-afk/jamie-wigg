@@ -7,7 +7,7 @@
  * - Graceful fallback if free tiers are exhausted
  */
 
-import { getLLMClient, completeWithLLM, getActiveLLMMode } from "../../lib/llm-router";
+import { getLLMClient, getActiveLLMMode } from "./llm-router";
 
 export type StudioTask =
   | "caption"           // Low-value: generate video captions
@@ -29,7 +29,7 @@ interface StudioLLMRequest {
   };
 }
 
-interface StudioLLMResponse {
+export interface StudioLLMResponse {
   text: string;
   provider: string;
   mode: "free" | "paid";

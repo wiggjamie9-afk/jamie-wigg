@@ -12,15 +12,28 @@
 | `pnpm install` | ✅ (after build-script approval) | Sandbox needed `dangerouslyAllowAllBuilds`; not a code issue |
 | `pnpm test` | ✅ **60/60 pass** (5 files) | Includes good security tests (token never leaks into events) |
 | `pnpm lint` | ⚠️ blocked | `next lint` hits an **interactive ESLint-setup prompt** — no ESLint config exists yet |
-| `pnpm build` | ❌ **red** | `Module not found: Can't resolve 'openai'` → real architecture issue (below) |
+| `pnpm build` | ✅ **green (FIXED)** | Was red on `openai` import; decoupled per option A1 — see Finding A |
 
-**Headline:** the core app logic is healthy and well-tested, but **Studio does
-not build today.** That blocks deploy, so it's the #1 Week-1 item. Two of the
-three failures are quick; the build failure needs a design decision.
+**Headline:** the core app logic is healthy and well-tested, and **Studio now
+builds and static-exports cleanly** (`studio/out/`) after the LLM-router
+decouple. Typecheck clean, 60/60 tests green, all routes prerendered. Lint
+(Finding B) remains a minor CI nicety; the deploy-blocking issue is resolved.
 
 ---
 
-## Finding A — Build failure: server LLM router bundled into the client (decision needed)
+## Finding A — Build failure: server LLM router bundled into the client (RESOLVED ✅)
+
+**Resolution (option A1 — decouple).** Added a dependency-free, browser-first
+`studio/lib/llm-router.ts` that talks to any OpenAI-compatible endpoint over
+`fetch`, resolves config lazily at call time (explicit arg → `configureLLM()` →
+`localStorage` → `process.env` only under Node), and never reads secrets at
+import or bundles the `openai` SDK. Repointed `studio/lib/llm-studio.ts` to it
+and exported the missing `StudioLLMResponse` type; excluded `*.example.tsx` from
+the build. Result: typecheck clean, 60/60 tests green, static export succeeds.
+Original analysis preserved below for context.
+
+---
+
 
 **Chain:**
 ```

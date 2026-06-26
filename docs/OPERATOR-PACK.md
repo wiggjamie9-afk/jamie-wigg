@@ -17,10 +17,13 @@ The complete map of the ecosystem and how to run it. Read in this order.
 
 - **Strategy + plan:** complete (docs 1–5).
 - **Studio tests:** ✅ 60/60 pass.
-- **Studio build:** ❌ red — needs a design decision (see `week1-findings.md`, Finding A).
+- **Studio build:** ✅ **green** — fixed (LLM router decoupled, option A1; static
+  export `studio/out/` succeeds). See `week1-findings.md`, Finding A.
 - **License Worker:** ✅ code complete; needs config + one test purchase.
-- **Next gate (you):** decide Finding A (decouple Studio's LLM router), then I
-  implement + fix the lint/CORS items and drive toward first deploy.
+- **Next gate (you):** the license `You`-gates — create the $149 Gumroad product,
+  `wrangler secret put GUMROAD_PRODUCT_ID`, bind KV, deploy, one test purchase.
+  Also confirm the preview-CORS domain (Finding C). I can take the lint config
+  (Finding B) and a Studio preview deploy whenever you want.
 
 ## The two heartbeats that define "working"
 1. **T1.8** — a real license unlocks Studio (a dollar flows).
