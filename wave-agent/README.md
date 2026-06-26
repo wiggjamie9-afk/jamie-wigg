@@ -33,7 +33,17 @@ python agent.py modem "hello waves"     # encode text as sound, decode it back
 python agent.py reservoir               # classify tones with wave dynamics
 python agent.py logic                   # interference-based truth tables
 python agent.py evolve --drift 6 --generations 80   # evolve in a moving world
+python agent.py evolve --tesla369 --generations 54  # chase a 369->639->963 Hz loop
 ```
+
+### About the `--tesla369` mode
+
+A playful, opt-in nod to the apocryphal Tesla "3-6-9" legend: the environment's
+resonance **loops** through 369 → 639 → 963 Hz and the population has to keep
+re-adapting. It is folklore, not physics — the only real bit of math is that
+369, 639 and 963 all have **digital root 9**, and the digit-doubling sequence
+(1‑2‑4‑8‑7‑5…) never touches 3, 6 or 9. The mode demonstrates that pattern
+honestly while literally "putting 369 on a loop."
 
 ## Test it
 

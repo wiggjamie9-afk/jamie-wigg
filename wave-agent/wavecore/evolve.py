@@ -31,6 +31,36 @@ class Environment:
         self.resonance += self.drift
 
 
+def digital_root(n):
+    """Repeatedly sum digits until one remains (base-10). dr(multiple of 9) == 9."""
+    n = abs(int(n))
+    while n >= 10:
+        n = sum(int(d) for d in str(n))
+    return n
+
+
+class Tesla369Environment(Environment):
+    """An environment whose resonance loops through 3-6-9 derived frequencies.
+
+    The target steps 369 -> 639 -> 963 Hz and wraps around, holding each for
+    `hold` generations. This is a playful nod to the apocryphal Tesla "3-6-9"
+    idea, NOT a physical claim — it just literally puts 369 on a loop and makes
+    the population keep adapting to it. The three targets all have digital root
+    9 (3+6+9 = 18 -> 9), which is the one real bit of math in the legend.
+    """
+
+    _LOOP = (369.0, 639.0, 963.0)
+
+    def __init__(self, bandwidth=45.0, hold=8):
+        super().__init__(resonance=self._LOOP[0], bandwidth=bandwidth, drift=0.0)
+        self.hold = max(1, int(hold))
+        self._tick = 0
+
+    def step(self):
+        self._tick += 1
+        self.resonance = self._LOOP[(self._tick // self.hold) % len(self._LOOP)]
+
+
 class Organism:
     __slots__ = ("freq", "fitness")
 

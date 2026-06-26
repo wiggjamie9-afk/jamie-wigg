@@ -62,3 +62,24 @@ def test_evolution_tracks_a_drifting_environment():
     hist = ev.evolve(env, generations=80, pop_size=50, seed=1)
     # population should stay coupled to the moving target, not fall far behind
     assert hist[-1]["best_fit"] > 0.6
+
+
+def test_digital_root_369_pattern():
+    # The one real fact in the 3-6-9 legend: these all reduce to 9.
+    assert ev.digital_root(369) == 9
+    assert ev.digital_root(639) == 9
+    assert ev.digital_root(963) == 9
+    # ...and the doubling sequence never lands on 3, 6, or 9.
+    seq = {ev.digital_root(2 ** k) for k in range(1, 12)}
+    assert seq.isdisjoint({3, 6, 9})
+
+
+def test_tesla369_environment_loops():
+    env = ev.Tesla369Environment(hold=2)
+    seen = [env.resonance]
+    for _ in range(6):
+        env.step()
+        seen.append(env.resonance)
+    # resonance only ever takes the three 3-6-9 values, and it cycles
+    assert set(seen) <= {369.0, 639.0, 963.0}
+    assert len(set(seen)) == 3

@@ -94,13 +94,24 @@ def run_logic() -> int:
     return 0 if all_ok else 1
 
 
-def run_evolve(generations: int, drift: float, pop: int, seed: int) -> int:
-    env = ev.Environment(resonance=440.0, bandwidth=40.0, drift=drift)
-    start = env.resonance
-    history = ev.evolve(env, generations=generations, pop_size=pop, seed=seed)
-
-    print(f"  environment: resonates at {start:.0f} Hz, drift {drift:+.0f} Hz/gen")
+def run_evolve(generations: int, drift: float, pop: int, seed: int,
+               tesla369: bool = False) -> int:
+    if tesla369:
+        env = ev.Tesla369Environment(bandwidth=45.0, hold=max(1, generations // 9))
+        roots = ", ".join(f"{int(f)}(dr={ev.digital_root(f)})" for f in env._LOOP)
+        print(f"  environment: resonance LOOPS through {roots} Hz")
+        print(f"  note       : the 3-6-9 legend is folklore; the one real fact is")
+        print(f"               that 369/639/963 all have digital root 9")
+    else:
+        env = ev.Environment(resonance=440.0, bandwidth=40.0, drift=drift)
+        print(f"  environment: resonates at {env.resonance:.0f} Hz, drift {drift:+.0f} Hz/gen")
     print(f"  population : {pop} frequency-organisms, random start in 100-900 Hz\n")
+
+    # The 369 loop makes big instant jumps, so the population needs a wider
+    # mutation step to leap between targets; the smooth-drift world stays gentle.
+    mutation = 60.0 if tesla369 else 8.0
+    history = ev.evolve(env, generations=generations, pop_size=pop, seed=seed,
+                        mutation=mutation)
     print("   gen   target   best     fit    population mean")
     print("   ---   ------   ----    -----   ---------------")
     for r in history:
@@ -160,6 +171,8 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--drift", type=float, default=0.0, help="Hz the target moves per generation")
     e.add_argument("--pop", type=int, default=40)
     e.add_argument("--seed", type=int, default=0)
+    e.add_argument("--tesla369", action="store_true",
+                   help="loop the target through 369/639/963 Hz (a nod to the folklore)")
     return p
 
 
@@ -174,7 +187,8 @@ def main(argv=None) -> int:
     if args.cmd == "logic":
         return run_logic()
     if args.cmd == "evolve":
-        return run_evolve(args.generations, args.drift, args.pop, args.seed)
+        return run_evolve(args.generations, args.drift, args.pop, args.seed,
+                          tesla369=args.tesla369)
     return 2
 
 
