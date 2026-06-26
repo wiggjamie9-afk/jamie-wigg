@@ -13,44 +13,41 @@ struct VoiceRecordingRequest: Codable {
   let planningClarity: Int?
 }
 
-struct VoiceRecordingResponse: Codable {
-  let success: Bool
-  let recordingId: String
-  let transcript: String
-  let emotion: EmotionResult
-  let acousticFeatures: AcousticFeatures
+// Backend contract response (POST /api/voice)
+struct VoiceRecordingResponse: Codable, Identifiable {
+  let id: String
+  let userId: String
+  let audioUrl: String
+  let emotionResult: EmotionAnalysis
+  let timestamp: Date
+  let transcript: String?
+  let context: String?
+
+  enum CodingKeys: String, CodingKey {
+    case id, userId, audioUrl, emotionResult, timestamp, transcript, context
+  }
 }
 
+// Wrapper for list responses
 struct VoiceRecordingsResponse: Codable {
   let success: Bool
-  let recordings: [VoiceRecordingItem]
+  let recordings: [VoiceRecordingResponse]
 }
 
 struct VoiceRecordingDetailResponse: Codable {
   let success: Bool
-  let recording: VoiceRecordingDetail
+  let recording: VoiceRecordingResponse
 }
 
-struct VoiceRecordingItem: Codable {
-  let id: String
-  let transcript: String
-  let emotion: String
-  let emotionScore: Float
-  let context: String?
-  let createdAt: Date
-}
+// Emotion analysis from backend
+struct EmotionAnalysis: Codable {
+  let emotions: [String: Double]  // joy, sadness, anger, calm, neutral, etc.
+  let confidence: Double
+  let primaryEmotion: String?
 
-struct VoiceRecordingDetail: Codable {
-  let id: String
-  let userId: String
-  let audioUrl: String
-  let duration: Float
-  let primaryEmotion: String
-  let emotionScore: Float
-  let acousticFeatures: AcousticFeatures
-  let transcript: String
-  let context: String?
-  let createdAt: Date
+  enum CodingKeys: String, CodingKey {
+    case emotions, confidence, primaryEmotion = "primary_emotion"
+  }
 }
 
 struct EmotionResult: Codable {
@@ -94,12 +91,50 @@ struct DecisionRequest: Codable {
   let reflectionInsights: String?
 }
 
-struct DecisionResponse: Codable {
-  let success: Bool
-  let decisionId: String
-  let metacognitiveScore: String
-  let analysis: String
-  let insights: InsightData
+struct DecisionResponse: Codable, Identifiable {
+  let id: String
+  let title: String
+  let description: String
+  let category: String
+  let chosenOption: String
+  let reasoning: String
+  let planningClarity: Int
+  let monitoringComprehension: Int
+  let evaluationEffectiveness: Int
+  let reflectionInsights: String?
+  let metacognitiveScore: Double
+  let metacognitiveBreakdown: MetacognitiveBreakdown
+  let insightData: InsightData
+  let timestamp: Date
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case title
+    case description
+    case category
+    case chosenOption
+    case reasoning
+    case planningClarity
+    case monitoringComprehension
+    case evaluationEffectiveness
+    case reflectionInsights
+    case metacognitiveScore
+    case metacognitiveBreakdown
+    case insightData
+    case timestamp
+  }
+}
+
+struct MetacognitiveBreakdown: Codable {
+  let planning: Double
+  let monitoring: Double
+  let evaluation: Double
+
+  enum CodingKeys: String, CodingKey {
+    case planning
+    case monitoring
+    case evaluation
+  }
 }
 
 struct InsightData: Codable {
@@ -107,6 +142,7 @@ struct InsightData: Codable {
   let monitoringComprehension: Int
   let evaluationEffectiveness: Int
   let hasReflection: Bool
+  let reflectionSummary: String?
 }
 
 struct DecisionsResponse: Codable {
@@ -120,13 +156,16 @@ struct DecisionDetailResponse: Codable {
   let decision: DecisionDetail
 }
 
-struct DecisionItem: Codable {
+struct DecisionItem: Codable, Identifiable {
   let id: String
   let title: String
   let category: String
   let chosenOption: String
-  let confidence: Float
-  let metacognitiveScore: Float
+  let reasoning: String
+  let metacognitiveScore: Double
+  let planningClarity: Int
+  let monitoringComprehension: Int
+  let evaluationEffectiveness: Int
   let createdAt: Date
 }
 
@@ -226,10 +265,15 @@ enum AnyCodableValue {
 }
 
 struct TwinInteractionResponse: Codable {
-  let success: Bool
-  let interactionId: String
-  let response: String
-  let phase: String?
+  let id: String
+  let twinType: String
+  let userMessage: String
+  let twinResponse: String
+  let timestamp: Date
+
+  enum CodingKeys: String, CodingKey {
+    case id, twinType, userMessage, twinResponse, timestamp
+  }
 }
 
 struct TwinsResponse: Codable {

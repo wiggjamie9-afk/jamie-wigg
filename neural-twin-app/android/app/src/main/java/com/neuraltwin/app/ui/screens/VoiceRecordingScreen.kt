@@ -30,19 +30,47 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Slider
+import kotlinx.coroutines.delay
 
 @Composable
 fun VoiceRecordingScreen(
     viewModel: VoiceRecorderViewModel = hiltViewModel(),
     metacognitionViewModel: MetacognitionViewModel = hiltViewModel()
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val isRecording by viewModel.isRecording.collectAsState()
     val recordingTime by viewModel.recordingTime.collectAsState()
     val waveProgress by viewModel.waveProgress.collectAsState()
     val emotionResult by viewModel.emotionResult.collectAsState()
+    val isUploading by viewModel.isUploading.collectAsState()
+    val uploadError by viewModel.uploadError.collectAsState()
+    val uploadSuccess by viewModel.uploadSuccess.collectAsState()
+
     var showMetacognitivePrompt by remember { mutableStateOf(false) }
     var decisionTitle by remember { mutableStateOf("") }
     var planningClarity by remember { mutableStateOf(5) }
+    var userId by remember { mutableStateOf("") } // TODO: Get from auth/session
+
+    // Initialize recorder on first compose
+    LaunchedEffect(Unit) {
+        viewModel.initializeRecorder(context)
+    }
+
+    // Show error snackbar
+    LaunchedEffect(uploadError) {
+        if (uploadError != null) {
+            // Show snackbar (implement with SnackbarHostState if needed)
+        }
+    }
+
+    // Show success message
+    LaunchedEffect(uploadSuccess) {
+        if (uploadSuccess) {
+            // Reset state after success
+            delay(1500)
+            viewModel.clearRecording()
+        }
+    }
 
     val animatedWaveProgress by animateFloatAsState(
         targetValue = waveProgress,
@@ -330,6 +358,7 @@ fun VoiceRecordingScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
+                        enabled = !isUploading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DesignTokens.Surface1
                         )
@@ -338,15 +367,96 @@ fun VoiceRecordingScreen(
                     }
 
                     Button(
-                        onClick = { /* Upload to backend */ },
+                        onClick = {
+                            // Get current planning clarity from reflection slider
+                            val reflectionScore = 5 // TODO: Use actual slider value from reflection section
+                            viewModel.uploadRecording(
+                                userId = userId,
+                                context = null,
+                                location = null,
+                                decisionTitle = decisionTitle,
+                                planningClarity = reflectionScore
+                            )
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
+                        enabled = !isUploading && emotionResult != null,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DesignTokens.BrandBlue
                         )
                     ) {
-                        Text("Save")
+                        if (isUploading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Save")
+                        }
+                    }
+                }
+
+                // Show upload error
+                uploadError?.let { error ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = DesignTokens.ErrorRed.copy(alpha = 0.2f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = DesignTokens.ErrorRed,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Button(
+                                onClick = { viewModel.clearError() },
+                                modifier = Modifier.size(24.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Transparent
+                                ),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("✕", color = DesignTokens.ErrorRed)
+                            }
+                        }
+                    }
+                }
+
+                // Show success message
+                if (uploadSuccess) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = DesignTokens.SuccessGreen.copy(alpha = 0.2f)
+                        )
+                    ) {
+                        Text(
+                            "✓ Recording saved successfully!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = DesignTokens.SuccessGreen,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        )
                     }
                 }
             }

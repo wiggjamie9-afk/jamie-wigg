@@ -96,7 +96,17 @@ class APIClient {
   // Voice Endpoints
   // ============================================================================
 
-  func uploadVoiceRecording(audioBase64: String, context: String?) async throws -> VoiceRecordingResponse {
+  /// Upload voice recording with emotion analysis
+  /// Backend contract: POST /api/voice
+  /// Request: {audioBase64, context, location, decisionTitle, planningClarity}
+  /// Response: {id, userId, audioUrl, emotionResult: {emotions, confidence}, timestamp}
+  func uploadVoiceRecording(
+    audioBase64: String,
+    context: String? = nil,
+    location: String? = nil,
+    decisionTitle: String? = nil,
+    planningClarity: Int? = nil
+  ) async throws -> VoiceRecordingResponse {
     guard let userId = TokenStore.shared.userId else {
       throw APIError.serverError(code: 401, message: "Not authenticated")
     }
@@ -105,9 +115,9 @@ class APIClient {
       userId: userId,
       audioBase64: audioBase64,
       context: context,
-      location: nil,
-      decisionTitle: nil,
-      planningClarity: nil
+      location: location,
+      decisionTitle: decisionTitle,
+      planningClarity: planningClarity
     )
     let data = try JSONEncoder().encode(voiceRequest)
 
@@ -142,9 +152,12 @@ class APIClient {
     title: String,
     description: String,
     category: String?,
+    chosenOption: String = "",
+    reasoning: String = "",
     planningClarity: Int = 5,
     monitoringComprehension: Int = 5,
-    evaluationEffectiveness: Int = 5
+    evaluationEffectiveness: Int = 5,
+    reflectionInsights: String? = nil
   ) async throws -> DecisionResponse {
     guard let userId = TokenStore.shared.userId else {
       throw APIError.serverError(code: 401, message: "Not authenticated")
@@ -155,15 +168,15 @@ class APIClient {
       title: title,
       description: description,
       options: [:],
-      chosenOption: "",
-      reasoning: "",
-      category: category,
+      chosenOption: chosenOption,
+      reasoning: reasoning,
+      category: category ?? "general",
       confidence: nil,
       planningClarity: planningClarity,
       strategyChosen: nil,
       monitoringComprehension: monitoringComprehension,
       evaluationEffectiveness: evaluationEffectiveness,
-      reflectionInsights: nil
+      reflectionInsights: reflectionInsights
     )
     let data = try JSONEncoder().encode(decisionRequest)
 
@@ -237,6 +250,71 @@ class APIClient {
     }
 
     return try await performRequest(request)
+  }
+
+  /// Stream chat response from Twin (for real-time response display)
+  /// Returns an async sequence of String chunks from Claude API
+  func streamTwinResponse(twinType: String, userMessage: String) async throws -> AsyncThrowingStream<String, Error> {
+    guard let userId = TokenStore.shared.userId else {
+      throw APIError.serverError(code: 401, message: "Not authenticated")
+    }
+
+    let interactionRequest = TwinInteractionRequest(
+      userId: userId,
+      twinType: twinType,
+      userMessage: userMessage,
+      metacognitivePhase: nil,
+      contextData: nil
+    )
+    let data = try JSONEncoder().encode(interactionRequest)
+
+    guard let request = buildRequest("/twins/interaction/stream", method: "POST", body: data) else {
+      throw APIError.invalidRequest
+    }
+
+    return AsyncThrowingStream { continuation in
+      Task {
+        do {
+          let (asyncBytes, response) = try await session.bytes(for: request)
+
+          guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+          }
+
+          if !(200..<300).contains(httpResponse.statusCode) {
+            throw APIError.serverError(
+              code: httpResponse.statusCode,
+              message: "Stream error: HTTP \(httpResponse.statusCode)"
+            )
+          }
+
+          // Process streaming response line by line (SSE format)
+          for try await line in asyncBytes.lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { continue }
+
+            // Parse Server-Sent Events format: "data: {json}" or "data: text"
+            if trimmed.hasPrefix("data: ") {
+              let dataContent = String(trimmed.dropFirst(6))
+              // Try JSON parsing first (if structured), otherwise treat as plain text
+              if let jsonData = dataContent.data(using: .utf8) {
+                if let json = try? JSONDecoder().decode([String: String].self, from: jsonData),
+                   let content = json["content"] {
+                  continuation.yield(content)
+                } else {
+                  // Fallback to plain text
+                  continuation.yield(dataContent)
+                }
+              }
+            }
+          }
+
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
   }
 
   // ============================================================================
