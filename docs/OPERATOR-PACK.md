@@ -9,6 +9,7 @@ The complete map of the ecosystem and how to run it. Read in this order.
 | 3 | [`BUSINESS-GUIDE.md`](./BUSINESS-GUIDE.md) | The business the system runs (revenue, GTM, metrics, 30/60/90) |
 | 4 | [`WHAT-WE-HAVE.md`](./WHAT-WE-HAVE.md) | Grounded inventory of every asset (real counts) |
 | 5 | [`EXECUTION-BACKLOG.md`](./EXECUTION-BACKLOG.md) | The dated, ordered path — first 30 days |
+| ★ | [`BUSINESS-PLAN.md`](./BUSINESS-PLAN.md) | **Researched, cited launch plan** — market, pricing, 7-day sprint, 6-week launch, risks |
 | — | [`mcp-profiles.md`](./mcp-profiles.md) | T1.3 — the content/software/ops MCP profiles |
 | — | [`studio-license-flow.md`](./studio-license-flow.md) | T1.6 — license path dry-run + gaps |
 | — | [`week1-findings.md`](./week1-findings.md) | T1.5/T1.6 — real toolchain results + the build decision |
