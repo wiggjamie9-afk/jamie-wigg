@@ -1,0 +1,171 @@
+name: Android Build & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'neural-twin-app/android/**'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch:
+
+env:
+  GRADLE_WRAPPER: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Decode keystore
+        run: |
+          mkdir -p ${{ github.workspace }}/neural-twin-app/android/
+          if [ ! -z "${{ secrets.KEYSTORE_FILE }}" ]; then
+            echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/neural-twin-app/android/keystore.jks
+          fi
+
+      - name: Create signing.properties
+        env:
+          SIGNING_STORE_FILE: keystore.jks
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cat > ${{ github.workspace }}/neural-twin-app/android/signing.properties << EOF
+          SIGNING_STORE_FILE=${{ env.SIGNING_STORE_FILE }}
+          SIGNING_STORE_PASSWORD=${{ env.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS=${{ env.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD=${{ env.SIGNING_KEY_PASSWORD }}
+          EOF
+
+      - name: Build release APK
+        run: |
+          cd ${{ github.workspace }}/neural-twin-app/android
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Build App Bundle (AAB)
+        run: |
+          cd ${{ github.workspace }}/neural-twin-app/android
+          ./gradlew bundleRelease --stacktrace
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: neural-twin-apk
+          path: |
+            neural-twin-app/android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: Upload App Bundle as artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: neural-twin-aab
+          path: |
+            neural-twin-app/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+
+      - name: Extract APK version info
+        id: version
+        run: |
+          cd ${{ github.workspace }}/neural-twin-app/android
+          VERSION_NAME=$(grep "versionName" app/build.gradle.kts | grep -oP '"\K[^"]+')
+          VERSION_CODE=$(grep "versionCode" app/build.gradle.kts | grep -oP '\K[0-9]+')
+          echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
+          echo "version_code=${VERSION_CODE}" >> $GITHUB_OUTPUT
+          echo "build_timestamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: success()
+        with:
+          name: "NeuralTwin v${{ steps.version.outputs.version_name }} (Build ${{ steps.version.outputs.version_code }})"
+          tag_name: "v${{ steps.version.outputs.version_name }}"
+          files: |
+            neural-twin-app/android/app/build/outputs/apk/release/*.apk
+            neural-twin-app/android/app/build/outputs/bundle/release/*.aab
+          body: |
+            ## Release Information
+            - **Version:** ${{ steps.version.outputs.version_name }}
+            - **Build Code:** ${{ steps.version.outputs.version_code }}
+            - **Build Date:** ${{ steps.version.outputs.build_timestamp }}
+
+            ### Artifacts
+            - `neural-twin-release.apk` - Direct Android Package (for manual installation/beta testing)
+            - `neural-twin-release.aab` - Android App Bundle (for Google Play Store submission)
+
+            ### Next Steps
+            1. **For Beta Testing:** Share the APK with testers
+            2. **For Play Store Release:** Upload the AAB to Google Play Console
+            3. **For Distribution:** Use internal testing track first, then staged rollout
+
+            See [RELEASE_NOTES.md](../../RELEASE_NOTES.md) for detailed changes in this release.
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Status Summary
+        if: always()
+        run: |
+          echo "### Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **Build succeeded**" >> $GITHUB_STEP_SUMMARY
+            echo "- APK artifact: neural-twin-apk" >> $GITHUB_STEP_SUMMARY
+            echo "- AAB artifact: neural-twin-aab" >> $GITHUB_STEP_SUMMARY
+            echo "- Version: ${{ steps.version.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build failed**" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifacts are retained for 30 days**" >> $GITHUB_STEP_SUMMARY
+
+  lint-and-analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Run lint
+        run: |
+          cd ${{ github.workspace }}/neural-twin-app/android
+          ./gradlew lint --stacktrace || true
+
+      - name: Upload lint results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-results
+          path: neural-twin-app/android/app/build/reports/lint-results*.html
+          retention-days: 30
+
+      - name: Lint Summary
+        if: always()
+        run: |
+          echo "### Lint Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "📋 Lint report generated (see artifacts)" >> $GITHUB_STEP_SUMMARY

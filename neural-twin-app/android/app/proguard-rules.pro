@@ -5,41 +5,69 @@
 # For more details, see
 #   https://developer.android.com/guide/developing/tools/proguard
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
+# Preserve line numbers for debugging stack traces
 -keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
 -renamesourcefileattribute SourceFile
 
-# Keep Hilt classes
+# === Hilt / Dagger ===
 -keep class dagger.hilt.** { *; }
 -keep @dagger.hilt.android.HiltAndroidApp class * { <init>(); }
 -keep @dagger.hilt.android.AndroidEntryPoint class * { <init>(); }
+-keepclasseswithmembernames class * {
+    @dagger.hilt.* *;
+}
 
-# Keep Retrofit classes
+# === Retrofit ===
 -keep class retrofit2.** { *; }
 -keep interface retrofit2.** { *; }
 -keepattributes Signature
 -keepattributes Exceptions
+-keepclasseswithmembers class * {
+    @retrofit2.http.<*> <methods>;
+}
 
-# Keep Gson classes
+# === Gson ===
 -keep class com.google.gson.** { *; }
 -keep interface com.google.gson.** { *; }
 -keepattributes Signature
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
 
-# Keep OkHttp classes
+# === OkHttp ===
 -keep class okhttp3.** { *; }
 -keep interface okhttp3.** { *; }
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 
-# Keep Room classes
+# === Room Database ===
 -keep class androidx.room.** { *; }
 -keep interface androidx.room.** { *; }
+-keepclasseswithmembernames class * {
+    @androidx.room.* <methods>;
+}
+-keepclasseswithmembernames class * {
+    @androidx.room.* <fields>;
+}
+
+# === Kotlin Coroutines ===
+-keepclassmembers class kotlinx.coroutines.** {
+    volatile <fields>;
+}
+
+# === Android Core ===
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# === Application Classes ===
+# Keep all classes in our app package (adjust package name as needed)
+-keep class com.neuraltwin.app.** { *; }
+
+# === Generic Optimization ===
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+-optimizationpasses 5
+-allowaccessmodification
+-dontpreverify
+
+# === Verbose Output ===
+-verbose

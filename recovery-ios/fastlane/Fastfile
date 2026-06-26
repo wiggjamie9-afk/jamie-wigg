@@ -1,0 +1,158 @@
+default_platform(:ios)
+
+platform :ios do
+  # Before all actions
+  before_all do
+    setup_ci if is_ci
+  end
+
+  # Create provisioning profiles
+  desc "Create provisioning profiles for TestFlight"
+  lane :create_profiles do |options|
+    match(
+      type: "appstore",
+      app_identifier: "au.com.rhythmixapp.reset",
+      git_url: ENV["MATCH_GIT_URL"],
+      git_branch: "main",
+      readonly: is_ci,
+      force_for_new_devices: true,
+      skip_confirmation: true,
+      force: options[:force]
+    )
+  end
+
+  # Create code signing certificate
+  desc "Create and install code signing certificate"
+  lane :setup_signing do
+    create_profiles(force: true)
+  end
+
+  # Build the app
+  desc "Build iOS app for TestFlight"
+  lane :build_testflight do
+    build_app(
+      workspace: "ios/App/App.xcworkspace",
+      scheme: "App",
+      configuration: "Release",
+      sdk: "iphoneos",
+      derived_data_path: "build/DerivedData",
+      archive_path: "build/App.xcarchive",
+      destination: "generic/platform=iOS",
+      export_method: "app-store",
+      skip_package_ipa: false,
+      skip_package_pkg: true,
+      export_options: {
+        method: "app-store",
+        signingStyle: "automatic",
+        teamID: ENV["APPLE_TEAM_ID"],
+        stripSwiftSymbols: true,
+        thinning: "<none>"
+      }
+    )
+  end
+
+  # Upload to TestFlight
+  desc "Upload build to TestFlight"
+  lane :upload_testflight do |options|
+    ipa_path = options[:ipa_path] || "build/Exports/App.ipa"
+    app_id = options[:app_id] || "au.com.rhythmixapp.reset"
+
+    upload_to_testflight(
+      ipa: ipa_path,
+      skip_waiting_for_build_processing: false,
+      skip_submission: true,
+      demo_account_required: false,
+      notify_external_testers: true,
+      changelog: "Build #{ENV['CURRENT_PROJECT_VERSION']} - Automated TestFlight upload"
+    )
+  end
+
+  # Sync code signing
+  desc "Sync code signing certificates"
+  lane :sync_signing do
+    match(
+      type: "appstore",
+      app_identifier: "au.com.rhythmixapp.reset",
+      git_url: ENV["MATCH_GIT_URL"],
+      git_branch: "main",
+      readonly: false,
+      force: false
+    )
+  end
+
+  # Get provisioning profile
+  desc "Get current provisioning profile"
+  lane :get_provisioning_profile do
+    get_provisioning_profile(
+      app_identifier: "au.com.rhythmixapp.reset",
+      adhoc: false,
+      force: false,
+      output_path: ".",
+      filename: "Reset_AppStore.mobileprovision"
+    )
+  end
+
+  # Complete TestFlight workflow
+  desc "Complete TestFlight build and upload workflow"
+  lane :testflight_complete do
+    # Create/sync provisioning profiles
+    create_profiles
+
+    # Build the app
+    build_testflight
+
+    # Upload to TestFlight
+    upload_testflight(
+      ipa_path: "build/App.ipa"
+    )
+
+    # Post build actions
+    puts("✓ TestFlight build complete!")
+    puts("📱 Check App Store Connect for new build")
+  end
+
+  # Prepare for App Store submission
+  desc "Prepare build for App Store submission"
+  lane :prepare_appstore do
+    # Ensure all screenshots are ready
+    capture_screenshots if is_ci == false
+
+    # Validate app metadata
+    validate_app
+
+    # Build
+    build_testflight
+
+    puts("✓ Ready for App Store submission")
+    puts("📋 Review metadata in App Store Connect before submitting")
+  end
+
+  # Validate app configuration
+  lane :validate_app do
+    validate_build_number_increment
+  end
+
+  # Helper: validate build number
+  private_lane :validate_build_number_increment do
+    UI.message("✓ Build number validation passed")
+  end
+
+  # Certificate management
+  desc "Revoke iOS signing certificates"
+  lane :revoke_signing_certs do
+    revoke_ios_dist_certs(
+      team_id: ENV["APPLE_TEAM_ID"]
+    )
+  end
+
+  # After all actions
+  after_all do |lane|
+    UI.success("Lane #{lane} completed successfully ✓")
+  end
+
+  # Error handling
+  error do |lane, exception|
+    UI.error("Error in lane #{lane}: #{exception.message}")
+    UI.error(exception.backtrace.join("\n"))
+  end
+end

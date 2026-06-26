@@ -310,7 +310,7 @@ struct TwinInteractionItem: Codable {
 struct CoherenceResponse: Codable {
   let success: Bool
   let coherenceState: String
-  let overallCoherence: String
+  let overallCoherence: Double
   let layers: [CoherenceLayer]
   let recommendations: String
   let timestamp: Date

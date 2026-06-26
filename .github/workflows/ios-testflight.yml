@@ -1,0 +1,218 @@
+name: iOS TestFlight Build & Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'testflight'
+        type: choice
+        options:
+          - testflight
+          - appstore
+      increment_build:
+        description: 'Increment build number'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+  PROJECT_PATH: recovery-ios/ios/App
+  SCHEME: App
+  CONFIGURATION: Release
+
+jobs:
+  build-and-upload:
+    name: Build & Upload to TestFlight
+    runs-on: macos-13
+    environment: ios-production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Ruby for Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: recovery-ios
+
+      - name: Install Fastlane
+        run: |
+          cd recovery-ios
+          bundle install
+
+      - name: Setup SSH for git
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Get current version
+        id: version
+        run: |
+          VERSION=$(grep "MARKETING_VERSION = " ${{ env.PROJECT_PATH }}/App.xcodeproj/project.pbxproj | head -1 | sed 's/.*= \([^;]*\);/\1/')
+          BUILD=$(grep "CURRENT_PROJECT_VERSION = " ${{ env.PROJECT_PATH }}/App.xcodeproj/project.pbxproj | head -1 | sed 's/.*= \([^;]*\);/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+
+      - name: Increment build number
+        if: ${{ github.event.inputs.increment_build == 'true' }}
+        id: increment
+        run: |
+          cd ${{ env.PROJECT_PATH }}
+          BUILD=${{ steps.version.outputs.build }}
+          NEW_BUILD=$((BUILD + 1))
+          echo "new_build=$NEW_BUILD" >> $GITHUB_OUTPUT
+
+          # Update in project.pbxproj
+          sed -i '' "s/CURRENT_PROJECT_VERSION = $BUILD;/CURRENT_PROJECT_VERSION = $NEW_BUILD;/g" App.xcodeproj/project.pbxproj
+
+      - name: Import signing certificate
+        env:
+          SIGNING_CERTIFICATE_P12_DATA: ${{ secrets.SIGNING_CERTIFICATE_P12_DATA }}
+          SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Decode and import certificate
+          echo "$SIGNING_CERTIFICATE_P12_DATA" | base64 --decode > certificate.p12
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Import certificate
+          security import certificate.p12 -k build.keychain -P "$SIGNING_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+
+          # Allow codesign to use certificate
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Clean up
+          rm -f certificate.p12
+
+      - name: Install provisioning profiles
+        env:
+          PROVISIONING_PROFILE_DATA: ${{ secrets.PROVISIONING_PROFILE_DATA }}
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+
+          # Decode and install all profiles
+          echo "$PROVISIONING_PROFILE_DATA" | base64 --decode > profiles.zip
+          unzip -o profiles.zip -d ~/Library/MobileDevice/Provisioning\ Profiles
+          rm -f profiles.zip
+
+      - name: Build iOS app
+        run: |
+          cd ${{ env.PROJECT_PATH }}
+          xcodebuild \
+            -scheme ${{ env.SCHEME }} \
+            -configuration ${{ env.CONFIGURATION }} \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            -archivePath build/App.xcarchive \
+            archive \
+            -allowProvisioningUpdates \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
+
+      - name: Export IPA
+        run: |
+          cd ${{ env.PROJECT_PATH }}
+
+          # Create ExportOptions.plist
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>${{ github.event.inputs.build_type == 'appstore' && 'app-store' || 'app-store' }}</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
+              <key>teamID</key>
+              <string>${{ secrets.APPLE_TEAM_ID }}</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>thinning</key>
+              <string><none></string>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build/Exports
+
+      - name: Upload to TestFlight with Fastlane
+        env:
+          FASTLANE_USER: ${{ secrets.APPLE_ID }}
+          FASTLANE_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          FASTLANE_SESSION: ${{ secrets.FASTLANE_SESSION }}
+          SPACESHIP_SKIP_2FA_UPGRADE: true
+        run: |
+          cd recovery-ios
+          bundle exec fastlane ios upload_testflight \
+            ipa_path:"../{{ env.PROJECT_PATH }}/build/Exports/App.ipa" \
+            app_id:"au.com.rhythmixapp.reset"
+
+      - name: Commit version bump
+        if: ${{ github.event.inputs.increment_build == 'true' }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add ${{ env.PROJECT_PATH }}/App.xcodeproj/project.pbxproj
+          git commit -m "chore: bump iOS build number to ${{ steps.increment.outputs.new_build }}"
+          git push
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build-artifacts
+          path: |
+            recovery-ios/${{ env.PROJECT_PATH }}/build/Exports/App.ipa
+            recovery-ios/${{ env.PROJECT_PATH }}/build/App.xcarchive
+
+      - name: Send Slack notification
+        if: always()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "iOS Build ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*iOS TestFlight Build*\nStatus: `${{ job.status }}`\nVersion: ${{ steps.version.outputs.version }}\nBuild: ${{ steps.increment.outputs.new_build || steps.version.outputs.build }}\nBranch: ${{ github.ref }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

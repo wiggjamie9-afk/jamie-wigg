@@ -153,27 +153,32 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/knowledge/:id - Get specific knowledge entry
-router.get('/:id', async (req: Request, res: Response) => {
+// GET /api/knowledge/loops/history - Get user's learning loops (MUST come before /:id)
+router.get('/loops/history', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
     const userId = req.userId!;
 
-    const entry = await prisma.knowledgeEntry.findFirst({
-      where: { id, userId }
+    const loops = await prisma.learningLoop.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 12
     });
-
-    if (!entry) {
-      return res.status(404).json({ error: 'Knowledge entry not found' });
-    }
 
     res.json({
       success: true,
-      entry
+      loops: loops.map(l => ({
+        id: l.id,
+        cycle: l.cycle,
+        cycleType: l.cycleType,
+        keyInsights: l.keyInsights,
+        metacognitiveCoherence: l.metacognitiveCoherence,
+        createdAt: l.createdAt
+      })),
+      count: loops.length
     });
   } catch (error) {
-    console.error('Knowledge fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch knowledge entry' });
+    console.error('Learning loops fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch learning loops' });
   }
 });
 
@@ -221,32 +226,27 @@ router.post('/learning-loop', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/knowledge/loops - Get user's learning loops
-router.get('/loops/history', async (req: Request, res: Response) => {
+// GET /api/knowledge/:id - Get specific knowledge entry (MUST come after /loops/history)
+router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
     const userId = req.userId!;
 
-    const loops = await prisma.learningLoop.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 12
+    const entry = await prisma.knowledgeEntry.findFirst({
+      where: { id, userId }
     });
+
+    if (!entry) {
+      return res.status(404).json({ error: 'Knowledge entry not found' });
+    }
 
     res.json({
       success: true,
-      loops: loops.map(l => ({
-        id: l.id,
-        cycle: l.cycle,
-        cycleType: l.cycleType,
-        keyInsights: l.keyInsights,
-        metacognitiveCoherence: l.metacognitiveCoherence,
-        createdAt: l.createdAt
-      })),
-      count: loops.length
+      entry
     });
   } catch (error) {
-    console.error('Learning loops fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch learning loops' });
+    console.error('Knowledge fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch knowledge entry' });
   }
 });
 

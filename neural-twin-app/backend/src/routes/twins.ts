@@ -153,6 +153,111 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/twins/interaction/stream - Stream Twin response in real-time via Server-Sent Events
+router.post('/interaction/stream', async (req: Request, res: Response) => {
+  try {
+    const {
+      twinType,
+      userMessage,
+      metacognitivePhase,
+      contextData
+    } = req.body as TwinInteractionRequest;
+    const userId = req.userId!;
+
+    if (!twinType || !userMessage) {
+      return res.status(400).json({
+        error: 'Missing required fields: twinType, userMessage'
+      });
+    }
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const twinPersonalities: Record<string, string> = {
+      task: 'You are Task Twin, a productivity and workflow optimization specialist. You help users organize priorities, break down complex projects, and maintain momentum. Be direct and action-oriented.',
+      coach: 'You are Coach Twin, a real-time guidance and metacognitive coaching specialist. Help users think about their thinking. If they mention a decision, ask about their planning clarity, monitoring awareness, and reflection. Use the 4-pillar metacognitive framework (planning, monitoring, evaluating, reflecting).',
+      growth: 'You are Growth Twin, a learning and development specialist. You help users identify learning opportunities, optimize their growth trajectory, and celebrate progress.',
+      health: 'You are Health Twin, a wellness and biometric optimization coach. You provide insights on physical and mental coherence based on health data.',
+      relationship: 'You are Relationship Twin, a social coherence and connection specialist. You help strengthen relationships and social patterns.',
+      financial: 'You are Financial Twin, a money psychology and financial life transformation expert. You help users understand their financial beliefs and patterns.',
+      creative: 'You are Creative Twin, a flow and creative expression specialist. You help users unlock their creative potential and maintain inspiration.',
+      research: 'You are Research Twin, a knowledge synthesis and learning accelerator. You help consolidate information and extract insights.',
+      metacognition: 'You are Metacognition Twin, a thinking specialist. You help users understand their own cognitive processes, develop metacognitive awareness, and improve how they think about problems.'
+    };
+
+    const systemPrompt = twinPersonalities[twinType] || twinPersonalities.coach;
+    let userPrompt = userMessage;
+
+    if (metacognitivePhase && twinType === 'coach') {
+      userPrompt += `\n\nFocus on the ${metacognitivePhase} phase of metacognitive processing. Help them deepen their awareness in this specific area.`;
+    }
+
+    if (contextData) {
+      if (contextData.decisionTitle) {
+        userPrompt += `\n\nThey're working on a decision: "${contextData.decisionTitle}"`;
+      }
+      if (contextData.emotionalState) {
+        userPrompt += `\n\nTheir current emotional state: ${contextData.emotionalState}`;
+      }
+    }
+
+    try {
+      const stream = await getAnthropic().messages.stream({
+        model: CLAUDE_MODEL,
+        max_tokens: 500,
+        messages: [
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ],
+        system: systemPrompt
+      });
+
+      let fullResponse = '';
+
+      stream.on('text', (text) => {
+        fullResponse += text;
+        res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
+      });
+
+      stream.on('end', async () => {
+        // Store interaction after streaming completes
+        await prisma.twinInteraction.create({
+          data: {
+            userId,
+            twinType,
+            userMessage,
+            twinResponse: fullResponse,
+            contextData: contextData || {},
+            metacognitivePhase: metacognitivePhase || null,
+            coachingFocus: metacognitivePhase ? `Metacognitive ${metacognitivePhase}` : null
+          }
+        });
+
+        res.write('data: [DONE]\n\n');
+        res.end();
+      });
+
+      stream.on('error', (error) => {
+        console.error('Stream error:', error);
+        res.write(`data: ${JSON.stringify({ error: 'Stream processing error' })}\n\n`);
+        res.end();
+      });
+    } catch (streamError) {
+      console.error('Streaming setup error:', streamError);
+      res.write(`data: ${JSON.stringify({ error: 'Failed to establish stream' })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    console.error('Twin stream error:', error);
+    res.status(500).json({ error: 'Failed to stream Twin response' });
+  }
+});
+
 // GET /api/twins/:type/history - Get Twin interaction history
 router.get('/:type/history', async (req: Request, res: Response) => {
   try {
