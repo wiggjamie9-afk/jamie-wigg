@@ -43,7 +43,7 @@ export default function AppsPage() {
 
       // Enrich with session data
       const enriched = await Promise.all(
-        (purchases || []).map(async (purchase) => {
+        (purchases || []).map(async (purchase: any) => {
           const { data: sessions } = await supabase
             .from('app_sessions')
             .select('session_end')
