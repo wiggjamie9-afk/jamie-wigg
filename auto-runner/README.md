@@ -62,6 +62,30 @@ Steps 1 and 3 are where money is actually won or lost, and no loop can do them
 for you. Steps 2, 4, 5 are where this runner genuinely saves you hours every
 week — which is real value, just not "money from nothing."
 
+## Running the real STARLIGHTMIX preset
+
+`presets.py` makes `STRATEGY.md` executable for the actual product:
+
+```bash
+python runner.py --preset starlightmix --ticks 5 --interval 0   # see it work
+python runner.py --preset starlightmix --serve --interval 86400 # daily, for real
+```
+
+- **`hook_generator`** drafts a faceless short-form video brief (hook + what to
+  show + caption + CTA) rotating through the product's wedge angles, to
+  `drafts/`. It never posts — you record the 15s demo and approve the copy.
+- **`gumroad_sales`** reports your **real** sales once you set a token:
+
+  ```bash
+  export GUMROAD_ACCESS_TOKEN=your_token   # from Gumroad → Settings → Advanced
+  python runner.py --preset starlightmix --once
+  ```
+
+  With no token it returns `setup-needed` and **invents nothing**.
+
+What the loop does NOT do (your accounts, your hands): deploy the app, publish
+the Gumroad product, configure DNS, or record/post the videos.
+
 ## Adding your own job
 
 ```python

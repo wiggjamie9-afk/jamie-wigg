@@ -40,6 +40,35 @@ def test_interval_gating(tmp_path):
     assert len(sch.tick(now=120.0)) == 1        # interval elapsed — fires again
 
 
+def test_hook_generator_varies_and_never_posts(tmp_path):
+    from presets import HookGeneratorJob
+
+    job = HookGeneratorJob(out_dir=str(tmp_path / "drafts"))
+    hooks = {job.run({"tick": t})["angle"] for t in range(5)}
+    assert len(hooks) == 5                       # rotates through all wedge angles
+    out = job.run({"tick": 0})
+    assert out["posted"] is False                # drafts only, never auto-posts
+    assert os.path.exists(out["wrote"])
+
+
+def test_gumroad_job_invents_nothing_without_token(monkeypatch, tmp_path):
+    from presets import GumroadSalesJob
+
+    monkeypatch.delenv("GUMROAD_ACCESS_TOKEN", raising=False)
+    out = GumroadSalesJob(out_dir=str(tmp_path / "r")).run({"tick": 1})
+    assert out["status"] == "setup-needed"       # no token -> no fabricated numbers
+
+
+def test_gumroad_parse_computes_revenue():
+    from presets import GumroadSalesJob
+
+    payload = {"sales": [{"product_name": "Studio", "price": 14900, "created_at": "x"},
+                         {"product_name": "Studio", "price": 14900, "created_at": "y"}]}
+    parsed = GumroadSalesJob._parse(payload)
+    assert parsed["count"] == 2
+    assert parsed["revenue_usd"] == 298.0        # 2 x $149.00, prices are in cents
+
+
 def test_serve_runs_fixed_ticks_without_real_sleep(tmp_path):
     sch = Scheduler([HeartbeatJob(interval=0)], state_path=str(tmp_path / "s.json"))
     clock = {"t": 0.0}

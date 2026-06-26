@@ -22,6 +22,7 @@ import time
 import traceback
 
 from jobs import default_jobs
+from presets import starlightmix_jobs
 
 
 class Scheduler:
@@ -94,9 +95,12 @@ def main(argv=None):
     ap.add_argument("--ticks", type=int, default=None, help="number of passes (demo)")
     ap.add_argument("--interval", type=float, default=3600.0, help="seconds between passes")
     ap.add_argument("--serve", action="store_true", help="run forever")
+    ap.add_argument("--preset", choices=["demo", "starlightmix"], default="demo",
+                    help="job lineup: 'demo' stubs or 'starlightmix' (real product)")
     args = ap.parse_args(argv)
 
-    sch = Scheduler(default_jobs())
+    jobs = starlightmix_jobs() if args.preset == "starlightmix" else default_jobs()
+    sch = Scheduler(jobs)
     if args.once:
         for r in sch.tick(time.time(), force=True):
             print(f"[tick {r['tick']}] {r['job']}: {r['status']} {r['result']}")
