@@ -172,6 +172,49 @@ def run_world(generations: int, pop: int, seed: int) -> int:
     return 0 if speciated else 1
 
 
+def _spark(series, lo, hi, cols=52):
+    s = np.asarray(series, dtype=float)
+    idx = np.linspace(0, len(s) - 1, cols).astype(int)
+    s = s[idx]
+    blocks = "▁▂▃▄▅▆▇█"
+    if hi - lo < 1e-9:
+        return blocks[0] * cols
+    norm = np.clip((s - lo) / (hi - lo), 0, 1)
+    return "".join(blocks[int(round(n * (len(blocks) - 1)))] for n in norm)
+
+
+def run_brain(generations: int, pop: int, seed: int) -> int:
+    from wavecore import brain as bm
+
+    print("  organisms whose BRAIN runs a continuous loop on a moving frequency.")
+    print("  genes = control gains (kp, kd); evolution breeds perfect self-regulators.")
+    print("  perfection = tracks the moving target AND regenerates after a knock,")
+    print("               under noise, with an inertial body — error below 2.0 Hz.\n")
+    print("   gen   track-err  recover  jitter")
+    print("   ---   ---------  -------  ------")
+
+    def show(r):
+        if r["gen"] < 12 or r["gen"] % 10 == 0:
+            print(f"   {r['gen']:>3}     {r['track']:>6.2f}    {r['recover']:>6.2f}   {r['jitter']:>5.2f}")
+
+    best, hist, reached = bm.evolve_brains(center=440.0, generations=generations,
+                                           pop=pop, seed=seed, on_generation=show)
+    final = hist[-1]
+    print(f"\n  result     : {'PERFECTION reached' if reached else 'budget spent (closest kept)'} "
+          f"at gen {final['gen']}  ->  brain kp={best.kp:.2f}, kd={best.kd:.2f}")
+
+    # Show the perfected brain chasing the continuous frequency (noise-free for clarity).
+    target = bm.setpoint(440.0, bm._STEPS)
+    traj, errs = bm.live(best, target, start=440.0, steps=bm._STEPS, perturbations=bm._PERTURB)
+    lo, hi = float(min(target.min(), min(traj))), float(max(target.max(), max(traj)))
+    print("\n  the perfected brain chasing the continuous frequency (+300Hz knock at t=55):")
+    print("    target   " + _spark(target, lo, hi))
+    print("    brain    " + _spark(traj, lo, hi))
+    print(f"\n  regeneration: after the knock it re-locked onto the moving target, "
+          f"ending {errs[-1]:.1f} Hz away.")
+    return 0 if reached else 1
+
+
 def run_auto(ticks: int, seed: int, state, resume: bool) -> int:
     from wavecore.autonomous import AutonomousWorld
 
@@ -284,6 +327,11 @@ def build_parser() -> argparse.ArgumentParser:
     ov.add_argument("--goal", type=int, default=3, help="target number of stable species")
     ov.add_argument("--budget", type=int, default=8, help="max trials")
     ov.add_argument("--seed", type=int, default=0)
+
+    b = sub.add_parser("brain", help="evolve self-regulating brains until one is perfect")
+    b.add_argument("--generations", type=int, default=80)
+    b.add_argument("--pop", type=int, default=40)
+    b.add_argument("--seed", type=int, default=0)
     return p
 
 
@@ -306,6 +354,8 @@ def main(argv=None) -> int:
         return run_auto(args.ticks, args.seed, args.state, args.resume)
     if args.cmd == "overseer":
         return run_overseer(args.goal, args.budget, args.seed)
+    if args.cmd == "brain":
+        return run_brain(args.generations, args.pop, args.seed)
     return 2
 
 

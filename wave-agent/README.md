@@ -52,7 +52,22 @@ python agent.py world                               # one loop; watch species em
 python agent.py auto --state runs/genome.json       # self-driving ecosystem; persists
 python agent.py auto --state runs/genome.json --resume   # continue where it left off
 python agent.py overseer --goal 3                   # agent that experiments to hit a goal
+python agent.py brain                               # evolve a self-regulating brain to perfection
 ```
+
+### The `brain` — organisms that regulate themselves to perfection
+
+Every organism here has a **brain**: a feedback controller running a continuous
+loop on a *moving* frequency. Its body has momentum (a second-order plant) and
+its senses are noisy, so flawless control is not trivial — an over-eager brain
+oscillates, a sluggish one lags. The brain's control gains are its genes, and
+evolution breeds the population until one **tracks the moving target and
+regenerates after any knock with sub-2 Hz error** — what we call *perfection*,
+defined honestly (true zero-error-forever is an asymptote; genuinely
+never-ending open-ended improvement is an unsolved research problem). Run
+`python agent.py brain` and watch the tracking error fall generation by
+generation, then see the perfected brain chase the wave and snap back from a
++300 Hz knock in a single step.
 
 ### Autonomy, honestly
 
@@ -102,7 +117,8 @@ wave-agent/
 │   ├── evolve.py         # frequencies evolving in an environment
 │   ├── world.py          # all four pillars composed into one loop
 │   ├── autonomous.py     # the self-driving ecosystem (perceive/decide/act/persist)
-│   └── overseer.py       # autonomous experimenter that drives the world to a goal
+│   ├── overseer.py       # autonomous experimenter that drives the world to a goal
+│   └── brain.py          # self-regulating brains that evolve to track a frequency perfectly
 └── tests/test_wavecore.py
 ```
 

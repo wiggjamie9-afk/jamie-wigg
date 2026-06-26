@@ -119,6 +119,22 @@ def test_overseer_searches_and_scores():
     assert best in [h for h in history] or best["trial"] >= 1
 
 
+def test_brain_evolves_to_perfection_and_regenerates():
+    from wavecore import brain as bm
+
+    best, history, reached = bm.evolve_brains(center=440.0, generations=80, pop=40, seed=0)
+    assert reached is True                              # it actually reaches perfection
+    assert history[0]["track"] > history[-1]["track"]  # and improved to get there
+    assert bm.is_perfect(best)
+
+    # regeneration: knock it off the moving target; it returns close.
+    target = bm.setpoint(440.0, bm._STEPS)
+    _, errs = bm.live(best, target, start=440.0, steps=bm._STEPS, perturbations={55: 300.0})
+    baseline = float(np.mean(errs[40:55]))
+    assert max(errs[55:62]) > baseline + 25   # the knock really displaced it
+    assert errs[-1] < 10                       # ...and it regenerated back onto the target
+
+
 def test_tesla369_environment_loops():
     env = ev.Tesla369Environment(hold=2)
     seen = [env.resonance]
