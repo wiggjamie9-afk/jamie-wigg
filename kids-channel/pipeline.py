@@ -40,6 +40,11 @@ YOUTUBE_CLIENT_SECRET = os.getenv("YOUTUBE_CLIENT_SECRET")
 PIPER_VOICE_DIR = Path(os.getenv("PIPER_VOICE_DIR", "/tmp/piper-voices"))
 PIPER_VOICE     = "en_US-lessac-medium"
 
+# Narration engine: "auto" (ElevenLabs → Piper), "kokoro", "elevenlabs", or "piper".
+NARRATION_ENGINE = os.getenv("NARRATION_ENGINE", "auto").lower()
+KOKORO_VOICE     = os.getenv("KOKORO_VOICE", "af_heart")   # warm soft-spoken woman
+KOKORO_SPEED     = os.getenv("KOKORO_SPEED", "0.9")        # <1.0 = slower, calmer bedtime pace
+
 # ── Show config (update once you have a character) ──────────────────────────────
 SHOW_NAME = "Sonny's Cozy Quokka Bedtime Tales"
 CHARACTER_NAME = "Sonny"
@@ -264,6 +269,48 @@ def generate_narration_piper(narration_text: str, episode_dir: Path) -> Path:
     else:
         audio_path.write_bytes(b"")
         print("  ⚠ Piper WAV→MP3 conversion failed")
+    return audio_path
+
+
+# ── 2c. Narration via Kokoro TTS (free local, ElevenLabs-grade quality) ──────────────
+
+def generate_narration_kokoro(narration_text: str, episode_dir: Path) -> Path:
+    """Generate narration using local Kokoro TTS — 30+ natural voices, no API key.
+    Voice/speed via KOKORO_VOICE / KOKORO_SPEED env (default: warm woman af_heart)."""
+    import shutil
+    audio_path = episode_dir / "narration.mp3"
+    wav_path   = episode_dir / "narration.wav"
+    txt_path   = episode_dir / "narration.txt"
+
+    if shutil.which("kokoro-tts") is None:
+        print("  ⚠ kokoro-tts not installed — skipping Kokoro (see KOKORO-SETUP.md)")
+        audio_path.write_bytes(b"")
+        return audio_path
+
+    txt_path.write_text(narration_text)
+    print(f"[2/6] Generating narration audio via Kokoro TTS (voice={KOKORO_VOICE}, speed={KOKORO_SPEED})...")
+    wav_result = subprocess.run(
+        ["kokoro-tts", str(txt_path), str(wav_path),
+         "--voice", KOKORO_VOICE, "--lang", "en-us", "--speed", KOKORO_SPEED],
+        capture_output=True, text=True, timeout=300,
+    )
+    if wav_result.returncode != 0 or not wav_path.exists():
+        print(f"  ⚠ Kokoro TTS failed: {wav_result.stderr[:150]}")
+        audio_path.write_bytes(b"")
+        return audio_path
+
+    # Convert WAV → MP3 so it matches the other engines' output format
+    mp3_result = subprocess.run(
+        ["ffmpeg", "-y", "-i", str(wav_path), "-q:a", "4", str(audio_path)],
+        capture_output=True,
+    )
+    wav_path.unlink(missing_ok=True)
+    txt_path.unlink(missing_ok=True)
+    if mp3_result.returncode == 0 and audio_path.exists() and audio_path.stat().st_size > 1000:
+        print(f"  ✓ Narration via Kokoro TTS ({audio_path.stat().st_size // 1024}KB)")
+    else:
+        audio_path.write_bytes(b"")
+        print("  ⚠ Kokoro WAV→MP3 conversion failed")
     return audio_path
 
 
@@ -1733,11 +1780,26 @@ def main():
         (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
         print(f"  ✓ Title: {script['title']}")
 
-    # 2. Narration — ElevenLabs first, Piper TTS free fallback
-    narration = generate_narration(script["narration"], episode_dir)
-    if not narration.exists() or narration.stat().st_size < 100:
-        print("  ↩ ElevenLabs unavailable — trying Piper TTS (free offline)...")
-        narration = generate_narration_piper(script["narration"], episode_dir)
+    # 2. Narration — engine chosen by NARRATION_ENGINE env:
+    #    "kokoro"    → Kokoro TTS (free local, warm voices) then Piper fallback
+    #    "piper"     → Piper TTS only
+    #    "elevenlabs"→ ElevenLabs only
+    #    "auto"      → ElevenLabs first, Piper fallback (original behaviour)
+    _txt = script["narration"]
+    if NARRATION_ENGINE == "kokoro":
+        narration = generate_narration_kokoro(_txt, episode_dir)
+        if not narration.exists() or narration.stat().st_size < 100:
+            print("  ↩ Kokoro unavailable — trying Piper TTS (free offline)...")
+            narration = generate_narration_piper(_txt, episode_dir)
+    elif NARRATION_ENGINE == "piper":
+        narration = generate_narration_piper(_txt, episode_dir)
+    elif NARRATION_ENGINE == "elevenlabs":
+        narration = generate_narration(_txt, episode_dir)
+    else:  # "auto"
+        narration = generate_narration(_txt, episode_dir)
+        if not narration.exists() or narration.stat().st_size < 100:
+            print("  ↩ ElevenLabs unavailable — trying Piper TTS (free offline)...")
+            narration = generate_narration_piper(_txt, episode_dir)
 
     # Probe actual narration length so scene durations can be matched to it —
     # otherwise the assembled video gets truncated mid-sentence by `-shortest`
