@@ -158,7 +158,7 @@ export default function AppsPage() {
               No apps yet
             </h2>
             <p className="text-gray-600 mb-6">
-              You haven't purchased any apps yet. Explore our collection and get
+              You haven&apos;t purchased any apps yet. Explore our collection and get
               started!
             </p>
             <Link
@@ -254,7 +254,7 @@ function AppCardComponent({ app }: { app: AppCard }) {
           href={`/apps/${app.app_id}?license=${app.license_key}`}
           className="block w-full bg-primary text-white py-2 rounded-lg font-medium text-center hover:bg-opacity-90 transition"
         >
-          Open App →
+          Open App &rarr;
         </a>
       </div>
     </div>

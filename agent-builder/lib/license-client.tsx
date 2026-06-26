@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * Client-side license validation utility
  * Use this in your apps to validate licenses and control access
@@ -161,8 +163,6 @@ export function useLicense() {
  *   );
  * }
  */
-import React from 'react';
-
 export function LicenseGuard({ children }: { children: React.ReactNode }) {
   const { license, isValidating } = useLicense();
 

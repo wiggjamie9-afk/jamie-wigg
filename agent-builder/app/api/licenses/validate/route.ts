@@ -7,6 +7,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 
+interface ValidateLicenseResponse {
+  is_valid: boolean;
+  app_id: string;
+  app_name: string;
+  is_premium: boolean;
+  user_id: string;
+}
+
 export async function GET(request: NextRequest) {
   const key = request.nextUrl.searchParams.get('key');
 
@@ -19,9 +27,9 @@ export async function GET(request: NextRequest) {
 
   try {
     // Validate license key
-    const { data, error } = await supabase
+    const { data, error } = (await supabase
       .rpc('validate_license', { p_license_key: key })
-      .single();
+      .single()) as any;
 
     if (error) {
       console.error('License validation error:', error);
