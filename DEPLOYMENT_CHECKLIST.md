@@ -1,228 +1,296 @@
-# 28-App Deployment Checklist
+# Autonomous Monetization System — Deployment Checklist
 
-## ✅ Build Status: COMPLETE
-
-| Status | Count | Items |
-|--------|-------|-------|
-| **Built & Committed** | 28 | All apps code-complete, localStorage-enabled, responsive |
-| **Portfolio Designed** | 1 | Chromatic Systems visual portfolio created |
-| **Assets Ready** | TBD | Icons, screenshots, descriptions |
+**Time Required:** ~2 hours  
+**Complexity:** Low (mostly copy-paste & clicks)  
+**Hands-on Work:** 2 hours, then completely automated
 
 ---
 
-## Core Functionality Verified
+## Pre-Setup (5 minutes)
 
-### ✅ All 28 Apps Include:
-- [x] Full localStorage persistence (data survives app close)
-- [x] Error handling with user-friendly toasts
-- [x] Mobile-first responsive design (375px–1200px)
-- [x] Dark theme UI
-- [x] High contrast text (WCAG AA minimum)
-- [x] Keyboard navigation support
-- [x] No external dependencies (Vanilla JS only)
-- [x] < 100KB file size per app
-
-### ✅ Quality Gates Passed:
-- [x] No console errors (production-ready)
-- [x] State management via localStorage
-- [x] User data persistence verified
-- [x] Accessibility compliance (color contrast, tab navigation)
-- [x] Performance optimized (loads in <3s on 3G)
+- [ ] Review `SYSTEM_COMPLETE.md` for overview
+- [ ] Have Supabase account ready
+- [ ] Have Gumroad account ready  
+- [ ] Have GitHub account ready
+- [ ] Have Anthropic API key from: https://console.anthropic.com
 
 ---
 
-## Deployment Tasks (IN PROGRESS)
+## Phase 1: Database Migrations (15 minutes)
 
-### Phase 1: Asset Generation (Today)
+**Objective:** Create improvement tracking schema in Supabase
 
-#### Icons & Graphics (28 apps × 4 formats = 112 files)
-- [ ] App Icon (512×512px, PNG per app)
-- [ ] Play Store Icon (192×192px)
-- [ ] Feature Graphic (1024×500px landscape)
-- [ ] Screenshots (5 per app, 1080×1920px)
+- [ ] Open Supabase Dashboard
+- [ ] Go to: Project → SQL Editor
+- [ ] Copy entire contents of: `agent-builder/migrations/002_improvements.sql`
+- [ ] Paste into SQL Editor
+- [ ] Click "Run" button
+- [ ] Wait for completion (should say "Done!")
+- [ ] Verify tables created with:
+  ```sql
+  SELECT COUNT(*) FROM information_schema.tables 
+  WHERE table_schema = 'public' 
+    AND (table_name LIKE '%variant%' OR table_name LIKE '%improvement%');
+  ```
+- [ ] Result should be: **10** (confirms tables created)
 
-**Tool:** Automated script to generate:
-- Emoji-based icons → PNG conversion
-- Category-color brand tiles
-- Auto-generated screenshots from app descriptions
+**Expected tables:**
+- variants, experiments, variant_analytics, variant_performance
+- variant_insights, ecosystem_patterns, creator_signature, improvements
 
-#### Metadata (Text Assets)
-- [ ] App Titles (≤50 chars)
-- [ ] Short Descriptions (≤80 chars)
-- [ ] Full Descriptions (≤4000 chars)
-- [ ] Privacy Policy (template + customization)
-- [ ] Terms of Service (template)
-- [ ] Contact Email (support@rhythmixapp.com.au)
+---
 
-### Phase 2: APK Builds (Today)
+## Phase 2: Gumroad Setup (30 minutes)
 
-#### Capacitor Setup
+**Objective:** Create product catalog and API integration
+
+### Step 2.1: Get API Token
+- [ ] Go to: https://gumroad.com/settings/creator
+- [ ] Scroll to "API Access Token"
+- [ ] Copy the token
+- [ ] Store temporarily: `export GUMROAD_TOKEN="your-token"`
+
+### Step 2.2: Test with 3 Products
 ```bash
-npm install -g @capacitor/cli
-cd /home/user/jamie-wigg
-capacitor init com.rhythmix.apps --web-dir apps/
-capacitor add android
+python3 scripts/monetization/setup_gumroad_products.py 3
 ```
 
-#### Build APKs (Batch)
-- [ ] Build signed release APKs (Gradle)
-- [ ] Test on Android 8.0+ devices
-- [ ] Verify APK signatures
-- [ ] Check bundle size < 50MB
+- [ ] Script runs without errors
+- [ ] See 3 products created
+- [ ] Verify in Gumroad dashboard: https://app.gumroad.com/products
 
-#### Output Structure
-```
-builds/
-├── com.rhythmix.heartbeat-release.apk
-├── com.rhythmix.dreams-release.apk
-├── com.rhythmix.expense-tracker-release.apk
-... (28 total)
-```
-
-### Phase 3: Google Play Submission (Today)
-
-#### Console Setup
-- [ ] Create Developer Account ($25 one-time)
-- [ ] Create Organization Profile
-- [ ] Set up payment method
-- [ ] Configure Play Store billing
-
-#### Per-App Submission (20 apps, batch by 5)
-
-**Batch 1:** Emotional AI + Health (8 apps)
-- [ ] heartbeat, mood-journal, meditation-guide
-- [ ] dreams, medicine-companion, blood-pressure-buddy
-- [ ] calorie-counter, weight-tracker
-
-**Batch 2:** Financial + Education (10 apps)
-- [ ] vendor-tracker, expense-tracker, savings-challenge
-- [ ] loan-calculator, goal-tracker, budget-tracker
-- [ ] english-pocket, math-helper, study-planner
-- [ ] trivia-quiz
-
-**Batch 3:** Productivity + Lifestyle (7 apps)
-- [ ] notes, tasklist, reminders, daily-planner
-- [ ] pomodoro-timer, workout-timer, period-tracker
-- [ ] quick-recipes, voice-notes, habit-streak
-
-### Phase 4: Marketing Assets (Today)
-
-#### Social Media Templates
-- [ ] Twitter/X post template (280 chars)
-- [ ] Instagram post caption
-- [ ] TikTok/Reels description
-- [ ] LinkedIn post (professional angle)
-- [ ] Facebook ad copy
-
-#### Email Sequences
-- [ ] Day 1: Welcome email
-- [ ] Day 7: Re-engagement email
-- [ ] Day 30: Premium upsell email
-
-#### Landing Page Snippets
-- [ ] App feature tiles
-- [ ] Download buttons
-- [ ] Social proof / testimonials placeholder
-- [ ] FAQ section
-
----
-
-## Revenue Ready
-
-### Monetization Structure
-- [x] Freemium model configured per app
-- [x] Premium tier unlocks: advanced features, analytics, export
-- [x] Geo-tiered pricing: $2.99/mo (developed), $0.99/mo (emerging), free (least-developed)
-- [x] In-app purchase hooks ready (Stripe/Gumroad integration)
-
-### Payment Gateway
-- [ ] Stripe account setup
-- [ ] Gumroad integration (affiliate-friendly)
-- [ ] Apple/Google subscription linking
-
----
-
-## Timeline
-
-| Phase | Start | End | Duration | Status |
-|-------|-------|-----|----------|--------|
-| Testing | Now | +1h | 1 hour | ✅ |
-| Asset Generation | +1h | +4h | 3 hours | 🔄 |
-| APK Builds | +2h | +4h | 2 hours (parallel) | 🔄 |
-| Play Store Submission | +4h | +6h | 2 hours | ⏳ |
-| Marketing Assets | +3h | +6h | 3 hours (parallel) | ⏳ |
-| **Total** | | | **~6 hours** | 🟡 |
-
----
-
-## Success Metrics (Post-Launch)
-
-### Week 1 Targets
-- [ ] 1,000+ installs per app
-- [ ] 50%+ Day 1 retention
-- [ ] 0 crash reports
-- [ ] 4.0+ star rating
-
-### Month 1 Targets
-- [ ] 10,000+ users
-- [ ] 3-5% freemium conversion
-- [ ] <1% crash rate
-- [ ] 40%+ Day 30 retention
-
----
-
-## Final Verification Before Submission
-
-### Technical QA
-- [ ] APK installs on Android 8.0, 10, 12, 13, 14
-- [ ] App icon displays correctly
-- [ ] All permissions declared (camera, microphone, etc.)
-- [ ] No PII collected without consent
-- [ ] Offline functionality verified
-
-### Compliance QA
-- [ ] Privacy policy clearly discloses data practices
-- [ ] GDPR compliant (no tracking, explicit consent)
-- [ ] Age rating appropriate (13+, 18+ where needed)
-- [ ] Content guidelines met (no hate speech, etc.)
-- [ ] Intellectual property rights clear
-
-### Store Listing QA
-- [ ] All screenshots accurate and up-to-date
-- [ ] Description matches feature set
-- [ ] Support email monitored
-- [ ] Website link active and relevant
-
----
-
-## Deployment Status: IN PROGRESS ✅
-
-**Current Phase:** Asset generation & APK builds  
-**Estimated Completion:** Today (6-8 hours)  
-**Next Action:** Generate app icons and submission materials  
-
----
-
-## Commands to Execute (Background)
-
+### Step 2.3: Create All Products
 ```bash
-# 1. Generate app assets (Python script)
-python3 generate-app-assets.py
-
-# 2. Create APK bundles
-./scripts/build-apks.sh
-
-# 3. Package for submission
-./scripts/prepare-submission.sh
-
-# 4. Generate Play Store listings
-python3 generate-store-listings.py
-
-# 5. Commit everything
-git add . && git commit -m "Add APKs, assets, and submission materials"
+GUMROAD_TOKEN=$GUMROAD_TOKEN python3 scripts/monetization/setup_gumroad_products.py
 ```
+
+- [ ] All products created (currently 16, extensible to 114)
+- [ ] Check results: `cat results/gumroad/products_latest.json | jq '.[].name'`
 
 ---
 
-**Status:** Ready to proceed with asset generation and APK builds.  
-All 28 apps are production-ready and awaiting deployment.
+## Phase 3: GitHub Secrets Setup (10 minutes)
+
+**Objective:** Configure CI/CD authentication for auto-runs
+
+### Get Required Values
+
+**SUPABASE_URL:**
+- [ ] Supabase Dashboard → Project Settings → API
+- [ ] Copy "URL" value (looks like `https://xxx.supabase.co`)
+
+**SUPABASE_ANON_KEY:**
+- [ ] Supabase Dashboard → Project Settings → API  
+- [ ] Copy "anon public" key (looks like `eyJ...`)
+
+**ANTHROPIC_API_KEY:**
+- [ ] https://console.anthropic.com → API Keys
+- [ ] Click "Create Key" and copy (looks like `sk-...`)
+
+### Add to GitHub
+- [ ] Go to: GitHub → Settings → Secrets and Variables → Actions
+- [ ] New secret: `SUPABASE_URL` → Paste value
+- [ ] New secret: `SUPABASE_ANON_KEY` → Paste value  
+- [ ] New secret: `ANTHROPIC_API_KEY` → Paste value
+- [ ] Verify all 3 secrets appear (values masked)
+
+---
+
+## Phase 4: Test Locally (25 minutes)
+
+**Objective:** Verify the improvement loop works before automation
+
+### Step 4.1: Create .env File
+```bash
+cat > agent-builder/.env.local <<EOF
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+ANTHROPIC_API_KEY=sk-...
+EOF
+```
+
+- [ ] Confirm file created: `ls -la agent-builder/.env.local`
+
+### Step 4.2: Install Dependencies
+```bash
+cd agent-builder
+pnpm install
+```
+
+- [ ] Completes successfully
+
+### Step 4.3: Run Improvement Loop
+```bash
+pnpm tsx scripts/run-autonomous-loop.ts
+```
+
+- [ ] Runs successfully
+- [ ] See output: `✅ Weekly Autonomous Improvement Loop Complete`
+- [ ] Exit code 0
+
+### Step 4.4: Check Results
+```bash
+cat results/improvements/latest.json | jq .
+```
+
+- [ ] See JSON with: `users_processed: 0`, `total_improvements: 0`, `errors: []`
+- [ ] (0 users because system is new)
+
+---
+
+## Phase 5: Deploy Workflow (10 minutes)
+
+**Objective:** Enable automatic weekly runs
+
+### Step 5.1: Verify Workflow File
+```bash
+head -10 .github/workflows/autonomous-improvements.yml
+```
+
+- [ ] File exists and shows: `name: Weekly Autonomous Improvements`
+- [ ] Cron schedule: `'0 2 * * 1'` (Monday 2 AM UTC)
+
+### Step 5.2: Enable in GitHub
+- [ ] GitHub → Actions
+- [ ] Find "Weekly Autonomous Improvements"
+- [ ] Enable if needed
+
+### Step 5.3: Manual Test Trigger
+- [ ] GitHub → Actions → "Weekly Autonomous Improvements"
+- [ ] Click "Run workflow"  
+- [ ] Select branch: your feature branch
+- [ ] Click "Run workflow"
+- [ ] Wait 1-2 minutes
+
+- [ ] Workflow completes: Green checkmark
+- [ ] Review logs: No errors
+
+### Step 5.4: Schedule Confirmation
+- [ ] Workflow is set to run: **Every Monday 2 AM UTC**
+- [ ] Can trigger manually anytime
+- [ ] First automatic run: Next Monday 2 AM UTC
+
+---
+
+## Phase 6: Monitor & Verify (10 minutes)
+
+**Objective:** Confirm system is live
+
+### Bookmark These URLs
+- [ ] **Supabase:** `https://app.supabase.com/project/[id]/sql`  
+  Query: `SELECT * FROM improvement_loops ORDER BY created_at DESC LIMIT 10;`
+  
+- [ ] **GitHub Actions:** Your workflows page  
+  Link: `https://github.com/[user]/[repo]/actions/workflows/autonomous-improvements.yml`
+  
+- [ ] **Gumroad:** `https://app.gumroad.com/products`
+  
+- [ ] **Results:** `results/gumroad/products_latest.json`
+
+### Verify in Supabase
+```sql
+SELECT COUNT(*) as loop_count FROM improvement_loops;
+```
+
+- [ ] Returns: 1 (from your test run)
+
+---
+
+## Phase 7: Production Deploy (5 minutes)
+
+**Objective:** Go live
+
+- [ ] All changes committed: `git status`
+- [ ] All changes pushed: `git push origin [branch]`
+
+### Verify Key Files Exist
+- [ ] `agent-builder/lib/autonomous-improvement.ts`
+- [ ] `agent-builder/migrations/002_improvements.sql`
+- [ ] `agent-builder/scripts/run-autonomous-loop.ts`
+- [ ] `.github/workflows/autonomous-improvements.yml`
+- [ ] `scripts/monetization/setup_gumroad_products.py`
+
+---
+
+## ✅ System Live
+
+When all phases complete:
+
+| Component | Status |
+|-----------|--------|
+| Database | ✅ Ready |
+| Gumroad Products | ✅ Live |
+| GitHub Automation | ✅ Scheduled |
+| Revenue | ✅ Flowing (1-2 weeks) |
+
+---
+
+## Revenue Timeline
+
+Track your progress:
+
+- [ ] **Week 1:** System deployed, monitoring (0 revenue)
+- [ ] **Week 2:** 5 apps live, 1st improvement cycle ($50-200)
+- [ ] **Week 3:** 15 apps live, pricing optimized ($200-800)
+- [ ] **Week 4:** 50 apps live, auto-optimization ($800-2000)
+- [ ] **Month 2:** 114 apps live ($3k-5k/month)
+
+---
+
+## Operational Checklist (Ongoing)
+
+### Weekly (Automatic)
+- [ ] GitHub Actions runs every Monday 2 AM UTC
+- [ ] Check GitHub Actions → Artifacts for results
+
+### Monthly (30 minutes)
+- [ ] Review improvement_loops in Supabase
+- [ ] Check Gumroad sales dashboard
+- [ ] Review GA4 analytics (if set up)
+
+### Quarterly (2 hours)
+- [ ] Review revenue trends
+- [ ] Plan next phase (subscriptions, white-label, etc.)
+
+---
+
+## Troubleshooting
+
+### Gumroad script fails
+```bash
+echo $GUMROAD_TOKEN
+curl -H "Authorization: Bearer $GUMROAD_TOKEN" https://api.gumroad.com/v2/products
+```
+- [ ] See 200 response = working
+
+### GitHub Actions fails
+- [ ] Check: Settings → Secrets → All 3 present
+- [ ] Check: Workflow logs for error details
+
+### No improvements generated
+- [ ] Check: SELECT COUNT(*) FROM projects; (need data first)
+- [ ] Check: improvement_loops table for errors
+
+---
+
+## Completion Checklist
+
+**Date Started:** _______________
+
+- [ ] Phase 1 Complete: _______________
+- [ ] Phase 2 Complete: _______________
+- [ ] Phase 3 Complete: _______________
+- [ ] Phase 4 Complete: _______________
+- [ ] Phase 5 Complete: _______________
+- [ ] Phase 6 Complete: _______________
+- [ ] Phase 7 Complete: _______________
+
+**System Live Date: _______________**
+
+**First Revenue Date: _______________**
+
+---
+
+**Next:** See `QUICK_START_AUTONOMOUS.md` for detailed walkthrough.  
+See `AUTONOMOUS_MONETIZATION_SETUP.md` for complete technical docs.  
+See `SYSTEM_COMPLETE.md` for overview and next phases.
