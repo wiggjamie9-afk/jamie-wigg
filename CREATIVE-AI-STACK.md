@@ -92,6 +92,7 @@ These five cover ~80% of creative output. Everything below is depth.
 | | **Framer** ([framer.com](https://framer.com)) | Animated marketing sites with AI | Web/iOS | Great for landing pages. |
 | | **Cursor Compose / Web** ([cursor.com](https://cursor.com)) | AI-pair-programming for serious code | Mac/Web | Mac-only desktop, but they're rolling out web. |
 | | **Replit Agent** ([replit.com](https://replit.com)) | Full apps in browser, deployable | Web/iOS | Solid for prototypes. |
+| | **Godly** ([godly.website](https://godly.website) / [godly.ai](https://godly.ai)) | Design inspiration & AI graphic generation | Web | `godly.website` is a curated gallery of beautifully-designed sites (great reference before a build); `godly.ai` is a hosted AI graphic-design tool. Inspiration/reference only — no verified API integration here. |
 
 **For your specific RHYTHMIX site:** keep the static HTML approach. Use **v0** for new sections, paste output into the existing `*.html` files.
 
