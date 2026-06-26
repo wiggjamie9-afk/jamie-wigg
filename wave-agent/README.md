@@ -53,7 +53,17 @@ python agent.py auto --state runs/genome.json       # self-driving ecosystem; pe
 python agent.py auto --state runs/genome.json --resume   # continue where it left off
 python agent.py overseer --goal 3                   # agent that experiments to hit a goal
 python agent.py brain                               # evolve a self-regulating brain to perfection
+python agent.py track                               # brain follows the pitch of real audio -> WAV
 ```
+
+### The `track` — a brain following a real signal
+
+`track` points a brain at **real audio**: it estimates the instantaneous pitch
+(short-time FFT), evolves a brain to follow that contour, and writes out audio
+you can play — `runs/input.wav` (the estimated pitch) and `runs/followed.wav`
+(the brain's follow). Functionally it's a **learned phase-locked loop**, the
+idea behind auto-tune, radio carrier recovery, and active noise cancellation.
+Pass your own clip with `--wav path.wav`, or omit it for a synthesized melody.
 
 ### The `brain` — organisms that regulate themselves to perfection
 
@@ -118,7 +128,8 @@ wave-agent/
 │   ├── world.py          # all four pillars composed into one loop
 │   ├── autonomous.py     # the self-driving ecosystem (perceive/decide/act/persist)
 │   ├── overseer.py       # autonomous experimenter that drives the world to a goal
-│   └── brain.py          # self-regulating brains that evolve to track a frequency perfectly
+│   ├── brain.py          # self-regulating brains that evolve to track a frequency perfectly
+│   └── tracker.py        # point a brain at real audio; follow its pitch (learned PLL)
 └── tests/test_wavecore.py
 ```
 

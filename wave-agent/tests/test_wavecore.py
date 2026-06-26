@@ -135,6 +135,27 @@ def test_brain_evolves_to_perfection_and_regenerates():
     assert errs[-1] < 10                       # ...and it regenerated back onto the target
 
 
+def test_tracker_follows_real_pitch(tmp_path):
+    from wavecore import tracker as tk
+
+    sig, sr = tk.synth_signal()
+    pitch = tk.instantaneous_pitch(sig, sr)
+    assert pitch.min() > 240 and pitch.max() < 470     # recovered the melody's range
+
+    best, hist = tk.fit_brain_to(pitch, generations=40, seed=0)
+    assert hist[-1] < hist[0]                           # the brain learned to follow
+
+    traj, _ = tk.follow(best, pitch)
+    corr = np.corrcoef(pitch[3:], np.array(traj)[3:])[0, 1]
+    assert corr > 0.95                                 # it tracks the contour closely
+
+    # audio round-trips through the stdlib WAV writer/reader
+    path = str(tmp_path / "t.wav")
+    tk.write_wav(path, tk.render_pitch(pitch, sr), sr)
+    back, sr2 = tk.load_wav(path)
+    assert sr2 == sr and len(back) > 0
+
+
 def test_tesla369_environment_loops():
     env = ev.Tesla369Environment(hold=2)
     seen = [env.resonance]

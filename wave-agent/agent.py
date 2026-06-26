@@ -215,6 +215,46 @@ def run_brain(generations: int, pop: int, seed: int) -> int:
     return 0 if reached else 1
 
 
+def run_track(wav, generations: int, seed: int) -> int:
+    import os
+
+    from wavecore import tracker as tk
+
+    if wav:
+        sig, sr = tk.load_wav(wav)
+        src = wav
+    else:
+        sig, sr = tk.synth_signal()
+        src = "synthesized melody (C E G A G E D C, with vibrato + hiss)"
+
+    pitch = tk.instantaneous_pitch(sig, sr)
+    print("  a brain following the pitch of a REAL signal (a learned phase-locked loop)")
+    print(f"  input      : {src}")
+    print(f"  estimated  : {len(pitch)} pitch frames, {pitch.min():.0f}-{pitch.max():.0f} Hz\n")
+    print("   evolving a brain to follow the contour:")
+
+    def show(g, e):
+        if g < 6 or g % 10 == 0:
+            print(f"     gen {g:>2}  follow-error {e:5.2f} Hz")
+
+    best, _ = tk.fit_brain_to(pitch, generations=generations, seed=seed, on_generation=show)
+    traj, errs = tk.follow(best, pitch)
+    traj = np.array(traj)
+    lo, hi = float(min(pitch.min(), traj.min())), float(max(pitch.max(), traj.max()))
+    print(f"\n  brain      : kp={best.kp:.2f} kd={best.kd:.2f}, "
+          f"mean follow error {np.mean(errs[3:]):.2f} Hz")
+    print("\n  pitch contour vs the brain following it:")
+    print("    input    " + _spark(pitch, lo, hi))
+    print("    brain    " + _spark(traj, lo, hi))
+
+    os.makedirs("runs", exist_ok=True)
+    tk.write_wav("runs/input.wav", tk.render_pitch(pitch, sr), sr)
+    tk.write_wav("runs/followed.wav", tk.render_pitch(traj, sr), sr)
+    print("\n  audio out  : runs/input.wav (estimated pitch) and runs/followed.wav (brain's follow)")
+    print("               — play them back to hear the brain track the melody.")
+    return 0
+
+
 def run_auto(ticks: int, seed: int, state, resume: bool) -> int:
     from wavecore.autonomous import AutonomousWorld
 
@@ -332,6 +372,11 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--generations", type=int, default=80)
     b.add_argument("--pop", type=int, default=40)
     b.add_argument("--seed", type=int, default=0)
+
+    tr = sub.add_parser("track", help="evolve a brain to follow the pitch of real audio")
+    tr.add_argument("--wav", default=None, help="input WAV (defaults to a synthesized melody)")
+    tr.add_argument("--generations", type=int, default=40)
+    tr.add_argument("--seed", type=int, default=0)
     return p
 
 
@@ -356,6 +401,8 @@ def main(argv=None) -> int:
         return run_overseer(args.goal, args.budget, args.seed)
     if args.cmd == "brain":
         return run_brain(args.generations, args.pop, args.seed)
+    if args.cmd == "track":
+        return run_track(args.wav, args.generations, args.seed)
     return 2
 
 
