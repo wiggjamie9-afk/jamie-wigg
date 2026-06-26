@@ -68,7 +68,7 @@ SCENE_PALETTES = [
     (  5,  10,  45,   12,  20,  65,  5,  5, 20),   # 5: night sky
     (  5,  18,  16,   12,  42,  30,  5, 20, 12),   # 6: moonlit dark
 ]
-VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # ElevenLabs default calm voice; swap for custom
+VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")  # default calm voice; override per-channel via ELEVENLABS_VOICE_ID env
 CHANNEL_CATEGORY = "27"            # YouTube category: Education
 MADE_FOR_KIDS = True
 
