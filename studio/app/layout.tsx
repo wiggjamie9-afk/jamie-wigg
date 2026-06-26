@@ -28,6 +28,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-starlightmix-surface focus:px-4 focus:py-2 focus:text-starlightmix-text focus:outline focus:outline-2 focus:outline-starlightmix-cyan"
+        >
+          Skip to content
+        </a>
         <Analytics />
         <CapabilityGate>{children}</CapabilityGate>
       </body>

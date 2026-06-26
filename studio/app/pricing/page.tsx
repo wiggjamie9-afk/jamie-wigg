@@ -21,7 +21,7 @@ export default function PricingPage() {
         "Community support",
       ],
       cta: "Start Free",
-      ctaHref: "/studio",
+      ctaHref: "/new",
       highlighted: false,
     },
     {
@@ -40,7 +40,7 @@ export default function PricingPage() {
         "Export to TikTok format",
       ],
       cta: "Start Pro Trial",
-      ctaHref: "/studio?plan=pro",
+      ctaHref: "/new",
       highlighted: true,
     },
     {
@@ -65,7 +65,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
       <div className="px-4 py-12 text-center sm:py-16">
         <h1 className="text-4xl font-bold text-white sm:text-5xl">
@@ -89,7 +89,10 @@ export default function PricingPage() {
               }`}
             >
               {tier.highlighted && (
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 to-purple-500" />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 to-purple-500"
+                />
               )}
 
               <div className="p-8">
@@ -133,6 +136,7 @@ export default function PricingPage() {
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-start">
                       <svg
+                        aria-hidden="true"
                         className="mr-3 h-5 w-5 flex-shrink-0 text-cyan-500"
                         fill="currentColor"
                         viewBox="0 0 20 20"
@@ -160,7 +164,7 @@ export default function PricingPage() {
           <details className="group cursor-pointer rounded-lg border border-slate-700 p-6 bg-slate-800">
             <summary className="flex items-center justify-between font-semibold text-white">
               Can I cancel anytime?
-              <span className="transition group-open:rotate-180">▼</span>
+              <span aria-hidden="true" className="transition group-open:rotate-180">▼</span>
             </summary>
             <p className="mt-4 text-slate-300">
               Yes, cancel your subscription anytime from your account settings. No
@@ -171,7 +175,7 @@ export default function PricingPage() {
           <details className="group cursor-pointer rounded-lg border border-slate-700 p-6 bg-slate-800">
             <summary className="flex items-center justify-between font-semibold text-white">
               What payment methods do you accept?
-              <span className="transition group-open:rotate-180">▼</span>
+              <span aria-hidden="true" className="transition group-open:rotate-180">▼</span>
             </summary>
             <p className="mt-4 text-slate-300">
               We accept all major credit cards (Visa, Mastercard, Amex) via Stripe.
@@ -181,7 +185,7 @@ export default function PricingPage() {
           <details className="group cursor-pointer rounded-lg border border-slate-700 p-6 bg-slate-800">
             <summary className="flex items-center justify-between font-semibold text-white">
               Do you offer team plans?
-              <span className="transition group-open:rotate-180">▼</span>
+              <span aria-hidden="true" className="transition group-open:rotate-180">▼</span>
             </summary>
             <p className="mt-4 text-slate-300">
               Contact our sales team at jam@rhythmixapp.com.au for enterprise and team
@@ -192,7 +196,7 @@ export default function PricingPage() {
           <details className="group cursor-pointer rounded-lg border border-slate-700 p-6 bg-slate-800">
             <summary className="flex items-center justify-between font-semibold text-white">
               Can I upgrade or downgrade anytime?
-              <span className="transition group-open:rotate-180">▼</span>
+              <span aria-hidden="true" className="transition group-open:rotate-180">▼</span>
             </summary>
             <p className="mt-4 text-slate-300">
               Yes, changes take effect immediately and we'll prorate your billing.
@@ -208,12 +212,12 @@ export default function PricingPage() {
           Start with Free or try Pro risk-free for 7 days.
         </p>
         <Link
-          href="/studio"
+          href="/new"
           className="mt-6 inline-block rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 px-8 py-3 font-semibold text-white transition-all duration-200 hover:from-cyan-600 hover:to-purple-600"
         >
           Launch Studio
         </Link>
       </div>
-    </div>
+    </main>
   );
 }
