@@ -54,7 +54,18 @@ python agent.py auto --state runs/genome.json --resume   # continue where it lef
 python agent.py overseer --goal 3                   # agent that experiments to hit a goal
 python agent.py brain                               # evolve a self-regulating brain to perfection
 python agent.py track                               # brain follows the pitch of real audio -> WAV
+python agent.py loop                                # continuous stream automation; self-retunes
 ```
+
+### The `loop` — continuous, self-repairing automation
+
+`loop` is the unattended, streaming version of `track`. Audio arrives in chunks;
+one persistent brain follows the pitch across chunk boundaries. After each chunk
+the loop checks its own error and, if tracking has drifted, **re-tunes itself**
+— evolves a fresh brain on the recent history and swaps it in mid-stream. It
+starts with a deliberately poor brain to show the mechanism: it begins at ~25 Hz
+error, notices, retunes itself in the first couple of chunks, then tracks at
+sub-0.1 Hz for the rest — no human in the loop.
 
 ### The `track` — a brain following a real signal
 
@@ -129,7 +140,8 @@ wave-agent/
 │   ├── autonomous.py     # the self-driving ecosystem (perceive/decide/act/persist)
 │   ├── overseer.py       # autonomous experimenter that drives the world to a goal
 │   ├── brain.py          # self-regulating brains that evolve to track a frequency perfectly
-│   └── tracker.py        # point a brain at real audio; follow its pitch (learned PLL)
+│   ├── tracker.py        # point a brain at real audio; follow its pitch (learned PLL)
+│   └── automation.py     # continuous stream loop that follows and self-retunes
 └── tests/test_wavecore.py
 ```
 

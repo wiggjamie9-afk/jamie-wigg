@@ -255,6 +255,40 @@ def run_track(wav, generations: int, seed: int) -> int:
     return 0
 
 
+def run_loop(wav, chunk: int, seed: int) -> int:
+    import os
+
+    from wavecore import automation as au
+    from wavecore import tracker as tk
+
+    if wav:
+        sig, sr = tk.load_wav(wav)
+        src = wav
+    else:
+        sig, sr = tk.synth_signal()
+        src = "synthesized melody stream"
+    pitch = tk.instantaneous_pitch(sig, sr)
+
+    print("  continuous loop automation: stream pitch in chunks, follow + self-retune")
+    print(f"  input      : {src}  ({len(pitch)} frames, {chunk}/chunk)")
+    print("  it starts with a poor brain on purpose, notices, and fixes itself.\n")
+    print("   chunk   mean-error   action")
+    print("   -----   ----------   ------")
+
+    def show(r):
+        print(f"   {r['chunk']:>5}   {r['error']:>8.2f}Hz   {r['action'] or 'tracking'}")
+
+    follow, retunes = au.run_stream(pitch, chunk=chunk, seed=seed, on_chunk=show)
+    n_chunks = (len(pitch) + chunk - 1) // chunk
+    print(f"\n  summary    : {len(pitch)} frames in {n_chunks} chunks, "
+          f"self-retuned {len(retunes)} time(s), unattended")
+
+    os.makedirs("runs", exist_ok=True)
+    tk.write_wav("runs/stream_follow.wav", tk.render_pitch(follow, sr), sr)
+    print("  audio out  : runs/stream_follow.wav (the brain's continuous follow)")
+    return 0
+
+
 def run_auto(ticks: int, seed: int, state, resume: bool) -> int:
     from wavecore.autonomous import AutonomousWorld
 
@@ -377,6 +411,11 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--wav", default=None, help="input WAV (defaults to a synthesized melody)")
     tr.add_argument("--generations", type=int, default=40)
     tr.add_argument("--seed", type=int, default=0)
+
+    lp = sub.add_parser("loop", help="continuous stream automation; tracks and self-retunes")
+    lp.add_argument("--wav", default=None, help="input WAV (defaults to a synthesized stream)")
+    lp.add_argument("--chunk", type=int, default=10, help="frames per streamed chunk")
+    lp.add_argument("--seed", type=int, default=0)
     return p
 
 
@@ -403,6 +442,8 @@ def main(argv=None) -> int:
         return run_brain(args.generations, args.pop, args.seed)
     if args.cmd == "track":
         return run_track(args.wav, args.generations, args.seed)
+    if args.cmd == "loop":
+        return run_loop(args.wav, args.chunk, args.seed)
     return 2
 
 

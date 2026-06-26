@@ -156,6 +156,20 @@ def test_tracker_follows_real_pitch(tmp_path):
     assert sr2 == sr and len(back) > 0
 
 
+def test_stream_automation_self_retunes():
+    from wavecore import automation as au
+    from wavecore import tracker as tk
+
+    sig, sr = tk.synth_signal()
+    pitch = tk.instantaneous_pitch(sig, sr)
+    follow, retunes = au.run_stream(pitch, chunk=10, seed=0)
+
+    assert len(follow) == len(pitch)
+    assert len(retunes) >= 1                           # the poor start forced a self-retune
+    late = float(np.mean(np.abs(pitch[-20:] - follow[-20:])))
+    assert late < 10                                   # after retuning, it tracks well
+
+
 def test_tesla369_environment_loops():
     env = ev.Tesla369Environment(hold=2)
     seen = [env.resonance]
