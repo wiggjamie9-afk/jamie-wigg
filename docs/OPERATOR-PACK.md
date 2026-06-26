@@ -12,6 +12,8 @@ The complete map of the ecosystem and how to run it. Read in this order.
 | — | [`mcp-profiles.md`](./mcp-profiles.md) | T1.3 — the content/software/ops MCP profiles |
 | — | [`studio-license-flow.md`](./studio-license-flow.md) | T1.6 — license path dry-run + gaps |
 | — | [`week1-findings.md`](./week1-findings.md) | T1.5/T1.6 — real toolchain results + the build decision |
+| — | [`GO-LIVE-PROCUREMENT.md`](./GO-LIVE-PROCUREMENT.md) | The 10 real products/keys to acquire + where each wires in |
+| — | [`security/agentshield-scan.md`](./security/agentshield-scan.md) | T1.1 — AgentShield governance baseline (Grade D, 0 critical) |
 
 ## Where things stand (live)
 
