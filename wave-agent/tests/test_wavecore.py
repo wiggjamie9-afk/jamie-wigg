@@ -92,6 +92,33 @@ def test_world_speciates_and_broadcasts():
     assert all(info["ok"] for info in broadcasts.values())  # heredity survives the modem
 
 
+def test_autonomous_world_self_stabilises_and_persists(tmp_path):
+    from wavecore.autonomous import AutonomousWorld
+
+    path = str(tmp_path / "genome.json")
+    a = AutonomousWorld(seed=0, max_ticks=200, stable_target=10, state_path=path)
+    a.run()
+    assert a.tick <= 200
+    assert len(a.world.species()) >= 2
+    assert os.path.exists(path)
+
+    # a fresh agent can resume the saved genome
+    b = AutonomousWorld(seed=0, state_path=path)
+    assert b.load() is True
+    assert b.tick == a.tick
+    assert len(b.world.pop) == len(a.world.pop)
+
+
+def test_overseer_searches_and_scores():
+    from wavecore.overseer import Overseer
+
+    o = Overseer(goal_species=3, budget=8, seed=1)
+    best, history = o.run()
+    assert len(history) >= 1
+    assert best["species"] >= 2          # found a genuinely speciated config
+    assert best in [h for h in history] or best["trial"] >= 1
+
+
 def test_tesla369_environment_loops():
     env = ev.Tesla369Environment(hold=2)
     seen = [env.resonance]

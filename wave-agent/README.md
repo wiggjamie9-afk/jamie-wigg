@@ -47,7 +47,31 @@ python agent.py logic                   # interference-based truth tables
 python agent.py evolve --drift 6 --generations 80   # evolve in a moving world
 python agent.py evolve --tesla369 --generations 54  # chase a 369->639->963 Hz loop
 python agent.py world                               # one loop; watch species emerge
+
+# autonomous layers — loops that run themselves
+python agent.py auto --state runs/genome.json       # self-driving ecosystem; persists
+python agent.py auto --state runs/genome.json --resume   # continue where it left off
+python agent.py overseer --goal 3                   # agent that experiments to hit a goal
 ```
+
+### Autonomy, honestly
+
+Two self-running loops sit on top of the world:
+
+- **`auto` — the self-driving ecosystem.** Each tick it *perceives* its own
+  state, *decides* (repair an extinct niche, raise or lower its own mutation
+  rate), *acts*, and persists its genome to JSON. It even decides **when it is
+  done** (the ecosystem has stayed stable long enough) and stops itself. Bounded
+  by a hard `--ticks` ceiling and sandboxed to one state file — autonomy with
+  guardrails, not a runaway.
+- **`overseer` — an autonomous experimenter.** Give it a goal ("produce K
+  stable species") and it tries configurations on its own, runs a full `auto`
+  trial for each, reads the result, keeps the best, and stops early once it hits
+  the goal — all within a fixed trial budget.
+
+No agent can "do anything" — an agent is exactly as capable as the tools you put
+in its hands. These two are real perceive→decide→act loops, deliberately bounded
+to their own world.
 
 ### About the `--tesla369` mode
 
@@ -76,7 +100,9 @@ wave-agent/
 │   ├── reservoir.py      # waves doing nonlinear computation
 │   ├── logic.py          # interference logic gates
 │   ├── evolve.py         # frequencies evolving in an environment
-│   └── world.py          # all four pillars composed into one loop
+│   ├── world.py          # all four pillars composed into one loop
+│   ├── autonomous.py     # the self-driving ecosystem (perceive/decide/act/persist)
+│   └── overseer.py       # autonomous experimenter that drives the world to a goal
 └── tests/test_wavecore.py
 ```
 

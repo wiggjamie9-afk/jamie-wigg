@@ -172,6 +172,55 @@ def run_world(generations: int, pop: int, seed: int) -> int:
     return 0 if speciated else 1
 
 
+def run_auto(ticks: int, seed: int, state, resume: bool) -> int:
+    from wavecore.autonomous import AutonomousWorld
+
+    a = AutonomousWorld(seed=seed, max_ticks=ticks, state_path=state)
+    resumed = a.load() if (resume and state) else False
+
+    print("  a self-driving ecosystem: perceive -> decide -> act -> persist")
+    if resumed:
+        print(f"  resumed    : from {state} at tick {a.tick}")
+    print(f"  budget     : {ticks} ticks max; it stops early if it self-stabilises\n")
+    print("   tick  species  mutation  decision the agent made")
+    print("   ----  -------  --------  ----------------------")
+
+    def show(ev):
+        if ev["actions"]:
+            print(f"   {ev['tick']:>4}  {ev['species']:>7}  {ev['mutation']:>8}  "
+                  + "; ".join(ev["actions"]))
+
+    a.run(on_event=show)
+    sp = a.world.species()
+    print(f"\n  stopped    : {a.stopped_because} at tick {a.tick}")
+    print(f"  ecosystem  : {len(sp)} species -> "
+          + ", ".join(f"{k} ≈ {int(v)}Hz" for k, v in sp.items()))
+    if state:
+        print(f"  persisted  : {state}  (run again with --resume to continue it)")
+    return 0
+
+
+def run_overseer(goal: int, budget: int, seed: int) -> int:
+    from wavecore.overseer import Overseer
+
+    o = Overseer(goal_species=goal, budget=budget, seed=seed)
+    print(f"  an autonomous experimenter. goal: produce exactly {goal} stable species")
+    print(f"  budget     : {budget} trials; it stops early the moment it hits the goal\n")
+    print("   trial  niches  bandwidth  ->  species  ticks")
+    print("   -----  ------  ---------      -------  -----")
+
+    def show(r):
+        flag = "   <- GOAL" if r["hit"] else ""
+        print(f"   {r['trial']:>5}  {r['niches']:>6}  {r['bandwidth']:>9.0f}      "
+              f"{r['species']:>7}  {r['ticks']:>5}{flag}")
+
+    best, _ = o.run(on_trial=show)
+    verdict = "goal met" if best["hit"] else "closest found"
+    print(f"\n  best config: {best['niches']} niches, bandwidth {best['bandwidth']:.0f} "
+          f"-> {best['species']} species ({verdict})")
+    return 0 if best["hit"] else 1
+
+
 def run_demo() -> int:
     sections = [
         ("1. MODEM  — data becomes sound, then sound becomes data",
@@ -224,6 +273,17 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--generations", type=int, default=40)
     w.add_argument("--pop", type=int, default=120)
     w.add_argument("--seed", type=int, default=0)
+
+    au = sub.add_parser("auto", help="run the self-driving ecosystem autonomously")
+    au.add_argument("--ticks", type=int, default=200)
+    au.add_argument("--seed", type=int, default=0)
+    au.add_argument("--state", default=None, help="JSON file to persist/resume the genome")
+    au.add_argument("--resume", action="store_true", help="continue from --state if it exists")
+
+    ov = sub.add_parser("overseer", help="autonomous agent that experiments to hit a goal")
+    ov.add_argument("--goal", type=int, default=3, help="target number of stable species")
+    ov.add_argument("--budget", type=int, default=8, help="max trials")
+    ov.add_argument("--seed", type=int, default=0)
     return p
 
 
@@ -242,6 +302,10 @@ def main(argv=None) -> int:
                           tesla369=args.tesla369)
     if args.cmd == "world":
         return run_world(args.generations, args.pop, args.seed)
+    if args.cmd == "auto":
+        return run_auto(args.ticks, args.seed, args.state, args.resume)
+    if args.cmd == "overseer":
+        return run_overseer(args.goal, args.budget, args.seed)
     return 2
 
 
