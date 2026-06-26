@@ -1,0 +1,76 @@
+name: Weekly Autonomous Improvements
+
+on:
+  schedule:
+    # Run every Monday at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      user_id:
+        description: 'User ID to run improvements for (optional, runs all if empty)'
+        required: false
+
+jobs:
+  run-improvements:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    environment:
+      name: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies (agent-builder)
+        working-directory: agent-builder
+        run: pnpm install
+
+      - name: Run autonomous improvements
+        working-directory: agent-builder
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          USER_ID: ${{ github.event.inputs.user_id }}
+        run: |
+          pnpm tsx scripts/run-autonomous-loop.ts
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: improvement-results-${{ github.run_id }}
+          path: agent-builder/results/improvements/
+          retention-days: 30
+
+      - name: Notify on completion
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const resultsFile = 'agent-builder/results/improvements/latest.json';
+
+            if (fs.existsSync(resultsFile)) {
+              const results = JSON.parse(fs.readFileSync(resultsFile, 'utf-8'));
+              const summary = `
+              ✅ Weekly Autonomous Improvements Complete
+
+              📊 Results:
+              - Loops Created: ${results.loopsCreated}
+              - Experiments Run: ${results.experimentsRun}
+              - Improvements Generated: ${results.improvementsGenerated}
+
+              🚀 Next improvements are ready for deployment in Supabase
+              `;
+              console.log(summary);
+            }
