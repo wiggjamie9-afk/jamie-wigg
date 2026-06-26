@@ -17,6 +17,18 @@ sound do real computation.
 | **reservoir** | Wave dynamics do the math for you | Physical reservoir computing (echo-state network) |
 | **logic** | Boolean gates from interference | Phononic-style AND/OR/NOT/XOR |
 | **evolve** | A frequency adapts to its environment | A genetic algorithm (artificial life) |
+| **world** | All four, wired into one loop → species emerge | Disruptive selection through sound |
+
+### The `world` — emergence from the four pillars
+
+`world` is the four pillars re-engineered into a single loop instead of four
+separate demos. Each generation every organism (a frequency) **sings** a tone,
+is **heard** and niche-labelled by the reservoir-ear, has its survival
+**decided by the interference logic gates**, then survivors **evolve**, and each
+species **broadcasts** its winning gene through the modem. With two resonant
+niches and a barren gap between them, a single uniform population reliably
+**splits into two distinct frequency-species** — emergence that no single pillar
+produces alone. Run `python agent.py world` and watch the histogram split.
 
 The `evolve` pillar is the closest honest answer to *"a frequency that evolves
 in a new environment"*: a population of frequency-organisms is selected and
@@ -34,6 +46,7 @@ python agent.py reservoir               # classify tones with wave dynamics
 python agent.py logic                   # interference-based truth tables
 python agent.py evolve --drift 6 --generations 80   # evolve in a moving world
 python agent.py evolve --tesla369 --generations 54  # chase a 369->639->963 Hz loop
+python agent.py world                               # one loop; watch species emerge
 ```
 
 ### About the `--tesla369` mode
@@ -62,7 +75,8 @@ wave-agent/
 │   ├── modem.py          # data <-> frequency
 │   ├── reservoir.py      # waves doing nonlinear computation
 │   ├── logic.py          # interference logic gates
-│   └── evolve.py         # frequencies evolving in an environment
+│   ├── evolve.py         # frequencies evolving in an environment
+│   └── world.py          # all four pillars composed into one loop
 └── tests/test_wavecore.py
 ```
 

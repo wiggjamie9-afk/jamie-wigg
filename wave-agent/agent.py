@@ -20,6 +20,7 @@ import numpy as np
 from wavecore import evolve as ev
 from wavecore import logic, modem, reservoir
 from wavecore.signals import DEFAULT_SR, tone
+from wavecore.world import ResonanceWorld
 
 
 # --------------------------------------------------------------------------- #
@@ -128,6 +129,49 @@ def run_evolve(generations: int, drift: float, pop: int, seed: int,
     return 0
 
 
+def _histogram(pop, lo=100, hi=1000, step=75, width=34):
+    edges = np.arange(lo, hi + step, step)
+    counts, _ = np.histogram(pop, bins=edges)
+    mx = counts.max() or 1
+    out = []
+    for i, c in enumerate(counts):
+        bar = "█" * int(round(width * c / mx))
+        out.append(f"   {int(edges[i]):>4}-{int(edges[i + 1]):>4} Hz |{bar} {c}")
+    return "\n".join(out)
+
+
+def run_world(generations: int, pop: int, seed: int) -> int:
+    world = ResonanceWorld(pop_size=pop, seed=seed)
+    niches = ", ".join(f"{n}@{int(r)}Hz" for n, r in world.niches)
+    acc = world.perception_accuracy()
+
+    print("  the four pillars wired into one loop: sing -> hear -> judge -> evolve")
+    print(f"  niches     : {niches}  (barren middle in between)")
+    print(f"  perception : reservoir-ear labels a tone's niche at {acc * 100:.0f}% accuracy\n")
+
+    history = world.run(generations=generations)
+    print("  GENERATION 0  — one undifferentiated population:")
+    print(_histogram(history[0]))
+    print(f"\n  GENERATION {generations}  — after selection through sound:")
+    print(_histogram(history[-1]))
+
+    species = world.species()
+    print(f"\n  species    : {len(species)} distinct -> "
+          + ", ".join(f"{k} ≈ {int(v)}Hz" for k, v in species.items()))
+
+    print("  heredity   : each species' winning gene broadcast over the modem —")
+    for name, info in world.broadcast_genes().items():
+        mark = "✓" if info["ok"] else "✗"
+        print(f"               {name:<5} gene {info['gene']:>4} Hz "
+              f"-> sound -> decoded {info['recovered']} {mark} "
+              f"({info['members']} members)")
+
+    speciated = len(species) >= 2
+    print("\n  emergence  : a single blob split into separate species ✓" if speciated
+          else "\n  emergence  : not enough separation this run")
+    return 0 if speciated else 1
+
+
 def run_demo() -> int:
     sections = [
         ("1. MODEM  — data becomes sound, then sound becomes data",
@@ -138,6 +182,8 @@ def run_demo() -> int:
          run_logic),
         ("4. EVOLVE  — a frequency adapts to a shifting world",
          lambda: run_evolve(generations=80, drift=4.0, pop=40, seed=0)),
+        ("5. WORLD  — all four pillars wired into one loop; species emerge",
+         lambda: run_world(generations=40, pop=120, seed=0)),
     ]
     rc = 0
     print("=" * 64)
@@ -173,6 +219,11 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--seed", type=int, default=0)
     e.add_argument("--tesla369", action="store_true",
                    help="loop the target through 369/639/963 Hz (a nod to the folklore)")
+
+    w = sub.add_parser("world", help="all four pillars in one loop; watch species emerge")
+    w.add_argument("--generations", type=int, default=40)
+    w.add_argument("--pop", type=int, default=120)
+    w.add_argument("--seed", type=int, default=0)
     return p
 
 
@@ -189,6 +240,8 @@ def main(argv=None) -> int:
     if args.cmd == "evolve":
         return run_evolve(args.generations, args.drift, args.pop, args.seed,
                           tesla369=args.tesla369)
+    if args.cmd == "world":
+        return run_world(args.generations, args.pop, args.seed)
     return 2
 
 

@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from wavecore import logic, modem, reservoir  # noqa: E402
 from wavecore import evolve as ev  # noqa: E402
 from wavecore.signals import dominant_freq, tone  # noqa: E402
+from wavecore.world import ResonanceWorld  # noqa: E402
 
 
 def test_tone_has_expected_frequency():
@@ -72,6 +73,23 @@ def test_digital_root_369_pattern():
     # ...and the doubling sequence never lands on 3, 6, or 9.
     seq = {ev.digital_root(2 ** k) for k in range(1, 12)}
     assert seq.isdisjoint({3, 6, 9})
+
+
+def test_world_speciates_and_broadcasts():
+    world = ResonanceWorld(pop_size=120, seed=0)
+    assert world.perception_accuracy() > 0.8        # the reservoir-ear works
+    world.run(generations=40)
+
+    species = world.species()
+    assert len(species) >= 2                          # one blob split in two
+    assert abs(species["low"] - 300.0) < 70
+    assert abs(species["high"] - 800.0) < 70
+
+    middle = np.sum((world.pop > 450) & (world.pop < 650))
+    assert middle <= len(world.pop) * 0.1             # barren middle evacuated
+
+    broadcasts = world.broadcast_genes()
+    assert all(info["ok"] for info in broadcasts.values())  # heredity survives the modem
 
 
 def test_tesla369_environment_loops():
