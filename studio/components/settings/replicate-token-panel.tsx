@@ -245,6 +245,7 @@ export function ReplicateTokenPanel() {
             <button
               type="button"
               onClick={handleClear}
+              aria-label="Clear your stored Replicate token"
               className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
             >
               Clear token
@@ -280,7 +281,9 @@ export function ReplicateTokenPanel() {
         </div>
       ) : null}
 
-      <Messages error={error} info={info} />
+      <div aria-live="polite" aria-atomic="true">
+        <Messages error={error} info={info} />
+      </div>
     </section>
   );
 }

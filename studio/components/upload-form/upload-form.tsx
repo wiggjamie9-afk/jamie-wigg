@@ -134,6 +134,7 @@ export function UploadForm() {
         <div
           role="button"
           tabIndex={0}
+          aria-label="Drop an audio file here (mp3, wav, m4a, flac, up to 50 MB)"
           onClick={() => fileInputRef.current?.click()}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -187,12 +188,13 @@ export function UploadForm() {
         >
           Visual theme
         </label>
-        <p className="mb-2 text-xs text-starlightmix-text-muted">
+        <p id="theme-hint" className="mb-2 text-xs text-starlightmix-text-muted">
           Describe the look you want — moods, settings, colours, anything that
           paints the scenes.
         </p>
         <textarea
           id="theme"
+          aria-describedby="theme-hint"
           value={theme}
           onChange={(e) => setTheme(e.target.value.slice(0, THEME_MAX))}
           maxLength={THEME_MAX}
@@ -214,11 +216,12 @@ export function UploadForm() {
         >
           BPM <span className="font-normal normal-case tracking-normal text-starlightmix-text-muted">(optional)</span>
         </label>
-        <p className="mb-2 text-xs text-starlightmix-text-muted">
+        <p id="bpm-hint" className="mb-2 text-xs text-starlightmix-text-muted">
           Sets the beat for scene cuts. Leave blank to auto-detect later.
         </p>
         <input
           id="bpm"
+          aria-describedby="bpm-hint"
           type="number"
           inputMode="numeric"
           min={BPM_MIN}
@@ -247,6 +250,7 @@ export function UploadForm() {
         type="button"
         onClick={onContinue}
         disabled={!canContinue}
+        aria-disabled={!canContinue}
         className="inline-flex w-full items-center justify-center rounded-[var(--radius-rhythmix-md)] bg-starlightmix-magenta px-6 py-3 text-base font-semibold text-starlightmix-text transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)] hover:bg-starlightmix-pink disabled:cursor-not-allowed disabled:bg-starlightmix-surface-2 disabled:text-starlightmix-text-muted"
         style={{ minHeight: "44px" }}
       >
