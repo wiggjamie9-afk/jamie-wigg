@@ -1,6 +1,22 @@
 # Phase 2: Monetization Integration
 
-## Status: Architecture Complete, Ready for Product Integration
+## Current Status: HUM Complete, Pattern Ready to Replicate
+
+### Completed ✅
+- **HUM** fully integrated with license paywall
+- Database schema (purchases, pricing_tiers, license_validations, revenue_events)
+- License validation system (client-side library, Supabase Functions, React hooks)
+- Stripe webhook handler (Supabase Function)
+- Standalone license validator for HTML apps
+- Dashboard showing user purchases and license keys
+
+### Next Steps (6 Products Remaining)
+- **DREAMS**: Same pattern as HUM
+- **RESONANCE**: Same pattern as HUM
+- **HerdCheck**: Offline PWA (add license check to app.js init)
+- **Reset**: iOS PWA (add license check to app init)
+- **STARLIGHTMIX Studio**: React (wrap with useLicense hook)
+- **RHYTHMIX**: Marketing site (review business model first)
 
 ### Phase 1 ✅ Complete
 - Database schema: 5 tables (products, pricing_tiers, purchases, license_validations, revenue_events)
@@ -28,18 +44,57 @@ export default function App() {
 ```
 
 #### For Standalone HTML Apps (HUM, DREAMS, RESONANCE)
-Use the standalone `LicenseValidator` class from `public/license-validator.js`:
+
+**Reference Implementation:** See `/hum-app.html` for the complete pattern.
+
+Key changes:
+1. Add license panel as first section (panel 0)
+2. Call `checkLicense()` on page load (async IIFE wrapper)
+3. Implement `showPaywall()` with Stripe checkout link
+4. Guard navigation with: `if (i > 0 && !isLicensed) return`
 
 ```html
-<script src="/license-validator.js"></script>
-<script>
-  const validator = new LicenseValidator({
-    productId: 'hum',
-    onValidated: (license) => { showApp(); },
-    onInvalid: (err) => { showPaywall(); }
-  });
-  validator.validate();
-</script>
+<!-- License panel (panel 0) -->
+<section class="panel" id="licensePanel" style="display:none">
+  <div class="eyebrow" id="licenseStatus">CHECKING LICENSE…</div>
+  <h1 id="licenseTitle">App Name</h1>
+  <p class="lede" id="licenseMsg">Validating your access…</p>
+  <div id="licenseActions"></div>
+</section>
+
+<!-- App panels start at panel 1 -->
+<section class="panel" aria-label="Welcome">
+  <!-- existing app content -->
+</section>
+```
+
+```javascript
+// On page load (before app init)
+(async () => {
+  await checkLicense();
+  // ... rest of initialization
+})();
+
+// License checking function
+async function checkLicense() {
+  let licenseKey = new URLSearchParams(window.location.search).get('license');
+  if (!licenseKey) licenseKey = localStorage.getItem('product.license');
+  
+  if (!licenseKey) { showPaywall(); return; }
+  
+  // Validate with Supabase
+  const response = await fetch('/api/validate-license', {
+    method: 'POST',
+    body: JSON.stringify({ license_key: licenseKey })
+  }).catch(() => ({ ok: false }));
+  
+  if (response.ok && result.valid) {
+    isLicensed = true;
+    localStorage.setItem('product.license', licenseKey);
+  } else {
+    showPaywall();
+  }
+}
 ```
 
 ### Stripe Webhook Configuration
@@ -59,9 +114,15 @@ Configure in Stripe Dashboard:
 
 ### Products to Integrate (Sequential)
 
-1. **HUM** (AU$30 one-time)
-   - Status: Ready (standalone HTML)
-   - Action: Wrap with license check + paywall panel
+1. **HUM** (AU$30 one-time) ✅ INTEGRATED
+   - Status: Complete with license check + paywall panel
+   - Location: `/hum-app.html`
+   - Features:
+     * License validation on load (URL param → localStorage)
+     * Paywall panel shows pricing + features
+     * "Already have a license?" re-entry option
+     * Navigation locked to licensed users only
+     * Stripe Checkout link (configure in production)
 
 2. **DREAMS** 
    - Status: Ready (standalone HTML)
