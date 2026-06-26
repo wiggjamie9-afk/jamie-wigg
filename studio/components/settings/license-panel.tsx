@@ -251,6 +251,7 @@ export function LicensePanel() {
               <button
                 type="button"
                 onClick={handleClear}
+                aria-label="Clear your stored license key"
                 disabled={busy}
                 className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/50 bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-magenta hover:bg-[var(--color-rhythmix-danger-soft)] disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
               >
@@ -261,19 +262,21 @@ export function LicensePanel() {
         </div>
       </form>
 
-      {error ? (
-        <p
-          role="alert"
-          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-starlightmix-magenta"
-        >
-          {error}
-        </p>
-      ) : null}
-      {info ? (
-        <p className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface-2 px-3 py-2 text-sm text-starlightmix-text-soft">
-          {info}
-        </p>
-      ) : null}
+      <div aria-live="polite" aria-atomic="true">
+        {error ? (
+          <p
+            role="alert"
+            className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-starlightmix-magenta"
+          >
+            {error}
+          </p>
+        ) : null}
+        {info ? (
+          <p className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface-2 px-3 py-2 text-sm text-starlightmix-text-soft">
+            {info}
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }

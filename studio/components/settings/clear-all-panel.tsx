@@ -61,19 +61,22 @@ export function ClearAllPanel() {
         type="button"
         onClick={() => setConfirming(true)}
         disabled={clearing}
+        aria-disabled={clearing}
         className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-danger px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
       >
         {clearing ? "Clearing…" : "Clear all local data"}
       </button>
 
-      {error ? (
-        <p
-          role="alert"
-          className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-starlightmix-magenta"
-        >
-          {error}
-        </p>
-      ) : null}
+      <div aria-live="polite" aria-atomic="true">
+        {error ? (
+          <p
+            role="alert"
+            className="mt-3 rounded-[var(--radius-rhythmix-md)] border border-starlightmix-magenta/40 bg-[var(--color-rhythmix-danger-soft)] px-3 py-2 text-sm text-starlightmix-magenta"
+          >
+            {error}
+          </p>
+        ) : null}
+      </div>
 
       <ConfirmDialog
         open={confirming && !clearing}
@@ -168,6 +171,7 @@ function ConfirmDialog(props: {
             ref={cancelRef}
             type="button"
             onClick={onCancel}
+            aria-label="Cancel clearing all local data"
             className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-transparent px-4 py-2 text-sm font-medium text-starlightmix-text-soft hover:bg-starlightmix-surface-2 hover:text-starlightmix-text focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Cancel
@@ -176,6 +180,7 @@ function ConfirmDialog(props: {
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
+            aria-label="Permanently clear all local data from this device"
             className="min-h-[44px] rounded-[var(--radius-rhythmix-md)] bg-starlightmix-danger px-4 py-2 text-sm font-semibold text-starlightmix-text hover:bg-starlightmix-pink focus:outline-none focus-visible:ring-2 focus-visible:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           >
             Clear everything
