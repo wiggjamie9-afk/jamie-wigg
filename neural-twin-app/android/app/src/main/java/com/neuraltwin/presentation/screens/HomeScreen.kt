@@ -22,6 +22,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neuraltwin.app.data.models.VoiceRecordingItem
 import com.neuraltwin.app.data.models.DecisionItem
 import com.neuraltwin.app.viewmodel.HomeViewModel
+import com.neuraltwin.app.viewmodel.CoherenceViewModel
+import com.neuraltwin.app.data.network.TokenStore
 import com.neuraltwin.presentation.theme.BrandBlue
 import com.neuraltwin.presentation.theme.Surface1
 import com.neuraltwin.presentation.theme.Surface2
@@ -29,14 +31,23 @@ import com.neuraltwin.presentation.theme.TextSecondary
 
 @Composable
 fun HomeScreen(
-  viewModel: HomeViewModel = hiltViewModel()
+  viewModel: HomeViewModel = hiltViewModel(),
+  coherenceViewModel: CoherenceViewModel = hiltViewModel()
 ) {
   val userName by viewModel.userName.collectAsState()
-  val coherenceScore by viewModel.coherenceScore.collectAsState()
+  val coherenceScore by coherenceViewModel.coherenceScore.collectAsState(initial = 0)
+  val coherenceLoading by coherenceViewModel.isLoading.collectAsState()
+  val coherenceError by coherenceViewModel.error.collectAsState()
   val recordingCount by viewModel.recordingCount.collectAsState()
   val decisionCount by viewModel.decisionCount.collectAsState()
   val recentRecordings by viewModel.recentRecordings.collectAsState()
   val recentDecisions by viewModel.recentDecisions.collectAsState()
+
+  LaunchedEffect(Unit) {
+    TokenStore.userId?.let { userId ->
+      coherenceViewModel.getCoherence(userId)
+    }
+  }
 
   Box(
     modifier = Modifier
@@ -84,38 +95,63 @@ fun HomeScreen(
               fontWeight = FontWeight.SemiBold
             )
 
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Text(
-                "$coherenceScore%",
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold,
-                color = when {
-                  coherenceScore >= 80 -> Color(0xFF34C759)
-                  coherenceScore >= 60 -> Color(0xFFFF9500)
-                  else -> Color(0xFFFF3B30)
-                }
-              )
-
+            if (coherenceLoading) {
               Box(
                 modifier = Modifier
-                  .size(100.dp),
+                  .fillMaxWidth()
+                  .height(120.dp),
                 contentAlignment = Alignment.Center
               ) {
-                CircularProgressIndicator(
-                  progress = { (coherenceScore / 100f).coerceIn(0f, 1f) },
-                  modifier = Modifier.size(100.dp),
+                CircularProgressIndicator()
+              }
+            } else if (coherenceError != null) {
+              Box(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(120.dp),
+                contentAlignment = Alignment.Center
+              ) {
+                Text(
+                  coherenceError ?: "Error loading coherence",
+                  fontSize = 12.sp,
+                  color = Color(0xFFFF3B30),
+                  textAlign = TextAlign.Center
+                )
+              }
+            } else {
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Text(
+                  "$coherenceScore%",
+                  fontSize = 48.sp,
+                  fontWeight = FontWeight.Bold,
                   color = when {
                     coherenceScore >= 80 -> Color(0xFF34C759)
                     coherenceScore >= 60 -> Color(0xFFFF9500)
                     else -> Color(0xFFFF3B30)
-                  },
-                  trackColor = Surface2,
-                  strokeWidth = 6.dp
+                  }
                 )
+
+                Box(
+                  modifier = Modifier
+                    .size(100.dp),
+                  contentAlignment = Alignment.Center
+                ) {
+                  CircularProgressIndicator(
+                    progress = { (coherenceScore / 100f).coerceIn(0f, 1f) },
+                    modifier = Modifier.size(100.dp),
+                    color = when {
+                      coherenceScore >= 80 -> Color(0xFF34C759)
+                      coherenceScore >= 60 -> Color(0xFFFF9500)
+                      else -> Color(0xFFFF3B30)
+                    },
+                    trackColor = Surface2,
+                    strokeWidth = 6.dp
+                  )
+                }
               }
             }
           }

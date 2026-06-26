@@ -40,6 +40,9 @@ class CoherenceViewModel @Inject constructor(
     private val _selectedLayerId = MutableStateFlow<String?>(null)
     val selectedLayerId: StateFlow<String?> = _selectedLayerId
 
+    private val _coherenceScore = MutableStateFlow(0)
+    val coherenceScore: StateFlow<Int> = _coherenceScore
+
     fun getCoherence(userId: String) {
         viewModelScope.launch {
             try {
@@ -48,7 +51,12 @@ class CoherenceViewModel @Inject constructor(
 
                 val response = repository.getCoherence(userId)
                 if (response.isSuccessful) {
-                    _coherenceData.value = response.body()
+                    val body = response.body()
+                    _coherenceData.value = body
+                    // Extract and cache the overall coherence score
+                    body?.overallCoherence?.toIntOrNull()?.let { score ->
+                        _coherenceScore.value = score
+                    }
                 } else {
                     _error.value = "Failed to fetch coherence: ${response.code()}"
                 }

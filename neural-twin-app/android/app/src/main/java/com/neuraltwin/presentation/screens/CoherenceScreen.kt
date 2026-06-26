@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.neuraltwin.app.data.models.CoherenceLayer
 import com.neuraltwin.app.viewmodel.CoherenceViewModel
+import com.neuraltwin.app.data.network.TokenStore
 import com.neuraltwin.presentation.theme.BrandBlue
 import com.neuraltwin.presentation.theme.Surface1
 import com.neuraltwin.presentation.theme.Surface2
@@ -36,9 +37,14 @@ fun CoherenceScreen(
   viewModel: CoherenceViewModel = hiltViewModel()
 ) {
   var selectedTimeframe by remember { mutableStateOf("7d") }
+
+  // Get userId from TokenStore if not provided
+  val effectiveUserId = userId ?: TokenStore.userId
+
   val isLoading by viewModel.isLoading.collectAsState()
   val isHistoryLoading by viewModel.isHistoryLoading.collectAsState()
   val isDetailLoading by viewModel.isDetailLoading.collectAsState()
+  val error by viewModel.error.collectAsState()
   val coherence by viewModel.coherenceData.collectAsState()
   val history by viewModel.coherenceHistory.collectAsState()
   val selectedLayerId by viewModel.selectedLayerId.collectAsState()
@@ -46,7 +52,7 @@ fun CoherenceScreen(
 
   // Load coherence on screen appear
   LaunchedEffect(Unit) {
-    userId?.let {
+    effectiveUserId?.let {
       viewModel.getCoherence(it)
       viewModel.getCoherenceHistory(it, selectedTimeframe)
     }
@@ -54,7 +60,7 @@ fun CoherenceScreen(
 
   // Reload history on timeframe change
   LaunchedEffect(selectedTimeframe) {
-    userId?.let {
+    effectiveUserId?.let {
       viewModel.getCoherenceHistory(it, selectedTimeframe)
     }
   }
@@ -79,6 +85,24 @@ fun CoherenceScreen(
           .padding(16.dp)
           .fillMaxWidth()
       )
+
+      // Error message
+      if (error != null) {
+        Card(
+          modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+          colors = CardDefaults.cardColors(containerColor = Color(0xFFFF3B30).copy(alpha = 0.2f)),
+          shape = RoundedCornerShape(12.dp)
+        ) {
+          Text(
+            error ?: "An error occurred",
+            fontSize = 13.sp,
+            color = Color(0xFFFF3B30),
+            modifier = Modifier.padding(12.dp)
+          )
+        }
+      }
 
       // Overall coherence circle
       if (isLoading) {
@@ -168,6 +192,8 @@ fun CoherenceScreen(
               selectedLayerId = selectedLayerId,
               onLayerTap = { layerId ->
                 viewModel.selectLayer(layerId)
+                // Fetch metric details for the selected layer
+                viewModel.getCoherenceMetric(layerId)
               }
             )
           }
@@ -358,19 +384,20 @@ fun CoherenceLayerCircle(
     score >= 60 -> Color(0xFFFF9500)
     else -> Color(0xFFFF3B30)
   }
-  val scale by animateColorAsState(
-    targetValue = if (isSelected) 1.1f else 1f
-  )
+  val scale by remember(isSelected) {
+    androidx.compose.animation.core.animateDpAsState(
+      targetValue = if (isSelected) 88.dp else 80.dp
+    )
+  }
 
   Column(
     modifier = modifier
-      .clickable { onTap() }
-      .scale(1f),
+      .clickable { onTap() },
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Box(
       modifier = Modifier
-        .size(80.dp)
+        .size(scale)
         .background(Surface2, CircleShape)
         .clip(CircleShape),
       contentAlignment = Alignment.Center
@@ -378,7 +405,7 @@ fun CoherenceLayerCircle(
       CircularProgressIndicator(
         progress = { progress },
         modifier = Modifier
-          .size(72.dp)
+          .size(scale.value * 0.9f)
           .padding(4.dp),
         color = color,
         trackColor = Surface2,

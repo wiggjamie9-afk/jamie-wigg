@@ -7,6 +7,7 @@ enum APIError: Error, LocalizedError {
   case invalidResponse
   case decodingError(Error)
   case serverError(code: Int, message: String)
+  case tokenExpired
 
   var errorDescription: String? {
     switch self {
@@ -22,6 +23,8 @@ enum APIError: Error, LocalizedError {
       return "Failed to decode response: \(error.localizedDescription)"
     case .serverError(let code, let message):
       return "Server error (\(code)): \(message)"
+    case .tokenExpired:
+      return "Your session has expired. Please log in again."
     }
   }
 }
@@ -401,7 +404,15 @@ class APIClient {
     }
 
     if httpResponse.statusCode == 401 {
-      throw APIError.serverError(code: 401, message: "Invalid email or password.")
+      let isAuthRoute = request.url?.path.contains("/auth/") ?? false
+
+      if isAuthRoute {
+        throw APIError.serverError(code: 401, message: "Invalid email or password.")
+      } else {
+        TokenStore.shared.clear()
+        NotificationCenter.default.post(name: NSNotification.Name("TokenExpired"), object: nil)
+        throw APIError.tokenExpired
+      }
     }
 
     if httpResponse.statusCode == 409 {

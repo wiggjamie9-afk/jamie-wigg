@@ -101,6 +101,9 @@ dependencies {
     // Health Connect / Google Fit
     implementation("androidx.health.connect:connect-client:1.1.0-alpha02")
 
+    // Security - Encrypted SharedPreferences
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Audio
     implementation("androidx.media:media:1.7.0")
 
