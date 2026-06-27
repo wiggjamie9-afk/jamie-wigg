@@ -121,16 +121,22 @@ def seg_from_image(src: Path, dur: float, dst: Path, ken_burns: bool, caption: P
               f"zoompan=z='min(zoom+0.0011,1.25)':d={frames}:"
               f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={W}x{H}:fps={FPS},"
               f"setsar=1")
+        # zoompan consumes ONE looped frame and emits `frames` frames; cap
+        # output with -frames:v so the looped input can't multiply duration.
+        inputs = ["-loop", "1", "-i", str(src)]
+        outlimit = ["-frames:v", str(frames)]
     else:
-        vf = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1"
-    inputs = ["-loop", "1", "-t", f"{dur}", "-i", str(src)]
+        vf = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={FPS}"
+        inputs = ["-loop", "1", "-t", f"{dur}", "-i", str(src)]
+        outlimit = []
     if caption:
-        inputs += ["-loop", "1", "-t", f"{dur}", "-i", str(caption)]
+        inputs += (["-loop", "1", "-i", str(caption)] if ken_burns
+                   else ["-loop", "1", "-t", f"{dur}", "-i", str(caption)])
         filt = f"[0:v]{vf}[bg];[bg][1:v]overlay=0:0,format=yuv420p[v]"
         maps = ["-filter_complex", filt, "-map", "[v]"]
     else:
         maps = ["-vf", f"{vf},format=yuv420p"]
-    run([*inputs, *maps, "-r", str(FPS), "-c:v", "libx264", "-pix_fmt", "yuv420p",
+    run([*inputs, *maps, *outlimit, "-r", str(FPS), "-c:v", "libx264", "-pix_fmt", "yuv420p",
          "-profile:v", "high", "-preset", "ultrafast", "-an", str(dst)])
 
 
