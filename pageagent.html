@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RHYTHMIX Copilot — drive the page with words (PageAgent)</title>
+  <meta name="description" content="A live demo of PageAgent: an in-page GUI agent that controls this web interface with natural language. No extension, no screenshots — just text-based DOM control.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rhythmixapp.com.au/pageagent.html">
+  <meta property="og:title" content="RHYTHMIX Copilot — drive the page with words">
+  <meta property="og:description" content="Live PageAgent demo: control this UI with natural language.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --canvas:#08050d; --magenta:#ff1f5a; --purple:#7c3aed; --cyan:#00d8ff;
+      --green:#00e887; --gold:#f5c000; --pink:#ff6fc8; --white:#ffffff;
+      --muted:#a0a0b0; --card:#1a1325;
+      --display:"Space Grotesk", system-ui, sans-serif;
+      --mono:"JetBrains Mono", ui-monospace, monospace;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      background:var(--canvas); color:var(--white); font-family:var(--display);
+      min-height:100vh; overflow-x:hidden; line-height:1.5;
+      background-image:radial-gradient(ellipse 70% 45% at 50% -5%, rgba(124,58,237,.22), transparent 70%);
+    }
+    a { color:inherit; }
+    code, .mono { font-family:var(--mono); }
+
+    nav {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:18px 24px; position:sticky; top:0; z-index:50;
+      background:rgba(8,5,13,.82); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .nav-logo {
+      font-size:20px; font-weight:700; letter-spacing:-.5px; text-decoration:none;
+      background:linear-gradient(135deg,var(--magenta),var(--purple),var(--cyan));
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .nav-links { display:flex; gap:18px; align-items:center; }
+    .nav-links a { color:var(--muted); text-decoration:none; font-size:14px; font-weight:500; }
+    .nav-links a:hover { color:var(--white); }
+
+    .wrap { max-width:980px; margin:0 auto; padding:0 24px; }
+
+    .hero { text-align:center; padding:72px 24px 48px; }
+    .badge {
+      display:inline-flex; align-items:center; gap:8px; margin-bottom:24px;
+      background:rgba(0,232,135,.1); border:1px solid rgba(0,232,135,.4); color:var(--green);
+      font-family:var(--mono); font-size:12px; font-weight:500; letter-spacing:2px;
+      text-transform:uppercase; padding:7px 16px; border-radius:100px;
+    }
+    .badge .dot { width:6px; height:6px; border-radius:50%; background:currentColor;
+      animation:pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+    .hero h1 { font-size:clamp(34px,8vw,68px); font-weight:700; line-height:1.02;
+      letter-spacing:-2px; margin-bottom:20px; }
+    .hero h1 em { font-style:normal;
+      background:linear-gradient(135deg,var(--magenta),var(--purple),var(--cyan));
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero p { color:var(--muted); font-size:clamp(15px,2.6vw,19px); max-width:580px; margin:0 auto; }
+    .hero p strong { color:var(--white); font-weight:500; }
+
+    .grid { display:grid; gap:22px; grid-template-columns:1fr 1fr; align-items:start;
+      padding:24px 0 64px; }
+    @media (max-width:760px){ .grid { grid-template-columns:1fr; } }
+
+    .panel {
+      background:var(--card); border:1px solid rgba(255,255,255,.07);
+      border-radius:18px; padding:26px; position:relative; overflow:hidden;
+    }
+    .panel::before {
+      content:""; position:absolute; inset:0 0 auto 0; height:2px;
+      background:linear-gradient(90deg,var(--magenta),var(--purple),var(--cyan));
+      opacity:.7;
+    }
+    .panel h2 { font-size:13px; font-family:var(--mono); font-weight:500; letter-spacing:2px;
+      text-transform:uppercase; color:var(--cyan); margin-bottom:6px; }
+    .panel .sub { color:var(--muted); font-size:14px; margin-bottom:20px; }
+
+    label { display:block; font-size:12px; font-family:var(--mono); letter-spacing:1px;
+      text-transform:uppercase; color:var(--muted); margin:16px 0 7px; }
+    input[type=text], input[type=email], select, textarea {
+      width:100%; background:rgba(255,255,255,.04); color:var(--white);
+      border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:12px 14px;
+      font-family:var(--display); font-size:15px; outline:none; transition:border-color .2s, box-shadow .2s;
+    }
+    textarea { resize:vertical; min-height:84px; }
+    input:focus, select:focus, textarea:focus {
+      border-color:var(--purple); box-shadow:0 0 0 3px rgba(124,58,237,.25);
+    }
+    .row { display:flex; gap:12px; }
+    .row > div { flex:1; }
+    .check { display:flex; align-items:center; gap:10px; margin-top:14px; }
+    .check input { width:18px; height:18px; accent-color:var(--magenta); }
+    .check label { margin:0; text-transform:none; letter-spacing:0; font-family:var(--display);
+      font-size:14px; color:var(--white); }
+
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      border:none; cursor:pointer; font-family:var(--display); font-weight:700;
+      border-radius:100px; padding:13px 22px; font-size:15px; transition:transform .15s, filter .2s;
+    }
+    .btn:active { transform:translateY(1px); }
+    .btn-primary { background:linear-gradient(135deg,var(--gold),#ff8800); color:#000; width:100%; margin-top:22px; }
+    .btn-primary:hover { filter:brightness(1.07); }
+    .btn-ghost { background:rgba(255,255,255,.06); color:var(--white);
+      border:1px solid rgba(255,255,255,.14); font-weight:500; padding:9px 16px; font-size:13px; }
+    .btn-ghost:hover { background:rgba(255,255,255,.12); }
+
+    .out {
+      margin-top:18px; background:rgba(0,216,255,.06); border:1px solid rgba(0,216,255,.25);
+      border-radius:10px; padding:14px; font-family:var(--mono); font-size:13px; color:var(--cyan);
+      display:none; white-space:pre-wrap; word-break:break-word;
+    }
+    .out.show { display:block; }
+
+    .examples { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .chip {
+      font-family:var(--mono); font-size:12px; color:var(--muted);
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+      border-radius:100px; padding:7px 13px; cursor:pointer; transition:all .15s; text-align:left;
+    }
+    .chip:hover { color:var(--white); border-color:var(--purple); background:rgba(124,58,237,.12); }
+
+    .ask-row { display:flex; gap:10px; margin-top:14px; }
+    .ask-row input { flex:1; }
+    .ask-row .btn { flex:0 0 auto; margin-top:0; padding:13px 20px; }
+
+    .note {
+      margin:0 auto 56px; max-width:760px; text-align:center;
+      font-family:var(--mono); font-size:12.5px; color:var(--muted); line-height:1.7;
+      border-top:1px solid rgba(255,255,255,.07); padding-top:28px;
+    }
+    .note code { color:var(--gold); }
+    .note a { color:var(--cyan); }
+
+    .how { padding:8px 0 56px; }
+    .how h3 { font-size:13px; font-family:var(--mono); letter-spacing:2px; text-transform:uppercase;
+      color:var(--pink); text-align:center; margin-bottom:26px; }
+    .steps { display:grid; gap:16px; grid-template-columns:repeat(3,1fr); }
+    @media (max-width:760px){ .steps { grid-template-columns:1fr; } }
+    .step { background:var(--card); border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:20px; }
+    .step .n { font-family:var(--mono); font-size:12px; color:var(--green); margin-bottom:8px; }
+    .step h4 { font-size:16px; font-weight:700; margin-bottom:6px; }
+    .step p { color:var(--muted); font-size:14px; }
+
+    footer { text-align:center; padding:40px 24px 64px; color:var(--muted); font-size:13px; font-family:var(--mono); }
+    footer a { color:var(--cyan); text-decoration:none; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="/">RHYTHMIX</a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/studio.html">Studio</a>
+      <a href="https://github.com/PageAgent/page-agent" target="_blank" rel="noopener">PageAgent ↗</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <span class="badge"><span class="dot"></span>Live PageAgent demo</span>
+    <h1>Drive this page<br><em>with words</em>.</h1>
+    <p><strong>RHYTHMIX Copilot</strong> is a GUI agent that lives inside the page. Type a request in plain English and watch it click, type, and submit the form on the right — no browser extension, no screenshots, just text-based DOM control.</p>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <!-- Command panel -->
+      <section class="panel" aria-label="Copilot command panel">
+        <h2>Tell the copilot what to do</h2>
+        <p class="sub">It reads the form on the right and acts on it. Tap an example, or write your own.</p>
+
+        <div class="ask-row">
+          <input type="text" id="askInput" placeholder="e.g. Fill the form for a 30s portrait jazz cut" aria-label="Copilot command">
+          <button class="btn btn-ghost" id="askBtn" style="background:linear-gradient(135deg,var(--magenta),var(--purple));color:#fff;border:none;font-weight:700;">Run ▶</button>
+        </div>
+
+        <div class="examples" id="examples">
+          <button class="chip">Set the email to fan@rhythmix.app</button>
+          <button class="chip">Choose a 30 second portrait cut</button>
+          <button class="chip">Pick the "Jazz" vibe and tick lifetime updates</button>
+          <button class="chip">Fill everything for a cinematic 60s landscape cut and submit</button>
+        </div>
+
+        <div class="out" id="out" role="status" aria-live="polite"></div>
+      </section>
+
+      <!-- Target form the agent operates on -->
+      <section class="panel" aria-label="Request a custom cut">
+        <h2>Request a custom cut</h2>
+        <p class="sub">The form the copilot drives. You can also fill it by hand.</p>
+
+        <form id="cutForm" autocomplete="off">
+          <label for="email">Your email</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com">
+
+          <div class="row">
+            <div>
+              <label for="duration">Duration</label>
+              <select id="duration" name="duration">
+                <option value="">Select…</option>
+                <option value="30s">30 seconds</option>
+                <option value="60s">60 seconds</option>
+                <option value="90s">90 seconds</option>
+              </select>
+            </div>
+            <div>
+              <label for="aspect">Aspect</label>
+              <select id="aspect" name="aspect">
+                <option value="">Select…</option>
+                <option value="landscape">Landscape 16:9</option>
+                <option value="portrait">Portrait 9:16</option>
+                <option value="square">Square 1:1</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="vibe">Vibe</label>
+          <select id="vibe" name="vibe">
+            <option value="">Select…</option>
+            <option value="cinematic">Cinematic</option>
+            <option value="jazz">Jazz</option>
+            <option value="rave">Rave</option>
+            <option value="rock">Rock</option>
+            <option value="disco">Disco</option>
+          </select>
+
+          <label for="notes">Notes (optional)</label>
+          <textarea id="notes" name="notes" placeholder="Anything specific about the track or look…"></textarea>
+
+          <div class="check">
+            <input type="checkbox" id="lifetime" name="lifetime">
+            <label for="lifetime">Include lifetime updates</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Request my cut</button>
+        </form>
+      </section>
+    </div>
+
+    <section class="how">
+      <h3>How it works</h3>
+      <div class="steps">
+        <div class="step">
+          <div class="n">01</div>
+          <h4>Reads the DOM as text</h4>
+          <p>No screenshots or multimodal models. PageAgent serializes the live page into a text view the LLM can reason about.</p>
+        </div>
+        <div class="step">
+          <div class="n">02</div>
+          <h4>Plans &amp; acts in-page</h4>
+          <p>It decides which element to click or type into, then performs the action directly in your browser — everything stays client-side.</p>
+        </div>
+        <div class="step">
+          <div class="n">03</div>
+          <h4>Bring your own LLM</h4>
+          <p>Point it at any OpenAI-compatible endpoint with your own key. This demo uses PageAgent's free testing LLM for evaluation.</p>
+        </div>
+      </div>
+    </section>
+
+    <p class="note">
+      ⚠️ This page loads the <strong>PageAgent demo bundle</strong>, which uses a free testing LLM —
+      <em>for technical evaluation only</em>. For production, set
+      <code>window.PAGEAGENT_CONFIG</code> with your own <code>model</code>, <code>baseURL</code> and
+      <code>apiKey</code> before loading <code>/pageagent/pageagent-copilot.js</code>.
+      See <a href="/pageagent/README.md">pageagent/README.md</a>. Built on
+      <a href="https://github.com/PageAgent/page-agent" target="_blank" rel="noopener">PageAgent</a> (MIT),
+      which itself builds on <a href="https://github.com/browser-use/browser-use" target="_blank" rel="noopener">browser-use</a>.
+    </p>
+  </main>
+
+  <footer>
+    RHYTHMIX · <a href="/">rhythmixapp.com.au</a> — turn any track into a cinematic AI music video.
+  </footer>
+
+  <!-- Configure here for production (own key). Leave commented to use the free demo LLM. -->
+  <!--
+  <script>
+    window.PAGEAGENT_CONFIG = {
+      model: 'qwen3.5-plus',
+      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+      apiKey: 'YOUR_API_KEY',
+      language: 'en-US',
+    };
+  </script>
+  -->
+  <script src="/pageagent/pageagent-copilot.js" defer></script>
+
+  <script>
+    // Wire the demo UI to the copilot. Falls back to a deterministic local
+    // interpreter if the PageAgent CDN is unreachable (e.g. egress-restricted
+    // sandbox) so the demo form still responds.
+    (function () {
+      var input = document.getElementById('askInput');
+      var btn = document.getElementById('askBtn');
+      var out = document.getElementById('out');
+      var form = document.getElementById('cutForm');
+
+      function say(msg) { out.textContent = msg; out.classList.add('show'); }
+
+      document.getElementById('examples').addEventListener('click', function (e) {
+        var chip = e.target.closest('.chip');
+        if (!chip) return;
+        input.value = chip.textContent.trim();
+        input.focus();
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        say('✓ Cut requested — ' +
+          (document.getElementById('duration').value || '?') + ' / ' +
+          (document.getElementById('aspect').value || '?') + ' / ' +
+          (document.getElementById('vibe').value || '?') +
+          (document.getElementById('lifetime').checked ? ' + lifetime updates' : '') +
+          '. (Demo only — nothing is sent.)');
+      });
+
+      // Lightweight offline fallback so the demo is never dead.
+      function localFallback(task) {
+        var t = task.toLowerCase();
+        var em = t.match(/[\w.+-]+@[\w.-]+\.\w+/);
+        if (em) document.getElementById('email').value = em[0];
+        if (/\b30\b|30s|thirty/.test(t)) document.getElementById('duration').value = '30s';
+        else if (/\b60\b|60s|sixty/.test(t)) document.getElementById('duration').value = '60s';
+        else if (/\b90\b|90s|ninety/.test(t)) document.getElementById('duration').value = '90s';
+        if (/portrait|vertical|9:16|reel|tiktok|short/.test(t)) document.getElementById('aspect').value = 'portrait';
+        else if (/landscape|16:9|youtube/.test(t)) document.getElementById('aspect').value = 'landscape';
+        else if (/square|1:1|instagram|feed/.test(t)) document.getElementById('aspect').value = 'square';
+        ['cinematic','jazz','rave','rock','disco'].forEach(function (v) {
+          if (t.indexOf(v) > -1) document.getElementById('vibe').value = v;
+        });
+        if (/lifetime|updates/.test(t)) document.getElementById('lifetime').checked = true;
+        if (/submit|request|send|go ahead/.test(t)) {
+          form.requestSubmit ? form.requestSubmit() : form.querySelector('[type=submit]').click();
+        } else {
+          say('↳ Applied locally (offline fallback — PageAgent CDN unavailable).');
+        }
+      }
+
+      function runTask() {
+        var task = input.value.trim();
+        if (!task) { input.focus(); return; }
+        say('… running: "' + task + '"');
+        window.rhythmixCopilot.run(task)
+          .then(function () { say('✓ Done: "' + task + '"'); })
+          .catch(function (err) {
+            // CDN blocked / no agent → use the deterministic local interpreter.
+            localFallback(task);
+          });
+      }
+
+      btn.addEventListener('click', runTask);
+      input.addEventListener('keydown', function (e) { if (e.key === 'Enter') runTask(); });
+    })();
+  </script>
+</body>
+</html>
