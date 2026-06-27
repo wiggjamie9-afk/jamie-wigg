@@ -31,17 +31,26 @@ Or download just this one file from GitHub:
 
 ### Install the new tools
 
-To install the genuinely installable tools below (MoviePy, ffmpeg, and
-optionally Stable Diffusion WebUI / Deep Playground), double-click
-**`Install-Downloads.command`** in Finder, or run:
+Double-click **`Install-Downloads.command`** in Finder, or run:
 
 ```bash
 bash Install-Downloads.command
 ```
 
-It asks before installing anything, skips what's already present, and prints
-where to go for the hosted / doc-only tools (PageAgent, Ruixen UI, MiniMax-01,
-Palmier Pro, Freebuff, Kling→socials).
+It runs **unattended** — installs everything automatically with no prompts:
+prerequisites (Homebrew, python3, ffmpeg, node), **MoviePy + ffmpeg**,
+**Stable Diffusion WebUI**, and **Deep Playground**. It skips anything already
+installed, so it's safe to re-run. (Homebrew's own installer may ask for your
+password — that's Apple's installer, not this script.)
+
+To skip the two heavy clones (SD WebUI + Deep Playground) on a given run:
+
+```bash
+SKIP_HEAVY=1 bash Install-Downloads.command
+```
+
+It also prints where to go for the hosted / doc-only tools (PageAgent,
+Ruixen UI, MiniMax-01, Palmier Pro, Freebuff, Kling→socials).
 
 > First time double-clicking? macOS may block it ("unidentified developer").
 > Right-click the file → **Open** → **Open**, or run

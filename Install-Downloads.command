@@ -3,11 +3,16 @@
 # Install-Downloads.command — one-click installer for the tools added to this
 # repo over the last two days. Double-click in Finder, or run:  bash Install-Downloads.command
 #
-# Companion to DOWNLOADS-LAST-2-DAYS.md. Installs the genuinely installable
-# tools; for hosted / doc-only / per-project tools it prints where to go.
+# Companion to DOWNLOADS-LAST-2-DAYS.md.
 #
-# Safe by design: nothing installs without asking, and the heavy GPU download
-# (Stable Diffusion WebUI) is opt-in.
+# UNATTENDED: installs everything automatically, no y/N prompts —
+#   prerequisites (Homebrew, python3, ffmpeg, node) + MoviePy + ffmpeg
+#   + Stable Diffusion WebUI + Deep Playground.
+# It still skips anything already installed, so it's safe to re-run.
+#
+# Note: the Homebrew installer itself may prompt for your password / a Return —
+# that's Apple's installer, not this script. To skip the heavy clones on a run,
+# set SKIP_HEAVY=1 (e.g.  SKIP_HEAVY=1 bash Install-Downloads.command).
 
 set -u
 
@@ -23,104 +28,87 @@ ok()   { echo "${green}  ✓${reset} $*"; }
 warn() { echo "${yellow}  !${reset} $*"; }
 err()  { echo "${red}  ✗${reset} $*"; }
 
-ask() { # ask "Question?" -> returns 0 for yes
-  local reply
-  read -r -p "${bold}$1${reset} [y/N] " reply
-  [[ "$reply" =~ ^[Yy]$ ]]
-}
-
 have() { command -v "$1" >/dev/null 2>&1; }
 
+SKIP_HEAVY="${SKIP_HEAVY:-0}"
+
 echo
-echo "${bold}RHYTHMIX — Install last 2 days' tools${reset}"
+echo "${bold}RHYTHMIX — Install last 2 days' tools (unattended)${reset}"
 echo "Period: 2026-06-26 → 2026-06-28  (see DOWNLOADS-LAST-2-DAYS.md)"
+[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping SD WebUI + Deep Playground this run."
 echo
 
 # ---------------------------------------------------------------------------
-# 0. Prerequisites: Homebrew, then ffmpeg + python3 + node as needed.
+# 0. Prerequisites: Homebrew, then ffmpeg + python3 + node (all automatic).
 # ---------------------------------------------------------------------------
-say "Checking prerequisites"
+say "Prerequisites"
 
 if ! have brew; then
-  warn "Homebrew not found."
-  if ask "Install Homebrew now? (recommended on macOS)"; then
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    # Make brew available in this shell (Apple Silicon vs Intel paths).
-    if [[ -x /opt/homebrew/bin/brew ]]; then eval "$(/opt/homebrew/bin/brew shellenv)"; fi
-    if [[ -x /usr/local/bin/brew ]]; then eval "$(/usr/local/bin/brew shellenv)"; fi
-  else
-    warn "Skipping Homebrew. Some installs below may not work without it."
-  fi
+  warn "Homebrew not found — installing (Apple's installer may ask for your password)."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+  [[ -x /usr/local/bin/brew ]]   && eval "$(/usr/local/bin/brew shellenv)"
 else
   ok "Homebrew present ($(brew --version | head -1))"
 fi
 
-if ! have python3; then
-  warn "python3 not found."
-  if have brew && ask "Install python3 via Homebrew?"; then brew install python; fi
+if have brew; then
+  for pkg in python ffmpeg node; do
+    bin="$pkg"; [[ "$pkg" == "python" ]] && bin="python3"
+    if have "$bin"; then ok "$bin present"; else
+      say "Installing $pkg"; brew install "$pkg" && ok "$pkg installed" || err "$pkg install failed"
+    fi
+  done
 else
-  ok "python3 present ($(python3 --version 2>&1))"
-fi
-
-if ! have ffmpeg; then
-  warn "ffmpeg not found (needed by MoviePy)."
-  if have brew && ask "Install ffmpeg via Homebrew?"; then brew install ffmpeg; fi
-else
-  ok "ffmpeg present"
+  warn "No Homebrew — skipping python3/ffmpeg/node auto-install. Some steps may fail."
 fi
 
 # ---------------------------------------------------------------------------
-# 1. MoviePy v2  (SETUP-MOVIEPY.md) — simple pip install.
+# 1. MoviePy v2  (SETUP-MOVIEPY.md)
 # ---------------------------------------------------------------------------
 echo
 say "MoviePy v2 — Python video post-processing"
-if have python3 && ask "Install MoviePy (>=2.0) for the current user?"; then
+if have python3; then
   python3 -m pip install --user --upgrade "moviepy>=2.0" \
     && ok "MoviePy installed. Test: python3 -c 'import moviepy; print(moviepy.__version__)'" \
     || err "MoviePy install failed — see SETUP-MOVIEPY.md"
 else
-  warn "Skipped MoviePy."
+  err "python3 missing — cannot install MoviePy. See SETUP-MOVIEPY.md"
 fi
 
 # ---------------------------------------------------------------------------
-# 2. Stable Diffusion WebUI / AUTOMATIC1111 (SETUP-SD-WEBUI.md) — heavy, opt-in.
+# 2. Stable Diffusion WebUI / AUTOMATIC1111 (SETUP-SD-WEBUI.md) — heavy.
 # ---------------------------------------------------------------------------
 echo
 say "Stable Diffusion WebUI (AUTOMATIC1111) — local image generation"
-warn "Large download (~GBs) + needs Python 3.10. Best on a GPU / Apple-Silicon Mac."
-if ask "Clone Stable Diffusion WebUI into ~/stable-diffusion-webui?"; then
-  if [[ -d "$HOME/stable-diffusion-webui/.git" ]]; then
-    ok "Already cloned at ~/stable-diffusion-webui"
-  else
-    git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git \
-      "$HOME/stable-diffusion-webui" \
-      && ok "Cloned. First run: cd ~/stable-diffusion-webui && ./webui.sh" \
-      || err "Clone failed — see SETUP-SD-WEBUI.md"
-  fi
+if [[ "$SKIP_HEAVY" == "1" ]]; then
+  warn "Skipped (SKIP_HEAVY=1)."
+elif [[ -d "$HOME/stable-diffusion-webui/.git" ]]; then
+  ok "Already cloned at ~/stable-diffusion-webui"
 else
-  warn "Skipped SD WebUI. (Cloud/Colab path is in SETUP-SD-WEBUI.md.)"
+  warn "Large download (~GBs); best on a GPU / Apple-Silicon Mac."
+  git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git \
+    "$HOME/stable-diffusion-webui" \
+    && ok "Cloned. First run: cd ~/stable-diffusion-webui && ./webui.sh" \
+    || err "Clone failed — see SETUP-SD-WEBUI.md"
 fi
 
 # ---------------------------------------------------------------------------
-# 3. Deep Playground (SETUP-DEEP-PLAYGROUND.md) — TS + d3 demo, opt-in.
+# 3. Deep Playground (SETUP-DEEP-PLAYGROUND.md) — TS + d3 demo.
 # ---------------------------------------------------------------------------
 echo
 say "TensorFlow Deep Playground — neural-net visualization demo"
-if ask "Clone Deep Playground into ~/deep-playground and npm install?"; then
-  if ! have node; then
-    warn "node not found."
-    have brew && ask "Install node via Homebrew?" && brew install node
-  fi
-  if [[ -d "$HOME/deep-playground/.git" ]]; then
-    ok "Already cloned at ~/deep-playground"
-  else
-    git clone https://github.com/tensorflow/playground.git "$HOME/deep-playground" \
-      && ( cd "$HOME/deep-playground" && npm install ) \
-      && ok "Ready. Run: cd ~/deep-playground && npm run serve" \
-      || err "Setup failed — see SETUP-DEEP-PLAYGROUND.md"
-  fi
+if [[ "$SKIP_HEAVY" == "1" ]]; then
+  warn "Skipped (SKIP_HEAVY=1)."
+elif [[ -d "$HOME/deep-playground/.git" ]]; then
+  ok "Already cloned at ~/deep-playground"
+elif have node; then
+  git clone https://github.com/tensorflow/playground.git "$HOME/deep-playground" \
+    && ( cd "$HOME/deep-playground" && npm install ) \
+    && ok "Ready. Run: cd ~/deep-playground && npm run serve" \
+    || err "Setup failed — see SETUP-DEEP-PLAYGROUND.md"
 else
-  warn "Skipped Deep Playground."
+  err "node missing — cannot set up Deep Playground. See SETUP-DEEP-PLAYGROUND.md"
 fi
 
 # ---------------------------------------------------------------------------
@@ -143,6 +131,6 @@ cat <<'NOTES'
 NOTES
 
 echo
-echo "${green}${bold}Done.${reset} Re-run this script any time — it skips what's already installed."
+echo "${green}${bold}Done.${reset} Re-run any time — it skips what's already installed."
 echo
 read -r -p "Press Return to close."
