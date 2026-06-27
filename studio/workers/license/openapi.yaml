@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: STARLIGHTMIX License Validation API
+  version: 0.1.0
+  description: >-
+    Cloudflare Worker that validates STARLIGHTMIX Gumroad license keys.
+    Verifies against the Gumroad license API, caches valid results in KV
+    (24h TTL), and never logs the key or any PII. CORS-locked to the
+    studio.starlightmix.com origins (+ Pages previews + local dev).
+  license:
+    name: Proprietary
+  contact:
+    name: STARLIGHTMIX
+    url: https://studio.starlightmix.com
+servers:
+  - url: https://license.studio.starlightmix.com
+    description: Production
+tags:
+  - name: license
+    description: License key validation.
+paths:
+  /api/license:
+    post:
+      summary: Validate a license key
+      description: >-
+        Validates a Gumroad license key and returns the entitlement tier.
+        Invalid keys return HTTP 200 with `valid: false` (not an error status).
+      operationId: validateLicense
+      tags: [license]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseRequest'
+      responses:
+        '200':
+          description: >-
+            Validation result. `valid: true` with a tier for a good key,
+            or `valid: false` with a reason for an unknown/invalid key.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidResponse'
+                  - $ref: '#/components/schemas/InvalidResponse'
+        '400':
+          description: Invalid JSON body, or missing/malformed license key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidResponse'
+        '405':
+          description: Method not allowed (only POST is accepted).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidResponse'
+        '429':
+          description: Rate limited (20 requests/minute per IP).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidResponse'
+        '503':
+          description: Gumroad unreachable — retry shortly. Failures are not cached.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidResponse'
+    options:
+      summary: CORS preflight
+      description: Returns the CORS preflight headers for the license endpoint.
+      operationId: licensePreflight
+      tags: [license]
+      responses:
+        '204':
+          description: No content — CORS preflight response.
+components:
+  schemas:
+    LicenseRequest:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          description: >-
+            Gumroad license key. Dash-separated alphanumeric, 8–128 chars
+            (typically 35, e.g. XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX).
+          minLength: 8
+          maxLength: 128
+          pattern: '^[A-Za-z0-9-]+$'
+          example: 3F2504E0-4F89-41D3-9A0C-0305E82C3301
+    ValidResponse:
+      type: object
+      required:
+        - valid
+        - tier
+      properties:
+        valid:
+          type: boolean
+          enum: [true]
+        tier:
+          type: string
+          enum: [lifetime, monthly]
+          description: Entitlement tier derived from the Gumroad purchase.
+    InvalidResponse:
+      type: object
+      required:
+        - valid
+        - reason
+      properties:
+        valid:
+          type: boolean
+          enum: [false]
+        reason:
+          type: string
+          example: Invalid or unknown license key
