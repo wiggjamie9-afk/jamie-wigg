@@ -29,6 +29,24 @@ open DOWNLOADS-LAST-2-DAYS.md
 Or download just this one file from GitHub:
 `https://github.com/wiggjamie9-afk/jamie-wigg/blob/main/DOWNLOADS-LAST-2-DAYS.md` → **Raw** → save.
 
+### Install the new tools
+
+To install the genuinely installable tools below (MoviePy, ffmpeg, and
+optionally Stable Diffusion WebUI / Deep Playground), double-click
+**`Install-Downloads.command`** in Finder, or run:
+
+```bash
+bash Install-Downloads.command
+```
+
+It asks before installing anything, skips what's already present, and prints
+where to go for the hosted / doc-only tools (PageAgent, Ruixen UI, MiniMax-01,
+Palmier Pro, Freebuff, Kling→socials).
+
+> First time double-clicking? macOS may block it ("unidentified developer").
+> Right-click the file → **Open** → **Open**, or run
+> `xattr -d com.apple.quarantine Install-Downloads.command` once.
+
 ---
 
 ## #106 — PageAgent copilot, tooling docs, Kling→socials workflow
