@@ -75,6 +75,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `SETUP-MOVIEPY.md` — MoviePy v2 (Python video editing) setup + v1→v2 migration; post-processing layer for HyperFrames renders (stitch Cuts, captions, aspect repurposing, GIFs)
 - `SETUP-MINIMAX-01.md` — MiniMax-01 (Text-01 456B MoE / VL-01) reference; long-context + multimodal foundation models. Cloud-first repo → use the hosted API/MCP, self-host only on a GPU cluster
 - `SETUP-DEEP-PLAYGROUND.md` — TensorFlow Deep Playground (TS + d3 neural-net visualization) reference; tangential teaching/demo tool, optionally vendored under `apps/playground/`
+- `SETUP-FREEBUFF.md` — Freebuff terminal AI coding-agent CLI reference (agent-CLI family alongside Hermes/Agent TARS/OpenManus); alternative coding agent, not a pipeline tool
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
 
