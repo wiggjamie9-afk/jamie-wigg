@@ -72,6 +72,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
 - `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
 - `SETUP-SD-WEBUI.md` — Stable Diffusion WebUI (AUTOMATIC1111) local image-gen setup; cloud-first repo, use only with a GPU machine
+- `SETUP-MOVIEPY.md` — MoviePy v2 (Python video editing) setup + v1→v2 migration; post-processing layer for HyperFrames renders (stitch Cuts, captions, aspect repurposing, GIFs)
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
 
