@@ -73,6 +73,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
 - `SETUP-SD-WEBUI.md` — Stable Diffusion WebUI (AUTOMATIC1111) local image-gen setup; cloud-first repo, use only with a GPU machine
 - `SETUP-MOVIEPY.md` — MoviePy v2 (Python video editing) setup + v1→v2 migration; post-processing layer for HyperFrames renders (stitch Cuts, captions, aspect repurposing, GIFs)
+- `SETUP-MINIMAX-01.md` — MiniMax-01 (Text-01 456B MoE / VL-01) reference; long-context + multimodal foundation models. Cloud-first repo → use the hosted API/MCP, self-host only on a GPU cluster
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
 
