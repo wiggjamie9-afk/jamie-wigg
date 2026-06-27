@@ -1,0 +1,304 @@
+{
+  "name": "RHYTHMIX — Sheets → Kling 2.1 → Socials",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Stage 1 — Trigger & Prompt Generation\nNew row in Google Sheets → Claude writes a Kling 2.1 video prompt from the row data.",
+        "height": 420,
+        "width": 520,
+        "color": 4
+      },
+      "id": "note-stage1",
+      "name": "Stage 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, -40]
+    },
+    {
+      "parameters": {
+        "content": "## Stage 2 — Submit Video Request\nCreate a Replicate prediction for the Kling 2.1 model with the generated prompt.",
+        "height": 420,
+        "width": 360,
+        "color": 5
+      },
+      "id": "note-stage2",
+      "name": "Stage 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [500, -40]
+    },
+    {
+      "parameters": {
+        "content": "## Stage 3 — Monitor Video Status\nWait 5s, poll the prediction, loop until status = succeeded.",
+        "height": 420,
+        "width": 480,
+        "color": 3
+      },
+      "id": "note-stage3",
+      "name": "Stage 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [880, -40]
+    },
+    {
+      "parameters": {
+        "content": "## Stage 4 — Retrieve & Update Results\nDownload the MP4, update the sheet, fan out to YouTube / TikTok / Instagram.",
+        "height": 620,
+        "width": 560,
+        "color": 2
+      },
+      "id": "note-stage4",
+      "name": "Stage 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1380, -40]
+    },
+
+    {
+      "parameters": {
+        "pollTimes": { "item": [ { "mode": "everyMinute" } ] },
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "list", "cachedResultName": "Sheet1" },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "trigger-sheets",
+      "name": "New Row (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [0, 160],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": { "id": "REPLACE_ME", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-opus-4-8\",\n  \"max_tokens\": 400,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You write vivid, camera-aware prompts for the Kling 2.1 text-to-video model. Return ONLY the prompt, one paragraph, no preamble. Subject/topic: {{ $json['Topic'] || $json['topic'] || $json['Prompt'] }}. Style: cinematic, beat-driven, RHYTHMIX neon aesthetic (deep near-black canvas, magenta #ff1f5a, cyan #00d8ff, electric green).\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "gen-prompt",
+      "name": "Generate Kling Prompt (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 160],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Anthropic x-api-key" }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "prompt",
+              "value": "={{ $json.content[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "rowNumber",
+              "value": "={{ $('New Row (Google Sheets)').item.json.row_number }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-prompt",
+      "name": "Extract Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [400, 160]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [ { "name": "content-type", "value": "application/json" } ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"version\": \"REPLACE_WITH_KLING_2_1_MODEL_VERSION_HASH\",\n  \"input\": {\n    \"prompt\": {{ JSON.stringify($json.prompt) }},\n    \"duration\": 5,\n    \"aspect_ratio\": \"16:9\"\n  }\n}",
+        "options": {}
+      },
+      "id": "submit-kling",
+      "name": "Submit to Kling (Replicate)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 160],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Replicate Bearer token" }
+      }
+    },
+
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "wait-5s",
+      "name": "Wait 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [940, 160],
+      "webhookId": "kling-poll-wait"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Submit to Kling (Replicate)').item.json.urls.get }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "check-status",
+      "name": "Check Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 160],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Replicate Bearer token" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "if-ready",
+      "name": "Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1300, 160]
+    },
+
+    {
+      "parameters": {
+        "url": "={{ $json.output }}",
+        "options": { "response": { "response": { "responseFormat": "file", "outputPropertyName": "video" } } }
+      },
+      "id": "download-video",
+      "name": "Download MP4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1520, 80]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "list", "cachedResultName": "Sheet1" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Extract Prompt').item.json.rowNumber }}",
+            "status": "done",
+            "video_url": "={{ $('Check Status').item.json.output }}"
+          },
+          "matchingColumns": [ "row_number" ]
+        },
+        "options": {}
+      },
+      "id": "update-sheet",
+      "name": "Update Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1520, 260],
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "REPLACE_ME", "name": "Google Sheets account" }
+      }
+    },
+
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Extract Prompt').item.json.prompt.slice(0, 90) }}",
+        "regionCode": "US",
+        "categoryId": "22",
+        "options": { "description": "={{ $('Extract Prompt').item.json.prompt }}", "privacyStatus": "private" }
+      },
+      "id": "upload-youtube",
+      "name": "Upload to YouTube",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [1760, 60],
+      "credentials": {
+        "youTubeOAuth2Api": { "id": "REPLACE_ME", "name": "YouTube account" }
+      }
+    },
+    {
+      "parameters": {
+        "content": "### TikTok\nWire the [TikTok Content Posting API](https://developers.tiktok.com/doc/content-posting-api-get-started) here:\n1. `POST /v2/post/publish/video/init/` (FILE_UPLOAD)\n2. PUT the binary from `Download MP4`\n3. poll `/v2/post/publish/status/fetch/`\nNeeds an approved TikTok app + OAuth.",
+        "height": 220,
+        "width": 320,
+        "color": 7
+      },
+      "id": "note-tiktok",
+      "name": "TikTok (HTTP — configure)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1760, 260]
+    },
+    {
+      "parameters": {
+        "content": "### Instagram\nUse the [Instagram Graph API](https://developers.facebook.com/docs/instagram-api/guides/content-publishing) (Reels):\n1. `POST /{ig-user-id}/media` (media_type=REELS, hosted `video_url`)\n2. poll container status\n3. `POST /{ig-user-id}/media_publish`\nNeeds an IG Business account + FB app. The video must be at a public URL — use `Check Status`.output or host it.",
+        "height": 240,
+        "width": 320,
+        "color": 6
+      },
+      "id": "note-instagram",
+      "name": "Instagram (HTTP — configure)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1760, 500]
+    }
+  ],
+  "connections": {
+    "New Row (Google Sheets)": { "main": [ [ { "node": "Generate Kling Prompt (Claude)", "type": "main", "index": 0 } ] ] },
+    "Generate Kling Prompt (Claude)": { "main": [ [ { "node": "Extract Prompt", "type": "main", "index": 0 } ] ] },
+    "Extract Prompt": { "main": [ [ { "node": "Submit to Kling (Replicate)", "type": "main", "index": 0 } ] ] },
+    "Submit to Kling (Replicate)": { "main": [ [ { "node": "Wait 5s", "type": "main", "index": 0 } ] ] },
+    "Wait 5s": { "main": [ [ { "node": "Check Status", "type": "main", "index": 0 } ] ] },
+    "Check Status": { "main": [ [ { "node": "Ready?", "type": "main", "index": 0 } ] ] },
+    "Ready?": {
+      "main": [
+        [ { "node": "Download MP4", "type": "main", "index": 0 }, { "node": "Update Sheet", "type": "main", "index": 0 } ],
+        [ { "node": "Wait 5s", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Download MP4": { "main": [ [ { "node": "Upload to YouTube", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "meta": { "templatecredsSetupCompleted": false }
+}
