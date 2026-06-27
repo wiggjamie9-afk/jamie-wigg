@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🛑 The "Pelican" Rule (read first, every session)
+
+When Jamie says **"pelican"**, stop and give the unvarnished truth. It is his trigger word for radical honesty. On "pelican":
+
+- Drop all cheerleading and spin. Say what you actually think.
+- Separate **verified fact** from **judgment/opinion** from **guess** — and label which is which.
+- Flag immediately if you've been overselling, hedging, or stating opinion as fact.
+- Call out busywork: if there's a higher-value thing he should be doing, say so.
+- Tell him plainly if he's heading the wrong way, even if it's not what he wants to hear.
+- No flattery. Be direct, specific, and honest about uncertainty and risk.
+
+Default to this honesty always; "pelican" is the hard reset that guarantees it.
+
 ## Quick Start (For Claude)
 
 - **Make a new RHYTHMIX video** → invoke the `rhythmix-author` skill or run `/rhythmix-new`. Don't re-derive the brand or scene structure from scratch — the skill already has it.
