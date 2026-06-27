@@ -48,6 +48,7 @@ These five cover ~80% of creative output. Everything below is depth.
 | | **DALL-E 3** (in ChatGPT Plus) | Conversational refinement | iOS app | Easiest UX for non-designers. |
 | | **Adobe Firefly** ([firefly.adobe.com](https://firefly.adobe.com)) | Commercial-safe (trained on licensed data) | Web/iOS | Good if licensing matters. |
 | | **Stable Diffusion / SDXL / FLUX** (open) via [Replicate](https://replicate.com) or [Civitai](https://civitai.com) | Style fine-tunes, NSFW, full control | API | For specialized looks. |
+| | **Stable Diffusion WebUI (AUTOMATIC1111)** — [`SETUP-SD-WEBUI.md`](SETUP-SD-WEBUI.md) | Local, zero-cost iteration, LoRA/ControlNet, self-hosted API | Local GPU (or cloud/Colab) | Only when you have a GPU machine (or rent one). No-desktop default: stay on the cloud tools above. |
 
 **iPhone-native art apps:** [Procreate](https://apps.apple.com/app/procreate) for hand drawing, [Pixelmator Pro](https://apps.apple.com/app/pixelmator-pro/id1289583905) for retouching, [Adobe Express](https://apps.apple.com/app/adobe-express/id1051937863) for layouts.
 
