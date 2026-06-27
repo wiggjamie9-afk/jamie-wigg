@@ -71,6 +71,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `SETUP-HERMES.md` — Hermes Agent CLI setup
 - `MORNING.md` / `MORNING-VOICES.md` — Codex of Reality morning brief
 - `VOICEBOX-SETUP.md` — Local voice cloning via Voicebox
+- `SETUP-SD-WEBUI.md` — Stable Diffusion WebUI (AUTOMATIC1111) local image-gen setup; cloud-first repo, use only with a GPU machine
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
 
