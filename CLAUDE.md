@@ -76,6 +76,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `SETUP-MINIMAX-01.md` — MiniMax-01 (Text-01 456B MoE / VL-01) reference; long-context + multimodal foundation models. Cloud-first repo → use the hosted API/MCP, self-host only on a GPU cluster
 - `SETUP-DEEP-PLAYGROUND.md` — TensorFlow Deep Playground (TS + d3 neural-net visualization) reference; tangential teaching/demo tool, optionally vendored under `apps/playground/`
 - `SETUP-FREEBUFF.md` — Freebuff terminal AI coding-agent CLI reference (agent-CLI family alongside Hermes/Agent TARS/OpenManus); alternative coding agent, not a pipeline tool
+- `SETUP-RUIXEN-UI.md` — Ruixen UI shadcn-compatible component catalog (240+ React components); fits `studio/` + `agent-builder/` (Next 15/React 19/Tailwind v4), re-skin via shadcn tokens to brand
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
 
