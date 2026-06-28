@@ -21,8 +21,11 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.join(__dirname, '..', 'apps', 'portraits');
 
-const API_KEY = process.env.HIGGSFIELD_API_KEY;
-const SECRET = process.env.HIGGSFIELD_SECRET;
+// .trim() guards against a trailing newline in the secret value (a common
+// copy-paste artifact) — a newline in the value makes the Authorization header
+// invalid ("Headers.append ... is an invalid header value").
+const API_KEY = (process.env.HIGGSFIELD_API_KEY || '').trim();
+const SECRET = (process.env.HIGGSFIELD_SECRET || '').trim();
 const FORCE = process.env.FORCE === '1';
 // Higgsfield platform REST API (matches the official @higgsfield/client SDK).
 const API_BASE = 'https://platform.higgsfield.ai';
