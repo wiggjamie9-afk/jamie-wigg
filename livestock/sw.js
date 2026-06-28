@@ -1,5 +1,5 @@
 // HerdCheck — service worker for offline-first
-const CACHE = 'herdcheck-v0.1.1';
+const CACHE = 'herdcheck-v0.1.2';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,8 @@ const ASSETS = [
   './db.js',
   './vision.js',
   './scoring.js',
+  './org.js',
+  './sync.js',
   './manifest.webmanifest',
   './icon.svg',
   './icon-192.png',
