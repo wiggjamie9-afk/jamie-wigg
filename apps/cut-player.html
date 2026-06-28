@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RHYTHMIX — Overview (60s)</title>
+<style>
+  /* ---- RHYTHMIX brand tokens (locked to DESIGN.md) ---- */
+  :root {
+    --canvas:   #08050d;
+    --magenta:  #ff1f5a;
+    --purple:   #7c3aed;
+    --cyan:     #00d8ff;
+    --green:    #00e887;
+    --gold:     #f5c000;
+    --pink:     #ff6fc8;
+    --text:     #ffffff;
+    --muted:    #a0a0b0;
+    --surface:  #1a1325;
+    --hairline: rgba(255,255,255,0.08);
+    --display: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1); /* expo-ish, no bounce */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--canvas);
+    color: var(--text);
+    font-family: var(--display);
+    line-height: 1.5;
+    min-height: 100vh;
+    /* localized glow, not a full-frame linear gradient (DESIGN.md) */
+    background-image:
+      radial-gradient(900px 600px at 80% -10%, rgba(124,58,237,0.22), transparent 60%),
+      radial-gradient(700px 520px at 10% 110%, rgba(255,31,90,0.16), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  ::selection { background: var(--magenta); color: #fff; }
+
+  a { color: var(--cyan); text-decoration: none; }
+
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: clamp(20px, 4vw, 44px) clamp(16px, 4vw, 36px) 64px;
+  }
+
+  /* ---- Header ---- */
+  header.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px 20px;
+    margin-bottom: clamp(20px, 3vw, 32px);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand .mark {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, var(--magenta), var(--purple));
+    box-shadow: 0 0 18px rgba(255,31,90,0.6);
+    flex: 0 0 auto;
+  }
+
+  .wordmark {
+    font-weight: 700;
+    font-size: clamp(15px, 2.4vw, 18px);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .meta-strip {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .meta-strip .dot { color: var(--purple); }
+  .meta-strip b { color: var(--text); font-weight: 600; }
+
+  /* ---- Title block ---- */
+  .titleblock { margin-bottom: clamp(20px, 3vw, 28px); }
+  .titleblock h1 {
+    font-size: clamp(28px, 6vw, 52px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.04;
+  }
+  .titleblock h1 .accent { color: var(--magenta); }
+  .titleblock p.sub {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: clamp(14px, 2.4vw, 16px);
+    max-width: 60ch;
+  }
+
+  /* ---- Layout grid ---- */
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr);
+    gap: clamp(18px, 2.6vw, 28px);
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Player ---- */
+  .player {
+    position: relative;
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    background: #05030a;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(124,58,237,0.18),
+      0 30px 80px -40px rgba(0,0,0,0.9),
+      0 0 90px -50px rgba(255,31,90,0.5);
+  }
+
+  .player .frame {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+  }
+
+  video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+  }
+
+  /* corner accent chrome */
+  .player .corner {
+    position: absolute;
+    width: 26px; height: 26px;
+    border: 2px solid var(--magenta);
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .player .corner.tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+  .player .corner.tr { top: 12px; right: 12px; border-left: none; border-bottom: none; }
+  .player .corner.bl { bottom: 12px; left: 12px; border-right: none; border-top: none; }
+  .player .corner.br { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+
+  /* scene badge over the video */
+  .scene-badge {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+    background: rgba(8,5,13,0.7);
+    border: 1px solid var(--hairline);
+    backdrop-filter: blur(6px);
+    padding: 6px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: opacity 0.3s var(--ease);
+  }
+  .scene-badge .num { color: var(--cyan); }
+
+  /* progress bar under player */
+  .progress-wrap {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    position: relative;
+    cursor: default;
+  }
+  .progress-bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    background: linear-gradient(90deg, var(--magenta), var(--cyan));
+    transition: width 0.12s linear;
+  }
+
+  .player .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--hairline);
+  }
+  .player .footer .time b { color: var(--text); font-weight: 600; }
+
+  /* error / fallback overlay */
+  .fallback {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 12px;
+    padding: 28px;
+    background:
+      radial-gradient(600px 400px at 50% 30%, rgba(124,58,237,0.25), transparent 70%),
+      #05030a;
+  }
+  .fallback.show { display: flex; }
+  .fallback .glyph {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--magenta);
+  }
+  .fallback h3 { font-size: clamp(18px, 3vw, 22px); font-weight: 700; }
+  .fallback p { color: var(--muted); font-size: 14px; max-width: 46ch; }
+  .fallback code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green);
+    background: rgba(0,232,135,0.08);
+    border: 1px solid rgba(0,232,135,0.2);
+    border-radius: 6px;
+    padding: 2px 7px;
+    display: inline-block;
+  }
+  .fallback .cmd {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 10px 14px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-align: left;
+  }
+
+  /* ---- Side rail ---- */
+  .rail { display: flex; flex-direction: column; gap: clamp(18px, 2.6vw, 24px); }
+
+  .panel {
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(26,19,37,0.6), rgba(26,19,37,0.25));
+    overflow: hidden;
+  }
+  .panel > .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .panel-head h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .panel-head .hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---- Chapters ---- */
+  .chapters { list-style: none; }
+  .chapter {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--hairline);
+    color: var(--text);
+    font-family: var(--display);
+    padding: 13px 16px;
+    cursor: pointer;
+    transition: background 0.25s var(--ease), padding-left 0.25s var(--ease);
+  }
+  .chapter:last-child { border-bottom: none; }
+  .chapter:hover { background: rgba(255,255,255,0.035); }
+  .chapter:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+
+  .chapter .idx {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    transition: all 0.25s var(--ease);
+  }
+  .chapter .body { min-width: 0; }
+  .chapter .label {
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+  .chapter .desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chapter .stamp {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .chapter.active {
+    background: linear-gradient(90deg, rgba(255,31,90,0.16), rgba(124,58,237,0.06));
+    padding-left: 20px;
+  }
+  .chapter.active::before {
+    content: "";
+    position: absolute;
+  }
+  .chapter.active .idx {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--magenta), var(--purple));
+    box-shadow: 0 0 16px rgba(255,31,90,0.45);
+  }
+  .chapter.active .stamp { color: var(--cyan); }
+  /* relative needed for active bar */
+  .chapter { position: relative; }
+  .chapter.active { box-shadow: inset 3px 0 0 var(--magenta); }
+
+  /* ---- Narration ---- */
+  .narration { padding: 6px 4px 8px; }
+  .narseg {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hairline);
+    cursor: pointer;
+    transition: background 0.25s var(--ease);
+  }
+  .narseg:last-child { border-bottom: none; }
+  .narseg:hover { background: rgba(255,255,255,0.03); }
+  .narseg .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    padding-top: 3px;
+    white-space: nowrap;
+  }
+  .narseg p {
+    font-size: 14px;
+    color: #d6d6e2;
+    line-height: 1.55;
+  }
+  .narseg p .hl { color: var(--gold); font-weight: 600; }
+  .narseg p .em { color: var(--cyan); font-weight: 600; }
+  .narseg.active { background: linear-gradient(90deg, rgba(0,216,255,0.08), transparent); }
+  .narseg.active .tag { color: var(--cyan); }
+  .narseg.active p { color: #fff; }
+
+  /* ---- Footer note ---- */
+  .pagefoot {
+    margin-top: clamp(28px, 4vw, 44px);
+    padding-top: 18px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .pagefoot .cta {
+    font-family: var(--display);
+    font-weight: 600;
+    letter-spacing: 0;
+    font-size: 13px;
+    color: var(--text);
+    border: 1px solid var(--magenta);
+    border-radius: 999px;
+    padding: 8px 16px;
+    transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  }
+  .pagefoot .cta:hover {
+    background: var(--magenta);
+    box-shadow: 0 0 24px rgba(255,31,90,0.5);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="top">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <span class="wordmark">RHYTHMIX</span>
+      </div>
+      <div class="meta-strip" aria-label="Render specification">
+        <span><b>1920×1080</b></span>
+        <span class="dot">·</span>
+        <span><b>60s</b></span>
+        <span class="dot">·</span>
+        <span>HyperFrames <b>0.4.42</b></span>
+      </div>
+    </header>
+
+    <div class="titleblock">
+      <p class="eyebrow">Canonical Cut · rhythmix-overview-60s</p>
+      <h1>Overview <span class="accent">/ 60s</span></h1>
+      <p class="sub">A complete studio in your pocket. The reference HyperFrames Promo — five crossfaded scenes from hook to waitlist. Jump to any beat below.</p>
+    </div>
+
+    <div class="grid">
+      <!-- ============ PLAYER ============ -->
+      <section class="player" aria-label="Video player">
+        <div class="frame">
+          <div class="corner tl"></div>
+          <div class="corner tr"></div>
+          <div class="corner bl"></div>
+          <div class="corner br"></div>
+
+          <div class="scene-badge" id="sceneBadge" hidden>
+            <span class="num">S1</span> · Hook
+          </div>
+
+          <video
+            id="player"
+            poster="../rhythmix-overview-60s/rhythmix-overview-60s-poster.jpg"
+            playsinline
+            preload="metadata"
+            controls>
+            <source src="../rhythmix-overview-60s/rhythmix-overview-60s.mp4" type="video/mp4" />
+          </video>
+
+          <div class="fallback" id="fallback" role="alert">
+            <span class="glyph">⚠ Stream offline</span>
+            <h3>The Cut couldn't load</h3>
+            <p>The MP4 is served as a static file relative to this page. If you opened this over <code>file://</code>, the browser blocks the relative path. Serve the repo root and reload:</p>
+            <div class="cmd">python3 -m http.server 8000
+# then open
+http://localhost:8000/apps/cut-player.html</div>
+          </div>
+        </div>
+
+        <div class="progress-wrap" aria-hidden="true">
+          <div class="progress-bar" id="progress"></div>
+        </div>
+
+        <div class="footer">
+          <div class="time"><b id="tCur">0:00</b> / <span id="tDur">1:00</span></div>
+          <div id="nowPlaying">Scene 1 — Hook</div>
+        </div>
+      </section>
+
+      <!-- ============ RAIL ============ -->
+      <aside class="rail">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Chapters</h2>
+            <span class="hint">tap to seek</span>
+          </div>
+          <ul class="chapters" id="chapters"></ul>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Narration</h2>
+            <span class="hint">script.txt</span>
+          </div>
+          <div class="narration" id="narration"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="pagefoot">
+      <span>RHYTHMIX — AI music platform · rhythmixapp.com.au</span>
+      <a class="cta" href="../launch.html">Join the waitlist →</a>
+    </div>
+
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Scene timeline (chapters seek video.currentTime) ----
+  // start/end in seconds; verbatim narration segmented to roughly align.
+  var SCENES = [
+    {
+      n: 1, start: 0,    end: 11,   label: "Hook → Wordmark",
+      desc: "What if making music didn't take years?",
+      tag: "0:00",
+      text: 'What if making music didn’t take years? <span class="em">No producer. No studio. No instrument.</span> Meet RHYTHMIX — an AI music platform that puts a complete studio in your pocket.'
+    },
+    {
+      n: 2, start: 10.5, end: 22,   label: "Four Pillars",
+      desc: "Generate · Master · Distribute · Earn",
+      tag: "0:11",
+      text: 'Four pillars. <span class="hl">Generate</span> — turn an idea into a track. <span class="hl">Master</span> — finish to a professional standard. <span class="hl">Distribute</span> — release to every major platform. <span class="hl">Earn</span> — build a real career around what you make.'
+    },
+    {
+      n: 3, start: 22,   end: 29,   label: "Three-Step Flow",
+      desc: "describe → refine → release",
+      tag: "0:22",
+      text: '<span class="em">Describe</span> a mood, a genre, a feeling. <span class="em">Refine</span> with AI tools that respond to plain language. Then <span class="em">release</span> everywhere your audience already listens.'
+    },
+    {
+      n: 4, start: 29,   end: 39,   label: "Audience Cards",
+      desc: "Who it's for",
+      tag: "0:29",
+      text: 'For the bedroom producer with great ideas and no gear. The first-time artist with no label. The solo creator scoring their own content. Anyone with something to say in sound.'
+    },
+    {
+      n: 5, start: 39,   end: 60,   label: "Waitlist CTA",
+      desc: "Coming soon",
+      tag: "0:39",
+      text: 'We’re not live yet — but the waitlist is. <span class="em">No payment. No pressure.</span> Just be first in line. <span class="hl">RHYTHMIX. Coming soon.</span>'
+    }
+  ];
+
+  var video      = document.getElementById("player");
+  var fallback   = document.getElementById("fallback");
+  var chaptersEl = document.getElementById("chapters");
+  var narrationEl= document.getElementById("narration");
+  var progress   = document.getElementById("progress");
+  var tCur       = document.getElementById("tCur");
+  var tDur       = document.getElementById("tDur");
+  var sceneBadge = document.getElementById("sceneBadge");
+  var nowPlaying = document.getElementById("nowPlaying");
+
+  var DURATION   = 60; // declared video duration
+  var activeIdx  = -1;
+
+  function fmt(t) {
+    if (!isFinite(t) || t < 0) t = 0;
+    var m = Math.floor(t / 60);
+    var s = Math.floor(t % 60);
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  // ---- Build chapter rail ----
+  SCENES.forEach(function (sc, i) {
+    var li = document.createElement("li");
+    var btn = document.createElement("button");
+    btn.className = "chapter";
+    btn.type = "button";
+    btn.setAttribute("data-idx", i);
+    btn.setAttribute("aria-label",
+      "Scene " + sc.n + ", " + sc.label + ", starts at " + sc.tag);
+    btn.innerHTML =
+      '<span class="idx">' + sc.n + '</span>' +
+      '<span class="body">' +
+        '<span class="label">' + sc.label + '</span>' +
+        '<span class="desc">' + sc.desc + '</span>' +
+      '</span>' +
+      '<span class="stamp">' + sc.tag + '</span>';
+    btn.addEventListener("click", function () { seekTo(i); });
+    li.appendChild(btn);
+    chaptersEl.appendChild(li);
+  });
+
+  // ---- Build narration panel ----
+  SCENES.forEach(function (sc, i) {
+    var seg = document.createElement("div");
+    seg.className = "narseg";
+    seg.setAttribute("data-idx", i);
+    seg.innerHTML =
+      '<span class="tag">S' + sc.n + '</span>' +
+      '<p>' + sc.text + '</p>';
+    seg.addEventListener("click", function () { seekTo(i); });
+    narrationEl.appendChild(seg);
+  });
+
+  var chapterBtns = chaptersEl.querySelectorAll(".chapter");
+  var narSegs     = narrationEl.querySelectorAll(".narseg");
+
+  function seekTo(i) {
+    var sc = SCENES[i];
+    if (!sc) return;
+    try {
+      video.currentTime = sc.start + 0.01; // nudge so timeupdate lands in-scene
+    } catch (e) { /* metadata not ready yet */ }
+    var p = video.play();
+    if (p && typeof p.catch === "function") { p.catch(function () {}); }
+    setActive(i);
+  }
+
+  function setActive(i) {
+    if (i === activeIdx) return;
+    activeIdx = i;
+    chapterBtns.forEach(function (b, j) {
+      b.classList.toggle("active", j === i);
+    });
+    narSegs.forEach(function (s, j) {
+      s.classList.toggle("active", j === i);
+    });
+    var sc = SCENES[i];
+    if (sc) {
+      sceneBadge.hidden = false;
+      sceneBadge.innerHTML =
+        '<span class="num">S' + sc.n + '</span> · ' + sc.label;
+      nowPlaying.textContent = "Scene " + sc.n + " — " + sc.label;
+    }
+  }
+
+  function sceneForTime(t) {
+    // pick the latest scene whose window has started (handles overlap windows)
+    var idx = 0;
+    for (var i = 0; i < SCENES.length; i++) {
+      if (t >= SCENES[i].start - 0.001) idx = i;
+    }
+    return idx;
+  }
+
+  // ---- Sync on playback ----
+  video.addEventListener("timeupdate", function () {
+    var t = video.currentTime;
+    var dur = isFinite(video.duration) && video.duration > 0 ? video.duration : DURATION;
+    tCur.textContent = fmt(t);
+    progress.style.width = Math.min(100, (t / dur) * 100) + "%";
+    setActive(sceneForTime(t));
+  });
+
+  var mediaLoaded = false;
+  ["loadedmetadata", "loadeddata", "canplay"].forEach(function (ev) {
+    video.addEventListener(ev, function () { mediaLoaded = true; });
+  });
+
+  video.addEventListener("loadedmetadata", function () {
+    if (isFinite(video.duration) && video.duration > 0) {
+      DURATION = video.duration;
+      tDur.textContent = fmt(video.duration);
+    }
+  });
+
+  video.addEventListener("ended", function () {
+    progress.style.width = "100%";
+  });
+
+  // initialize first chapter as active
+  setActive(0);
+  sceneBadge.hidden = false;
+
+  // ---- Graceful failure (e.g. opened via file://) ----
+  function showFallback() {
+    fallback.classList.add("show");
+    sceneBadge.hidden = true;
+  }
+  video.addEventListener("error", showFallback);
+  var srcEl = video.querySelector("source");
+  if (srcEl) { srcEl.addEventListener("error", showFallback); }
+
+  // Backstop for file:// or a missing source. Only surfaces on a genuine
+  // failure signal (media error or NETWORK_NO_SOURCE) — never just because a
+  // large video is still buffering on a slow connection.
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      if (!mediaLoaded && (video.error || video.networkState === 3)) {
+        showFallback();
+      }
+    }, 4000);
+  });
+})();
+</script>
+</body>
+</html>

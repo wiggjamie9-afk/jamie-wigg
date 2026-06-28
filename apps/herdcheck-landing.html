@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HerdCheck — phone-camera livestock screening</title>
+<meta name="description" content="HerdCheck is an offline-first phone app that helps smallholder farmers screen cattle, buffalo, sheep and goats for lameness, mastitis and imminent calving — no account, no server, your data stays on your phone.">
+<style>
+  :root {
+    --green-900: #14361f;
+    --green-800: #1c4a2b;
+    --green-700: #246138;
+    --green-600: #2f7d49;
+    --green-500: #3f9a5d;
+    --green-100: #e3efe6;
+    --green-50:  #f2f8f3;
+
+    --earth-900: #3a2f24;
+    --earth-700: #6b5a45;
+    --earth-300: #cbb89c;
+
+    --amber:     #c8821a;
+    --amber-bg:  #fbf1dd;
+    --red:       #b23b2e;
+    --red-bg:    #fbe6e2;
+    --grass:     #4d8b3f;
+
+    --ink:       #20281f;
+    --ink-soft:  #4a5347;
+    --line:      #d6e0d6;
+    --paper:     #fbfaf6;
+    --paper-2:   #f4f3ec;
+    --white:     #ffffff;
+
+    --maxw: 1120px;
+    --r:    16px;
+    --r-sm: 10px;
+
+    --font: "Segoe UI", Roboto, "Helvetica Neue", system-ui, -apple-system, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    font-family: var(--font);
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.6;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 { line-height: 1.12; letter-spacing: -0.02em; margin: 0; font-weight: 800; }
+  h1 { font-size: clamp(2.1rem, 6vw, 3.5rem); }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+  h3 { font-size: 1.18rem; letter-spacing: -0.01em; }
+  p  { margin: 0; }
+  a  { color: inherit; }
+
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--green-700);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    min-height: 56px;
+    padding: 0 28px;
+    border-radius: 999px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+  .btn-primary {
+    background: var(--green-600);
+    color: #fff;
+    box-shadow: 0 8px 22px rgba(31,74,43,.28);
+  }
+  .btn-primary:hover { background: var(--green-700); transform: translateY(-2px); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--green-800);
+    border-color: var(--green-600);
+  }
+  .btn-ghost:hover { background: var(--green-100); }
+
+  /* ---------- Header ---------- */
+  header.site {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(251,250,246,.86);
+    backdrop-filter: saturate(140%) blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 66px;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; font-weight: 800; font-size: 1.18rem; letter-spacing: -0.02em; }
+  .brand .mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--green-600);
+    display: grid; place-items: center;
+    flex: none;
+  }
+  .nav-links { display: none; gap: 26px; font-size: 0.97rem; font-weight: 600; color: var(--ink-soft); }
+  .nav-links a { text-decoration: none; }
+  .nav-links a:hover { color: var(--green-700); }
+  .nav .btn { min-height: 44px; padding: 0 20px; font-size: 0.95rem; }
+  @media (min-width: 820px) { .nav-links { display: flex; } }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 120% at 88% -10%, rgba(63,154,93,.16), transparent 55%),
+      linear-gradient(180deg, var(--green-50), var(--paper) 70%);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero-grid {
+    display: grid;
+    gap: 44px;
+    padding: 56px 0 64px;
+    align-items: center;
+  }
+  @media (min-width: 940px) {
+    .hero-grid { grid-template-columns: 1.05fr 0.95fr; padding: 84px 0 88px; gap: 56px; }
+  }
+  .hero h1 { margin-top: 16px; }
+  .hero .lede {
+    margin-top: 22px;
+    font-size: clamp(1.08rem, 2.4vw, 1.3rem);
+    color: var(--ink-soft);
+    max-width: 38ch;
+  }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; }
+  .hero-note { margin-top: 20px; font-size: 0.92rem; color: var(--earth-700); display: flex; align-items: center; gap: 9px; }
+
+  /* Phone mock */
+  .phone {
+    margin: 0 auto;
+    width: min(300px, 78vw);
+    background: #11271a;
+    border-radius: 34px;
+    padding: 12px;
+    box-shadow: 0 30px 60px rgba(20,54,31,.34), inset 0 0 0 2px rgba(255,255,255,.06);
+  }
+  .phone-screen {
+    background: var(--paper);
+    border-radius: 24px;
+    overflow: hidden;
+    aspect-ratio: 9 / 18.5;
+    display: flex;
+    flex-direction: column;
+  }
+  .ps-top {
+    background: var(--green-700);
+    color: #fff;
+    padding: 18px 16px 14px;
+  }
+  .ps-top small { opacity: .8; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+  .ps-top .h { font-weight: 800; font-size: 1.05rem; margin-top: 3px; }
+  .ps-body { padding: 13px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .ps-row {
+    display: flex; align-items: center; gap: 11px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    padding: 11px 12px;
+  }
+  .dot { width: 13px; height: 13px; border-radius: 50%; flex: none; }
+  .dot.red { background: var(--red); }
+  .dot.amber { background: var(--amber); }
+  .dot.green { background: var(--grass); }
+  .ps-row .tag { font-weight: 700; font-size: .92rem; }
+  .ps-row .sub { font-size: .76rem; color: var(--ink-soft); }
+  .ps-row .right { margin-left: auto; font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .right.red { background: var(--red-bg); color: var(--red); }
+  .right.amber { background: var(--amber-bg); color: var(--amber); }
+  .right.green { background: var(--green-100); color: var(--green-700); }
+
+  /* ---------- Section scaffolding ---------- */
+  section { padding: 68px 0; }
+  .sec-head { max-width: 56ch; margin-bottom: 40px; }
+  .sec-head h2 { margin-top: 12px; }
+  .sec-head p { margin-top: 14px; color: var(--ink-soft); font-size: 1.08rem; }
+
+  .alt { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .dark {
+    background:
+      radial-gradient(120% 130% at 10% 0%, rgba(63,154,93,.22), transparent 50%),
+      var(--green-900);
+    color: #e8f1e9;
+    border-top: none; border-bottom: none;
+  }
+  .dark .eyebrow { color: #8fd3a4; }
+  .dark .sec-head p { color: #bcd4c0; }
+
+  /* ---------- Checks ---------- */
+  .checks { display: grid; gap: 20px; }
+  @media (min-width: 760px) { .checks { grid-template-columns: repeat(3, 1fr); } }
+  .check-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 26px 24px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 0 rgba(20,54,31,.03);
+  }
+  .check-card .icon {
+    width: 52px; height: 52px; border-radius: 13px;
+    display: grid; place-items: center;
+    background: var(--green-100);
+    margin-bottom: 18px;
+  }
+  .check-card h3 { margin-bottom: 4px; }
+  .check-card .basis {
+    font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--green-700); margin-bottom: 14px;
+  }
+  .check-card p { color: var(--ink-soft); font-size: .98rem; }
+  .check-card .divider { height: 1px; background: var(--line); margin: 18px 0 14px; }
+  .tier-legend { display: flex; flex-direction: column; gap: 8px; font-size: .87rem; }
+  .tier-legend div { display: flex; align-items: center; gap: 9px; }
+  .tier-legend b { font-weight: 700; }
+  .tier-legend span { color: var(--ink-soft); }
+
+  /* ---------- Species ---------- */
+  .species { display: grid; gap: 16px; }
+  @media (min-width: 560px) { .species { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 880px) { .species { grid-template-columns: repeat(4, 1fr); } }
+  .species-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 24px 22px;
+    text-align: left;
+  }
+  .species-card .emoji { font-size: 2.3rem; line-height: 1; }
+  .species-card h3 { margin-top: 14px; font-size: 1.25rem; }
+  .species-card .gest {
+    margin-top: 10px;
+    font-size: 2rem; font-weight: 800; color: var(--green-700); letter-spacing: -0.03em;
+  }
+  .species-card .gest small { font-size: .8rem; font-weight: 600; color: var(--ink-soft); letter-spacing: 0; }
+  .species-card p { margin-top: 6px; font-size: .9rem; color: var(--ink-soft); }
+
+  /* ---------- How it works ---------- */
+  .steps { display: grid; gap: 22px; counter-reset: step; }
+  @media (min-width: 820px) { .steps { grid-template-columns: repeat(3, 1fr); gap: 26px; } }
+  .step { position: relative; padding-left: 60px; }
+  .step .num {
+    position: absolute; left: 0; top: 2px;
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--green-600); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 1.2rem;
+  }
+  .step h3 { margin-bottom: 6px; }
+  .step p { color: var(--ink-soft); font-size: .98rem; }
+
+  /* ---------- Trust ---------- */
+  .trust-grid { display: grid; gap: 18px; }
+  @media (min-width: 720px) { .trust-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .trust-grid { grid-template-columns: repeat(4, 1fr); } }
+  .trust-card {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: var(--r);
+    padding: 24px 22px;
+  }
+  .trust-card .icon { margin-bottom: 14px; }
+  .trust-card h3 { font-size: 1.08rem; margin-bottom: 7px; }
+  .trust-card p { font-size: .93rem; color: #bcd4c0; }
+
+  /* ---------- Honesty callout ---------- */
+  .note-band {
+    border: 1px solid var(--earth-300);
+    background: var(--amber-bg);
+    border-radius: var(--r);
+    padding: 26px 26px;
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+  }
+  .note-band .ic { flex: none; margin-top: 2px; }
+  .note-band h3 { color: var(--earth-900); margin-bottom: 6px; font-size: 1.1rem; }
+  .note-band p { color: var(--earth-900); font-size: .98rem; }
+
+  /* ---------- Final CTA ---------- */
+  .final {
+    text-align: center;
+    background:
+      radial-gradient(120% 120% at 50% -20%, rgba(63,154,93,.18), transparent 60%),
+      linear-gradient(180deg, var(--green-50), var(--paper));
+  }
+  .final h2 { max-width: 18ch; margin: 0 auto; }
+  .final p { max-width: 50ch; margin: 16px auto 0; color: var(--ink-soft); font-size: 1.1rem; }
+  .final .hero-cta { justify-content: center; }
+
+  /* ---------- Footer ---------- */
+  footer.site {
+    background: var(--green-900);
+    color: #c4d6c8;
+    padding: 40px 0 34px;
+  }
+  .foot {
+    display: flex; flex-wrap: wrap; gap: 18px 28px;
+    align-items: center; justify-content: space-between;
+  }
+  .foot .brand { color: #fff; }
+  .foot .brand .mark { background: var(--green-500); }
+  .foot nav { display: flex; flex-wrap: wrap; gap: 18px; font-size: .92rem; }
+  .foot nav a { color: #aecbb4; text-decoration: none; }
+  .foot nav a:hover { color: #fff; }
+  .foot .fine { width: 100%; font-size: .82rem; color: #88a591; border-top: 1px solid rgba(255,255,255,.1); padding-top: 18px; margin-top: 4px; }
+
+  svg { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="#top" style="text-decoration:none;color:inherit">
+      <span class="mark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </span>
+      HerdCheck
+    </a>
+    <nav class="nav-links">
+      <a href="#checks">The checks</a>
+      <a href="#species">Species</a>
+      <a href="#how">How it works</a>
+      <a href="#trust">Your data</a>
+    </nav>
+    <a class="btn btn-primary" href="../livestock/index.html">Open HerdCheck</a>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top" style="padding:0">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Offline livestock screening &middot; built for the phone in your pocket</span>
+      <h1>Catch a sick animal before it costs you the herd.</h1>
+      <p class="lede">HerdCheck turns your phone camera into a structured health check for cattle, buffalo, sheep and goats — lameness, mastitis and imminent calving — and gives you a clear red, amber or green next step.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="../livestock/index.html">
+          Open HerdCheck
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="#checks">See the three checks</a>
+      </div>
+      <p class="hero-note">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+        No account. No server. Works with no signal.
+      </p>
+    </div>
+
+    <!-- Phone mock: herd dashboard -->
+    <div class="phone" aria-hidden="true">
+      <div class="phone-screen">
+        <div class="ps-top">
+          <small>Herd dashboard</small>
+          <div class="h">12 animals &middot; sorted by risk</div>
+        </div>
+        <div class="ps-body">
+          <div class="ps-row">
+            <span class="dot red"></span>
+            <span>
+              <span class="tag" style="display:block">Ear tag 047 &middot; Cow</span>
+              <span class="sub">Mastitis &middot; clotted milk</span>
+            </span>
+            <span class="right red">URGENT</span>
+          </div>
+          <div class="ps-row">
+            <span class="dot red"></span>
+            <span>
+              <span class="tag" style="display:block">Ear tag 112 &middot; Buffalo</span>
+              <span class="sub">Calving &middot; within 24 hrs</span>
+            </span>
+            <span class="right red">URGENT</span>
+          </div>
+          <div class="ps-row">
+            <span class="dot amber"></span>
+            <span>
+              <span class="tag" style="display:block">Ear tag 089 &middot; Goat</span>
+              <span class="sub">Lameness &middot; score 3/5</span>
+            </span>
+            <span class="right amber">WATCH</span>
+          </div>
+          <div class="ps-row">
+            <span class="dot green"></span>
+            <span>
+              <span class="tag" style="display:block">Ear tag 023 &middot; Sheep</span>
+              <span class="sub">All checks clear</span>
+            </span>
+            <span class="right green">OK</span>
+          </div>
+          <div class="ps-row">
+            <span class="dot green"></span>
+            <span>
+              <span class="tag" style="display:block">Ear tag 031 &middot; Cow</span>
+              <span class="sub">All checks clear</span>
+            </span>
+            <span class="right green">OK</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE CHECKS ============ -->
+<section id="checks">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Three structured checks</span>
+      <h2>Made for the 30-cow farmer with no formal training.</h2>
+      <p>A vet with years of experience can spot these signs. HerdCheck helps you make the same observations, score them the same way every time, and know when it's time to call for help. Each check ends in a tier and a plain-language action list.</p>
+    </div>
+
+    <div class="checks">
+
+      <!-- Lameness -->
+      <article class="check-card">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M6 20l2-9 4 2 2-6 4 13"/></svg>
+        </div>
+        <h3>Lameness</h3>
+        <div class="basis">Sprecher 5-point locomotion scale</div>
+        <p>Record a short clip of the animal walking, then score its gait on the published 1&ndash;5 locomotion scale — back arch, stride length and weight-bearing. The score is the signal; nothing overrides it.</p>
+        <div class="divider"></div>
+        <div class="tier-legend">
+          <div><span class="dot red"></span><span><b>Score 4&ndash;5</b> &mdash; clear lameness, inspect hooves today</span></div>
+          <div><span class="dot amber"></span><span><b>Score 2&ndash;3</b> &mdash; early signs, re-score in 48 hrs</span></div>
+          <div><span class="dot green"></span><span><b>Score 1</b> &mdash; normal gait</span></div>
+        </div>
+      </article>
+
+      <!-- Mastitis -->
+      <article class="check-card">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10M8 4c0 4-3 5-3 10a7 7 0 0 0 14 0c0-5-3-6-3-10"/><path d="M12 14v4"/></svg>
+        </div>
+        <h3>Mastitis</h3>
+        <div class="basis">Visible signs + milk + photo check</div>
+        <p>Tick the visible signs — swelling, asymmetry, redness, heat, pain, yield drop — and pick the milk appearance (normal, watery, clotted, bloody). A photo of the udder adds a light corroborating signal, never the deciding one.</p>
+        <div class="divider"></div>
+        <div class="tier-legend">
+          <div><span class="dot red"></span><span><b>Clotted or bloody milk</b>, or heavy signs &mdash; withhold milk, call vet</span></div>
+          <div><span class="dot amber"></span><span><b>Some signs present</b> &mdash; strip the quarter, re-check in 12 hrs</span></div>
+          <div><span class="dot green"></span><span><b>No signs today</b> &mdash; maintain teat hygiene</span></div>
+        </div>
+      </article>
+
+      <!-- Calving -->
+      <article class="check-card">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <h3>Calving predictor</h3>
+        <div class="basis">Gestation day + pre-calving signs</div>
+        <p>From the breeding date and the species' gestation length, HerdCheck works out how many days are left, then weighs the pre-calving signs you observe — bagging up, vulva swelling, mucus, restlessness, water bag. A visible water bag forces "active labour" on its own.</p>
+        <div class="divider"></div>
+        <div class="tier-legend">
+          <div><span class="dot red"></span><span><b>Within 24 hrs or water bag</b> &mdash; move to a clean calving area now</span></div>
+          <div><span class="dot amber"></span><span><b>Within 1&ndash;14 days</b> &mdash; prepare the pen, check twice daily</span></div>
+          <div><span class="dot green"></span><span><b>Still weeks out</b> &mdash; routine monitoring</span></div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ SPECIES ============ -->
+<section id="species" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Built around your animals</span>
+      <h2>Four species, the right gestation length for each.</h2>
+      <p>The calving predictor uses species-specific gestation defaults so the days-left estimate is honest for whatever you keep. It's only ever as accurate as the breeding date you enter.</p>
+    </div>
+
+    <div class="species">
+      <div class="species-card">
+        <div class="emoji">🐄</div>
+        <h3>Cattle</h3>
+        <div class="gest">283 <small>days</small></div>
+        <p>Dairy and dual-purpose cows.</p>
+      </div>
+      <div class="species-card">
+        <div class="emoji">🐃</div>
+        <h3>Buffalo</h3>
+        <div class="gest">310 <small>days</small></div>
+        <p>Water buffalo dairy herds.</p>
+      </div>
+      <div class="species-card">
+        <div class="emoji">🐑</div>
+        <h3>Sheep</h3>
+        <div class="gest">147 <small>days</small></div>
+        <p>Ewes in small flocks.</p>
+      </div>
+      <div class="species-card">
+        <div class="emoji">🐐</div>
+        <h3>Goat</h3>
+        <div class="gest">150 <small>days</small></div>
+        <p>Dairy and meat does.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Three taps in the field</span>
+      <h2>Point the camera, answer a few prompts, get an action.</h2>
+      <p>No reading manuals. No internet round-trips. Everything happens on the phone, in seconds, even in a shed with no signal.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <span class="num">1</span>
+        <h3>Point the camera</h3>
+        <p>Film a few seconds of the animal walking, or snap the udder. The capture stays on your device — nothing is uploaded.</p>
+      </div>
+      <div class="step">
+        <span class="num">2</span>
+        <h3>Answer a few prompts</h3>
+        <p>Tap through the structured checklist — large buttons, plain words, your language. Add the breeding date once and HerdCheck tracks the rest.</p>
+      </div>
+      <div class="step">
+        <span class="num">3</span>
+        <h3>Get a red / amber / green action</h3>
+        <p>A clear risk tier with the reasons behind it and concrete next steps written for a non-vet — then the worst-off animals rise to the top of your herd list.</p>
+      </div>
+    </div>
+
+    <div class="note-band" style="margin-top:44px">
+      <span class="ic">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      </span>
+      <div>
+        <h3>It's decision support, not a diagnosis.</h3>
+        <p>The photo analysis is a coarse colour-and-symmetry heuristic that can only nudge a result — it can never flip a clear result on its own, and it is not a computer-vision diagnosis. HerdCheck helps you observe, score and track consistently. It does not replace a vet or extension worker. Any red mastitis result means withholding that animal's milk from human consumption until a vet has reviewed it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRUST / OFFLINE ============ -->
+<section id="trust" class="dark">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Field-ready by design</span>
+      <h2>Offline-first. No account. Your data stays on your phone.</h2>
+      <p>HerdCheck was built for low-coverage areas and farmers who shouldn't have to trust a server with their herd. By default, nothing leaves the device.</p>
+    </div>
+
+    <div class="trust-grid">
+      <div class="trust-card">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8fd3a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14 0M1.4 8.5a16 16 0 0 1 21.2 0M8.5 16.4a6 6 0 0 1 7 0"/><path d="M12 20h.01"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+        </div>
+        <h3>Works fully offline</h3>
+        <p>A service worker and on-device database mean every check runs with no signal. Nothing syncs unless you choose to export.</p>
+      </div>
+      <div class="trust-card">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8fd3a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </div>
+        <h3>No login, no telemetry</h3>
+        <p>No account to create, no password to lose, no tracking. Your animals, observations and photos live in your phone's storage alone.</p>
+      </div>
+      <div class="trust-card">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8fd3a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 3h9l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M9 14l2 2 4-4"/></svg>
+        </div>
+        <h3>You own the export</h3>
+        <p>Only you decide if data leaves the device — export to CSV for a co-op, JSON for a full backup, or share an alerts summary by SMS.</p>
+      </div>
+      <div class="trust-card">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8fd3a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14M5 8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><circle cx="12" cy="14" r="2.5"/></svg>
+        </div>
+        <h3>Install it like an app</h3>
+        <p>Add HerdCheck to your home screen for a full-screen experience on Android and iOS — big tap targets and sunlight-readable colours.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="final">
+  <div class="wrap">
+    <span class="eyebrow">Free to open &middot; runs in your browser</span>
+    <h2 style="margin-top:14px">Start screening your herd today.</h2>
+    <p>~500 million smallholder farmers keep livestock with no screening tools at all. HerdCheck is built for the phone already in your pocket.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="../livestock/index.html">
+        Open HerdCheck
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site">
+  <div class="wrap foot">
+    <div class="brand">
+      <span class="mark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#13361f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </span>
+      HerdCheck
+    </div>
+    <nav>
+      <a href="#checks">The checks</a>
+      <a href="#species">Species</a>
+      <a href="#how">How it works</a>
+      <a href="#trust">Your data</a>
+      <a href="../livestock/index.html">Open the app</a>
+    </nav>
+    <p class="fine">
+      HerdCheck provides decision support, not veterinary diagnosis, and does not replace a vet or extension worker. Risk tiers are grounded in published references — the Sprecher 5-point locomotion scale, clinical mastitis signs, and species gestation windows. Photo analysis is a coarse corroborating heuristic only. &copy; 2026 HerdCheck.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
