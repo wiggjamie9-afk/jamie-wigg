@@ -25,6 +25,22 @@ generative-AI processing is closed and gated behind login + subscription.
 > bookmark for when/if a Mac is in the loop. The free editor + MCP server need no
 > login; only the gen-AI features cost money.
 
+## Install (on a Mac)
+
+A helper script downloads the latest `.dmg` and opens it for you. Run it **on a
+Mac** (Apple Silicon, macOS 26 Tahoe) — it guards against Linux/Intel and exits
+early, so it's a no-op in this repo's cloud sandbox:
+
+```bash
+bash scripts/install-palmier-mac.sh
+```
+
+It pulls the newest release from GitHub (falling back to a pinned version),
+drops `PalmierPro.dmg` in `~/Downloads`, and opens the disk image. Then drag
+Palmier Pro into Applications and launch it (first launch: right-click → Open to
+clear Gatekeeper). Editing your own footage is free; in-timeline gen-AI needs
+login + subscription.
+
 ## Connect the MCP server
 
 The app must be **open** — it serves MCP at `http://127.0.0.1:19789/mcp` over
