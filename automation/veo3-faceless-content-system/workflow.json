@@ -210,7 +210,7 @@
     {
       "parameters": {
         "url": "={{ $json.video.url }}",
-        "options": { "response": { "response": { "responseFormat": "file", "outputPropertyName": "video" } } }
+        "options": { "response": { "response": { "responseFormat": "file", "outputPropertyName": "data" } } }
       },
       "id": "download-video",
       "name": "Download MP4",
@@ -251,20 +251,24 @@
         "url": "https://api.upload-post.com/api/upload",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [ { "name": "content-type", "value": "application/json" } ]
-        },
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"user\": \"REPLACE_UPLOADPOST_USER\",\n  \"platform\": [\"tiktok\", \"instagram\"],\n  \"title\": {{ JSON.stringify($('Set Variables for Video').item.json.prompt.slice(0, 120)) }},\n  \"video\": {{ JSON.stringify($('Get Video URL').item.json.video.url) }}\n}",
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "user", "value": "jamie28" },
+            { "name": "title", "value": "={{ $('Set Variables for Video').item.json.prompt.slice(0, 120) }}" },
+            { "name": "platform[]", "value": "tiktok" },
+            { "name": "platform[]", "value": "instagram" },
+            { "parameterType": "formBinaryData", "name": "video", "inputDataFieldName": "data" }
+          ]
+        },
         "options": {}
       },
       "id": "post-tiktok-ig",
       "name": "Post to TikTok + Instagram (upload-post.com)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1780, 420],
+      "position": [2260, 200],
       "credentials": {
         "httpHeaderAuth": { "id": "REPLACE_ME", "name": "upload-post.com Apikey" }
       }
@@ -290,7 +294,7 @@
 
     {
       "parameters": {
-        "content": "### Posting options\n**Primary path (this node):** [upload-post.com](https://upload-post.com) posts to **TikTok + Instagram Reels** in one call using the public fal.ai `video.url`. Set the `user` field + `Apikey` credential.\n\n**Direct-API alternative (no third party):**\n- **TikTok** — [Content Posting API](https://developers.tiktok.com/doc/content-posting-api-get-started): `POST /v2/post/publish/video/init/` (PULL_FROM_URL with the fal URL) → poll `/v2/post/publish/status/fetch/`.\n- **Instagram Reels** — [Graph API](https://developers.facebook.com/docs/instagram-api/guides/content-publishing): `POST /{ig-user-id}/media` (media_type=REELS, `video_url`) → poll container → `POST /{ig-user-id}/media_publish`.\n\nEach direct path needs an approved app + OAuth that only you can set up.",
+        "content": "### Posting options\n**Primary path (this node):** [upload-post.com](https://upload-post.com) posts to **TikTok + Instagram Reels** in one call. It uses **multipart/form-data** — fields `user`, `title`, repeated `platform[]`, and the MP4 binary as `video` (taken from the `Download MP4` node's `data` property). Set the `Apikey` credential; the `user` field is preset to `jamie28` — change it if your upload-post profile differs.\n\nTo also post **YouTube** here, add another `platform[]` = `youtube` (connect YouTube in upload-post first) and you can delete the native `Upload to YouTube Shorts` node + its Google OAuth.\n\n**Direct-API alternative (no third party):**\n- **TikTok** — [Content Posting API](https://developers.tiktok.com/doc/content-posting-api-get-started): `POST /v2/post/publish/video/init/` (PULL_FROM_URL with the fal URL) → poll `/v2/post/publish/status/fetch/`.\n- **Instagram Reels** — [Graph API](https://developers.facebook.com/docs/instagram-api/guides/content-publishing): `POST /{ig-user-id}/media` (media_type=REELS, `video_url`) → poll container → `POST /{ig-user-id}/media_publish`.\n\nEach direct path needs an approved app + OAuth that only you can set up.",
         "height": 300,
         "width": 360,
         "color": 7
@@ -319,12 +323,18 @@
       "main": [
         [
           { "node": "Download MP4", "type": "main", "index": 0 },
-          { "node": "Update Sheet", "type": "main", "index": 0 },
-          { "node": "Post to TikTok + Instagram (upload-post.com)", "type": "main", "index": 0 }
+          { "node": "Update Sheet", "type": "main", "index": 0 }
         ]
       ]
     },
-    "Download MP4": { "main": [ [ { "node": "Upload to YouTube Shorts", "type": "main", "index": 0 } ] ] }
+    "Download MP4": {
+      "main": [
+        [
+          { "node": "Upload to YouTube Shorts", "type": "main", "index": 0 },
+          { "node": "Post to TikTok + Instagram (upload-post.com)", "type": "main", "index": 0 }
+        ]
+      ]
+    }
   },
   "settings": { "executionOrder": "v1" },
   "pinData": {},

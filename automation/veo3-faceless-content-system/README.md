@@ -50,15 +50,16 @@ Drop a new row with an `Idea`, and the pipeline does the rest.
 | `New Row (Google Sheets)`, `Update Sheet` | Google Sheets OAuth2 | Your Google account with access to the sheet. |
 | `Generate VEO3 Prompt (Claude)` | **Header Auth** | Header name `x-api-key`, value = your Anthropic API key. |
 | `Submit to VEO3 (fal.ai)`, `Check Status`, `Get Video URL` | **Header Auth** | Header name `Authorization`, value `Key <your_fal_key>`. |
-| `Post to TikTok + Instagram (upload-post.com)` | **Header Auth** | Header name `Authorization`, value `Apikey <your_upload-post_key>`. |
+| `Post to TikTok + Instagram (upload-post.com)` | **Header Auth** | Header name `Authorization`, value `Apikey <your_upload-post_key>`. (Do **not** set a `content-type` header — n8n sets the multipart boundary.) |
 | `Upload to YouTube Shorts` | YouTube OAuth2 | Your YouTube channel. |
 
 ## Placeholders to replace
 
 1. **`YOUR_GOOGLE_SHEET_ID`** — in both Google Sheets nodes (the trigger and
    `Update Sheet`). It's the long ID in your sheet's URL.
-2. **`REPLACE_UPLOADPOST_USER`** — in `Post to TikTok + Instagram`. The
-   upload-post.com profile that has TikTok + Instagram connected.
+2. **upload-post `user`** — in `Post to TikTok + Instagram`, the `user` form
+   field is preset to `jamie28`. Change it only if your upload-post profile name
+   differs. (That profile must have TikTok + Instagram connected.)
 3. The model is **`fal-ai/veo3/fast`** (cheaper, fast). For full quality switch
    the URL in `Submit to VEO3 (fal.ai)` to `https://queue.fal.run/fal-ai/veo3`.
 
@@ -88,13 +89,14 @@ for a worked Replicate-based example.
 
 ## Posting — TikTok & Instagram
 
-The primary path uses **upload-post.com**, which accepts the public fal.ai
-`video.url` and posts to TikTok + Instagram Reels in one request. If you'd rather
-go direct (no third party), the `Posting notes` sticky note inside the workflow
-has the exact TikTok Content Posting API and Instagram Graph API call sequences —
-each needs an approved app + OAuth you set up once.
+The primary path uses **upload-post.com**. The node sends **multipart/form-data**
+(`user`, `title`, repeated `platform[]`, and the MP4 **file** as `video`), taking
+the binary from the `Download MP4` node — so it works regardless of how long the
+fal.ai URL stays live. To add **YouTube** through upload-post, add a third
+`platform[]` = `youtube` (connect YouTube in upload-post first) and delete the
+native `Upload to YouTube Shorts` node + its Google OAuth — one credential covers
+all three.
 
-> ⚠️ fal.ai result URLs are public but **temporary**. upload-post and Instagram
-> fetch them immediately, so this is fine for auto-posting. If you need a durable
-> link, add a step that re-hosts the MP4 (from `Download MP4`) to R2/S3 and use
-> that URL instead.
+If you'd rather go direct (no third party), the `Posting notes` sticky note inside
+the workflow has the exact TikTok Content Posting API and Instagram Graph API call
+sequences — each needs an approved app + OAuth you set up once.
