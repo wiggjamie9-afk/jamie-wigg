@@ -24,7 +24,9 @@ const OUT_DIR = path.join(__dirname, '..', 'apps', 'portraits');
 const API_KEY = process.env.HIGGSFIELD_API_KEY;
 const SECRET = process.env.HIGGSFIELD_SECRET;
 const FORCE = process.env.FORCE === '1';
-const IMAGE_ENDPOINT = 'https://api.higgsfield.ai/v1/generate/image';
+// Higgsfield platform REST API (matches the official @higgsfield/client SDK).
+const API_BASE = 'https://platform.higgsfield.ai';
+const SOUL_ENDPOINT = `${API_BASE}/v1/text2image/soul`;
 
 if (!API_KEY || !SECRET) {
   console.error('✗ Missing HIGGSFIELD_API_KEY / HIGGSFIELD_SECRET. Set them as GitHub secrets.');
@@ -94,49 +96,64 @@ const BUDDIES = [
 
 function authHeaders() {
   return {
-    'Authorization': `Bearer ${API_KEY}`,
-    'X-API-Secret': SECRET,
+    // Higgsfield platform auth: "Key <api-key-id>:<api-key-secret>".
+    'Authorization': `Key ${API_KEY}:${SECRET}`,
     'Content-Type': 'application/json',
   };
 }
 
+// Pull the finished image URL out of a job-set's jobs array (raw = full-res PNG).
+function pickImageUrl(jobs) {
+  if (!Array.isArray(jobs)) return null;
+  for (const job of jobs) {
+    if (job?.status === 'completed' && job?.results?.raw?.url) return job.results.raw.url;
+  }
+  return null;
+}
+
 async function requestImageUrl(prompt) {
-  const res = await fetch(IMAGE_ENDPOINT, {
+  // POST /v1/text2image/soul → returns a job-set { id, jobs: [...] }.
+  const res = await fetch(SOUL_ENDPOINT, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ model: 'soul', prompt, size: '768x768' }),
+    body: JSON.stringify({
+      params: {
+        prompt,
+        width_and_height: '1536x1536', // square, matches the carousel card
+        quality: '1080p',
+        batch_size: 1,
+        enhance_prompt: true,
+      },
+    }),
   });
   if (!res.ok) {
     throw new Error(`Higgsfield ${res.status} ${res.statusText}: ${(await res.text()).slice(0, 160)}`);
   }
   const data = await res.json();
 
-  // Synchronous response shapes
-  if (data?.data?.[0]?.url) return data.data[0].url;
-  if (data?.url) return data.url;
-  if (data?.image_url) return data.image_url;
+  // Occasionally a job is already done in the initial response.
+  const immediate = pickImageUrl(data?.jobs);
+  if (immediate) return immediate;
 
-  // Async job shape — poll until a URL appears
-  const jobId = data?.id || data?.job_id;
-  if (jobId) return pollJob(jobId);
-
-  throw new Error(`No image URL in response: ${JSON.stringify(data).slice(0, 160)}`);
+  const jobSetId = data?.id;
+  if (!jobSetId) throw new Error(`No job-set id in response: ${JSON.stringify(data).slice(0, 160)}`);
+  return pollJobSet(jobSetId);
 }
 
-async function pollJob(jobId, attempts = 30, delayMs = 4000) {
-  const statusUrl = `${IMAGE_ENDPOINT}/${jobId}`;
+async function pollJobSet(jobSetId, attempts = 40, delayMs = 3000) {
+  const statusUrl = `${API_BASE}/v1/job-sets/${jobSetId}`;
   for (let i = 0; i < attempts; i++) {
     await sleep(delayMs);
     const res = await fetch(statusUrl, { headers: authHeaders() });
     if (!res.ok) continue;
     const data = await res.json();
-    const url = data?.data?.[0]?.url || data?.url || data?.image_url || data?.result?.url;
+    const jobs = data?.jobs ?? [];
+    const url = pickImageUrl(jobs);
     if (url) return url;
-    if (data?.status && /fail|error/i.test(data.status)) {
-      throw new Error(`Job ${jobId} failed: ${data.status}`);
-    }
+    const bad = jobs.find((j) => ['failed', 'nsfw', 'canceled'].includes(j?.status));
+    if (bad) throw new Error(`Job ${jobSetId} ${bad.status}`);
   }
-  throw new Error(`Job ${jobId} timed out`);
+  throw new Error(`Job ${jobSetId} timed out`);
 }
 
 async function download(url, dest) {
