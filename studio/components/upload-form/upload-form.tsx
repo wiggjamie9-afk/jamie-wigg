@@ -7,11 +7,54 @@ import {
   stashAudioForPlan,
   validateAudioFile,
 } from "../../lib/audio-blob";
+import {
+  buildNewProjectMeta,
+  newProjectStorageKey,
+  type ProjectKind,
+} from "../../lib/new-project";
 import { WaveformCanvas } from "./waveform-canvas";
 
 const THEME_MAX = 500;
 const BPM_MIN = 40;
 const BPM_MAX = 220;
+
+/**
+ * Per-variant copy. `music` is the original track → music-video flow;
+ * `podcast` is spoken / long-form audio → audiogram. The podcast variant drops
+ * the BPM field (no beat) and reframes the visual prompt around a backdrop.
+ */
+const VARIANT_COPY: Record<
+  ProjectKind,
+  {
+    audioLabel: string;
+    dropHint: string;
+    themeLabel: string;
+    themeHelp: string;
+    themePlaceholder: string;
+    showBpm: boolean;
+  }
+> = {
+  music: {
+    audioLabel: "Audio file",
+    dropHint: "or tap to choose · mp3, wav, m4a, flac · up to 50 MB",
+    themeLabel: "Visual theme",
+    themeHelp:
+      "Describe the look you want — moods, settings, colours, anything that paints the scenes.",
+    themePlaceholder:
+      "e.g. neon-soaked night drive through Tokyo, rain on the windshield, slow pans",
+    showBpm: true,
+  },
+  podcast: {
+    audioLabel: "Episode audio",
+    dropHint: "or tap to choose · mp3, wav, m4a, flac · up to 50 MB",
+    themeLabel: "Cover & backdrop look",
+    themeHelp:
+      "Describe the visual behind the waveform — cover art mood, colours, setting. No beat needed; the waveform follows the speech.",
+    themePlaceholder:
+      "e.g. warm candlelit studio, soft grain, slow drifting bokeh behind the title card",
+    showBpm: false,
+  },
+};
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -19,9 +62,15 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function UploadForm() {
+export function UploadForm({
+  variant = "music",
+}: {
+  /** Which create flow this is. Defaults to `music` so `/new` is unchanged. */
+  variant?: ProjectKind;
+}) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const copy = VARIANT_COPY[variant];
 
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -102,13 +151,16 @@ export function UploadForm() {
       // own the durable plan structure in localStorage.
       try {
         sessionStorage.setItem(
-          `rhythmix:new:${planId}`,
-          JSON.stringify({
-            theme: theme.trim(),
-            bpm: bpm ? Number(bpm) : null,
-            fileName: file.name,
-            fileSize: file.size,
-          }),
+          newProjectStorageKey(planId),
+          JSON.stringify(
+            buildNewProjectMeta({
+              kind: variant,
+              theme,
+              bpm: bpm ? Number(bpm) : null,
+              fileName: file.name,
+              fileSize: file.size,
+            }),
+          ),
         );
       } catch {
         // Non-fatal: /plan/[id] will fall back to defaults if this missed.
@@ -129,7 +181,7 @@ export function UploadForm() {
       {/* Drop zone / file picker */}
       <div className="min-w-0">
         <label className="mb-2 block font-starlightmix-mono text-xs uppercase tracking-[0.2em] text-starlightmix-text-soft">
-          Audio file
+          {copy.audioLabel}
         </label>
         <div
           role="button"
@@ -155,9 +207,7 @@ export function UploadForm() {
             {file ? file.name : "Drop an audio file here"}
           </p>
           <p className="font-starlightmix-mono text-xs text-starlightmix-text-muted">
-            {file
-              ? formatBytes(file.size)
-              : "or tap to choose · mp3, wav, m4a, flac · up to 50 MB"}
+            {file ? formatBytes(file.size) : copy.dropHint}
           </p>
           <input
             ref={fileInputRef}
@@ -185,11 +235,10 @@ export function UploadForm() {
           htmlFor="theme"
           className="mb-2 block font-starlightmix-mono text-xs uppercase tracking-[0.2em] text-starlightmix-text-soft"
         >
-          Visual theme
+          {copy.themeLabel}
         </label>
         <p className="mb-2 text-xs text-starlightmix-text-muted">
-          Describe the look you want — moods, settings, colours, anything that
-          paints the scenes.
+          {copy.themeHelp}
         </p>
         <textarea
           id="theme"
@@ -197,7 +246,7 @@ export function UploadForm() {
           onChange={(e) => setTheme(e.target.value.slice(0, THEME_MAX))}
           maxLength={THEME_MAX}
           rows={4}
-          placeholder="e.g. neon-soaked night drive through Tokyo, rain on the windshield, slow pans"
+          placeholder={copy.themePlaceholder}
           className="block w-full resize-y rounded-[var(--radius-rhythmix-md)] border border-starlightmix-border-strong bg-starlightmix-surface px-3 py-3 text-base text-starlightmix-text placeholder:text-starlightmix-text-muted focus:border-starlightmix-cyan focus:outline-none focus:ring-1 focus:ring-starlightmix-cyan transition-colors duration-[var(--duration-starlightmix-fast)] ease-[var(--ease-starlightmix-out)]"
           style={{ minHeight: "96px" }}
         />
@@ -206,7 +255,8 @@ export function UploadForm() {
         </div>
       </div>
 
-      {/* BPM */}
+      {/* BPM — music only; a podcast has no beat to cut on. */}
+      {copy.showBpm && (
       <div className="min-w-0">
         <label
           htmlFor="bpm"
@@ -236,6 +286,7 @@ export function UploadForm() {
           </p>
         )}
       </div>
+      )}
 
       {submitError && (
         <p className="text-sm text-starlightmix-magenta" role="alert">
