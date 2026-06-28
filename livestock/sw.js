@@ -1,10 +1,12 @@
 // HerdCheck — service worker for offline-first
-const CACHE = 'herdcheck-v0.1.0';
+const CACHE = 'herdcheck-v0.1.1';
 const ASSETS = [
   './',
   './index.html',
   './app.css',
   './app.js',
+  './ui-utils.js',
+  './app-enhancements.js',
   './i18n.js',
   './db.js',
   './vision.js',
