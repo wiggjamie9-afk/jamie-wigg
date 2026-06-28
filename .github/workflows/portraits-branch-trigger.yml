@@ -1,0 +1,46 @@
+name: Generate Buddy Portraits (branch trigger)
+
+# Temporary trigger so the portrait generation can be kicked off without the
+# manual "Run workflow" dispatch button (which the integration can't press).
+# Only fires when THIS file changes, so committing the generated .jpgs back to
+# the branch does not re-trigger it (no loop). Same logic as
+# generate-portraits.yml, but commits to the branch that triggered it.
+
+on:
+  push:
+    paths:
+      - ".github/workflows/portraits-branch-trigger.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  portraits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate portraits
+        env:
+          HIGGSFIELD_API_KEY: ${{ secrets.HIGGSFIELD_API_KEY }}
+          HIGGSFIELD_SECRET: ${{ secrets.HIGGSFIELD_SECRET }}
+          FORCE: "0"
+        run: node scripts/generate-portraits.mjs
+
+      - name: Commit portraits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/portraits/*.jpg || true
+          if git diff --cached --quiet; then
+            echo "No new portraits to commit."
+          else
+            git commit -m "Add generated buddy portraits (Higgsfield Soul) [skip ci]"
+            git push
+          fi
