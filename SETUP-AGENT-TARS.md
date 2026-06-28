@@ -1,17 +1,29 @@
 # Setting up Agent TARS / UI-TARS for this workspace
 
-[Agent TARS](https://github.com/bytedance/UI-TARS-desktop) is a vision-language-model-driven GUI agent that takes screenshots of your computer and clicks/types to complete natural-language instructions. Two flavors:
+The `TARS*` umbrella (ByteDance) ships **two distinct projects**, not two flavors of one:
 
-- **Agent TARS CLI** — runs in a terminal, drives a browser or the OS
-- **UI-TARS Desktop** — a native Mac/Windows app version of the same
+- **Agent TARS** — a *general* multimodal AI agent stack that brings GUI Agent + Vision into your terminal, computer, browser, and product. Ships a **CLI** and **Web UI**; its kernel is built on MCP and it can **mount MCP servers** to reach real-world tools.
+- **UI-TARS Desktop** — a native Mac/Windows desktop app providing a GUI agent driven by the UI-TARS model, with local *and* remote computer/browser operators.
 
-Both are powered by the UI-TARS / Seed-1.5-VL/1.6 model family.
+Both lean on the UI-TARS / Seed-1.5-VL/1.6 vision-language model family.
 
 > Honest framing: this repo (RHYTHMIX / Remotion / HyperFrames) is a *content authoring* workspace, not a GUI-automation target. Agent TARS is **not** a natural fit for the everyday `/rhythmix-new`, `/album-launch`, or `/dream` flows — those are LLM-driven content pipelines, not click-stream automation. See [§3 below](#3-where-it-could-actually-help-this-repo) for the narrow cases where it *does* pull weight.
 
 For the full feature list, screenshots, and citation info, see the upstream README: <https://github.com/bytedance/UI-TARS-desktop>.
 
-(Provider/model details verified against the upstream README as of **2026-05-12** — re-check before relying on them.)
+(Provider/model details verified against the upstream README as of **2026-06-28** — re-check before relying on them.)
+
+### What's new upstream
+
+- **Agent TARS CLI v0.3.0** (2025-11-05) — streaming output for multi-step tools (shell commands, multi-file structured display), runtime settings with timing stats for tool calls + deep thinking, an **Event Stream Viewer** for tracing/debugging the data flow, and an **AIO agent Sandbox** as an isolated all-in-one tool-execution environment.
+- **UI-TARS Desktop v0.2.0** (2025-06-12) — free **Remote Computer Operator** and **Remote Browser Operator** (zero-config, click-to-control).
+
+### Core features (Agent TARS)
+
+- 🖱️ **One-click CLI** — runs headful (Web UI) or headless (server).
+- 🌐 **Hybrid Browser Agent** — control a browser via GUI Agent, DOM, or a hybrid strategy.
+- 🔄 **Event Stream** — a protocol-driven event stream powers context engineering and the Agent UI.
+- 🧰 **MCP Integration** — built on MCP; mount external MCP servers to connect to real tools.
 
 ---
 
@@ -62,9 +74,10 @@ agent-tars \
 
 For all of these, the existing `webapp-testing` skill (Playwright-based) is usually a better fit because it's scripted and reproducible. Reach for TARS when you want one-shot natural-language exploration instead of a saved test.
 
-## 4. What this does *not* affect
+## 4. Relationship to this repo's MCP setup
 
-- `.mcp.json` — Agent TARS isn't an MCP server; it runs as a standalone CLI/app.
+- `.mcp.json` here registers MCP servers for **Claude Code** to consume. Agent TARS doesn't get added to it — it runs as a standalone CLI/app, not as a server Claude Code mounts.
+- The reverse *is* possible: Agent TARS is itself an MCP **host** (its kernel is built on MCP and it can mount MCP servers). So this repo's servers — `creative-stack`, `nvidia` (MiniMax-M3), `stepfun`, `higgsfield` — could in principle be mounted *into* an Agent TARS session via its own config. Nothing in this repo wires that up today; it's an option, not a dependency.
 - `.claude/settings.json` — no permission entries needed. TARS controls your *desktop*, not Claude Code.
 - The Remotion / HyperFrames pipelines — they don't talk to TARS at all.
 
