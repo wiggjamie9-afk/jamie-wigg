@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HerdCheck — Co-op Dashboard</title>
+<meta name="description" content="Staff-only aggregate herd view for HerdCheck co-op deployments: tier roll-up, red-flag work queue, CSV export. The farmer app stays free and offline.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="#top">
+      <span class="mark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </span>
+      HerdCheck
+      <span class="brand-sub">Co-op Dashboard</span>
+    </a>
+    <span class="staff-pill">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+      Staff access
+    </span>
+  </div>
+</header>
+
+<!-- ============ SIGN-IN / CONNECTION PANEL ============ -->
+<section class="connbar">
+  <div class="wrap">
+    <form id="connForm" class="conn-grid" autocomplete="off">
+      <label class="field">
+        <span class="lbl">Staff token</span>
+        <input id="tokenInput" type="password" placeholder="Paste your org staff token" spellcheck="false">
+      </label>
+      <label class="field">
+        <span class="lbl">Worker base URL <span class="opt">(optional)</span></span>
+        <input id="baseInput" type="text" placeholder="https://herd.studio.starlightmix.com" spellcheck="false">
+      </label>
+      <div class="conn-actions">
+        <button type="submit" class="btn btn-primary" id="connectBtn">Load dashboard</button>
+        <button type="button" class="btn btn-ghost" id="demoBtn">Load demo data</button>
+      </div>
+    </form>
+    <p class="conn-hint" id="connHint">No token yet? Click <b>Load demo data</b> to explore a sample co-op. Your token is kept only in this browser.</p>
+  </div>
+</section>
+
+<!-- ============ STATUS / ERROR BANNER ============ -->
+<div class="wrap"><div id="banner" class="banner" hidden></div></div>
+
+<!-- ============ DASHBOARD ============ -->
+<main id="dash" class="wrap dash" hidden>
+
+  <!-- Org header + validation status -->
+  <section class="orghead">
+    <div>
+      <span class="eyebrow">Aggregate herd view</span>
+      <h1 id="orgName">—</h1>
+      <p class="orgmeta" id="orgMeta">Across all member herds in this deployment.</p>
+    </div>
+    <div id="validationBadge" class="vbadge"></div>
+  </section>
+
+  <!-- Controls -->
+  <section class="controls">
+    <div class="seg" role="group" aria-label="Day window">
+      <span class="seg-lbl">Window</span>
+      <button class="seg-btn" data-days="7">7 days</button>
+      <button class="seg-btn" data-days="30">30 days</button>
+    </div>
+    <label class="memfilter">
+      <span class="seg-lbl">Flags for member</span>
+      <select id="memberFilter"><option value="">All members</option></select>
+    </label>
+    <div class="ctl-spacer"></div>
+    <button class="btn btn-ghost btn-sm" id="refreshBtn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg>
+      Refresh
+    </button>
+    <button class="btn btn-primary btn-sm" id="exportOrgBtn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Export CSV (whole org)
+    </button>
+  </section>
+
+  <!-- Top tiles -->
+  <section class="tiles" id="tiles"></section>
+
+  <!-- By-kind breakdown -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Risk by check</h2>
+      <p class="panel-sub">Animals' most-recent result of each kind, red / amber / green.</p>
+    </div>
+    <div class="bykind" id="byKind"></div>
+  </section>
+
+  <!-- Members table -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Members</h2>
+      <p class="panel-sub">One row per member herd. Export pulls only that member's records.</p>
+    </div>
+    <div class="table-scroll">
+      <table class="tbl" id="membersTable">
+        <thead>
+          <tr>
+            <th>Member</th><th class="num">Animals</th>
+            <th class="num">Red</th><th class="num">Amber</th><th class="num">Green</th>
+            <th>Last sync</th><th class="num">Export</th>
+          </tr>
+        </thead>
+        <tbody id="membersBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="membersEmpty" hidden>No members have synced yet. Once a member opts in and syncs, their herd appears here.</div>
+  </section>
+
+  <!-- Red-flag work queue -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Red-flag work queue <span class="count-pill" id="flagCount">0</span></h2>
+      <p class="panel-sub">Red &amp; amber observations in the window. Acknowledge a flag once a member or vet has been contacted.</p>
+    </div>
+    <div id="flagList" class="flags"></div>
+    <div class="empty" id="flagsEmpty" hidden>No open red or amber flags in this window. Healthy herds, or widen the window above.</div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-foot">
+  <div class="wrap">
+    <p class="fine">
+      <b>Staff-only.</b> This dashboard is the organisation layer for HerdCheck co-op / NGO deployments — read &amp; acknowledge only; staff never edit a member's raw observations, whose phone stays the source of truth.
+      The farmer-facing app stays <b>free and fully offline</b>; nothing leaves a member's phone without their opt-in consent.
+      HerdCheck provides decision support, not veterinary diagnosis. Risk tiers must be signed off by a named partner before clinical claims are made. &copy; 2026 HerdCheck.
+    </p>
+  </div>
+</footer>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
