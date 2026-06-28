@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RHYTHMIX · Feature Docs</title>
+<meta name="description" content="Browser for the repo's per-feature CLAUDE.md docs." />
+<style>
+  :root {
+    --canvas: #08050d;
+    --surface: #1a1325;
+    --surface-2: #120c1c;
+    --line: #2a2138;
+    --magenta: #ff1f5a;
+    --purple: #7c3aed;
+    --cyan: #00d8ff;
+    --green: #00e887;
+    --gold: #f5c000;
+    --pink: #ff6fc8;
+    --text: #ffffff;
+    --muted: #a0a0b0;
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --sidebar-w: 290px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--canvas);
+    color: var(--text);
+    font-family: var(--display);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--surface-2);
+    border-right: 1px solid var(--line);
+    padding: 22px 16px 40px;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; margin: 4px 6px 18px; }
+  .brand .mark {
+    font-weight: 700; font-size: 19px; letter-spacing: 0.04em;
+    background: linear-gradient(92deg, var(--magenta), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .brand .sub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .search-wrap { position: relative; margin: 0 4px 18px; }
+  .search {
+    width: 100%; background: var(--canvas); border: 1px solid var(--line);
+    color: var(--text); font-family: var(--mono); font-size: 13px;
+    padding: 9px 11px 9px 32px; border-radius: 9px; outline: none;
+  }
+  .search:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,0.18); }
+  .search-wrap svg { position: absolute; left: 10px; top: 9px; width: 15px; height: 15px; stroke: var(--muted); }
+  .search-hint { position: absolute; right: 9px; top: 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+
+  .group-label {
+    font-family: var(--mono); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--muted); margin: 16px 8px 6px; opacity: 0.8;
+  }
+  .nav-item {
+    display: block; padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    color: var(--text); border: 1px solid transparent; margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--surface); text-decoration: none; }
+  .nav-item.active { background: var(--surface); border-color: var(--line); }
+  .nav-item .t { font-size: 14.5px; font-weight: 600; }
+  .nav-item .d { font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+  .nav-item.active .t {
+    background: linear-gradient(92deg, var(--magenta), var(--pink));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .no-match { color: var(--muted); font-family: var(--mono); font-size: 12px; padding: 10px; }
+
+  /* Content */
+  .content { padding: 40px clamp(20px, 6vw, 80px) 100px; max-width: 920px; }
+  .doc-meta { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 18px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .doc-meta .path { color: var(--cyan); }
+  .doc-meta .src { color: var(--muted); }
+
+  .md h1 { font-size: 33px; line-height: 1.15; margin: 6px 0 18px; letter-spacing: -0.01em; }
+  .md h2 { font-size: 23px; margin: 38px 0 12px; padding-top: 8px; }
+  .md h3 { font-size: 18px; margin: 26px 0 8px; color: var(--pink); }
+  .md h2 { border-top: 1px solid var(--line); padding-top: 26px; }
+  .md p { margin: 12px 0; color: #e7e5ee; }
+  .md ul, .md ol { margin: 12px 0; padding-left: 22px; }
+  .md li { margin: 6px 0; color: #e7e5ee; }
+  .md li::marker { color: var(--purple); }
+  .md strong { color: #fff; font-weight: 700; }
+  .md hr { border: none; border-top: 1px solid var(--line); margin: 28px 0; }
+  .md code {
+    font-family: var(--mono); font-size: 0.86em; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; color: var(--cyan);
+  }
+  .md pre {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 11px;
+    padding: 16px 18px; overflow-x: auto; margin: 16px 0;
+  }
+  .md pre code { background: none; border: none; padding: 0; color: #d9d4e6; font-size: 13px; line-height: 1.55; }
+  .md pre .c-com { color: #6f6786; font-style: italic; }
+  .md pre .c-str { color: var(--green); }
+  .md pre .c-num { color: var(--gold); }
+  .md table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14px; }
+  .md th, .md td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; vertical-align: top; }
+  .md th { background: var(--surface); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .md td code { white-space: nowrap; }
+  .loading, .error { font-family: var(--mono); color: var(--muted); padding: 40px 0; }
+  .error { color: var(--magenta); }
+
+  /* Mobile */
+  .menu-btn { display: none; }
+  @media (max-width: 820px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: fixed; left: 0; top: 0; width: 84%; max-width: 320px; z-index: 30;
+      transform: translateX(-102%); transition: transform 0.25s ease; box-shadow: 0 0 40px rgba(0,0,0,0.6);
+    }
+    body.nav-open .sidebar { transform: translateX(0); }
+    .scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 20; }
+    body.nav-open .scrim { display: block; }
+    .menu-btn {
+      display: inline-flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 10;
+      width: 100%; background: var(--surface-2); border: none; border-bottom: 1px solid var(--line);
+      color: var(--text); font-family: var(--mono); font-size: 13px; padding: 13px 18px; cursor: pointer;
+    }
+    .content { padding: 24px 20px 90px; }
+  }
+</style>
+</head>
+<body>
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation">☰ &nbsp;Feature docs</button>
+  <div class="scrim" id="scrim"></div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="mark">RHYTHMIX</span>
+        <span class="sub">feature&nbsp;docs</span>
+      </div>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input class="search" id="search" type="text" placeholder="Search docs…" autocomplete="off" spellcheck="false" />
+        <span class="search-hint">/</span>
+      </div>
+      <nav id="nav"></nav>
+    </aside>
+
+    <main class="content">
+      <div class="doc-meta" id="docMeta"></div>
+      <article class="md" id="doc"><div class="loading">Loading…</div></article>
+    </main>
+  </div>
+
+<script>
+/* ----------------------------------------------------------------------------
+ * Doc registry. Paths are relative to this file (/apps/feature-docs.html), so
+ * `../<dir>/CLAUDE.md` resolves to the real file served at the repo root.
+ * The docs are fetched live — this app never holds its own copy, so it can't
+ * drift from the source of truth.
+ * -------------------------------------------------------------------------- */
+const DOCS = [
+  { id: "herdcheck", group: "Standalone apps", title: "HerdCheck Scoring",
+    blurb: "Livestock risk scoring — lameness, mastitis, calving.",
+    path: "../livestock/CLAUDE.md", repo: "livestock/CLAUDE.md" },
+  { id: "license", group: "STARLIGHTMIX Studio", title: "License Validation",
+    blurb: "Cloudflare Worker — CORS, KV cache, Gumroad verify.",
+    path: "../studio/workers/license/CLAUDE.md", repo: "studio/workers/license/CLAUDE.md" },
+  { id: "hyperframes-cut", group: "Video pipeline", title: "HyperFrames Cut",
+    blurb: "Anatomy of a Cut — composition, timeline, narration.",
+    path: "../rhythmix-overview-60s/CLAUDE.md", repo: "rhythmix-overview-60s/CLAUDE.md" },
+];
+
+const cache = {};
+const $ = (s, r = document) => r.querySelector(s);
+
+/* ---- tiny Markdown renderer (handles exactly what these docs use) --------- */
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function highlightCode(code) {
+  // escape first, then colour comments / strings / numbers conservatively
+  let h = escapeHtml(code);
+  h = h.replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;|`[^`]*?`)/g, '<span class="c-str">$1</span>');
+  h = h.replace(/(^|\n)(\s*)(\/\/|#)([^\n]*)/g, '$1$2<span class="c-com">$3$4</span>');
+  h = h.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="c-num">$1</span>');
+  return h;
+}
+function inline(text) {
+  // protect inline code spans, format, then restore
+  const spans = [];
+  let t = text.replace(/`([^`]+)`/g, (_, c) => { spans.push(c); return " " + (spans.length - 1) + " "; });
+  t = escapeHtml(t);
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  t = t.replace(/ (\d+) /g, (_, i) => "<code>" + escapeHtml(spans[+i]) + "</code>");
+  return t;
+}
+function renderMarkdown(src) {
+  const lines = src.replace(/\r\n/g, "\n").split("\n");
+  let out = "", i = 0;
+  const isTableRow = (l) => /^\s*\|.*\|\s*$/.test(l);
+  while (i < lines.length) {
+    let line = lines[i];
+
+    // fenced code
+    const fence = line.match(/^```(\w*)\s*$/);
+    if (fence) {
+      let code = [];
+      i++;
+      while (i < lines.length && !/^```\s*$/.test(lines[i])) { code.push(lines[i]); i++; }
+      i++; // closing fence
+      out += '<pre><code>' + highlightCode(code.join("\n")) + '</code></pre>';
+      continue;
+    }
+    // heading
+    const h = line.match(/^(#{1,4})\s+(.*)$/);
+    if (h) { const lv = h[1].length; out += `<h${lv}>${inline(h[2])}</h${lv}>`; i++; continue; }
+    // hr
+    if (/^\s*---\s*$/.test(line)) { out += "<hr/>"; i++; continue; }
+    // table
+    if (isTableRow(line) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      const cells = (l) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      const head = cells(line);
+      i += 2;
+      let rows = "";
+      while (i < lines.length && isTableRow(lines[i])) {
+        rows += "<tr>" + cells(lines[i]).map((c) => `<td>${inline(c)}</td>`).join("") + "</tr>";
+        i++;
+      }
+      out += "<table><thead><tr>" + head.map((c) => `<th>${inline(c)}</th>`).join("") + "</tr></thead><tbody>" + rows + "</tbody></table>";
+      continue;
+    }
+    // lists (one level of nesting via indentation)
+    if (/^(\s*)([-*]|\d+\.)\s+/.test(line)) {
+      const top = lines[i].match(/^(\d+\.)/) ? "ol" : "ul";
+      let html = `<${top}>`, stack = [top];
+      while (i < lines.length && /^(\s*)([-*]|\d+\.)\s+/.test(lines[i])) {
+        const m = lines[i].match(/^(\s*)([-*]|\d+\.)\s+(.*)$/);
+        const indent = m[1].length;
+        if (indent >= 2 && stack.length === 1) { const sub = /^\d+\./.test(m[2]) ? "ol" : "ul"; html += `<${sub}>`; stack.push(sub); }
+        else if (indent < 2 && stack.length > 1) { html += `</${stack.pop()}>`; }
+        html += `<li>${inline(m[3])}</li>`;
+        i++;
+      }
+      while (stack.length) html += `</${stack.pop()}>`;
+      out += html;
+      continue;
+    }
+    // blank
+    if (/^\s*$/.test(line)) { i++; continue; }
+    // paragraph (gather until blank / block)
+    let para = [];
+    while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,4}\s|```|\s*---\s*$)/.test(lines[i]) && !isTableRow(lines[i]) && !/^(\s*)([-*]|\d+\.)\s+/.test(lines[i])) {
+      para.push(lines[i]); i++;
+    }
+    out += "<p>" + inline(para.join(" ")) + "</p>";
+  }
+  return out;
+}
+
+/* ---- nav + routing -------------------------------------------------------- */
+function buildNav(filter = "") {
+  const nav = $("#nav");
+  const f = filter.trim().toLowerCase();
+  const groups = {};
+  DOCS.forEach((d) => {
+    const hay = (d.title + " " + d.blurb + " " + d.repo + " " + (cache[d.id] || "")).toLowerCase();
+    if (f && !hay.includes(f)) return;
+    (groups[d.group] = groups[d.group] || []).push(d);
+  });
+  const keys = Object.keys(groups);
+  if (!keys.length) { nav.innerHTML = '<div class="no-match">No docs match “' + escapeHtml(filter) + '”.</div>'; return; }
+  nav.innerHTML = keys.map((g) =>
+    `<div class="group-label">${g}</div>` +
+    groups[g].map((d) =>
+      `<a class="nav-item${location.hash === "#" + d.id ? " active" : ""}" href="#${d.id}" data-id="${d.id}">
+         <div class="t">${d.title}</div><div class="d">${d.blurb}</div>
+       </a>`).join("")
+  ).join("");
+}
+
+async function loadDoc(id) {
+  const doc = DOCS.find((d) => d.id === id) || DOCS[0];
+  document.body.classList.remove("nav-open");
+  buildNav($("#search").value);
+  $("#docMeta").innerHTML =
+    `<span class="path">${doc.repo}</span><span class="src">· fetched live from source</span>`;
+  const el = $("#doc");
+  if (cache[doc.id]) { el.innerHTML = renderMarkdown(cache[doc.id]); window.scrollTo(0, 0); return; }
+  el.innerHTML = '<div class="loading">Loading ' + doc.repo + ' …</div>';
+  try {
+    const res = await fetch(doc.path, { cache: "no-cache" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    cache[doc.id] = await res.text();
+    el.innerHTML = renderMarkdown(cache[doc.id]);
+    window.scrollTo(0, 0);
+  } catch (err) {
+    el.innerHTML = '<div class="error">Couldn\'t load <code>' + doc.repo + '</code> (' + err.message +
+      ').<br/>This viewer fetches the files live, so open it from the served site ' +
+      '(e.g. <code>python3 -m http.server</code> at the repo root, then ' +
+      '<code>/apps/feature-docs.html</code>) rather than via <code>file://</code>.</div>';
+  }
+}
+
+function route() { loadDoc((location.hash || "#" + DOCS[0].id).slice(1)); }
+
+/* ---- wire up -------------------------------------------------------------- */
+$("#search").addEventListener("input", (e) => buildNav(e.target.value));
+window.addEventListener("hashchange", route);
+$("#menuBtn").addEventListener("click", () => document.body.classList.toggle("nav-open"));
+$("#scrim").addEventListener("click", () => document.body.classList.remove("nav-open"));
+document.addEventListener("keydown", (e) => {
+  if (e.key === "/" && document.activeElement !== $("#search")) { e.preventDefault(); $("#search").focus(); }
+  if (e.key === "Escape") { $("#search").blur(); document.body.classList.remove("nav-open"); }
+});
+
+buildNav();
+route();
+</script>
+</body>
+</html>
