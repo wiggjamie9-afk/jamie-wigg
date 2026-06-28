@@ -51,6 +51,18 @@ def test_hook_generator_varies_and_never_posts(tmp_path):
     assert os.path.exists(out["wrote"])
 
 
+def test_codex_hooks_are_honest(tmp_path):
+    """The Codex content must stay on real HRV science — no pseudoscience terms."""
+    from presets import HookGeneratorJob, CODEX_WEDGE
+
+    job = HookGeneratorJob(wedge=CODEX_WEDGE, out_dir=str(tmp_path / "d"))
+    banned = ["tesla", "schumann", "3-6-9", "369", "frequency of reality",
+              "quantum", "manifest"]
+    for t in range(5):
+        text = job.run({"tick": t})["hook"].lower()
+        assert not any(b in text for b in banned), f"pseudoscience leaked: {text}"
+
+
 def test_gumroad_job_invents_nothing_without_token(monkeypatch, tmp_path):
     from presets import GumroadSalesJob
 

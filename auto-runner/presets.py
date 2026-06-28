@@ -123,3 +123,39 @@ class GumroadSalesJob(Job):
 
 def starlightmix_jobs():
     return [HeartbeatJob(interval=0), HookGeneratorJob(interval=0), GumroadSalesJob(interval=0)]
+
+
+# Codex of Reality — note: every angle is honest HRV-biofeedback framing.
+# No "Tesla 3-6-9", no "Schumann lock", no "reality has a frequency" claims.
+CODEX_WEDGE = {
+    "product": "Codex of Reality",
+    "price": "AU$30 lifetime",
+    "link": "https://wiggjamie.gumroad.com/l/codex-of-reality",
+    "promise": ("An HRV biofeedback studio for your phone — read your heart-rate "
+                "variability with the camera and use guided breathing to steady it."),
+    "angles": [
+        ("see-it",
+         "Your phone camera can read your heart-rate variability live. Watch your "
+         "nervous system settle in real time. {product}, {price}."),
+        ("anti-subscription",
+         "A biofeedback studio you own — not another monthly wellness app. "
+         "{product}, {price}."),
+        ("breath",
+         "90 seconds of guided breathing, and you can watch your coherence climb. "
+         "{product}."),
+        ("no-hardware",
+         "No chest strap, no wearable — just your phone camera and your breath. "
+         "{product}, {price}."),
+        ("who-for",
+         "For people who want to actually see their calm, not just count steps. "
+         "{product}, {price}."),
+    ],
+}
+
+
+def codex_jobs():
+    return [
+        HeartbeatJob(interval=0),
+        HookGeneratorJob(interval=0, wedge=CODEX_WEDGE),
+        GumroadSalesJob(interval=0),
+    ]
