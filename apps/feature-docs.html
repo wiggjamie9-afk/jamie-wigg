@@ -200,6 +200,7 @@ function inline(text) {
   let t = text.replace(/`([^`]+)`/g, (_, c) => { spans.push(c); return " " + (spans.length - 1) + " "; });
   t = escapeHtml(t);
   t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");   // single-asterisk italics (after bold)
   t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   t = t.replace(/ (\d+) /g, (_, i) => "<code>" + escapeHtml(spans[+i]) + "</code>");
   return t;
@@ -239,18 +240,30 @@ function renderMarkdown(src) {
       out += "<table><thead><tr>" + head.map((c) => `<th>${inline(c)}</th>`).join("") + "</tr></thead><tbody>" + rows + "</tbody></table>";
       continue;
     }
-    // lists (one level of nesting via indentation)
+    // lists (one level of nesting via indentation; wrapped lines continue an item)
     if (/^(\s*)([-*]|\d+\.)\s+/.test(line)) {
       const top = lines[i].match(/^(\d+\.)/) ? "ol" : "ul";
-      let html = `<${top}>`, stack = [top];
-      while (i < lines.length && /^(\s*)([-*]|\d+\.)\s+/.test(lines[i])) {
-        const m = lines[i].match(/^(\s*)([-*]|\d+\.)\s+(.*)$/);
-        const indent = m[1].length;
-        if (indent >= 2 && stack.length === 1) { const sub = /^\d+\./.test(m[2]) ? "ol" : "ul"; html += `<${sub}>`; stack.push(sub); }
-        else if (indent < 2 && stack.length > 1) { html += `</${stack.pop()}>`; }
-        html += `<li>${inline(m[3])}</li>`;
-        i++;
+      let html = `<${top}>`, stack = [top], buf = null;
+      // buffer raw item text so inline() runs once per item — a **bold** span that
+      // wraps across source lines must not be split mid-pair.
+      const flush = () => { if (buf !== null) { html += `<li>${inline(buf)}</li>`; buf = null; } };
+      while (i < lines.length) {
+        const l = lines[i];
+        if (/^\s*$/.test(l)) break;                        // blank line ends the list
+        const m = l.match(/^(\s*)([-*]|\d+\.)\s+(.*)$/);
+        if (m) {
+          flush();
+          const indent = m[1].length;
+          if (indent >= 2 && stack.length === 1) { const sub = /^\d+\./.test(m[2]) ? "ol" : "ul"; html += `<${sub}>`; stack.push(sub); }
+          else if (indent < 2 && stack.length > 1) { html += `</${stack.pop()}>`; }
+          buf = m[3];
+          i++;
+        } else if (buf !== null && !/^(#{1,4}\s|```)/.test(l) && !isTableRow(l)) {
+          buf += " " + l.trim();                            // wrapped continuation line
+          i++;
+        } else { break; }
       }
+      flush();
       while (stack.length) html += `</${stack.pop()}>`;
       out += html;
       continue;
