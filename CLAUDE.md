@@ -315,6 +315,7 @@ Skills live in two shapes:
 - `/tdd` — red-green-refactor cycle.
 - `/improve-codebase-architecture`, `/zoom-out` — refactor/navigation.
 - `/prototype`, `/grill-me`, `/handoff`, `/caveman`, `/write-a-skill` — productivity.
+- `/n8n-workflow-generator` — convert an n8n workflow breakdown (e.g. a Gemini analysis of a YouTube tutorial) into validated, import-ready n8n JSON under `automation/<slug>/`. Bundles the Gemini Step-1 extraction prompt + a `validate-workflow.mjs` checker. Worked examples: `automation/veo3-faceless-content-system/`, `automation/kling-social-pipeline/`.
 - `/claude-api` — build/debug Claude API / Anthropic SDK apps with prompt caching.
 - `/frontend-design` — production-grade UI, avoids generic AI aesthetics.
 - `/apple-hig-expert` — Apple HIG guidance (iOS/macOS/visionOS, Liquid Glass aesthetics).

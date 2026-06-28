@@ -1,0 +1,332 @@
+{
+  "name": "Faceless Content System — Sheets → VEO3 → TikTok/Reels/Shorts",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Stage 1 — Trigger & Prompt Generation\nNew row in Google Sheets → Claude writes a VEO3-compatible video prompt (scene + camera + audio cues) from the row's idea.",
+        "height": 460,
+        "width": 540,
+        "color": 4
+      },
+      "id": "note-stage1",
+      "name": "Stage 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, -60]
+    },
+    {
+      "parameters": {
+        "content": "## Stage 2 — Prepare & Submit Video Request\nSet the generation variables (aspect, duration, audio) and submit the prompt to VEO3 on fal.ai's queue.",
+        "height": 460,
+        "width": 380,
+        "color": 5
+      },
+      "id": "note-stage2",
+      "name": "Stage 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [520, -60]
+    },
+    {
+      "parameters": {
+        "content": "## Stage 3 — Monitor Video Status\nWait 10s, poll the fal.ai request, loop until status = COMPLETED.",
+        "height": 460,
+        "width": 480,
+        "color": 3
+      },
+      "id": "note-stage3",
+      "name": "Stage 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [920, -60]
+    },
+    {
+      "parameters": {
+        "content": "## Stage 4 — Retrieve & Update Results\nFetch the final video URL, download the MP4, log it back to the sheet, then fan out to TikTok + Instagram Reels + YouTube Shorts.",
+        "height": 720,
+        "width": 620,
+        "color": 2
+      },
+      "id": "note-stage4",
+      "name": "Stage 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1420, -60]
+    },
+
+    {
+      "parameters": {
+        "pollTimes": { "item": [ { "mode": "everyMinute" } ] },
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "list", "cachedResultName": "Sheet1" },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "trigger-sheets",
+      "name": "New Row (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [0, 180],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": { "id": "REPLACE_ME", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 500,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are a prompt engineer for Google's VEO3 text-to-video model, which generates 8-second clips WITH native audio (dialogue, sound effects, ambience). Write ONE vivid, self-contained prompt for a vertical 9:16 faceless short. Describe: the scene, the main subject and its action, camera movement, lighting/mood, and explicit audio cues (ambient sound + any voiceover line in quotes). No on-screen text. Return ONLY the prompt as a single paragraph, no preamble, no markdown. Video idea: {{ $json['Idea'] || $json['Topic'] || $json['Prompt'] || $json['idea'] }}. Style/tone (optional): {{ $json['Style'] || $json['style'] || 'cinematic, high-contrast, scroll-stopping' }}.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "gen-prompt",
+      "name": "Generate VEO3 Prompt (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 180],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Anthropic x-api-key" }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "prompt", "value": "={{ $json.content[0].text }}", "type": "string" },
+            { "id": "a2", "name": "rowNumber", "value": "={{ $('New Row (Google Sheets)').item.json.row_number }}", "type": "number" },
+            { "id": "a3", "name": "aspectRatio", "value": "9:16", "type": "string" },
+            { "id": "a4", "name": "duration", "value": "8s", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-vars",
+      "name": "Set Variables for Video",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [400, 180]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/veo3/fast",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [ { "name": "content-type", "value": "application/json" } ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": {{ JSON.stringify($json.prompt) }},\n  \"aspect_ratio\": {{ JSON.stringify($json.aspectRatio) }},\n  \"duration\": {{ JSON.stringify($json.duration) }},\n  \"generate_audio\": true\n}",
+        "options": {}
+      },
+      "id": "submit-veo3",
+      "name": "Submit to VEO3 (fal.ai)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 180],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "fal.ai Key auth" }
+      }
+    },
+
+    {
+      "parameters": { "amount": 10, "unit": "seconds" },
+      "id": "wait-10s",
+      "name": "Wait 10s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [980, 180],
+      "webhookId": "veo3-poll-wait"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Submit to VEO3 (fal.ai)').item.json.status_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "check-status",
+      "name": "Check Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1160, 180],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "fal.ai Key auth" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "if-ready",
+      "name": "Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1340, 180]
+    },
+
+    {
+      "parameters": {
+        "url": "={{ $('Submit to VEO3 (fal.ai)').item.json.response_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-result",
+      "name": "Get Video URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 180],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "fal.ai Key auth" }
+      }
+    },
+
+    {
+      "parameters": {
+        "url": "={{ $json.video.url }}",
+        "options": { "response": { "response": { "responseFormat": "file", "outputPropertyName": "video" } } }
+      },
+      "id": "download-video",
+      "name": "Download MP4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 60]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "list", "cachedResultName": "Sheet1" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Set Variables for Video').item.json.rowNumber }}",
+            "status": "done",
+            "video_url": "={{ $('Get Video URL').item.json.video.url }}",
+            "prompt_used": "={{ $('Set Variables for Video').item.json.prompt }}"
+          },
+          "matchingColumns": [ "row_number" ]
+        },
+        "options": {}
+      },
+      "id": "update-sheet",
+      "name": "Update Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1780, 240],
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "REPLACE_ME", "name": "Google Sheets account" }
+      }
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.upload-post.com/api/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [ { "name": "content-type", "value": "application/json" } ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"user\": \"REPLACE_UPLOADPOST_USER\",\n  \"platform\": [\"tiktok\", \"instagram\"],\n  \"title\": {{ JSON.stringify($('Set Variables for Video').item.json.prompt.slice(0, 120)) }},\n  \"video\": {{ JSON.stringify($('Get Video URL').item.json.video.url) }}\n}",
+        "options": {}
+      },
+      "id": "post-tiktok-ig",
+      "name": "Post to TikTok + Instagram (upload-post.com)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 420],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "upload-post.com Apikey" }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Set Variables for Video').item.json.prompt.slice(0, 90) }} #Shorts",
+        "regionCode": "US",
+        "categoryId": "22",
+        "options": { "description": "={{ $('Set Variables for Video').item.json.prompt }}\n\n#Shorts", "privacyStatus": "private" }
+      },
+      "id": "upload-youtube",
+      "name": "Upload to YouTube Shorts",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [2020, 60],
+      "credentials": {
+        "youTubeOAuth2Api": { "id": "REPLACE_ME", "name": "YouTube account" }
+      }
+    },
+
+    {
+      "parameters": {
+        "content": "### Posting options\n**Primary path (this node):** [upload-post.com](https://upload-post.com) posts to **TikTok + Instagram Reels** in one call using the public fal.ai `video.url`. Set the `user` field + `Apikey` credential.\n\n**Direct-API alternative (no third party):**\n- **TikTok** — [Content Posting API](https://developers.tiktok.com/doc/content-posting-api-get-started): `POST /v2/post/publish/video/init/` (PULL_FROM_URL with the fal URL) → poll `/v2/post/publish/status/fetch/`.\n- **Instagram Reels** — [Graph API](https://developers.facebook.com/docs/instagram-api/guides/content-publishing): `POST /{ig-user-id}/media` (media_type=REELS, `video_url`) → poll container → `POST /{ig-user-id}/media_publish`.\n\nEach direct path needs an approved app + OAuth that only you can set up.",
+        "height": 300,
+        "width": 360,
+        "color": 7
+      },
+      "id": "note-posting",
+      "name": "Posting notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2020, 240]
+    }
+  ],
+  "connections": {
+    "New Row (Google Sheets)": { "main": [ [ { "node": "Generate VEO3 Prompt (Claude)", "type": "main", "index": 0 } ] ] },
+    "Generate VEO3 Prompt (Claude)": { "main": [ [ { "node": "Set Variables for Video", "type": "main", "index": 0 } ] ] },
+    "Set Variables for Video": { "main": [ [ { "node": "Submit to VEO3 (fal.ai)", "type": "main", "index": 0 } ] ] },
+    "Submit to VEO3 (fal.ai)": { "main": [ [ { "node": "Wait 10s", "type": "main", "index": 0 } ] ] },
+    "Wait 10s": { "main": [ [ { "node": "Check Status", "type": "main", "index": 0 } ] ] },
+    "Check Status": { "main": [ [ { "node": "Ready?", "type": "main", "index": 0 } ] ] },
+    "Ready?": {
+      "main": [
+        [ { "node": "Get Video URL", "type": "main", "index": 0 } ],
+        [ { "node": "Wait 10s", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Get Video URL": {
+      "main": [
+        [
+          { "node": "Download MP4", "type": "main", "index": 0 },
+          { "node": "Update Sheet", "type": "main", "index": 0 },
+          { "node": "Post to TikTok + Instagram (upload-post.com)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Download MP4": { "main": [ [ { "node": "Upload to YouTube Shorts", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "meta": { "templateCredsSetupCompleted": false }
+}
