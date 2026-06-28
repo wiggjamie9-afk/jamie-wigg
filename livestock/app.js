@@ -532,6 +532,87 @@
     document.getElementById('settings-farm').value = s.farm || '';
     document.getElementById('settings-coop').value = s.coop || '';
     document.getElementById('settings-lang').value = window.HC.lang;
+    renderOrg();
+  }
+
+  // ---------- Co-op program (opt-in org membership + consent) ----------
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"]/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  function setOrgMsg(text) {
+    const m = document.getElementById('org-msg');
+    if (m) { m.hidden = !text; m.textContent = text || ''; }
+  }
+
+  async function renderOrg() {
+    const el = document.getElementById('org-section');
+    if (!el || !window.HC.org) return;
+    const st = await window.HC.org.status();
+
+    if (!st.joined) {
+      el.innerHTML =
+        '<p class="hint">Join your co-op or program to share screenings with their dashboard. Optional — HerdCheck works fully without it.</p>' +
+        '<label class="field"><span>Program code</span>' +
+        '<input type="text" id="org-code" placeholder="e.g. GREENVALLEY-MEMBER" autocapitalize="characters"></label>' +
+        '<label class="field"><span>Your name</span>' +
+        '<input type="text" id="org-name" placeholder="Your name"></label>' +
+        '<button class="btn btn-secondary btn-full" id="org-join">Join program</button>' +
+        '<p class="hint" id="org-msg" hidden></p>';
+      document.getElementById('org-join').addEventListener('click', onOrgJoin);
+      return;
+    }
+
+    if (st.role === 'staff') {
+      el.innerHTML =
+        '<p class="hint">Joined <strong>' + esc(st.orgName) + '</strong> as staff. ' +
+        'Open the co-op dashboard in your browser with your staff token to see the herd.</p>' +
+        '<button class="btn btn-secondary btn-full" id="org-leave">Leave program</button>';
+      document.getElementById('org-leave').addEventListener('click', onOrgLeave);
+      return;
+    }
+
+    el.innerHTML =
+      '<p class="hint">Joined <strong>' + esc(st.orgName) + '</strong>.</p>' +
+      '<label class="org-consent"><input type="checkbox" id="org-consent"' + (st.consent ? ' checked' : '') + '>' +
+      '<span>Share my screenings with ' + esc(st.orgName) + '</span></label>' +
+      '<p class="hint">We send only: animal tag, species, check type, risk tier, and the reason/action text, with the time. ' +
+      'Photos and videos never leave your phone.</p>' +
+      '<p class="hint" id="org-share-state">' +
+      (st.consent ? 'Sharing on — syncs whenever you have signal.' : 'Sharing off — nothing is sent.') + '</p>' +
+      '<button class="btn btn-secondary btn-full" id="org-leave">Leave program</button>';
+    document.getElementById('org-consent').addEventListener('change', onOrgConsent);
+    document.getElementById('org-leave').addEventListener('click', onOrgLeave);
+  }
+
+  async function onOrgJoin() {
+    const code = (document.getElementById('org-code').value || '').trim();
+    const name = (document.getElementById('org-name').value || '').trim();
+    if (!code) { setOrgMsg('Enter your program code.'); return; }
+    setOrgMsg('Joining…');
+    try {
+      const r = await window.HC.org.join({ orgCode: code, memberName: name });
+      if (!r.ok) { setOrgMsg(r.reason || 'Could not join. Check the code.'); return; }
+      await renderOrg();
+      toast('Joined ' + r.orgName);
+    } catch (e) {
+      setOrgMsg('No connection. Try again when you have signal.');
+    }
+  }
+
+  async function onOrgConsent(e) {
+    await window.HC.org.setConsent(e.target.checked);
+    if (e.target.checked && window.HC.sync) window.HC.sync.flush();
+    await renderOrg();
+    toast(e.target.checked ? 'Sharing on' : 'Sharing off');
+  }
+
+  async function onOrgLeave() {
+    if (!confirm('Leave the program? Your animals and checks stay on your phone — only sharing stops.')) return;
+    await window.HC.org.leave();
+    await renderOrg();
+    toast('Left program');
   }
 
   ['settings-farm', 'settings-coop'].forEach(id => {

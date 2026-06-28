@@ -2,6 +2,7 @@
 // Languages: en, hi, bn, sw, pt, es
 window.HC_I18N = {
   en: {
+    "settings.orgTitle": "Co-op program",
     "herd.title": "Your herd",
     "herd.add": "+ Add animal",
     "herd.empty": "No animals yet. Tap <strong>+ Add animal</strong> to register your first one.",
