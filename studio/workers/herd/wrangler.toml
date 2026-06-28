@@ -1,0 +1,44 @@
+# HerdCheck co-op aggregation Worker.
+#
+# Deployed at https://herd.studio.starlightmix.com/api/herd/*
+#
+# Required setup (post-`wrangler login`):
+#
+#   1. Create the D1 database:
+#        wrangler d1 create starlightmix-herd
+#      Paste the returned `database_id = "..."` into the [[d1_databases]] block
+#      below (replace REPLACE_WITH_D1_DATABASE_ID).
+#
+#   2. Apply the schema:
+#        wrangler d1 execute starlightmix-herd --remote --file=src/schema.sql
+#      (drop --remote to seed the local dev DB used by `wrangler dev`).
+#
+#   3. Deploy:
+#        wrangler deploy
+#
+#   4. (Optional) Seed a demo org — uncomment the INSERTs at the bottom of
+#      src/schema.sql, then re-run the d1 execute above.
+#
+# There are NO secrets for this Worker: auth is via opaque bearer tokens stored
+# on the members row (issued at /api/herd/join), not a shared secret.
+
+name = "starlightmix-herd"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+workers_dev = false
+
+# Custom-domain route. The zone `starlightmix.com` must already be on Cloudflare
+# (proxied) and `herd.studio` should resolve to this Worker.
+[[routes]]
+pattern = "herd.studio.starlightmix.com/api/herd*"
+custom_domain = true
+
+# D1 database binding. Run `wrangler d1 create starlightmix-herd` and replace the
+# placeholder id. Schema lives in src/schema.sql.
+[[d1_databases]]
+binding = "HERD_DB"
+database_name = "starlightmix-herd"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[observability]
+enabled = true
