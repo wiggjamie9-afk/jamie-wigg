@@ -74,6 +74,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `SETUP-SD-WEBUI.md` — Stable Diffusion WebUI (AUTOMATIC1111) local image-gen setup; cloud-first repo, use only with a GPU machine
 - `SETUP-MOVIEPY.md` — MoviePy v2 (Python video editing) setup + v1→v2 migration; post-processing layer for HyperFrames renders (stitch Cuts, captions, aspect repurposing, GIFs)
 - `SETUP-MINIMAX-01.md` — MiniMax-01 (Text-01 456B MoE / VL-01) reference; long-context + multimodal foundation models. Cloud-first repo → use the hosted API/MCP, self-host only on a GPU cluster
+- `SETUP-NVIDIA-MINIMAX.md` — NVIDIA NIM-hosted **MiniMax-M3** (OpenAI-compatible, long-context + multimodal image/video). The hosted path the repo should actually use; wired as the `nvidia` MCP server (`minimax_chat` / `minimax_vision` / `minimax_script`). Put `NVIDIA_API_KEY` in `.env`
 - `SETUP-DEEP-PLAYGROUND.md` — TensorFlow Deep Playground (TS + d3 neural-net visualization) reference; tangential teaching/demo tool, optionally vendored under `apps/playground/`
 - `SETUP-FREEBUFF.md` — Freebuff terminal AI coding-agent CLI reference (agent-CLI family alongside Hermes/Agent TARS/OpenManus); alternative coding agent, not a pipeline tool
 - `SETUP-RUIXEN-UI.md` — Ruixen UI shadcn-compatible component catalog (240+ React components); fits `studio/` + `agent-builder/` (Next 15/React 19/Tailwind v4), re-skin via shadcn tokens to brand
@@ -370,6 +371,7 @@ The `.claude/agents/` directory contains sub-agent definition files for FleetVie
 | `playwright` | `npx -y @playwright/mcp@latest` | Base Playwright browser automation. |
 | `claude-playwright` | `node node_modules/claude-playwright/dist/mcp/server.cjs` | Session/profile/test management on top of Playwright. Run `npm install` first. |
 | `context7` | HTTP `https://mcp.context7.com/mcp` | Current library documentation. Prefer over training knowledge. |
+| `nvidia` | `node .claude/mcp/nvidia/server.mjs` | NVIDIA NIM-hosted MiniMax-M3 (long-context + multimodal). Tools: `minimax_chat`, `minimax_vision`, `minimax_script`. Needs `.env`: `NVIDIA_API_KEY`. Run `cd .claude/mcp/nvidia && npm install` first. See `SETUP-NVIDIA-MINIMAX.md`. |
 | `openmanus` | `python -m app.mcp.server` (from `/tmp/OpenManus`) | LLM-driven browser automation agent. Tools: navigate, click, fill, extract, screenshot, search. Config: `.mcp.json`. Setup: `OPENMANUS-MCP-INTEGRATION.md`. |
 
 **Rule:** Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging. Use OpenManus for autonomous browser tasks, research automation, and multi-step web workflows — particularly useful for RHYTHMIX content research and market intelligence gathering.
