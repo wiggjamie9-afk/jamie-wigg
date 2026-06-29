@@ -37,9 +37,14 @@ Layout:
 > `skills-lock.json`. Diff before pulling a newer version so local adaptations
 > aren't clobbered.
 >
-> **Not yet vendored** (candidate to add): `writing-great-skills`. The repo's own
-> `write-a-skill` skill covers similar ground — diff the two before adding to
-> avoid duplication.
+> **Coverage:** as of upstream commit `35414756`, **all 17** skills under
+> `anthropics/skills/skills/` are already vendored here (`algorithmic-art`,
+> `brand-guidelines`, `canvas-design`, `claude-api`, `doc-coauthoring`, `docx`,
+> `frontend-design`, `internal-comms`, `mcp-builder`, `pdf`, `pptx`,
+> `skill-creator`, `slack-gif-creator`, `theme-factory`, `web-artifacts-builder`,
+> `webapp-testing`, `xlsx`) and pinned to that commit in `skills-lock.json`.
+> Nothing is missing — re-syncing means *refreshing* against a newer upstream
+> commit, not adding new skills.
 >
 > **Authoring new skills:** the repo conventions in `CLAUDE.md` (source in
 > `.agents/skills/`, symlink into `.claude/skills/`, local-only skills edited
