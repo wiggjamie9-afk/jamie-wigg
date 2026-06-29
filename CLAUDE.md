@@ -78,6 +78,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `SETUP-FREEBUFF.md` — Freebuff terminal AI coding-agent CLI reference (agent-CLI family alongside Hermes/Agent TARS/OpenManus); alternative coding agent, not a pipeline tool
 - `SETUP-OPENCODE.md` — OpenCode terminal AI coding-agent CLI reference (agent-CLI family alongside Freebuff/Hermes/Agent TARS/OpenManus); built-in `build`/`plan` agents + desktop app, alternative coding agent, not a pipeline tool
 - `SETUP-RUIXEN-UI.md` — Ruixen UI shadcn-compatible component catalog (240+ React components); fits `studio/` + `agent-builder/` (Next 15/React 19/Tailwind v4), re-skin via shadcn tokens to brand
+- `SETUP-PENPOT.md` — Penpot open-source, self-hostable design platform (MPL-2.0); native Design Tokens + Components/Variants, MCP server, open API/plugins, SVG/CSS/HTML export. Design-authoring layer that maps to `rhythmix-teaser-60s/DESIGN.md` and feeds `studio/` + the site-build pipeline
 - `SETUP-PALMIER-PRO.md` — Palmier Pro MCP-controllable video editor (GPLv3); agent-driven NLE timeline alternative to MoviePy/FFmpeg. macOS 26 Apple-Silicon only → not usable on the no-desktop setup yet
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
