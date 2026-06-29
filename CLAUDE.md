@@ -84,6 +84,7 @@ This workspace hosts **RHYTHMIX** (AI music platform) marketing assets, promo vi
 - `SETUP-PALMIER-PRO.md` — Palmier Pro MCP-controllable video editor (GPLv3); agent-driven NLE timeline alternative to MoviePy/FFmpeg. macOS 26 Apple-Silicon only → not usable on the no-desktop setup yet
 - `SETUP-LOGTO.md` — Logto open-source auth infra (OIDC/OAuth 2.1, SSO, RBAC, MCP/agent auth; MPL-2.0). App-layer auth for `studio/` (SPA/PKCE flow — static export, no server runtime) and the Cloudflare Workers; not for the static marketing site
 - `SETUP-SIMPLEX.md` — SimpleX Chat reference (no-identifier private messaging; double-ratchet + PQ E2E; self-hostable SMP/XFTP relays; AGPLv3). Niche fit as a privacy-first bot / notification channel for the render+agent pipeline (parallel to the Hermes/Telegram/Discord gateways) via the terminal CLI's WebSocket server; not for the marketing site
+- `SETUP-THE-AGENCY.md` — The Agency (Agency Agents) reference: 232 community AI agent personalities across 16 divisions, MIT, with multi-tool convert/install scripts (Claude Code, Cursor, Codex, OpenClaw, Hermes, …). Supplemental subagent library — install user-global to `~/.claude/agents/`, **never** into this repo's FleetView-managed `.claude/agents/`
 - `AWESOME-AI-HARDWARE.md` — AI hardware reference
 - `SCRIPT.md`, `VIDEOS.md` — script and video asset references
 
