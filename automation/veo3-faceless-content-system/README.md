@@ -3,15 +3,14 @@
 An importable [n8n](https://n8n.io) workflow that rebuilds the "VEO3 + autoposting"
 faceless content automation: a new Google Sheets row triggers an AI-written VEO3
 prompt, generates an 8-second vertical video (with native audio) on **fal.ai**,
-polls until it's ready, writes the result back to the sheet, then fans out to
-**TikTok + Instagram Reels + YouTube Shorts**.
+polls until it's ready, writes the result back to the sheet, then posts it to
+**TikTok, Instagram, Facebook, X & Threads** in one call.
 
 > **Status:** the workflow imports and runs as a skeleton with **placeholder
-> credentials** and a couple of literal placeholders (sheet ID, upload-post user).
-> YouTube is wired with the native node; TikTok + Instagram post through
-> [upload-post.com](https://upload-post.com) in a single call (with direct-API
-> alternatives documented on a sticky note). Nothing here contains secrets — you
-> add credentials inside n8n after import.
+> credentials**. All posting goes through [upload-post.com](https://upload-post.com)
+> in a single multipart call to every connected platform (default: tiktok,
+> instagram, facebook, x, threads — add `youtube` etc. once connected there).
+> Nothing here contains secrets — you add credentials inside n8n after import.
 
 ## Stages
 
@@ -20,7 +19,7 @@ polls until it's ready, writes the result back to the sheet, then fans out to
 | 1 — Trigger & Prompt | `New Row (Google Sheets)` → `Generate VEO3 Prompt (Claude)` → `Set Variables for Video` | On a new row, Claude turns the row's `Idea` into a VEO3-ready prompt (scene + camera + audio cues), and sets aspect ratio (`9:16`) + duration (`8s`). |
 | 2 — Submit | `Submit to VEO3 (fal.ai)` | `POST https://queue.fal.run/fal-ai/veo3/fast` with the prompt; returns a `request_id` + `status_url` + `response_url`. |
 | 3 — Monitor | `Wait 10s` → `Check Status` → `Ready?` | Polls every 10s; loops back until `status = COMPLETED`. |
-| 4 — Retrieve & post | `Get Video URL` → `Download MP4` / `Update Sheet` / `Post to TikTok + Instagram` → `Upload to YouTube Shorts` | Fetches the final `video.url`, logs `status` + `video_url` + `prompt_used` to the sheet, and posts everywhere. |
+| 4 — Retrieve & post | `Get Video URL` → `Download MP4` / `Update Sheet` / `Post to socials (upload-post.com)` | Fetches the final `video.url`, logs `status` + `video_url` + `prompt_used` to the sheet, downloads the MP4, and posts it to all connected platforms. |
 
 ## Import
 
@@ -50,16 +49,18 @@ Drop a new row with an `Idea`, and the pipeline does the rest.
 | `New Row (Google Sheets)`, `Update Sheet` | Google Sheets OAuth2 | Your Google account with access to the sheet. |
 | `Generate VEO3 Prompt (Claude)` | **Header Auth** | Header name `x-api-key`, value = your Anthropic API key. |
 | `Submit to VEO3 (fal.ai)`, `Check Status`, `Get Video URL` | **Header Auth** | Header name `Authorization`, value `Key <your_fal_key>`. |
-| `Post to TikTok + Instagram (upload-post.com)` | **Header Auth** | Header name `Authorization`, value `Apikey <your_upload-post_key>`. (Do **not** set a `content-type` header — n8n sets the multipart boundary.) |
-| `Upload to YouTube Shorts` | YouTube OAuth2 | Your YouTube channel. |
+| `Post to socials (upload-post.com)` | **Header Auth** | Header name `Authorization`, value `Apikey <your_upload-post_key>`. (Do **not** set a `content-type` header — n8n sets the multipart boundary.) |
+
+So you create **4 credentials total**: Google Sheets OAuth, Anthropic Header Auth, fal.ai Header Auth, upload-post Header Auth. (No separate YouTube/Google OAuth — posting is all via upload-post.)
 
 ## Placeholders to replace
 
 1. **`YOUR_GOOGLE_SHEET_ID`** — in both Google Sheets nodes (the trigger and
    `Update Sheet`). It's the long ID in your sheet's URL.
-2. **upload-post `user`** — in `Post to TikTok + Instagram`, the `user` form
-   field is preset to `jamie28`. Change it only if your upload-post profile name
-   differs. (That profile must have TikTok + Instagram connected.)
+2. **upload-post `user`** — in `Post to socials`, the `user` form field is preset
+   to `jamie28`. Change it only if your upload-post profile name differs. That
+   profile posts to its connected platforms (here: tiktok, instagram, facebook,
+   x, threads).
 3. The model is **`fal-ai/veo3/fast`** (cheaper, fast). For full quality switch
    the URL in `Submit to VEO3 (fal.ai)` to `https://queue.fal.run/fal-ai/veo3`.
 
@@ -87,16 +88,14 @@ three fal nodes:
 See the sibling [`automation/kling-social-pipeline/`](../kling-social-pipeline/)
 for a worked Replicate-based example.
 
-## Posting — TikTok & Instagram
+## Posting — all platforms via upload-post
 
-The primary path uses **upload-post.com**. The node sends **multipart/form-data**
-(`user`, `title`, repeated `platform[]`, and the MP4 **file** as `video`), taking
-the binary from the `Download MP4` node — so it works regardless of how long the
-fal.ai URL stays live. To add **YouTube** through upload-post, add a third
-`platform[]` = `youtube` (connect YouTube in upload-post first) and delete the
-native `Upload to YouTube Shorts` node + its Google OAuth — one credential covers
-all three.
+The `Post to socials` node sends **multipart/form-data** (`user`, `title`, repeated
+`platform[]`, and the MP4 **file** as `video`), taking the binary from the
+`Download MP4` node — so it works regardless of how long the fal.ai URL stays live.
 
-If you'd rather go direct (no third party), the `Posting notes` sticky note inside
-the workflow has the exact TikTok Content Posting API and Instagram Graph API call
-sequences — each needs an approved app + OAuth you set up once.
+Default platforms: **tiktok, instagram, facebook, x, threads** (the ones connected
+on the `jamie28` upload-post profile). To add or remove one, edit the `platform[]`
+rows in the node — valid values include `youtube`, `linkedin`, `pinterest`. Each
+platform must be connected on the upload-post profile first (Users → profile →
+tap the platform → Authorize).
