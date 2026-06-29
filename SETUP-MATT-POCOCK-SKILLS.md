@@ -36,10 +36,14 @@ They target four common agent failure modes:
 > so on this repo prefer pulling specific skills into `.agents/skills/` and
 > wiring the symlink, rather than letting the installer scatter copies.
 >
-> **Not yet vendored here** (candidates to add): `ask-matt`,
-> `setup-matt-pocock-skills`, `domain-modeling`, `codebase-design`, `grilling`,
-> `teach`, `writing-great-skills`, plus the misc tools (`git-guardrails`,
-> `migrate-to-shoehorn`, `scaffold-exercises`, `setup-pre-commit`).
+> **Now vendored** (pinned to upstream commit `5d78bd0` in `skills-lock.json`):
+> `ask-matt`, `codebase-design`, `domain-modeling`, `implement`,
+> `resolving-merge-conflicts`, `grilling`, `teach`, `writing-great-skills`,
+> `git-guardrails-claude-code`, `migrate-to-shoehorn`, `scaffold-exercises`,
+> `setup-pre-commit` — added as real dirs under `.claude/skills/`. The repo's
+> `diagnose` skill is the local rename of upstream `diagnosing-bugs`, so that one
+> was intentionally not re-vendored. Re-syncing now means *refreshing* against a
+> newer upstream commit.
 
 ## Quickstart (30-second setup)
 
