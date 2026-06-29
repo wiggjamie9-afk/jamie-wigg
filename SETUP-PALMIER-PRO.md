@@ -3,13 +3,21 @@
 ## Overview
 
 [Palmier Pro](https://palmier.io) is an **MCP-controllable video editor** — a
-CapCut/Premiere-style timeline editor that exposes an **MCP server**, so an agent
-(Claude Code / Claude Desktop / Cursor / Codex) can drive the timeline directly.
-The editor, MCP server, and agent chat are **open source (GPLv3)**; only the
-generative-AI processing is closed and gated behind login + subscription.
+**Swift-native** (built from scratch; north star Premiere Pro) timeline editor
+that exposes an **MCP server**, so an agent (Claude Code / Claude Desktop /
+Cursor / Codex) can drive the timeline directly. You can also use the **in-app
+agent** to work on the same project alongside it. The editor, MCP server, and
+agent chat are **open source (GPLv3)**; only the generative-AI processing is
+closed and gated behind login + subscription.
 
-**Site**: https://palmier.io · Updates: [@Palmier_io](https://twitter.com/Palmier_io)
-· License: GPLv3, © 2026 Palmier, Inc.
+Built-in **generative AI** can produce videos and images from SOTA models —
+**Seedance, Kling, Nano Banana Pro** — directly inside the timeline.
+
+**Site**: https://palmier.io · Repo:
+[palmier-io/palmier-pro](https://github.com/palmier-io/palmier-pro) ·
+Updates: [@Palmier_io](https://twitter.com/Palmier_io) · Actively released
+(v0.4.4 at time of writing; see the repo's Releases) · License: GPLv3,
+© 2026 Palmier, Inc.
 
 > ### How this fits the RHYTHMIX repo
 > **Conceptually a strong fit** — it sits at the intersection of two things this
