@@ -4,12 +4,12 @@ An importable [n8n](https://n8n.io) workflow that rebuilds the "VEO3 + autoposti
 faceless content automation: a new Google Sheets row triggers an AI-written VEO3
 prompt, generates an 8-second vertical video (with native audio) on **fal.ai**,
 polls until it's ready, writes the result back to the sheet, then posts it to
-**TikTok, Instagram, Facebook, X & Threads** in one call.
+**TikTok, Facebook, X & Threads** in one call.
 
 > **Status:** the workflow imports and runs as a skeleton with **placeholder
 > credentials**. All posting goes through [upload-post.com](https://upload-post.com)
 > in a single multipart call to every connected platform (default: tiktok,
-> instagram, facebook, x, threads — add `youtube` etc. once connected there).
+> facebook, x, threads — add `instagram`/`youtube`/`pinterest` once connected there).
 > Nothing here contains secrets — you add credentials inside n8n after import.
 
 ## Stages
@@ -59,8 +59,7 @@ So you create **4 credentials total**: Google Sheets OAuth, Anthropic Header Aut
    `Update Sheet`). It's the long ID in your sheet's URL.
 2. **upload-post `user`** — in `Post to socials`, the `user` form field is preset
    to `jamie28`. Change it only if your upload-post profile name differs. That
-   profile posts to its connected platforms (here: tiktok, instagram, facebook,
-   x, threads).
+   profile posts to its connected platforms (here: tiktok, facebook, x, threads).
 3. The model is **`fal-ai/veo3/fast`** (cheaper, fast). For full quality switch
    the URL in `Submit to VEO3 (fal.ai)` to `https://queue.fal.run/fal-ai/veo3`.
 
@@ -94,8 +93,9 @@ The `Post to socials` node sends **multipart/form-data** (`user`, `title`, repea
 `platform[]`, and the MP4 **file** as `video`), taking the binary from the
 `Download MP4` node — so it works regardless of how long the fal.ai URL stays live.
 
-Default platforms: **tiktok, instagram, facebook, x, threads** (the ones connected
-on the `jamie28` upload-post profile). To add or remove one, edit the `platform[]`
-rows in the node — valid values include `youtube`, `linkedin`, `pinterest`. Each
-platform must be connected on the upload-post profile first (Users → profile →
-tap the platform → Authorize).
+Default platforms: **tiktok, facebook, x, threads** (the ones connected on the
+`jamie28` upload-post profile). To add or remove one, edit the `platform[]` rows
+in the node — valid values include `instagram`, `youtube`, `linkedin`,
+`pinterest`. Each platform must be connected on the upload-post profile first
+(Users → profile → tap the platform → Authorize). Note: `pinterest` also needs a
+board field, and `youtube` needs a title — add those params if you enable them.
