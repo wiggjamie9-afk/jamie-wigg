@@ -40,9 +40,9 @@ bash Install-Downloads.command
 It runs **unattended** — installs everything automatically with no prompts:
 prerequisites (Homebrew, node, git, Docker check), the **OpenCode CLI**, the
 **SimpleX Chat CLI**, the **Impeccable** design toolkit, the **Vercel CLI**, opens
-the **Viral Hook Generator** in your browser, and (optionally) brings up the
-**Penpot** design platform via Docker Compose. It skips anything already
-installed, so it's safe to re-run.
+the **Viral Hook Generator** in your browser, and (optionally) the heavy steps —
+the **Penpot** Docker stack and cloning the **Awesome LLM Apps** cookbook. It
+skips anything already installed, so it's safe to re-run.
 
 To skip the one heavy step (Penpot's Docker stack) on a given run:
 
@@ -162,6 +162,23 @@ native `@vercel/vc-native` binary is left opt-in). Then run `vercel`.
 
 ---
 
+## Awesome LLM Apps — fork-ready template cookbook (setup & reference)
+
+`Shubhamsaboo/awesome-llm-apps` — ~15 categories of self-contained,
+provider-agnostic LLM app templates (agents, always-on, multi-agent, voice, MCP,
+RAG, agent skills, memory, fine-tuning). Apache-2.0. A **parts bin to fork from** —
+lift one template into `automation/<slug>/` or `apps/<name>/` with attribution.
+
+| File | Lines | What it is |
+|---|---:|---|
+| `SETUP-AWESOME-LLM-APPS.md` | — | What's inside (the 15 categories), the per-template quick start, and how to lift a template into this repo. |
+
+**On your Mac:** the installer **clones** it to `~/awesome-llm-apps` (source only —
+no repo-wide deps; you `pip install -r requirements.txt` inside whichever template
+you run). This is one of the two heavy steps — skip with `SKIP_HEAVY=1`.
+
+---
+
 ## Penpot — self-host design platform (Docker Compose)
 
 The official Penpot stack (frontend, backend, exporter, MCP, Postgres 15,
@@ -206,5 +223,6 @@ Skill bundles synced into the repo (no install needed — they live in
 - **New lines of content:** ~3,800 across the new asset files
 - **Actually "installable" on the Mac:** OpenCode CLI (auto), SimpleX Chat CLI
   (auto), Impeccable design toolkit (auto), Vercel CLI (auto), Penpot stack
-  (Docker, optional). Everything else is open-and-use (Hook Generator) or
-  import-only (VEO3 n8n workflow) or already-in-repo (skills).
+  (Docker, optional), Awesome LLM Apps cookbook (clone, optional). Everything else
+  is open-and-use (Hook Generator) or import-only (VEO3 n8n workflow) or
+  already-in-repo (skills).

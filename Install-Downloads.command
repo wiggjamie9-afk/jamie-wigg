@@ -8,12 +8,14 @@
 # UNATTENDED: installs everything automatically, no y/N prompts —
 #   prerequisites (Homebrew, node, git) + OpenCode CLI + SimpleX Chat CLI +
 #   Impeccable design toolkit + Vercel CLI, opens the Viral Hook Generator in your
-#   browser, and (optionally) brings up the Penpot Docker stack.
+#   browser, and (optionally) the heavy steps — the Penpot Docker stack and the
+#   Awesome LLM Apps cookbook clone.
 # It still skips anything already installed, so it's safe to re-run.
 #
 # Note: the Homebrew installer itself may prompt for your password / a Return —
 # that's Apple's installer, not this script. To skip the heavy step (Penpot's
-# Docker stack), set SKIP_HEAVY=1 (e.g.  SKIP_HEAVY=1 bash Install-Downloads.command).
+# Docker stack + the cookbook clone), set SKIP_HEAVY=1
+# (e.g.  SKIP_HEAVY=1 bash Install-Downloads.command).
 
 set -u
 
@@ -36,7 +38,7 @@ SKIP_HEAVY="${SKIP_HEAVY:-0}"
 echo
 echo "${bold}RHYTHMIX — Install last 2 days' tools (unattended)${reset}"
 echo "Period: 2026-06-28 → 2026-06-30  (see DOWNLOADS-LAST-2-DAYS.md)"
-[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping the Penpot Docker stack this run."
+[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping Penpot + the Awesome LLM Apps clone this run."
 echo
 
 # ---------------------------------------------------------------------------
@@ -158,6 +160,23 @@ elif [[ -f "infra/penpot/docker-compose.yaml" ]]; then
     || err "Penpot failed to start — see infra/penpot/README.md"
 else
   warn "infra/penpot/docker-compose.yaml not found — did you 'git pull'?"
+fi
+
+# ---------------------------------------------------------------------------
+# 3b. Awesome LLM Apps cookbook (SETUP-AWESOME-LLM-APPS.md) — clone, heavy-ish.
+# ---------------------------------------------------------------------------
+echo
+say "Awesome LLM Apps — fork-ready LLM app templates (clone)"
+if [[ "$SKIP_HEAVY" == "1" ]]; then
+  warn "Skipped (SKIP_HEAVY=1)."
+elif [[ -d "$HOME/awesome-llm-apps/.git" ]]; then
+  ok "Already cloned at ~/awesome-llm-apps"
+elif have git; then
+  git clone https://github.com/Shubhamsaboo/awesome-llm-apps.git "$HOME/awesome-llm-apps" \
+    && ok "Cloned. Per template: cd ~/awesome-llm-apps/<path> && pip install -r requirements.txt" \
+    || err "Clone failed — see SETUP-AWESOME-LLM-APPS.md"
+else
+  err "git missing — cannot clone the cookbook. See SETUP-AWESOME-LLM-APPS.md"
 fi
 
 # ---------------------------------------------------------------------------
