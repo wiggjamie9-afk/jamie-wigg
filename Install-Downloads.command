@@ -6,8 +6,9 @@
 # Companion to DOWNLOADS-LAST-2-DAYS.md.
 #
 # UNATTENDED: installs everything automatically, no y/N prompts —
-#   prerequisites (Homebrew, node, git) + OpenCode CLI, opens the Viral Hook
-#   Generator in your browser, and (optionally) brings up the Penpot Docker stack.
+#   prerequisites (Homebrew, node, git) + OpenCode CLI + SimpleX Chat CLI, opens
+#   the Viral Hook Generator in your browser, and (optionally) brings up the
+#   Penpot Docker stack.
 # It still skips anything already installed, so it's safe to re-run.
 #
 # Note: the Homebrew installer itself may prompt for your password / a Return —
@@ -80,6 +81,19 @@ else
   curl -fsSL https://opencode.ai/install | bash \
     && ok "OpenCode installed via install script." \
     || err "OpenCode install failed — see SETUP-OPENCODE.md"
+fi
+
+# ---------------------------------------------------------------------------
+# 1b. SimpleX Chat terminal CLI  (SETUP-SIMPLEX.md)
+# ---------------------------------------------------------------------------
+echo
+say "SimpleX Chat — privacy-first messaging (terminal CLI)"
+if have simplex-chat; then
+  ok "SimpleX CLI already installed. Run: simplex-chat"
+else
+  curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash \
+    && ok "SimpleX CLI installed. Run: simplex-chat  (see SETUP-SIMPLEX.md)" \
+    || err "SimpleX CLI install failed — see SETUP-SIMPLEX.md"
 fi
 
 # ---------------------------------------------------------------------------

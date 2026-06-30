@@ -38,10 +38,10 @@ bash Install-Downloads.command
 ```
 
 It runs **unattended** — installs everything automatically with no prompts:
-prerequisites (Homebrew, node, git, Docker check), the **OpenCode CLI**, opens the
-**Viral Hook Generator** in your browser, and (optionally) brings up the
-**Penpot** design platform via Docker Compose. It skips anything already
-installed, so it's safe to re-run.
+prerequisites (Homebrew, node, git, Docker check), the **OpenCode CLI**, the
+**SimpleX Chat CLI**, opens the **Viral Hook Generator** in your browser, and
+(optionally) brings up the **Penpot** design platform via Docker Compose. It
+skips anything already installed, so it's safe to re-run.
 
 To skip the one heavy step (Penpot's Docker stack) on a given run:
 
@@ -111,6 +111,24 @@ script). Then run `opencode` in any project.
 
 ---
 
+## SimpleX Chat — privacy-first messaging (setup & reference)
+
+A messenger with **no user identifiers of any kind** (pairwise per-queue IDs),
+double-ratchet + extra NaCl encryption + post-quantum key exchange, Trail of
+Bits-audited (AGPLv3). Has a terminal CLI that runs as a local WebSocket server —
+useful here for **private bots/automations** (e.g. a render-finished or
+new-download-bundle notifier).
+
+| File | Lines | What it is |
+|---|---:|---|
+| `SETUP-SIMPLEX.md` | — | Overview, the no-identifier model, app + CLI install, connection/QR flow, bot dev, privacy limitations. |
+
+**On your Mac:** the installer runs the official SimpleX CLI install
+(`curl … install.sh | bash`). Then run `simplex-chat`. Mobile/desktop apps are
+linked in the doc.
+
+---
+
 ## Penpot — self-host design platform (Docker Compose)
 
 The official Penpot stack (frontend, backend, exporter, MCP, Postgres 15,
@@ -153,6 +171,6 @@ Skill bundles synced into the repo (no install needed — they live in
   12 vendored skills, 4 SETUP docs, 1 Penpot compose + README)
 - **Modified files:** `CLAUDE.md`, `skills-lock.json`, `SETUP-PALMIER-PRO.md`
 - **New lines of content:** ~3,800 across the new asset files
-- **Actually "installable" on the Mac:** OpenCode CLI (auto), Penpot stack (Docker,
-  optional). Everything else is open-and-use (Hook Generator) or import-only
-  (VEO3 n8n workflow) or already-in-repo (skills).
+- **Actually "installable" on the Mac:** OpenCode CLI (auto), SimpleX Chat CLI
+  (auto), Penpot stack (Docker, optional). Everything else is open-and-use (Hook
+  Generator) or import-only (VEO3 n8n workflow) or already-in-repo (skills).
