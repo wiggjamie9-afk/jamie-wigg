@@ -6,9 +6,9 @@
 # Companion to DOWNLOADS-LAST-2-DAYS.md.
 #
 # UNATTENDED: installs everything automatically, no y/N prompts —
-#   prerequisites (Homebrew, node, git) + OpenCode CLI + SimpleX Chat CLI, opens
-#   the Viral Hook Generator in your browser, and (optionally) brings up the
-#   Penpot Docker stack.
+#   prerequisites (Homebrew, node, git) + OpenCode CLI + SimpleX Chat CLI +
+#   Impeccable design toolkit + Vercel CLI, opens the Viral Hook Generator in your
+#   browser, and (optionally) brings up the Penpot Docker stack.
 # It still skips anything already installed, so it's safe to re-run.
 #
 # Note: the Homebrew installer itself may prompt for your password / a Return —
@@ -94,6 +94,36 @@ else
   curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash \
     && ok "SimpleX CLI installed. Run: simplex-chat  (see SETUP-SIMPLEX.md)" \
     || err "SimpleX CLI install failed — see SETUP-SIMPLEX.md"
+fi
+
+# ---------------------------------------------------------------------------
+# 1c. Impeccable — design-quality toolkit for AI coding agents (SETUP-IMPECCABLE.md)
+# ---------------------------------------------------------------------------
+echo
+say "Impeccable — design skill + detector for AI-built frontends"
+if [[ -d "$HOME/.claude/skills/impeccable" ]]; then
+  ok "Impeccable already installed globally (~/.claude/skills/impeccable)."
+elif have node; then
+  npx --yes impeccable install --providers=claude --scope=global \
+    && ok "Impeccable installed. Run /impeccable init in your AI tool; CLI: npx impeccable detect ." \
+    || err "Impeccable install failed — see SETUP-IMPECCABLE.md"
+else
+  err "node missing — cannot install Impeccable. See SETUP-IMPECCABLE.md"
+fi
+
+# ---------------------------------------------------------------------------
+# 1d. Vercel CLI  (SETUP-VERCEL.md) — standard npm CLI; native binary is opt-in.
+# ---------------------------------------------------------------------------
+echo
+say "Vercel CLI — deploy / vercel dev"
+if have vercel; then
+  ok "Vercel CLI already installed ($(vercel --version 2>/dev/null | head -1))"
+elif have npm; then
+  npm i -g vercel \
+    && ok "Vercel CLI installed. Run: vercel  (native binary is opt-in — see SETUP-VERCEL.md)" \
+    || err "Vercel CLI install failed — see SETUP-VERCEL.md"
+else
+  err "npm missing — cannot install Vercel CLI. See SETUP-VERCEL.md"
 fi
 
 # ---------------------------------------------------------------------------

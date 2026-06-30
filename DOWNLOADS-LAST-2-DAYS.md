@@ -39,9 +39,10 @@ bash Install-Downloads.command
 
 It runs **unattended** — installs everything automatically with no prompts:
 prerequisites (Homebrew, node, git, Docker check), the **OpenCode CLI**, the
-**SimpleX Chat CLI**, opens the **Viral Hook Generator** in your browser, and
-(optionally) brings up the **Penpot** design platform via Docker Compose. It
-skips anything already installed, so it's safe to re-run.
+**SimpleX Chat CLI**, the **Impeccable** design toolkit, the **Vercel CLI**, opens
+the **Viral Hook Generator** in your browser, and (optionally) brings up the
+**Penpot** design platform via Docker Compose. It skips anything already
+installed, so it's safe to re-run.
 
 To skip the one heavy step (Penpot's Docker stack) on a given run:
 
@@ -129,6 +130,38 @@ linked in the doc.
 
 ---
 
+## Impeccable — design-quality toolkit for AI coding agents (setup & reference)
+
+1 skill + 23 `/impeccable` commands + live browser mode + **44 deterministic
+detector rules** for AI-frontend slop (Inter everywhere, purple gradients, nested
+cards, bounce easing). Directly relevant to `studio/`, the root site, and the
+`sites/<slug>/` pipeline; a parallel skill to the repo's `frontend-design`.
+
+| File | Lines | What it is |
+|---|---:|---|
+| `SETUP-IMPECCABLE.md` | — | Install (`npx impeccable install`), the 23 commands, the standalone `detect` CLI, `.gitignore` block, how it maps to the brand DESIGN.md. |
+
+**On your Mac:** the installer runs
+`npx impeccable install --providers=claude --scope=global`. Then `/impeccable
+init` in your AI tool, or `npx impeccable detect .` as a CI-style gate.
+
+---
+
+## Vercel CLI — deploy from the terminal (setup & reference)
+
+`vercel` / `vc` for `vercel deploy` and `vercel dev`. Tangential here — this repo
+ships via **GitHub Pages + Cloudflare Pages**, not Vercel — kept for one-off /
+experimental deploys.
+
+| File | Lines | What it is |
+|---|---:|---|
+| `SETUP-VERCEL.md` | — | Standard `npm i -g vercel`, the opt-in native binary, basic usage, and the upstream monorepo contributing notes. |
+
+**On your Mac:** the installer runs `npm i -g vercel` (standard Node.js CLI; the
+native `@vercel/vc-native` binary is left opt-in). Then run `vercel`.
+
+---
+
 ## Penpot — self-host design platform (Docker Compose)
 
 The official Penpot stack (frontend, backend, exporter, MCP, Postgres 15,
@@ -172,5 +205,6 @@ Skill bundles synced into the repo (no install needed — they live in
 - **Modified files:** `CLAUDE.md`, `skills-lock.json`, `SETUP-PALMIER-PRO.md`
 - **New lines of content:** ~3,800 across the new asset files
 - **Actually "installable" on the Mac:** OpenCode CLI (auto), SimpleX Chat CLI
-  (auto), Penpot stack (Docker, optional). Everything else is open-and-use (Hook
-  Generator) or import-only (VEO3 n8n workflow) or already-in-repo (skills).
+  (auto), Impeccable design toolkit (auto), Vercel CLI (auto), Penpot stack
+  (Docker, optional). Everything else is open-and-use (Hook Generator) or
+  import-only (VEO3 n8n workflow) or already-in-repo (skills).
