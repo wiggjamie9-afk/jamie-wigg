@@ -6,13 +6,13 @@
 # Companion to DOWNLOADS-LAST-2-DAYS.md.
 #
 # UNATTENDED: installs everything automatically, no y/N prompts —
-#   prerequisites (Homebrew, python3, ffmpeg, node) + MoviePy + ffmpeg
-#   + Stable Diffusion WebUI + Deep Playground.
+#   prerequisites (Homebrew, node, git) + OpenCode CLI, opens the Viral Hook
+#   Generator in your browser, and (optionally) brings up the Penpot Docker stack.
 # It still skips anything already installed, so it's safe to re-run.
 #
 # Note: the Homebrew installer itself may prompt for your password / a Return —
-# that's Apple's installer, not this script. To skip the heavy clones on a run,
-# set SKIP_HEAVY=1 (e.g.  SKIP_HEAVY=1 bash Install-Downloads.command).
+# that's Apple's installer, not this script. To skip the heavy step (Penpot's
+# Docker stack), set SKIP_HEAVY=1 (e.g.  SKIP_HEAVY=1 bash Install-Downloads.command).
 
 set -u
 
@@ -34,12 +34,12 @@ SKIP_HEAVY="${SKIP_HEAVY:-0}"
 
 echo
 echo "${bold}RHYTHMIX — Install last 2 days' tools (unattended)${reset}"
-echo "Period: 2026-06-26 → 2026-06-28  (see DOWNLOADS-LAST-2-DAYS.md)"
-[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping SD WebUI + Deep Playground this run."
+echo "Period: 2026-06-28 → 2026-06-30  (see DOWNLOADS-LAST-2-DAYS.md)"
+[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping the Penpot Docker stack this run."
 echo
 
 # ---------------------------------------------------------------------------
-# 0. Prerequisites: Homebrew, then ffmpeg + python3 + node (all automatic).
+# 0. Prerequisites: Homebrew, then git + node (all automatic).
 # ---------------------------------------------------------------------------
 say "Prerequisites"
 
@@ -53,81 +53,82 @@ else
 fi
 
 if have brew; then
-  for pkg in python ffmpeg node; do
-    bin="$pkg"; [[ "$pkg" == "python" ]] && bin="python3"
-    if have "$bin"; then ok "$bin present"; else
+  for pkg in git node; do
+    if have "$pkg"; then ok "$pkg present"; else
       say "Installing $pkg"; brew install "$pkg" && ok "$pkg installed" || err "$pkg install failed"
     fi
   done
 else
-  warn "No Homebrew — skipping python3/ffmpeg/node auto-install. Some steps may fail."
+  warn "No Homebrew — skipping git/node auto-install. Some steps may fail."
 fi
 
 # ---------------------------------------------------------------------------
-# 1. MoviePy v2  (SETUP-MOVIEPY.md)
+# 1. OpenCode CLI  (SETUP-OPENCODE.md)
 # ---------------------------------------------------------------------------
 echo
-say "MoviePy v2 — Python video post-processing"
-if have python3; then
-  python3 -m pip install --user --upgrade "moviepy>=2.0" \
-    && ok "MoviePy installed. Test: python3 -c 'import moviepy; print(moviepy.__version__)'" \
-    || err "MoviePy install failed — see SETUP-MOVIEPY.md"
+say "OpenCode — terminal AI coding-agent CLI"
+if have opencode; then
+  ok "OpenCode already installed ($(opencode --version 2>/dev/null | head -1))"
+elif have brew; then
+  brew install anomalyco/tap/opencode \
+    && ok "OpenCode installed. Run: opencode  (in any project)" \
+    || { warn "brew tap install failed — trying the official install script."
+         curl -fsSL https://opencode.ai/install | bash \
+           && ok "OpenCode installed via install script." \
+           || err "OpenCode install failed — see SETUP-OPENCODE.md"; }
 else
-  err "python3 missing — cannot install MoviePy. See SETUP-MOVIEPY.md"
+  curl -fsSL https://opencode.ai/install | bash \
+    && ok "OpenCode installed via install script." \
+    || err "OpenCode install failed — see SETUP-OPENCODE.md"
 fi
 
 # ---------------------------------------------------------------------------
-# 2. Stable Diffusion WebUI / AUTOMATIC1111 (SETUP-SD-WEBUI.md) — heavy.
+# 2. Viral Hook Generator (HookLab) — open in browser, nothing to install.
 # ---------------------------------------------------------------------------
 echo
-say "Stable Diffusion WebUI (AUTOMATIC1111) — local image generation"
+say "Viral Hook Generator (HookLab) — free in-browser tool"
+if [[ -f "tools/hook-generator/index.html" ]]; then
+  open "tools/hook-generator/index.html" 2>/dev/null \
+    && ok "Opened tools/hook-generator/index.html in your browser." \
+    || ok "Open it yourself: tools/hook-generator/index.html (README has the 2-min setup)."
+else
+  warn "tools/hook-generator/index.html not found — did you 'git pull'?"
+fi
+
+# ---------------------------------------------------------------------------
+# 3. Penpot self-host (infra/penpot/, SETUP-PENPOT.md) — heavy, needs Docker.
+# ---------------------------------------------------------------------------
+echo
+say "Penpot — self-host design platform (Docker Compose)"
 if [[ "$SKIP_HEAVY" == "1" ]]; then
   warn "Skipped (SKIP_HEAVY=1)."
-elif [[ -d "$HOME/stable-diffusion-webui/.git" ]]; then
-  ok "Already cloned at ~/stable-diffusion-webui"
+elif ! have docker; then
+  warn "Docker not found — install Docker Desktop, then run:"
+  warn "  cd infra/penpot && docker compose -p penpot up -d   (see SETUP-PENPOT.md)"
+elif ! docker info >/dev/null 2>&1; then
+  warn "Docker is installed but not running — start Docker Desktop, then run:"
+  warn "  cd infra/penpot && docker compose -p penpot up -d"
+elif [[ -f "infra/penpot/docker-compose.yaml" ]]; then
+  ( cd infra/penpot && docker compose -p penpot up -d ) \
+    && ok "Penpot is up → http://localhost:9001" \
+    || err "Penpot failed to start — see infra/penpot/README.md"
 else
-  warn "Large download (~GBs); best on a GPU / Apple-Silicon Mac."
-  git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git \
-    "$HOME/stable-diffusion-webui" \
-    && ok "Cloned. First run: cd ~/stable-diffusion-webui && ./webui.sh" \
-    || err "Clone failed — see SETUP-SD-WEBUI.md"
+  warn "infra/penpot/docker-compose.yaml not found — did you 'git pull'?"
 fi
 
 # ---------------------------------------------------------------------------
-# 3. Deep Playground (SETUP-DEEP-PLAYGROUND.md) — TS + d3 demo.
-# ---------------------------------------------------------------------------
-echo
-say "TensorFlow Deep Playground — neural-net visualization demo"
-if [[ "$SKIP_HEAVY" == "1" ]]; then
-  warn "Skipped (SKIP_HEAVY=1)."
-elif [[ -d "$HOME/deep-playground/.git" ]]; then
-  ok "Already cloned at ~/deep-playground"
-elif have node; then
-  git clone https://github.com/tensorflow/playground.git "$HOME/deep-playground" \
-    && ( cd "$HOME/deep-playground" && npm install ) \
-    && ok "Ready. Run: cd ~/deep-playground && npm run serve" \
-    || err "Setup failed — see SETUP-DEEP-PLAYGROUND.md"
-else
-  err "node missing — cannot set up Deep Playground. See SETUP-DEEP-PLAYGROUND.md"
-fi
-
-# ---------------------------------------------------------------------------
-# 4. Doc-only / hosted / per-project — nothing to globally install.
+# 4. Import-only / hosted / already-in-repo — nothing to globally install.
 # ---------------------------------------------------------------------------
 echo
 say "No standalone install (use these per the docs):"
 cat <<'NOTES'
-  • PageAgent copilot   — web component; embed pageagent/pageagent-copilot.js
-                          in a page. Open pageagent.html to try it. (pageagent/README.md)
-  • Ruixen UI           — shadcn components added per-project with the shadcn
-                          CLI, not a global install. (SETUP-RUIXEN-UI.md)
-  • MiniMax-01          — hosted API / MCP, no local install. (SETUP-MINIMAX-01.md)
-  • Palmier Pro         — macOS 26 Apple-Silicon only; install from its own
-                          release when on a supported Mac. (SETUP-PALMIER-PRO.md)
-  • Freebuff CLI        — terminal AI coding agent; install per its own README.
-                          (SETUP-FREEBUFF.md)
-  • Kling→socials       — import automation/kling-social-pipeline/workflow.json
-                          into your n8n instance. (automation/kling-social-pipeline/README.md)
+  • VEO3 faceless content — import automation/veo3-faceless-content-system/workflow.json
+                            into your n8n instance. (its README.md)
+  • Vendored skills       — already in .claude/skills/ after `git pull`; they show
+                            up as /-commands in Claude Code. (SETUP-MATT-POCOCK-SKILLS.md,
+                            SETUP-ANTHROPIC-SKILLS.md)
+  • Palmier Pro           — macOS 26 Apple-Silicon only; install from its own
+                            release when on a supported Mac. (SETUP-PALMIER-PRO.md)
 NOTES
 
 echo

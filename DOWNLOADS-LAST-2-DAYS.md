@@ -3,9 +3,9 @@
 > A plain summary of everything added to the `jamie-wigg` repo over the last two days,
 > so you can pull it down to your Mac in one place.
 >
-> **Period covered:** 2026-06-26 → 2026-06-28
-> **Pull requests merged:** #106, #107
-> **Generated:** 2026-06-27
+> **Period covered:** 2026-06-28 → 2026-06-30
+> **Pull requests merged:** #112, #113, #114, #115, #116, #117, #118 (+ doc/skill commits)
+> **Generated:** 2026-06-30
 
 ---
 
@@ -38,19 +38,19 @@ bash Install-Downloads.command
 ```
 
 It runs **unattended** — installs everything automatically with no prompts:
-prerequisites (Homebrew, python3, ffmpeg, node), **MoviePy + ffmpeg**,
-**Stable Diffusion WebUI**, and **Deep Playground**. It skips anything already
-installed, so it's safe to re-run. (Homebrew's own installer may ask for your
-password — that's Apple's installer, not this script.)
+prerequisites (Homebrew, node, git, Docker check), the **OpenCode CLI**, opens the
+**Viral Hook Generator** in your browser, and (optionally) brings up the
+**Penpot** design platform via Docker Compose. It skips anything already
+installed, so it's safe to re-run.
 
-To skip the two heavy clones (SD WebUI + Deep Playground) on a given run:
+To skip the one heavy step (Penpot's Docker stack) on a given run:
 
 ```bash
 SKIP_HEAVY=1 bash Install-Downloads.command
 ```
 
-It also prints where to go for the hosted / doc-only tools (PageAgent,
-Ruixen UI, MiniMax-01, Palmier Pro, Freebuff, Kling→socials).
+It also prints where to go for the import-only / hosted items (the VEO3 n8n
+workflow, the vendored skills, Palmier Pro).
 
 > First time double-clicking? macOS may block it ("unidentified developer").
 > Right-click the file → **Open** → **Open**, or run
@@ -58,57 +58,101 @@ Ruixen UI, MiniMax-01, Palmier Pro, Freebuff, Kling→socials).
 
 ---
 
-## #106 — PageAgent copilot, tooling docs, Kling→socials workflow
+## #112 / #114 — Viral Hook Generator (HookLab)
 
-### 🤖 PageAgent in-page GUI copilot (MIT)
-An in-page, text-based DOM agent for RHYTHMIX web pages — no browser extension,
-no headless browser, no screenshots.
+A free, no-cost web tool that hands people scroll-stopping video hooks (the first
+line of a TikTok / Reel / Short). Runs **100% in the browser** — no server, no API
+keys, no monthly fees — and doubles as an email-list lead magnet.
 
 | File | Lines | What it is |
 |---|---:|---|
-| `pageagent/pageagent-copilot.js` | 174 | Drop-in loader. Pins PageAgent v1.10.0, falls back from jsDelivr to the npmmirror CDN, exposes `window.rhythmixCopilot`. Free demo LLM by default; switches to production when model + baseURL + apiKey are supplied. |
-| `pageagent.html` | 368 | Brand-locked standalone demo at the site root. Drives a "request a custom cut" form by natural language, with an offline fallback if the CDN is blocked. |
-| `pageagent/README.md` | 124 | Integration, production key-handling, and API docs. |
+| `tools/hook-generator/index.html` | 422 | The whole tool — self-contained HTML/JS. Edit the two CONFIG lines at the top of the `<script>` block to wire your email list. |
+| `tools/hook-generator/README.md` | 73 | Setup (2 min), the strategy, deploy notes. Live URL after deploy: `rhythmixapp.com.au/tools/hook-generator/`. |
+| `tools/hook-generator/THE-PLAN.md` | 75 | The traffic → list → sell plan behind it. |
+| `tools/hook-generator/START-HERE-MAKE-MONEY.md` | 107 | Step-by-step make-money guide for using the tool. |
 
-### 📄 New setup / reference docs (`SETUP-*.md`)
-Local/cloud tool references following the repo's existing `SETUP-*.md` convention.
-
-| File | Lines | Covers |
-|---|---:|---|
-| `SETUP-SD-WEBUI.md` | 187 | Stable Diffusion WebUI (AUTOMATIC1111) — local/cloud image generation, `--api` workflow wired to RHYTHMIX assets. |
-| `SETUP-MOVIEPY.md` | 167 | MoviePy v2 — Python post-processing over HyperFrames/FFmpeg, v1→v2 migration cheat-sheet, RHYTHMIX recipes. |
-| `SETUP-MINIMAX-01.md` | 164 | MiniMax-01 (Text-01 456B MoE / VL-01) — long-context + multimodal foundation models. |
-| `SETUP-RUIXEN-UI.md` | 96 | Ruixen UI — shadcn-compatible React component catalog (240+ components). |
-| `SETUP-PALMIER-PRO.md` | 82 | Palmier Pro — MCP-controllable video editor (GPLv3), agent-driven NLE timeline. |
-| `SETUP-DEEP-PLAYGROUND.md` | 67 | TensorFlow Deep Playground — TS + d3 neural-net visualization, teaching/demo tool. |
-| `SETUP-FREEBUFF.md` | 63 | Freebuff — terminal AI coding-agent CLI reference. |
-
-### 🎬 Kling → socials automation (n8n)
-| File | Lines | What it is |
-|---|---:|---|
-| `automation/kling-social-pipeline/workflow.json` | 304 | n8n workflow: Kling video → social channels. |
-| `automation/kling-social-pipeline/README.md` | 85 | How to import and run the workflow. |
-
-### ✏️ Updated
-- `CREATIVE-AI-STACK.md` — added an AUTOMATIC1111 row to the image-generation table.
-- `CLAUDE.md` — listed all new docs under "Reference docs at root".
+**On your Mac:** the installer opens `tools/hook-generator/index.html` in your
+browser. Nothing to install — just open and use it.
 
 ---
 
-## #107 — CI fix: green up the Tests workflow
+## #113 / #115 / #116 / #117 — VEO3 faceless content system (n8n)
 
-No application code changed — purely CI/infra cleanup.
+An end-to-end n8n workflow: generate a faceless short with VEO3, then post it to
+your connected socials in one upload-post call. Shipped alongside a new
+`n8n-workflow-generator` skill that turns a workflow breakdown into import-ready,
+validated n8n JSON.
 
-- `.github/workflows/test.yml` — `npm test --if-present` (root has no test script); dropped the broken `cache: npm` reference to the uncommitted `agent-builder/package-lock.json`.
-- `.github/workflows/deploy-agent-builder.yml` — removed the same broken cache reference; bumped `upload/download-artifact` v3 → v4 (v3 is sunset).
-- `external-projects/mhdbdb-tei` — removed a dangling submodule gitlink that logged a fatal warning on every checkout.
+| File | Lines | What it is |
+|---|---:|---|
+| `automation/veo3-faceless-content-system/workflow.json` | 325 | The importable n8n workflow. Final state: one upload-post call to **5 connected platforms** (Instagram dropped — not connected), multipart file upload fixed. |
+| `automation/veo3-faceless-content-system/README.md` | 101 | How to import and run it. |
+| `.claude/skills/n8n-workflow-generator/SKILL.md` | 91 | The skill itself (`/n8n-workflow-generator`). |
+| `.claude/skills/n8n-workflow-generator/gemini-extraction-prompt.md` | 51 | Step-1 extraction prompt. |
+| `.claude/skills/n8n-workflow-generator/validate-workflow.mjs` | 110 | JSON validator/checker. |
 
-Verified locally: 239 tests pass, lint clean, `next build` succeeds.
+**On your Mac:** import `automation/veo3-faceless-content-system/workflow.json`
+into your n8n instance (nothing to globally install).
+
+---
+
+## #118 — OpenCode CLI (setup & reference)
+
+A terminal AI coding-agent CLI (built-in `build`/`plan` agents + a desktop app) —
+an alternative coding agent in the same family as Freebuff / Hermes / Agent TARS.
+
+| File | Lines | What it is |
+|---|---:|---|
+| `SETUP-OPENCODE.md` | 105 | Install options, the `build`/`plan` agents, desktop app, config. |
+
+**On your Mac:** the installer runs
+`brew install anomalyco/tap/opencode` (falls back to the official install
+script). Then run `opencode` in any project.
+
+---
+
+## Penpot — self-host design platform (Docker Compose)
+
+The official Penpot stack (frontend, backend, exporter, MCP, Postgres 15,
+Valkey, mailcatcher), pinned for a reproducible self-host. Maps to the brand
+design system and feeds `studio/` + the site-build pipeline.
+
+| File | Lines | What it is |
+|---|---:|---|
+| `infra/penpot/docker-compose.yaml` | 263 | Official compose, Penpot `2.16` by default (`PENPOT_VERSION` overrides). |
+| `infra/penpot/README.md` | 30 | `docker compose -p penpot up -d` → `http://localhost:9001`. |
+| `SETUP-PENPOT.md` | 104 | Full reference (design tokens, components/variants, MCP, export). |
+
+**On your Mac:** if Docker Desktop is running, the installer brings the stack up
+with `docker compose -p penpot up -d` (this is the heavy step — skip it with
+`SKIP_HEAVY=1`). Then open `http://localhost:9001`.
+
+---
+
+## Vendored skills + reference docs
+
+Skill bundles synced into the repo (no install needed — they live in
+`.claude/skills/` and are available as slash commands), plus their setup docs.
+
+| File / area | Lines | What it is |
+|---|---:|---|
+| `.claude/skills/*` (12 new mattpocock skills) | ~1,600 | `ask-matt`, `codebase-design`, `domain-modeling`, `git-guardrails-claude-code`, `grilling`, `implement`, `migrate-to-shoehorn`, `resolving-merge-conflicts`, `scaffold-exercises`, `setup-pre-commit`, `teach`, `writing-great-skills`. |
+| `SETUP-MATT-POCOCK-SKILLS.md` | 145 | mattpocock/skills reference + how to re-sync. |
+| `SETUP-ANTHROPIC-SKILLS.md` | 130 | anthropics/skills official Agent Skills reference. |
+| `skills-lock.json` | +178 | Records the vendored skill hashes. |
+| `SETUP-PALMIER-PRO.md` | +15 | Refreshed with new upstream details (still macOS 26 Apple-Silicon only). |
+
+**On your Mac:** nothing to install — these are already in the repo. After
+`git pull`, they show up as `/`-commands in Claude Code.
 
 ---
 
 ## At a glance
 
-- **New files:** 12 (1 JS loader, 1 HTML demo, 8 Markdown docs, 1 n8n workflow JSON, 1 workflow README)
-- **Modified files:** 5 (`CLAUDE.md`, `CREATIVE-AI-STACK.md`, 2 CI workflows, 1 submodule gitlink removed)
-- **New lines of content:** ~1,880 across the new asset files
+- **New files:** ~38 (1 web tool + 3 docs, 1 n8n workflow + README, 3 skill files,
+  12 vendored skills, 4 SETUP docs, 1 Penpot compose + README)
+- **Modified files:** `CLAUDE.md`, `skills-lock.json`, `SETUP-PALMIER-PRO.md`
+- **New lines of content:** ~3,800 across the new asset files
+- **Actually "installable" on the Mac:** OpenCode CLI (auto), Penpot stack (Docker,
+  optional). Everything else is open-and-use (Hook Generator) or import-only
+  (VEO3 n8n workflow) or already-in-repo (skills).
