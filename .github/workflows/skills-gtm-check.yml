@@ -1,0 +1,46 @@
+name: SKILLS-GTM manifest check
+
+# Keeps the SKILLS-GTM go-to-market prompt library honest: the manifest
+# (skills_index.json + data/ mirror) and per-file frontmatter are generated
+# from the files themselves, so they must never be hand-edited out of sync.
+# This regenerates them and fails if the result differs from what's committed.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 09:00 UTC
+  workflow_dispatch:
+  push:
+    paths:
+      - "skills-gtm/**"
+      - ".github/workflows/skills-gtm-check.yml"
+  pull_request:
+    paths:
+      - "skills-gtm/**"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Regenerate manifest + frontmatter
+        run: node skills-gtm/scripts/build-index.mjs
+
+      - name: Fail if manifest drifted from committed files
+        run: |
+          if ! git diff --exit-code -- skills-gtm/; then
+            echo ""
+            echo "::error::SKILLS-GTM manifest/frontmatter is out of sync with the skill files."
+            echo "Run 'node skills-gtm/scripts/build-index.mjs' locally and commit the result."
+            exit 1
+          fi
+          echo "SKILLS-GTM manifest in sync."
