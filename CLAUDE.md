@@ -465,3 +465,14 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Claude SEO (`/seo`)
+
+Open-source SEO analysis suite (MIT, by AgriciDaniel) installed under `.claude/skills/seo*` (orchestrator + 24 sub-skills) and `.claude/agents/seo-*.md` (18 specialist agents). User-invocable via `/seo`.
+
+- **Run an audit** → `/seo audit <url>` (parallel sub-agents → prioritized action plan). Other commands: `/seo page`, `/seo technical`, `/seo content`, `/seo schema`, `/seo geo`, `/seo local`, `/seo sitemap`, `/seo google`, etc. Full list: `.claude/skills/seo/SKILL.md`.
+- **Python deps** (needed only when skills run their scripts — rendering, PDF reports, Google APIs) are NOT committed. Recreate the venv:
+  `python3 -m venv .claude/skills/seo/.venv && .claude/skills/seo/.venv/bin/pip install -r .claude/skills/seo/requirements.txt`
+  (`.venv/` is gitignored.) Optional Google API enrichment: `/seo google setup`.
+- **Note on `seo-audit`** → the repo's earlier standalone `seo-audit` skill is preserved at `.agents/skills/seo-audit/`; `.claude/skills/seo-audit/` now points at Claude SEO's version so `/seo audit` resolves to the suite. To restore the old one: `ln -sf ../../.agents/skills/seo-audit .claude/skills/seo-audit`.
+- Optional paid MCP extensions (DataForSEO, Ahrefs, Firecrawl, Banana, …) are NOT installed; fetch from github.com/AgriciDaniel/claude-seo if wanted.
