@@ -1,3 +1,14 @@
+---
+id: gtm-roles-sdr-bdr-follow-up-sequences
+name: "SDR/BDR Follow-Up Sequences"
+description: "Prompts for SDRs and BDRs managing multi-touch follow-up after no reply, a no-show, or a cold sequence that went quiet."
+category: marketing
+group: roles
+subcategory: sdr-bdr
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "sdr-bdr"]
+---
 # Reference: SDR/BDR Follow-Up Sequences Prompts
 
 ## Purpose

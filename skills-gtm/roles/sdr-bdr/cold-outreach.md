@@ -1,3 +1,14 @@
+---
+id: gtm-roles-sdr-bdr-cold-outreach
+name: "SDR/BDR Cold Outreach"
+description: "400+ prompts for SDRs and BDRs running signal-based outbound. Copy-paste starters calibrated by persona, trigger, and seniority."
+category: marketing
+group: roles
+subcategory: sdr-bdr
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "sdr-bdr"]
+---
 # Reference: SDR/BDR Cold Outreach Prompts
 
 ## Purpose

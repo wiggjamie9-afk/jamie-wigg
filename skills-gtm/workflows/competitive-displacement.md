@@ -1,3 +1,14 @@
+---
+id: gtm-workflows-competitive-displacement
+name: "Competitive Displacement"
+description: "The motion for replacing an incumbent vendor in an account where the prospect is already deployed on a competitor — not evaluating from a blank slate."
+category: marketing
+group: workflows
+subcategory: workflows
+risk: none
+license: MIT
+tags: ["go-to-market", "workflow", "workflows"]
+---
 # Workflow: Competitive Displacement
 
 ## Purpose

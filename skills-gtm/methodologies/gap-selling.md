@@ -1,3 +1,14 @@
+---
+id: gtm-methodologies-gap-selling
+name: "Gap Selling"
+description: "Gap Selling (Keenan) rejects needs-based selling in favour of problem-centric diagnosis."
+category: marketing
+group: methodologies
+subcategory: methodologies
+risk: none
+license: MIT
+tags: ["go-to-market", "methodology", "methodologies"]
+---
 # Reference: Gap Selling Prompts
 
 ## Purpose

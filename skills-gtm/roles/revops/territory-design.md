@@ -1,3 +1,14 @@
+---
+id: gtm-roles-revops-territory-design
+name: "RevOps Territory Design"
+description: "A collection of analytical prompts for RevOps and Sales Operations practitioners designing or redesigning sales territories."
+category: marketing
+group: roles
+subcategory: revops
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "revops"]
+---
 # Reference: RevOps Territory Design Prompts
 
 ## Purpose

@@ -1,3 +1,14 @@
+---
+id: gtm-roles-customer-success-expansion-plays
+name: "CSM Expansion Plays"
+description: "A collection of prompts for Customer Success Managers identifying and executing expansion opportunities within existing accounts."
+category: marketing
+group: roles
+subcategory: customer-success
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "customer-success"]
+---
 # Reference: CSM Expansion Plays Prompts
 
 ## Purpose

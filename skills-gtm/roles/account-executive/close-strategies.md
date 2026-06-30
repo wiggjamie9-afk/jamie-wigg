@@ -1,3 +1,14 @@
+---
+id: gtm-roles-account-executive-close-strategies
+name: "AE Close Strategies"
+description: "A collection of prompts for Account Executives navigating the final stages of a deal — from trial closes and mutual action plans through pricing negotiations, urgency creation, and procurement navigation."
+category: marketing
+group: roles
+subcategory: account-executive
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "account-executive"]
+---
 # Reference: AE Close Strategies Prompts
 
 ## Purpose

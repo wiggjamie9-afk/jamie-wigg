@@ -1,3 +1,14 @@
+---
+id: gtm-roles-founder-founder-led-outbound
+name: "Founder-Led Outbound"
+description: "A collection of prompts for founders doing direct outreach — cold outreach to prospective customers, design-partner recruitment, warm-intro asks, and the first-10-customers push."
+category: marketing
+group: roles
+subcategory: founder
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "founder"]
+---
 # Reference: Founder-Led Outbound Prompts
 
 ## Purpose

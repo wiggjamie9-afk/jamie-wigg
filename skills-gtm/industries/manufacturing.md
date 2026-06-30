@@ -1,3 +1,14 @@
+---
+id: gtm-industries-manufacturing
+name: "Manufacturing GTM"
+description: "Manufacturing GTM splits across two very different audiences: plant-floor operators and engineers who care about uptime, OEE, and throughput, and corporate buyers (CFO, COO, VP of Operations) who care about capex ROI, su…"
+category: marketing
+group: industries
+subcategory: industries
+risk: none
+license: MIT
+tags: ["go-to-market", "industry", "industries"]
+---
 # Reference: Manufacturing GTM Prompts
 
 ## Purpose

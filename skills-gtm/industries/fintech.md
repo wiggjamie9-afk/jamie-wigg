@@ -1,3 +1,14 @@
+---
+id: gtm-industries-fintech
+name: "Fintech GTM"
+description: "Selling into fintech means every conversation circles back to risk, compliance, and regulatory exposure before it reaches business value."
+category: marketing
+group: industries
+subcategory: industries
+risk: none
+license: MIT
+tags: ["go-to-market", "industry", "industries"]
+---
 # Reference: Fintech GTM Prompts
 
 ## Purpose

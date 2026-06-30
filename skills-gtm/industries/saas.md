@@ -1,3 +1,14 @@
+---
+id: gtm-industries-saas
+name: "SaaS GTM"
+description: "Selling into SaaS companies means navigating fast-moving buying committees, competing priorities, and a culture that measures everything."
+category: marketing
+group: industries
+subcategory: industries
+risk: none
+license: MIT
+tags: ["go-to-market", "industry", "industries"]
+---
 # Reference: SaaS GTM Prompts
 
 ## Purpose

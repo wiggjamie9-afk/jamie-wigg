@@ -1,3 +1,14 @@
+---
+id: gtm-workflows-discovery-mastery
+name: "Discovery Mastery"
+description: "A structured pre-call-through-recap process for running discovery calls that produce real MEDDPICC data rather than a polite conversation."
+category: marketing
+group: workflows
+subcategory: workflows
+risk: none
+license: MIT
+tags: ["go-to-market", "workflow", "workflows"]
+---
 # Workflow: Discovery Mastery
 
 ## Purpose

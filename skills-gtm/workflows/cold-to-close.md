@@ -1,3 +1,14 @@
+---
+id: gtm-workflows-cold-to-close
+name: "Cold to Close"
+description: "The full-funnel motion from first signal or ICP target through signed contract. Runs across SDR/BDR (top of funnel), AE (mid and late funnel), and SE (demo and technical validation)."
+category: marketing
+group: workflows
+subcategory: workflows
+risk: none
+license: MIT
+tags: ["go-to-market", "workflow", "workflows"]
+---
 # Workflow: Cold to Close
 
 ## Purpose

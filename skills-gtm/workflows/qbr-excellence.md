@@ -1,3 +1,14 @@
+---
+id: gtm-workflows-qbr-excellence
+name: "QBR Excellence"
+description: "A structured quarterly business review process that moves from raw usage data to an executive-aligned narrative that proves realized value, surfaces risk early, and opens the door to expansion — all within a single meeti…"
+category: marketing
+group: workflows
+subcategory: workflows
+risk: none
+license: MIT
+tags: ["go-to-market", "workflow", "workflows"]
+---
 # Workflow: QBR Excellence
 
 ## Purpose

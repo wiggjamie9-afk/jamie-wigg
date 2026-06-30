@@ -1,3 +1,14 @@
+---
+id: gtm-industries-professional-services
+name: "Professional Services GTM"
+description: "Selling into professional services (consulting, legal, accounting, architecture, engineering) means selling to the people who sell their own expertise for a living."
+category: marketing
+group: industries
+subcategory: industries
+risk: none
+license: MIT
+tags: ["go-to-market", "industry", "industries"]
+---
 # Reference: Professional Services GTM Prompts
 
 ## Purpose

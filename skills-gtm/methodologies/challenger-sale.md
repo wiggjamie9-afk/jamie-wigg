@@ -1,3 +1,14 @@
+---
+id: gtm-methodologies-challenger-sale
+name: "The Challenger Sale"
+description: "The Challenger Sale (Matthew Dixon & Brent Adamson, CEB/Gartner research) reframes the rep's role: instead of building rapport and responding to stated needs, Challengers teach buyers something new about their business,…"
+category: marketing
+group: methodologies
+subcategory: methodologies
+risk: none
+license: MIT
+tags: ["go-to-market", "methodology", "methodologies"]
+---
 # Reference: The Challenger Sale Prompts
 
 ## Purpose

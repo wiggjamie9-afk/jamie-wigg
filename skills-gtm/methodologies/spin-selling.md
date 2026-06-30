@@ -1,3 +1,14 @@
+---
+id: gtm-methodologies-spin-selling
+name: "SPIN Selling"
+description: "SPIN Selling (Neil Rackham, Huthwaite Research Group) is a question-based methodology proven in large-sale environments."
+category: marketing
+group: methodologies
+subcategory: methodologies
+risk: none
+license: MIT
+tags: ["go-to-market", "methodology", "methodologies"]
+---
 # Reference: SPIN Selling Prompts
 
 ## Purpose

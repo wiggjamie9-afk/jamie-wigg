@@ -1,3 +1,14 @@
+---
+id: gtm-methodologies-meddpicc
+name: "MEDDPICC"
+description: "MEDDPICC is a qualification framework for complex B2B sales that forces reps to verify the mechanics of every deal before investing time."
+category: marketing
+group: methodologies
+subcategory: methodologies
+risk: none
+license: MIT
+tags: ["go-to-market", "methodology", "methodologies"]
+---
 # Reference: MEDDPICC Prompts
 
 ## Purpose

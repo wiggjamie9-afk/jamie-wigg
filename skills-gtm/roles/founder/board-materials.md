@@ -1,3 +1,14 @@
+---
+id: gtm-roles-founder-board-materials
+name: "Founder Board Materials"
+description: "A collection of prompts for founders preparing board updates, metric commentary, and GTM narrative slides."
+category: marketing
+group: roles
+subcategory: founder
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "founder"]
+---
 # Reference: Founder Board Materials Prompts
 
 ## Purpose

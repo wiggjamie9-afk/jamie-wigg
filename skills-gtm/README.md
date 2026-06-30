@@ -69,3 +69,45 @@ common failure modes for that play.
   can't dispute (a real job change, a real hire, a real funding round).
 - **Add, don't overwrite** — new plays get a new `## Prompt NN` block or a new
   file; keep existing numbering stable so cross-references hold.
+
+## Installable (Stable Skills Manifest v1)
+
+This library ships a discovery manifest so antigravity-style hosts (Claude Code,
+Cursor, Codex CLI, Gemini CLI, Antigravity, etc.) can install and load it the
+same way they load any skill catalog — without pulling in an external library.
+
+- **`skills_index.json`** — canonical array manifest (`id`, `path`, `metadata`)
+  for all 36 skills. A host loads a skill's `path` only when its `id` is
+  requested (e.g. `@gtm-roles-sdr-bdr-cold-outreach`).
+- **`data/skills_index.json`** — compatibility mirror of the same manifest.
+- **`schemas/skills-index.v1.schema.json`** — JSON Schema for the manifest shape.
+- **Per-file frontmatter** — every skill `.md` opens with YAML frontmatter
+  (`id`, `name`, `description`, `category`, `group`, `subcategory`, `risk`,
+  `license`, `tags`) so each file is self-describing.
+
+All skills are `risk: none` (prose prompt references — they execute nothing) and
+`license: MIT`.
+
+### Install into a host's skills directory
+
+```bash
+# Copy into the directory your tool watches (examples):
+cp -r skills-gtm ~/.agents/skills/skills-gtm          # Antigravity / OpenCode
+cp -r skills-gtm ~/.claude/skills/skills-gtm          # Claude Code
+cp -r skills-gtm .cursor/skills/skills-gtm            # Cursor
+```
+
+Then reference a skill by `id`, e.g. *"Use `@gtm-workflows-cold-to-close` to
+structure this deal."*
+
+### Regenerate the manifest
+
+The manifest and frontmatter are generated from the files themselves — never
+hand-edit `skills_index.json`. After adding or editing a skill, run:
+
+```bash
+node skills-gtm/scripts/build-index.mjs
+```
+
+It re-derives each entry's `name`/`description` from the file's H1 and Purpose,
+refreshes frontmatter idempotently, and rewrites both manifest copies.

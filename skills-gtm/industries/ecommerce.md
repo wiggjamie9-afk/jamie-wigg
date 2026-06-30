@@ -1,3 +1,14 @@
+---
+id: gtm-industries-ecommerce
+name: "Ecommerce GTM"
+description: "Ecommerce buying is driven by marketing and growth leaders who think in conversion rates, CAC, AOV, and ROAS — not procurement timelines."
+category: marketing
+group: industries
+subcategory: industries
+risk: none
+license: MIT
+tags: ["go-to-market", "industry", "industries"]
+---
 # Reference: Ecommerce GTM Prompts
 
 ## Purpose

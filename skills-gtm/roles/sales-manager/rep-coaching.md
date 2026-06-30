@@ -1,3 +1,14 @@
+---
+id: gtm-roles-sales-manager-rep-coaching
+name: "Sales Manager Rep Coaching"
+description: "A collection of prompts for Sales Managers conducting call reviews, skill-gap diagnostics, ride-along debriefs, structured 1:1s, and performance-improvement conversations."
+category: marketing
+group: roles
+subcategory: sales-manager
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "sales-manager"]
+---
 # Reference: Sales Manager Rep Coaching Prompts
 
 ## Purpose

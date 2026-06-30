@@ -1,3 +1,14 @@
+---
+id: gtm-methodologies-value-selling
+name: "Value Selling"
+description: "Value Selling ties every capability, feature, and conversation to quantified business outcomes rather than product attributes."
+category: marketing
+group: methodologies
+subcategory: methodologies
+risk: none
+license: MIT
+tags: ["go-to-market", "methodology", "methodologies"]
+---
 # Reference: Value Selling Prompts
 
 ## Purpose

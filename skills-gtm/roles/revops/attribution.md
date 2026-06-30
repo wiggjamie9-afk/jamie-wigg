@@ -1,3 +1,14 @@
+---
+id: gtm-roles-revops-attribution
+name: "RevOps Attribution"
+description: "A collection of analytical prompts for RevOps teams navigating channel attribution, pipeline source definitions, and marketing/sales data reconciliation."
+category: marketing
+group: roles
+subcategory: revops
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "revops"]
+---
 # Reference: RevOps Attribution Prompts
 
 ## Purpose

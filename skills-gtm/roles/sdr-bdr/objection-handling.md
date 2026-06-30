@@ -1,3 +1,14 @@
+---
+id: gtm-roles-sdr-bdr-objection-handling
+name: "SDR/BDR Objection Handling"
+description: "Prompts for SDRs and BDRs hitting the standard wall of brush-offs — from \"not interested\" to \"we built it in-house.\" Each prompt reframes the objection without arguing, validates the prospect's position, and creates a mi…"
+category: marketing
+group: roles
+subcategory: sdr-bdr
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "sdr-bdr"]
+---
 # Reference: SDR/BDR Objection Handling Prompts
 
 ## Purpose

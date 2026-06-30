@@ -1,3 +1,14 @@
+---
+id: gtm-roles-account-executive-roi-model
+name: "AE ROI & Business Case"
+description: "A set of prompts for Account Executives building cost-of-inaction arguments, quantified value cases, and written business cases for economic buyers."
+category: marketing
+group: roles
+subcategory: account-executive
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "account-executive"]
+---
 # Reference: AE ROI & Business Case Prompts
 
 ## Purpose

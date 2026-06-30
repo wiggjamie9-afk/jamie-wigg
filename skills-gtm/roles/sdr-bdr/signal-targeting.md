@@ -1,3 +1,14 @@
+---
+id: gtm-roles-sdr-bdr-signal-targeting
+name: "SDR/BDR Signal Targeting"
+description: "Prompts for SDRs and BDRs who want to move faster than the competition on buying signals."
+category: marketing
+group: roles
+subcategory: sdr-bdr
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "sdr-bdr"]
+---
 # Reference: SDR/BDR Signal Targeting Prompts
 
 ## Purpose

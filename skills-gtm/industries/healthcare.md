@@ -1,3 +1,14 @@
+---
+id: gtm-industries-healthcare
+name: "Healthcare GTM"
+description: "Healthcare buying is bifurcated between clinical stakeholders who care about patient outcomes and operational/administrative buyers who care about cost, throughput, and regulatory compliance."
+category: marketing
+group: industries
+subcategory: industries
+risk: none
+license: MIT
+tags: ["go-to-market", "industry", "industries"]
+---
 # Reference: Healthcare GTM Prompts
 
 ## Purpose

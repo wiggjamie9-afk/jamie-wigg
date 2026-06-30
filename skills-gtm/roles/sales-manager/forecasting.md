@@ -1,3 +1,14 @@
+---
+id: gtm-roles-sales-manager-forecasting
+name: "Sales Manager Forecasting"
+description: "A collection of prompts for Sales Managers preparing weekly forecast calls, rolling up team numbers, weighting deals, building scenario models, and presenting board-ready forecast narratives."
+category: marketing
+group: roles
+subcategory: sales-manager
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "sales-manager"]
+---
 # Reference: Sales Manager Forecasting Prompts
 
 ## Purpose

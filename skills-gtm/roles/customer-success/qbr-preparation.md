@@ -1,3 +1,14 @@
+---
+id: gtm-roles-customer-success-qbr-preparation
+name: "CSM QBR Preparation"
+description: "A collection of prompts for Customer Success Managers preparing Quarterly Business Reviews. Covers value-realised recaps, usage-trend narratives, exec-alignment agenda design, expansion tee-ups, and risk surfacing."
+category: marketing
+group: roles
+subcategory: customer-success
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "customer-success"]
+---
 # Reference: CSM QBR Preparation Prompts
 
 ## Purpose

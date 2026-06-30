@@ -1,3 +1,14 @@
+---
+id: gtm-roles-revops-crm-hygiene-audit
+name: "RevOps CRM Hygiene Audit"
+description: "A collection of analytical prompts for RevOps practitioners running CRM data quality initiatives. Covers duplicate detection, stale-deal triage, field-completion enforcement, and stage-discipline checks."
+category: marketing
+group: roles
+subcategory: revops
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "revops"]
+---
 # Reference: RevOps CRM Hygiene Audit Prompts
 
 ## Purpose

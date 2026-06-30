@@ -1,3 +1,14 @@
+---
+id: gtm-roles-account-executive-discovery-prep
+name: "AE Discovery Prep"
+description: "A curated collection of pre-call and in-call prompts for Account Executives preparing for discovery conversations."
+category: marketing
+group: roles
+subcategory: account-executive
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "account-executive"]
+---
 # Reference: AE Discovery Prep Prompts
 
 ## Purpose

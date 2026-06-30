@@ -1,3 +1,14 @@
+---
+id: gtm-roles-account-executive-demo-customisation
+name: "AE Demo Customisation"
+description: "A collection of prompts for Account Executives who need to tailor product demonstrations to specific buyers, use cases, and discovered pain points rather than delivering a generic feature walkthrough."
+category: marketing
+group: roles
+subcategory: account-executive
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "account-executive"]
+---
 # Reference: AE Demo Customisation Prompts
 
 ## Purpose

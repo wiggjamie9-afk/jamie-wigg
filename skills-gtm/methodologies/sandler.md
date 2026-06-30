@@ -1,3 +1,14 @@
+---
+id: gtm-methodologies-sandler
+name: "Sandler Selling System"
+description: "The Sandler Selling System (David Sandler) inverts traditional sales: the rep qualifies hard, disqualifies fast, and never gives away advice or strategy without a commitment in return."
+category: marketing
+group: methodologies
+subcategory: methodologies
+risk: none
+license: MIT
+tags: ["go-to-market", "methodology", "methodologies"]
+---
 # Reference: Sandler Selling System Prompts
 
 ## Purpose

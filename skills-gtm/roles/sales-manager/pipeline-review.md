@@ -1,3 +1,14 @@
+---
+id: gtm-roles-sales-manager-pipeline-review
+name: "Sales Manager Pipeline Review"
+description: "A set of prompts for Sales Managers conducting deal inspections, stage-exit audits, and at-risk deal interventions during pipeline reviews."
+category: marketing
+group: roles
+subcategory: sales-manager
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "sales-manager"]
+---
 # Reference: Sales Manager Pipeline Review Prompts
 
 ## Purpose

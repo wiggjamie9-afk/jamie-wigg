@@ -1,3 +1,14 @@
+---
+id: gtm-workflows-demo-to-proposal
+name: "Demo to Proposal"
+description: "The mid-funnel motion from demo preparation through a stakeholder-aligned proposal that the champion can carry to the economic buyer unassisted. Owned jointly by AE and SE: the AE owns narrative and qualification;"
+category: marketing
+group: workflows
+subcategory: workflows
+risk: none
+license: MIT
+tags: ["go-to-market", "workflow", "workflows"]
+---
 # Workflow: Demo to Proposal
 
 ## Purpose

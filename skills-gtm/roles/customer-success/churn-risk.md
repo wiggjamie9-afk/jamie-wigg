@@ -1,3 +1,14 @@
+---
+id: gtm-roles-customer-success-churn-risk
+name: "CSM Churn Risk"
+description: "A collection of prompts for Customer Success Managers identifying, addressing, and escalating churn risk before it becomes a lost renewal."
+category: marketing
+group: roles
+subcategory: customer-success
+risk: none
+license: MIT
+tags: ["go-to-market", "role", "customer-success"]
+---
 # Reference: CSM Churn Risk Prompts
 
 ## Purpose
