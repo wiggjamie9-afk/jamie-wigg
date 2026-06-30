@@ -1,7 +1,8 @@
-# Graph Report - /home/user/jamie-wigg  (2026-06-30)
+# Graph Report - jamie-wigg  (2026-06-30)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 618 files · ~298,439 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
 - 2247 nodes · 2965 edges · 222 communities (161 shown, 61 thin omitted)
@@ -9,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c838f45d`
+- Built from commit: `65f92deb`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -250,10 +251,10 @@
 
 ## Import Cycles
 - 3-file cycle: `agent-builder/app/builder/page.tsx -> agent-builder/components/BuilderSteps.tsx -> agent-builder/components/StepFourStream.tsx -> agent-builder/app/builder/page.tsx`
+- 3-file cycle: `agent-builder/app/builder/page.tsx -> agent-builder/components/BuilderSteps.tsx -> agent-builder/components/StepTwoEnvironment.tsx -> agent-builder/app/builder/page.tsx`
 - 3-file cycle: `agent-builder/app/builder/page.tsx -> agent-builder/components/BuilderSteps.tsx -> agent-builder/components/StepThreeBasics.tsx -> agent-builder/app/builder/page.tsx`
 - 3-file cycle: `agent-builder/app/builder/page.tsx -> agent-builder/components/BuilderSteps.tsx -> agent-builder/components/StepFiveFineTune.tsx -> agent-builder/app/builder/page.tsx`
 - 3-file cycle: `agent-builder/app/builder/page.tsx -> agent-builder/components/BuilderSteps.tsx -> agent-builder/components/StepOneCreateAgent.tsx -> agent-builder/app/builder/page.tsx`
-- 3-file cycle: `agent-builder/app/builder/page.tsx -> agent-builder/components/BuilderSteps.tsx -> agent-builder/components/StepTwoEnvironment.tsx -> agent-builder/app/builder/page.tsx`
 
 ## Communities (222 total, 61 thin omitted)
 
@@ -287,7 +288,7 @@ Nodes (21): MODELS, metadata, CostSummary(), LoadState, PlanEditor(), MODEL_OPTI
 
 ### Community 7 - "video/package.json · devDependencies"
 Cohesion: 0.11
-Nodes (29): assemble_video(), _build_prompt(), build_seo_description(), _extract_json(), generate_ebook(), generate_music(), generate_music_pixabay(), generate_narration() (+21 more)
+Nodes (34): assemble_video(), _build_prompt(), build_seo_description(), _extract_json(), generate_ebook(), generate_music(), generate_music_pixabay(), generate_narration() (+26 more)
 
 ### Community 8 - "agent-builder/package.json · devDependencies"
 Cohesion: 0.07
@@ -334,8 +335,8 @@ Cohesion: 0.17
 Nodes (10): main(), OpenManusSetup, Install Python dependencies, Setup configuration files, Verify OpenManus installation, Run the complete setup process, Execute a shell command, Clone OpenManus repository if needed (+2 more)
 
 ### Community 19 - "kids-channel/pipeline.py · Path"
-Cohesion: 0.15
-Nodes (15): generate_scene_bg(), generate_scene_image_flux(), generate_scene_image_kontext(), generate_scene_image_replicate(), get_character_ref(), _poll_replicate_prediction(), Generate a scene image via FLUX (OpenMontage tool) — needs FAL_KEY., Return the canonical Sonny reference image used to keep the character     identi (+7 more)
+Cohesion: 0.20
+Nodes (10): generate_scene_image_kontext(), generate_scene_image_replicate(), get_character_ref(), _poll_replicate_prediction(), Return the canonical Sonny reference image used to keep the character     identi, Generate a scene image via Replicate FLUX Kontext using the canonical     Sonny, Poll a Replicate prediction until it succeeds; return the output URL., Run a single FLUX Dev prediction on Replicate and save the image. (+2 more)
 
 ### Community 20 - "agent-builder/tsconfig.json · compilerOptions"
 Cohesion: 0.09
@@ -474,8 +475,8 @@ Cohesion: 0.23
 Nodes (5): server, transport, MyComposition(), RemotionRoot(), CompositionProps
 
 ### Community 56 - "kids-channel/pipeline.py · generate_script_via_anthropic()"
-Cohesion: 0.22
-Nodes (4): metadata, LicensePanel(), ReplicateTokenPanel(), Status
+Cohesion: 0.18
+Nodes (6): metadata, LicensePanel(), ReplicateTokenPanel(), Status, SupportBundlePanel(), downloadSupportBundle()
 
 ### Community 57 - "agent-builder/components · TypeCard()"
 Cohesion: 0.22
@@ -510,8 +511,8 @@ Cohesion: 0.17
 Nodes (11): background_color, categories, description, display, icons, name, orientation, screenshots (+3 more)
 
 ### Community 66 - "apps/scan · name"
-Cohesion: 0.19
-Nodes (11): SupportBundlePanel(), buildSupportBundle(), downloadSupportBundle(), ErrorEntry, ErrorLevel, errorLog, getErrorLog(), readBrowserInfo() (+3 more)
+Cohesion: 0.23
+Nodes (9): buildSupportBundle(), ErrorEntry, ErrorLevel, errorLog, getErrorLog(), readBrowserInfo(), readFfmpegVersion(), readRenderMetadata() (+1 more)
 
 ### Community 67 - "apps/vault · name"
 Cohesion: 0.20
@@ -850,7 +851,7 @@ Cohesion: 0.50
 Nodes (3): DYNAMIC_HOSTS, FONT_HOSTS, SHELL
 
 ## Knowledge Gaps
-- **974 isolated node(s):** `session-start.sh script`, `name`, `version`, `private`, `type` (+969 more)
+- **974 isolated node(s):** `name`, `private`, `type`, `dev`, `check` (+969 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **61 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -858,10 +859,12 @@ Nodes (3): DYNAMIC_HOSTS, FONT_HOSTS, SHELL
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `MODELS` connect `rhythmix-studio/src · testStructureDetection()` to `apps/buddy-receipts.js · ReceiptLedger`, `agent-builder/components · APIKey`, `studio/workers · fetch()`, `agent-builder/lib · ProjectQueries`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Why does `PexelsError` connect `studio/workers · fetch()` to `apps/buddy-receipts.js · ReceiptLedger`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
-- **What connects `session-start.sh script`, `name`, `version` to the rest of the system?**
+- **Why does `detectCapabilities()` connect `pageagent/pageagent-copilot.js · warn()` to `rhythmix-anthem-60s/package.json · scripts`, `apps/scan · name`?**
+  _High betweenness centrality (0.002) - this node is a cross-community bridge._
+- **What connects `name`, `private`, `type` to the rest of the system?**
   _1037 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `rhythmix-studio/src · buildPlan()` be split into smaller, more focused modules?**
   _Cohesion score 0.0645045045045045 - nodes in this community are weakly interconnected._
@@ -869,5 +872,3 @@ _Questions this graph is uniquely positioned to answer:_
   _Cohesion score 0.05928614640048397 - nodes in this community are weakly interconnected._
 - **Should `studio/lib · executeRender()` be split into smaller, more focused modules?**
   _Cohesion score 0.05555555555555555 - nodes in this community are weakly interconnected._
-- **Should `studio/lib · isBrowser()` be split into smaller, more focused modules?**
-  _Cohesion score 0.058823529411764705 - nodes in this community are weakly interconnected._
