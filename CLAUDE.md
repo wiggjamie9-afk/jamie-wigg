@@ -376,6 +376,9 @@ The `.claude/agents/` directory contains sub-agent definition files for FleetVie
 | `playwright` | `npx -y @playwright/mcp@latest` | Base Playwright browser automation. |
 | `claude-playwright` | `node node_modules/claude-playwright/dist/mcp/server.cjs` | Session/profile/test management on top of Playwright. Run `npm install` first. |
 | `context7` | HTTP `https://mcp.context7.com/mcp` | Current library documentation. Prefer over training knowledge. |
+| `memory` | `npx -y @modelcontextprotocol/server-memory` | Long-term memory (knowledge graph) for Claude Code. **No API key** — stores `.claude/memory/knowledge-graph.json` (gitignored). Works offline. The Claude-Code-native equivalent of Kortix `kortix-memory`. |
+| `tavily` | `npx -y tavily-mcp` | Web search. Needs `TAVILY_API_KEY`. Claude-Code-native equivalent of Kortix `web-search`. |
+| `firecrawl` | `npx -y firecrawl-mcp` | Web scrape/crawl. Needs `FIRECRAWL_API_KEY`. Claude-Code-native equivalent of Kortix `scrape-webpage`. |
 | `openmanus` | `python -m app.mcp.server` (from `/tmp/OpenManus`) | LLM-driven browser automation agent. Tools: navigate, click, fill, extract, screenshot, search. Config: `.mcp.json`. Setup: `OPENMANUS-MCP-INTEGRATION.md`. |
 
 **Rule:** Always reach for Context7 when you need library/API docs, setup instructions, or version-specific code generation — without the user asking. Not for business logic or debugging. Use OpenManus for autonomous browser tasks, research automation, and multi-step web workflows — particularly useful for RHYTHMIX content research and market intelligence gathering.
