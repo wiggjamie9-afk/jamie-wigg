@@ -17,6 +17,7 @@ apps/dads-code/
 ├── code.js                 # the Code: values→principles→practices model + check-in loop
 ├── diary.js                # journaling modes, prompts, resurfacing
 ├── clarity.js              # mood "weather", clarity practices, on-device heaviness check
+├── focus.js                # breath pacer + humming + Web Audio tone engine (R17)
 ├── health.js               # ≤5 gentle signals, screening reminders, consistency calc
 ├── legacy.js               # Private/Shared/Bequeathed state machine, "mark for them" pivot
 ├── audio.js                # MediaRecorder capture + playback + transcript hook
@@ -93,6 +94,7 @@ Home (today's check-in + add button + backup status)
 ├── Today           (daily check-in loop + inner-weather)
 ├── Journal         (compose · list · "Look back" resurfacing)
 ├── Clarity         (decompression, brain-dump, reframe, one-breath, crisis link)
+├── Focus           (Take 10: breath pacer + hum + tone · protocol picker · "learn the harm" · heatmap)  [R17]
 ├── Health          (5 gentle signals + screening reminders)            [v1 light]
 ├── For Them        (Legacy channel: shared/bequeathed entries + recipients) 
 ├── Backup & Export (self-contained HTML, JSON, print book, encryption)
@@ -109,12 +111,27 @@ The five domains are surfaced under **one spine** (R-spine): the home loop and t
 - **Brand** (R14): tokens as CSS custom properties (`--paper`, `--ink`, `--oxblood`, `--brass`, `--slate`, `--sage`); Fraunces headings, Newsreader body, Caveat only for sign-off; the "settle-in" reveal and oxblood waveform are the signature moments; print stylesheet doubles as the keepsake book.
 - **Safety** (R16): `safety.js` ships a static, region-keyed crisis page in the shell; on-device-only heaviness check surfaces a single dismissible calm card; standing non-medical disclaimer.
 
+## 5b. Focus module reuse map (R17) — assemble, don't reinvent
+
+The breath/hum module is built almost entirely by lifting and adapting existing, working repo code into `focus.js` + a Focus view. **Copy the mechanism, restyle to the warm-archival brand (R14)** — drop the neon/mystic styling of the originals.
+
+| Need | Reuse from | What to lift |
+|---|---|---|
+| Breath protocols (patterns, cycles, scripts, citations, disclaimers) | `content/protocols/tesla-369-breath.md`, `tesla-toroidal-breath.md`, `tesla-schumann-lock.md` | the `breath_pattern` frontmatter (in/hold/out/cycles), guidance scripts, source lists, "practice not treatment" disclaimers |
+| Visual breath pacer | `apps/hum/index.html` | `.pacer-ring` CSS scale animation (inhale 1.3× / exhale 0.78×), `startPacer()`/`stopPacer()` interval logic, inhale/exhale/hold phase labels |
+| Web Audio tone engine | `apps/hum/index.html` (single sine) + `apps/resonate/index.html` (3-osc drone, detune-by-coherence) | `startTone(freq)`/`stopTone()` oscillator factory with 1s gain ramp; 432/528/7.83 Hz presets; optional drone |
+| Session ring + completion burst + ambient noise | `apps/focus/index.html` | stroke-dashoffset progress ring, particle-burst celebration, brown/white/rain noise + binaural-beat factories (optional bg) |
+| Practice consistency heatmap | `apps/pulse/index.html` | 12-week grid render, opacity-by-completion, additive streak walkback (no breakable streak) |
+| Copy & "learn the harm" science | `docs/refs/humming-research-origins.md`, `humming-research-newtech.md`, `frequency-30s-science-voiceover.md`; `sites/codex-of-reality/launch/people-2-breathing.html` | NO-15× / lowest-stress-index lines, cortisol/vagal/autonomic harm framing, wellness-not-medical guardrail, "5 in · 5 out · 6 breaths/min" copy |
+
+Session shape (R17.1): settle (~30s) → guided protocol (5-0-5 default; 3-6-9 / box optional) with optional exhale hum + optional tone → short stillness → calm close → additive log to the heatmap. All Web-Audio-generated; **no shipped audio files** (R13 longevity). `prefers-reduced-motion` → static count fallback (R12.3). Carries the protocol disclaimers + retention caution (R17.9).
+
 ## 6. Build phases (maps to tasks.md)
 
 1. **Shell & storage** — index.html, db.js, store.js, sw.js, manifest, brand tokens, i18n seam.
 2. **The loop** — code.js (the Code) + daily check-in + home. *This is the wedge; ship it first and well.*
 3. **Capture** — diary.js + audio.js + transcripts + onboarding prompt cards.
-4. **Inner work** — clarity.js (weather mood, practices) + safety.js (crisis, disclaimer).
+4. **Inner work** — clarity.js (weather mood, practices) + focus.js (breath/hum/tone, R17) + safety.js (crisis, disclaimer).
 5. **Health light** — health.js (5 signals, screening, additive consistency).
 6. **Legacy** — legacy.js state machine + "pass this on" pivot + recipients + "For Them".
 7. **Durability & security** — export.js (self-contained HTML, JSON, print book) + crypto.js.

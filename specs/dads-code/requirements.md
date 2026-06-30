@@ -32,6 +32,7 @@ The app spans five domains unified by the Code. v1 ships **one loop done well**;
 | **Daily Check-in** — the wedge loop | ✅ kept/slipped/n-a + grounding question | trend insights |
 | **Diary** — journaling, voice-first | ✅ quick log + voice + prompts | search, tags, milestone/letter modes |
 | **Clarity & Mental Health** | ✅ weather mood + decompression + crisis resources | standalone practice library |
+| **Focus — Breath & Hum** | ✅ daily ~10-min breath-pacer + humming + tone, stress-harm education | wearable HRV, mic pitch-detection, more protocols |
 | **Health & Well-being** | ✅ *light* — ≤5 gentle signals + screening nudges | sleep↔mood correlation, deeper trends |
 | **Legacy** — pass it on | ⚠️ "★ mark for them" + Private/Shared/Bequeathed states + export | curated vault, per-child threads, sealed handoff ceremony |
 
@@ -70,6 +71,23 @@ The heart of the app. A dad authors his own operating code as a three-layer stac
 - **R4.2 — Mood capture.** A single-tap daily "inner weather" check (sky/cloud/storm + optional one-word tag: tired/wired/flat/steady/good). **No numeric or clinical scales anywhere in the app** (no 1–10, no PHQ-style questionnaires).
 - **R4.3 — Gentle reflection.** Show state history back as soft retrospective narrative ("the last couple weeks have felt heavier"), never a sharp/comparative graph, never with a failure or broken-streak state. The value is self-recognition, never measurement.
 - **R4.4 — Clarity → Code pivot.** A moment of clarity lands first as a **private** note. After processing, an optional soft prompt — *"Is there something in this worth passing on one day?"* — lets him author a **distilled, kid-facing** lesson that moves to the Legacy channel. The raw note stays private forever. The app never auto-promotes private material.
+
+## R17: Focus — Breath & Hum (the daily 10-minute reset)
+
+A first-class daily practice: **~10 stress-free minutes** of guided breathing and humming to discharge the load that today's always-on society piles on a dad's nervous system. This is the most actionable answer to "what would help a dad in this day and age" — a concrete, repeatable, sub-treatment ritual he can do anywhere. **Reuses existing repo work** (see `design.md §Focus reuse map`): the Tesla breath protocols in `content/protocols/`, the HUM/RESONATE/FOCUS app engines, and the humming research in `docs/refs/`.
+
+- **R17.1 — The session.** A single primary "Take 10" action runs a paced session (default ~10 min, adjustable 3/5/10): a brief settle → a guided breath protocol with optional humming on the exhale → a short stillness → a calm close. One tap to start; nothing else required.
+- **R17.2 — Breath protocols (from the archive).** Ship the three already-authored patterns, selectable, with the coherence breath as the default for stress:
+  - **Coherence 5-0-5** — 5s in / 5s out, 6 breaths/min, the HRV "coherence frequency" (default; gentlest, no retention). *(Schumann Lock protocol.)*
+  - **3-6-9 Breath** — in 3 / hold 6 / out 9 — the signature "Dad's Code" pattern; deeper vagal discharge via long exhale + retention. *(369 protocol.)*
+  - **Box 4-4-4-4** — equal-ratio, with the toroidal visualization option. *(Toroidal protocol.)*
+- **R17.3 — Visual pacer.** A breathing orb/ring expands on inhale, holds, contracts on exhale (reuse HUM's `.pacer-ring` scale animation), with phase labels ("Inhale" / "Hold" / "Exhale · hum") and a session-progress ring (reuse FOCUS's stroke-dashoffset ring). Honour `prefers-reduced-motion` with a non-animated count fallback.
+- **R17.4 — Humming.** Teach the hum on the exhale (Bhramari-style): a low, easy hum through the nose/closed lips. Optional. Frame it plainly — not mystically.
+- **R17.5 — Tone layer (Web Audio, no files).** Optional sine-tone drone generated on-device via Web Audio API (reuse HUM/RESONATE oscillator factory), selectable: 432 Hz, 528 Hz, 7.83 Hz (Schumann). Fades in/out; no shipped audio assets (longevity, R13); works offline; respects a master mute. Headphones suggested for the low/binaural tones.
+- **R17.6 — "Learn the harm" (education, brief).** A short, optional, plainly-written card on what **chronic stress in today's society** does to the body — elevated cortisol, suppressed vagal tone, autonomic dysregulation — and how slow breathing + humming counter each in minutes. Source it from `docs/refs/humming-research-origins.md` (e.g. humming raises nasal nitric oxide ~15× — Weitzberg & Lundberg, Karolinska 2002; humming produced the lowest HRV stress index of any measured state, incl. sleep — Trivedi 2023). **Wellness language only** — no disease/treatment claims (keeps it outside TGA/FDA medical-device regulation per `docs/refs/humming-research-newtech.md`).
+- **R17.7 — Streak done right.** Track the daily practice with **additive, forgiving** consistency (reuse PULSE heatmap: "10 of the last 14 days"). No breakable streaks, no red, no guilt (consistent with R2.4/R5.3).
+- **R17.8 — Integration.** The Focus session is the active practice that R4 Clarity points to (e.g. offered after a "storm" mood day or a "Reframe a Hard Moment"). On completion, the same soft pivot as R4.4 may offer: "want to leave your kids the habit that steadies you?" → an opt-in legacy entry (R6).
+- **R17.9 — Safety.** Carry the protocols' existing disclaimer verbatim in spirit: *"a practice, not a treatment."* The 3-6-9 retention pattern shows a caution for cardiovascular/respiratory conditions and pregnancy (suggest a gentler 2-4-6 or the no-hold 5-0-5), and a "don't do this while driving or during exertion" note. Routes to R16 crisis resources if needed.
 
 ## R5: Health & Well-being (v1 light)
 

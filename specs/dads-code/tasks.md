@@ -122,6 +122,23 @@
 
 **DoD:** Crisis resources load with network disabled; detection fires at most one card and never transmits; copy passes a tone review.
 
+### T17: Focus — breath, hum & tone (the daily 10-min reset)
+- [ ] `focus.js` — "Take 10" session runner (3/5/10 min): settle → guided protocol → stillness → calm close
+- [ ] Three protocols from `content/protocols/tesla-*.md`: Coherence 5-0-5 (default), 3-6-9, Box 4-4-4-4 (with toroidal visualization option)
+- [ ] Breath pacer: reuse `apps/hum/index.html` `.pacer-ring` scale animation + phase labels (Inhale/Hold/Exhale·hum); session-progress ring from `apps/focus/index.html`; `prefers-reduced-motion` static-count fallback
+- [ ] Web Audio tone engine: reuse HUM `startTone()` + RESONATE 3-osc drone; presets 432/528/7.83 Hz; gain ramp; master mute; **no audio files** (R13)
+- [ ] Humming guidance on exhale (Bhramari, plainly framed, optional)
+- [ ] "Learn the harm" card: chronic-stress science from `docs/refs/humming-research-origins.md` (NO 15×/Karolinska 2002; lowest stress index/Trivedi 2023; cortisol/vagal/autonomic) — **wellness language only**, no disease claims
+- [ ] Additive practice heatmap (reuse `apps/pulse/index.html` grid) — no breakable streak
+- [ ] Carry protocol disclaimer ("a practice, not a treatment") + 3-6-9 retention caution (cardiovascular/respiratory/pregnancy → suggest 2-4-6 or 5-0-5) + "not while driving/exertion"; link to T9 crisis resources
+- [ ] Completion → optional R4.4-style legacy pivot ("leave your kids the habit that steadies you?")
+
+`satisfies:` R17.1, R17.2, R17.3, R17.4, R17.5, R17.6, R17.7, R17.8, R17.9
+`depends:` T2, T3, T9
+`files:` apps/dads-code/focus.js, apps/dads-code/app.css
+
+**DoD:** A 10-min coherence session runs with a smooth pacer and an on-device tone (no files); reduced-motion path works; protocols match the archived patterns; "learn the harm" carries citations in wellness language; disclaimer + retention caution present; heatmap has no breakable streak.
+
 ---
 
 ## Phase 5 — Health (light) · depends: T2, T3
@@ -211,7 +228,7 @@
 **DoD:** Axe/Lighthouse a11y ≥95; manual screen-reader pass of capture + revisit; no anti-pattern present.
 
 ### T16: End-to-end verification & docs
-- [ ] Full flow test: onboard → author Code → daily check-in → journal (text+voice) → clarity → health → mark-for-them → export → reopen backup offline
+- [ ] Full flow test: onboard → author Code → daily check-in → journal (text+voice) → clarity → Focus (10-min breath/hum) → health → mark-for-them → export → reopen backup offline
 - [ ] Durability test: clear site data → restore from backup HTML/JSON with zero loss
 - [ ] `apps/dads-code/README.md` (run/preview, data model, export format, "your words are never locked" promise); register app in root `CLAUDE.md` apps table
 
@@ -229,6 +246,7 @@
 Wave 1: T1, T2, T3                 (shell, storage, brand — parallel)
 Wave 2: T4                         (the Code)         → then T5 (loop)
 Wave 3: T6 → T7                    (audio → journaling)   ‖  T8, T9, T10 (inner work, safety, health)
+        T9 → T17                   (Focus breath/hum/tone — needs safety/crisis from T9)
 Wave 4: T11                        (legacy; needs T7)
 Wave 5: T12 → T13                  (export → crypto)
 Wave 6: T14                        (license)          ‖  T15 (a11y/brand QA)
