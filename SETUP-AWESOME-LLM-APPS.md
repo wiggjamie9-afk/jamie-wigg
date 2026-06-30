@@ -67,7 +67,7 @@ install per template, only for the one you're running.
   change — point them at Claude (the repo's default) where you can.
 - **Per-template setup:** check each template's own README/tutorial; featured ones
   have free walkthroughs on Unwind AI.
-- On this repo's Mac, `Install-Downloads.command` **clones** the cookbook to
+- On this repo's Mac, `mac-downloads/Install-Downloads.command` **clones** the cookbook to
   `~/awesome-llm-apps` (source only — no repo-wide deps installed; you `pip
   install -r requirements.txt` inside whichever template you run). It skips the
   clone if it's already there.

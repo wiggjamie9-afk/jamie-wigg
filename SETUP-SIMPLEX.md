@@ -57,7 +57,7 @@ simplex-chat
 ```
 
 See the upstream docs for installing and using the terminal app. On this repo's
-Mac, the SimpleX CLI is wired into **`Install-Downloads.command`** (it runs the
+Mac, the SimpleX CLI is wired into **`mac-downloads/Install-Downloads.command`** (it runs the
 official install script above, and skips if `simplex-chat` is already present).
 
 ## Making a connection

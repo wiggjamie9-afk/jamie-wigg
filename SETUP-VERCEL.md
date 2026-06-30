@@ -79,5 +79,5 @@ cd ./packages/cli && pnpm vercel <cli-commands...>   # run local changes
 
 - Source of truth is the upstream docs (<https://vercel.com/docs>) and repo
   (<https://github.com/vercel/vercel>); this is a minimal install/usage snapshot.
-- This repo's Mac installer (`Install-Downloads.command`) installs the standard
+- This repo's Mac installer (`mac-downloads/Install-Downloads.command`) installs the standard
   npm CLI (`npm i -g vercel`); the native binary is left opt-in.
