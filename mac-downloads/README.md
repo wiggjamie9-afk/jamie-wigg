@@ -63,6 +63,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 | **Impeccable** — design skill + 44-rule detector | `SETUP-IMPECCABLE.md` | `/impeccable init`, `npx impeccable detect .` |
 | **Vercel CLI** — deploy / `vercel dev` | `SETUP-VERCEL.md` | `vercel` |
 | **Graphify** — map the repo into a queryable knowledge graph | `SETUP-GRAPHIFY.md` | `/graphify .`, `graphify query "…"` |
+| **Flow** — developer-workflow CLI (`f`) | `SETUP-FLOW.md` | `~/.flow/bin/f doctor`, `f --help` |
 | **Scrapling** — adaptive web-scraping framework (browsers via `scrapling install`, heavy) | `SETUP-SCRAPLING.md` | `scrapling shell`, `scrapling extract get <url> out.md` |
 | **Godot Engine** — 2D/3D game engine (Homebrew cask) | `SETUP-GODOT.md` | open `/Applications/Godot.app` |
 | **GodMode** — multi-AI chat browser (universal `.dmg`, unsigned) | `SETUP-GODMODE.md` | launch `/Applications/GodMode.app`, then Cmd+Shift+G |
@@ -126,6 +127,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 - **ClawFleet** — `SETUP-CLAWFLEET.md` (Go/Docker dashboard for a fleet of OpenClaw instances; built from source).
 - **Zenii** — `SETUP-ZENII.md` (local Rust AI backend / MCP memory server at `localhost:18981`; built from source).
 - **Scrapling** — `SETUP-SCRAPLING.md` (adaptive Python web-scraping framework + AI MCP server).
+- **Flow** — `SETUP-FLOW.md` (developer-workflow CLI `f`; `curl -fsSL https://myflow.sh/install.sh | sh`).
 - **Godot Engine** — `SETUP-GODOT.md` (free MIT 2D/3D game engine; `brew install --cask godot`).
 - **GodMode** — `SETUP-GODMODE.md` (smol-ai multi-AI chat browser; universal `.dmg` from GitHub releases).
 - **This folder** — moved the Mac download bundle into `mac-downloads/` so it has a permanent home.
@@ -134,7 +136,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 
 ## At a glance
 
-- **Auto-installable on the Mac (9):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify, Scrapling (+ browsers via `scrapling install`, heavy), Godot, GodMode.
+- **Auto-installable on the Mac (10):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify, Scrapling (+ browsers via `scrapling install`, heavy), Flow, Godot, GodMode.
 - **Open-and-use (1):** Viral Hook Generator.
 - **Heavy/optional (6):** SD WebUI, Deep Playground, Penpot, Awesome LLM Apps, ClawFleet, Zenii.
 - **Pointers (8):** PageAgent, VEO3 n8n, Kling n8n, vendored skills, Ruixen UI, MiniMax-01, Palmier Pro, Freebuff.

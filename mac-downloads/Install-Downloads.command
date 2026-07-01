@@ -12,7 +12,7 @@
 # UNATTENDED: installs everything automatically, no y/N prompts —
 #   prerequisites (Homebrew, python3, ffmpeg, node, git)
 #   + MoviePy + OpenCode CLI + SimpleX Chat CLI + Impeccable + Vercel CLI
-#   + Graphify + Scrapling + Godot + GodMode, opens the Viral Hook Generator in your browser, and (optionally) the heavy
+#   + Graphify + Scrapling + Flow + Godot + GodMode, opens the Viral Hook Generator in your browser, and (optionally) the heavy
 #   steps — Stable Diffusion WebUI, Deep Playground, the Penpot Docker stack,
 #   the Awesome LLM Apps cookbook clone, ClawFleet, and Zenii (both build from source).
 # It still skips anything already installed, so it's safe to re-run.
@@ -189,6 +189,17 @@ if have python3; then
   fi
 else
   err "python3 missing — cannot install Scrapling. See SETUP-SCRAPLING.md"
+fi
+
+# --- Flow (SETUP-FLOW.md) — developer workflow CLI (f) ---------------------
+echo
+say "Flow — developer workflow CLI (f)"
+if have f || [[ -x "$HOME/.flow/bin/f" ]]; then
+  ok "Flow already installed. Verify: ~/.flow/bin/f --version"
+else
+  curl -fsSL https://myflow.sh/install.sh | sh \
+    && ok "Flow installed → ~/.flow/bin/f. Check: ~/.flow/bin/f doctor  (open a new shell if 'f' isn't found)" \
+    || err "Flow install failed — see SETUP-FLOW.md"
 fi
 
 # --- Godot Engine (SETUP-GODOT.md) — light GUI app via Homebrew cask -------
