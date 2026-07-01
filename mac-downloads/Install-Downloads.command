@@ -11,8 +11,8 @@
 #
 # UNATTENDED: installs everything automatically, no y/N prompts —
 #   prerequisites (Homebrew, python3, ffmpeg, node, git)
-#   + MoviePy + OpenCode CLI + SimpleX Chat CLI + Impeccable + Vercel CLI,
-#   opens the Viral Hook Generator in your browser, and (optionally) the heavy
+#   + MoviePy + OpenCode CLI + SimpleX Chat CLI + Impeccable + Vercel CLI
+#   + Graphify, opens the Viral Hook Generator in your browser, and (optionally) the heavy
 #   steps — Stable Diffusion WebUI, Deep Playground, the Penpot Docker stack,
 #   and the Awesome LLM Apps cookbook clone.
 # It still skips anything already installed, so it's safe to re-run.
@@ -139,6 +139,35 @@ elif have npm; then
     || err "Vercel CLI install failed — see SETUP-VERCEL.md"
 else
   err "npm missing — cannot install Vercel CLI. See SETUP-VERCEL.md"
+fi
+
+# --- Graphify knowledge-graph tool (SETUP-GRAPHIFY.md) ---------------------
+echo
+say "Graphify — map the repo into a queryable knowledge graph"
+if have graphify; then
+  ok "Graphify already installed ($(graphify --version 2>/dev/null | head -1))"
+else
+  # uv is the recommended installer (isolated env; avoids the pip PATH footgun).
+  if ! have uv && have brew; then
+    say "Installing uv (Graphify's recommended installer)"; brew install uv || warn "uv install failed"
+  fi
+  if have uv; then
+    uv tool install graphifyy \
+      && uv tool update-shell >/dev/null 2>&1 || true
+    if have graphify; then
+      graphify install >/dev/null 2>&1 \
+        && ok "Graphify installed + skill registered. Use: /graphify .  (see SETUP-GRAPHIFY.md)" \
+        || ok "Graphify installed. Run 'graphify install' to register the skill (SETUP-GRAPHIFY.md)."
+    else
+      warn "Graphify installed to uv's bin dir but not on PATH yet — open a new terminal, then run 'graphify install'."
+    fi
+  elif have pipx; then
+    pipx install graphifyy && pipx ensurepath >/dev/null 2>&1 \
+      && ok "Graphify installed via pipx. Open a new terminal, then run 'graphify install'." \
+      || err "Graphify install failed — see SETUP-GRAPHIFY.md"
+  else
+    err "Neither uv nor pipx available — cannot install Graphify. See SETUP-GRAPHIFY.md"
+  fi
 fi
 
 # ===========================================================================

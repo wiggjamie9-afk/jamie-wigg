@@ -62,6 +62,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 | **SimpleX Chat CLI** — privacy-first messaging | `SETUP-SIMPLEX.md` | `simplex-chat` |
 | **Impeccable** — design skill + 44-rule detector | `SETUP-IMPECCABLE.md` | `/impeccable init`, `npx impeccable detect .` |
 | **Vercel CLI** — deploy / `vercel dev` | `SETUP-VERCEL.md` | `vercel` |
+| **Graphify** — map the repo into a queryable knowledge graph | `SETUP-GRAPHIFY.md` | `/graphify .`, `graphify query "…"` |
 
 ### 🌐 Opens in your browser (nothing to install)
 
@@ -116,13 +117,14 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 - **Impeccable** — `SETUP-IMPECCABLE.md` (design skill + detector for AI frontends).
 - **Vercel CLI** — `SETUP-VERCEL.md` (deploy CLI; tangential — repo ships via Pages/Cloudflare).
 - **Awesome LLM Apps** — `SETUP-AWESOME-LLM-APPS.md` (fork-ready LLM app template cookbook).
+- **Graphify** — `SETUP-GRAPHIFY.md` (the knowledge-graph tool that produces the repo's `graphify-out/` snapshot).
 - **This folder** — moved the Mac download bundle into `mac-downloads/` so it has a permanent home.
 
 ---
 
 ## At a glance
 
-- **Auto-installable on the Mac (5):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel.
+- **Auto-installable on the Mac (6):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify.
 - **Open-and-use (1):** Viral Hook Generator.
 - **Heavy/optional (4):** SD WebUI, Deep Playground, Penpot, Awesome LLM Apps.
 - **Pointers (8):** PageAgent, VEO3 n8n, Kling n8n, vendored skills, Ruixen UI, MiniMax-01, Palmier Pro, Freebuff.
