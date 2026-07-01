@@ -406,6 +406,11 @@ cat <<'NOTES'
                           when on a supported Mac. (SETUP-PALMIER-PRO.md)
   • Freebuff CLI        — terminal AI coding agent; install per its own README.
                           (SETUP-FREEBUFF.md)
+  • Self-hosted (Docker)— run per their docs, not auto-installed here:
+                          Matchering (music mastering — also a pip lib: pip install
+                          matchering) SETUP-MATCHERING.md; HandBrake Web (video
+                          transcode) SETUP-HANDBRAKE-WEB.md; Activepieces (n8n-style
+                          automation) SETUP-ACTIVEPIECES.md.
 NOTES
 
 echo

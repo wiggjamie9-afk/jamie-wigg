@@ -130,6 +130,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 - **Flow** — `SETUP-FLOW.md` (developer-workflow CLI `f`; `curl -fsSL https://myflow.sh/install.sh | sh`).
 - **Godot Engine** — `SETUP-GODOT.md` (free MIT 2D/3D game engine; `brew install --cask godot`).
 - **GodMode** — `SETUP-GODMODE.md` (smol-ai multi-AI chat browser; universal `.dmg` from GitHub releases).
+- **Self-hosted (Docker) — documented, not auto-installed:** `SETUP-MATCHERING.md` (music mastering; also a `pip install matchering` library), `SETUP-HANDBRAKE-WEB.md` (video transcode), `SETUP-ACTIVEPIECES.md` (n8n-style automation). Picked from the awesome-selfhosted list as the ones that fit a music/video/automation shop; run per their docs.
 - **This folder** — moved the Mac download bundle into `mac-downloads/` so it has a permanent home.
 
 ---
