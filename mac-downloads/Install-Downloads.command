@@ -12,7 +12,7 @@
 # UNATTENDED: installs everything automatically, no y/N prompts —
 #   prerequisites (Homebrew, python3, ffmpeg, node, git)
 #   + MoviePy + OpenCode CLI + SimpleX Chat CLI + Impeccable + Vercel CLI
-#   + Graphify + Scrapling + Godot, opens the Viral Hook Generator in your browser, and (optionally) the heavy
+#   + Graphify + Scrapling + Godot + GodMode, opens the Viral Hook Generator in your browser, and (optionally) the heavy
 #   steps — Stable Diffusion WebUI, Deep Playground, the Penpot Docker stack,
 #   the Awesome LLM Apps cookbook clone, ClawFleet, and Zenii (both build from source).
 # It still skips anything already installed, so it's safe to re-run.
@@ -202,6 +202,42 @@ elif have brew; then
     || err "Godot install failed — see SETUP-GODOT.md"
 else
   warn "No Homebrew — download Godot from godotengine.org. See SETUP-GODOT.md"
+fi
+
+# --- GodMode (SETUP-GODMODE.md) — download latest universal .dmg -----------
+echo
+say "GodMode — smol AI chat browser (Cmd+Shift+G)"
+if [[ -d "/Applications/GodMode.app" ]]; then
+  ok "GodMode already installed (/Applications/GodMode.app)."
+elif have curl; then
+  api="https://api.github.com/repos/smol-ai/GodMode/releases/latest"
+  dmg_url=$(curl -fsSL "$api" 2>/dev/null | grep -oE 'https://[^"]*universal[^"]*\.dmg' | head -1)
+  [[ -z "$dmg_url" ]] && dmg_url=$(curl -fsSL "$api" 2>/dev/null | grep -oE 'https://[^"]*\.dmg' | head -1)
+  if [[ -z "$dmg_url" ]]; then
+    warn "Couldn't resolve a .dmg in the latest release — install from github.com/smol-ai/GodMode/releases/latest"
+  else
+    tmp="$(mktemp -d)"; mkdir -p "$tmp/mnt"
+    if curl -fsSL "$dmg_url" -o "$tmp/GodMode.dmg"; then
+      if hdiutil attach "$tmp/GodMode.dmg" -nobrowse -noautoopen -mountpoint "$tmp/mnt" >/dev/null 2>&1; then
+        app=$(ls -d "$tmp/mnt"/*.app 2>/dev/null | head -1)
+        if [[ -n "$app" ]]; then
+          cp -R "$app" /Applications/ \
+            && ok "GodMode installed → /Applications. First launch: right-click → Open (unsigned app). Then Cmd+Shift+G." \
+            || warn "Copy to /Applications failed — drag it in manually from the mounted dmg."
+        else
+          warn "No .app found inside the dmg — install manually from the releases page."
+        fi
+        hdiutil detach "$tmp/mnt" >/dev/null 2>&1
+      else
+        warn "Failed to mount the dmg — install manually from github.com/smol-ai/GodMode/releases/latest"
+      fi
+    else
+      warn "Download failed — get it from github.com/smol-ai/GodMode/releases/latest"
+    fi
+    rm -rf "$tmp"
+  fi
+else
+  warn "curl missing — download GodMode from github.com/smol-ai/GodMode/releases/latest"
 fi
 
 # ===========================================================================
