@@ -64,6 +64,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 | **Vercel CLI** — deploy / `vercel dev` | `SETUP-VERCEL.md` | `vercel` |
 | **Graphify** — map the repo into a queryable knowledge graph | `SETUP-GRAPHIFY.md` | `/graphify .`, `graphify query "…"` |
 | **Scrapling** — adaptive web-scraping framework (browsers via `scrapling install`, heavy) | `SETUP-SCRAPLING.md` | `scrapling shell`, `scrapling extract get <url> out.md` |
+| **Godot Engine** — 2D/3D game engine (Homebrew cask) | `SETUP-GODOT.md` | open `/Applications/Godot.app` |
 
 ### 🌐 Opens in your browser (nothing to install)
 
@@ -124,13 +125,14 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 - **ClawFleet** — `SETUP-CLAWFLEET.md` (Go/Docker dashboard for a fleet of OpenClaw instances; built from source).
 - **Zenii** — `SETUP-ZENII.md` (local Rust AI backend / MCP memory server at `localhost:18981`; built from source).
 - **Scrapling** — `SETUP-SCRAPLING.md` (adaptive Python web-scraping framework + AI MCP server).
+- **Godot Engine** — `SETUP-GODOT.md` (free MIT 2D/3D game engine; `brew install --cask godot`).
 - **This folder** — moved the Mac download bundle into `mac-downloads/` so it has a permanent home.
 
 ---
 
 ## At a glance
 
-- **Auto-installable on the Mac (7):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify, Scrapling (+ browsers via `scrapling install`, heavy).
+- **Auto-installable on the Mac (8):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify, Scrapling (+ browsers via `scrapling install`, heavy), Godot.
 - **Open-and-use (1):** Viral Hook Generator.
 - **Heavy/optional (6):** SD WebUI, Deep Playground, Penpot, Awesome LLM Apps, ClawFleet, Zenii.
 - **Pointers (8):** PageAgent, VEO3 n8n, Kling n8n, vendored skills, Ruixen UI, MiniMax-01, Palmier Pro, Freebuff.

@@ -12,7 +12,7 @@
 # UNATTENDED: installs everything automatically, no y/N prompts —
 #   prerequisites (Homebrew, python3, ffmpeg, node, git)
 #   + MoviePy + OpenCode CLI + SimpleX Chat CLI + Impeccable + Vercel CLI
-#   + Graphify + Scrapling, opens the Viral Hook Generator in your browser, and (optionally) the heavy
+#   + Graphify + Scrapling + Godot, opens the Viral Hook Generator in your browser, and (optionally) the heavy
 #   steps — Stable Diffusion WebUI, Deep Playground, the Penpot Docker stack,
 #   the Awesome LLM Apps cookbook clone, ClawFleet, and Zenii (both build from source).
 # It still skips anything already installed, so it's safe to re-run.
@@ -189,6 +189,19 @@ if have python3; then
   fi
 else
   err "python3 missing — cannot install Scrapling. See SETUP-SCRAPLING.md"
+fi
+
+# --- Godot Engine (SETUP-GODOT.md) — light GUI app via Homebrew cask -------
+echo
+say "Godot Engine — 2D/3D game engine"
+if [[ -d "/Applications/Godot.app" ]] || { have brew && brew list --cask godot >/dev/null 2>&1; }; then
+  ok "Godot already installed (/Applications/Godot.app)."
+elif have brew; then
+  brew install --cask godot \
+    && ok "Godot installed → /Applications/Godot.app" \
+    || err "Godot install failed — see SETUP-GODOT.md"
+else
+  warn "No Homebrew — download Godot from godotengine.org. See SETUP-GODOT.md"
 fi
 
 # ===========================================================================
