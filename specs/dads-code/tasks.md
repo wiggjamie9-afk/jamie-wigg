@@ -156,6 +156,37 @@
 
 **DoD:** Only the 5 permitted signals exist; no streak can "break"; framing references presence/capability, never abs.
 
+### T18: Food planner — fuel & family meals
+- [ ] `food.js` — Mon–Sun meal planner (breakfast/lunch/dinner/snack slots), free-text or saved favourites; reuse `apps/macro/index.html` grid/cards + `apps/NutriAI.html` meal entry
+- [ ] Family-dinner tagging (first-class); optional whose-favourite / who-cooks
+- [ ] Grocery list auto-assembled from the week's plan; editable + check-off view
+- [ ] Hydration tracker (reuse MACRO); optional one-tap "ate well today"; **no calorie/macro by default** (R5.2) — macros are opt-in, de-emphasised, no streak/guilt
+- [ ] Save family recipes; a recipe can be marked-for-them (R6, "The Way We Do Things")
+- [ ] Persist in IndexedDB (R8); include in backup/export (R9); restyle to warm-archival (drop MACRO's glass/neon)
+
+`satisfies:` R18.1, R18.2, R18.3, R18.4, R18.5, R18.6
+`depends:` T2, T3
+`files:` apps/dads-code/food.js
+
+**DoD:** A week can be planned and turned into a grocery list; no calorie tracking appears unless opted in; a recipe can be passed to a child; plans survive export/restore.
+
+### T19: AI Buddy — the companion
+- [ ] `buddy.js` — chat UI (reuse `apps/buddy-1.html` bubble/input/typing) + persona/onboarding from `apps/heartbeat.html`
+- [ ] **Offline scripted companion is the default** (reflective prompts/check-ins/supportive responses, no model, nothing transmitted)
+- [ ] Optional BYO-key upgrade (Claude `sk-ant-…`, reuse buddy-system fetch pattern); **"Sending to Claude…" consent indicator** on every send; no key ⇒ no transmission
+- [ ] Key stored locally, offered under R10 passcode encryption; never to any server
+- [ ] Walled off from private entries — buddy sees journal/clarity/Focus/legacy content ONLY when the dad explicitly shares an entry into the chat (R19.3)
+- [ ] Crisis-keyword detection (reuse buddy apps) → calm dismissible card + offline AU resources from T9 (R16.2)
+- [ ] Optional Web Speech TTS reply + optional voice input (reuse R7.3 capture); "I'm an AI, not a person / not a substitute for real support" framing; validate-before-reframe tone
+- [ ] Buddy→code bridge: optional post-chat pivot "keep any of this for yourself, or your kids?" → private note or legacy entry (never auto-writes)
+- [ ] Chat history in IndexedDB (R8), covered by auto-lock (R10), backup (R9), purge (R11.3)
+
+`satisfies:` R19.1, R19.2, R19.3, R19.4, R19.5, R19.6, R19.7, R19.8, R19.9
+`depends:` T2, T3, T9
+`files:` apps/dads-code/buddy.js
+
+**DoD:** With no key, the buddy works fully offline and transmits nothing; with a key, every send shows a clear "leaving device" indicator; the buddy cannot access stored private entries unless one is explicitly shared; crisis path shows AU resources offline.
+
 ---
 
 ## Phase 6 — Legacy · depends: T2, T7
@@ -222,13 +253,13 @@
 - [ ] Voice-first verification; auto-save robustness; reduced-motion path
 
 `satisfies:` R12.1, R12.2, R12.3, R12.4, R14.2, R14.6
-`depends:` T5, T7, T8, T10, T11
+`depends:` T5, T7, T8, T10, T11, T17, T18, T19
 `files:` apps/dads-code/**
 
 **DoD:** Axe/Lighthouse a11y ≥95; manual screen-reader pass of capture + revisit; no anti-pattern present.
 
 ### T16: End-to-end verification & docs
-- [ ] Full flow test: onboard → author Code → daily check-in → journal (text+voice) → clarity → Focus (10-min breath/hum) → health → mark-for-them → export → reopen backup offline
+- [ ] Full flow test: onboard → author Code → daily check-in → journal (text+voice) → clarity → Focus (10-min breath/hum) → health → food plan → buddy chat (offline) → mark-for-them → export → reopen backup offline
 - [ ] Durability test: clear site data → restore from backup HTML/JSON with zero loss
 - [ ] `apps/dads-code/README.md` (run/preview, data model, export format, "your words are never locked" promise); register app in root `CLAUDE.md` apps table
 
@@ -247,6 +278,7 @@ Wave 1: T1, T2, T3                 (shell, storage, brand — parallel)
 Wave 2: T4                         (the Code)         → then T5 (loop)
 Wave 3: T6 → T7                    (audio → journaling)   ‖  T8, T9, T10 (inner work, safety, health)
         T9 → T17                   (Focus breath/hum/tone — needs safety/crisis from T9)
+        T18                        (Food planner — needs T2/T3)   ‖  T9 → T19 (AI Buddy — needs crisis from T9)
 Wave 4: T11                        (legacy; needs T7)
 Wave 5: T12 → T13                  (export → crypto)
 Wave 6: T14                        (license)          ‖  T15 (a11y/brand QA)

@@ -19,6 +19,8 @@ apps/dads-code/
 ├── clarity.js              # mood "weather", clarity practices, on-device heaviness check
 ├── focus.js                # breath pacer + humming + Web Audio tone engine (R17)
 ├── health.js               # ≤5 gentle signals, screening reminders, consistency calc
+├── food.js                 # weekly meal planner, family dinners, grocery list, hydration (R18)
+├── buddy.js                # AI companion: offline scripted + optional BYO-key chat, crisis-aware (R19)
 ├── legacy.js               # Private/Shared/Bequeathed state machine, "mark for them" pivot
 ├── audio.js                # MediaRecorder capture + playback + transcript hook
 ├── crypto.js               # optional AES-GCM vault passcode + encrypted export (R10)
@@ -96,6 +98,8 @@ Home (today's check-in + add button + backup status)
 ├── Clarity         (decompression, brain-dump, reframe, one-breath, crisis link)
 ├── Focus           (Take 10: breath pacer + hum + tone · protocol picker · "learn the harm" · heatmap)  [R17]
 ├── Health          (5 gentle signals + screening reminders)            [v1 light]
+├── Food            (weekly plan · family dinners · grocery list · hydration)  [R18]
+├── Buddy           (companion chat · offline default · optional BYO-key · crisis-aware)  [R19]
 ├── For Them        (Legacy channel: shared/bequeathed entries + recipients) 
 ├── Backup & Export (self-contained HTML, JSON, print book, encryption)
 └── Settings        (passcode, region/crisis, reminder time, i18n, purge, license)
@@ -126,17 +130,31 @@ The breath/hum module is built almost entirely by lifting and adapting existing,
 
 Session shape (R17.1): settle (~30s) → guided protocol (5-0-5 default; 3-6-9 / box optional) with optional exhale hum + optional tone → short stillness → calm close → additive log to the heatmap. All Web-Audio-generated; **no shipped audio files** (R13 longevity). `prefers-reduced-motion` → static count fallback (R12.3). Carries the protocol disclaimers + retention caution (R17.9).
 
+## 5c. Food Planner & AI Buddy reuse map (R18, R19)
+
+| Need | Reuse from | What to lift / how it changes |
+|---|---|---|
+| Weekly meal planner grid, meal cards, water tracker, rings | `apps/macro/index.html` | grid + cards + hydration UI; **drop the calorie/macro centre** (R5) — planner-first, macros opt-in only |
+| Meal logging / favourites / carousel | `apps/NutriAI.html` | meal entry + saved favourites; restyle to warm-archival |
+| Grocery list | assemble in `food.js` | derive from the week's planned meals; editable + check-off |
+| Buddy chat (BYO-key Claude, offline localStorage history, crisis detection) | `apps/buddy-system.html`, `apps/buddy-1.html` | canonical Claude fetch pattern + AU crisis hotlines; **default to offline scripted responses**, cloud only when a key is set |
+| Persona picker, TTS, mic input | `apps/heartbeat.html` | onboarding/persona UI + Web Speech TTS; voice input reuses R7.3 capture |
+| Consent / key handling | new in `buddy.js` | "Sending to Claude…" indicator; key stored locally under R10 encryption; nothing sent without a key |
+
+**Food** persists plans/recipes/grocery in IndexedDB (R8), flows into backup (R9); recipes can be marked-for-them (R6, "The Way We Do Things"). **Buddy** stores chat locally (R8), is walled off from private entries unless a dad shares one into the chat (R19.3), covered by passcode/auto-lock (R10) and purge (R11.3), and its crisis path reuses R16 resources.
+
 ## 6. Build phases (maps to tasks.md)
 
 1. **Shell & storage** — index.html, db.js, store.js, sw.js, manifest, brand tokens, i18n seam.
 2. **The loop** — code.js (the Code) + daily check-in + home. *This is the wedge; ship it first and well.*
 3. **Capture** — diary.js + audio.js + transcripts + onboarding prompt cards.
 4. **Inner work** — clarity.js (weather mood, practices) + focus.js (breath/hum/tone, R17) + safety.js (crisis, disclaimer).
-5. **Health light** — health.js (5 signals, screening, additive consistency).
+5. **Health light** — health.js (5 signals, screening, additive consistency) + food.js (meal planner, grocery, R18).
+5b. **Companion** — buddy.js (offline scripted + optional BYO-key chat, crisis-aware, R19).
 6. **Legacy** — legacy.js state machine + "pass this on" pivot + recipients + "For Them".
 7. **Durability & security** — export.js (self-contained HTML, JSON, print book) + crypto.js.
 8. **Monetization & polish** — license.js + gift redemption + a11y/brand pass + verification.
 
 ## 7. Deferred to v2 (named, not silently dropped)
 
-Milestone/To-My-Kids journaling modes; standalone clarity-practice library; full sleep↔mood correlation and health trend dashboards; curated legacy vault, per-child threads, and the sealed handoff "ceremony"; physical keepsake-book fulfilment (print-on-demand via Lulu/Blurb); multi-device sync key; actual translations. The product-strategy advisor would additionally defer the whole Health module and Legacy vault to protect v1 focus — see the flagged tension in `requirements.md`.
+Milestone/To-My-Kids journaling modes; standalone clarity-practice library; full sleep↔mood correlation and health trend dashboards; **Food:** recipe database, photo-to-meal AI, meal-template library; **Buddy:** multiple personas, on-device WebLLM/WebGPU model (smart + fully private), premium voice; curated legacy vault, per-child threads, and the sealed handoff "ceremony"; physical keepsake-book fulfilment (print-on-demand via Lulu/Blurb); multi-device sync key; actual translations. The product-strategy advisor would additionally defer the whole Health module and Legacy vault to protect v1 focus — see the flagged tension in `requirements.md`.

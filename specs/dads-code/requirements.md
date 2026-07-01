@@ -34,6 +34,8 @@ The app spans five domains unified by the Code. v1 ships **one loop done well**;
 | **Clarity & Mental Health** | ✅ weather mood + decompression + crisis resources | standalone practice library |
 | **Focus — Breath & Hum** | ✅ daily ~10-min breath-pacer + humming + tone, stress-harm education | wearable HRV, mic pitch-detection, more protocols |
 | **Health & Well-being** | ✅ *light* — ≤5 gentle signals + screening nudges | sleep↔mood correlation, deeper trends |
+| **Food Planner** — fuel & family meals | ✅ *light* — weekly plan + grocery list + family dinners | recipes, photo-to-meal AI, macro opt-in |
+| **AI Buddy** — the companion | ✅ offline scripted companion + optional BYO-key Claude, crisis-aware | personas, on-device model, voice |
 | **Legacy** — pass it on | ⚠️ "★ mark for them" + Private/Shared/Bequeathed states + export | curated vault, per-child threads, sealed handoff ceremony |
 
 > Note: The product-strategy advisor recommended deferring the standalone Health module and the curated Legacy vault entirely to v2 to protect focus. The user explicitly named health, well-being, mental health, and clarity as in-scope, so v1 includes a **deliberately light** health module and the **state machine + export** for legacy, while deferring the heavier vault/ceremony to v2. This tension is flagged for `/spec-analyze`.
@@ -95,6 +97,31 @@ A first-class daily practice: **~10 stress-free minutes** of guided breathing an
 - **R5.2 — Track at most five gentle signals:** sleep (bed/wake or a 1–5 "how rested"), movement ("moved" / "strength today" toggle), energy (1–5 daily), alcohol (gentle count, awareness not shame), and **screening reminders** (age-based: BP, lipids, glucose/HbA1c; testicular awareness <40; bowel/prostate conversations ~45–50). **Do NOT track** calories, macros, daily weight, or body-fat %.
 - **R5.3 — Humane consistency.** Additive language only ("moved 18 of the last 30 days"). No breakable streaks, no guilt notifications, no comparison, no leaderboards. Missed days fade quietly.
 - **R5.4 — Integration.** Surface a gentle, non-clinical sleep↔mood reflection (v1 may stub the data, full correlation is v2). Allow an opt-in legacy hook: "health lessons I want you to learn from my mistakes."
+
+## R18: Food Planner — Fuel & Family Meals (v1 light)
+
+A simple meal *planner*, not a diet tracker — kept deliberately consistent with R5's anti-diet-culture stance. The frame: food is **fuel to show up** and the **family table** is where a dad shows up. **Reuses** `apps/macro/index.html` (weekly grid, cards, water, rings) and `apps/NutriAI.html`; strips out the calorie-obsession.
+
+- **R18.1 — Weekly meal plan.** A Mon–Sun planner with breakfast/lunch/dinner/snack slots; add a meal as free text (or pick from saved favourites). Plan-first, log-optional.
+- **R18.2 — Family dinners.** First-class "family meal" tagging — plan the dinners everyone eats together; this is the point, not solo macro optimisation. Optionally attach whose-favourite / who-cooks.
+- **R18.3 — Grocery list.** Auto-assemble a shopping list from the week's planned meals; hand-editable; check-off view for the shop.
+- **R18.4 — Hydration & simple basics.** Keep the gentle water tracker (reuse MACRO); optionally a one-tap "ate well today" reflection. **No calorie/macro tracking by default** (R5.2); if a dad wants macros, they are an explicit opt-in, de-emphasised, never the default and never streak/guilt-driven (R5.3).
+- **R18.5 — Recipes & keepsake tie-in.** Save simple recipes/family dishes ("the Sunday thing"); a recipe can be marked-for-them (R6) — "The Way We Do Things" is an existing legacy category, so family recipes double as inheritance.
+- **R18.6 — Storage.** Meals/plans/recipes/grocery persist in IndexedDB (R8), included in backup/export (R9). Deferred to v2: recipe database, photo-to-meal AI, meal templates library.
+
+## R19: AI Buddy — the Companion
+
+A private, always-there companion for a dad with no one to talk to at 1am — the antidote to the paternal isolation named in R4. **Reuses** `apps/buddy-system.html` + `apps/buddy-1.html` (BYO-key Claude chat, offline localStorage history, crisis detection) and `apps/heartbeat.html` (persona picker, TTS). Its design is governed by this app's privacy law.
+
+- **R19.1 — Hybrid intelligence (privacy-first default).** Ships a **fully-offline companion** as the default: warm, rule-based reflective prompts, check-ins, and supportive responses that need no model and send nothing anywhere. A dad may **optionally paste his own AI key** (BYO-key, e.g. Claude `sk-ant-…`, mirroring STARLIGHTMIX's BYO-token pattern) to upgrade to real free-form conversation. *(On-device WebLLM/WebGPU is a documented v2 option for smart-and-fully-private; not required for v1.)*
+- **R19.2 — Consent on every send.** When a BYO-key is set, the buddy makes it unmistakable when a message leaves the device ("Sending to Claude…") vs. an offline response. No key ⇒ nothing is ever transmitted. The key is stored locally (offered under the R10 passcode encryption), never to our servers — we have none.
+- **R19.3 — Walled off from private content by default.** The buddy has **no access** to journal, clarity, Focus, or legacy entries unless the dad **explicitly shares a specific entry into the conversation** for that exchange. It never auto-reads the vault. This upholds R11 and is stated plainly to the user.
+- **R19.4 — What it's for.** A steady, non-judgmental sounding board — reflect on a hard day, think through a parenting moment, decompress, or just not be alone. It is a companion, **not a therapist and not a coach-with-authority**; it defers to real people and professionals.
+- **R19.5 — Voice (optional).** Optional text-to-speech reply via the free Web Speech API (no key), with BYO-key premium TTS as an upgrade. Optional voice input (reuse the mic capture from R7.3/R3.3).
+- **R19.6 — Crisis-aware (reuse existing).** On-device keyword detection (reuse the buddy apps' crisis logic) surfaces the same calm, non-alarmist support card and the offline AU crisis resources from R16.2 (Lifeline 13 11 14, Beyond Blue, MensLine, 000). One card, dismissible, never nagging.
+- **R19.7 — Safety framing.** Plainly states it is an AI, not a person, and not a substitute for real support; validate-before-reframe tone (R16.4); no toxic positivity; never claims to diagnose or treat.
+- **R19.8 — The buddy→code bridge.** After a meaningful exchange, an optional soft pivot (like R4.4): "want to keep any of this for yourself, or for your kids?" — turning a late-night conversation into a private note or, deliberately, a legacy entry. The buddy never writes to the vault on its own.
+- **R19.9 — Storage.** Chat history persists locally in IndexedDB (R8), is covered by the passcode/auto-lock (R10) and backup/export (R9), and can be purged (R11.3).
 
 ## R6: Legacy & Inheritance
 
