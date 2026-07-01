@@ -12,7 +12,7 @@
 # UNATTENDED: installs everything automatically, no y/N prompts —
 #   prerequisites (Homebrew, python3, ffmpeg, node, git)
 #   + MoviePy + OpenCode CLI + SimpleX Chat CLI + Impeccable + Vercel CLI
-#   + Graphify + Scrapling + Flow + Godot + GodMode, opens the Viral Hook Generator in your browser, and (optionally) the heavy
+#   + Graphify + Scrapling + Apprise + Flow + Godot + GodMode, opens the Viral Hook Generator in your browser, and (optionally) the heavy
 #   steps — Stable Diffusion WebUI, Deep Playground, the Penpot Docker stack,
 #   the Awesome LLM Apps cookbook clone, ClawFleet, and Zenii (both build from source).
 # It still skips anything already installed, so it's safe to re-run.
@@ -189,6 +189,17 @@ if have python3; then
   fi
 else
   err "python3 missing — cannot install Scrapling. See SETUP-SCRAPLING.md"
+fi
+
+# --- Apprise (SETUP-APPRISE.md) — one-API notifications (pip library) -------
+echo
+say "Apprise — send notifications to ~any service (Telegram/Discord/Slack/…)"
+if have python3; then
+  python3 -m pip install --user --upgrade apprise \
+    && ok "Apprise installed. Try: apprise -b 'hello' 'tgram://<token>/<chat_id>'" \
+    || err "Apprise install failed — see SETUP-APPRISE.md"
+else
+  err "python3 missing — cannot install Apprise. See SETUP-APPRISE.md"
 fi
 
 # --- Flow (SETUP-FLOW.md) — developer workflow CLI (f) ---------------------
@@ -410,7 +421,9 @@ cat <<'NOTES'
                           Matchering (music mastering — also a pip lib: pip install
                           matchering) SETUP-MATCHERING.md; HandBrake Web (video
                           transcode) SETUP-HANDBRAKE-WEB.md; Activepieces (n8n-style
-                          automation) SETUP-ACTIVEPIECES.md.
+                          automation) SETUP-ACTIVEPIECES.md; Listmonk (newsletter /
+                          email-list manager, pairs with the Hook Generator)
+                          SETUP-LISTMONK.md.
 NOTES
 
 echo

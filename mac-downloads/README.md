@@ -63,6 +63,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 | **Impeccable** — design skill + 44-rule detector | `SETUP-IMPECCABLE.md` | `/impeccable init`, `npx impeccable detect .` |
 | **Vercel CLI** — deploy / `vercel dev` | `SETUP-VERCEL.md` | `vercel` |
 | **Graphify** — map the repo into a queryable knowledge graph | `SETUP-GRAPHIFY.md` | `/graphify .`, `graphify query "…"` |
+| **Apprise** — one-API notifications (Telegram/Discord/Slack/…) | `SETUP-APPRISE.md` | `apprise -b "msg" "tgram://…"` |
 | **Flow** — developer-workflow CLI (`f`) | `SETUP-FLOW.md` | `~/.flow/bin/f doctor`, `f --help` |
 | **Scrapling** — adaptive web-scraping framework (browsers via `scrapling install`, heavy) | `SETUP-SCRAPLING.md` | `scrapling shell`, `scrapling extract get <url> out.md` |
 | **Godot Engine** — 2D/3D game engine (Homebrew cask) | `SETUP-GODOT.md` | open `/Applications/Godot.app` |
@@ -130,14 +131,15 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 - **Flow** — `SETUP-FLOW.md` (developer-workflow CLI `f`; `curl -fsSL https://myflow.sh/install.sh | sh`).
 - **Godot Engine** — `SETUP-GODOT.md` (free MIT 2D/3D game engine; `brew install --cask godot`).
 - **GodMode** — `SETUP-GODMODE.md` (smol-ai multi-AI chat browser; universal `.dmg` from GitHub releases).
-- **Self-hosted (Docker) — documented, not auto-installed:** `SETUP-MATCHERING.md` (music mastering; also a `pip install matchering` library), `SETUP-HANDBRAKE-WEB.md` (video transcode), `SETUP-ACTIVEPIECES.md` (n8n-style automation). Picked from the awesome-selfhosted list as the ones that fit a music/video/automation shop; run per their docs.
+- **Apprise** — `SETUP-APPRISE.md` (one-API notifications; `pip install apprise` — installed by the bundle).
+- **Self-hosted (Docker) — documented, not auto-installed:** `SETUP-MATCHERING.md` (music mastering; also a `pip install matchering` library), `SETUP-HANDBRAKE-WEB.md` (video transcode), `SETUP-ACTIVEPIECES.md` (n8n-style automation), `SETUP-LISTMONK.md` (newsletter/list manager; pairs with the Hook Generator). Picked from the awesome-selfhosted list as the ones that fit a music/video/marketing/automation shop; run per their docs.
 - **This folder** — moved the Mac download bundle into `mac-downloads/` so it has a permanent home.
 
 ---
 
 ## At a glance
 
-- **Auto-installable on the Mac (10):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify, Scrapling (+ browsers via `scrapling install`, heavy), Flow, Godot, GodMode.
+- **Auto-installable on the Mac (11):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify, Scrapling (+ browsers via `scrapling install`, heavy), Apprise, Flow, Godot, GodMode.
 - **Open-and-use (1):** Viral Hook Generator.
 - **Heavy/optional (6):** SD WebUI, Deep Playground, Penpot, Awesome LLM Apps, ClawFleet, Zenii.
 - **Pointers (8):** PageAgent, VEO3 n8n, Kling n8n, vendored skills, Ruixen UI, MiniMax-01, Palmier Pro, Freebuff.
