@@ -14,7 +14,7 @@
 #   + MoviePy + OpenCode CLI + SimpleX Chat CLI + Impeccable + Vercel CLI
 #   + Graphify, opens the Viral Hook Generator in your browser, and (optionally) the heavy
 #   steps — Stable Diffusion WebUI, Deep Playground, the Penpot Docker stack,
-#   and the Awesome LLM Apps cookbook clone.
+#   the Awesome LLM Apps cookbook clone, and ClawFleet (build from source).
 # It still skips anything already installed, so it's safe to re-run.
 #
 # Note: the Homebrew installer itself may prompt for your password / a Return —
@@ -43,7 +43,7 @@ SKIP_HEAVY="${SKIP_HEAVY:-0}"
 echo
 echo "${bold}RHYTHMIX — Install last 4 days' tools (unattended)${reset}"
 echo "Period: 2026-06-26 → 2026-06-30  (see mac-downloads/README.md)"
-[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping SD WebUI, Deep Playground, Penpot, and the Awesome LLM Apps clone."
+[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping SD WebUI, Deep Playground, Penpot, the Awesome LLM Apps clone, and ClawFleet."
 echo
 
 # ===========================================================================
@@ -250,6 +250,34 @@ elif have git; then
     || err "Clone failed — see SETUP-AWESOME-LLM-APPS.md"
 else
   err "git missing — cannot clone the cookbook. See SETUP-AWESOME-LLM-APPS.md"
+fi
+
+# --- ClawFleet (SETUP-CLAWFLEET.md) — clone + build; needs Docker + Go -----
+echo
+say "ClawFleet — manage a fleet of OpenClaw instances (Docker dashboard)"
+if [[ "$SKIP_HEAVY" == "1" ]]; then
+  warn "Skipped (SKIP_HEAVY=1)."
+elif ! have docker; then
+  warn "Docker not found — install Docker Desktop first, then re-run (ClawFleet runs instances as containers)."
+elif [[ -x "$HOME/clawfleet/bin/clawfleet" ]]; then
+  ok "Already built at ~/clawfleet/bin/clawfleet. Start it: cd ~/clawfleet && ./bin/clawfleet dashboard"
+else
+  # Go is needed to build the CLI from source (the documented build flow).
+  if ! have go && have brew; then
+    say "Installing go (needed to build ClawFleet)"; brew install go || warn "go install failed"
+  fi
+  if ! have go; then
+    err "go missing — cannot build ClawFleet. See SETUP-CLAWFLEET.md"
+  else
+    [[ -d "$HOME/clawfleet/.git" ]] || git clone https://github.com/clawfleet/ClawFleet.git "$HOME/clawfleet"
+    if [[ -d "$HOME/clawfleet/.git" ]]; then
+      ( cd "$HOME/clawfleet" && go mod tidy && make build ) \
+        && ok "Built ~/clawfleet/bin/clawfleet. Start the dashboard (pulls the pinned OpenClaw image, ~1.4GB): cd ~/clawfleet && ./bin/clawfleet dashboard" \
+        || err "Build failed — see SETUP-CLAWFLEET.md and the repo README."
+    else
+      err "Clone failed — see SETUP-CLAWFLEET.md"
+    fi
+  fi
 fi
 
 # ===========================================================================

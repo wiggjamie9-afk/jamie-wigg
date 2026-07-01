@@ -78,6 +78,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 | **Deep Playground** (TF neural-net demo) | `~/deep-playground` | `SETUP-DEEP-PLAYGROUND.md` |
 | **Penpot** self-host design platform | `infra/penpot/` → `localhost:9001` (needs Docker) | `SETUP-PENPOT.md` |
 | **Awesome LLM Apps** cookbook | `~/awesome-llm-apps` (source only; per-template `pip install`) | `SETUP-AWESOME-LLM-APPS.md` |
+| **ClawFleet** — OpenClaw fleet dashboard | built at `~/clawfleet/bin/clawfleet` (needs Docker + Go; image ~1.4GB on first `dashboard`) | `SETUP-CLAWFLEET.md` |
 
 ### 🔗 Pointers (import-only / hosted / per-project / already-in-repo)
 
@@ -126,5 +127,5 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 
 - **Auto-installable on the Mac (6):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify.
 - **Open-and-use (1):** Viral Hook Generator.
-- **Heavy/optional (4):** SD WebUI, Deep Playground, Penpot, Awesome LLM Apps.
+- **Heavy/optional (5):** SD WebUI, Deep Playground, Penpot, Awesome LLM Apps, ClawFleet.
 - **Pointers (8):** PageAgent, VEO3 n8n, Kling n8n, vendored skills, Ruixen UI, MiniMax-01, Palmier Pro, Freebuff.

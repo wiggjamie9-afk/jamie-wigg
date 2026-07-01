@@ -28,8 +28,9 @@ noVNC** (browser access on port `690N`) plus the **OpenClaw Gateway** (port
 > OpenClaw instances** (desktop + gateway, in Docker) and manage several at once
 > from a dashboard — e.g. standing up a bot that watches a channel and posts
 > RHYTHMIX updates. It's a heavier, Docker-based, self-hostable app; tangential to
-> the HyperFrames video pipeline. **Not** wired into the Mac installer (by
-> choice — it needs Docker and pulls a ~1.4 GB image).
+> the HyperFrames video pipeline. It **is** wired into the Mac installer as a
+> heavy/optional step (clones + `make build`; needs Docker + Go, and the first
+> `dashboard` pulls a ~1.4 GB image) — skip it with `SKIP_HEAVY=1`.
 
 ## Install (from the project)
 
@@ -99,5 +100,14 @@ deliver the pinned one.
   (`github.com/clawfleet/ClawFleet/wiki`) — Getting-Started, Dashboard-Guide,
   CLI-Reference, FAQ, per-provider and per-channel pages. Use those for exact,
   current commands.
-- This is a reference doc only — ClawFleet is not vendored, installed, or wired
-  into `mac-downloads/Install-Downloads.command` in this repo.
+- On this repo's Mac, `mac-downloads/Install-Downloads.command` installs ClawFleet
+  as a heavy/optional step: it installs Go (via Homebrew if needed), clones
+  `github.com/clawfleet/ClawFleet` to `~/clawfleet`, and runs `go mod tidy && make
+  build` to produce `~/clawfleet/bin/clawfleet`. Start it with `cd ~/clawfleet &&
+  ./bin/clawfleet dashboard` (that first run pulls the pinned OpenClaw image). The
+  step needs Docker running and is skipped by `SKIP_HEAVY=1`.
+- **Install-method caveat:** the installer builds the CLI from source (the flow
+  documented in the project's own guidance). The project also offers an
+  `install.sh` / "Pull" flow that ships the pre-built, pinned GHCR image — check
+  the ClawFleet repo README for that exact command; it isn't hardcoded here
+  because the URL/tag wasn't in the source paste.
