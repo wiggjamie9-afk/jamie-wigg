@@ -63,6 +63,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 | **Impeccable** — design skill + 44-rule detector | `SETUP-IMPECCABLE.md` | `/impeccable init`, `npx impeccable detect .` |
 | **Vercel CLI** — deploy / `vercel dev` | `SETUP-VERCEL.md` | `vercel` |
 | **Graphify** — map the repo into a queryable knowledge graph | `SETUP-GRAPHIFY.md` | `/graphify .`, `graphify query "…"` |
+| **Scrapling** — adaptive web-scraping framework (browsers via `scrapling install`, heavy) | `SETUP-SCRAPLING.md` | `scrapling shell`, `scrapling extract get <url> out.md` |
 
 ### 🌐 Opens in your browser (nothing to install)
 
@@ -79,6 +80,7 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 | **Penpot** self-host design platform | `infra/penpot/` → `localhost:9001` (needs Docker) | `SETUP-PENPOT.md` |
 | **Awesome LLM Apps** cookbook | `~/awesome-llm-apps` (source only; per-template `pip install`) | `SETUP-AWESOME-LLM-APPS.md` |
 | **ClawFleet** — OpenClaw fleet dashboard | built at `~/clawfleet/bin/clawfleet` (needs Docker + Go; image ~1.4GB on first `dashboard`) | `SETUP-CLAWFLEET.md` |
+| **Zenii** — local AI backend / MCP memory server | built at `~/zenii/target/release/` (needs Rust; runs at `localhost:18981`) | `SETUP-ZENII.md` |
 
 ### 🔗 Pointers (import-only / hosted / per-project / already-in-repo)
 
@@ -119,13 +121,16 @@ SKIP_HEAVY=1 bash mac-downloads/Install-Downloads.command
 - **Vercel CLI** — `SETUP-VERCEL.md` (deploy CLI; tangential — repo ships via Pages/Cloudflare).
 - **Awesome LLM Apps** — `SETUP-AWESOME-LLM-APPS.md` (fork-ready LLM app template cookbook).
 - **Graphify** — `SETUP-GRAPHIFY.md` (the knowledge-graph tool that produces the repo's `graphify-out/` snapshot).
+- **ClawFleet** — `SETUP-CLAWFLEET.md` (Go/Docker dashboard for a fleet of OpenClaw instances; built from source).
+- **Zenii** — `SETUP-ZENII.md` (local Rust AI backend / MCP memory server at `localhost:18981`; built from source).
+- **Scrapling** — `SETUP-SCRAPLING.md` (adaptive Python web-scraping framework + AI MCP server).
 - **This folder** — moved the Mac download bundle into `mac-downloads/` so it has a permanent home.
 
 ---
 
 ## At a glance
 
-- **Auto-installable on the Mac (6):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify.
+- **Auto-installable on the Mac (7):** MoviePy, OpenCode, SimpleX, Impeccable, Vercel, Graphify, Scrapling (+ browsers via `scrapling install`, heavy).
 - **Open-and-use (1):** Viral Hook Generator.
-- **Heavy/optional (5):** SD WebUI, Deep Playground, Penpot, Awesome LLM Apps, ClawFleet.
+- **Heavy/optional (6):** SD WebUI, Deep Playground, Penpot, Awesome LLM Apps, ClawFleet, Zenii.
 - **Pointers (8):** PageAgent, VEO3 n8n, Kling n8n, vendored skills, Ruixen UI, MiniMax-01, Palmier Pro, Freebuff.

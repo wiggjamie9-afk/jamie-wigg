@@ -12,9 +12,9 @@
 # UNATTENDED: installs everything automatically, no y/N prompts —
 #   prerequisites (Homebrew, python3, ffmpeg, node, git)
 #   + MoviePy + OpenCode CLI + SimpleX Chat CLI + Impeccable + Vercel CLI
-#   + Graphify, opens the Viral Hook Generator in your browser, and (optionally) the heavy
+#   + Graphify + Scrapling, opens the Viral Hook Generator in your browser, and (optionally) the heavy
 #   steps — Stable Diffusion WebUI, Deep Playground, the Penpot Docker stack,
-#   the Awesome LLM Apps cookbook clone, and ClawFleet (build from source).
+#   the Awesome LLM Apps cookbook clone, ClawFleet, and Zenii (both build from source).
 # It still skips anything already installed, so it's safe to re-run.
 #
 # Note: the Homebrew installer itself may prompt for your password / a Return —
@@ -43,7 +43,7 @@ SKIP_HEAVY="${SKIP_HEAVY:-0}"
 echo
 echo "${bold}RHYTHMIX — Install last 4 days' tools (unattended)${reset}"
 echo "Period: 2026-06-26 → 2026-06-30  (see mac-downloads/README.md)"
-[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping SD WebUI, Deep Playground, Penpot, the Awesome LLM Apps clone, and ClawFleet."
+[[ "$SKIP_HEAVY" == "1" ]] && warn "SKIP_HEAVY=1 — skipping SD WebUI, Deep Playground, Penpot, Awesome LLM Apps, ClawFleet, and Zenii."
 echo
 
 # ===========================================================================
@@ -170,6 +170,27 @@ else
   fi
 fi
 
+# --- Scrapling (SETUP-SCRAPLING.md) — pip lib (light) + browsers (heavy) ---
+echo
+say "Scrapling — adaptive web-scraping framework"
+if have python3; then
+  python3 -m pip install --user --upgrade "scrapling[all]" \
+    && ok "Scrapling library installed." \
+    || err "Scrapling install failed — see SETUP-SCRAPLING.md"
+  # Browser + fingerprint deps are a heavy download — gate on SKIP_HEAVY.
+  if [[ "$SKIP_HEAVY" == "1" ]]; then
+    warn "Skipped 'scrapling install' (browsers) — run it later: scrapling install"
+  elif have scrapling; then
+    scrapling install \
+      && ok "Scrapling browsers installed. Try: scrapling shell" \
+      || warn "'scrapling install' failed — run it manually later."
+  else
+    warn "scrapling CLI not on PATH yet — open a new terminal, then run 'scrapling install'."
+  fi
+else
+  err "python3 missing — cannot install Scrapling. See SETUP-SCRAPLING.md"
+fi
+
 # ===========================================================================
 # OPEN IN BROWSER (nothing to install)
 # ===========================================================================
@@ -276,6 +297,31 @@ else
         || err "Build failed — see SETUP-CLAWFLEET.md and the repo README."
     else
       err "Clone failed — see SETUP-CLAWFLEET.md"
+    fi
+  fi
+fi
+
+# --- Zenii (SETUP-ZENII.md) — build from source; needs Rust ---------------
+echo
+say "Zenii — local AI backend / MCP memory server (build from source)"
+if [[ "$SKIP_HEAVY" == "1" ]]; then
+  warn "Skipped (SKIP_HEAVY=1)."
+elif [[ -x "$HOME/zenii/target/release/zenii-daemon" ]]; then
+  ok "Already built at ~/zenii/target/release/zenii-daemon. Start it, then: curl localhost:18981/health"
+else
+  if ! have cargo && have brew; then
+    say "Installing rust (needed to build Zenii)"; brew install rust || warn "rust install failed"
+  fi
+  if ! have cargo; then
+    err "cargo/rust missing — cannot build Zenii. See SETUP-ZENII.md (or use the desktop app)."
+  else
+    [[ -d "$HOME/zenii/.git" ]] || git clone https://github.com/sprklai/zenii.git "$HOME/zenii"
+    if [[ -d "$HOME/zenii/.git" ]]; then
+      ( cd "$HOME/zenii" && cargo build --release ) \
+        && ok "Built ~/zenii/target/release/. Start: ~/zenii/target/release/zenii-daemon &  then curl localhost:18981/health" \
+        || err "Build failed — see SETUP-ZENII.md and the repo README."
+    else
+      err "Clone failed — see SETUP-ZENII.md"
     fi
   fi
 fi
