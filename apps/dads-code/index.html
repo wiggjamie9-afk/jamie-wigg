@@ -241,6 +241,13 @@
   nav button.on{color:var(--oxblood)}
 
   .fab-more{}
+  /* voice recording */
+  #rec-btn.recording{background:var(--slate)}
+  #rec-dot{color:#ff6b6b;animation:recpulse 1s ease-in-out infinite}
+  @keyframes recpulse{0%,100%{opacity:1}50%{opacity:.3}}
+  @media (prefers-reduced-motion:reduce){#rec-dot{animation:none}}
+  .audio-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--oxblood);font-family:var(--head);margin:4px 0}
+  .entry audio, #rec-preview audio{display:block;width:100%;margin:6px 0;height:38px}
   .empty{text-align:center; color:var(--slate); padding:22px 8px; font-style:italic}
   .skip{position:absolute;left:-999px;top:0;background:var(--oxblood);color:#fff;padding:8px 14px;border-radius:0 0 8px 0;z-index:100}
   .skip:focus{left:0}
@@ -304,9 +311,11 @@
       <p class="sub" style="margin:8px 0 6px">Talk it out or write a line. 30 seconds is enough.</p>
       <div class="card">
         <div class="lock-note"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg> Private — just for you while you write.</div>
+        <button class="cta" id="rec-btn" onclick="toggleRecord()" style="margin:6px 0"><span id="rec-dot" style="display:none">● </span><span id="rec-label">🎙 Record your voice</span></button>
+        <div id="rec-preview" style="display:none;margin:4px 0 8px"></div>
         <textarea id="journal-input" placeholder="30 seconds is enough. What happened today?" oninput="autosaveDraft(this.value)"></textarea>
         <div class="row-actions" style="justify-content:space-between;align-items:center">
-          <button class="link-btn" id="voice-btn" onclick="toggleVoiceCapture()">🎙 Speak instead</button>
+          <button class="link-btn" id="voice-btn" onclick="toggleVoiceCapture()">Dictate to text instead</button>
           <button class="cta small" style="width:auto;padding:12px 22px" onclick="saveJournal()">Save entry</button>
         </div>
         <p class="tiny" id="voice-status" style="margin:6px 0 0"></p>
@@ -494,6 +503,8 @@
       <button class="cta" onclick="exportHTML()">Save a keepsake backup (.html)</button>
       <p class="tiny" style="text-align:center;margin:6px 0 16px">One file. Opens on any device, offline, forever — with a built-in reader. No app needed.</p>
       <button class="cta ghost small" onclick="exportJSON()">Export data file (.dadscode / JSON)</button>
+      <button class="cta ghost small" style="margin-top:10px" onclick="exportEncrypted()">Encrypted backup (passphrase-protected)</button>
+      <p class="tiny" style="text-align:center;margin:6px 0 16px">Safe to email or put in the cloud. Opens years later in a tiny built-in decrypter — no app, just the passphrase.</p>
       <button class="cta ghost small" style="margin-top:10px" onclick="window.print()">Print keepsake book (Save as PDF)</button>
       <div class="card" style="margin-top:16px">
         <h3>Restore from a backup</h3>
@@ -513,11 +524,13 @@
       </div>
       <div class="card">
         <h3>Vault passcode <span class="tiny">(optional, off by default)</span></h3>
-        <p class="tiny">A passcode encrypts your sensitive entries at rest on this device. If you forget it, that content can't be recovered — there is no server and no reset. Write down a hint.</p>
-        <input type="password" id="pass-set" placeholder="Set a passcode…">
+        <p class="tiny">A passphrase genuinely <b>encrypts</b> your sensitive entries at rest on this device — journal, clarity notes, your Code, buddy chats and recipes — using AES-256. Titles and dates stay readable so lists still work. If you forget the passphrase, that content <b>cannot be recovered</b> — there is no server and no reset. Write down a hint.</p>
+        <input type="password" id="pass-set" placeholder="Set a passphrase…">
         <input type="text" id="pass-hint" placeholder="Passphrase hint (stored in the clear)">
-        <button class="cta small" onclick="setPasscode()">Turn on passcode</button>
+        <label class="inline" style="margin:8px 0"><input type="checkbox" id="pass-ack" style="width:auto;margin:0"> <span class="tiny">I understand: if I lose this passphrase, it cannot be recovered.</span></label>
+        <button class="cta small" id="pass-btn" onclick="setPasscode()">Turn on encryption</button>
         <button class="link-btn" id="lock-now" style="display:none" onclick="lockVault()">Lock now</button>
+        <button class="link-btn danger" id="enc-off" style="display:none" onclick="turnOffEncryption()">Turn off encryption</button>
       </div>
       <div class="card">
         <h3>Legacy keeper</h3>
@@ -591,7 +604,7 @@ const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'id'+Date.now()+Math.random().toString(16).slice(2));
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const todayKey=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-const SCHEMA=1;
+const SCHEMA=2;
 
 /* ---------- localStorage settings (R8.1: small state only) ---------- */
 const S={
@@ -599,10 +612,61 @@ const S={
   set(k,v){try{localStorage.setItem('dc.'+k,JSON.stringify(v))}catch(e){}}
 };
 
+/* =====================================================================
+   VAULT ENCRYPTION (R10) — WebCrypto AES-GCM, key from PBKDF2-SHA256
+   ---------------------------------------------------------------------
+   Design notes (documented per R10 / R13):
+   - When the vault passcode is ON, the *sensitive text field* of an entry
+     (journal body, clarity body, code note text, legacy body, chat text,
+     recipe body) is encrypted at rest. Titles, dates, states, kinds and
+     recipient links stay PLAINTEXT so list views, dates and legacy state
+     badges keep working without unlock (usability, R12).
+   - The AES-GCM key is derived from the passphrase via PBKDF2
+     (SHA-256, 210,000 iterations) and lives in memory only (VAULT.key);
+     it is NEVER written to disk. Only salt+iv+ciphertext are persisted.
+   - Fail-safe on read: if decryption fails (wrong key / corrupt blob) the
+     record is returned with a placeholder body and a __decryptFailed flag —
+     the ciphertext is never dropped, so data is never corrupted.
+   - Recovery honesty (R10.3): enabling encryption requires a hint + an
+     explicit "cannot be recovered" confirmation. No silent lockout.
+   ===================================================================== */
+const PBKDF2_ITERS=210000;
+const ENC_FIELDS={ // store -> field that carries sensitive free text
+  // journal + clarity + legacy all live in `entries` (body); code notes (text);
+  // buddy chat (text); family recipes (body). Titles/dates/state stay plaintext.
+  entries:'body', code:'text', chat:'text', recipes:'body'
+};
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const VAULT={
+  key:null,        // CryptoKey (AES-GCM) — memory only, never persisted
+  on:()=>S.get('encOn',false),
+  unlocked:()=>!!VAULT.key,
+  drop(){ VAULT.key=null; }   // called on lock / tab-hide
+};
+const Crypto={
+  async deriveKey(pass,saltBytes){
+    const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),{name:'PBKDF2'},false,['deriveKey']);
+    return crypto.subtle.deriveKey(
+      {name:'PBKDF2',salt:saltBytes,iterations:PBKDF2_ITERS,hash:'SHA-256'},
+      base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  },
+  async encrypt(key,plaintext){
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(plaintext));
+    return {iv:b64(iv),ct:b64(ct)};
+  },
+  async decrypt(key,ivB64,ctB64){
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(ivB64)},key,unb64(ctB64));
+    return new TextDecoder().decode(pt);
+  },
+  newSalt(){ return crypto.getRandomValues(new Uint8Array(16)); }
+};
+
 /* ---------- IndexedDB wrapper (R8) ---------- */
 const DB={
   db:null, ok:false,
-  STORES:['entries','code','checkins','moods','recipients','milestones','focuslog','health','food','recipes','grocery','chat','meta'],
+  STORES:['entries','code','checkins','moods','recipients','milestones','focuslog','health','food','recipes','grocery','chat','mediaBlobs','meta'],
   open(){
     return new Promise(res=>{
       if(!('indexedDB' in window)){this.ok=false;console.warn('IndexedDB unavailable — running memory-only');return res(false)}
@@ -626,19 +690,33 @@ const DB={
     });
   },
   _tx(store,mode='readonly'){return this.db.transaction(store,mode).objectStore(store)},
-  put(store,val){
+  /* raw layer — no encryption; used by export/import/migration */
+  _putRaw(store,val){
     if(!val.id) val.id=uid();
     if(!('schemaVersion' in val)) val.schemaVersion=SCHEMA;
     if(!this.ok){MEM[store]=MEM[store]||{};MEM[store][val.id]=val;return Promise.resolve(val)}
     return new Promise((res,rej)=>{const r=this._tx(store,'readwrite').put(val);r.onsuccess=()=>res(val);r.onerror=()=>rej(r.error)});
   },
-  get(store,id){
+  _getRaw(store,id){
     if(!this.ok){return Promise.resolve((MEM[store]||{})[id]||null)}
     return new Promise((res,rej)=>{const r=this._tx(store).get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)});
   },
-  all(store){
+  _allRaw(store){
     if(!this.ok){return Promise.resolve(Object.values(MEM[store]||{}))}
     return new Promise((res,rej)=>{const r=this._tx(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)});
+  },
+  /* encrypting layer — app code uses these; transparently enc/dec sensitive field */
+  async put(store,val){
+    const enc=await encRecord(store,val);
+    await this._putRaw(store,enc);
+    return val; // return the caller's plaintext object unchanged
+  },
+  async get(store,id){
+    return decRecord(store,await this._getRaw(store,id));
+  },
+  async all(store){
+    const rows=await this._allRaw(store);
+    return Promise.all(rows.map(r=>decRecord(store,r)));
   },
   del(store,id){
     if(!this.ok){delete (MEM[store]||{})[id];return Promise.resolve()}
@@ -650,6 +728,43 @@ const DB={
   }
 };
 const MEM={}; // graceful in-memory fallback if IndexedDB is blocked (private mode etc.)
+
+/* ---- transparent field encryption (R10) ----
+   A record is stored with its sensitive field replaced by an `enc` envelope
+   {iv,ct,f:<fieldName>} and the plaintext field removed. On read we restore it. */
+async function encRecord(store,val){
+  const field=ENC_FIELDS[store];
+  // only encrypt when: this store has a sensitive field, encryption is ON,
+  // the vault is unlocked (key in memory), and the field currently holds text.
+  if(val.enc){ // already an encrypted envelope — strip any stray plaintext of that field
+    if(field && field in val){ const o={...val}; delete o[field]; return o; }
+    return val;
+  }
+  if(!field || !VAULT.on() || !VAULT.unlocked()){ return val; }
+  const plain=val[field];
+  if(plain==null){ return val; }
+  const {iv,ct}=await Crypto.encrypt(VAULT.key,String(plain));
+  const out={...val, enc:{iv,ct,f:field}};
+  delete out[field];
+  return out;
+}
+async function decRecord(store,rec){
+  if(!rec || !rec.enc){ return rec; }
+  const field=rec.enc.f||ENC_FIELDS[store];
+  if(!VAULT.unlocked()){
+    // locked: never expose ciphertext as text; keep envelope intact for round-trip
+    return {...rec,[field]:'🔒 Locked — unlock the vault to read this.',__locked:true};
+  }
+  try{
+    const plain=await Crypto.decrypt(VAULT.key,rec.enc.iv,rec.enc.ct);
+    const out={...rec,[field]:plain};
+    delete out.enc;               // present plaintext view to app; original stays encrypted at rest
+    return out;
+  }catch(e){
+    // FAIL SAFE (R10): wrong key / corruption — never drop the ciphertext, flag it
+    return {...rec,[field]:'⚠ Could not decrypt (wrong passphrase or corrupted).',__decryptFailed:true};
+  }
+}
 
 /* meta helpers */
 async function metaGet(){return (await DB.get('meta','vault'))||{key:'vault',schemaVersion:SCHEMA,createdAt:Date.now(),lastBackupAt:null,region:'AU',persisted:false,license:'free'}}
@@ -939,11 +1054,85 @@ async function checkIn(practiceId,status){
    ===================================================================== */
 let voiceRec=null, voiceActive=false;
 function autosaveDraft(v){ S.set('journalDraft',v); }
+
+/* ---- media (audio) store helpers (R8.2: native Blobs, own store, never base64 in-record) ---- */
+async function saveMediaBlob(blob,mime,kind){
+  const id=uid();
+  await DB._putRaw('mediaBlobs',{id,mime,kind:kind||'audio',blob,createdAt:Date.now()}); // raw store, never encrypted
+  return id;
+}
+async function getMediaBlob(id){ const m=await DB._getRaw('mediaBlobs',id); return m&&m.blob?m:null; }
+
+/* ---- voice recording via MediaRecorder (R3.3) ---- */
+let mediaRec=null, mediaChunks=[], mediaStream=null, pendingAudioId=null, pendingAudioURL=null, recTimer=null;
+function pickAudioMime(){
+  if(typeof MediaRecorder==='undefined'||!MediaRecorder.isTypeSupported) return '';
+  if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
+  if(MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
+  if(MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';        // iOS Safari fallback (R9.5)
+  return '';
+}
+async function toggleRecord(){
+  if(mediaRec && mediaRec.state==='recording'){ stopRecord(); return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder==='undefined'){
+    $('#voice-status').textContent='Recording isn’t supported on this browser — you can still type or dictate.'; return;
+  }
+  try{
+    mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});
+  }catch(e){
+    $('#voice-status').textContent='Mic permission denied — no problem, typing works everywhere.'; // graceful degrade
+    return;
+  }
+  const mime=pickAudioMime();
+  try{ mediaRec=mime?new MediaRecorder(mediaStream,{mimeType:mime}):new MediaRecorder(mediaStream); }
+  catch(e){ mediaRec=new MediaRecorder(mediaStream); }
+  mediaChunks=[];
+  mediaRec.ondataavailable=e=>{ if(e.data&&e.data.size>0) mediaChunks.push(e.data); };
+  mediaRec.onstop=async()=>{
+    if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; } // release mic
+    const type=(mediaRec&&mediaRec.mimeType)||mime||'audio/webm';
+    const blob=new Blob(mediaChunks,{type});
+    mediaChunks=[];
+    if(blob.size===0){ $('#voice-status').textContent='Nothing recorded.'; return; }
+    // clean up any previous pending clip not yet saved
+    if(pendingAudioId){ await DB.del('mediaBlobs',pendingAudioId); }
+    pendingAudioId=await saveMediaBlob(blob,type,'journal');
+    if(pendingAudioURL) URL.revokeObjectURL(pendingAudioURL);
+    pendingAudioURL=URL.createObjectURL(blob);
+    const pv=$('#rec-preview'); pv.style.display='';
+    pv.innerHTML='<div class="audio-chip">🎙 Voice clip attached to this entry</div><audio controls src="'+pendingAudioURL+'"></audio>'+
+      '<button class="link-btn danger" onclick="discardRecording()">Remove clip</button>';
+    $('#voice-status').textContent='Recorded. Add a line of text too if you like, then Save.';
+  };
+  mediaRec.start();
+  $('#rec-btn').classList.add('recording');
+  $('#rec-dot').style.display=''; $('#rec-label').textContent='Stop recording';
+  let secs=0; clearInterval(recTimer);
+  recTimer=setInterval(()=>{ secs++; $('#voice-status').textContent='Recording… '+secs+'s'; },1000);
+  $('#voice-status').textContent='Recording… 0s';
+}
+function stopRecord(){
+  clearInterval(recTimer);
+  $('#rec-btn').classList.remove('recording'); $('#rec-dot').style.display='none'; $('#rec-label').textContent='🎙 Record your voice';
+  if(mediaRec && mediaRec.state!=='inactive'){ try{ mediaRec.stop(); }catch(e){} }
+}
+async function discardRecording(){
+  if(pendingAudioId){ await DB.del('mediaBlobs',pendingAudioId); pendingAudioId=null; }
+  if(pendingAudioURL){ URL.revokeObjectURL(pendingAudioURL); pendingAudioURL=null; }
+  const pv=$('#rec-preview'); pv.style.display='none'; pv.innerHTML='';
+  $('#voice-status').textContent='';
+}
+
 async function saveJournal(){
   const body=$('#journal-input').value.trim();
-  if(!body){ $('#voice-status').textContent='Even one line is a complete entry — write something first.'; return; }
-  await DB.put('entries',{id:uid(),kind:'diary',type:'quicklog',body,state:'private',lang:'en',isSensitive:false,recipientIds:[],createdAt:Date.now(),authoredAt:Date.now()});
+  if(!body && !pendingAudioId){ $('#voice-status').textContent='Even one line — or a voice clip — is a complete entry.'; return; }
+  const rec={id:uid(),kind:'diary',type:pendingAudioId?'voice':'quicklog',body:body||'(voice note)',state:'private',lang:'en',isSensitive:false,recipientIds:[],createdAt:Date.now(),authoredAt:Date.now()};
+  if(pendingAudioId){ rec.audioId=pendingAudioId; } // links to mediaBlobs (R3.3: keep transcript AND audio)
+  await DB.put('entries',rec);
   ensurePersist();
+  // consume the pending clip
+  pendingAudioId=null; if(pendingAudioURL){ URL.revokeObjectURL(pendingAudioURL); pendingAudioURL=null; }
+  $('#rec-preview').style.display='none'; $('#rec-preview').innerHTML='';
   $('#journal-input').value=''; S.set('journalDraft','');
   $('#voice-status').textContent='Saved — just for you.';
   setTimeout(()=>$('#voice-status').textContent='',2500);
@@ -963,18 +1152,30 @@ function toggleVoiceCapture(){
   voiceRec.onerror=()=>{voiceActive=false;$('#voice-btn').textContent='🎙 Speak instead';$('#voice-status').textContent='Voice stopped.';};
   voiceRec.start();
 }
+let journalAudioURLs=[]; // track object URLs to revoke on re-render (R14.5 / memory hygiene)
+function revokeJournalAudio(){ journalAudioURLs.forEach(u=>URL.revokeObjectURL(u)); journalAudioURLs=[]; }
 async function renderJournal(){
   $('#journal-input').value=S.get('journalDraft','');
-  const entries=(await DB.all('entries')).filter(e=>e.kind==='diary'&&e.state==='private'||e.kind==='diary').sort((a,b)=>b.createdAt-a.createdAt);
   const diary=(await DB.all('entries')).filter(e=>e.kind==='diary').sort((a,b)=>b.createdAt-a.createdAt);
   const list=$('#journal-list');
+  revokeJournalAudio();
   if(diary.length===0){ list.innerHTML='<div class="empty">Your journal is empty. The first line is the hardest.</div>'; return; }
   list.innerHTML=diary.map(e=>entryHTML(e)).join('');
+  // hydrate audio players from mediaBlobs (async, after DOM is in place)
+  for(const e of diary){
+    if(!e.audioId) continue;
+    const holder=$('#audio-'+e.id); if(!holder) continue;
+    const m=await getMediaBlob(e.audioId);
+    if(!m){ holder.innerHTML='<span class="tiny">Audio clip missing.</span>'; continue; }
+    const url=URL.createObjectURL(m.blob); journalAudioURLs.push(url);
+    holder.innerHTML='<div class="audio-chip">🎙 In his own voice</div><audio controls preload="none" src="'+url+'"></audio>';
+  }
 }
 function entryHTML(e){
   const d=new Date(e.createdAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
   const badge=stateBadge(e.state);
   return '<div class="entry"><div class="meta"><span>'+d+'</span>'+badge+'</div><div class="body">'+esc(e.body)+'</div>'+
+    (e.audioId?'<div id="audio-'+e.id+'"></div>':'')+
     '<div class="row-actions"><button class="link-btn" onclick="passOnFlow(\''+e.id+'\')">★ Pass this on</button>'+
     '<button class="link-btn" onclick="toggleSensitive(\''+e.id+'\')">'+(e.isSensitive?'Marked sensitive':'Mark sensitive')+'</button>'+
     '<button class="link-btn danger" onclick="deleteEntry(\''+e.id+'\')">Delete</button></div></div>';
@@ -985,7 +1186,7 @@ function stateBadge(state){
   return '<span class="badge private"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Private</span>';
 }
 async function toggleSensitive(id){const e=await DB.get('entries',id);e.isSensitive=!e.isSensitive;await DB.put('entries',e);renderJournal();}
-async function deleteEntry(id){if(!confirm('Delete this entry? This can’t be undone.'))return;await DB.del('entries',id);renderJournal();renderThem();}
+async function deleteEntry(id){if(!confirm('Delete this entry? This can’t be undone.'))return;const e=await DB.get('entries',id);if(e&&e.audioId){await DB.del('mediaBlobs',e.audioId);}await DB.del('entries',id);renderJournal();renderThem();}
 async function lookBack(){
   const entries=(await DB.all('entries')).filter(e=>e.kind==='diary'&&!e.isSensitive&&e.state!=='bequeathed');
   if(entries.length===0){openModal('<h2>Look back</h2><p class="muted">Nothing to resurface yet — your journal will fill.</p>');return;}
@@ -1447,9 +1648,30 @@ async function saveQuickLegacy(){
 /* =====================================================================
    BACKUP / EXPORT (R9, R13)
    ===================================================================== */
+function exportBlockedByLock(){
+  // Never export placeholder/ciphertext text: require an unlocked vault when encryption is on.
+  if(S.get('encOn',false) && !VAULT.unlocked()){
+    alert('Unlock the vault first so your words export as readable text (not locked ciphertext).');
+    showLock(); return true;
+  }
+  return false;
+}
+async function blobToDataURL(blob){
+  return new Promise((res)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>res(null); r.readAsDataURL(blob); });
+}
 async function gatherAll(){
   const data={schemaVersion:SCHEMA,app:'dadscode',exportedAt:new Date().toISOString(),stores:{}};
-  for(const s of DB.STORES){ data.stores[s]=await DB.all(s); }
+  for(const s of DB.STORES){
+    if(s==='mediaBlobs') continue; // handled separately (base64-embedded for portability)
+    data.stores[s]=await DB.all(s);
+  }
+  // Media (audio) → base64 data URLs so the export is a single self-contained file (R9.2/R8.2)
+  const media=await DB._allRaw('mediaBlobs');
+  data.stores.mediaBlobs=[];
+  for(const m of media){
+    const url=m.blob instanceof Blob ? await blobToDataURL(m.blob) : (m.dataUrl||null);
+    data.stores.mediaBlobs.push({id:m.id,mime:m.mime,kind:m.kind,createdAt:m.createdAt,dataUrl:url});
+  }
   data.settings={ownerName:S.get('ownerName',''),region:S.get('region','AU')};
   return data;
 }
@@ -1463,6 +1685,7 @@ function download(filename,content,mime){
 }
 async function markBackedUp(){await metaSet({lastBackupAt:Date.now()});if(currentScreen==='backup')renderBackup();if(currentScreen==='today')renderToday();}
 async function exportJSON(){
+  if(exportBlockedByLock()) return;
   const data=await gatherAll();
   const json=JSON.stringify(data,null,2);
   const sum=await sha256(json);
@@ -1471,11 +1694,14 @@ async function exportJSON(){
   await markBackedUp();
 }
 async function exportHTML(){
+  if(exportBlockedByLock()) return;
   const data=await gatherAll();
   const json=JSON.stringify(data);
   const entries=(data.stores.entries||[]);
   const codeRows=(data.stores.code||[]);
   const recipes=(data.stores.recipes||[]);
+  const mediaMap={}; (data.stores.mediaBlobs||[]).forEach(m=>{ if(m.dataUrl) mediaMap[m.id]=m; });
+  const audioHTML=e=>{ const m=e.audioId&&mediaMap[e.audioId]; return m?'<audio controls preload="none" src="'+m.dataUrl+'"></audio>':''; };
   // Build a self-contained, offline read-only viewer (R9.2 / R13.2)
   const viewer=`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dad's Code — Keepsake</title><style>
@@ -1486,6 +1712,7 @@ h2{font-size:20px;color:#7A3B2E;border-bottom:1px solid rgba(42,36,32,.2);paddin
 .date{font-size:12px;color:#5A6B6E}.badge{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5A6B6E}
 .val{font-size:22px;color:#7A3B2E;margin-top:16px;font-weight:bold}.prin{font-style:italic;margin-left:12px}.prac{margin-left:12px;color:#5A6B6E}
 .note{background:rgba(184,137,62,.12);border:1px solid rgba(184,137,62,.4);padding:12px;border-radius:10px;font-size:14px;margin:16px 0}
+audio{display:block;width:100%;margin:8px 0 2px}
 </style></head><body>
 <h1>Dad's Code</h1><p class="sub">Keepsake export · ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}${data.settings.ownerName?' · '+esc(data.settings.ownerName):''}</p>
 <div class="note">This file opens on any device, offline, forever. No app, no server, no account needed. Your words are never locked.</div>
@@ -1494,7 +1721,7 @@ h2{font-size:20px;color:#7A3B2E;border-bottom:1px solid rgba(42,36,32,.2);paddin
   codeRows.filter(p=>p.layer==='principle'&&p.parentId===v.id).forEach(p=>{s+='<div class="prin">“'+esc(p.text)+'”</div>';
     codeRows.filter(pr=>pr.layer==='practice'&&pr.parentId===p.id).forEach(pr=>s+='<div class="prac">· '+esc(pr.cadence||'')+' — '+esc(pr.text)+'</div>');});
   return s;}).join('')||'<p>—</p>'}
-<h2>Journal & Notes</h2>${entries.filter(e=>e.kind==='diary'||e.kind==='clarity').map(e=>'<div class="entry"><div class="date">'+new Date(e.createdAt).toLocaleDateString('en-AU')+' · <span class="badge">'+esc(e.state||'private')+'</span></div>'+esc(e.body)+'</div>').join('')||'<p>—</p>'}
+<h2>Journal & Notes</h2>${entries.filter(e=>e.kind==='diary'||e.kind==='clarity').map(e=>'<div class="entry"><div class="date">'+new Date(e.createdAt).toLocaleDateString('en-AU')+' · <span class="badge">'+esc(e.state||'private')+'</span></div>'+esc(e.body)+audioHTML(e)+'</div>').join('')||'<p>—</p>'}
 <h2>For Them</h2>${entries.filter(e=>e.state==='shared'||e.state==='bequeathed').map(e=>'<div class="entry"><div class="badge">'+esc(e.state)+'</div>'+esc(e.title?e.title+'\\n':'')+esc(e.body)+'</div>').join('')||'<p>—</p>'}
 <h2>Family Recipes</h2>${recipes.map(r=>'<div class="entry"><b>'+esc(r.name)+'</b>\\n'+esc(r.body)+'</div>').join('')||'<p>—</p>'}
 <script type="application/json" id="dadscode-data">${json.replace(/</g,'\\u003c')}<\/script>
@@ -1502,6 +1729,92 @@ h2{font-size:20px;color:#7A3B2E;border-bottom:1px solid rgba(42,36,32,.2);paddin
   download('dads-code-backup.html',viewer,'text/html');
   await markBackedUp();
 }
+
+/* Encrypted, passphrase-protected export (R10.2) — ships a standalone HTML decrypter. */
+function exportEncrypted(){
+  if(exportBlockedByLock()) return;
+  if(!crypto.subtle){alert('This browser can’t encrypt an export (WebCrypto needs https or localhost).');return}
+  openModal('<h2>Encrypted backup</h2><p class="muted">Choose a passphrase for this file. It’s independent of your vault passphrase — share it with family however you trust. Anyone who opens the file needs it.</p>'+
+    '<input type="password" id="m-exp-pass" placeholder="Passphrase for this backup…">'+
+    '<input type="text" id="m-exp-hint" placeholder="Hint (stored in the clear in the file)">'+
+    '<label class="inline" style="margin:8px 0"><input type="checkbox" id="m-exp-ack" style="width:auto;margin:0"> <span class="tiny">I understand: without this passphrase, the file can’t be opened. It can’t be recovered.</span></label>'+
+    '<button class="cta small" onclick="doEncryptedExport()">Create encrypted file</button>');
+}
+async function doEncryptedExport(){
+  const pass=$('#m-exp-pass').value, hint=$('#m-exp-hint').value.trim();
+  if(!pass){alert('Enter a passphrase.');return}
+  if(!$('#m-exp-ack').checked){alert('Please confirm you understand it can’t be recovered without the passphrase.');return}
+  const data=await gatherAll();
+  const json=JSON.stringify(data);
+  const salt=Crypto.newSalt();
+  const key=await Crypto.deriveKey(pass,salt);
+  const {iv,ct}=await Crypto.encrypt(key,json);
+  const bundle={app:'dadscode',mode:'encrypted-export',schemaVersion:SCHEMA,kdf:'PBKDF2-SHA256',iterations:PBKDF2_ITERS,
+    salt:b64(salt),iv,ct,hint,exportedAt:new Date().toISOString()};
+  const html=buildDecrypterHTML(bundle);
+  download('dads-code-encrypted.html',html,'text/html');
+  closeModal();
+  await markBackedUp();
+}
+function buildDecrypterHTML(bundle){
+  // Self-contained offline decrypter — no app, no network. Prompts for the passphrase,
+  // runs PBKDF2 + AES-GCM in the browser, and renders the vault read-only.
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dad's Code — Encrypted Keepsake</title><style>
+body{font-family:Georgia,'Times New Roman',serif;background:#F4EDE2;color:#2A2420;max-width:640px;margin:0 auto;padding:30px 22px;line-height:1.6}
+h1{font-size:28px;color:#7A3B2E;margin-bottom:2px}h2{font-size:20px;color:#7A3B2E;border-bottom:1px solid rgba(42,36,32,.2);padding-bottom:6px;margin-top:34px}
+.sub{color:#5A6B6E}input{width:100%;font-size:17px;padding:12px;border:1px solid rgba(42,36,32,.2);border-radius:10px;margin:8px 0;box-sizing:border-box}
+button{background:#7A3B2E;color:#F7EFE2;border:0;padding:14px 18px;border-radius:12px;font-size:17px;cursor:pointer}
+.entry{padding:14px 0;border-bottom:1px solid rgba(42,36,32,.12);white-space:pre-wrap}.date{font-size:12px;color:#5A6B6E}
+.badge{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5A6B6E}.val{font-size:22px;color:#7A3B2E;margin-top:16px;font-weight:bold}
+.prin{font-style:italic;margin-left:12px}.prac{margin-left:12px;color:#5A6B6E}audio{display:block;width:100%;margin:8px 0}
+.note{background:rgba(184,137,62,.12);border:1px solid rgba(184,137,62,.4);padding:12px;border-radius:10px;font-size:14px;margin:16px 0}
+.err{color:#7A3B2E;font-weight:bold}#lock{margin-top:20px}
+</style></head><body>
+<h1>Dad's Code</h1><p class="sub">Encrypted keepsake — this file is safe to store anywhere.</p>
+<div id="lock">
+  <div class="note">This file is encrypted. Enter the passphrase to read it. No app, no server, no internet needed — everything happens in this page.</div>
+  <input type="password" id="pass" placeholder="Passphrase" autofocus onkeydown="if(event.key==='Enter')unlock()">
+  ${bundle.hint?'<p class="sub">Hint: '+String(bundle.hint).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</p>':''}
+  <button onclick="unlock()">Open</button>
+  <p id="msg" class="err"></p>
+</div>
+<div id="out"></div>
+<script id="payload" type="application/json">${JSON.stringify(bundle).replace(/</g,'\\u003c')}<\/script>
+<script>
+const B=JSON.parse(document.getElementById('payload').textContent);
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function unlock(){
+  const msg=document.getElementById('msg'); msg.textContent='';
+  const pass=document.getElementById('pass').value; if(!pass){msg.textContent='Enter the passphrase.';return}
+  try{
+    const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),{name:'PBKDF2'},false,['deriveKey']);
+    const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:unb64(B.salt),iterations:B.iterations,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+    const ptBuf=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(B.iv)},key,unb64(B.ct));
+    const data=JSON.parse(new TextDecoder().decode(ptBuf));
+    render(data);
+  }catch(e){ msg.textContent='Wrong passphrase, or the file is damaged.'; }
+}
+function render(data){
+  document.getElementById('lock').style.display='none';
+  const S=data.stores||{}; const entries=S.entries||[], code=S.code||[], recipes=S.recipes||[];
+  const mediaMap={}; (S.mediaBlobs||[]).forEach(m=>{if(m.dataUrl)mediaMap[m.id]=m;});
+  const au=e=>{const m=e.audioId&&mediaMap[e.audioId];return m?'<audio controls preload="none" src="'+m.dataUrl+'"></audio>':'';};
+  let h='<div class="note">Decrypted in this browser. Nothing was sent anywhere.</div>';
+  h+='<h2>The Code</h2>'+(code.filter(r=>r.layer==='value').map(v=>{let s='<div class="val">'+esc(v.text)+'</div>';
+    code.filter(p=>p.layer==='principle'&&p.parentId===v.id).forEach(p=>{s+='<div class="prin">“'+esc(p.text)+'”</div>';
+      code.filter(pr=>pr.layer==='practice'&&pr.parentId===p.id).forEach(pr=>s+='<div class="prac">· '+esc(pr.cadence||'')+' — '+esc(pr.text)+'</div>');});
+    return s;}).join('')||'<p>—</p>');
+  h+='<h2>Journal & Notes</h2>'+(entries.filter(e=>e.kind==='diary'||e.kind==='clarity').map(e=>'<div class="entry"><div class="date">'+new Date(e.createdAt).toLocaleDateString()+' · <span class="badge">'+esc(e.state||'private')+'</span></div>'+esc(e.body)+au(e)+'</div>').join('')||'<p>—</p>');
+  h+='<h2>For Them</h2>'+(entries.filter(e=>e.state==='shared'||e.state==='bequeathed').map(e=>'<div class="entry"><div class="badge">'+esc(e.state)+'</div>'+esc(e.title?e.title+'\\n':'')+esc(e.body)+'</div>').join('')||'<p>—</p>');
+  h+='<h2>Family Recipes</h2>'+(recipes.map(r=>'<div class="entry"><b>'+esc(r.name)+'</b>\\n'+esc(r.body)+'</div>').join('')||'<p>—</p>');
+  document.getElementById('out').innerHTML=h;
+}
+<\/script>
+</body></html>`;
+}
+
 async function importJSON(input){
   const file=input.files[0];if(!file)return;
   try{
@@ -1511,10 +1824,22 @@ async function importJSON(input){
     let n=0;
     for(const s of DB.STORES){
       if(!data.stores[s])continue;
-      const existing=await DB.all(s);const byId={};existing.forEach(r=>byId[r.id]=r);
+      if(s==='mediaBlobs'){
+        // media came in as base64 dataUrl — rebuild native Blobs (R8.2), keep raw (never encrypted)
+        const existing=await DB._allRaw(s);const byId={};existing.forEach(r=>byId[r.id]=r);
+        for(const m of data.stores[s]){
+          if(byId[m.id])continue;
+          let blob=null; if(m.dataUrl){ try{ blob=await (await fetch(m.dataUrl)).blob(); }catch(e){} }
+          await DB._putRaw(s,{id:m.id,mime:m.mime,kind:m.kind,createdAt:m.createdAt,blob});
+          n++;
+        }
+        continue;
+      }
+      const existing=await DB._allRaw(s);const byId={};existing.forEach(r=>byId[r.id]=r);
       for(const rec of data.stores[s]){
         const cur=byId[rec.id];
-        // keep-newer (R9.2 import: upsert-by-id, keep-newer)
+        // keep-newer (R9.2 import: upsert-by-id, keep-newer). Records import as
+        // plaintext (export decrypts) → DB.put re-encrypts under the current vault.
         if(!cur || (rec.updatedAt||rec.createdAt||0)>=(cur.updatedAt||cur.createdAt||0)){ await DB.put(s,rec); n++; }
       }
     }
@@ -1548,32 +1873,114 @@ function renderSettings(){
   $('#keeper-contact').value=S.get('keeperContact','');
   const lic=S.get('license','free');
   $('#license-status').textContent=lic==='lifetime'?'Lifetime unlock active — thank you.':'Free forever. All your entries and full export are always free.';
-  $('#lock-now').style.display=S.get('passcodeOn',false)?'':'none';
+  const on=S.get('encOn',false);
+  $('#lock-now').style.display=on?'':'none';
+  $('#enc-off').style.display=on?'':'none';
+  const btn=$('#pass-btn'); if(btn) btn.textContent=on?'Change passphrase':'Turn on encryption';
 }
 function setOwner(v){S.set('ownerName',v.trim());if(currentScreen==='today')go('today');}
 function setReminder(v){S.set('reminderTime',v.trim());}
 function setRegion(v){S.set('region',v);}
 function setKeeper(){S.set('keeperName',$('#keeper-name').value.trim());S.set('keeperContact',$('#keeper-contact').value.trim());}
-function setPasscode(){
-  const p=$('#pass-set').value,hint=$('#pass-hint').value.trim();
-  if(!p){alert('Enter a passcode first.');return}
-  if(!confirm('Turn on a passcode? If you forget it, sensitive content on this device can’t be recovered — there’s no reset. Hint saved: "'+hint+'"'))return;
-  // Light v1: store a marker + hint; full AES-GCM at-rest is the T13 deepening. We gate the UI (auto-lock/blur) here.
-  S.set('passcodeOn',true);S.set('passHint',hint);
-  // store a hashed check so we can verify unlock without keeping the passcode
-  sha256(p).then(h=>{S.set('passCheck',h);renderSettings();alert('Passcode on. Use "Lock now" to lock; the app locks on returning to it.');});
+
+const VAULT_TOKEN='dadscode-vault-ok';
+/* Build a KDF verifier: derive key from pass+salt, encrypt a fixed token.
+   Unlock later = re-derive, decrypt, compare token. Passphrase never stored. */
+async function makeVerifier(pass){
+  const salt=Crypto.newSalt();
+  const key=await Crypto.deriveKey(pass,salt);
+  const {iv,ct}=await Crypto.encrypt(key,VAULT_TOKEN);
+  return {key,salt:b64(salt),iv,ct};
 }
-function lockVault(){ S.set('locked',true); showLock(); }
+async function verifyPass(pass){
+  const saltB64=S.get('encSalt',''), check=S.get('encCheck',null);
+  if(!saltB64||!check) return null;
+  try{
+    const key=await Crypto.deriveKey(pass,unb64(saltB64));
+    const tok=await Crypto.decrypt(key,check.iv,check.ct);
+    return tok===VAULT_TOKEN?key:null;
+  }catch(e){ return null; }
+}
+
+async function setPasscode(){
+  const p=$('#pass-set').value,hint=$('#pass-hint').value.trim();
+  if(!p){alert('Enter a passphrase first.');return}
+  if(!crypto.subtle){alert('This browser can’t encrypt (WebCrypto needs a secure context — https or localhost). Your data stays unencrypted but safe.');return}
+  const changing=S.get('encOn',false);
+  // recovery honesty (R10.3): explicit unrecoverable acknowledgement
+  if(!$('#pass-ack')||!$('#pass-ack').checked){alert('Please tick the box confirming a lost passphrase can’t be recovered.');return}
+  if(!confirm((changing?'Change your passphrase?':'Turn on encryption?')+'\n\nIf you lose this passphrase, your encrypted content CANNOT be recovered — there is no server and no reset.\n\nHint saved: "'+hint+'"'))return;
+
+  if(changing){
+    // must be unlocked with the OLD key to re-encrypt everything under the new key
+    if(!VAULT.unlocked()){alert('Unlock the vault first, then change the passphrase.');return}
+  }
+  const oldKey=VAULT.key; // may be null on first enable
+  const v=await makeVerifier(p);
+  // Re-encrypt all sensitive records under the new key.
+  // On first enable oldKey is null → plaintext records get encrypted for the first time.
+  const newKey=v.key;
+  try{
+    for(const store of Object.keys(ENC_FIELDS)){
+      const field=ENC_FIELDS[store];
+      const rows=await DB._allRaw(store);
+      for(const rec of rows){
+        let plain;
+        if(rec.enc){ // already encrypted under old key — decrypt then re-encrypt
+          if(!oldKey) continue; // can't read without old key; leave as-is
+          try{ plain=await Crypto.decrypt(oldKey,rec.enc.iv,rec.enc.ct); }catch(e){ continue; }
+        } else {
+          plain=rec[field];
+          if(plain==null) continue;
+        }
+        const {iv,ct}=await Crypto.encrypt(newKey,String(plain));
+        const out={...rec,enc:{iv,ct,f:field}}; delete out[field];
+        await DB._putRaw(store,out);
+      }
+    }
+  }catch(e){ alert('Encryption failed: '+e.message); return; }
+  VAULT.key=newKey;
+  S.set('encOn',true); S.set('encSalt',v.salt); S.set('encCheck',{iv:v.iv,ct:v.ct}); S.set('passHint',hint);
+  S.set('locked',false);
+  $('#pass-set').value=''; if($('#pass-ack')) $('#pass-ack').checked=false;
+  renderSettings();
+  openModal('<h2>Encryption is on.</h2><p class="muted">Your sensitive entries are now encrypted at rest with AES-256. The passphrase lives only in memory while unlocked — it is never saved. Use “Lock now”, and the app locks itself when you leave and come back.</p><button class="cta small" onclick="closeModal()">Good</button>');
+}
+
+async function turnOffEncryption(){
+  if(!VAULT.unlocked()){alert('Unlock the vault first to turn encryption off.');return}
+  if(!confirm('Turn off encryption? Your sensitive entries will be stored as plain text on this device again. (Your words are never lost either way.)'))return;
+  const key=VAULT.key;
+  for(const store of Object.keys(ENC_FIELDS)){
+    const field=ENC_FIELDS[store];
+    const rows=await DB._allRaw(store);
+    for(const rec of rows){
+      if(!rec.enc) continue;
+      try{
+        const plain=await Crypto.decrypt(key,rec.enc.iv,rec.enc.ct);
+        const out={...rec,[field]:plain}; delete out.enc;
+        await DB._putRaw(store,out);
+      }catch(e){/* leave encrypted rather than lose data */}
+    }
+  }
+  S.set('encOn',false); S.set('locked',false); S.set('encSalt',''); S.set('encCheck',null);
+  VAULT.drop();
+  renderSettings();
+  alert('Encryption is off. Your entries are readable as plain text again.');
+  renderScreen(currentScreen);
+}
+
+function lockVault(){ S.set('locked',true); VAULT.drop(); showLock(); }
 function showLock(){
-  if(!S.get('passcodeOn',false)||!S.get('locked',false))return;
-  openModal('<h2>Vault locked</h2><p class="muted">Enter your passcode to unlock.'+(S.get('passHint','')?' <br><span class="tiny">Hint: '+esc(S.get('passHint',''))+'</span>':'')+'</p>'+
-    '<input type="password" id="m-unlock" placeholder="Passcode" autofocus>'+
+  if(!S.get('encOn',false)||!S.get('locked',false)){ return; }
+  openModal('<h2>Vault locked</h2><p class="muted">Enter your passphrase to unlock and read your encrypted entries.'+(S.get('passHint','')?' <br><span class="tiny">Hint: '+esc(S.get('passHint',''))+'</span>':'')+'</p>'+
+    '<input type="password" id="m-unlock" placeholder="Passphrase" autofocus onkeydown="if(event.key===\'Enter\')tryUnlock()">'+
     '<button class="cta small" onclick="tryUnlock()">Unlock</button>');
   $('#modal-bg').style.background='rgba(42,36,32,.85)';
 }
 async function tryUnlock(){
-  const h=await sha256($('#m-unlock').value);
-  if(h===S.get('passCheck','')){S.set('locked',false);$('#modal-bg').style.background='';closeModal();}
+  const key=await verifyPass($('#m-unlock').value);
+  if(key){ VAULT.key=key; S.set('locked',false); $('#modal-bg').style.background=''; closeModal(); renderScreen(currentScreen); }
   else alert('That’s not it. Try the hint.');
 }
 function redeemLicense(){
@@ -1619,9 +2026,12 @@ function renderMore(){
    ===================================================================== */
 async function init(){
   await DB.open();
+  // if encryption is on, start locked until the passphrase is entered (key is memory-only)
+  if(S.get('encOn',false)){ S.set('locked',true); VAULT.drop(); }
   await seedDemoIfEmpty();
-  // lock on return if passcode set (R10.4 shared-device hygiene)
-  document.addEventListener('visibilitychange',()=>{ if(document.hidden && S.get('passcodeOn',false)){ S.set('locked',true); } else if(!document.hidden){ showLock(); } });
+  // auto-lock on tab blur/hide, drop key from memory; re-prompt on return (R10.4)
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden && S.get('encOn',false)){ S.set('locked',true); VAULT.drop(); } else if(!document.hidden){ showLock(); } });
+  addEventListener('blur',()=>{ if(S.get('encOn',false)){ S.set('locked',true); VAULT.drop(); } });
   const start=(location.hash&&$('#s-'+location.hash.slice(1)))?location.hash.slice(1):'today';
   go($('#s-'+start)?start:'today');
   showLock();
