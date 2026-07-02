@@ -8,6 +8,7 @@ import * as Exp from "./export.js";
 import * as Legacy from "./legacy.js";
 import { mountFocus } from "./focus.js";
 import * as Clarity from "./clarity.js";
+import * as Health from "./health.js";
 import * as Safety from "./safety.js";
 
 const main = document.getElementById("main");
@@ -34,6 +35,7 @@ const routes = {
   "/today": viewToday,
   "/journal": viewJournal,
   "/clarity": viewClarity,
+  "/health": viewHealth,
   "/focus": viewFocus,
   "/forthem": viewForThem,
   "/backup": viewBackup,
@@ -489,6 +491,110 @@ function reframeCard() {
   return wrap;
 }
 
+// ---- Health & Well-being (R5, light) ----
+async function viewHealth() {
+  const meta = await db.getMeta();
+  const today = await Health.todayHealth();
+  const h = today.health;
+  const age = meta.birthYear ? (new Date().getFullYear() - meta.birthYear) : null;
+
+  const s = section("Health", el("p", { class: "muted", text: Health.FRAME }));
+
+  // today's gentle signals — no numbers to chase, no weigh-ins (R5.2)
+  const sig = card([
+    el("h2", { text: "Today" }),
+    el("p", { class: "small muted", text:
+      "A few soft taps. Not about looking a certain way — about being around, and able." }),
+  ]);
+  sig.append(
+    signalRow("Slept alright", "rested", h.rested),
+    signalRow("Moved my body", "moved", h.moved),
+    signalRow("Did something strengthening", "strength", h.strength),
+    signalRow("Had energy for them", "energy", h.energy),
+    alcoholRow(h.alcohol),
+  );
+  s.append(sig);
+
+  // additive consistency only — a missed day never breaks anything (R5.3)
+  const movedDates = await Health.signalDates("moved");
+  const strengthDates = await Health.signalDates("strength");
+  s.append(card([
+    el("h2", { text: "Lately" }),
+    el("p", { class: "small muted", text: consistencyLine(movedDates, 30, "moved") }),
+    el("p", { class: "small muted", text: consistencyLine(strengthDates, 30, "did strength work") }),
+    el("p", { class: "small muted", text: "Every day you show up is added on. Missing one takes nothing away." }),
+  ]));
+
+  // age-based nudges — conversations to have, never diagnoses (R5.2)
+  const screenCard = card([
+    el("h2", { text: "Worth a conversation" }),
+    el("p", { class: "small muted", text:
+      "Quiet nudges toward the checks that keep dads around — take them to your GP, not as a verdict." }),
+  ]);
+  if (age == null) {
+    const yr = el("input", { type: "number", inputmode: "numeric", placeholder: "e.g. 1985",
+      min: "1900", max: String(new Date().getFullYear()) });
+    screenCard.append(
+      el("label", { text: "Add your birth year to tailor these (stored only on this device):" }),
+      el("div", { class: "btn-row" }, [
+        yr,
+        el("button", { class: "btn quiet", text: "Save", onclick: async () => {
+          const v = +yr.value, thisYear = new Date().getFullYear();
+          if (v > 1900 && v <= thisYear) { await db.setMeta({ birthYear: v }); toast("Saved."); render(); }
+          else toast("Enter a real birth year.");
+        } }),
+      ]),
+    );
+  } else {
+    for (const t of Health.screenings(age)) screenCard.append(el("p", { class: "muted", text: "• " + t }));
+    screenCard.append(el("p", { class: "small muted", text: `Tailored to age ${age}. Change your birth year in Settings.` }));
+  }
+  s.append(screenCard);
+
+  s.append(el("p", { class: "small muted center", text:
+    "This isn't medical advice. When something feels off, see your doctor." }));
+  mount(s);
+}
+
+// yes / not-today toggle for a boolean health signal
+function signalRow(label, key, value) {
+  const row = el("div", { class: "checkin" });
+  row.append(el("span", { class: "prac", text: label }));
+  const seg = el("div", { class: "seg", role: "group", "aria-label": label });
+  for (const [lbl, bool, cls] of [["Yes", true, "kept"], ["Not today", false, "slipped"]]) {
+    const pressed = value === bool;
+    const b = el("button", { class: cls, text: lbl, "aria-pressed": String(pressed),
+      onclick: async () => {
+        await Health.setSignal({ [key]: bool });
+        seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", "false"));
+        b.setAttribute("aria-pressed", "true");
+        toast("Noted.");
+      } });
+    seg.append(b);
+  }
+  row.append(seg);
+  return row;
+}
+
+// alcohol count — tracked plainly, framed without shame (R5.2)
+function alcoholRow(count) {
+  const row = el("div", { class: "checkin" });
+  row.append(el("span", { class: "prac", text: "Drinks today" }));
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Drinks today" });
+  for (const n of [0, 1, 2, 3]) {
+    const b = el("button", { text: n === 3 ? "3+" : String(n), "aria-pressed": String(count === n),
+      onclick: async () => {
+        await Health.setSignal({ alcohol: n });
+        seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", "false"));
+        b.setAttribute("aria-pressed", "true");
+        toast(n === 0 ? "A clear day. Good." : "Noted — no judgement.");
+      } });
+    seg.append(b);
+  }
+  row.append(seg);
+  return row;
+}
+
 // ---- Focus — Breath & Hum (R17) ----
 async function viewFocus() {
   await mountFocus(main);
@@ -683,6 +789,14 @@ async function viewSettings() {
       el("input", { type: "text", id: "set-name", value: meta.ownerName || "", onchange: async e => {
         await db.setMeta({ ownerName: e.target.value.trim() }); toast("Saved.");
       } }),
+      el("label", { for: "set-year", text: "Birth year (tailors Health nudges — stays on this device)" }),
+      el("input", { type: "number", id: "set-year", inputmode: "numeric", placeholder: "e.g. 1985",
+        min: "1900", max: String(new Date().getFullYear()), value: meta.birthYear || "", onchange: async e => {
+          const v = +e.target.value, thisYear = new Date().getFullYear();
+          if (!e.target.value) { await db.setMeta({ birthYear: null }); toast("Cleared."); }
+          else if (v > 1900 && v <= thisYear) { await db.setMeta({ birthYear: v }); toast("Saved."); }
+          else toast("Enter a real birth year.");
+        } }),
     ]),
     card([
       el("h2", { text: "Gentle reminder" }),
