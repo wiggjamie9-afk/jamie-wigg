@@ -10,6 +10,8 @@ import { mountFocus } from "./focus.js";
 import * as Clarity from "./clarity.js";
 import * as Health from "./health.js";
 import * as Safety from "./safety.js";
+import * as Crypto from "./crypto.js";
+import * as License from "./license.js";
 
 const main = document.getElementById("main");
 const topbar = document.getElementById("topbar");
@@ -28,6 +30,21 @@ document.getElementById("navToggle").addEventListener("click", () =>
 scrim.addEventListener("click", () => openDrawer(false));
 drawer.addEventListener("click", e => { if (e.target.closest("a")) openDrawer(false); });
 
+// ---- lock (R10.4): manual, on tab-hide, and after idle ----
+function lockNow() { Crypto.lock(); openDrawer(false); render(); }
+document.getElementById("lockBtn").addEventListener("click", lockNow);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && Crypto.isUnlocked()) Crypto.isEnabled().then(on => { if (on) lockNow(); });
+});
+let idleTimer = null;
+function armIdle() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (Crypto.isUnlocked()) Crypto.isEnabled().then(on => { if (on) lockNow(); });
+  }, 5 * 60 * 1000);   // 5 min idle auto-lock
+}
+["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, armIdle, { passive: true }));
+
 // ---- routing ----
 const routes = {
   "/home": viewHome,
@@ -45,7 +62,13 @@ const routes = {
 async function render() {
   const meta = await db.getMeta();
   if (!meta.onboarded) { topbar.hidden = true; return viewOnboarding(); }
+
+  // Vault passcode gate (R10.4) — content stays hidden until unlocked.
+  if (await Crypto.isEnabled() && !Crypto.isUnlocked()) { topbar.hidden = true; return viewLocked(); }
+
   topbar.hidden = false;
+  const lockBtn = document.getElementById("lockBtn");
+  lockBtn.hidden = !(await Crypto.isEnabled());
 
   const hash = location.hash.replace(/^#/, "") || "/home";
   const path = hash.split("?")[0];
@@ -137,6 +160,35 @@ async function viewOnboarding() {
     const finishBtn = document.getElementById("ob-finish");
     box.focus();
   }
+}
+
+// ---- locked screen (R10.4) ----
+async function viewLocked() {
+  main.innerHTML = "";
+  const hint = await Crypto.getHint();
+  const pass = el("input", { type: "password", id: "unlock-pass", placeholder: "Passphrase", autocomplete: "current-password" });
+  const msg = el("p", { class: "small", style: "color:var(--oxblood);min-height:1.2em" });
+  const attempt = async () => {
+    const ok = await Crypto.unlock(pass.value);
+    if (ok) { msg.textContent = ""; render(); }
+    else { msg.textContent = "That passphrase didn't work. Try again."; pass.select(); }
+  };
+  pass.addEventListener("keydown", e => { if (e.key === "Enter") attempt(); });
+  const s = section(null,
+    el("div", { class: "hero" }, [
+      el("p", { class: "quote", text: "🔒 Locked" }),
+      el("h1", { text: "Dad's Code" }),
+      el("p", { class: "muted", text: "This vault is passcode-protected on this device. Enter your passphrase to open it." }),
+    ]),
+    card([
+      pass,
+      hint ? el("p", { class: "small muted", text: "Hint: " + hint }) : null,
+      msg,
+      el("button", { class: "btn big", text: "Unlock", onclick: attempt }),
+    ], false),
+  );
+  mount(s);
+  setTimeout(() => pass.focus(), 50);
 }
 
 // ---- backup banner (R9.4) ----
@@ -765,8 +817,69 @@ async function viewBackup() {
       restoreControl(),
     ]),
   );
+  s.append(encryptedExportCard(meta));
+  s.append(await legacyBookCard());
   mount(s);
 }
+
+// Encrypted export (R10.2) — safe to email/cloud; ships its own offline decrypter.
+function encryptedExportCard(meta) {
+  const pass = el("input", { type: "password", placeholder: "Passphrase for this file", autocomplete: "new-password" });
+  const hint = el("input", { type: "text", placeholder: "Passphrase hint (optional, stored in the file)" });
+  const ack = el("input", { type: "checkbox", id: "enc-ack" });
+  return card([
+    el("h2", { text: "Encrypted export" }),
+    el("p", { class: "muted", text:
+      "A locked copy you can safely email or keep in the cloud. It carries its own decrypter — family open it in any browser, no app, no internet." }),
+    pass, hint,
+    el("label", { class: "recip-opt", for: "enc-ack" }, [ack,
+      el("span", { text: "I understand: if this passphrase is lost, this file can never be opened. There is no reset." })]),
+    el("button", { class: "btn", text: "⬇︎ Encrypted HTML", onclick: async () => {
+      if (!pass.value) { toast("Choose a passphrase first."); return; }
+      if (!ack.checked) { toast("Please tick the box confirming the passphrase can't be recovered."); return; }
+      const payload = JSON.stringify(await db.dumpAll(), null, 2);
+      const bundle = await Crypto.encryptPayload(pass.value, payload);
+      const html = Crypto.decrypterHTML(bundle, hint.value, meta.ownerName);
+      download("dads-code-sealed.html", new Blob([html], { type: "text/html" }));
+      pass.value = ""; ack.checked = false;
+      toast("Sealed file downloaded.");
+    } }),
+    el("p", { class: "small muted", text:
+      "Note: this protects the exported file. The always-free plain export above is never encrypted, so your words can never be locked away from you (or them)." }),
+  ]);
+}
+
+// Legacy Book (R15.3 paid perk) — degrades to the free HTML export for everyone.
+async function legacyBookCard() {
+  const paid = await License.isPaid();
+  return card([
+    el("h2", { text: "The Legacy Book" }),
+    el("p", { class: "muted", text:
+      "A bound, printable reading view of your whole vault — the ceremony, not the data." }),
+    paid
+      ? el("button", { class: "btn", text: "📖 Open the book", onclick: () => openLegacyBook() })
+      : el("div", {}, [
+          el("p", { class: "small muted", text:
+            "Part of the one-time lifetime unlock. Your words don't need it — the free self-contained HTML above already reads beautifully and always will." }),
+          el("button", { class: "btn quiet", text: "About the lifetime unlock", onclick: () => go("/settings") }),
+        ]),
+  ]);
+}
+
+function download(filename, blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+// paid: render the vault as a styled book in a new window and offer print/save-as-PDF
+async function openLegacyBook() {
+  await Exp.exportHTML();   // reuse the canonical self-contained render, then let them print it
+  toast("Your Legacy Book downloaded — open it and choose Print → Save as PDF for a bound copy.");
+}
+
 function restoreControl() {
   const input = el("input", { type: "file", accept: ".dadscode,.json,application/json" });
   input.addEventListener("change", async () => {
@@ -782,6 +895,8 @@ function restoreControl() {
 async function viewSettings() {
   const meta = await db.getMeta();
   const prefs = getPrefs();
+  const passcode = await passcodeCard();
+  const licence = await licenseCard();
   const s = section("Settings",
     card([
       el("h2", { text: "You" }),
@@ -798,6 +913,8 @@ async function viewSettings() {
           else toast("Enter a real birth year.");
         } }),
     ]),
+    passcode,
+    licence,
     card([
       el("h2", { text: "Gentle reminder" }),
       el("label", { for: "set-time", text: "One nudge a day (optional), at:" }),
@@ -820,6 +937,82 @@ async function viewSettings() {
     ]),
   );
   mount(s);
+}
+
+// ---- Settings: vault passcode (R10) ----
+async function passcodeCard() {
+  const on = await Crypto.isEnabled();
+  if (on) {
+    return card([
+      el("h2", { text: "Vault passcode 🔒" }),
+      el("p", { class: "small muted", text:
+        "On. The app locks when you set it, when you switch away, and after a few idle minutes. Tap the lock in the top bar to lock now." }),
+      el("div", { class: "btn-row" }, [
+        el("button", { class: "btn quiet", text: "Remove passcode", onclick: async () => {
+          const cur = prompt("Enter your current passphrase to remove the lock:");
+          if (cur == null) return;
+          const ok = await Crypto.removePasscode(cur);
+          toast(ok ? "Passcode removed." : "That passphrase didn't match."); if (ok) render();
+        } }),
+      ]),
+    ]);
+  }
+  const p1 = el("input", { type: "password", placeholder: "Choose a passphrase", autocomplete: "new-password" });
+  const p2 = el("input", { type: "password", placeholder: "Repeat it", autocomplete: "new-password" });
+  const hint = el("input", { type: "text", placeholder: "Hint (optional — shown on the lock screen)" });
+  const ack = el("input", { type: "checkbox", id: "pc-ack" });
+  return card([
+    el("h2", { text: "Vault passcode 🔒" }),
+    el("p", { class: "muted", text:
+      "Optional. Locks the app on this device so a passing glance can't read your entries. The passphrase is never stored — only you hold it." }),
+    p1, p2, hint,
+    el("label", { class: "recip-opt", for: "pc-ack" }, [ack,
+      el("span", { text: "I understand this passphrase can't be recovered. If I forget it, I'll use my exported backup to get back in." })]),
+    el("button", { class: "btn", text: "Turn on passcode", onclick: async () => {
+      if (!p1.value) { toast("Choose a passphrase."); return; }
+      if (p1.value !== p2.value) { toast("The two passphrases don't match."); return; }
+      if (!ack.checked) { toast("Please tick the box to confirm you understand."); return; }
+      try { await Crypto.setPasscode(p1.value, hint.value, true); toast("Passcode on. Locked next time you leave."); render(); }
+      catch { toast("Couldn't set the passcode on this device."); }
+    } }),
+    el("p", { class: "small muted", text:
+      "This locks the app view. For protection if the device itself is lost, also keep an encrypted export (Backup & Export) and use your phone's screen lock." }),
+  ]);
+}
+
+// ---- Settings: lifetime unlock + gifting (R15) ----
+async function licenseCard() {
+  const lic = await License.getEntitlement();
+  if (lic?.tier === "lifetime") {
+    return card([
+      el("h2", { text: "Lifetime unlock ✓" }),
+      el("p", { class: "muted", text: "Active — thank you. The polished legacy experiences are yours for good, on this device." }),
+      lic.dedication ? el("p", { class: "small", text: "“" + lic.dedication + "”" }) : null,
+      lic.issuedTo ? el("p", { class: "small muted", text: "Issued to " + lic.issuedTo }) : null,
+      el("button", { class: "btn quiet", text: "Remove unlock from this device", onclick: async () => {
+        if (confirm("Remove the lifetime unlock here? Your entries and exports are untouched — only the extra polish turns off.")) {
+          await License.removeLicense(); toast("Removed. Everything you wrote is still here and always free."); render();
+        }
+      } }),
+    ]);
+  }
+  const key = el("input", { type: "text", placeholder: "Paste your unlock or gift code", autocomplete: "off" });
+  const ded = el("input", { type: "text", placeholder: "Gift dedication (optional) — e.g. “From Dad”" });
+  return card([
+    el("h2", { text: "Lifetime unlock" }),
+    el("p", { class: "muted", text:
+      "A one-time unlock for the polished legacy experiences (like the Legacy Book). No subscription — a legacy shouldn't rent." }),
+    el("p", { class: "small muted", text:
+      "Free forever, no matter what: every entry, the daily check-in, and the full unencrypted export. You never pay to reach your own words." }),
+    key, ded,
+    el("button", { class: "btn", text: "Redeem", onclick: async () => {
+      if (!key.value.trim()) { toast("Paste a code first."); return; }
+      const res = await License.redeem(key.value, ded.value);
+      if (res.ok) { toast("Unlocked. Thank you."); render(); }
+      else toast("That code didn't verify. Check it and try again.");
+    } }),
+    ...License.PAID_PERKS.map(p => el("p", { class: "small muted", text: "• " + p })),
+  ]);
 }
 
 // ---- service worker + boot ----
