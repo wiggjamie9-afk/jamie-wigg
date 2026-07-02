@@ -989,12 +989,19 @@ async function renderToday(){
   // backup nudge age
   const m=await metaGet();
   const nudge=$('#backup-nudge-txt');
+  const nudgeBox=$('#backup-nudge');
+  // count real content so the nudge can escalate when irreplaceable words are at risk
+  const contentCount=(await DB.all('entries')).length + (await DB.all('code')).length + (await DB.all('recipes')).length;
+  const days=m.lastBackupAt?Math.floor((Date.now()-m.lastBackupAt)/86400000):null;
+  const urgent=(m.lastBackupAt===null && contentCount>=3) || (days!==null && days>=7);
   if(m.lastBackupAt){
-    const days=Math.floor((Date.now()-m.lastBackupAt)/86400000);
-    nudge.innerHTML='<b>Last backup: '+(days===0?'today':days+' day'+(days>1?'s':'')+' ago')+'.</b> Your words live only on this device.';
+    nudge.innerHTML='<b>Last backup: '+(days===0?'today':days+' day'+(days>1?'s':'')+' ago')+'.</b> '+(urgent?'Time for a fresh copy — your':'Your')+' words live only on this device.';
   } else {
-    nudge.innerHTML='<b>Keep a copy of your words.</b> They live only on this device — back up once this week.';
+    nudge.innerHTML=urgent
+      ? '<b>'+contentCount+' entries, no backup yet.</b> These live only on this device — back one up now, it takes a tap.'
+      : '<b>Keep a copy of your words.</b> They live only on this device — back up once this week.';
   }
+  if(nudgeBox){ nudgeBox.style.borderColor=urgent?'#7A3B2E':''; nudgeBox.style.background=urgent?'rgba(122,59,46,.12)':''; }
   // check-in list
   const pracs=await activePractices();
   const checkins=await DB.all('checkins');
