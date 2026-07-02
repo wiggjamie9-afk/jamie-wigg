@@ -2,7 +2,7 @@
 // CRITICAL: user content is NEVER cached here. Only the app shell (code/markup/style).
 // Everything the dad writes lives in IndexedDB and is his alone.
 
-const CACHE = "dadscode-v1";
+const CACHE = "dadscode-v2";
 const SHELL = [
   "./",
   "./index.html",
@@ -14,6 +14,8 @@ const SHELL = [
   "./code.js",
   "./diary.js",
   "./export.js",
+  "./legacy.js",
+  "./focus.js",
   "./manifest.webmanifest",
 ];
 

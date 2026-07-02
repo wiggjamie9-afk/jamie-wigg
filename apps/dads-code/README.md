@@ -30,13 +30,18 @@ python3 -m http.server 8000 --bind 127.0.0.1 --directory apps/dads-code
 - **Backup & export** (`R9`) — self-contained `.html` backup that opens with no app,
   `.dadscode` JSON with sha-256 checksum + restore, and a print keepsake book. Always free.
 - **Settings** — name, one gentle reminder time, AU crisis resources, full local purge.
+- **Legacy — "Pass this on"** (`R6`) — recipients + the copy-not-mutate pivot: pick child(ren)
+  → share now / bequeath (date · age · when-gone) → framing note → review & confirm → seal.
+  Revocable until delivered; "For Them" lists shared/bequeathed entries with state badges.
+- **Focus — Breath & Hum** (`R17`) — "Take 10": three protocols (Coherence 5·0·5 default,
+  3·6·9, Box 4·4·4·4) with a breathing orb pacer, optional exhale humming, Web-Audio tone
+  (432 / 528 / 7.83 Hz, no shipped audio), the "learn the harm" wellness card, retention
+  cautions, and an additive practice heatmap. Honours `prefers-reduced-motion`.
 - Warm-archival design (`R14`), WCAG-minded, `prefers-reduced-motion` respected, offline SW.
 
 ## Not yet built (next phases, per `design.md §6`)
 
-- **Legacy pivot** (`R6`) — the "Pass this on" → recipient → share/bequeath → confirm flow.
-  ("For Them" is currently an informative stub.)
-- **Focus — Breath & Hum** (`R17`), **Clarity practices** (`R4.1`), **Health light** (`R5`),
+- **Clarity practices** (`R4.1` — decompression, brain-dump, reframe), **Health light** (`R5`),
   **vault passcode / encrypted export** (`R10`), **license + gifting** (`R15`).
 - Self-hosted Fraunces/Newsreader/Caveat woff2 (currently a system-serif fallback stack),
   and PWA icons under `icons/`.

@@ -5,6 +5,8 @@ import { el, esc, toast, fmtDate, daysAgo, consistencyLine } from "./ui.js";
 import * as Code from "./code.js";
 import * as Diary from "./diary.js";
 import * as Exp from "./export.js";
+import * as Legacy from "./legacy.js";
+import { mountFocus } from "./focus.js";
 
 const main = document.getElementById("main");
 const topbar = document.getElementById("topbar");
@@ -29,6 +31,7 @@ const routes = {
   "/code": viewCode,
   "/today": viewToday,
   "/journal": viewJournal,
+  "/focus": viewFocus,
   "/forthem": viewForThem,
   "/backup": viewBackup,
   "/settings": viewSettings,
@@ -369,6 +372,7 @@ async function viewJournal() {
         e.title ? el("h3", { text: e.title }) : null,
         el("div", { text: e.body }),
         el("div", { class: "btn-row", style: "margin-top:6px" }, [
+          el("button", { class: "btn quiet small", text: "✈ Pass this on", onclick: () => passThisOn(e) }),
           el("button", { class: "btn quiet small", text: "Delete", onclick: async () => {
             if (confirm("Delete this entry? This can't be undone.")) { await Diary.deleteEntry(e.id); render(); }
           } }),
@@ -415,21 +419,146 @@ function voiceButton(targetTextarea) {
   return btn;
 }
 
-// ---- For Them (R6) — v1 informative stub of the legacy channel ----
+// ---- Focus — Breath & Hum (R17) ----
+async function viewFocus() {
+  await mountFocus(main);
+}
+
+// ---- For Them (R6) — the legacy channel ----
 async function viewForThem() {
-  const shared = (await db.byIndex("entries", "by_state", "shared")).length;
-  const bequeathed = (await db.byIndex("entries", "by_state", "bequeathed")).length;
+  const recips = await Legacy.listRecipients();
+  const legacy = await Legacy.listLegacy();
   const s = section("For Them",
-    card([
-      el("h2", { text: "The legacy channel" }),
-      el("p", { class: "muted", text:
-        "This is the deliberate output — kid-facing words you've chosen to pass on. Private work never lands here on its own; you always decide, name the child, and confirm." }),
-      el("p", { text: `Shared now: ${shared} · Bequeathed: ${bequeathed}` }),
-      el("p", { class: "small muted", text:
-        "Passing entries on (pick a recipient, share now or bequeath, confirm) arrives in the next build. For now, your writing is safely private." }),
-    ]),
-  );
+    el("p", { class: "muted", text:
+      "The deliberate output — words you've chosen to pass on. Nothing lands here on its own; you always pick the child, choose the timing, and confirm." }));
+
+  // recipients
+  const recipCard = card([ el("h2", { text: "Who it's for" }) ]);
+  if (recips.length === 0) recipCard.append(el("p", { class: "small muted", text: "Add your kids (or whoever this is for) so you can address entries to them by name." }));
+  for (const r of recips) {
+    recipCard.append(el("div", { class: "entry" }, [
+      el("strong", { text: r.name }),
+      r.relationship ? el("span", { class: "muted", text: " · " + r.relationship }) : null,
+      el("div", { class: "btn-row", style: "margin-top:6px" }, [
+        el("button", { class: "btn quiet small", text: "Remove", onclick: async () => {
+          if (confirm(`Remove ${r.name}?`)) { await Legacy.deleteRecipient(r.id); render(); }
+        } }),
+      ]),
+    ]));
+  }
+  recipCard.append(inlineAdd("Add a name (e.g. your child)…", async name => {
+    const rel = prompt(`How are they to you? (e.g. son, daughter) — optional`, "") || "";
+    await Legacy.addRecipient({ name, relationship: rel.trim() }); render();
+  }));
+  s.append(recipCard);
+
+  // passed-on entries
+  if (legacy.length === 0) {
+    s.append(el("p", { class: "empty", text: "Nothing passed on yet. Open a Journal entry and choose “Pass this on.”" }));
+  } else {
+    const list = card([ el("h2", { text: `${legacy.length} passed on` }) ]);
+    for (const e of legacy) {
+      const badge = Legacy.stateBadge(e.state);
+      const names = (e.recipientIds || []).map(id => recips.find(r => r.id === id)?.name || "someone").join(", ");
+      list.append(el("div", { class: "entry" }, [
+        el("div", { class: "entry-meta" }, [
+          el("span", { class: "badge-state " + badge.cls, text: badge.label }),
+          el("span", { text: "For " + names }),
+        ]),
+        e.title ? el("h3", { text: e.title }) : null,
+        el("div", { text: e.body }),
+        e.framingNote ? el("p", { class: "small muted", text: "“" + e.framingNote + "”" }) : null,
+        el("p", { class: "small muted", text: Legacy.describeTiming(e.release || { kind: "now" }) }),
+        el("div", { class: "btn-row", style: "margin-top:6px" }, [
+          el("button", { class: "btn quiet small", text: "Revoke", onclick: async () => {
+            if (confirm("Take this back? It won't reach them.")) {
+              try { await Legacy.revoke(e.id); toast("Revoked."); render(); }
+              catch { toast("Already delivered — can't revoke."); }
+            }
+          } }),
+        ]),
+      ]));
+    }
+    s.append(list);
+    s.append(el("p", { class: "small muted", text:
+      "Honest note: bequeathed entries aren't delivered by a server timer. They unlock through you or a trusted person at export — reliable over decades in a way a 20-year server promise isn't." }));
+  }
   mount(s);
+}
+
+// ---- the "Pass this on" pivot (R6.2) — copies, never mutates the private original ----
+async function passThisOn(entry) {
+  const recips = await Legacy.listRecipients();
+  if (recips.length === 0) {
+    if (confirm("First, add who this is for. Go to “For Them” to add a recipient?")) go("/forthem");
+    return;
+  }
+  const scrim = el("div", { class: "modal-scrim" });
+  const chosen = new Set();
+  let timing = { kind: "now" };
+  const note = el("textarea", { placeholder: "A short word to frame it (optional)…" });
+
+  const recipOpts = el("div", {}, recips.map(r => {
+    const cb = el("input", { type: "checkbox", id: "r-" + r.id,
+      onchange: e => { e.target.checked ? chosen.add(r.id) : chosen.delete(r.id); } });
+    return el("label", { class: "recip-opt", for: "r-" + r.id }, [cb, el("span", { text: r.name + (r.relationship ? " · " + r.relationship : "") })]);
+  }));
+
+  const timingOpts = el("div", {}, [
+    timingRadio("Share now — while you're here", { kind: "now" }, true),
+    timingRadio("Bequeath — sealed until you're gone", { kind: "gone" }),
+    timingRadio("Bequeath — until a date", { kind: "date" }, false, "date"),
+    timingRadio("Bequeath — until they turn…", { kind: "age" }, false, "age"),
+  ]);
+
+  const modal = el("div", { class: "modal" }, [
+    el("h2", { text: "Pass this on" }),
+    el("p", { class: "small muted", text: "This copies the entry to your family channel. Your private original stays exactly as it is." }),
+    entry.title ? el("h3", { text: entry.title }) : null,
+    el("p", { class: "muted", text: entry.body.slice(0, 160) + (entry.body.length > 160 ? "…" : "") }),
+    el("label", { text: "For whom?" }), recipOpts,
+    el("label", { text: "When can they read it?" }), timingOpts,
+    el("label", { text: "Framing note" }), note,
+    el("div", { class: "btn-row" }, [
+      el("button", { class: "btn", text: "Review & confirm", onclick: confirmStep }),
+      el("button", { class: "btn quiet", text: "Cancel", onclick: close }),
+    ]),
+  ]);
+  scrim.append(modal);
+  scrim.addEventListener("click", e => { if (e.target === scrim) close(); });
+  document.body.append(scrim);
+
+  function timingRadio(label, value, checked = false, extra = null) {
+    const wrap = el("label", { class: "timing-opt" });
+    const radio = el("input", { type: "radio", name: "timing", checked });
+    radio.addEventListener("change", () => {
+      if (extra === "date") { const d = prompt("Unlock on date (YYYY-MM-DD):", ""); timing = { kind: "date", date: d || "" }; }
+      else if (extra === "age") { const a = prompt("Unlock when they turn what age?", "18"); timing = { kind: "age", age: +a || 18 }; }
+      else timing = value;
+    });
+    wrap.append(radio, document.createTextNode(" " + label));
+    return wrap;
+  }
+
+  function confirmStep() {
+    if (chosen.size === 0) { toast("Pick at least one person."); return; }
+    const names = [...chosen].map(id => recips.find(r => r.id === id)?.name).join(", ");
+    modal.innerHTML = "";
+    modal.append(
+      el("h2", { text: "Confirm" }),
+      el("p", { text: `You're passing “${entry.title || entry.body.slice(0, 40)}…” to ` }),
+      el("p", { class: "muted", text: `${names} — ${Legacy.describeTiming(timing)}.` }),
+      el("p", { class: "small muted", text: "Your private original is untouched. You can revoke this until it's delivered." }),
+      el("div", { class: "btn-row" }, [
+        el("button", { class: "btn", text: "Seal it", onclick: async () => {
+          await Legacy.passOn(entry.id, { recipientIds: [...chosen], timing, framingNote: note.value });
+          close(); toast("Passed on. It's in “For Them.”");
+        } }),
+        el("button", { class: "btn quiet", text: "Back", onclick: close }),
+      ]),
+    );
+  }
+  function close() { scrim.remove(); }
 }
 
 // ---- Backup & Export (R9) ----
