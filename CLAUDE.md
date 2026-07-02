@@ -455,3 +455,24 @@ When spawning subagents via the `Agent` tool, default to **Haiku** for simple me
 - **Issue tracker** → GitHub Issues on `wiggjamie9-afk/jamie-wigg`. See `docs/agents/issue-tracker.md`.
 - **Triage labels** → `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 - **Domain docs** → `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`. Read before introducing new terms.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Claude SEO (`/seo`)
+
+Open-source SEO analysis suite (MIT, by AgriciDaniel) installed under `.claude/skills/seo*` (orchestrator + 24 sub-skills) and `.claude/agents/seo-*.md` (18 specialist agents). User-invocable via `/seo`.
+
+- **Run an audit** → `/seo audit <url>` (parallel sub-agents → prioritized action plan). Other commands: `/seo page`, `/seo technical`, `/seo content`, `/seo schema`, `/seo geo`, `/seo local`, `/seo sitemap`, `/seo google`, etc. Full list: `.claude/skills/seo/SKILL.md`.
+- **Python deps** (needed only when skills run their scripts — rendering, PDF reports, Google APIs) are NOT committed. Recreate the venv:
+  `python3 -m venv .claude/skills/seo/.venv && .claude/skills/seo/.venv/bin/pip install -r .claude/skills/seo/requirements.txt`
+  (`.venv/` is gitignored.) Optional Google API enrichment: `/seo google setup`.
+- **Note on `seo-audit`** → the repo's earlier standalone `seo-audit` skill is preserved at `.agents/skills/seo-audit/`; `.claude/skills/seo-audit/` now points at Claude SEO's version so `/seo audit` resolves to the suite. To restore the old one: `ln -sf ../../.agents/skills/seo-audit .claude/skills/seo-audit`.
+- Optional paid MCP extensions (DataForSEO, Ahrefs, Firecrawl, Banana, …) are NOT installed; fetch from github.com/AgriciDaniel/claude-seo if wanted.
