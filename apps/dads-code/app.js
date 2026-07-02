@@ -7,6 +7,8 @@ import * as Diary from "./diary.js";
 import * as Exp from "./export.js";
 import * as Legacy from "./legacy.js";
 import { mountFocus } from "./focus.js";
+import * as Clarity from "./clarity.js";
+import * as Safety from "./safety.js";
 
 const main = document.getElementById("main");
 const topbar = document.getElementById("topbar");
@@ -31,6 +33,7 @@ const routes = {
   "/code": viewCode,
   "/today": viewToday,
   "/journal": viewJournal,
+  "/clarity": viewClarity,
   "/focus": viewFocus,
   "/forthem": viewForThem,
   "/backup": viewBackup,
@@ -157,6 +160,9 @@ async function viewHome() {
   const hello = meta.ownerName ? `Evening, ${esc(meta.ownerName)}.` : "Today";
 
   const s = section(null, el("h1", { text: hello }), banner);
+
+  // one calm, dismissible support card if the on-device signal is heavy (R16.3)
+  if (await Clarity.heavinessSignal()) s.append(Safety.supportCard());
 
   if (practices.length === 0) {
     s.append(card([
@@ -417,6 +423,70 @@ function voiceButton(targetTextarea) {
     } catch { toast("Couldn't access the mic."); }
   });
   return btn;
+}
+
+// ---- Clarity & Mental Health (R4) ----
+async function viewClarity() {
+  const s = section("Clarity",
+    el("p", { class: "muted", text:
+      "A few small ways to tend your head. Everything here is private to you — and never scored." }));
+
+  const narrative = await Clarity.weatherNarrative();
+  if (narrative) s.append(el("div", { class: "banner" }, [el("span", { text: narrative })]));
+
+  // simple write-and-save practices
+  for (const p of Clarity.PRACTICES.filter(x => x.prompt)) {
+    const box = el("textarea", { placeholder: p.prompt });
+    s.append(card([
+      el("h2", { text: p.title }),
+      el("p", { class: "small muted", text: p.blurb }),
+      box,
+      el("button", { class: "btn", text: "Save (just for me)", onclick: async () => {
+        const body = box.value.trim();
+        if (!body) { toast("Even one line counts."); return; }
+        await Clarity.saveClarity({ practiceId: p.id, title: p.title, body });
+        box.value = ""; toast("Saved privately.");
+      } }),
+    ]));
+  }
+
+  // one-breath reset
+  s.append(card([
+    el("h2", { text: "One-breath reset" }),
+    el("p", { class: "small muted", text: "Right now: breathe in slow… and out longer. Once. Then carry on." }),
+    el("button", { class: "btn sage", text: "Take one breath", onclick: () => {
+      toast("In… 2… 3… 4 — out… 2… 3… 4… 5… 6.");
+    } }),
+    el("button", { class: "btn quiet", text: "Or run a full session →", onclick: () => go("/focus"), style: "margin-top:8px" }),
+  ]));
+
+  // reframe a hard moment (4-step)
+  s.append(reframeCard());
+
+  // crisis resources (R16.2) — always findable
+  s.append(Safety.crisisCard("AU"));
+  mount(s);
+}
+
+function reframeCard() {
+  const inputs = {};
+  const wrap = card([
+    el("h2", { text: "Reframe a hard moment" }),
+    el("p", { class: "small muted", text: "Four gentle questions. Validate first, then look underneath." }),
+  ]);
+  for (const [key, label] of Clarity.REFRAME_STEPS) {
+    const ta = el("textarea", { placeholder: label, style: "min-height:70px" });
+    inputs[key] = ta;
+    wrap.append(el("label", { text: label }), ta);
+  }
+  wrap.append(el("button", { class: "btn", text: "Save this reframe", onclick: async () => {
+    const body = Clarity.REFRAME_STEPS.map(([k, l]) => `${l}\n${inputs[k].value.trim()}`).join("\n\n");
+    if (Clarity.REFRAME_STEPS.every(([k]) => !inputs[k].value.trim())) { toast("Write at least one part."); return; }
+    await Clarity.saveClarity({ practiceId: "reframe", title: "Reframe a hard moment", body });
+    Clarity.REFRAME_STEPS.forEach(([k]) => inputs[k].value = "");
+    toast("Saved privately. That sounds heavy — and it makes sense.");
+  } }));
+  return wrap;
 }
 
 // ---- Focus — Breath & Hum (R17) ----
