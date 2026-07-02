@@ -12,7 +12,8 @@ export async function todayHealth() {
   let rec = all.find(e => (e.authoredAt || e.createdAt).slice(0, 10) === key);
   if (!rec) {
     rec = {
-      id: db.uuid(), kind: "health", type: "daily", title: "Daily signals", body: "",
+      // deterministic per-day id → two fast taps upsert ONE row instead of racing to two
+      id: "health-" + key, kind: "health", type: "daily", title: "Daily signals", body: "",
       lang: "en", categoryIds: [], recipientIds: [], mediaAssetIds: [], milestoneId: null,
       state: "private", mood: null, isDraft: false, isFavorite: false, isSensitive: false,
       health: { rested: null, moved: null, strength: null, energy: null, alcohol: null },

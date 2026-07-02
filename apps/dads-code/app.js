@@ -29,6 +29,11 @@ document.getElementById("navToggle").addEventListener("click", () =>
   openDrawer(!drawer.classList.contains("open")));
 scrim.addEventListener("click", () => openDrawer(false));
 drawer.addEventListener("click", e => { if (e.target.closest("a")) openDrawer(false); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && drawer.classList.contains("open")) {
+    openDrawer(false); document.getElementById("navToggle").focus();
+  }
+});
 
 // ---- lock (R10.4): manual, on tab-hide, and after idle ----
 function lockNow() { Crypto.lock(); openDrawer(false); render(); }
@@ -59,27 +64,39 @@ const routes = {
   "/settings": viewSettings,
 };
 
+let _viewCleanup = null;                     // teardown for the outgoing view (e.g. a running focus session)
+let _rendering = false, _pendingRender = false;
+
 async function render() {
-  const meta = await db.getMeta();
-  if (!meta.onboarded) { topbar.hidden = true; return viewOnboarding(); }
+  if (_rendering) { _pendingRender = true; return; }   // coalesce concurrent renders → no duplicated DOM
+  _rendering = true;
+  try {
+    if (_viewCleanup) { try { _viewCleanup(); } catch {} _viewCleanup = null; }
+    const meta = await db.getMeta();
+    if (!meta.onboarded) { topbar.hidden = true; return viewOnboarding(); }
 
-  // Vault passcode gate (R10.4) — content stays hidden until unlocked.
-  if (await Crypto.isEnabled() && !Crypto.isUnlocked()) { topbar.hidden = true; return viewLocked(); }
+    // Vault passcode gate (R10.4) — content stays hidden until unlocked.
+    if (await Crypto.isEnabled() && !Crypto.isUnlocked()) { topbar.hidden = true; return viewLocked(); }
 
-  topbar.hidden = false;
-  const lockBtn = document.getElementById("lockBtn");
-  lockBtn.hidden = !(await Crypto.isEnabled());
+    topbar.hidden = false;
+    const lockBtn = document.getElementById("lockBtn");
+    lockBtn.hidden = !(await Crypto.isEnabled());
 
-  const hash = location.hash.replace(/^#/, "") || "/home";
-  const path = hash.split("?")[0];
-  const fn = routes[path] || viewHome;
-  setPref("lastView", "#" + path);
-  drawer.querySelectorAll("a[data-nav]").forEach(a =>
-    a.setAttribute("aria-current", a.getAttribute("href") === "#" + path ? "page" : "false"));
-  main.innerHTML = "";
-  await fn();
-  main.focus();
-  window.scrollTo(0, 0);
+    const hash = location.hash.replace(/^#/, "") || "/home";
+    const path = hash.split("?")[0];
+    const fn = routes[path] || viewHome;
+    setPref("lastView", "#" + path);
+    drawer.querySelectorAll("a[data-nav]").forEach(a =>
+      a.setAttribute("aria-current", a.getAttribute("href") === "#" + path ? "page" : "false"));
+    main.innerHTML = "";
+    await fn();
+    main.focus();
+    window.scrollTo(0, 0);
+    armIdle();   // (re)arm idle auto-lock on every render — covers boot and post-unlock, not just after input
+  } finally {
+    _rendering = false;
+    if (_pendingRender) { _pendingRender = false; render(); }
+  }
 }
 window.addEventListener("hashchange", render);
 
@@ -166,14 +183,26 @@ async function viewOnboarding() {
 async function viewLocked() {
   main.innerHTML = "";
   const hint = await Crypto.getHint();
-  const pass = el("input", { type: "password", id: "unlock-pass", placeholder: "Passphrase", autocomplete: "current-password" });
-  const msg = el("p", { class: "small", style: "color:var(--oxblood);min-height:1.2em" });
+  const pass = el("input", { type: "password", id: "unlock-pass", placeholder: "Passphrase",
+    "aria-label": "Passphrase", autocomplete: "current-password" });
+  const msg = el("p", { class: "small", role: "alert", "aria-live": "assertive", style: "color:var(--oxblood);min-height:1.2em" });
   const attempt = async () => {
     const ok = await Crypto.unlock(pass.value);
     if (ok) { msg.textContent = ""; render(); }
     else { msg.textContent = "That passphrase didn't work. Try again."; pass.select(); }
   };
   pass.addEventListener("keydown", e => { if (e.key === "Enter") attempt(); });
+
+  // Recovery escape (R10.3): a forgotten passphrase must NEVER be a permanent lockout.
+  // Importing a backup clears the passcode (see export.js), so this always reopens the vault.
+  const restore = el("input", { type: "file", accept: ".dadscode,.json,application/json", id: "unlock-restore",
+    style: "display:none" });
+  restore.addEventListener("change", async () => {
+    const f = restore.files[0]; if (!f) return;
+    if (!confirm("Restore from this backup? It reopens your vault and turns the passcode off (you can set a new one after).")) return;
+    try { await Exp.importJSON(f); Crypto.lock(); toast("Restored — vault reopened."); render(); }
+    catch { toast("Couldn't read that file."); }
+  });
   const s = section(null,
     el("div", { class: "hero" }, [
       el("p", { class: "quote", text: "🔒 Locked" }),
@@ -186,6 +215,13 @@ async function viewLocked() {
       msg,
       el("button", { class: "btn big", text: "Unlock", onclick: attempt }),
     ], false),
+    el("details", { class: "recovery" }, [
+      el("summary", { text: "Forgotten your passphrase?" }),
+      el("p", { class: "small muted", text:
+        "The passphrase can't be recovered — but your words aren't lost. Restore your latest backup file to reopen the vault (the passcode turns off; set a new one afterward)." }),
+      restore,
+      el("button", { class: "btn quiet", text: "Restore from a backup file", onclick: () => restore.click() }),
+    ]),
   );
   mount(s);
   setTimeout(() => pass.focus(), 50);
@@ -211,7 +247,7 @@ async function viewHome() {
   const banner = await backupBanner();
   const practices = await Code.activePractices();
   const doneMap = await Code.todaysCheckins();
-  const hello = meta.ownerName ? `Evening, ${esc(meta.ownerName)}.` : "Today";
+  const hello = meta.ownerName ? `Evening, ${meta.ownerName}.` : "Today";   // el() sets textContent — don't double-escape
 
   const s = section(null, el("h1", { text: hello }), banner);
 
@@ -649,7 +685,9 @@ function alcoholRow(count) {
 
 // ---- Focus — Breath & Hum (R17) ----
 async function viewFocus() {
-  await mountFocus(main);
+  const ctrl = await mountFocus(main);
+  // stop the tone + pacer timers when navigating away (render() calls this)
+  _viewCleanup = ctrl && ctrl.stop ? () => ctrl.stop() : null;
 }
 
 // ---- For Them (R6) — the legacy channel ----
@@ -739,8 +777,9 @@ async function passThisOn(entry) {
     timingRadio("Bequeath — until they turn…", { kind: "age" }, false, "age"),
   ]);
 
-  const modal = el("div", { class: "modal" }, [
-    el("h2", { text: "Pass this on" }),
+  const modal = el("div", { class: "modal", role: "dialog", "aria-modal": "true",
+    "aria-labelledby": "passon-title", tabindex: "-1" }, [
+    el("h2", { id: "passon-title", text: "Pass this on" }),
     el("p", { class: "small muted", text: "This copies the entry to your family channel. Your private original stays exactly as it is." }),
     entry.title ? el("h3", { text: entry.title }) : null,
     el("p", { class: "muted", text: entry.body.slice(0, 160) + (entry.body.length > 160 ? "…" : "") }),
@@ -755,6 +794,21 @@ async function passThisOn(entry) {
   scrim.append(modal);
   scrim.addEventListener("click", e => { if (e.target === scrim) close(); });
   document.body.append(scrim);
+
+  // Focus management (a11y): trap Tab inside the dialog, close on Escape, restore focus on close.
+  const prevFocus = document.activeElement;
+  const focusables = () => modal.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), textarea, select, [tabindex]:not([tabindex="-1"])');
+  function onKey(e) {
+    if (e.key === "Escape") { e.preventDefault(); close(); return; }
+    if (e.key !== "Tab") return;
+    const f = focusables(); if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  scrim.addEventListener("keydown", onKey);
+  (focusables()[0] || modal).focus();
 
   function timingRadio(label, value, checked = false, extra = null) {
     const wrap = el("label", { class: "timing-opt" });
@@ -773,7 +827,7 @@ async function passThisOn(entry) {
     const names = [...chosen].map(id => recips.find(r => r.id === id)?.name).join(", ");
     modal.innerHTML = "";
     modal.append(
-      el("h2", { text: "Confirm" }),
+      el("h2", { id: "passon-title", text: "Confirm" }),
       el("p", { text: `You're passing “${entry.title || entry.body.slice(0, 40)}…” to ` }),
       el("p", { class: "muted", text: `${names} — ${Legacy.describeTiming(timing)}.` }),
       el("p", { class: "small muted", text: "Your private original is untouched. You can revoke this until it's delivered." }),
@@ -785,8 +839,13 @@ async function passThisOn(entry) {
         el("button", { class: "btn quiet", text: "Back", onclick: close }),
       ]),
     );
+    (focusables()[0] || modal).focus();   // move focus into the swapped-in confirm step
   }
-  function close() { scrim.remove(); }
+  function close() {
+    scrim.removeEventListener("keydown", onKey);
+    scrim.remove();
+    if (prevFocus && prevFocus.focus) prevFocus.focus();   // restore focus to the trigger
+  }
 }
 
 // ---- Backup & Export (R9) ----
@@ -837,12 +896,14 @@ function encryptedExportCard(meta) {
     el("button", { class: "btn", text: "⬇︎ Encrypted HTML", onclick: async () => {
       if (!pass.value) { toast("Choose a passphrase first."); return; }
       if (!ack.checked) { toast("Please tick the box confirming the passphrase can't be recovered."); return; }
-      const payload = JSON.stringify(await db.dumpAll(), null, 2);
-      const bundle = await Crypto.encryptPayload(pass.value, payload);
-      const html = Crypto.decrypterHTML(bundle, hint.value, meta.ownerName);
-      download("dads-code-sealed.html", new Blob([html], { type: "text/html" }));
-      pass.value = ""; ack.checked = false;
-      toast("Sealed file downloaded.");
+      try {
+        const payload = JSON.stringify(await db.dumpAll(), null, 2);
+        const bundle = await Crypto.encryptPayload(pass.value, payload);
+        const html = Crypto.decrypterHTML(bundle, hint.value, meta.ownerName);
+        download("dads-code-sealed.html", new Blob([html], { type: "text/html" }));
+        pass.value = ""; ack.checked = false;
+        toast("Sealed file downloaded.");
+      } catch { toast("Couldn't build the encrypted file on this device."); }
     } }),
     el("p", { class: "small muted", text:
       "Note: this protects the exported file. The always-free plain export above is never encrypted, so your words can never be locked away from you (or them)." }),

@@ -27,8 +27,8 @@ let toastTimer;
 export function toast(msg) {
   const t = document.getElementById("toast");
   if (!t) return;
+  t.hidden = false;          // reveal the aria-live region BEFORE mutating text so SRs announce it
   t.textContent = msg;
-  t.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
 }

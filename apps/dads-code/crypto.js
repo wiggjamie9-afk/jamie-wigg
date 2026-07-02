@@ -14,7 +14,18 @@ let _key = null;        // in-memory CryptoKey after a successful unlock — nev
 let _unlocked = false;
 
 // ---- base64 helpers ----
-const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+// Chunked so a whole-vault ciphertext (100 KB+) never blows the argument/stack
+// limit that String.fromCharCode(...spread) hits — the encrypted family export
+// must work precisely for the decades-long users it exists for.
+function b64(buf) {
+  const bytes = new Uint8Array(buf);
+  let out = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    out += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(out);
+}
 const unb64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
 function randomBytes(n) { return crypto.getRandomValues(new Uint8Array(n)); }

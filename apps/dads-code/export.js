@@ -42,7 +42,12 @@ export async function importJSON(file) {
   await restore("checkins", data.checkins);
   await restore("recipients", data.recipients);
   await restore("mediaAssets", data.mediaAssets);
-  if (data.meta) await db.setMeta({ ...data.meta, key: "vault" });
+  if (data.meta) {
+    // Never let a restored backup re-impose a (possibly forgotten) passcode lock —
+    // the backup IS the recovery path, so importing must always leave the vault open (R10.3/R15.2).
+    const { security, ...rest } = data.meta;
+    await db.setMeta({ ...rest, security: null, key: "vault" });
+  }
   return true;
 }
 

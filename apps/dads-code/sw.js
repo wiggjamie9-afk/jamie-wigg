@@ -2,7 +2,7 @@
 // CRITICAL: user content is NEVER cached here. Only the app shell (code/markup/style).
 // Everything the dad writes lives in IndexedDB and is his alone.
 
-const CACHE = "dadscode-v5";
+const CACHE = "dadscode-v6";
 const SHELL = [
   "./",
   "./index.html",
@@ -22,6 +22,10 @@ const SHELL = [
   "./crypto.js",
   "./license.js",
   "./manifest.webmanifest",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/maskable-512.png",
+  "./icons/apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (e) => {
