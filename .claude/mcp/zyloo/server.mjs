@@ -31,10 +31,11 @@ function requireKey() {
   }
 }
 
-async function zylooRequest(path, { method = "GET", body } = {}) {
+async function zylooRequest(path, { method = "GET", body, timeoutMs = 60000 } = {}) {
   requireKey();
   const res = await fetch(`${ZYLOO_BASE_URL}${path}`, {
     method,
+    signal: AbortSignal.timeout(timeoutMs),
     headers: {
       Authorization: `Bearer ${ZYLOO_API_KEY}`,
       "Content-Type": "application/json",
@@ -104,6 +105,7 @@ server.registerTool(
             content: z.string(),
           }),
         )
+        .min(1, "At least one message is required")
         .describe("Conversation history. At minimum, supply a single user message."),
       user_images: z
         .array(z.string().url())
@@ -118,16 +120,18 @@ server.registerTool(
     const msgs = [...messages];
 
     if (user_images && user_images.length > 0) {
-      const last = msgs[msgs.length - 1];
-      if (last && last.role === "user") {
-        msgs[msgs.length - 1] = {
-          role: "user",
-          content: [
-            { type: "text", text: last.content },
-            ...user_images.map((url) => ({ type: "image_url", image_url: { url } })),
-          ],
-        };
+      const lastUserIndex = msgs.map((m) => m.role).lastIndexOf("user");
+      if (lastUserIndex === -1) {
+        throw new Error("user_images requires at least one user message");
       }
+      const last = msgs[lastUserIndex];
+      msgs[lastUserIndex] = {
+        role: "user",
+        content: [
+          { type: "text", text: last.content },
+          ...user_images.map((url) => ({ type: "image_url", image_url: { url } })),
+        ],
+      };
     }
 
     const result = await chatCompletion({ messages: msgs, model, temperature, maxTokens: max_tokens });

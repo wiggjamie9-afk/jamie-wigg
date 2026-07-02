@@ -10,7 +10,7 @@ endpoints. Model ids are namespaced, e.g. `zyloo/claude-haiku-4-5-20251001`.
 
 1. Get a key at https://zyloo.io (keys start with `sk-zy-`).
 2. Copy `.env.example` → `.env` at the repo root and fill in:
-   ```
+   ```ini
    ZYLOO_API_KEY=sk-zy-...
    ZYLOO_BASE_URL=https://api.zyloo.io/v1   # optional, this is the default
    ZYLOO_MODEL=zyloo/claude-haiku-4-5-20251001   # optional default model
