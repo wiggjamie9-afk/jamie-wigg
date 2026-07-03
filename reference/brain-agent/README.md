@@ -1,4 +1,4 @@
-# Brain — phased agent orchestrator (reference only)
+# Brain — phased agent orchestrator
 
 `Brain.py` is the top-level orchestrator for a phased Telegram/AI agent. It boots
 a set of services over a shared message bus (`JoBus`) in a fixed order:
@@ -12,22 +12,39 @@ a set of services over a shared message bus (`JoBus`) in a fixed order:
 7. **Resilience** — reconnect, health-check, fallback
 8. **Shields** — watchdog
 
-## ⚠️ Status: INCOMPLETE
+## ✅ Status: RUNNABLE (stub services)
 
-Only `Brain.py` was provided. It imports ~25 modules across the packages
-`brain/ bus/ children/ core/ network/ notifications/ sai/ telegram/ memory/
-resilience/ shields/` — **none of which were supplied**. As given, this file
-cannot run (every `from …` import would fail).
+The original paste contained only `Brain.py`, which imported ~25 modules that
+were **not supplied**. Those modules are now provided as **working stubs** so the
+orchestrator boots and shuts down end-to-end:
 
-Kept here verbatim as a **reference / architecture snapshot**, not a runnable
-project. To make it work you would need to implement each imported class with:
+```bash
+cd reference/brain-agent
+python3 main.py
+```
 
-- a constructor matching the keyword args used here (`bus=…`, etc.),
-- `start()` / `stop()` methods (the boot/shutdown loops call these),
-- for `AraHealthChecker`: `set_services(list)`,
-- for `AraFallbackHandler`: `set_restart_map(dict)`,
-- for `MiniTelegramBot`: `send_message(str)`,
-- a `Settings` object exposing `OPENROUTER_API_KEY`.
+Expected output: all 18 services log `start()`, `MiniTelegramBot` prints
+`[telegram] Brain Online — all systems ready`, then all services `stop()` in
+reverse order.
 
-If you want, I can scaffold those modules as working stubs (no-op `start`/`stop`,
-an in-memory `JoBus`, a logger) so `Brain().start()` runs end-to-end — just ask.
+### What the stubs provide
+
+- `bus/JoLogger.py` — stdout logger (`get_logger`)
+- `bus/JoBus.py` — minimal in-memory pub/sub bus
+- `bus/JoService.py` — shared `Service` base: stores kwargs as attributes,
+  provides `start()`/`stop()` that log their transitions
+- `brain/settings.py` — `Settings` reading env (`OPENROUTER_API_KEY`, …)
+- One module per imported service (`children/`, `core/`, `network/`,
+  `notifications/`, `sai/`, `telegram/`, `memory/`, `resilience/`, `shields/`),
+  each a thin `Service` subclass
+- Special methods wired to match `Brain.py`: `MiniTelegramBot.send_message`,
+  `AraHealthChecker.set_services`, `AraFallbackHandler.set_restart_map`
+- `main.py` — entry point
+
+### Turning stubs into real services
+
+Each stub accepts arbitrary keyword args and no-ops on `start()`/`stop()`. To
+implement a real service, override those hooks (and add its own methods) — the
+constructor signatures already match how `Brain.py` wires them together. The
+services run synchronously here; a real deployment would give each its own
+thread and use `JoBus.publish/subscribe` for cross-service messaging.

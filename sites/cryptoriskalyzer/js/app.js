@@ -57,6 +57,19 @@
     })(start);
   }
 
+  var sourceEl = $("source");
+  function renderSource(res) {
+    if (!sourceEl) return;
+    var tok = res.tokenSymbol ? " · " + res.tokenSymbol : "";
+    if (res.source === "live") {
+      sourceEl.className = "source live";
+      sourceEl.textContent = "🟢 Live-Daten (GoPlus Token Security)" + tok;
+    } else {
+      sourceEl.className = "source sim";
+      sourceEl.textContent = "🟡 Simulation (keine Live-Daten verfügbar/ Chain nicht unterstützt)";
+    }
+  }
+
   function renderCategories(cats) {
     catsEl.innerHTML = "";
     cats.forEach(function (c, i) {
@@ -103,10 +116,11 @@
     }
     await sleep(200);
 
-    var res = window.CryptoRiskAnalyzer.analyze(address, ch);
+    var res = await window.CryptoRiskAnalyzer.analyze(address, ch);
     progress.hidden = true;
     results.hidden = false;
     verdict.textContent = VERDICT[res.level];
+    renderSource(res);
     renderCategories(res.categories);
     animateScore(res.total, res.level);
     results.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });

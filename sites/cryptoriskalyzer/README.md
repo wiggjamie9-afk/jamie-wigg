@@ -22,14 +22,24 @@ Multi-Chain: Ethereum · BSC · Polygon · Base · Solana.
 Animierter Ring-Score mit Counter, schrittweise Analyse-Anzeige, voll responsiv,
 `prefers-reduced-motion`-freundlich.
 
-## ⚠️ Wichtiger Hinweis zur Engine
+## 🔌 Datenquellen
 
-Diese Version enthält **keinen Live-On-Chain-Abruf**. `js/analyzer.js` erzeugt
-eine **deterministische Simulation** aus der eingegebenen Adresse (Hash + PRNG),
-damit die UI ohne API-Keys und ohne Netzwerkzugriff reproduzierbar läuft.
-Für echte Analysen müssten Explorer-/RPC-/Honeypot-APIs (z. B. Etherscan,
-GoPlus, Honeypot.is) angebunden werden — die Kategorie-Struktur ist dafür bereits
-vorbereitet.
+`js/analyzer.js` nutzt zwei Quellen und wählt automatisch:
+
+1. **LIVE** — [GoPlus Token Security API](https://docs.gopluslabs.io/) (kostenlos,
+   kein API-Key, CORS-fähig) für die EVM-Chains **ETH / BSC / Polygon / Base**.
+   Die API-Felder (`is_open_source`, `is_honeypot`, `sell_tax`, `lp_holders`,
+   `owner_address`, `holders`, `can_take_back_ownership`, …) werden auf die 6
+   Kategorien gemappt.
+2. **SIMULATION** — deterministischer Fallback (Hash + PRNG) aus der Adresse,
+   wenn die API scheitert, das Token unbekannt ist oder die Chain (z. B. **Solana**)
+   hier nicht live abgefragt wird.
+
+`analyze()` versucht zuerst LIVE und fällt still auf SIMULATION zurück. Der
+**Ergebnis-Badge** zeigt die tatsächlich genutzte Quelle an (🟢 Live / 🟡 Simulation).
+
+> Hinweis: Live-Abrufe brauchen ausgehenden Netzwerkzugriff des Browsers. In
+> Umgebungen ohne Egress greift automatisch die Simulation.
 
 ## 🚀 Lokale Nutzung
 
