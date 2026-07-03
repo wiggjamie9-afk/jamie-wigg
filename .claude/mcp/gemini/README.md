@@ -39,7 +39,14 @@ when Claude Code loads the project. Generated images are saved under
 | `gemini_generate` | Single-prompt text generation. Pass `prompt` (+ optional `system_instruction`, `model`, `temperature`, `max_tokens`). |
 | `gemini_chat` | Multi-turn chat with the Gen AI `contents` format (`messages` as `{role: user\|model, text}`). Optional `user_images` (URLs) attach vision inputs to the last user turn. |
 | `gemini_image` | Native image generation (`responseModalities: [TEXT, IMAGE]`). Decodes the returned base64 image(s) and saves them to disk; returns the file paths + any model text. |
-| `gemini_list_models` | Lists models the gateway can route to (OpenAI-compatible `GET /models`). Optional `filter` substring. Use to discover valid `model` slugs. |
+| `zenmux_complete` | Single-prompt completion against **any** ZenMux model via the OpenAI-compatible Chat Completions endpoint (`anthropic/…`, `openai/…`, `moonshotai/…`, `bytedance/…`, etc.). Pass `prompt` (+ optional `system_prompt`, `model`, `temperature`, `max_tokens`). |
+| `zenmux_chat` | Multi-turn chat against any ZenMux model using the full OpenAI `messages` array. Optional `user_images` (URLs) append vision inputs to the last user turn. |
+| `gemini_list_models` | Lists models the gateway can route to (OpenAI-compatible `GET /models`). Optional `filter` substring. Use to discover valid `model` slugs for any tool. |
+
+The `gemini_*` tools speak the Gemini-native `generateContent` format (Vertex-AI
+path) and are the only ones that do image generation. The `zenmux_*` tools speak
+the OpenAI Chat Completions format (`{base}/api/v1/chat/completions`) and can
+route to any model on the gateway. Both share the same `ZENMUX_API_KEY`.
 
 ## Environment variables
 
@@ -48,8 +55,10 @@ when Claude Code loads the project. Generated images are saved under
 | `ZENMUX_API_KEY` | yes | — | ZenMux API key (Bearer auth). |
 | `ZENMUX_BASE_URL` | no | `https://zenmux.ai/api/vertex-ai` | Vertex-AI-compatible base URL. |
 | `ZENMUX_API_VERSION` | no | `v1` | API version path segment. |
-| `ZENMUX_GEMINI_MODEL` | no | `google/gemini-3.1-flash-lite-image` | Default model slug. |
-| `ZENMUX_MODELS_URL` | no | `https://zenmux.ai/api/v1/models` | OpenAI-compatible models endpoint for discovery. |
+| `ZENMUX_GEMINI_MODEL` | no | `google/gemini-3.1-flash-lite-image` | Default model slug for the `gemini_*` tools. |
+| `ZENMUX_OPENAI_BASE_URL` | no | `https://zenmux.ai/api/v1` | OpenAI-compatible base for the `zenmux_*` tools. |
+| `ZENMUX_CHAT_MODEL` | no | `anthropic/claude-sonnet-5-free` | Default model slug for the `zenmux_*` tools. |
+| `ZENMUX_MODELS_URL` | no | `{ZENMUX_OPENAI_BASE_URL}/models` | OpenAI-compatible models endpoint for discovery. |
 | `GEMINI_OUT_DIR` | no | `./creative-out` | Where `gemini_image` writes files. |
 
 ## Equivalent raw call
@@ -88,3 +97,20 @@ for part in resp.parts:
 Under the hood that resolves to
 `POST https://zenmux.ai/api/vertex-ai/v1/publishers/google/models/gemini-3.1-flash-lite-image:generateContent`
 with `Authorization: Bearer $ZENMUX_API_KEY`.
+
+The `zenmux_*` tools wrap ZenMux's OpenAI-compatible endpoint instead, so any
+routed model works with the standard OpenAI SDK:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="https://zenmux.ai/api/v1", api_key="$ZENMUX_API_KEY")
+completion = client.chat.completions.create(
+    model="anthropic/claude-opus-4.8",   # or openai/…, moonshotai/…, bytedance/…, google/…
+    messages=[{"role": "user", "content": "What is the meaning of life?"}],
+)
+print(completion.choices[0].message.content)
+```
+
+That resolves to `POST https://zenmux.ai/api/v1/chat/completions` with the same
+Bearer key.
