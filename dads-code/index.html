@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12141a">
+<title>Dad's Code</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dad's Code">
+<style>
+  :root{
+    --ink:#12141a; --ink-2:#191c24; --card:#1e2230; --line:rgba(255,255,255,.07);
+    --text:#eef0f4; --dim:#9aa0b0; --faint:#5b6274;
+    --ember:#e8a15a; --ember-soft:rgba(232,161,90,.14); --sage:#7fb08a;
+    --radius:20px; --tap:56px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--ink); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    line-height:1.5; overflow-x:hidden;
+    padding-bottom:calc(84px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:0 20px}
+  header{padding:calc(28px + env(safe-area-inset-top)) 0 8px; text-align:center}
+  header .mark{font-size:12px; letter-spacing:4px; text-transform:uppercase; color:var(--faint); font-weight:700}
+  header h1{font-size:24px; font-weight:800; letter-spacing:-.5px; margin-top:4px}
+  header h1 span{color:var(--ember)}
+
+  .screen{display:none; animation:fade .3s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-top:16px}
+  .label{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--faint); font-weight:700; margin-bottom:10px}
+
+  /* TODAY */
+  .streak{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; color:var(--dim); font-size:14px}
+  .streak b{color:var(--ember); font-size:18px}
+  .one-thing textarea{
+    width:100%; background:transparent; border:none; color:var(--text);
+    font-size:22px; font-weight:700; line-height:1.35; resize:none; outline:none;
+    font-family:inherit; min-height:96px;
+  }
+  .one-thing textarea::placeholder{color:var(--faint); font-weight:600}
+  .row{display:flex; gap:10px; margin-top:16px}
+  button.btn{
+    flex:1; min-height:var(--tap); border:none; border-radius:14px; cursor:pointer;
+    font-family:inherit; font-size:16px; font-weight:800; letter-spacing:.2px;
+  }
+  .btn-go{background:var(--ember); color:#241605}
+  .btn-ghost{background:rgba(255,255,255,.06); color:var(--text); border:1px solid var(--line)}
+  .btn-full{width:100%}
+  .timer{text-align:center; margin-top:18px}
+  .timer .big{font-size:52px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-1px}
+  .timer .hint{color:var(--dim); font-size:14px; margin-top:2px}
+  .done-msg{color:var(--sage); font-weight:700; text-align:center; margin-top:14px; min-height:22px}
+
+  /* CODE */
+  .code-item{display:flex; gap:12px; align-items:flex-start; padding:14px 0; border-bottom:1px solid var(--line)}
+  .code-item:last-child{border-bottom:none}
+  .code-num{color:var(--ember); font-weight:800; font-size:15px; min-width:20px; padding-top:1px}
+  .code-text{flex:1; font-size:16px; color:var(--text); outline:none}
+  .code-text:empty:before{content:attr(data-ph); color:var(--faint)}
+  .code-del{color:var(--faint); background:none; border:none; font-size:20px; cursor:pointer; padding:0 4px; line-height:1}
+  .add-code{width:100%; min-height:var(--tap); margin-top:14px; background:var(--ember-soft); color:var(--ember); border:1px dashed rgba(232,161,90,.4); border-radius:14px; font-weight:800; font-size:15px; cursor:pointer; font-family:inherit}
+  .code-intro{color:var(--dim); font-size:14px; margin-top:6px}
+
+  /* RESET */
+  .reset-wrap{text-align:center; padding:8px 0}
+  .breath{
+    width:180px; height:180px; margin:24px auto; border-radius:50%;
+    background:radial-gradient(circle at 50% 40%, rgba(127,176,138,.35), rgba(127,176,138,.05));
+    border:1px solid rgba(127,176,138,.3);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform 4s ease-in-out;
+  }
+  .breath.in{transform:scale(1.28)}
+  .breath .phase{font-size:18px; font-weight:800; color:var(--sage)}
+  .reset-copy{color:var(--dim); font-size:15px; max-width:340px; margin:0 auto}
+  .reset-after{color:var(--text); font-size:17px; font-weight:600; margin-top:18px; min-height:26px; line-height:1.5}
+
+  /* NAV */
+  nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:50;
+    background:rgba(18,20,26,.92); backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+    display:flex; justify-content:space-around; max-width:520px; margin:0 auto;
+  }
+  nav button{
+    background:none; border:none; color:var(--faint); cursor:pointer; font-family:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 14px; border-radius:12px;
+    font-size:11px; font-weight:700; letter-spacing:.3px;
+  }
+  nav button.on{color:var(--ember)}
+  nav button svg{width:24px; height:24px}
+  .foot{text-align:center; color:var(--faint); font-size:12px; margin-top:26px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">The code I live by</div>
+    <h1>Dad's <span>Code</span></h1>
+  </header>
+
+  <!-- TODAY -->
+  <section id="today" class="screen active">
+    <div class="card one-thing">
+      <div class="label">One thing today</div>
+      <textarea id="oneThing" placeholder="Just one. The next thing that matters." rows="3"></textarea>
+      <div class="row" id="todayButtons">
+        <button class="btn btn-go" id="startBtn">Start · 10 min</button>
+        <button class="btn btn-ghost" id="doneBtn">Done ✓</button>
+      </div>
+    </div>
+    <div class="card" id="timerCard" style="display:none">
+      <div class="timer">
+        <div class="big" id="timerDisplay">10:00</div>
+        <div class="hint">You started. That's the whole win.</div>
+      </div>
+      <div class="row">
+        <button class="btn btn-ghost btn-full" id="stopBtn">Stop</button>
+      </div>
+    </div>
+    <div class="done-msg" id="doneMsg"></div>
+    <div class="streak">Showed up <b id="streakCount">0</b> days in a row</div>
+    <div class="foot">Starting beats finishing. Come back tomorrow.</div>
+  </section>
+
+  <!-- CODE -->
+  <section id="code" class="screen">
+    <div class="card">
+      <div class="label">Your code</div>
+      <div class="code-intro">The rules you want to live by — and pass on. Tap any line to edit.</div>
+      <div id="codeList"></div>
+      <button class="add-code" id="addCode">+ Add a line</button>
+    </div>
+    <div class="foot">This is yours. It saves on your phone. No account, no cloud.</div>
+  </section>
+
+  <!-- RESET -->
+  <section id="reset" class="screen">
+    <div class="card reset-wrap">
+      <div class="label">Reset</div>
+      <p class="reset-copy">Lost it? Snapped? Before the shame spiral starts — breathe with this for one minute.</p>
+      <div class="breath" id="breath"><span class="phase" id="breathPhase">Tap to begin</span></div>
+      <button class="btn btn-ghost btn-full" id="breathBtn">Begin 60 seconds</button>
+      <div class="reset-after" id="resetAfter"></div>
+    </div>
+    <div class="foot">Losing it doesn't make you a bad dad. What you do next is the code.</div>
+  </section>
+</div>
+
+<nav>
+  <button data-go="today" class="on">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 6H21l-5 4 2 7-6-4.5L6 20l2-7-5-4h6.5z"/></svg>
+    Today
+  </button>
+  <button data-go="code">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+    My Code
+  </button>
+  <button data-go="reset">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4a8 8 0 108 8"/><path d="M12 4V1M12 4l3 2"/></svg>
+    Reset
+  </button>
+</nav>
+
+<script>
+const S = {
+  get(k,d){ try{return JSON.parse(localStorage.getItem('dc_'+k)) ?? d}catch(e){return d} },
+  set(k,v){ localStorage.setItem('dc_'+k, JSON.stringify(v)) }
+};
+const $ = s => document.querySelector(s);
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+/* ---- nav ---- */
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick=()=>{
+    const go=b.dataset.go;
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    $('#'+go).classList.add('active');
+    document.querySelectorAll('nav button').forEach(n=>n.classList.remove('on'));
+    b.classList.add('on');
+  };
+});
+
+/* ---- Today: one thing ---- */
+const oneThing = $('#oneThing');
+oneThing.value = S.get('oneThing','');
+oneThing.oninput = ()=> S.set('oneThing', oneThing.value);
+
+/* streak */
+function renderStreak(){ $('#streakCount').textContent = S.get('streak',0); }
+function markShowedUp(){
+  const last = S.get('lastDay',''); const t = todayStr();
+  if(last === t) return;
+  const y = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  S.set('streak', last === y ? S.get('streak',0)+1 : 1);
+  S.set('lastDay', t); renderStreak();
+}
+renderStreak();
+
+/* timer */
+let timer=null, left=600;
+function fmt(s){ return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+$('#startBtn').onclick=()=>{
+  markShowedUp();
+  left=600; $('#timerDisplay').textContent=fmt(left);
+  $('#timerCard').style.display='block'; $('#doneMsg').textContent='';
+  clearInterval(timer);
+  timer=setInterval(()=>{
+    left--; $('#timerDisplay').textContent=fmt(left);
+    if(left<=0){ clearInterval(timer); $('#doneMsg').textContent='Ten minutes. You did the hard part.'; $('#timerCard').style.display='none'; }
+  },1000);
+};
+$('#stopBtn').onclick=()=>{ clearInterval(timer); $('#timerCard').style.display='none'; $('#doneMsg').textContent='You started, and that counts. Rest.'; };
+$('#doneBtn').onclick=()=>{ markShowedUp(); $('#doneMsg').textContent='Done. Clear your head — you earned it.'; };
+
+/* ---- My Code ---- */
+const defaults = [
+  "I show up, even when I'm scattered.",
+  "I say sorry to my kids when I get it wrong.",
+  "I do the one thing before the ten things.",
+  "My worst day doesn't cancel my best.",
+];
+function renderCode(){
+  const list = S.get('code', defaults);
+  const el = $('#codeList'); el.innerHTML='';
+  list.forEach((line,i)=>{
+    const row=document.createElement('div'); row.className='code-item';
+    row.innerHTML=`<div class="code-num">${i+1}</div>
+      <div class="code-text" contenteditable="true" data-ph="Write your line…">${line.replace(/</g,'&lt;')}</div>
+      <button class="code-del" aria-label="delete">×</button>`;
+    const txt=row.querySelector('.code-text');
+    txt.onblur=()=>{ const a=S.get('code',defaults); a[i]=txt.textContent.trim(); S.set('code',a); };
+    row.querySelector('.code-del').onclick=()=>{ const a=S.get('code',defaults); a.splice(i,1); S.set('code',a); renderCode(); };
+    el.appendChild(row);
+  });
+}
+$('#addCode').onclick=()=>{ const a=S.get('code',defaults); a.push(''); S.set('code',a); renderCode(); };
+renderCode();
+
+/* ---- Reset: breathing ---- */
+const afterMsgs=[
+  "That's it. Go back in softer than you came out.",
+  "You paused instead of piling on. That's the code working.",
+  "One breath at a time. You're still a good dad.",
+  "The storm passed. Now go be the calm."
+];
+let breathing=false;
+$('#breathBtn').onclick=()=>{
+  if(breathing) return; breathing=true;
+  const orb=$('#breath'), phase=$('#breathPhase'), after=$('#resetAfter');
+  after.textContent=''; let cycles=0;
+  const step=()=>{
+    phase.textContent='Breathe in'; orb.classList.add('in');
+    setTimeout(()=>{ phase.textContent='Hold'; },4000);
+    setTimeout(()=>{ phase.textContent='Breathe out'; orb.classList.remove('in'); },5500);
+    setTimeout(()=>{
+      cycles++;
+      if(cycles<6){ step(); }
+      else{ breathing=false; phase.textContent='Done'; after.textContent=afterMsgs[Math.floor(Date.now()/1000)%afterMsgs.length]; }
+    },9500);
+  };
+  step();
+};
+
+/* ---- offline ---- */
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>
