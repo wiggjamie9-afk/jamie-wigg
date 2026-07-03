@@ -8,7 +8,7 @@ vi.mock("remotion", () => ({
 }));
 
 import { RemotionRoot } from "../Root";
-import { MyComposition } from "../Composition";
+import { MyComposition, TOTAL_FRAMES } from "../Composition";
 
 type CompositionProps = {
   id: string;
@@ -46,12 +46,12 @@ describe("RemotionRoot", () => {
       throw new Error("Expected mocked Composition output");
     }
     expect(rendered.props).toEqual({
-      id: "MyComp",
+      id: "RhythmixPromo",
       component: MyComposition,
-      durationInFrames: 60,
+      durationInFrames: TOTAL_FRAMES,
       fps: 30,
-      width: 1280,
-      height: 720,
+      width: 1920,
+      height: 1080,
     });
   });
 });
