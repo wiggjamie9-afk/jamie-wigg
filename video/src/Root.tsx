@@ -1,3 +1,4 @@
+import "./fonts.css";
 import "./index.css";
 import { Composition } from "remotion";
 import { MyComposition, TOTAL_FRAMES } from "./Composition";

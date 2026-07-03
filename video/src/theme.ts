@@ -21,8 +21,8 @@ export const COLORS = {
 
 /**
  * Display face for headlines / wordmark / big numbers, mono for taglines and
- * numerals. The brand fonts lead; system faces trail so a render never blocks
- * on a missing font.
+ * numerals. The real faces are loaded in fonts.ts via @remotion/fonts (which
+ * blocks capture until they're ready); system faces only trail as a safety net.
  */
 export const FONTS = {
   display: '"Space Grotesk", system-ui, -apple-system, sans-serif',

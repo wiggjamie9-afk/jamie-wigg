@@ -34,6 +34,26 @@ Brand tokens live in `src/theme.ts` (mirrors `src/index.css`), sourced from
 timing and the crossfade overlap are computed in `src/Composition.tsx`
 (`sceneStarts` / `TOTAL_FRAMES`), so `Root.tsx` stays in sync automatically.
 
+### Motion & look
+
+- `src/motion.ts` — shared motion language: a beat envelope (`beatPulse`) so
+  glows/scales pulse to one tempo, plus Ken Burns and confident eases.
+- `src/components/Background.tsx` — drifting aurora blobs, a perspective
+  dot-grid, static film grain and a vignette (no flat linear gradients).
+- `src/components/Equalizer.tsx` — deterministic, beat-reactive bars with
+  reflections. `LightSweep` adds a glint to cards/pills.
+
+### Fonts
+
+The brand faces (Space Grotesk 700, JetBrains Mono 500) are inlined as base64
+`@font-face` data URIs in `src/fonts.css` — they load instantly offline with no
+CDN or `delayRender`, and every scene fades in from zero so there is no FOUT.
+Regenerate from the `@fontsource` packages with:
+
+```console
+node scripts/gen-fonts.mjs
+```
+
 ## Commands
 
 **Install Dependencies**

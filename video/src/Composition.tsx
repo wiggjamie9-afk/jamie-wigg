@@ -37,7 +37,10 @@ export const MyComposition: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: COLORS.canvas }}>
       {SCENES.map(({ Component, duration }, i) => (
         <Sequence key={i} from={sceneStarts[i]} durationInFrames={duration}>
-          <CrossfadeScene durationInFrames={duration}>
+          <CrossfadeScene
+            durationInFrames={duration}
+            holdEnd={i === SCENES.length - 1}
+          >
             <Component />
           </CrossfadeScene>
         </Sequence>

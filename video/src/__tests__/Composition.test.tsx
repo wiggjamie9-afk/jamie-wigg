@@ -18,6 +18,13 @@ vi.mock("remotion", () => ({
   }) => <div style={style}>{children}</div>,
   Sequence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   useCurrentFrame: () => 45,
+  useVideoConfig: () => ({
+    fps: 30,
+    width: 1920,
+    height: 1080,
+    durationInFrames: 330,
+  }),
+  spring: () => 1,
   interpolate: (_frame: number, _inputRange: number[], outputRange: number[]) =>
     outputRange[outputRange.length - 1],
 }));
@@ -44,10 +51,13 @@ describe("MyComposition", () => {
     expect(typeof MyComposition).toBe("function");
   });
 
-  it("renders the wordmark and call-to-action content", () => {
+  it("renders text from every scene", () => {
+    // The wordmark renders per-letter spans (for the reveal), so assert on each
+    // scene's contiguous copy instead — proving all four scenes mounted.
     const html = renderToStaticMarkup(<MyComposition />);
-    expect(html).toContain("RHYTHMIX");
-    expect(html).toContain("rhythmixapp.com.au");
-    expect(html).toContain("AI Music Platform");
+    expect(html).toContain("AI Music Platform"); // Intro kicker
+    expect(html).toContain("Your track. Your video. Your voice."); // Wordmark
+    expect(html).toContain("TTS voices"); // Stats
+    expect(html).toContain("rhythmixapp.com.au"); // Call to action
   });
 });
