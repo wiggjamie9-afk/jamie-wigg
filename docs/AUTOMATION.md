@@ -43,16 +43,18 @@ automation layer decides *when* each one fires. Three cadences:
 | MCP/deps self-heal | `.claude/hooks/session-start.sh` | every session start |
 | Verification gates | `verification-before-completion`, `render-verify`, `deploy-check` | 👆 |
 
-## Routines to create (cloud sessions)
+## Scheduled automation — two tiers
 
-Create with `create_trigger` from any cloud session; they run as fresh sessions with a standalone prompt:
+**Tier 1: GitHub Actions (mechanical checks — zero Claude tokens, no approvals needed):**
 
-1. **weekly-promo** — cron `0 9 * * 1`: "Run /rhythmix-new for this week's angle; run render-verify; leave the Cut folder on a branch for review. Do not publish."
-2. **daily-site-check** — cron `0 8 * * *`: "Invoke the deploy-check skill against rhythmixapp.com.au; only report if something fails."
-3. **weekly-metrics-digest** — cron `0 9 * * 5` (needs Supermetrics connected): "Pull last-7-days ad + GA4 performance via Supermetrics MCP; write a short digest of what moved and one recommendation."
+1. **Daily site check** — `.github/workflows/site-check.yml`, cron `17 22 * * *` (~8:17am AEST). HTTP-sweeps the key live pages + homepage sanity; opens/updates a `site-check`-labeled issue on failure. Manual run: Actions → "Daily site check" → Run workflow.
+2. **Monthly token audit** — `.github/workflows/token-audit.yml`, cron `23 21 1 * *` (1st, ~7:23am AEST). Guards against config drift: CLAUDE.md ≤12KB, skills ≤140, agents ≤60, valid JSON configs, no broken symlinks, no dangling skills-lock paths. Opens a `token-audit`-labeled issue on drift.
 
-4. **monthly-token-audit** — cron `0 21 1 * *` (1st of month, ~7am AEST): "Keep per-session token overhead minimal. Check: CLAUDE.md under 10KB (re-slim into docs/tools-index.md if it grew); no bulk-imported skill packs in .claude/skills or .agents/skills; .claude/agents roster stays ~43 dev+marketing agents; .claude/settings.json valid schema with the self-healing SessionStart hook; no broken symlinks, invalid JSON, or dangling skills-lock.json paths. Apply safe mechanical fixes on branch claude/token-audit-<date>, push, summarize. If nothing drifted: '✅ token overhead stable'. Never touch main."
+**Tier 2: Claude cloud Routines (judgment/creative work — created with `create_trigger`):**
 
-Keep routines *reporting* by default — publishing stays human-approved (the repo root is production).
+3. **weekly-promo** — REGISTERED (`trig_0112n9DHdovSbg9FJMZ3LGFN`), cron `0 23 * * 0` UTC (Mon ~9am AEST). Drafts a new promo via `rhythmix-author`, verifies with `render-verify`, pushes to a `claude/weekly-promo-<date>` branch for review. Never publishes.
+4. **weekly-metrics-digest** — PENDING (needs Supermetrics connected + one `create_trigger` approval), cron `0 23 * * 4` UTC (Fri ~9am AEST): "Pull last-7-days ad + GA4 performance via Supermetrics MCP vs prior week; digest what moved, best/worst campaign, one recommendation for next week's content. If Supermetrics is unreachable in the scheduled session, say so and stop."
 
-**Routine status:** `weekly-promo` is registered (trig_0112n9DHdovSbg9FJMZ3LGFN). `daily-site-check`, `weekly-metrics-digest`, and `monthly-token-audit` are specced above but not yet registered — creating them needs an interactive approval tap on the claude-code-remote `create_trigger` call.
+Deeper Claude-driven remediation of site failures or token drift stays on-demand: the `deploy-check` skill and the fix guide in this file.
+
+Keep all automation *reporting* by default — publishing stays human-approved (the repo root is production).
