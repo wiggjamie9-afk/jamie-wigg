@@ -68,7 +68,7 @@ All images now generate in **professional watercolour children's book style** (B
 6. **Pexels / Pixabay stock** — Royalty-free nature photos (needs free API keys)
 7. **PIL illustration** — Fallback procedural art (always works, no external calls)
 
-**Character consistency:** the pipeline generates one canonical Sonny portrait with a fixed seed (`7777`), saves it to `kids-channel/character/sonny-ref.jpg` (committed by the workflow on first run), then uses FLUX Kontext image-editing to place that exact character into each scene. To redesign Sonny, delete `kids-channel/character/sonny-ref.jpg` and the next run regenerates it.
+**Character consistency:** the canonical Sonny master artwork lives at `kids-channel/character/sonny-ref.jpg` — a **user-chosen design** (big fluffy ears, pale nose blaze, cream chest, golden-brown fur), committed to the repo. Every scene and every book page is painted from this exact image via FLUX Kontext image-editing, so the character is identical everywhere. To redesign Sonny, replace `kids-channel/character/sonny-ref.jpg` with new master artwork (if the file is deleted, the next run regenerates one with fixed seed `7777`).
 
 **Thumbnails:** built from the episode's first scene painting (cover-cropped to 1280×720) with the title on a darkened band — no more plain navy text cards.
 

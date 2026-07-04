@@ -394,11 +394,12 @@ def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: P
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     # Short prompt: URL-length safe, faster to process, professional watercolor focus
     short_prompt = (
-        f"Professional watercolour Beatrix Potter style children's book illustration. "
-        f"Sonny: chubby round quokka with warm golden-brown fur, big gentle brown eyes, sweet smile. "
-        f"Often in peaceful restful poses, sometimes with cozy blankets. "
-        f"{prompt[:120]}. Australian bush, moonlit night, stars, gum trees, soft warm palette. "
-        f"Hand-painted visible brushstrokes, textured paper, no text, safe for children."
+        f"Award-winning watercolour children's book illustration, adorable and heart-melting. "
+        f"Sonny: super cuddly chubby BABY quokka, plush-toy soft golden-brown fluffy fur, big round head, "
+        f"HUGE sparkling brown eyes with catchlights, rosy blush cheeks, tiny paws on cream tummy, sweetest sleepy smile, "
+        f"snuggled with a soft blanket. "
+        f"{prompt[:110]}. Dreamy moonlit Australian bush, glowing fireflies bokeh, twinkling stars, soft vignette. "
+        f"Hand-painted brushstrokes, textured paper, warm honey-gold and navy palette, no text, safe for toddlers."
     )
     encoded = requests.utils.quote(short_prompt)
     headers = {"User-Agent": "SonnyBot/1.0", "Accept": "image/*"}
@@ -619,19 +620,30 @@ def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Pat
 # draws Sonny. FLUX has no negative prompts, so this spells out what a quokka
 # IS rather than listing styles to avoid (listed "avoid" terms leak into the
 # image as content).
+# Matches the committed master artwork at kids-channel/character/sonny-ref.jpg
+# (user-chosen design) — fallback generators aim at this same look when the
+# Kontext reference path is unavailable.
 SONNY_CHARACTER = (
-    "Sonny the quokka: EXTREMELY CHUBBY and ROUND (compact teddy-bear shape, plump rounded body), "
-    "WARM GOLDEN-BROWN soft fur (never dark, never grey), large gentle warm brown eyes with kind expression, "
-    "small round ears, short snout with a natural gentle smile, always appears cosy and peaceful. "
-    "Often sitting, lying down, or resting in calm poses. Sometimes wearing cozy details like pajamas or a blanket."
+    "Sonny the baby quokka: an ADORABLE, IRRESISTIBLY CUDDLY plush-toy-soft baby animal — "
+    "EXTREMELY CHUBBY and ROUND with baby proportions (big round head, plump huggable teddy-bear body), "
+    "thick fluffy WARM GOLDEN-BROWN fur that looks impossibly soft to touch (never dark, never grey), "
+    "BIG soft fluffy rounded ears with pale cream inner fur, "
+    "HUGE sparkling dark-brown eyes with bright catchlights, rosy warm blush cheeks, "
+    "a soft pale blaze down the bridge of the nose, little black button nose, "
+    "the sweetest gentle contented smile, fluffy cream-coloured chest and tummy, "
+    "tiny paws tucked adorably together against the tummy. "
+    "Always snuggly and peaceful: sitting curled and cosy, radiating warmth and safety."
 )
 
 WATERCOLOUR_STYLE = (
-    "Professional watercolour children's picture book illustration, Beatrix Potter and Jill Barklem style. "
-    "Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes, "
-    "loose sketchy linework. Warm cosy palette: warm golds, burnt siennas, soft sage greens, deep indigo-navy blues, "
-    "pale golden moonlight. Australian bush scenes at night: moonlit meadows, gum trees, wildflowers, gentle streams. "
-    "Soft, safe, calming bedtime mood. No text or captions. Safe for toddlers ages 1-5."
+    "Award-winning watercolour children's picture book illustration, beautifully art-directed like a premium modern "
+    "storybook (Beatrix Potter warmth with contemporary polish). Hand-painted on textured cold-press paper with "
+    "visible brushstrokes, soft pigment bleeds, gentle colour washes, delicate linework. "
+    "Dreamy storybook composition: the character lovingly centred and softly lit, a gentle glowing vignette framing "
+    "the scene, twinkling hand-dotted stars, drifting fireflies with warm golden bokeh glow, soft moonbeams. "
+    "Warm cosy palette: honey golds, peachy creams, burnt siennas, soft sage greens, deep dreamy indigo-navy blues, "
+    "pale golden moonlight. Australian bush at night: moonlit meadows, graceful gum trees, tiny wildflowers, gentle streams. "
+    "Soft, safe, sleepy, heart-melting bedtime mood. No text or captions. Safe for toddlers ages 1-5."
 )
 
 CHARACTER_REF_PATH = Path(__file__).parent / "character" / "sonny-ref.jpg"
