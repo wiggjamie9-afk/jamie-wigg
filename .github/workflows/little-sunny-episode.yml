@@ -16,6 +16,11 @@ on:
     - cron: "0 21 * * *"   # 7 AM AEST every day
     - cron: "0 3 * * *"    # 1 PM AEST every day
     - cron: "0 9 * * *"    # 7 PM AEST every day
+  push:
+    # Test hook: pushing the trigger file on the rebuild branch starts a
+    # dry-run build (no upload, no queue advance). Scoped to that branch only.
+    branches: [claude/youtube-tv-research-fla0ts]
+    paths: [kids-channel/.dry-run-trigger]
 
 jobs:
   produce-episode:
@@ -23,6 +28,9 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+    env:
+      # Push-triggered runs are always dry runs
+      DRY_RUN: ${{ github.event_name == 'push' || inputs.dry_run == true }}
 
     steps:
       - name: Checkout repo
@@ -131,7 +139,7 @@ jobs:
           EOF
 
       - name: Write YouTube token
-        if: ${{ inputs.dry_run != true }}
+        if: ${{ env.DRY_RUN != 'true' }}
         run: |
           python3 -c "
           import json, os
@@ -156,7 +164,7 @@ jobs:
       - name: Validate YouTube token (pre-flight)
         # Dry runs never upload, so they must not be blocked by dead tokens —
         # this is what lets us test the build pipeline while OAuth is broken.
-        if: ${{ inputs.dry_run != true }}
+        if: ${{ env.DRY_RUN != 'true' }}
         env:
           YT_REFRESH: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
@@ -214,7 +222,7 @@ jobs:
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: |
           DRY_RUN_FLAG=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
+          if [ "$DRY_RUN" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
           fi
           python kids-channel/pipeline.py \
@@ -238,7 +246,7 @@ jobs:
 
       - name: Advance queue
         # Never advance the queue on a dry run — nothing was published.
-        if: steps.pick-script.outputs.from_queue == 'true' && steps.run-pipeline.conclusion == 'success' && inputs.dry_run != true
+        if: steps.pick-script.outputs.from_queue == 'true' && steps.run-pipeline.conclusion == 'success' && env.DRY_RUN != 'true'
         run: |
           git config user.email "sunny-bot@rhythmixapp.com.au"
           git config user.name "Sunny Bot"
