@@ -21,28 +21,36 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download asset
+      - name: Download assets
         run: |
-          URL=$(grep -oP '^url=\K.+' kids-channel/.fetch-asset-trigger)
-          DEST=$(grep -oP '^dest=\K.+' kids-channel/.fetch-asset-trigger)
-          if [ -z "$URL" ] || [ -z "$DEST" ]; then
-            echo "::error::Trigger file needs url= and dest= lines"; exit 1
-          fi
-          case "$DEST" in
-            /*|*..*) echo "::error::dest must be a relative repo path without .."; exit 1;;
-          esac
-          mkdir -p "$(dirname "$DEST")"
-          curl -fsSL "$URL" -o "$DEST"
-          ls -la "$DEST"
+          # Trigger file: one "url=<https URL>|dest=<repo path>" pair per line.
+          FAILED=0
+          while IFS= read -r LINE; do
+            case "$LINE" in url=*) ;; *) continue;; esac
+            URL="${LINE#url=}"; URL="${URL%%|dest=*}"
+            DEST="${LINE##*|dest=}"
+            case "$DEST" in
+              /*|*..*) echo "::error::dest must be a relative repo path without .."; exit 1;;
+            esac
+            mkdir -p "$(dirname "$DEST")"
+            if curl -fsSL "$URL" -o "$DEST"; then
+              echo "fetched $DEST ($(stat -c%s "$DEST") bytes)"
+            else
+              echo "::warning::failed to fetch $DEST from $URL"
+              FAILED=$((FAILED+1))
+            fi
+          done < kids-channel/.fetch-asset-trigger
+          [ "$FAILED" -eq 0 ] || echo "$FAILED downloads failed"
 
-      - name: Commit asset
+      - name: Commit assets
         run: |
           git config user.email "sunny-bot@rhythmixapp.com.au"
           git config user.name "Sunny Bot"
-          DEST=$(grep -oP '^dest=\K.+' kids-channel/.fetch-asset-trigger)
-          git add "$DEST"
+          grep -oP '\|dest=\K.+' kids-channel/.fetch-asset-trigger | while read -r DEST; do
+            [ -f "$DEST" ] && git add "$DEST"
+          done
           if ! git diff --cached --quiet; then
-            git commit -m "assets: fetch $DEST"
+            git commit -m "assets: fetch external files"
             git pull --rebase origin ${{ github.ref_name }} || true
             git push origin HEAD:${{ github.ref_name }}
           else
