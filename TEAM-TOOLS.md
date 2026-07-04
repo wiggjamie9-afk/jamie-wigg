@@ -25,6 +25,12 @@ repo so it travels via git** — not installed onto any one machine.
 | **ECC** — agent-harness operating system (skills, agents, hooks, rules) | `affaan-m/ECC` | `ecc@ecc` | [SETUP-ECC.md](SETUP-ECC.md) |
 | **Superpowers** — auto-triggering dev methodology (brainstorm → plan → subagent TDD → review) | `obra/superpowers-marketplace` | `superpowers@superpowers-marketplace` | [SETUP-SUPERPOWERS.md](SETUP-SUPERPOWERS.md) |
 
+**gstack** (Garry Tan / YC) is a clone-and-`./setup` skill pack, **not** a marketplace
+plugin, so it isn't in the table above. ~23 sprint-role slash commands + browser +
+GBrain memory; per-machine install (needs Bun), with an opt-in team mode that edits
+`CLAUDE.md`. **Documented + registered, not auto-wired** — its `required` team mode gates
+the repo, which needs a human call. See [SETUP-GSTACK.md](SETUP-GSTACK.md).
+
 Verify after opening the repo in Claude Code:
 ```
 /plugin                       # Marketplaces + installed plugins
