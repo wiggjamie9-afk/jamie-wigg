@@ -48,6 +48,7 @@ Verify after opening the repo in Claude Code:
 | Tool | Install | Docs |
 |---|---|---|
 | **E-book pipeline** (`/ebook`) — Markdown → EPUB + print PDF via pandoc + weasyprint | `bash scripts/setup-ebook.sh` | [SETUP-EBOOK.md](SETUP-EBOOK.md) · sample: [`books/campfire-quickstart/`](books/campfire-quickstart/) |
+| **Open Montage** (`/open-montage`) — media+music+captions → real H.264 movie (MoviePy + bundled ffmpeg, CPU-only); OpenManus as AI director | `pip3 install -r open-montage/requirements.txt` | [OPEN-MONTAGE.md](OPEN-MONTAGE.md) · sample: [`open-montage/samples/`](open-montage/samples/) |
 | **UI-UX Pro Max CLI** | `npm i -g ui-ux-pro-max-cli && uipro init --ai claude` | [SETUP-UI-UX-PRO-MAX.md](SETUP-UI-UX-PRO-MAX.md) |
 | **video-use** — edit videos with Claude Code | `git clone https://github.com/browser-use/video-use ~/Developer/video-use` + symlink into `~/.claude/skills/`; needs **full ffmpeg** | [SETUP-VIDEO-USE.md](SETUP-VIDEO-USE.md) |
 | **taste-skill** — frontend design taste | `npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"` | [SETUP-TASTE-SKILL.md](SETUP-TASTE-SKILL.md) |
