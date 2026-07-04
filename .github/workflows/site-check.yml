@@ -1,0 +1,59 @@
+name: Daily site check
+
+on:
+  schedule:
+    - cron: "17 22 * * *" # ~8:17am AEST
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: HTTP sweep of live pages
+        id: sweep
+        run: |
+          BASE="https://rhythmixapp.com.au"
+          PAGES="/ /studio.html /features.html /downloads.html /members.html /launch.html /privacy.html /terms.html /refunds.html"
+          FAILED=""
+          for p in $PAGES; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$BASE$p" || echo "000")
+            echo "$code  $BASE$p"
+            [ "$code" = "200" ] || FAILED="$FAILED $p($code)"
+          done
+          # Homepage content sanity: non-empty <title>, no template placeholders
+          HOME=$(curl -s --max-time 20 "$BASE/" || true)
+          echo "$HOME" | grep -qi "<title>[^<]" || FAILED="$FAILED /(empty-title)"
+          echo "$HOME" | grep -qE "\{\{|lorem ipsum" && FAILED="$FAILED /(placeholder-text)"
+          if [ -n "$FAILED" ]; then
+            echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+            echo "::error::Site check failed:$FAILED"
+            exit 1
+          fi
+          echo "✅ rhythmixapp.com.au all green"
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const failed = `${{ steps.sweep.outputs.failed }}` || 'see workflow log';
+            const title = '🔴 Daily site check failed';
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'site-check'
+            });
+            const body = `The scheduled smoke test of rhythmixapp.com.au failed: ${failed}\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            if (open.data.length) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: open.data[0].number, body
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ['site-check']
+              });
+            }

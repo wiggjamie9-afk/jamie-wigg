@@ -1,0 +1,549 @@
+{
+  "name": "RHYTHMIX Faceless YouTube Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 1 · Generate Ideas and Script\nWeekly trigger → Claude drafts a RHYTHMIX video idea + narration script + scene prompts (strict JSON).",
+        "height": 420,
+        "width": 640,
+        "color": 5
+      },
+      "id": "sticky-ideas",
+      "name": "Sticky — Ideas and Script",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-60, -80]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [1],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "weekly-trigger",
+      "name": "Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 2000, messages: [{ role: 'user', content: 'You write faceless YouTube videos for RHYTHMIX, an AI music platform (rhythmixapp.com.au). Brand voice: confident, modern, no hype-spam. Produce STRICT JSON only, no markdown, with keys: idea_title (string), youtube_title (string, <=90 chars), youtube_description (string, 2-3 sentences + link https://rhythmixapp.com.au), youtube_tags (array of 8-12 strings), narration (string, ~140 words, 60 seconds spoken), music_prompt (string, prompt for an instrumental backing track), scene_prompts (array of exactly 4 strings, cinematic image prompts matching the narration arc, 16:9). Vary the angle each week.' }] }) }}",
+        "options": {}
+      },
+      "id": "claude-script",
+      "name": "Generate Idea and Script (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 60],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Anthropic API (x-api-key header)" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.content?.[0]?.text ?? '{}';\nconst script = JSON.parse(raw.replace(/^```json\\n?|```$/g, ''));\nif (!script.narration || !Array.isArray(script.scene_prompts)) {\n  throw new Error('Claude did not return the expected JSON shape');\n}\nreturn [{ json: script }];"
+      },
+      "id": "parse-script",
+      "name": "Parse Script JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 60]
+    },
+    {
+      "parameters": {
+        "content": "## 2 · Generate Music\nReplicate MusicGen → poll until the instrumental track is ready.",
+        "height": 420,
+        "width": 860,
+        "color": 4
+      },
+      "id": "sticky-music",
+      "name": "Sticky — Music",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [620, -80]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ version: 'MUSICGEN_VERSION_ID_PLACEHOLDER', input: { prompt: $json.music_prompt, duration: 60, output_format: 'mp3' } }) }}",
+        "options": {}
+      },
+      "id": "music-start",
+      "name": "Start Music Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 60],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Replicate API (Authorization: Bearer)" }
+      }
+    },
+    {
+      "parameters": { "amount": 15 },
+      "id": "music-wait",
+      "name": "Wait for Music",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [880, 60],
+      "webhookId": "music-wait-webhook"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.replicate.com/v1/predictions/' + $('Start Music Generation').first().json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "music-status",
+      "name": "Check Music Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1060, 60],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Replicate API (Authorization: Bearer)" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "music-ready",
+      "name": "Music Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1240, 60]
+    },
+    {
+      "parameters": {
+        "content": "## 3 · Generate Images\nOne FLUX 1.1 Pro render per scene prompt → poll each until done, then collect URLs.",
+        "height": 420,
+        "width": 1060,
+        "color": 3
+      },
+      "id": "sticky-images",
+      "name": "Sticky — Images",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1520, -80]
+    },
+    {
+      "parameters": {
+        "jsCode": "const script = $('Parse Script JSON').first().json;\nconst music = $('Check Music Status').first().json;\nreturn script.scene_prompts.map((prompt, i) => ({ json: { scene: i + 1, prompt, music_url: Array.isArray(music.output) ? music.output[0] : music.output } }));"
+      },
+      "id": "split-scenes",
+      "name": "Split Scene Prompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ input: { prompt: $json.prompt, aspect_ratio: '16:9', output_format: 'jpg', safety_tolerance: 2 } }) }}",
+        "options": {}
+      },
+      "id": "image-start",
+      "name": "Start Image Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 60],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Replicate API (Authorization: Bearer)" }
+      }
+    },
+    {
+      "parameters": { "amount": 10 },
+      "id": "image-wait",
+      "name": "Wait for Images",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1960, 60],
+      "webhookId": "image-wait-webhook"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.urls?.get ?? ('https://api.replicate.com/v1/predictions/' + $json.id) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "image-status",
+      "name": "Check Image Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2140, 60],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Replicate API (Authorization: Bearer)" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "images-ready",
+      "name": "Images Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2320, 60]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst image_urls = items.map(i => Array.isArray(i.json.output) ? i.json.output[0] : i.json.output);\nconst script = $('Parse Script JSON').first().json;\nconst music = $('Check Music Status').first().json;\nreturn [{ json: { ...script, image_urls, music_url: Array.isArray(music.output) ? music.output[0] : music.output } }];"
+      },
+      "id": "collect-images",
+      "name": "Collect Image URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2500, 60]
+    },
+    {
+      "parameters": {
+        "content": "## 4 · VoiceOver + Aggregate Final Video\nElevenLabs TTS → stage narration on Drive → Creatomate assembles images + music + voiceover → poll render.",
+        "height": 420,
+        "width": 1480,
+        "color": 6
+      },
+      "id": "sticky-video",
+      "name": "Sticky — VoiceOver and Video",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2760, -80]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/ELEVENLABS_VOICE_ID_PLACEHOLDER",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "content-type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.narration, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } }) }}",
+        "options": {
+          "response": { "response": { "responseFormat": "file", "outputPropertyName": "data" } }
+        }
+      },
+      "id": "elevenlabs-tts",
+      "name": "Generate Voiceover",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2820, 60],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "ElevenLabs API (xi-api-key header)" }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ 'rhythmix-narration-' + $now.format('yyyy-MM-dd') + '.mp3' }}",
+        "driveId": { "__rl": true, "mode": "list", "value": "My Drive" },
+        "folderId": { "__rl": true, "mode": "id", "value": "GOOGLE_DRIVE_FOLDER_ID_PLACEHOLDER" },
+        "options": {}
+      },
+      "id": "drive-upload",
+      "name": "Upload Narration to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3000, 60],
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REPLACE_ME", "name": "Google Drive account" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": { "__rl": true, "mode": "id", "value": "={{ $json.id }}" },
+        "permissionsUi": {
+          "permissionsValues": { "role": "reader", "type": "anyone" }
+        },
+        "options": {}
+      },
+      "id": "drive-share",
+      "name": "Share Narration File",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3180, 60],
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REPLACE_ME", "name": "Google Drive account" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileId = $('Upload Narration to Drive').first().json.id;\nconst narrationUrl = 'https://drive.google.com/uc?export=download&id=' + fileId;\nconst d = $('Collect Image URLs').first().json;\nconst sceneSeconds = 15;\nconst elements = d.image_urls.map((url, i) => ({ type: 'image', source: url, track: 1, time: i * sceneSeconds, duration: sceneSeconds, animations: [{ type: 'scale', scope: 'element', easing: 'linear', start_scale: '100%', end_scale: '110%' }] }));\nelements.push({ type: 'audio', source: narrationUrl, track: 2, time: 0 });\nelements.push({ type: 'audio', source: d.music_url, track: 3, time: 0, volume: '20%' });\nreturn [{ json: { ...d, creatomate_source: { output_format: 'mp4', width: 1920, height: 1080, duration: d.image_urls.length * sceneSeconds, elements } } }];"
+      },
+      "id": "build-source",
+      "name": "Build Creatomate Source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3360, 60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v1/renders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "content-type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ source: $json.creatomate_source }) }}",
+        "options": {}
+      },
+      "id": "creatomate-start",
+      "name": "Start Creatomate Render",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3540, 60],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Creatomate API (Authorization: Bearer)" }
+      }
+    },
+    {
+      "parameters": { "amount": 20 },
+      "id": "render-wait",
+      "name": "Wait for Render",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [3720, 60],
+      "webhookId": "render-wait-webhook"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.creatomate.com/v1/renders/' + ($('Start Creatomate Render').first().json[0]?.id ?? $('Start Creatomate Render').first().json.id) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "render-status",
+      "name": "Check Render Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3900, 60],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_ME", "name": "Creatomate API (Authorization: Bearer)" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "render-ready",
+      "name": "Render Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [4080, 60]
+    },
+    {
+      "parameters": {
+        "content": "## 5 · Manual Approval → Post to YouTube\nNothing publishes on its own: email with preview + resume link → workflow pauses until you approve → uploads as PRIVATE → logs to Sheets.",
+        "height": 420,
+        "width": 1120,
+        "color": 7
+      },
+      "id": "sticky-publish",
+      "name": "Sticky — Approval and Publish",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [4320, -80]
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_APPROVAL_EMAIL_PLACEHOLDER",
+        "subject": "={{ 'RHYTHMIX video ready for approval: ' + $('Collect Image URLs').first().json.idea_title }}",
+        "message": "={{ 'Preview the render: ' + $json.url + '\\n\\nTitle: ' + $('Collect Image URLs').first().json.youtube_title + '\\n\\nApprove and publish to YouTube by opening this link:\\n' + $execution.resumeUrl + '\\n\\nIgnore this email to leave it unpublished.' }}",
+        "options": {}
+      },
+      "id": "approval-email",
+      "name": "Send Approval Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [4380, 60],
+      "credentials": {
+        "gmailOAuth2": { "id": "REPLACE_ME", "name": "Gmail account" }
+      }
+    },
+    {
+      "parameters": { "resume": "webhook", "options": {} },
+      "id": "approval-wait",
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [4560, 60],
+      "webhookId": "approval-wait-webhook"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Check Render Status').first().json.url }}",
+        "options": {
+          "response": { "response": { "responseFormat": "file", "outputPropertyName": "data" } }
+        }
+      },
+      "id": "download-video",
+      "name": "Download Final Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4740, 60]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Collect Image URLs').first().json.youtube_title }}",
+        "regionCode": "AU",
+        "categoryId": "10",
+        "options": {
+          "description": "={{ $('Collect Image URLs').first().json.youtube_description }}",
+          "tags": "={{ $('Collect Image URLs').first().json.youtube_tags.join(',') }}",
+          "privacyStatus": "private"
+        }
+      },
+      "id": "youtube-upload",
+      "name": "Upload to YouTube",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [4920, 60],
+      "credentials": {
+        "youTubeOAuth2Api": { "id": "REPLACE_ME", "name": "YouTube account" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "mode": "id", "value": "GOOGLE_SHEET_ID_PLACEHOLDER" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Videos" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ $now.format('yyyy-MM-dd') }}",
+            "idea": "={{ $('Collect Image URLs').first().json.idea_title }}",
+            "youtube_title": "={{ $('Collect Image URLs').first().json.youtube_title }}",
+            "youtube_video_id": "={{ $json.id }}",
+            "render_url": "={{ $('Check Render Status').first().json.url }}",
+            "status": "uploaded-private"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-log",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [5100, 60],
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "REPLACE_ME", "name": "Google Sheets account" }
+      }
+    }
+  ],
+  "connections": {
+    "Weekly Trigger": { "main": [[{ "node": "Generate Idea and Script (Claude)", "type": "main", "index": 0 }]] },
+    "Generate Idea and Script (Claude)": { "main": [[{ "node": "Parse Script JSON", "type": "main", "index": 0 }]] },
+    "Parse Script JSON": { "main": [[{ "node": "Start Music Generation", "type": "main", "index": 0 }]] },
+    "Start Music Generation": { "main": [[{ "node": "Wait for Music", "type": "main", "index": 0 }]] },
+    "Wait for Music": { "main": [[{ "node": "Check Music Status", "type": "main", "index": 0 }]] },
+    "Check Music Status": { "main": [[{ "node": "Music Ready?", "type": "main", "index": 0 }]] },
+    "Music Ready?": {
+      "main": [
+        [{ "node": "Split Scene Prompts", "type": "main", "index": 0 }],
+        [{ "node": "Wait for Music", "type": "main", "index": 0 }]
+      ]
+    },
+    "Split Scene Prompts": { "main": [[{ "node": "Start Image Generation", "type": "main", "index": 0 }]] },
+    "Start Image Generation": { "main": [[{ "node": "Wait for Images", "type": "main", "index": 0 }]] },
+    "Wait for Images": { "main": [[{ "node": "Check Image Status", "type": "main", "index": 0 }]] },
+    "Check Image Status": { "main": [[{ "node": "Images Ready?", "type": "main", "index": 0 }]] },
+    "Images Ready?": {
+      "main": [
+        [{ "node": "Collect Image URLs", "type": "main", "index": 0 }],
+        [{ "node": "Wait for Images", "type": "main", "index": 0 }]
+      ]
+    },
+    "Collect Image URLs": { "main": [[{ "node": "Generate Voiceover", "type": "main", "index": 0 }]] },
+    "Generate Voiceover": { "main": [[{ "node": "Upload Narration to Drive", "type": "main", "index": 0 }]] },
+    "Upload Narration to Drive": { "main": [[{ "node": "Share Narration File", "type": "main", "index": 0 }]] },
+    "Share Narration File": { "main": [[{ "node": "Build Creatomate Source", "type": "main", "index": 0 }]] },
+    "Build Creatomate Source": { "main": [[{ "node": "Start Creatomate Render", "type": "main", "index": 0 }]] },
+    "Start Creatomate Render": { "main": [[{ "node": "Wait for Render", "type": "main", "index": 0 }]] },
+    "Wait for Render": { "main": [[{ "node": "Check Render Status", "type": "main", "index": 0 }]] },
+    "Check Render Status": { "main": [[{ "node": "Render Ready?", "type": "main", "index": 0 }]] },
+    "Render Ready?": {
+      "main": [
+        [{ "node": "Send Approval Email", "type": "main", "index": 0 }],
+        [{ "node": "Wait for Render", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Approval Email": { "main": [[{ "node": "Wait for Approval", "type": "main", "index": 0 }]] },
+    "Wait for Approval": { "main": [[{ "node": "Download Final Video", "type": "main", "index": 0 }]] },
+    "Download Final Video": { "main": [[{ "node": "Upload to YouTube", "type": "main", "index": 0 }]] },
+    "Upload to YouTube": { "main": [[{ "node": "Log to Google Sheets", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "meta": { "templateCredsSetupCompleted": false }
+}
