@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brainwave Analyzer — FFT band power (Delta · Theta · Alpha · Beta · Gamma)</title>
+  <meta name="description" content="Import raw EEG/brainwave samples (OpenVibe / MindwaveReader512 CSV), compute an FFT, split the spectrum into Delta, Theta, Alpha, Beta and Gamma bands, graph the result, and export to CSV. Self-contained, runs entirely in the browser." />
+  <meta name="theme-color" content="#0a0e17" />
+  <style>
+    :root{
+      --bg:#0a0e17; --bg-2:#0e1320; --surface:#141a29; --surface-2:#1b2233;
+      --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.16);
+      --text:#eef2fb; --muted:#9aa6c0; --faint:#6b7691;
+      --delta:#4c7dff; --theta:#8b5cf6; --alpha:#3ddc84; --beta:#f6c453; --gamma:#ff5c74;
+      --accent:#35e0d6;
+      --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+      --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;background:
+      radial-gradient(60% 40% at 85% -5%,rgba(53,224,214,.10),transparent 60%),
+      radial-gradient(50% 40% at 5% 0,rgba(139,92,246,.08),transparent 60%),var(--bg);
+      color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+    h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.01em}
+    a{color:var(--accent)}
+    .wrap{max-width:1080px;margin:0 auto;padding:36px 20px 72px}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+    header.hero{margin-bottom:28px}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;font-weight:700;
+      letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+    .eyebrow::before{content:"";width:22px;height:2px;background:var(--accent);border-radius:2px}
+    h1{font-size:clamp(1.8rem,4.5vw,2.6rem);font-weight:800;margin:12px 0 10px}
+    .hero p{color:var(--muted);max-width:70ch;margin:0}
+
+    .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:22px}
+    .panel h2{font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+    .panel h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+
+    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;align-items:end}
+    .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+    .field label{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+    input,select{font:inherit;color:var(--text);background:var(--bg-2);border:1px solid var(--line-2);
+      border-radius:10px;padding:10px 12px;width:100%}
+    input[type=file]{padding:8px;font-size:.85rem}
+    input[type=number]{font-family:var(--mono)}
+    .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+    button{font:inherit;font-weight:700;cursor:pointer;border:1px solid var(--line-2);border-radius:10px;
+      padding:11px 18px;background:var(--surface-2);color:var(--text);transition:transform .15s,background .15s,border-color .15s}
+    button:hover{transform:translateY(-1px);border-color:var(--line-2)}
+    button.primary{background:linear-gradient(135deg,var(--accent),#4c7dff);color:#04121f;border-color:transparent}
+    button.ghost{background:transparent}
+    button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+    .status{margin-top:12px;font-family:var(--mono);font-size:.82rem;color:var(--muted);min-height:1.2em}
+    .status.err{color:var(--gamma)}
+    .status.ok{color:var(--alpha)}
+
+    /* Band range editor */
+    .bands-edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+    .band-edit{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:12px;border-left:4px solid var(--bl)}
+    .band-edit .name{font-weight:700;font-size:.9rem;margin-bottom:8px;color:var(--bl)}
+    .band-edit .rng{display:flex;align-items:center;gap:6px}
+    .band-edit input{padding:6px 8px;font-size:.82rem;text-align:center}
+    .band-edit .sep{color:var(--faint);font-size:.8rem}
+    .band-edit .hz{color:var(--faint);font-size:.72rem;margin-left:4px}
+
+    canvas{width:100%;display:block;background:var(--bg-2);border:1px solid var(--line);border-radius:12px}
+    .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:.8rem;color:var(--muted)}
+    .legend span{display:inline-flex;align-items:center;gap:6px}
+    .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+    table{width:100%;border-collapse:collapse;margin-top:16px;font-size:.9rem}
+    th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
+    th{color:var(--faint);font-size:.74rem;text-transform:uppercase;letter-spacing:.08em}
+    td.num{font-family:var(--mono);text-align:right}
+    tbody tr td:first-child{font-weight:700}
+    .bar-cell{width:38%}
+    .barbg{height:10px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden}
+    .barbg i{display:block;height:100%;border-radius:5px}
+
+    .hint{color:var(--faint);font-size:.82rem;margin-top:10px}
+    footer{margin-top:34px;padding-top:20px;border-top:1px solid var(--line);color:var(--faint);font-size:.8rem;line-height:1.7}
+    footer a{color:var(--muted)}
+    @media (max-width:560px){ .controls{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <span class="eyebrow">Brainwaves.io · Web Edition</span>
+      <h1>Brainwave Analyzer</h1>
+      <p>Import raw brainwave samples, compute an FFT, split the spectrum into
+      <strong>Delta · Theta · Alpha · Beta · Gamma</strong> bands, graph the result, and export to CSV.
+      Everything runs in your browser — no upload, no server. Supports OpenVibe and
+      MindwaveReader512 CSV exports, or generic single-/multi-column sample files.</p>
+    </header>
+
+    <!-- Input -->
+    <section class="panel">
+      <h2><span class="dot"></span> 1 · Load signal</h2>
+      <div class="controls">
+        <div class="field" style="grid-column:span 2">
+          <label for="file">CSV file (EEG samples)</label>
+          <input id="file" type="file" accept=".csv,.txt" />
+        </div>
+        <div class="field">
+          <label for="fs">Sample rate (Hz)</label>
+          <input id="fs" type="number" value="256" min="1" step="1" />
+        </div>
+        <div class="field">
+          <label for="channel">Channel / column</label>
+          <select id="channel"><option value="-1">— load a file —</option></select>
+        </div>
+      </div>
+      <div class="btnrow">
+        <button id="sampleBtn" class="ghost">Load sample signal</button>
+        <button id="analyzeBtn" class="primary">Analyze ▸</button>
+        <button id="exportBtn" disabled>Export bands CSV</button>
+      </div>
+      <div id="status" class="status">Load a CSV or click “Load sample signal” to try it.</div>
+    </section>
+
+    <!-- Band ranges -->
+    <section class="panel">
+      <h2><span class="dot"></span> 2 · Band ranges (Hz) — editable</h2>
+      <div class="bands-edit" id="bandsEdit"></div>
+      <p class="hint">Defaults follow the common clinical convention. Adjust freely (the “flexible” edition).</p>
+    </section>
+
+    <!-- Spectrum -->
+    <section class="panel">
+      <h2><span class="dot"></span> 3 · Frequency spectrum</h2>
+      <canvas id="spectrum" width="1040" height="300"></canvas>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <!-- Band results -->
+    <section class="panel">
+      <h2><span class="dot"></span> 4 · Band power</h2>
+      <canvas id="bars" width="1040" height="220"></canvas>
+      <table id="table">
+        <thead><tr><th>Band</th><th>Range (Hz)</th><th class="bar-cell">Relative power</th><th style="text-align:right">Absolute</th><th style="text-align:right">%</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Cross-frequency coupling -->
+    <section class="panel">
+      <h2><span class="dot"></span> 5 · Cross-frequency coupling (phase–amplitude)</h2>
+      <p class="hint" style="margin-top:0;margin-bottom:14px">
+        Does the <em>phase</em> of a low-frequency rhythm modulate the <em>amplitude</em> of a
+        high-frequency rhythm? Computed via bandpass + Hilbert analytic signal, with a
+        surrogate (shuffled-amplitude) significance test.</p>
+      <div class="controls">
+        <div class="field"><label>Low band lo (Hz)</label><input id="cfcLoLo" type="number" step="0.5" value="5"></div>
+        <div class="field"><label>Low band hi (Hz)</label><input id="cfcLoHi" type="number" step="0.5" value="7"></div>
+        <div class="field"><label>High band lo (Hz)</label><input id="cfcHiLo" type="number" step="1" value="30"></div>
+        <div class="field"><label>High band hi (Hz)</label><input id="cfcHiHi" type="number" step="1" value="50"></div>
+        <div class="field"><label>Surrogates</label><input id="cfcSurr" type="number" step="50" value="200"></div>
+      </div>
+      <div class="btnrow"><button id="cfcBtn" class="primary">Compute coupling ▸</button></div>
+      <div id="cfcStatus" class="status"></div>
+      <canvas id="pac" width="1040" height="260" style="margin-top:8px"></canvas>
+    </section>
+
+    <footer>
+      Free &amp; open source. FFT after
+      <a href="https://www.nayuki.io/page/free-small-fft-in-multiple-languages" target="_blank" rel="noopener">Project Nayuki’s free small FFT</a>;
+      a project of <a href="http://brainwaves.io/wp/" target="_blank" rel="noopener">Brainwaves.io</a>.
+      <br>For academic work using frequency-resolved brain-network analysis, cite:
+      Rosso, M., Fernández-Rubio, G., Keller, P. E., Brattico, E., Vuust, P., Kringelbach, M. L., &amp; Bonetti, L. (2025).
+      <em>FREQ-NESS Reveals the Dynamic Reconfiguration of Frequency-Resolved Brain Networks During Auditory Stimulation.</em>
+      Advanced Science, 2413195. <a href="https://doi.org/10.1002/advs.202413195" target="_blank" rel="noopener">doi:10.1002/advs.202413195</a>
+    </footer>
+  </div>
+
+  <script>
+  (function(){
+    "use strict";
+    var $ = function(id){ return document.getElementById(id); };
+
+    // ---- Bands (editable) ------------------------------------------------
+    var BANDS = [
+      { key:"delta", name:"Delta", lo:0.5, hi:4,   color:"var(--delta)", hex:"#4c7dff" },
+      { key:"theta", name:"Theta", lo:4,   hi:8,   color:"var(--theta)", hex:"#8b5cf6" },
+      { key:"alpha", name:"Alpha", lo:8,   hi:12,  color:"var(--alpha)", hex:"#3ddc84" },
+      { key:"beta",  name:"Beta",  lo:12,  hi:30,  color:"var(--beta)",  hex:"#f6c453" },
+      { key:"gamma", name:"Gamma", lo:30,  hi:100, color:"var(--gamma)", hex:"#ff5c74" },
+    ];
+
+    // Build the band-range editor + legend
+    (function initBandsUI(){
+      var edit = $("bandsEdit"), legend = $("legend");
+      BANDS.forEach(function(b, i){
+        var el = document.createElement("div");
+        el.className = "band-edit"; el.style.setProperty("--bl", b.hex);
+        el.innerHTML = '<div class="name">'+b.name+'</div>'+
+          '<div class="rng"><input type="number" step="0.5" min="0" value="'+b.lo+'" data-i="'+i+'" data-k="lo">'+
+          '<span class="sep">–</span><input type="number" step="0.5" min="0" value="'+b.hi+'" data-i="'+i+'" data-k="hi">'+
+          '<span class="hz">Hz</span></div>';
+        edit.appendChild(el);
+        var lg = document.createElement("span");
+        lg.innerHTML = '<i style="background:'+b.hex+'"></i>'+b.name;
+        legend.appendChild(lg);
+      });
+      edit.addEventListener("input", function(e){
+        var t = e.target; if (t.dataset.i === undefined) return;
+        BANDS[+t.dataset.i][t.dataset.k] = parseFloat(t.value) || 0;
+        if (lastResult) render(lastResult);   // live re-bin
+      });
+    })();
+
+    // ---- FFT (iterative radix-2 Cooley–Tukey, after Nayuki) --------------
+    function fft(re, im){
+      var n = re.length, i, j, k;
+      for (i = 1, j = 0; i < n; i++){
+        var bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j){ var tr=re[i];re[i]=re[j];re[j]=tr; var ti=im[i];im[i]=im[j];im[j]=ti; }
+      }
+      for (var len = 2; len <= n; len <<= 1){
+        var ang = -2*Math.PI/len, wr = Math.cos(ang), wi = Math.sin(ang);
+        for (i = 0; i < n; i += len){
+          var cr = 1, ci = 0;
+          for (k = 0; k < (len>>1); k++){
+            var a = i+k, b = i+k+(len>>1);
+            var xr = re[b]*cr - im[b]*ci, xi = re[b]*ci + im[b]*cr;
+            re[b] = re[a]-xr; im[b] = im[a]-xi;
+            re[a] += xr;      im[a] += xi;
+            var ncr = cr*wr - ci*wi; ci = cr*wi + ci*wr; cr = ncr;
+          }
+        }
+      }
+    }
+    function nextPow2(n){ var p = 1; while (p < n) p <<= 1; return p; }
+    function ifft(re, im){                 // inverse via conjugation
+      var n = re.length, i;
+      for (i = 0; i < n; i++) im[i] = -im[i];
+      fft(re, im);
+      for (i = 0; i < n; i++){ re[i] /= n; im[i] = -im[i]/n; }
+    }
+
+    // FFT bandpass: zero all bins whose |frequency| is outside [lo, hi] Hz.
+    function bandpass(sig, fs, lo, hi){
+      var Nraw = sig.length, N = nextPow2(Nraw);
+      var re = new Array(N), im = new Array(N);
+      for (var i = 0; i < N; i++){ re[i] = i < Nraw ? sig[i] : 0; im[i] = 0; }
+      fft(re, im);
+      for (var k = 0; k < N; k++){
+        var f = (k <= N/2 ? k : k - N) * fs / N;   // signed frequency
+        var af = Math.abs(f);
+        if (af < lo || af > hi){ re[k] = 0; im[k] = 0; }
+      }
+      ifft(re, im);
+      return re.slice(0, Nraw);
+    }
+
+    // Analytic signal (Hilbert): zero negative freqs, double positives.
+    function analytic(sig){
+      var Nraw = sig.length, N = nextPow2(Nraw);
+      var re = new Array(N), im = new Array(N);
+      for (var i = 0; i < N; i++){ re[i] = i < Nraw ? sig[i] : 0; im[i] = 0; }
+      fft(re, im);
+      var h = new Array(N);
+      h[0] = 1; h[N/2] = 1;
+      for (var k = 1; k < N/2; k++) h[k] = 2;
+      for (var k2 = N/2 + 1; k2 < N; k2++) h[k2] = 0;
+      for (var j = 0; j < N; j++){ re[j] *= h[j]; im[j] *= h[j]; }
+      ifft(re, im);
+      return { re: re.slice(0, Nraw), im: im.slice(0, Nraw) };
+    }
+
+    // Phase-amplitude coupling: phase of low band vs amplitude of high band.
+    function computePAC(sig, fs, loBand, hiBand, nBins, nSurr){
+      var vlo = bandpass(sig, fs, loBand[0], loBand[1]);
+      var vhi = bandpass(sig, fs, hiBand[0], hiBand[1]);
+      var zlo = analytic(vlo), zhi = analytic(vhi);
+      var Np = sig.length;
+      var phi = new Array(Np), amp = new Array(Np);
+      for (var i = 0; i < Np; i++){
+        phi[i] = Math.atan2(zlo.im[i], zlo.re[i]);
+        amp[i] = Math.hypot(zhi.re[i], zhi.im[i]);
+      }
+      // edge trim (filter transients)
+      var trim = Math.min(200, Math.floor(Np*0.05));
+      phi = phi.slice(trim, Np-trim); amp = amp.slice(trim, Np-trim);
+
+      function binned(phiA, ampA){
+        var sums = new Array(nBins).fill(0), cnt = new Array(nBins).fill(0);
+        for (var i = 0; i < phiA.length; i++){
+          var b = Math.floor((phiA[i] + Math.PI) / (2*Math.PI) * nBins);
+          if (b < 0) b = 0; if (b >= nBins) b = nBins-1;
+          sums[b] += ampA[i]; cnt[b]++;
+        }
+        var means = sums.map(function(s,i){ return cnt[i] ? s/cnt[i] : 0; });
+        return means;
+      }
+      var means = binned(phi, amp);
+      var h = Math.max.apply(null, means) - Math.min.apply(null, means);
+
+      // Modulation Index (Tort): KL divergence of normalized amp dist from uniform
+      var tot = means.reduce(function(a,b){ return a+b; }, 0) || 1;
+      var p = means.map(function(m){ return m/tot || 1e-12; });
+      var kl = 0; for (var b2 = 0; b2 < nBins; b2++) kl += p[b2] * Math.log(p[b2] * nBins);
+      var MI = kl / Math.log(nBins);
+
+      // Surrogates: shuffle amplitude, recompute h
+      var seed = 987654321;
+      function rnd(){ seed = (seed*1103515245 + 12345) & 0x7fffffff; return seed/0x7fffffff; }
+      var greater = 0;
+      for (var s = 0; s < nSurr; s++){
+        var a2 = amp.slice();
+        for (var i2 = a2.length-1; i2 > 0; i2--){ var j2 = Math.floor(rnd()*(i2+1)); var tmp=a2[i2]; a2[i2]=a2[j2]; a2[j2]=tmp; }
+        var hm = binned(phi, a2);
+        var hs = Math.max.apply(null, hm) - Math.min.apply(null, hm);
+        if (hs >= h) greater++;
+      }
+      var pval = greater / nSurr;
+      // bin centers for plotting
+      var centers = [];
+      for (var c = 0; c < nBins; c++) centers.push(-Math.PI + (c+0.5)*(2*Math.PI/nBins));
+      return { centers: centers, means: means, h: h, MI: MI, pval: pval, nSurr: nSurr };
+    }
+
+    // ---- CSV parsing -----------------------------------------------------
+    var columns = [];   // array of numeric arrays, one per column
+    var headers = [];
+
+    function parseCSV(text){
+      var lines = text.replace(/\r/g,"").split("\n").filter(function(l){ return l.trim() !== ""; });
+      if (!lines.length) throw new Error("Empty file.");
+      var delim = (lines[0].indexOf(";") > -1 && lines[0].indexOf(",") === -1) ? ";"
+                : (lines[0].indexOf("\t") > -1 ? "\t" : ",");
+      var first = lines[0].split(delim);
+      var hasHeader = first.some(function(c){ return isNaN(parseFloat(c)); });
+      headers = hasHeader ? first.map(function(c){ return c.trim(); })
+                          : first.map(function(_,i){ return "Column " + i; });
+      var start = hasHeader ? 1 : 0;
+      columns = headers.map(function(){ return []; });
+      for (var r = start; r < lines.length; r++){
+        var parts = lines[r].split(delim);
+        for (var c = 0; c < headers.length; c++){
+          var v = parseFloat(parts[c]);
+          columns[c].push(isNaN(v) ? 0 : v);
+        }
+      }
+      // populate channel selector; default to first non-time numeric column
+      var sel = $("channel"); sel.innerHTML = "";
+      headers.forEach(function(h, i){
+        var opt = document.createElement("option"); opt.value = i; opt.textContent = h; sel.appendChild(opt);
+      });
+      var def = headers.findIndex(function(h){ return !/time|timestamp|index|sample/i.test(h); });
+      sel.value = def < 0 ? 0 : def;
+
+      // If a "Time"/"Sampling"/"Fs" hint exists, try to infer sample rate
+      var tIdx = headers.findIndex(function(h){ return /time/i.test(h); });
+      if (tIdx > -1 && columns[tIdx].length > 2){
+        var dt = columns[tIdx][1] - columns[tIdx][0];
+        if (dt > 0){ var fs = Math.round(1/dt); if (fs >= 1 && fs <= 20000) $("fs").value = fs; }
+      }
+      setStatus("ok", "Loaded " + (lines.length - start) + " samples · " + headers.length + " columns.");
+    }
+
+    // ---- Sample signal (with real phase-amplitude coupling) --------------
+    function loadSample(){
+      var fs = 256, N = 4096, out = [];
+      var seed = 12345; function rnd(){ seed = (seed*1103515245 + 12345) & 0x7fffffff; return seed/0x7fffffff - 0.5; }
+      for (var n = 0; n < N; n++){
+        var t = n/fs;
+        var thetaPhase = 2*Math.PI*6*t;                 // 6 Hz theta
+        var delta = 2.0*Math.sin(2*Math.PI*2*t);
+        var theta = 4.0*Math.sin(thetaPhase);
+        var alpha = 3.0*Math.sin(2*Math.PI*10*t);
+        var beta  = 1.2*Math.sin(2*Math.PI*20*t);
+        var mod   = (1 + Math.cos(thetaPhase)) / 2;      // 0..1, peaks at theta trough
+        var gamma = (0.4 + 1.8*mod) * Math.sin(2*Math.PI*40*t); // 40 Hz amp modulated by theta phase
+        out.push(delta + theta + alpha + beta + gamma + rnd()*1.6);
+      }
+      headers = ["Time","EEG (sample)"]; columns = [out.map(function(_,i){ return i/fs; }), out];
+      var sel = $("channel"); sel.innerHTML = "<option value='0'>Time</option><option value='1'>EEG (sample)</option>";
+      sel.value = 1; $("fs").value = fs;
+      setStatus("ok", "Synthetic signal: 4096 samples @256Hz — Δ2 Θ6 α10 β20 Hz + a 40Hz γ whose amplitude is coupled to the 6Hz θ phase (try §5).");
+    }
+
+    // ---- Analyze ---------------------------------------------------------
+    var lastResult = null;
+
+    function analyze(){
+      var ci = parseInt($("channel").value, 10);
+      var fs = parseFloat($("fs").value);
+      if (!columns.length || isNaN(ci) || ci < 0 || !columns[ci]){ return setStatus("err","No signal loaded."); }
+      if (!(fs > 0)){ return setStatus("err","Sample rate must be > 0."); }
+      var sig = columns[ci].slice();
+      if (sig.length < 8){ return setStatus("err","Need at least 8 samples."); }
+
+      // detrend (remove DC) + Hann window
+      var mean = sig.reduce(function(a,b){ return a+b; }, 0) / sig.length;
+      var Nraw = sig.length, N = nextPow2(Nraw);
+      var re = new Array(N), im = new Array(N);
+      for (var i = 0; i < N; i++){
+        if (i < Nraw){
+          var w = 0.5 - 0.5*Math.cos(2*Math.PI*i/(Nraw-1)); // Hann
+          re[i] = (sig[i]-mean)*w;
+        } else re[i] = 0;
+        im[i] = 0;
+      }
+      fft(re, im);
+
+      var half = N >> 1;
+      var freqs = new Array(half), mags = new Array(half);
+      for (var k = 0; k < half; k++){
+        freqs[k] = k*fs/N;
+        mags[k] = Math.sqrt(re[k]*re[k] + im[k]*im[k]) / Nraw; // magnitude
+      }
+      lastResult = { freqs:freqs, mags:mags, fs:fs, N:N, Nraw:Nraw };
+      render(lastResult);
+      $("exportBtn").disabled = false;
+      setStatus("ok", "FFT: " + Nraw + " samples → " + N + "-pt (zero-padded) · resolution " + (fs/N).toFixed(3) + " Hz/bin.");
+    }
+
+    // ---- Band binning + render ------------------------------------------
+    function computeBands(res){
+      var out = BANDS.map(function(b){ return { band:b, power:0 }; });
+      for (var k = 1; k < res.freqs.length; k++){   // skip DC
+        var f = res.freqs[k], p = res.mags[k]*res.mags[k];
+        for (var bi = 0; bi < BANDS.length; bi++){
+          var b = BANDS[bi];
+          if (f >= b.lo && f < b.hi){ out[bi].power += p; break; }
+        }
+      }
+      var total = out.reduce(function(a,o){ return a+o.power; }, 0) || 1;
+      out.forEach(function(o){ o.pct = 100*o.power/total; });
+      return { rows: out, total: total };
+    }
+
+    function render(res){
+      var bands = computeBands(res);
+      drawSpectrum(res);
+      drawBars(bands);
+      fillTable(bands);
+    }
+
+    function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+    function drawSpectrum(res){
+      var cv = $("spectrum"), ctx = cv.getContext("2d");
+      var W = cv.width, H = cv.height, pad = 34;
+      ctx.clearRect(0,0,W,H);
+      var fMax = Math.min(res.fs/2, 60);
+      var iMax = 1; while (iMax < res.freqs.length && res.freqs[iMax] <= fMax) iMax++;
+      var mMax = 1e-9; for (var k = 1; k < iMax; k++) if (res.mags[k] > mMax) mMax = res.mags[k];
+      var x = function(f){ return pad + (f/fMax)*(W-pad-10); };
+      var y = function(m){ return H-pad - (m/mMax)*(H-pad-14); };
+
+      // band background tints
+      BANDS.forEach(function(b){
+        if (b.lo >= fMax) return;
+        var x0 = x(Math.max(0,b.lo)), x1 = x(Math.min(fMax,b.hi));
+        ctx.fillStyle = b.hex + "22"; ctx.fillRect(x0, 14, x1-x0, H-pad-14);
+      });
+      // axes
+      ctx.strokeStyle = "rgba(255,255,255,.15)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad, H-pad); ctx.lineTo(W-10, H-pad); ctx.stroke();
+      ctx.fillStyle = cssVar("--faint"); ctx.font = "11px ui-monospace,monospace";
+      for (var f = 0; f <= fMax; f += 10){ ctx.fillText(f+"Hz", x(f)-8, H-pad+16); }
+      // spectrum line
+      ctx.strokeStyle = cssVar("--accent"); ctx.lineWidth = 1.6; ctx.beginPath();
+      for (var k2 = 1; k2 < iMax; k2++){ var xx = x(res.freqs[k2]), yy = y(res.mags[k2]); if (k2===1) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy); }
+      ctx.stroke();
+    }
+
+    function drawBars(bands){
+      var cv = $("bars"), ctx = cv.getContext("2d");
+      var W = cv.width, H = cv.height, pad = 30;
+      ctx.clearRect(0,0,W,H);
+      var rows = bands.rows, n = rows.length;
+      var max = Math.max.apply(null, rows.map(function(r){ return r.power; })) || 1;
+      var bw = (W - pad*2) / n, barW = bw*0.56;
+      rows.forEach(function(r, i){
+        var h = (r.power/max)*(H-pad-24);
+        var cx = pad + i*bw + bw/2;
+        ctx.fillStyle = r.band.hex;
+        ctx.fillRect(cx - barW/2, H-pad-h, barW, h);
+        ctx.fillStyle = cssVar("--text"); ctx.font = "bold 12px "+cssVar("--sans");
+        ctx.textAlign = "center";
+        ctx.fillText(r.band.name, cx, H-pad+16);
+        ctx.fillStyle = cssVar("--muted"); ctx.font = "11px ui-monospace,monospace";
+        ctx.fillText(r.pct.toFixed(1)+"%", cx, H-pad-h-6);
+      });
+      ctx.textAlign = "left";
+    }
+
+    function fillTable(bands){
+      var tb = $("table").querySelector("tbody"); tb.innerHTML = "";
+      var max = Math.max.apply(null, bands.rows.map(function(r){ return r.power; })) || 1;
+      bands.rows.forEach(function(r){
+        var tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td style="color:'+r.band.hex+'">'+r.band.name+'</td>'+
+          '<td class="num">'+r.band.lo+'–'+r.band.hi+'</td>'+
+          '<td class="bar-cell"><div class="barbg"><i style="width:'+(100*r.power/max).toFixed(1)+'%;background:'+r.band.hex+'"></i></div></td>'+
+          '<td class="num">'+r.power.toExponential(3)+'</td>'+
+          '<td class="num">'+r.pct.toFixed(2)+'%</td>';
+        tb.appendChild(tr);
+      });
+    }
+
+    // ---- Export ----------------------------------------------------------
+    function exportCSV(){
+      if (!lastResult) return;
+      var bands = computeBands(lastResult);
+      var rows = [["band","low_hz","high_hz","absolute_power","relative_percent"]];
+      bands.rows.forEach(function(r){ rows.push([r.band.name, r.band.lo, r.band.hi, r.power, r.pct.toFixed(4)]); });
+      var csv = rows.map(function(r){ return r.join(","); }).join("\n");
+      var blob = new Blob([csv], { type:"text/csv" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "brainwave-bands.csv"; a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ---- Wiring ----------------------------------------------------------
+    function setStatus(kind, msg){ var s = $("status"); s.className = "status " + (kind||""); s.textContent = msg; }
+    $("file").addEventListener("change", function(e){
+      var f = e.target.files[0]; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function(){ try { parseCSV(rd.result); } catch(err){ setStatus("err","Parse error: "+err.message); } };
+      rd.onerror = function(){ setStatus("err","Could not read file."); };
+      rd.readAsText(f);
+    });
+    $("sampleBtn").addEventListener("click", loadSample);
+    $("analyzeBtn").addEventListener("click", analyze);
+    $("exportBtn").addEventListener("click", exportCSV);
+
+    // ---- CFC wiring ------------------------------------------------------
+    function runCFC(){
+      var ci = parseInt($("channel").value, 10), fs = parseFloat($("fs").value);
+      if (!columns.length || isNaN(ci) || !columns[ci]) { setCfc("err","No signal loaded."); return; }
+      var lo = [parseFloat($("cfcLoLo").value), parseFloat($("cfcLoHi").value)];
+      var hi = [parseFloat($("cfcHiLo").value), parseFloat($("cfcHiHi").value)];
+      var nSurr = Math.max(50, Math.min(2000, parseInt($("cfcSurr").value,10) || 200));
+      if (!(lo[0] < lo[1] && hi[0] < hi[1] && hi[0] > lo[1])) { setCfc("err","Need low band < high band, each lo < hi."); return; }
+      if (hi[1] > fs/2) { setCfc("err","High band exceeds Nyquist ("+(fs/2)+" Hz)."); return; }
+      setCfc("", "Filtering + Hilbert + "+nSurr+" surrogates…");
+      setTimeout(function(){
+        var r = computePAC(columns[ci].slice(), fs, lo, hi, 18, nSurr);
+        drawPAC(r, lo, hi);
+        var sig = r.pval < 0.05 ? "significant" : "not significant";
+        setCfc(r.pval < 0.05 ? "ok" : "", "h = "+r.h.toExponential(3)+" · Modulation Index = "+r.MI.toFixed(4)+
+          " · p = "+(r.pval === 0 ? "<"+(1/r.nSurr).toFixed(3) : r.pval.toFixed(3))+" ("+sig+")");
+      }, 20);
+    }
+    function setCfc(kind, msg){ var s = $("cfcStatus"); s.className = "status " + (kind||""); s.textContent = msg; }
+    function drawPAC(r, lo, hi){
+      var cv = $("pac"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height, pad = 40;
+      ctx.clearRect(0,0,W,H);
+      var means = r.means, n = means.length;
+      var mMax = Math.max.apply(null, means) || 1, mMin = Math.min.apply(null, means);
+      var x = function(i){ return pad + (i/(n-1))*(W-pad-14); };
+      var y = function(m){ return H-pad - ((m-mMin)/((mMax-mMin)||1))*(H-pad-20); };
+      // axes
+      ctx.strokeStyle = "rgba(255,255,255,.15)"; ctx.beginPath();
+      ctx.moveTo(pad,H-pad); ctx.lineTo(W-14,H-pad); ctx.moveTo(pad,14); ctx.lineTo(pad,H-pad); ctx.stroke();
+      ctx.fillStyle = cssVar("--faint"); ctx.font = "11px ui-monospace,monospace";
+      ctx.fillText("-π", pad-6, H-pad+16); ctx.fillText("0", W/2, H-pad+16); ctx.fillText("π", W-24, H-pad+16);
+      ctx.save(); ctx.translate(12,H/2); ctx.rotate(-Math.PI/2);
+      ctx.fillText("high-freq amplitude", -40, 0); ctx.restore();
+      ctx.fillText("low-freq phase ("+lo[0]+"–"+lo[1]+" Hz)  →  amp ("+hi[0]+"–"+hi[1]+" Hz)", pad, 12);
+      // bars + line
+      var bw = (W-pad-14)/n * 0.7;
+      for (var i = 0; i < n; i++){
+        ctx.fillStyle = "rgba(53,224,214,.18)";
+        ctx.fillRect(x(i)-bw/2, y(means[i]), bw, (H-pad)-y(means[i]));
+      }
+      ctx.strokeStyle = cssVar("--accent"); ctx.lineWidth = 2; ctx.beginPath();
+      for (var k = 0; k < n; k++){ if (k===0) ctx.moveTo(x(k),y(means[k])); else ctx.lineTo(x(k),y(means[k])); }
+      ctx.stroke();
+    }
+    $("cfcBtn").addEventListener("click", runCFC);
+  })();
+  </script>
+</body>
+</html>

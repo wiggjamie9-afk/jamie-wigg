@@ -1,0 +1,52 @@
+# NOTE: This workflow is REFERENCE only while the app lives under sites/cryptoriskalyzer/.
+# GitHub Actions only runs workflows located at the REPOSITORY ROOT .github/workflows/.
+# To activate it, extract this project to its own repo (or move this file to the repo root
+# .github/workflows/ and adjust the `data/market-data.json` path).
+name: Daily Market Data Update
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # täglich 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch market data (Fear & Greed + trending + top caps)
+        run: |
+          set -euo pipefail
+          DATE="$(date -u +%Y-%m-%d)"
+
+          # Fear & Greed Index (alternative.me, free, no key)
+          FG_JSON="$(curl -fsSL 'https://api.alternative.me/fng/?limit=1' || echo '{}')"
+          FG_VALUE="$(echo "$FG_JSON" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get("data",[{}])[0].get("value","50"))' 2>/dev/null || echo 50)"
+          FG_LABEL="$(echo "$FG_JSON" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get("data",[{}])[0].get("value_classification","Neutral"))' 2>/dev/null || echo Neutral)"
+
+          # Trending (CoinGecko, free, no key)
+          TREND_JSON="$(curl -fsSL 'https://api.coingecko.com/api/v3/search/trending' || echo '{}')"
+
+          python3 - "$DATE" "$FG_VALUE" "$FG_LABEL" <<'PY' > data/market-data.json
+          import sys, json, urllib.request
+          date, fg_value, fg_label = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+          try:
+              t = json.load(urllib.request.urlopen('https://api.coingecko.com/api/v3/search/trending', timeout=15))
+              trending = [{"symbol": c["item"]["symbol"].upper(), "name": c["item"]["name"], "change_24h": 0} for c in t.get("coins", [])[:5]]
+          except Exception:
+              trending = []
+          json.dump({"updated": date, "fear_greed": {"value": fg_value, "label": fg_label},
+                     "trending": trending, "top_market_caps": []}, sys.stdout, indent=2, ensure_ascii=False)
+          PY
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/market-data.json
+          git diff --staged --quiet || git commit -m "chore: daily market data update"
+          git push

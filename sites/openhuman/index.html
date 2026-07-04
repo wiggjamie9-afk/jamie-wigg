@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OpenHuman — 당신의 데이터를 기억하는 오픈소스 AI 에이전트</title>
+  <meta name="description" content="tinyhumans.ai가 공개한 OpenHuman은 로컬 우선 메모리 트리, 118개+ 원클릭 연동, 20분 자동 동기화, TokenJuice 토큰 압축을 갖춘 오픈소스 AI 에이전트다. 아키텍처와 시사점을 정리했다." />
+  <meta name="theme-color" content="#0d1117" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="OpenHuman — 당신의 데이터를 기억하는 오픈소스 AI 에이전트" />
+  <meta property="og:description" content="로컬 우선 메모리 트리, 118개+ 원클릭 연동, 20분 자동 동기화, TokenJuice. OpenHuman 아키텍처와 시사점 정리." />
+  <style>
+    :root{
+      --bg:#0d1117; --bg-2:#0f1420; --surface:#161b26; --surface-2:#1c2230;
+      --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.16);
+      --text:#e9edf5; --muted:#a3adc2; --faint:#727d96;
+      --accent:#5ed6c4; --accent-2:#6ea8ff; --warn:#f6c453;
+      --maxw:740px;
+      --sans:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",
+             system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+      --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+      line-height:1.78;font-size:17px;letter-spacing:-.003em;
+      -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    }
+    body::before{content:"";position:fixed;inset:0;z-index:-1;
+      background:
+        radial-gradient(60% 40% at 85% -5%,rgba(110,168,255,.14),transparent 60%),
+        radial-gradient(50% 40% at 5% 0%,rgba(94,214,196,.10),transparent 60%);}
+    a{color:var(--accent-2);text-decoration:none}
+    a:hover{text-decoration:underline;text-underline-offset:3px}
+    img{max-width:100%;display:block}
+    ::selection{background:var(--accent);color:#08110f}
+
+    .wrap{max-width:var(--maxw);margin-inline:auto;padding-inline:22px}
+
+    /* Hero */
+    header.hero{padding:64px 0 26px;border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg,var(--bg-2),transparent)}
+    .kicker{display:inline-flex;align-items:center;gap:9px;font-size:.72rem;font-weight:700;
+      letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+    .kicker::before{content:"";width:20px;height:2px;background:var(--accent);border-radius:2px}
+    h1{margin:0;font-size:clamp(1.9rem,5vw,2.9rem);line-height:1.22;font-weight:800;letter-spacing:-.02em}
+    .dek{margin:22px 0 0;color:var(--muted);font-size:1.08rem;line-height:1.7}
+    .meta{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;
+      color:var(--faint);font-size:.85rem}
+    .meta .tag{font-family:var(--mono);font-size:.74rem;color:var(--accent);
+      border:1px solid var(--line-2);border-radius:999px;padding:3px 10px}
+
+    .hero-img{margin:34px 0 8px;border-radius:16px;overflow:hidden;border:1px solid var(--line);
+      background:linear-gradient(135deg,#12303a,#1a2138 60%,#221a34);aspect-ratio:16/9;
+      display:grid;place-items:center}
+    .hero-img img{width:100%;height:100%;object-fit:cover}
+    .hero-img .ph{color:var(--faint);font-family:var(--mono);font-size:.85rem;text-align:center;padding:20px}
+
+    /* Article body */
+    article{padding:16px 0 40px}
+    article h2{margin:52px 0 14px;font-size:1.55rem;font-weight:800;letter-spacing:-.02em;
+      padding-top:14px;border-top:1px solid var(--line)}
+    article h3{margin:34px 0 8px;font-size:1.16rem;font-weight:700;color:#f3f6fc}
+    article p{margin:16px 0}
+    article strong{color:#fff;font-weight:700}
+    article ol,article ul{margin:16px 0;padding-left:22px}
+    article li{margin:8px 0}
+    article li::marker{color:var(--accent)}
+
+    hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+
+    blockquote{margin:22px 0;padding:14px 20px;border-left:3px solid var(--accent);
+      background:var(--surface);border-radius:0 12px 12px 0;color:var(--muted);font-style:italic}
+    blockquote.warn{border-left-color:var(--warn)}
+    blockquote p{margin:0}
+
+    code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
+      border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:#d7e0f0}
+    pre{margin:20px 0;background:#0a0e16;border:1px solid var(--line);border-radius:12px;
+      padding:16px 18px;overflow-x:auto}
+    pre code{background:none;border:0;padding:0;font-size:.82rem;line-height:1.7;color:#c8d3e6}
+
+    .table-wrap{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:12px}
+    table{width:100%;border-collapse:collapse;font-size:.92rem;min-width:460px}
+    th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+    thead th{background:var(--surface);color:#fff;font-weight:700;font-size:.86rem;white-space:nowrap}
+    tbody tr:last-child td{border-bottom:0}
+    tbody tr:nth-child(even){background:rgba(255,255,255,.02)}
+    td strong{color:var(--accent)}
+
+    /* pros/cons callouts */
+    .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+    .card h3{margin:0 0 8px;font-size:1.02rem}
+    .card.good h3{color:var(--accent)}
+    .card.warn h3{color:var(--warn)}
+    .card ul{margin:6px 0 0;padding-left:18px}
+    .card li{margin:9px 0;font-size:.95rem;color:var(--muted)}
+    .card li strong{color:var(--text)}
+
+    .links-grid{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0}
+    .links-grid a{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:999px;
+      border:1px solid var(--line-2);background:var(--surface);color:var(--text);font-size:.9rem;font-weight:600}
+    .links-grid a:hover{border-color:var(--accent);text-decoration:none;color:var(--accent)}
+
+    .closing{margin:40px 0 0;padding:24px 22px;border:1px solid var(--line);border-radius:16px;
+      background:linear-gradient(180deg,var(--surface),var(--bg-2))}
+    .closing p{margin:0 0 12px}
+    .closing p:last-child{margin:0}
+
+    footer{border-top:1px solid var(--line);padding:30px 0 60px;color:var(--faint);font-size:.85rem}
+    footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+
+    @media (max-width:560px){
+      body{font-size:16px}
+      .cards{grid-template-columns:1fr}
+      article h2{font-size:1.35rem}
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="wrap">
+      <span class="kicker">AI 에이전트 · 리뷰</span>
+      <h1>OpenHuman — 당신의 데이터를 기억하는 오픈소스 AI 에이전트</h1>
+      <p class="dek">2026년 5월, tinyhumans.ai가 공개한 <strong>OpenHuman</strong>은 "AI가 나에 대해 뭘 알고 있나?"라는 근본적인 질문에서 출발한다. 118개 이상의 서비스와 원클릭 연동, 20분마다 자동 동기화, 로컬 기반 메모리 트리. Karpathy의 Obsidian 위키 워크플로에서 영감받은 이 프로젝트가 왜 주목받는지 정리했다.</p>
+      <div class="meta">
+        <span class="tag">tinyhumans.ai</span>
+        <span class="tag">GNU GPL-3.0</span>
+        <span class="tag">Rust · Tauri</span>
+        <span>Early Beta · v0.54.0</span>
+      </div>
+      <div class="hero-img">
+        <img src="https://github.com/tinyhumansai/openhuman/blob/main/gitbooks/.gitbook/assets/demo.png?raw=true"
+             alt="OpenHuman 데스크톱 앱 데모 화면"
+             loading="lazy"
+             onerror="this.style.display='none';this.insertAdjacentHTML('afterend','&lt;div class=ph&gt;OpenHuman 데모 화면&lt;br&gt;(원본 이미지: github.com/tinyhumansai/openhuman)&lt;/div&gt;')" />
+      </div>
+    </div>
+  </header>
+
+  <article>
+    <div class="wrap">
+
+      <h2>왜 "또" AI 에이전트인가</h2>
+      <p>현재 AI 에이전트 시장은 두 가지 극단에 있다. 한쪽은 Claude, ChatGPT 같은 <strong>챗봇</strong> — 대화는 잘하지만 당신에 대해 아무것도 모른다. 매 대화가 새 시작이다. 다른 한쪽은 OpenClaw, Hermes 같은 <strong>개발자 도구</strong> — 강력하지만 설정이 복잡하고, 플러그인 생태계에 의존하며, 에이전트가 "당신"을 이해하는 데 몇 주가 걸린다.</p>
+      <p>OpenHuman이 노리는 지점은 명확하다. <strong>설치 후 몇 분 만에 당신의 전체 맥락을 이해하는 에이전트</strong>를 만드는 것.</p>
+      <blockquote><p>"Most agents start cold. OpenHuman skips the wait."</p></blockquote>
+
+      <h2>핵심 아키텍처: 메모리가 먼저다</h2>
+      <p>OpenHuman의 설계 철학은 한 줄로 요약된다: <strong>모델이 똑똑한 게 아니라, 맥락이 풍부한 게 중요하다.</strong></p>
+
+      <h3>Memory Tree — 로컬 지식 그래프</h3>
+      <p>OpenHuman의 심장은 <strong>Memory Tree</strong>다. Gmail, Slack, GitHub, Notion, 캘린더 — 연결된 모든 데이터가 하나의 파이프라인을 통과한다:</p>
+      <ol>
+        <li><strong>정규화</strong>: 모든 소스를 마크다운으로 변환</li>
+        <li><strong>청킹</strong>: 3,000토큰 이하로 압축</li>
+        <li><strong>스코어링</strong>: 중요도에 따라 점수 부여</li>
+        <li><strong>계층화</strong>: 소스별/주제별/날짜별 요약 트리로 구조화</li>
+        <li><strong>저장</strong>: 로컬 SQLite에 저장 (벡터 블랙박스가 아니다)</li>
+      </ol>
+      <p>이 구조의 장점은 <strong>추론 가능성</strong>이다. 벡터 유사도 검색이 "어렴풋이 비슷한 것"을 찾는다면, Memory Tree는 "이 이메일이 이 프로젝트와 연결되어 있고, 이 사람이 관여했다"를 그래프 순회로 답한다.</p>
+
+      <h3>Obsidian 위키 — 읽을 수 있는 메모리</h3>
+      <p>"믿을 수 없는 메모리는 메모리가 아니다." OpenHuman은 Memory Tree의 모든 청크를 <code>.md</code> 파일로 Obsidian 호환 볼트에 저장한다. Obsidian에서 열어보고, 편집하고, 링크를 직접 연결할 수 있다.</p>
+      <p>이건 Karpathy가 <a href="https://x.com/karpathy/status/2039805659525644595" target="_blank" rel="noopener">자신의 Obsidian 위키 워크플로</a>에서 제안한 방식과 같은 맥락이다. AI가 만든 지식 베이스를 인간이 검증하고 보완하는 루프.</p>
+
+      <h3>Auto-fetch — 20분마다 자동 동기화</h3>
+      <p>대부분의 에이전트가 "질문할 때만" 데이터를 가져온다. OpenHuman은 <strong>20분마다</strong> 연결된 모든 서비스에서 새 데이터를 끌어와서 Memory Tree에 반영한다. 아침에 일어나면 에이전트가 이미 어젯밤 이메일과 오늘 일정을 알고 있다.</p>
+
+      <h2>118개 이상의 원클릭 연동</h2>
+      <p>Gmail, Notion, GitHub, Slack, Stripe, Google Calendar, Drive, Linear, Jira… API 키를 수동으로 설정할 필요 없이 <strong>원클릭 OAuth</strong>로 연결된다. 연결된 모든 서비스는 에이전트에게 typed tool로 노출된다.</p>
+      <p>현재 AI 에이전트 시장에서 이 정도 연동을 기본 제공하는 경우는 드물다. 대부분 BYO(Bring Your Own) 방식으로, 사용자가 직접 플러그인을 찾고 설치하고 설정해야 한다.</p>
+
+      <h2>TokenJuice — 토큰 비용 80% 절감</h2>
+      <p>AI 에이전트의 현실적인 문제: <strong>토큰이 비싸다.</strong> 이메일 본문, 검색 결과, 스크래핑 내용, 도구 호출 결과 — 이 모든 게 LLM 컨텍스트를 잡아먹는다.</p>
+      <p>OpenHuman은 <strong>TokenJuice</strong>라는 토큰 압축 레이어를 모든 도구 출력 앞에 둔다:</p>
+      <ul>
+        <li>HTML → 마크다운 변환</li>
+        <li>긴 URL 단축</li>
+        <li>비 ASCII 문자 제거</li>
+        <li>중복 정보 압축</li>
+      </ul>
+      <p>결과: <strong>동일한 정보를 최대 80% 적은 토큰으로 전달</strong>. 최근 6개월 이메일을 스윕해도 한 자릿수 달러면 충분하다.</p>
+
+      <h2>모델 라우팅 — 하나의 구독으로</h2>
+      <p>OpenHuman은 작업 특성에 따라 자동으로 모델을 선택한다:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>작업</th><th>모델</th></tr></thead>
+          <tbody>
+            <tr><td>복잡한 추론</td><td><code>hint:reasoning</code> → 프론티어 모델</td></tr>
+            <tr><td>빠른 응답</td><td><code>hint:fast</code> → 경량 모델</td></tr>
+            <tr><td>이미지 처리</td><td>비전 모델</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>하나의 구독으로 모든 라우팅을 처리한다. 여러 API 키를 관리하거나, 모델별로 요금을 추적할 필요가 없다.</p>
+      <p>선택적으로 <strong>Ollama</strong>를 통한 로컬 AI도 지원한다. 임베딩과 요약을 온디바이스에서 실행하고 싶은 사용자를 위한 옵션.</p>
+
+      <h2>데스크톱 마스코트 — 에이전트에 얼굴이 있다</h2>
+      <p>OpenHuman은 단순한 터미널 도구가 아니다. <strong>데스크톱 마스코트</strong>가 있다.</p>
+      <ul>
+        <li>말을 하고, 반응하고, 주변 환경에 반응한다</li>
+        <li><strong>Google Meet에 실제 참가자로 참석</strong>해서 회의를 녹취하고, 당신을 대신해 발언할 수도 있다</li>
+        <li>타이핑을 멈춰도 <strong>백그라운드에서 계속 생각</strong>한다</li>
+        <li>주에 걸쳐 당신을 기억한다</li>
+      </ul>
+      <p>이건 "챗봇에 아바타 붙이기"가 아니다. 에이전트가 지속적으로 당신의 맥락을 유지하면서, 언제든 대화형으로 개입할 수 있다는 의미다.</p>
+
+      <h2>경쟁사 비교</h2>
+      <p>OpenHuman의 GitHub README에 있는 비교표를 정리하면:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th></th><th>Claude Cowork</th><th>OpenClaw</th><th>Hermes</th><th>OpenHuman</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>오픈소스</td><td>❌</td><td>✅ MIT</td><td>✅ MIT</td><td><strong>✅ GNU</strong></td></tr>
+            <tr><td>시작 난이도</td><td>✅</td><td>⚠️ 터미널 필수</td><td>⚠️ 터미널 필수</td><td><strong>✅ UI</strong></td></tr>
+            <tr><td>비용</td><td>구독+애드온</td><td>BYO 모델</td><td>BYO 모델</td><td><strong>1구독 + TokenJuice</strong></td></tr>
+            <tr><td>메모리</td><td>채팅 범위</td><td>플러그인 의존</td><td>자기학습</td><td><strong>Memory Tree + Obsidian</strong></td></tr>
+            <tr><td>연동</td><td>소수</td><td>BYO</td><td>BYO</td><td><strong>118+ OAuth</strong></td></tr>
+            <tr><td>자동 동기화</td><td>❌</td><td>❌</td><td>❌</td><td><strong>20분 주기</strong></td></tr>
+            <tr><td>모델 라우팅</td><td>단일</td><td>수동</td><td>수동</td><td><strong>자동</strong></td></tr>
+            <tr><td>기본 도구</td><td>코드만</td><td>코드만</td><td>코드만</td><td><strong>코드+검색+스크래퍼+음성</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>기술 스택</h2>
+      <ul>
+        <li><strong>런타임</strong>: Rust + Tauri (Tauri/CEF 내장)</li>
+        <li><strong>프론트엔드</strong>: 웹 UI</li>
+        <li><strong>로컬 DB</strong>: SQLite</li>
+        <li><strong>로컬 AI</strong>: Ollama (선택)</li>
+        <li><strong>음성</strong>: STT 인 + ElevenLabs TTS 아웃 + 마스코트 립싱크</li>
+        <li><strong>라이선스</strong>: GNU GPL-3.0</li>
+      </ul>
+      <p>개발 환경 세팅: Node.js 24+, pnpm 10.10.0, Rust 1.93.0, CMake 필요.</p>
+
+      <h2>설치</h2>
+      <pre><code># macOS / Linux x64
+curl -fsSL https://raw.githubusercontent.com/tinyhumansai/openhuman/main/scripts/install.sh | bash
+
+# Windows
+irm https://raw.githubusercontent.com/tinyhumansai/openhuman/main/scripts/install.ps1 | iex</code></pre>
+      <p>또는 <a href="https://tinyhumans.ai/openhuman" target="_blank" rel="noopener">tinyhumans.ai/openhuman</a>에서 DMG/EXE 다운로드.</p>
+      <blockquote class="warn"><p>⚠️ 현재 <strong>Early Beta</strong> 상태. "거친 부분"이 있을 수 있다고 명시되어 있다.</p></blockquote>
+
+      <h2>생각할 점</h2>
+      <div class="cards">
+        <div class="card good">
+          <h3>가능성</h3>
+          <ul>
+            <li><strong>"Cold start" 문제의 실질적 해결</strong>: 대부분의 AI 에이전트가 "몇 주 쓰면 좋아져요"라고 말하지만, OpenHuman은 연동 즉시 맥락을 확보한다</li>
+            <li><strong>로컬 우선 설계</strong>: 데이터가 내 기기에 있고, 암호화되어 있고, 내가 읽을 수 있다</li>
+            <li><strong>비용 효율</strong>: TokenJuice + 자동 모델 라우팅으로 실제 사용 비용을 크게 낮춘다</li>
+          </ul>
+        </div>
+        <div class="card warn">
+          <h3>아쉬운 점</h3>
+          <ul>
+            <li><strong>GNU GPL-3.0 라이선스</strong>: MIT에 비해 상업적 활용 제약이 있다. 기여한 코드도 동일 라이선스로 공개해야 한다</li>
+            <li><strong>Early Beta</strong>: 실제 안정성과 에지 케이스는 직접 써봐야 알 수 있다</li>
+            <li><strong>구독 모델 불명확</strong>: "One sub"라고 하지만 정확한 가격 구조가 아직 명확하지 않다</li>
+            <li><strong>의존성</strong>: 118개 연동이 장점이지만, OAuth 토큰 관리와 서비스 정책 변경에 대한 대비가 필요하다</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>링크</h2>
+      <div class="links-grid">
+        <a href="https://github.com/tinyhumansai/openhuman" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://tinyhumans.ai/openhuman" target="_blank" rel="noopener">공식 사이트</a>
+        <a href="https://tinyhumans.gitbook.io/openhuman/" target="_blank" rel="noopener">문서</a>
+        <a href="https://discord.tinyhumans.ai/" target="_blank" rel="noopener">Discord</a>
+        <a href="https://x.com/senamakel" target="_blank" rel="noopener">크리에이터 @senamakel</a>
+      </div>
+
+      <div class="closing">
+        <p>OpenHuman은 "더 똑똑한 챗봇"이 아니라 <strong>"당신의 모든 데이터를 소화하고 기억하는 로컬 에이전트"</strong>를 지향한다. AI가 당신에 대해 아는 것이 포스트잇 몇 장이 아니라, 구조화된 지식 그래프가 되는 것. 그 방향성이 당연해 보이면서도, 아직 아무도 제대로 해내지 못한 일이다.</p>
+        <p>Early Beta지만, 방향과 아키텍처는 확실히 주목할 만하다.</p>
+      </div>
+
+    </div>
+  </article>
+
+  <footer>
+    <div class="wrap">
+      <span>OpenHuman 리뷰 · 정보 정리</span>
+      <span>출처: tinyhumans.ai / github.com/tinyhumansai/openhuman</span>
+    </div>
+  </footer>
+
+</body>
+</html>
