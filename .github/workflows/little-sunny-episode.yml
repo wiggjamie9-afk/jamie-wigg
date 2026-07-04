@@ -28,7 +28,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: main
+          # No ref pin: scheduled runs use main, manual dispatch uses the
+          # branch it was dispatched on — so workflow fixes can be tested
+          # from a feature branch before merging.
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: false
 
@@ -129,6 +131,7 @@ jobs:
           EOF
 
       - name: Write YouTube token
+        if: ${{ inputs.dry_run != true }}
         run: |
           python3 -c "
           import json, os
@@ -151,6 +154,9 @@ jobs:
           YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
 
       - name: Validate YouTube token (pre-flight)
+        # Dry runs never upload, so they must not be blocked by dead tokens —
+        # this is what lets us test the build pipeline while OAuth is broken.
+        if: ${{ inputs.dry_run != true }}
         env:
           YT_REFRESH: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
@@ -215,19 +221,33 @@ jobs:
             --script-file "${{ steps.pick-script.outputs.script }}" \
             $DRY_RUN_FLAG
 
+      - name: Persist character reference
+        # Commit the canonical Sonny reference even on dry runs — it is the
+        # seed-locked source of character consistency for every future episode.
+        if: steps.run-pipeline.conclusion == 'success'
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          git add kids-channel/character/ 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "character: persist canonical Sonny reference"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "Character reference unchanged — nothing to commit"
+          fi
+
       - name: Advance queue
-        if: steps.pick-script.outputs.from_queue == 'true' && steps.run-pipeline.conclusion == 'success'
+        # Never advance the queue on a dry run — nothing was published.
+        if: steps.pick-script.outputs.from_queue == 'true' && steps.run-pipeline.conclusion == 'success' && inputs.dry_run != true
         run: |
           git config user.email "sunny-bot@rhythmixapp.com.au"
           git config user.name "Sunny Bot"
           tail -n +2 kids-channel/queue.txt > kids-channel/queue_tmp.txt
           mv kids-channel/queue_tmp.txt kids-channel/queue.txt
           git add kids-channel/queue.txt
-          # Persist the canonical Sonny character reference the first time the
-          # pipeline generates it — keeps the character identical across runs
-          git add kids-channel/character/ 2>/dev/null || true
           git commit -m "queue: processed ${{ steps.pick-script.outputs.script }}"
-          git push origin main
+          git pull --rebase origin ${{ github.ref_name }} || true
+          git push origin HEAD:${{ github.ref_name }}
 
       - name: Upload episode artifacts
         uses: actions/upload-artifact@v4
