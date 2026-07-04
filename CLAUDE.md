@@ -41,7 +41,7 @@ Live site: **rhythmixapp.com.au** — GitHub Pages serves the **repo root** (pus
 | `video/` | Dormant Remotion starter — do not use (ADR-0001). |
 | `*.html` at root | Live marketing pages (full list in `docs/tools-index.md`). |
 | `.agents/skills/` → `.claude/skills/` | Skill sources → symlinks (+ local-only skills). Edit sources, never symlinks. |
-| `.claude/agents/` | FleetView sub-agent definitions — managed by FleetView, do not hand-edit. |
+| `.claude/agents/` | FleetView sub-agent definitions, pruned to the dev + marketing roster (43). Re-sync from FleetView if more are needed; don't hand-edit individual files. |
 | `docs/` | ADRs, agent procedures (`docs/agents/`), automation map, tools index. |
 | `infra/` | Wiki.js + Postgres + Caddy compose (detail in tools-index). |
 
