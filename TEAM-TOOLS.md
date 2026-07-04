@@ -47,6 +47,7 @@ Verify after opening the repo in Claude Code:
 | **NVIDIA audio models** | NVIDIA (mixed licenses) | Music/Audio Flamingo, ETTA, Fugatto, TangoFlux, BigVGAN-v2, etc. Model repos — relevant to the RHYTHMIX audio pipeline; licenses vary (MIT / NVIDIA non-commercial). |
 | **MarkItDown** | `microsoft/markitdown` (MIT) | File → Markdown converter (`pip install 'markitdown[all]'`). Handy for feeding docs to LLMs. |
 | **Flow** (RL trading) | `yazanobeidi/flow` | Q-learning HF-trading sim. Reference + install/run steps in [`reference/flow-trading/`](reference/flow-trading/). Not runnable here; not financial advice. |
+| **Gold overweight playbook** | pasted research | Data-driven gold report rendered as a page → [`sites/gold-playbook/`](sites/gold-playbook/) (tables, scenario matrix, monitoring dashboard, refs). Informational only, not advice. |
 | **French cyber dictionary** | M82-project | Built as a searchable page → [`sites/cyber-dictionnaire/`](sites/cyber-dictionnaire/) (section "F"). |
 | **CFC notebook** | Case-Studies-Python | Implemented as [`sites/brainwave-analyzer/`](sites/brainwave-analyzer/) §5 (phase-amplitude coupling). |
 | Joscha Bach notes · IVAN changelog | pasted | Persisted under [`reference/misc/`](reference/misc/) — reference only, unrelated to this repo. |
