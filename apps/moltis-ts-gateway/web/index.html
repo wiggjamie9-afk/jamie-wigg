@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moltis TS Gateway</title>
+<style>
+  :root{--bg:#0e1116;--panel:#151a22;--line:#242c38;--txt:#e6edf3;--muted:#8b98a9;--accent:#4c8dff;--accent-2:#35e0d6}
+  *{box-sizing:border-box}
+  body{margin:0;height:100vh;display:flex;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt)}
+  aside{width:260px;flex:none;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
+  aside header{padding:16px;border-bottom:1px solid var(--line);font-weight:600;display:flex;align-items:center;gap:8px}
+  aside header .dot{width:8px;height:8px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 8px var(--accent-2)}
+  #new{margin:12px;padding:9px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--txt);cursor:pointer}
+  #new:hover{border-color:var(--accent)}
+  #sessions{flex:1;overflow:auto;padding:4px 8px}
+  .sess{padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sess:hover{background:#1b2230}
+  .sess.active{background:#1f2937;color:var(--txt)}
+  main{flex:1;display:flex;flex-direction:column;min-width:0}
+  #log{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:14px}
+  .msg{max-width:760px;padding:12px 15px;border-radius:12px;white-space:pre-wrap;word-wrap:break-word}
+  .user{align-self:flex-end;background:var(--accent);color:#00122e}
+  .assistant{align-self:flex-start;background:var(--panel);border:1px solid var(--line)}
+  .role{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  form{display:flex;gap:10px;padding:16px;border-top:1px solid var(--line);background:var(--panel)}
+  #input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--txt);font:inherit}
+  #send{padding:0 20px;border-radius:10px;border:0;background:var(--accent);color:#00122e;font-weight:600;cursor:pointer}
+  #send:disabled{opacity:.5;cursor:default}
+  #status{font-size:12px;color:var(--muted);padding:6px 16px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<aside>
+  <header><span class="dot"></span> Moltis TS Gateway</header>
+  <button id="new">+ New chat</button>
+  <div id="sessions"></div>
+</aside>
+<main>
+  <div id="log"></div>
+  <div id="status">connecting…</div>
+  <form id="form">
+    <input id="input" placeholder="Message…" autocomplete="off" autofocus>
+    <button id="send" type="submit">Send</button>
+  </form>
+</main>
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const log = $("#log"), sessionsEl = $("#sessions"), statusEl = $("#status");
+let sessionId = null, ws = null, current = null;
+
+function bubble(role, text){
+  const el = document.createElement("div");
+  el.className = "msg " + role;
+  el.innerHTML = `<div class="role">${role}</div>`;
+  const body = document.createElement("span"); body.textContent = text;
+  el.appendChild(body); log.appendChild(el); log.scrollTop = log.scrollHeight;
+  return body;
+}
+
+async function loadSessions(){
+  const { sessions } = await fetch("/api/sessions").then(r=>r.json());
+  sessionsEl.innerHTML = "";
+  for (const s of sessions){
+    const d = document.createElement("div");
+    d.className = "sess" + (s.id===sessionId?" active":"");
+    d.textContent = s.title || "Untitled";
+    d.onclick = () => openSession(s.id);
+    sessionsEl.appendChild(d);
+  }
+}
+async function openSession(id){
+  sessionId = id; log.innerHTML = "";
+  const { messages } = await fetch(`/api/sessions/${id}/messages`).then(r=>r.json());
+  for (const m of messages) bubble(m.role, m.content);
+  loadSessions();
+}
+
+function connect(){
+  ws = new WebSocket(`ws://${location.host}/ws/chat`);
+  ws.onopen = () => statusEl.textContent = "connected";
+  ws.onclose = () => { statusEl.textContent = "disconnected — retrying…"; setTimeout(connect, 1000); };
+  ws.onmessage = (ev) => {
+    const m = JSON.parse(ev.data);
+    if (m.type==="hello") statusEl.textContent = `connected · ${m.provider}/${m.model} · live chat ${m.liveChat?"on":"off (offline fallback)"}`;
+    else if (m.type==="chat.start"){ sessionId = m.sessionId; current = bubble("assistant",""); }
+    else if (m.type==="chat.delta" && current){ current.textContent += m.delta; log.scrollTop = log.scrollHeight; }
+    else if (m.type==="chat.done"){ current = null; loadSessions(); }
+    else if (m.type==="chat.error" && current){ current.textContent += `\n[error] ${m.error}`; }
+  };
+}
+
+$("#form").onsubmit = (e) => {
+  e.preventDefault();
+  const text = $("#input").value.trim();
+  if (!text || ws?.readyState!==1) return;
+  bubble("user", text);
+  ws.send(JSON.stringify({ type:"chat.send", sessionId, content:text }));
+  $("#input").value = "";
+};
+$("#new").onclick = async () => {
+  const { session } = await fetch("/api/sessions",{method:"POST",headers:{"content-type":"application/json"},body:"{}"}).then(r=>r.json());
+  await openSession(session.id);
+};
+
+connect(); loadSessions();
+</script>
+</body>
+</html>
