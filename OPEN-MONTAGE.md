@@ -65,11 +65,25 @@ montage manifest → runs Layer 1.
 HyperFrames folders (`rhythmix-*`) render standalone promos; stitch several renders into
 one film with Layer 1. See the `hyperframes` skills / ADR-0001.
 
-## The director: OpenManus setup
+## The director — you have three options (two are keyless)
 
-OpenManus is cloned at `vendor/openmanus`. It needs Python 3.12 + an LLM API key and runs
-best on your own machine (this sandbox is ephemeral, no GPU). Config template:
-`open-montage/openmanus.config.toml` (copy to `vendor/openmanus/config/config.toml`).
+The "director" just needs to be *an AI* that decides shots and runs the editor. You do
+**not** need a paid API key for that:
+
+1. **Claude in this chat (keyless, free, now).** I'm already an AI director — give me
+   media, I write the manifest and run the editor. Nothing to install.
+2. **Ollama on your machine (keyless, local).** OpenManus can run entirely on free local
+   models — no API key, no bill. Config: `open-montage/openmanus.ollama.config.toml`
+   (install Ollama, `ollama pull llama3.2`, copy the config, run `python main.py`).
+3. **OpenManus + a hosted key (paid).** Only if you want frontier-model quality via an
+   Anthropic/OpenAI key. Config: `open-montage/openmanus.config.toml`.
+
+> **Cloning OpenManus does not remove the need for a brain.** OpenManus is an agent shell
+> that calls an LLM — the clone is wiring, the LLM is the intelligence. Keyless = use
+> Claude here (option 1) or local Ollama (option 2).
+
+OpenManus is cloned at `vendor/openmanus` (Python 3.12; runs best on your own machine —
+this sandbox is ephemeral, no GPU).
 
 ```bash
 cd vendor/openmanus
