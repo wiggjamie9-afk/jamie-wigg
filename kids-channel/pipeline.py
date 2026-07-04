@@ -1500,8 +1500,8 @@ def assemble_video(scene_videos: list, narration: Path, music: Path,
         raise RuntimeError("ffmpeg concat failed")
 
     # Mix narration + music + video — try increasingly simple approaches
-    has_narration = narration.exists() and narration.stat().st_size > 100
-    has_music = music.exists() and music.stat().st_size > 100
+    has_narration = narration.is_file() and narration.stat().st_size > 100
+    has_music = music.is_file() and music.stat().st_size > 100
 
     def _try(cmd):
         return subprocess.run(cmd, capture_output=True)
@@ -1868,7 +1868,8 @@ def main():
     # 4. Music — Pixabay royalty-free (OpenMontage) first, ffmpeg tones fallback
     total_secs = sum(s.get("duration", 8) for s in script.get("scenes", [])) + 15
     music = generate_music_pixabay(total_secs, episode_dir)
-    if not music.exists() or music.stat().st_size < 100:
+    # Path("") resolves to "." (a directory), so is_file() is the real check here
+    if not music.is_file() or music.stat().st_size < 100:
         music = generate_music(total_secs, episode_dir)
 
     # 5. Assemble
