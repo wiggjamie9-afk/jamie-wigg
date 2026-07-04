@@ -44,23 +44,18 @@ jobs:
                     "deep navy night sky. No text.")
           results = []
 
-          # 1. Pollinations kontext (free image-to-image)
-          try:
-              url = ("https://image.pollinations.ai/prompt/" + requests.utils.quote(PROMPT)
-                     + f"?model=kontext&image={requests.utils.quote(REF_URL)}"
-                     + "&width=1280&height=720&nologo=true&seed=7")
-              r = requests.get(url, timeout=300, headers={"User-Agent": "SonnyBot/1.0"})
-              ok = r.status_code == 200 and len(r.content) > 10000
-              if ok: (OUT / "pollinations-kontext.jpg").write_bytes(r.content)
-              results.append(f"pollinations-kontext: {'OK '+str(len(r.content)//1024)+'KB' if ok else 'FAIL status='+str(r.status_code)+' body='+r.text[:200]}")
-          except Exception as e:
-              results.append(f"pollinations-kontext: ERROR {type(e).__name__}: {e}")
-
-          # 2. Hugging Face ZeroGPU Space FLUX.1-Kontext-Dev via gradio_client
+          # Hugging Face ZeroGPU Space FLUX.1-Kontext-Dev via gradio_client
+          # (Pollinations kontext requires a registered enter.pollinations.ai
+          # token — parked until one exists.)
           try:
               from gradio_client import Client, handle_file
               token = os.environ.get("HF_TOKEN") or None
-              client = Client("black-forest-labs/FLUX.1-Kontext-Dev", hf_token=token)
+              kwargs = {}
+              if token:
+                  import inspect
+                  params = inspect.signature(Client.__init__).parameters
+                  kwargs = {"token": token} if "token" in params else {"hf_token": token}
+              client = Client("black-forest-labs/FLUX.1-Kontext-Dev", **kwargs)
               res = client.predict(
                   input_image=handle_file(REF_URL),
                   prompt=PROMPT,
