@@ -31,6 +31,12 @@ GBrain memory; per-machine install (needs Bun), with an opt-in team mode that ed
 `CLAUDE.md`. **Documented + registered, not auto-wired** — its `required` team mode gates
 the repo, which needs a human call. See [SETUP-GSTACK.md](SETUP-GSTACK.md).
 
+**Toolport** is a local **MCP gateway** desktop app (open-core, MIT) that collapses all
+your MCP servers behind 3 lazy-discovery meta-tools — big token savings when many servers
+are connected (directly relevant to this repo's `.mcp.json`). Per-machine install; edits
+client configs, secrets in OS keychain. **Documented + registered, not wired** (can't run
+durably in the sandbox). See [SETUP-TOOLPORT.md](SETUP-TOOLPORT.md).
+
 Verify after opening the repo in Claude Code:
 ```
 /plugin                       # Marketplaces + installed plugins
@@ -62,6 +68,7 @@ Verify after opening the repo in Claude Code:
 | Joscha Bach notes · IVAN changelog | pasted | Persisted under [`reference/misc/`](reference/misc/) — reference only, unrelated to this repo. |
 | **Awesome Go (Korean-curated)** | pasted link collection | Curated Go learning/library links → [`reference/awesome-go-korean.md`](reference/awesome-go-korean.md) (representative index + note; ask to expand verbatim or render as a searchable `sites/awesome-go/` page). |
 | **freeCodeCamp.org** | `freeCodeCamp/freeCodeCamp` (BSD-3-Clause; curriculum © fCC) | Open-source learning platform + free-cert curriculum → notes in [`reference/freecodecamp.md`](reference/freecodecamp.md); **fully designed landing page** built at [`sites/freecodecamp/`](sites/freecodecamp/) ("campfire in the dark" theme). Unofficial design tribute, not affiliated. |
+| **Claude Code memory docs** | Anthropic official docs | CLAUDE.md vs auto memory, `.claude/rules/` path-scoping, load order, managed policy → condensed reference at [`reference/claude-memory-system.md`](reference/claude-memory-system.md). Notes that this repo's root CLAUDE.md exceeds the 200-line guidance. |
 | **Moltis TS Gateway** (fork scaffold) | pasted README (MIT) | **Runnable** TS AI gateway reimplemented from the fork spec → [`apps/moltis-ts-gateway/`](apps/moltis-ts-gateway/). WebSocket streaming chat + SQLite sessions + REST + optional Redis; boots with offline fallback, 5/5 tests. TS runtime only (no Rust workspace). |
 | Marketing / ad-tech link list · internship table · Awesome VuePress · KB-ALBERT · NVIDIA audio · SpiralOS | pasted lists | Reference bookmark/README collections — not tools. Ask if you want any rendered as a page under `sites/`. |
 
