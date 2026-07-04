@@ -55,10 +55,20 @@ Verify after opening the repo in Claude Code:
 
 ## Clone everything locally
 
-`bash scripts/clone-tools.sh` shallow-clones every clonable tool above into a
-**gitignored `vendor/`** (12 repos, ~660 MB; add `--all` for freeCodeCamp too).
-Idempotent — reruns update in place. Clones are per-machine/per-session; the script is
-the durable artifact.
+`bash scripts/clone-tools.sh` shallow-clones every clonable tool referenced by this
+repo into a **gitignored `vendor/`**, grouped by purpose:
+
+- **DESIGN** (apps/webpages/UI): ui-ux-pro-max-skill, taste-skill, ruixen-ui, penpot,
+  anthropics-skills, mattpocock-skills, superpowers (+marketplace)
+- **AUTOMATION** (agents/browser/orchestration): openmanus, browser-use, video-use,
+  ui-tars-desktop, hermes-agent, opencode, gstack, ecc, neels-plugins, higgsfield-mcp,
+  palmier-pro
+- **MEDIA / REFERENCE**: moviepy, deep-playground, markitdown, spiralos, flow-trading
+- **BIG** (`--all` only): stable-diffusion-webui, freeCodeCamp
+
+24 repos in the core run (~2.3 GB with `--depth 1`). Idempotent — reruns fast-forward in
+place; failures are non-fatal. Clones are per-machine/per-session; the script + SETUP docs
+are the durable artifacts.
 
 ## Resources / references (clone or read — not "installable" as plugins)
 
