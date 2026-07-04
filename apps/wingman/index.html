@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<title>WINGMATE — Your AI Wingman</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg-dot: rgba(255,255,255,0.05);
+    --surface: #161618;
+    --surface-2: #1f1f22;
+    --border: rgba(255,255,255,0.08);
+    --text: #f2f2f3;
+    --text-dim: #8e8e93;
+    --accent: #f5c518;
+    --accent-text: #1a1400;
+    --blue: #3ea6ff;
+    --radius: 18px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(var(--bg-dot) 1px, transparent 1px);
+    background-size: 26px 26px;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .app { display: flex; flex-direction: column; height: 100dvh; max-width: 560px; margin: 0 auto; width: 100%; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(10px + var(--safe-top)) 14px 10px;
+  }
+  .iconbtn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); display: grid; place-items: center;
+    cursor: pointer; flex-shrink: 0; font-size: 17px;
+    transition: background .15s;
+  }
+  .iconbtn:active { background: var(--surface-2); }
+  .topbar .spacer { flex: 1; }
+  .buybtn {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--accent); color: var(--accent-text);
+    border: none; border-radius: 999px; padding: 11px 20px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .buybtn .coin {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent-text); color: var(--accent);
+    display: grid; place-items: center; font-size: 11px;
+  }
+
+  /* ---------- Chat ---------- */
+  .chat {
+    flex: 1; overflow-y: auto; padding: 10px 18px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+    scroll-behavior: smooth;
+  }
+  .daychip {
+    align-self: center; padding: 6px 16px; border-radius: 999px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    color: var(--text-dim); font-size: 14px; margin: 12px 0 6px;
+  }
+  .msg { max-width: 92%; font-size: 19px; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; }
+  .msg.bot { align-self: flex-start; color: var(--text); }
+  .msg.user {
+    align-self: flex-end; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    border-bottom-right-radius: 6px; padding: 12px 16px; font-size: 17px;
+  }
+  .msg.typing { color: var(--text-dim); font-size: 16px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-self: flex-start; }
+  .chip {
+    display: flex; align-items: center; gap: 9px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 999px; padding: 9px 18px 9px 9px;
+    color: var(--text-dim); font-size: 17px; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .chip:active { border-color: var(--accent); color: var(--text); }
+  .chip .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 16px;
+    background: radial-gradient(circle at 30% 30%, #3a4a5a, #12181f);
+    border: 1px solid var(--border);
+  }
+
+  /* ---------- Composer ---------- */
+  .composer-wrap { padding: 0 12px calc(12px + var(--safe-bottom)); }
+  .composer {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; overflow: hidden;
+  }
+  .bonusbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .bonusbar .count {
+    background: #35c3f0; color: #04222d; font-weight: 700;
+    border-radius: 999px; padding: 3px 11px; font-size: 14px;
+  }
+  .bonusbar .label { font-size: 16px; font-weight: 600; flex: 1; }
+  .bonusbar .setup { color: var(--blue); font-size: 16px; font-weight: 600; }
+  .bonusbar.done .count { background: #38d979; color: #06301a; }
+  textarea#input {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 17px; font-family: inherit;
+    padding: 16px 16px 6px; resize: none; height: 56px; max-height: 130px;
+  }
+  textarea#input::placeholder { color: var(--text-dim); }
+  .composer-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px 12px; }
+  .composer-row .spacer { flex: 1; }
+  .cbtn {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    color: var(--text); display: grid; place-items: center;
+    cursor: pointer; font-size: 17px;
+  }
+  .cbtn.send { background: #e9e9ec; color: #111; border: none; }
+  .cbtn.send:disabled { opacity: .4; }
+  .cbtn.mic.rec { background: #e5484d; color: #fff; border: none; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { transform: scale(1.08); } }
+
+  /* ---------- Sheets / modals ---------- */
+  .sheet-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 40;
+  }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    max-width: 560px; margin: 0 auto;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    padding: 14px 20px calc(24px + var(--safe-bottom));
+    transform: translateY(105%); transition: transform .25s ease; max-height: 82dvh; overflow-y: auto;
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+  .sheet .grab { width: 40px; height: 4px; border-radius: 4px; background: var(--border); margin: 0 auto 16px; }
+  .sheet h2 { font-size: 20px; margin-bottom: 4px; }
+  .sheet .sub { color: var(--text-dim); font-size: 15px; margin-bottom: 18px; }
+  .steplist { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; }
+  .step {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px;
+  }
+  .step .tick {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid var(--text-dim); display: grid; place-items: center; font-size: 13px;
+  }
+  .step.done .tick { border-color: #38d979; background: #38d979; color: #06301a; }
+  .step .t { font-size: 16px; }
+  .step .d { font-size: 13px; color: var(--text-dim); }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+  .field input {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 15px; outline: none;
+  }
+  .field input:focus { border-color: var(--blue); }
+  .primary {
+    width: 100%; background: var(--accent); color: var(--accent-text);
+    border: none; border-radius: 14px; padding: 15px; font-size: 17px; font-weight: 700;
+    cursor: pointer; margin-top: 6px;
+  }
+  .ghost {
+    width: 100%; background: transparent; color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 14px; padding: 13px; font-size: 15px;
+    cursor: pointer; margin-top: 10px;
+  }
+  .memlist { display: flex; flex-direction: column; gap: 8px; }
+  .memitem {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; font-size: 15px;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .memitem .del { color: var(--text-dim); cursor: pointer; font-size: 17px; background: none; border: none; }
+  .empty { color: var(--text-dim); font-size: 15px; padding: 10px 2px; }
+  .section-title { font-size: 15px; color: var(--text-dim); margin: 18px 0 8px; text-transform: uppercase; letter-spacing: .06em; }
+  .toast {
+    position: fixed; top: calc(14px + var(--safe-top)); left: 50%; transform: translateX(-50%) translateY(-80px);
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 12px 20px; border-radius: 999px; font-size: 15px; z-index: 60;
+    transition: transform .3s ease; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <button class="iconbtn" id="menuBtn" title="Memory & tasks">☰</button>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="checklistBtn" title="Setup checklist">☑</button>
+    <button class="iconbtn" id="settingsBtn" title="Settings">⚙</button>
+    <button class="buybtn" id="buyBtn"><span class="coin">✦</span><span id="creditLabel">Buy</span></button>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="daychip">Today</div>
+  </div>
+
+  <div class="composer-wrap">
+    <div class="composer">
+      <div class="bonusbar" id="bonusBar">
+        <span class="count" id="bonusCount">0/3</span>
+        <span class="label">Get bonus 20 credits</span>
+        <span class="setup">Set up</span>
+      </div>
+      <textarea id="input" rows="1" placeholder="Reply to Wingmate"></textarea>
+      <div class="composer-row">
+        <button class="cbtn" id="attachBtn" title="Attach">+</button>
+        <button class="cbtn" id="ghBtn" title="Connect GitHub">⌥</button>
+        <div class="spacer"></div>
+        <button class="cbtn mic" id="micBtn" title="Voice input">🎙</button>
+        <button class="cbtn send" id="sendBtn" title="Send">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="backdrop"></div>
+
+<!-- Setup checklist sheet -->
+<div class="sheet" id="setupSheet">
+  <div class="grab"></div>
+  <h2>Get 20 bonus credits</h2>
+  <p class="sub">Teach your wingman the basics — each step makes it smarter.</p>
+  <div class="steplist">
+    <div class="step" id="stepName"><div class="tick">✓</div><div><div class="t">Give your assistant a name</div><div class="d">Pick a preset or type "call you …"</div></div></div>
+    <div class="step" id="stepTask"><div class="tick">✓</div><div><div class="t">Hand over one task</div><div class="d">Tell it one thing you'd love off your plate</div></div></div>
+    <div class="step" id="stepMemory"><div class="tick">✓</div><div><div class="t">Teach it a memory</div><div class="d">Say "remember …" — e.g. "remember I gym at 6am"</div></div></div>
+  </div>
+</div>
+
+<!-- Memory / tasks sheet -->
+<div class="sheet" id="memSheet">
+  <div class="grab"></div>
+  <h2 id="memTitle">Memory</h2>
+  <p class="sub">Everything your wingman knows lives on this device only.</p>
+  <div class="section-title">Memories</div>
+  <div class="memlist" id="memList"></div>
+  <div class="section-title">Tasks</div>
+  <div class="memlist" id="taskList"></div>
+  <button class="ghost" id="clearBtn">Reset everything</button>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet" id="settingsSheet">
+  <div class="grab"></div>
+  <h2>Bring your own brain</h2>
+  <p class="sub">Optional: paste any OpenAI-compatible endpoint and your wingman answers with a real model. Key stays in localStorage on your device.</p>
+  <div class="field"><label>Base URL</label><input id="cfgBase" placeholder="https://api.openai.com/v1"></div>
+  <div class="field"><label>API key</label><input id="cfgKey" type="password" placeholder="sk-…"></div>
+  <div class="field"><label>Model</label><input id="cfgModel" placeholder="gpt-4o-mini"></div>
+  <button class="primary" id="cfgSave">Save</button>
+  <button class="ghost" id="cfgClear">Disconnect &amp; use built-in mode</button>
+</div>
+
+<!-- Buy sheet -->
+<div class="sheet" id="buySheet">
+  <div class="grab"></div>
+  <h2>Credits</h2>
+  <p class="sub" id="buySub"></p>
+  <button class="primary" id="buyDemo">Add 50 demo credits</button>
+  <button class="ghost" id="buyClose">Close</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const LS_KEY = "wingmate.v1";
+  const PERSONAS = [
+    { name: "Alfred", emoji: "🤵", vibe: "calm, butler-precise, dry wit" },
+    { name: "Donna",  emoji: "💁‍♀️", vibe: "sharp, warm, always three steps ahead" },
+    { name: "Jarvis", emoji: "🤖", vibe: "technical, fast, lightly sarcastic" },
+  ];
+  const START_CREDITS = 10;
+  const BONUS = 20;
+
+  const defaults = () => ({
+    agentName: null, persona: null,
+    credits: START_CREDITS, bonusClaimed: false,
+    memories: [], tasks: [],
+    messages: [], // {role:'user'|'bot', text}
+    api: { base: "", key: "", model: "" },
+    onboarded: false,
+  });
+
+  let S = load();
+  function load() {
+    try { return Object.assign(defaults(), JSON.parse(localStorage.getItem(LS_KEY) || "{}")); }
+    catch { return defaults(); }
+  }
+  function save() { localStorage.setItem(LS_KEY, JSON.stringify(S)); }
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const chat = $("chat"), input = $("input");
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._h);
+    t._h = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+
+  // ---------- Rendering ----------
+  function addBubble(role, text, persist = true) {
+    const b = el("div", "msg " + (role === "user" ? "user" : "bot"), text);
+    chat.appendChild(b);
+    chat.scrollTop = chat.scrollHeight;
+    if (persist) { S.messages.push({ role, text }); save(); }
+    return b;
+  }
+  function addChips() {
+    if ($("personaChips")) return;
+    const wrap = el("div", "chips");
+    wrap.id = "personaChips";
+    PERSONAS.forEach(p => {
+      const c = el("button", "chip");
+      const av = el("span", "avatar", p.emoji);
+      c.appendChild(av);
+      c.appendChild(document.createTextNode(p.name));
+      c.onclick = () => { wrap.remove(); setName(p.name, p); };
+      wrap.appendChild(c);
+    });
+    chat.appendChild(wrap);
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function typing(on) {
+    let t = $("typingRow");
+    if (on) {
+      if (!t) { t = addBubble("bot", "", false); t.id = "typingRow"; t.classList.add("typing"); t.textContent = (S.agentName || "Wingmate") + " is thinking…"; }
+    } else if (t) t.remove();
+  }
+
+  // ---------- State helpers ----------
+  function setupCount() {
+    return (S.agentName ? 1 : 0) + (S.tasks.length ? 1 : 0) + (S.memories.length ? 1 : 0);
+  }
+  function refreshHud() {
+    const n = setupCount();
+    $("bonusCount").textContent = n + "/3";
+    $("bonusBar").classList.toggle("done", n === 3);
+    $("creditLabel").textContent = S.credits > 0 ? S.credits : "Buy";
+    input.placeholder = "Reply to " + (S.agentName || "Wingmate");
+    [["stepName", S.agentName], ["stepTask", S.tasks.length], ["stepMemory", S.memories.length]]
+      .forEach(([id, done]) => $(id).classList.toggle("done", !!done));
+    if (n === 3 && !S.bonusClaimed) {
+      S.bonusClaimed = true;
+      S.credits += BONUS;
+      save();
+      toast("🎉 +" + BONUS + " bonus credits");
+      refreshHud();
+    }
+  }
+  function setName(name, persona) {
+    S.agentName = name;
+    S.persona = persona ? persona.vibe : null;
+    save(); refreshHud();
+    botReply(`${persona ? persona.emoji + " " : ""}${name} it is. Love it.\n\nNow — what's one thing you'd hand off this week if you could? Say it plainly, like "chase the plumber quote" or "plan Saturday's dinner".`);
+  }
+  function spendCredit() {
+    if (S.credits <= 0) return false;
+    S.credits -= 1; save(); refreshHud();
+    return true;
+  }
+
+  // ---------- Built-in brain ----------
+  function localBrain(text) {
+    const t = text.trim(); const lower = t.toLowerCase();
+    const nameMatch = lower.match(/(?:call you|name you|your name is|you are|you're)\s+([a-z][a-z0-9 _-]{1,24})/i);
+
+    if (!S.agentName) {
+      if (nameMatch) { setNameFromText(nameMatch[1]); return null; }
+      const single = t.match(/^[A-Za-z][A-Za-z0-9_-]{1,16}$/);
+      if (single) { setNameFromText(single[0]); return null; }
+      return "Happy to be whoever you need — give me a name first (tap a preset above, or just type one), then tell me the task.";
+    }
+    if (nameMatch) { setNameFromText(nameMatch[1]); return null; }
+
+    if (/^(remember|note that|don't forget)\s+/i.test(t)) {
+      const m = t.replace(/^(remember|note that|don't forget)\s+(that\s+)?/i, "");
+      S.memories.push(m); save(); refreshHud();
+      return `Locked in: "${m}". I won't forget.`;
+    }
+    if (/what do you (know|remember)|show (me )?(your )?memor/i.test(lower)) {
+      return S.memories.length
+        ? "Here's what I know so far:\n" + S.memories.map(m => "• " + m).join("\n")
+        : "Nothing yet — teach me with \"remember …\".";
+    }
+    if (/(my |show |list |what).*(tasks?|plate)/i.test(lower)) {
+      return S.tasks.length
+        ? "On your plate with me:\n" + S.tasks.map(m => "• " + m).join("\n")
+        : "No tasks handed over yet. Tell me one thing you'd love off your plate.";
+    }
+    if (/^(hi|hey|hello|yo|gday|g'day)\b/i.test(lower)) {
+      return `Hey! ${S.agentName} here, ready when you are. Hand me a task, teach me a memory, or just think out loud.`;
+    }
+    if (/^(thanks|thank you|cheers|legend)\b/i.test(lower)) {
+      return "Anytime. That's the job. 🫡";
+    }
+    // Default: treat a substantive message as a task hand-off
+    if (t.length > 12) {
+      S.tasks.push(t); save(); refreshHud();
+      return `On it — "${t}" is now my problem, not yours.\n\nHere's how I'd tackle it:\n1. Break it into the first concrete step\n2. Schedule it before it goes stale\n3. Report back\n\n(Built-in mode is a demo brain — connect a real model in ⚙ Settings and I'll actually work the problem.)`;
+    }
+    return `Tell me a bit more and I'll run with it. You can also say "remember …" to teach me something, or ask "what's on my plate?"`;
+  }
+  function setNameFromText(raw) {
+    const name = raw.trim().replace(/\s+/g, " ").replace(/^\w/, c => c.toUpperCase());
+    const preset = PERSONAS.find(p => p.name.toLowerCase() === name.toLowerCase());
+    const chips = $("personaChips"); if (chips) chips.remove();
+    setName(preset ? preset.name : name, preset);
+  }
+
+  // ---------- Real model (optional BYO key) ----------
+  async function apiBrain(text) {
+    const { base, key, model } = S.api;
+    const sys = [
+      `You are ${S.agentName || "Wingmate"}, a personal AI wingman.${S.persona ? " Personality: " + S.persona + "." : ""}`,
+      "Be concise, warm and useful. You have persistent memory supplied below.",
+      S.memories.length ? "Memories:\n" + S.memories.map(m => "- " + m).join("\n") : "",
+      S.tasks.length ? "Open tasks:\n" + S.tasks.map(m => "- " + m).join("\n") : "",
+      'If the user asks you to remember something new, start your reply with the exact line: MEMORY: <the fact>',
+      'If the user hands you a new task, start your reply with the exact line: TASK: <the task>',
+    ].filter(Boolean).join("\n\n");
+    const history = S.messages.slice(-12).map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text }));
+    const res = await fetch(base.replace(/\/$/, "") + "/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ model, messages: [{ role: "system", content: sys }, ...history, { role: "user", content: text }] }),
+    });
+    if (!res.ok) throw new Error("API " + res.status);
+    const data = await res.json();
+    let out = (data.choices?.[0]?.message?.content || "").trim();
+    const mem = out.match(/^MEMORY:\s*(.+)$/m);
+    const task = out.match(/^TASK:\s*(.+)$/m);
+    if (mem) { S.memories.push(mem[1].trim()); out = out.replace(mem[0], "").trim(); }
+    if (task) { S.tasks.push(task[1].trim()); out = out.replace(task[0], "").trim(); }
+    save(); refreshHud();
+    return out || "…";
+  }
+
+  // ---------- Send flow ----------
+  let busy = false;
+  async function send() {
+    const text = input.value.trim();
+    if (!text || busy) return;
+    input.value = ""; autosize();
+    addBubble("user", text);
+    if (!spendCredit()) { openSheet("buySheet"); addBubble("bot", "You're out of credits — top up to keep me talking. (Demo top-up is free.)"); return; }
+    busy = true; typing(true);
+    try {
+      let reply;
+      if (S.api.key && S.api.base && S.api.model) {
+        try { reply = await apiBrain(text); }
+        catch (e) { reply = localBrain(text); if (reply) reply += "\n\n⚠️ (Your API endpoint errored — fell back to built-in mode.)"; }
+      } else {
+        await new Promise(r => setTimeout(r, 500 + Math.random() * 600));
+        reply = localBrain(text);
+      }
+      typing(false);
+      if (reply) botReply(reply);
+    } finally { busy = false; typing(false); }
+  }
+  function botReply(text) { addBubble("bot", text); }
+
+  // ---------- Composer plumbing ----------
+  function autosize() {
+    input.style.height = "56px";
+    input.style.height = Math.min(input.scrollHeight, 130) + "px";
+  }
+  input.addEventListener("input", autosize);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  $("sendBtn").onclick = send;
+  $("attachBtn").onclick = () => toast("Attachments coming soon");
+  $("ghBtn").onclick = () => toast("GitHub connect coming soon");
+
+  // Voice input
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = $("micBtn");
+  let rec = null;
+  micBtn.onclick = () => {
+    if (!SR) { toast("Voice input not supported in this browser"); return; }
+    if (rec) { rec.stop(); return; }
+    rec = new SR();
+    rec.lang = "en-AU"; rec.interimResults = true;
+    micBtn.classList.add("rec");
+    rec.onresult = e => {
+      input.value = Array.from(e.results).map(r => r[0].transcript).join("");
+      autosize();
+    };
+    rec.onend = () => { micBtn.classList.remove("rec"); rec = null; };
+    rec.start();
+  };
+
+  // ---------- Sheets ----------
+  const sheets = ["setupSheet", "memSheet", "settingsSheet", "buySheet"];
+  function openSheet(id) {
+    sheets.forEach(s => $(s).classList.toggle("open", s === id));
+    $("backdrop").classList.add("open");
+    if (id === "memSheet") renderMem();
+    if (id === "buySheet") $("buySub").textContent = `You have ${S.credits} credit${S.credits === 1 ? "" : "s"}. This is a demo clone — no real payments here.`;
+    if (id === "settingsSheet") { $("cfgBase").value = S.api.base; $("cfgKey").value = S.api.key; $("cfgModel").value = S.api.model; }
+  }
+  function closeSheets() {
+    sheets.forEach(s => $(s).classList.remove("open"));
+    $("backdrop").classList.remove("open");
+  }
+  $("backdrop").onclick = closeSheets;
+  $("bonusBar").onclick = () => openSheet("setupSheet");
+  $("checklistBtn").onclick = () => openSheet("setupSheet");
+  $("menuBtn").onclick = () => openSheet("memSheet");
+  $("settingsBtn").onclick = () => openSheet("settingsSheet");
+  $("buyBtn").onclick = () => openSheet("buySheet");
+  $("buyDemo").onclick = () => { S.credits += 50; save(); refreshHud(); closeSheets(); toast("+50 demo credits"); };
+  $("buyClose").onclick = closeSheets;
+
+  $("cfgSave").onclick = () => {
+    S.api = { base: $("cfgBase").value.trim(), key: $("cfgKey").value.trim(), model: $("cfgModel").value.trim() };
+    save(); closeSheets();
+    toast(S.api.key ? "Connected — real-model mode on" : "Saved");
+  };
+  $("cfgClear").onclick = () => { S.api = { base: "", key: "", model: "" }; save(); closeSheets(); toast("Back to built-in mode"); };
+
+  function renderMem() {
+    $("memTitle").textContent = (S.agentName || "Wingmate") + "'s memory";
+    const list = (arr, mount, kind) => {
+      mount.innerHTML = "";
+      if (!arr.length) { mount.appendChild(el("div", "empty", kind === "mem" ? 'Nothing yet — say "remember …"' : "No tasks handed over yet.")); return; }
+      arr.forEach((m, i) => {
+        const row = el("div", "memitem");
+        row.appendChild(el("span", null, m));
+        const del = el("button", "del", "✕");
+        del.onclick = () => { arr.splice(i, 1); save(); refreshHud(); renderMem(); };
+        row.appendChild(del);
+        mount.appendChild(row);
+      });
+    };
+    list(S.memories, $("memList"), "mem");
+    list(S.tasks, $("taskList"), "task");
+  }
+  $("clearBtn").onclick = () => {
+    if (!confirm("Wipe your wingman's memory, tasks and chat?")) return;
+    localStorage.removeItem(LS_KEY);
+    location.reload();
+  };
+
+  // ---------- Boot ----------
+  function boot() {
+    refreshHud();
+    if (S.messages.length) {
+      S.messages.forEach(m => addBubble(m.role, m.text, false));
+      chat.scrollTop = chat.scrollHeight;
+      if (!S.agentName) addChips();
+      return;
+    }
+    if (!S.onboarded) {
+      S.onboarded = true; save();
+      addBubble("bot", "👋 Hey, really glad you're here. I'm online, I've got a memory of my own, and the more you teach me, the better I get. Let's do two quick things: give me a name, and tell me one thing you'd love off your plate this week");
+      addChips();
+    }
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
