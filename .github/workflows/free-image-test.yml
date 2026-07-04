@@ -1,0 +1,97 @@
+name: Free image-generation test
+
+on:
+  push:
+    # Test hook: pushing the trigger file runs a zero-cost experiment — can
+    # free services paint the exact Sonny master artwork into a new scene?
+    branches: [claude/youtube-tv-research-fla0ts]
+    paths: [kids-channel/.free-image-test-trigger]
+
+jobs:
+  test-free-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install requests gradio_client
+
+      - name: Run free-source experiments
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python3 - <<'EOF'
+          import os, requests, pathlib, traceback
+
+          OUT = pathlib.Path("review/freetest"); OUT.mkdir(parents=True, exist_ok=True)
+          REF_URL = ("https://raw.githubusercontent.com/wiggjamie9-afk/jamie-wigg/"
+                     "claude/youtube-tv-research-fla0ts/kids-channel/character/sonny-ref.jpg")
+          PROMPT = ("Keep this exact quokka character completely unchanged - same fur, face, "
+                    "big fluffy ears, cream chest. Place the character beside a gentle moonlit "
+                    "stream with glowing fireflies, watercolour children's book style, "
+                    "deep navy night sky. No text.")
+          results = []
+
+          # 1. Pollinations kontext (free image-to-image)
+          try:
+              url = ("https://image.pollinations.ai/prompt/" + requests.utils.quote(PROMPT)
+                     + f"?model=kontext&image={requests.utils.quote(REF_URL)}"
+                     + "&width=1280&height=720&nologo=true&seed=7")
+              r = requests.get(url, timeout=300, headers={"User-Agent": "SonnyBot/1.0"})
+              ok = r.status_code == 200 and len(r.content) > 10000
+              if ok: (OUT / "pollinations-kontext.jpg").write_bytes(r.content)
+              results.append(f"pollinations-kontext: {'OK '+str(len(r.content)//1024)+'KB' if ok else 'FAIL status='+str(r.status_code)+' body='+r.text[:200]}")
+          except Exception as e:
+              results.append(f"pollinations-kontext: ERROR {type(e).__name__}: {e}")
+
+          # 2. Hugging Face ZeroGPU Space FLUX.1-Kontext-Dev via gradio_client
+          try:
+              from gradio_client import Client, handle_file
+              token = os.environ.get("HF_TOKEN") or None
+              client = Client("black-forest-labs/FLUX.1-Kontext-Dev", hf_token=token)
+              res = client.predict(
+                  input_image=handle_file(REF_URL),
+                  prompt=PROMPT,
+                  seed=7777, randomize_seed=False,
+                  guidance_scale=2.5, steps=24,
+                  api_name="/infer",
+              )
+              img = res[0] if isinstance(res, (list, tuple)) else res
+              p = pathlib.Path(img if isinstance(img, str) else img.get("path", ""))
+              if p.is_file() and p.stat().st_size > 10000:
+                  (OUT / "hf-kontext.png").write_bytes(p.read_bytes())
+                  results.append(f"hf-kontext: OK {p.stat().st_size//1024}KB (token={'yes' if token else 'anonymous'})")
+              else:
+                  results.append(f"hf-kontext: FAIL unexpected result {res!r:.200}")
+          except Exception as e:
+              results.append(f"hf-kontext: ERROR {type(e).__name__}: {str(e)[:300]}")
+
+          report = "\n".join(results)
+          (OUT / "RESULTS.txt").write_text(report + "\n")
+          print(report)
+          EOF
+
+      - name: Commit results
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          git add review/freetest
+          if ! git diff --cached --quiet; then
+            git commit -m "freetest: results of zero-cost character-lock experiment"
+            git pull --rebase origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "No results to commit"
+          fi
