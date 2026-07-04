@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#07090f">
+<title>GENETIC OS — an operating system that evolves</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GeneticOS">
+<style>
+  /* ============ GENOME-DRIVEN DESIGN TOKENS ============
+     Every one of these vars is expressed from the genome.
+     Nothing visual is hardcoded — the OS *is* its DNA.  */
+  :root{
+    --hue: 190;
+    --accent-hue: 320;
+    --sat: 70%;
+    --bg-l: 7%;
+    --glass: 0.55;
+    --radius: 14px;
+    --font-scale: 1;
+    --gap: 14px;
+    --glow: 14px;
+    --ink: hsl(var(--hue), 30%, 92%);
+    --ink-dim: hsl(var(--hue), 18%, 62%);
+    --chrome: hsla(var(--hue), 40%, 12%, var(--glass));
+    --chrome-solid: hsl(var(--hue), 35%, 10%);
+    --line: hsla(var(--hue), var(--sat), 65%, .22);
+    --hi: hsl(var(--hue), var(--sat), 60%);
+    --hi-soft: hsla(var(--hue), var(--sat), 60%, .16);
+    --acc: hsl(var(--accent-hue), var(--sat), 62%);
+    --acc-soft: hsla(var(--accent-hue), var(--sat), 62%, .16);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:calc(15px * var(--font-scale));
+    background:hsl(var(--hue),35%,var(--bg-l));
+    color:var(--ink);
+    user-select:none;
+  }
+  canvas#wall{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+
+  /* ============ BOOT ============ */
+  #boot{position:fixed;inset:0;z-index:1000;background:#05060a;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:22px;transition:opacity .8s ease}
+  #boot.done{opacity:0;pointer-events:none}
+  .boot-helix{font-size:56px;animation:spin 3s linear infinite;filter:drop-shadow(0 0 18px hsl(190,80%,60%))}
+  @keyframes spin{from{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(1.15)}to{transform:rotate(360deg) scale(1)}}
+  .boot-title{font-size:26px;letter-spacing:.4em;font-weight:200;color:#cfeef7}
+  .boot-log{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#4d7a8a;height:64px;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px}
+  .boot-bar{width:min(260px,70vw);height:3px;background:#12202a;border-radius:2px;overflow:hidden}
+  .boot-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2dd4bf,#e879f9);transition:width .25s}
+
+  /* ============ TOP BAR ============ */
+  #topbar{position:fixed;top:0;left:0;right:0;height:42px;z-index:500;
+    display:flex;align-items:center;justify-content:space-between;padding:0 16px;
+    padding-top:env(safe-area-inset-top);
+    background:var(--chrome);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--line);font-size:calc(13px * var(--font-scale))}
+  #topbar .brand{font-weight:700;letter-spacing:.18em;display:flex;gap:8px;align-items:center}
+  #topbar .brand small{font-weight:400;letter-spacing:.05em;color:var(--ink-dim)}
+  #gen-badge{background:var(--hi-soft);border:1px solid var(--line);color:var(--hi);
+    padding:3px 10px;border-radius:calc(var(--radius) * .6);font-family:ui-monospace,Menlo,monospace;
+    font-size:11px;letter-spacing:.12em}
+  #clock{font-family:ui-monospace,Menlo,monospace;color:var(--ink-dim);font-size:12px}
+
+  /* ============ DOCK ============ */
+  #dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));
+    z-index:500;display:flex;gap:calc(var(--gap) * .7);padding:10px 14px;
+    background:var(--chrome);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--line);border-radius:calc(var(--radius) * 1.4);
+    box-shadow:0 8px calc(var(--glow) * 2.4) hsla(var(--hue),var(--sat),50%,.28)}
+  .dock-app{width:52px;height:52px;border-radius:calc(var(--radius) * .9);border:1px solid var(--line);
+    background:var(--hi-soft);font-size:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;transition:transform .18s,background .18s;position:relative}
+  .dock-app:hover{transform:translateY(-6px) scale(1.08);background:var(--acc-soft)}
+  .dock-app:active{transform:scale(.94)}
+  .dock-app.open::after{content:"";position:absolute;bottom:-7px;width:4px;height:4px;border-radius:50%;background:var(--acc)}
+  .dock-app span.lbl{position:absolute;top:-30px;left:50%;transform:translateX(-50%);white-space:nowrap;
+    background:var(--chrome-solid);border:1px solid var(--line);padding:2px 8px;border-radius:6px;
+    font-size:10px;opacity:0;pointer-events:none;transition:opacity .15s}
+  .dock-app:hover span.lbl{opacity:1}
+
+  /* ============ WINDOWS ============ */
+  .win{position:fixed;z-index:100;min-width:280px;display:flex;flex-direction:column;
+    background:var(--chrome);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    box-shadow:0 18px calc(var(--glow) * 3.4) hsla(var(--hue),var(--sat),45%,.35);
+    animation:winin .22s ease}
+  @keyframes winin{from{transform:scale(.92) translateY(14px);opacity:0}to{transform:none;opacity:1}}
+  .win.closing{transition:all .18s;transform:scale(.92) translateY(10px);opacity:0}
+  .win-title{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:grab;touch-action:none;
+    border-bottom:1px solid var(--line);background:hsla(var(--hue),40%,16%,.35);font-size:calc(13px * var(--font-scale));font-weight:600}
+  .win-title:active{cursor:grabbing}
+  .win-dot{width:12px;height:12px;border-radius:50%;background:var(--acc);border:none;cursor:pointer;flex:none}
+  .win-dot:hover{filter:brightness(1.3)}
+  .win-body{padding:calc(var(--gap) * 1);overflow:auto;flex:1;font-size:calc(13.5px * var(--font-scale));line-height:1.55}
+  .win-body::-webkit-scrollbar{width:8px}
+  .win-body::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+
+  /* ============ SHARED UI BITS ============ */
+  .btn{background:var(--hi-soft);border:1px solid var(--line);color:var(--ink);
+    padding:8px 14px;border-radius:calc(var(--radius) * .6);cursor:pointer;font-size:calc(12.5px * var(--font-scale));
+    font-weight:600;transition:background .15s,transform .1s}
+  .btn:hover{background:var(--acc-soft)}
+  .btn:active{transform:scale(.96)}
+  .btn.primary{background:var(--hi);color:hsl(var(--hue),50%,10%)}
+  .btn.primary:hover{filter:brightness(1.15)}
+  .row{display:flex;gap:calc(var(--gap) * .6);align-items:center;flex-wrap:wrap}
+  .muted{color:var(--ink-dim)}
+  .mono{font-family:ui-monospace,Menlo,monospace}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;
+    background:var(--line);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--acc);cursor:pointer;box-shadow:0 0 10px var(--acc)}
+
+  /* ============ EVOLUTION CHAMBER ============ */
+  .brood{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:calc(var(--gap) * .8);margin:12px 0}
+  .specimen{border:2px solid var(--line);border-radius:calc(var(--radius) * .8);overflow:hidden;cursor:pointer;
+    background:var(--chrome-solid);transition:border-color .15s,transform .12s;position:relative}
+  .specimen:hover{transform:translateY(-2px)}
+  .specimen.sel{border-color:var(--acc);box-shadow:0 0 var(--glow) var(--acc-soft)}
+  .specimen.sel::after{content:"✓ parent";position:absolute;top:6px;right:6px;background:var(--acc);
+    color:#000;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:.05em}
+  .specimen canvas{width:100%;height:76px;display:block}
+  .specimen .chips{display:flex;height:10px}
+  .specimen .chips i{flex:1}
+  .specimen .meta{padding:7px 9px;font-size:10.5px;display:flex;justify-content:space-between;align-items:center}
+  .specimen .apply-btn{font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);
+    background:var(--hi-soft);color:var(--ink);cursor:pointer;font-weight:700}
+  .specimen .apply-btn:hover{background:var(--hi);color:#000}
+
+  /* ============ GENE EDITOR ============ */
+  .gene-row{display:grid;grid-template-columns:118px 1fr 52px;gap:10px;align-items:center;padding:7px 0;
+    border-bottom:1px dashed hsla(var(--hue),30%,50%,.12)}
+  .gene-row label{font-size:calc(11.5px * var(--font-scale));letter-spacing:.04em;color:var(--ink-dim)}
+  .gene-row output{font-family:ui-monospace,Menlo,monospace;font-size:11px;text-align:right;color:var(--hi)}
+
+  /* ============ DNA VIEWER ============ */
+  #helix-cv{width:100%;height:170px;border-radius:calc(var(--radius) * .7);border:1px solid var(--line);display:block}
+  .seq{margin-top:12px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.9;
+    word-break:break-all;letter-spacing:2px;user-select:text}
+  .seq b{font-weight:700}
+  .base-A{color:#4ade80}.base-C{color:#60a5fa}.base-G{color:#fbbf24}.base-T{color:#f87171}
+
+  /* ============ TERMINAL ============ */
+  .term{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.65;user-select:text}
+  .term-out{white-space:pre-wrap;min-height:120px}
+  .term-in{display:flex;gap:8px;margin-top:8px;align-items:center}
+  .term-in b{color:var(--acc)}
+  .term-in input{flex:1;background:transparent;border:none;outline:none;color:var(--ink);
+    font-family:inherit;font-size:inherit}
+  .t-dim{color:var(--ink-dim)}.t-hi{color:var(--hi)}.t-acc{color:var(--acc)}
+
+  /* ============ LINEAGE ============ */
+  .lin-item{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px dashed hsla(var(--hue),30%,50%,.12)}
+  .lin-swatch{display:flex;width:60px;height:26px;border-radius:6px;overflow:hidden;border:1px solid var(--line);flex:none}
+  .lin-swatch i{flex:1}
+  .lin-item .g{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--hi);width:64px}
+  .lin-item small{flex:1;color:var(--ink-dim);font-size:11px}
+
+  @media (max-width:640px){
+    .win{left:3vw !important;top:calc(50px + env(safe-area-inset-top)) !important;width:94vw !important;
+      max-height:calc(100dvh - 150px)}
+    .dock-app{width:46px;height:46px;font-size:21px}
+    .gene-row{grid-template-columns:96px 1fr 44px}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="wall"></canvas>
+
+<div id="boot">
+  <div class="boot-helix">🧬</div>
+  <div class="boot-title">GENETIC OS</div>
+  <div class="boot-bar"><i id="boot-fill"></i></div>
+  <div class="boot-log" id="boot-log"></div>
+</div>
+
+<div id="topbar">
+  <div class="brand">🧬 GENETIC OS <small>· every pixel expressed from DNA</small></div>
+  <div id="gen-badge">GEN 000</div>
+  <div id="clock">--:--</div>
+</div>
+
+<div id="dock"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   GENETIC OS
+   A desktop environment whose entire phenotype (colors, glass, motion,
+   typography, wallpaper physics) is expressed from a 14-gene genome.
+   Evolve it: select specimens in the Evolution Chamber, breed them via
+   uniform crossover + gaussian mutation, and the OS becomes its child.
+   ===================================================================== */
+
+/* ---------------- GENOME DEFINITION ----------------
+   Every gene is stored normalized 0..1 and mapped to a phenotype range. */
+const GENES = [
+  {k:"hue",        n:"Base hue",       lo:0,    hi:360, unit:"°",  fmt:v=>Math.round(v)},
+  {k:"accShift",   n:"Accent shift",   lo:40,   hi:320, unit:"°",  fmt:v=>Math.round(v)},
+  {k:"sat",        n:"Saturation",     lo:25,   hi:95,  unit:"%",  fmt:v=>Math.round(v)},
+  {k:"bgLight",    n:"Depth (bg)",     lo:4,    hi:14,  unit:"%",  fmt:v=>v.toFixed(1)},
+  {k:"glass",      n:"Glass opacity",  lo:0.25, hi:0.85,unit:"",   fmt:v=>v.toFixed(2)},
+  {k:"radius",     n:"Corner radius",  lo:2,    hi:26,  unit:"px", fmt:v=>Math.round(v)},
+  {k:"fontScale",  n:"Type scale",     lo:0.85, hi:1.18,unit:"×",  fmt:v=>v.toFixed(2)},
+  {k:"density",    n:"Spacing",        lo:8,    hi:22,  unit:"px", fmt:v=>Math.round(v)},
+  {k:"glow",       n:"Bioluminescence",lo:2,    hi:30,  unit:"px", fmt:v=>Math.round(v)},
+  {k:"wallMode",   n:"Habitat",        lo:0,    hi:3,   unit:"",   discrete:true,
+     fmt:v=>["waves","cells","helix","grid"][Math.round(v)]},
+  {k:"wallScale",  n:"Habitat scale",  lo:0.5,  hi:2.2, unit:"×",  fmt:v=>v.toFixed(2)},
+  {k:"wallSpeed",  n:"Metabolism",     lo:0.15, hi:2.0, unit:"×",  fmt:v=>v.toFixed(2)},
+  {k:"wallChaos",  n:"Entropy",        lo:0,    hi:1,   unit:"",   fmt:v=>v.toFixed(2)},
+  {k:"wallDots",   n:"Cell density",   lo:0,    hi:1,   unit:"",   fmt:v=>v.toFixed(2)},
+];
+const GK = GENES.map(g=>g.k);
+
+const val = (g, key) => {                 // normalized gene -> phenotype value
+  const def = GENES.find(x=>x.k===key);
+  const raw = def.lo + (def.hi - def.lo) * g[key];
+  return def.discrete ? Math.round(raw) : raw;
+};
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+function randomGenome(){
+  const g = {};
+  GK.forEach(k => g[k] = Math.random());
+  return g;
+}
+// The genesis strain — the factory genome the OS boots with on first run.
+const GENESIS = {hue:.53, accShift:.86, sat:.62, bgLight:.3, glass:.55, radius:.46,
+  fontScale:.5, density:.42, glow:.42, wallMode:.66, wallScale:.5, wallSpeed:.45,
+  wallChaos:.35, wallDots:.6};
+
+function crossover(a, b){                 // uniform crossover
+  const child = {};
+  GK.forEach(k => child[k] = (Math.random() < .5 ? a : b)[k]);
+  return child;
+}
+function mutate(g, rate){                 // gaussian jitter per gene
+  const out = {...g};
+  GK.forEach(k=>{
+    if (Math.random() < rate){
+      if (k === "wallMode" && Math.random() < .5){ out[k] = Math.random(); return; }
+      const u1 = Math.random() || 1e-9, u2 = Math.random();
+      const gauss = Math.sqrt(-2*Math.log(u1)) * Math.cos(2*Math.PI*u2);
+      out[k] = clamp01(out[k] + gauss * .13);
+    }
+  });
+  return out;
+}
+function genomeFromSeed(str){             // deterministic genome from a string
+  let h = 2166136261;
+  const g = {};
+  GK.forEach(k=>{
+    for (const c of (k+str)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+    g[k] = ((h >>> 0) % 10000) / 10000;
+  });
+  return g;
+}
+function genomeToDNA(g){                  // serialize: each gene -> 1 byte -> 4 bases (2 bits each)
+  const bases = "ACGT";
+  return GK.map(k=>{
+    const byte = Math.round(g[k] * 255);
+    let s = "";
+    for (let i = 6; i >= 0; i -= 2) s += bases[(byte >> i) & 3];
+    return s;
+  }).join("");
+}
+
+/* ---------------- STATE ---------------- */
+const store = {
+  get(k, d){ try { const v = localStorage.getItem("geneticos-"+k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem("geneticos-"+k, JSON.stringify(v)); } catch(e){} }
+};
+let genome     = store.get("genome", GENESIS);
+let generation = store.get("gen", 0);
+let lineage    = store.get("lineage", [{gen:0, genome:GENESIS, t:Date.now(), note:"genesis strain"}]);
+let mutationRate = store.get("mrate", 0.35);
+let brood = [];          // current offspring candidates in the chamber
+let selected = new Set();// selected specimen indices (parents)
+
+function persist(){
+  store.set("genome", genome); store.set("gen", generation);
+  store.set("lineage", lineage.slice(-60)); store.set("mrate", mutationRate);
+}
+function recordLineage(note){
+  lineage.push({gen:generation, genome:{...genome}, t:Date.now(), note});
+  persist();
+}
+
+/* ---------------- EXPRESS PHENOTYPE (genome -> CSS) ---------------- */
+function expressGenome(){
+  const r = document.documentElement.style;
+  r.setProperty("--hue",        val(genome,"hue").toFixed(0));
+  r.setProperty("--accent-hue", ((val(genome,"hue") + val(genome,"accShift")) % 360).toFixed(0));
+  r.setProperty("--sat",        val(genome,"sat").toFixed(0) + "%");
+  r.setProperty("--bg-l",       val(genome,"bgLight").toFixed(1) + "%");
+  r.setProperty("--glass",      val(genome,"glass").toFixed(2));
+  r.setProperty("--radius",     val(genome,"radius").toFixed(0) + "px");
+  r.setProperty("--font-scale", val(genome,"fontScale").toFixed(3));
+  r.setProperty("--gap",        val(genome,"density").toFixed(0) + "px");
+  r.setProperty("--glow",       val(genome,"glow").toFixed(0) + "px");
+  document.getElementById("gen-badge").textContent = "GEN " + String(generation).padStart(3,"0");
+  document.querySelector('meta[name=theme-color]')
+    .setAttribute("content", `hsl(${val(genome,"hue")},35%,${val(genome,"bgLight")}%)`);
+}
+
+/* ---------------- WALLPAPER (the habitat) ----------------
+   Pure function of (genome, t) so the same renderer draws both the live
+   desktop and the little specimen thumbnails in the chamber. */
+function drawWall(ctx, w, h, g, t){
+  const hue  = val(g,"hue"), acc = (hue + val(g,"accShift")) % 360;
+  const sat  = val(g,"sat"), mode = val(g,"wallMode");
+  const scl  = val(g,"wallScale"), spd = val(g,"wallSpeed");
+  const chaos= val(g,"wallChaos"), dots = val(g,"wallDots");
+  const T = t * spd;
+
+  const bg = ctx.createLinearGradient(0,0,w,h);
+  bg.addColorStop(0, `hsl(${hue},35%,${val(g,"bgLight")}%)`);
+  bg.addColorStop(1, `hsl(${(hue+40)%360},30%,${Math.max(2, val(g,"bgLight")-3)}%)`);
+  ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
+
+  if (mode === 0){ /* WAVES */
+    const layers = 4;
+    for (let i = 0; i < layers; i++){
+      const yBase = h * (0.35 + i * 0.16);
+      const amp = (h * 0.05 + i * h * 0.02) * scl * (1 + chaos);
+      ctx.beginPath(); ctx.moveTo(0, h);
+      for (let x = 0; x <= w; x += 6){
+        const y = yBase
+          + Math.sin(x * 0.004 / scl + T * (0.6 + i * .22)) * amp
+          + Math.sin(x * 0.011 / scl - T * (0.4 + i * .3) + i) * amp * .45 * (0.4 + chaos);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, h); ctx.closePath();
+      const hh = (hue + i * (18 + chaos * 40)) % 360;
+      ctx.fillStyle = `hsla(${hh},${sat}%,${28 + i*7}%,${0.16 + i*0.05})`;
+      ctx.fill();
+    }
+  } else if (mode === 1){ /* CELLS — drifting organelles */
+    const n = Math.round(6 + dots * 16);
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < n; i++){
+      const sx = Math.sin(i * 12.9898) * .5 + .5, sy = Math.sin(i * 78.233) * .5 + .5;
+      const x = ((sx + Math.sin(T * .3 + i) * .12 * (1 + chaos)) % 1) * w;
+      const y = ((sy + Math.cos(T * .22 + i * 1.7) * .12 * (1 + chaos)) % 1) * h;
+      const r = (30 + (i % 5) * 22) * scl * (Math.min(w,h) / 700 + .4);
+      const hh = i % 3 === 0 ? acc : hue;
+      const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
+      grd.addColorStop(0, `hsla(${hh},${sat}%,55%,.22)`);
+      grd.addColorStop(.7, `hsla(${hh},${sat}%,45%,.07)`);
+      grd.addColorStop(1, "transparent");
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+      ctx.strokeStyle = `hsla(${hh},${sat}%,70%,.14)`;
+      ctx.beginPath(); ctx.arc(x, y, r * .45 * (1 + Math.sin(T + i) * .1), 0, 7); ctx.stroke();
+    }
+    ctx.globalCompositeOperation = "source-over";
+  } else if (mode === 2){ /* HELIX — a strand of DNA drifting through */
+    const cy = h / 2, amp = h * .22 * scl, steps = Math.round(24 + dots * 40);
+    for (let i = 0; i <= steps; i++){
+      const x = (i / steps) * w;
+      const ph = x * .012 / scl + T;
+      const y1 = cy + Math.sin(ph) * amp, y2 = cy + Math.sin(ph + Math.PI) * amp;
+      const depth1 = (Math.cos(ph) + 1) / 2, depth2 = (Math.cos(ph + Math.PI) + 1) / 2;
+      if (i % 2 === 0){ // rungs
+        ctx.strokeStyle = `hsla(${hue},${sat}%,60%,${.06 + chaos * .1})`;
+        ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2); ctx.stroke();
+      }
+      const r1 = 2.5 + depth1 * 4 * scl, r2 = 2.5 + depth2 * 4 * scl;
+      ctx.fillStyle = `hsla(${hue},${sat}%,62%,${.25 + depth1 * .5})`;
+      ctx.beginPath(); ctx.arc(x, y1, r1, 0, 7); ctx.fill();
+      ctx.fillStyle = `hsla(${acc},${sat}%,62%,${.25 + depth2 * .5})`;
+      ctx.beginPath(); ctx.arc(x, y2, r2, 0, 7); ctx.fill();
+    }
+  } else { /* GRID — pulsing lattice */
+    const cell = (34 + (1 - dots) * 50) * scl;
+    const off = (T * 20) % cell;
+    ctx.strokeStyle = `hsla(${hue},${sat}%,55%,.10)`; ctx.lineWidth = 1;
+    for (let x = -off; x < w; x += cell){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+    for (let y = -off; y < h; y += cell){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+    const pulses = Math.round(3 + chaos * 8);
+    for (let i = 0; i < pulses; i++){
+      const px = (Math.sin(i * 12.9898) * .5 + .5) * w, py = (Math.sin(i * 78.233) * .5 + .5) * h;
+      const pr = ((T * .5 + i / pulses) % 1) * 160 * scl;
+      ctx.strokeStyle = `hsla(${i % 2 ? acc : hue},${sat}%,60%,${.35 * (1 - pr / (160 * scl))})`;
+      ctx.beginPath(); ctx.arc(Math.round(px / cell) * cell - off, Math.round(py / cell) * cell - off, pr, 0, 7); ctx.stroke();
+    }
+  }
+}
+
+const wallCv = document.getElementById("wall");
+const wallCtx = wallCv.getContext("2d");
+function sizeWall(){
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  wallCv.width = innerWidth * dpr; wallCv.height = innerHeight * dpr;
+  wallCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener("resize", sizeWall); sizeWall();
+(function loop(){
+  drawWall(wallCtx, innerWidth, innerHeight, genome, performance.now() / 1000);
+  requestAnimationFrame(loop);
+})();
+
+/* ---------------- WINDOW MANAGER ---------------- */
+let zTop = 100, winCount = 0;
+const openWins = {};
+
+function openWindow(id, title, html, opts = {}){
+  if (openWins[id]){ focusWin(openWins[id]); return openWins[id]; }
+  const el = document.createElement("div");
+  el.className = "win"; el.dataset.app = id;
+  const w = Math.min(opts.w || 420, innerWidth - 24);
+  el.style.width = w + "px";
+  if (opts.h) el.style.maxHeight = Math.min(opts.h, innerHeight - 140) + "px";
+  el.style.left = Math.max(8, (innerWidth - w) / 2 + (winCount % 5 - 2) * 34) + "px";
+  el.style.top  = (66 + (winCount % 5) * 30) + "px";
+  el.style.zIndex = ++zTop;
+  el.innerHTML = `<div class="win-title"><button class="win-dot" title="close"></button><span>${title}</span></div>
+    <div class="win-body">${html}</div>`;
+  document.body.appendChild(el);
+  openWins[id] = el; winCount++;
+  dockDot(id, true);
+
+  el.addEventListener("pointerdown", () => focusWin(el));
+  el.querySelector(".win-dot").addEventListener("click", () => closeWindow(id));
+
+  // drag (pointer events => mouse + touch)
+  const bar = el.querySelector(".win-title");
+  bar.addEventListener("pointerdown", e => {
+    if (e.target.classList.contains("win-dot")) return;
+    const sx = e.clientX - el.offsetLeft, sy = e.clientY - el.offsetTop;
+    bar.setPointerCapture(e.pointerId);
+    const move = ev => {
+      el.style.left = Math.max(-w + 80, Math.min(innerWidth - 60, ev.clientX - sx)) + "px";
+      el.style.top  = Math.max(44, Math.min(innerHeight - 60, ev.clientY - sy)) + "px";
+    };
+    const up = () => { bar.removeEventListener("pointermove", move); bar.removeEventListener("pointerup", up); };
+    bar.addEventListener("pointermove", move);
+    bar.addEventListener("pointerup", up);
+  });
+  return el;
+}
+function focusWin(el){ el.style.zIndex = ++zTop; }
+function closeWindow(id){
+  const el = openWins[id]; if (!el) return;
+  el.classList.add("closing");
+  setTimeout(() => el.remove(), 180);
+  delete openWins[id]; dockDot(id, false);
+}
+function dockDot(id, on){
+  const d = document.querySelector(`.dock-app[data-app="${id}"]`);
+  if (d) d.classList.toggle("open", on);
+}
+function refreshOpenWindows(){
+  // re-render live windows whose content depends on the genome
+  if (openWins.editor)  renderEditor();
+  if (openWins.dna)     renderDNA();
+  if (openWins.lineage) renderLineage();
+}
+
+/* ---------------- APPLY / EVOLVE ---------------- */
+function applyGenome(g, note){
+  genome = {...g};
+  generation++;
+  expressGenome();
+  recordLineage(note || "manual apply");
+  refreshOpenWindows();
+}
+
+/* ---------------- APP: EVOLUTION CHAMBER ---------------- */
+function newBrood(){
+  const parents = [...selected].map(i => brood[i]);
+  const pA = parents[0] || genome;
+  const pB = parents[1] || parents[0] || mutate(genome, 0.9);
+  brood = Array.from({length:6}, () => mutate(crossover(pA, pB), mutationRate));
+  selected = new Set();
+}
+function specimenCard(g, i){
+  const hue = val(g,"hue"), acc = (hue + val(g,"accShift")) % 360, sat = val(g,"sat");
+  return `<div class="specimen" data-i="${i}">
+    <canvas width="300" height="152"></canvas>
+    <div class="chips">
+      <i style="background:hsl(${hue},${sat}%,55%)"></i>
+      <i style="background:hsl(${acc},${sat}%,58%)"></i>
+      <i style="background:hsl(${hue},30%,${val(g,"bgLight")+6}%)"></i>
+    </div>
+    <div class="meta"><span class="mono muted">#${String(i+1)} · ${GENES[9].fmt(val(g,"wallMode"))}</span>
+    <button class="apply-btn" data-apply="${i}">HATCH</button></div>
+  </div>`;
+}
+function renderChamber(){
+  const el = openWins.chamber; if (!el) return;
+  const body = el.querySelector(".win-body");
+  body.innerHTML = `
+    <p class="muted" style="margin-bottom:10px">Six offspring bred from the current OS genome.
+    Tap up to two specimens to mark them as <b style="color:var(--acc)">parents</b>, then breed —
+    or <b style="color:var(--hi)">HATCH</b> one to make it the living OS.</p>
+    <div class="brood">${brood.map((g,i)=>specimenCard(g,i)).join("")}</div>
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <button class="btn primary" id="breed-btn">⚡ Breed generation</button>
+        <button class="btn" id="reroll-btn">🎲 Reroll brood</button>
+      </div>
+      <div class="row" style="min-width:170px;flex:1;max-width:240px">
+        <span class="muted" style="font-size:11px">mutation</span>
+        <input type="range" id="mrate" min="0.05" max="0.9" step="0.05" value="${mutationRate}" style="flex:1">
+        <output class="mono" style="font-size:11px;color:var(--hi)" id="mrate-out">${mutationRate.toFixed(2)}</output>
+      </div>
+    </div>`;
+  // paint thumbnails with the shared wallpaper renderer
+  body.querySelectorAll(".specimen").forEach((card, i) => {
+    const cv = card.querySelector("canvas");
+    drawWall(cv.getContext("2d"), cv.width, cv.height, brood[i], 12 + i * 3);
+    card.addEventListener("click", e => {
+      if (e.target.dataset.apply !== undefined && e.target.dataset.apply !== "") return;
+      if (selected.has(i)) selected.delete(i);
+      else { if (selected.size >= 2) selected.delete([...selected][0]); selected.add(i); }
+      body.querySelectorAll(".specimen").forEach((c,j)=>c.classList.toggle("sel", selected.has(j)));
+    });
+  });
+  body.querySelectorAll("[data-apply]").forEach(btn => btn.addEventListener("click", e => {
+    e.stopPropagation();
+    applyGenome(brood[+btn.dataset.apply], "hatched from chamber");
+    newBrood(); renderChamber();
+  }));
+  body.querySelector("#breed-btn").addEventListener("click", () => { newBrood(); renderChamber(); });
+  body.querySelector("#reroll-btn").addEventListener("click", () => {
+    selected = new Set(); brood = Array.from({length:6}, () => mutate(genome, Math.max(mutationRate, .5)));
+    renderChamber();
+  });
+  const mr = body.querySelector("#mrate");
+  mr.addEventListener("input", () => {
+    mutationRate = +mr.value; body.querySelector("#mrate-out").textContent = mutationRate.toFixed(2); persist();
+  });
+}
+
+/* ---------------- APP: GENE EDITOR ---------------- */
+function renderEditor(){
+  const el = openWins.editor; if (!el) return;
+  const body = el.querySelector(".win-body");
+  body.innerHTML = `<p class="muted" style="margin-bottom:6px">Direct germline editing — drag a gene and the
+    phenotype re-expresses live. CRISPR without the ethics committee.</p>` +
+    GENES.map(g => `<div class="gene-row">
+      <label>${g.n}</label>
+      <input type="range" min="0" max="1000" value="${Math.round(genome[g.k]*1000)}" data-g="${g.k}">
+      <output>${g.fmt(val(genome,g.k))}${g.unit}</output>
+    </div>`).join("") +
+    `<div class="row" style="margin-top:12px">
+      <button class="btn primary" id="commit-genes">🧬 Commit as new generation</button>
+      <button class="btn" id="rand-genes">🎲 Randomize</button>
+    </div>`;
+  body.querySelectorAll("input[data-g]").forEach(sl => sl.addEventListener("input", () => {
+    genome[sl.dataset.g] = +sl.value / 1000;
+    expressGenome();
+    const def = GENES.find(x=>x.k===sl.dataset.g);
+    sl.parentElement.querySelector("output").textContent = def.fmt(val(genome, def.k)) + def.unit;
+    if (openWins.dna) renderDNA();
+  }));
+  body.querySelector("#commit-genes").addEventListener("click", () => {
+    generation++; expressGenome(); recordLineage("germline edit"); refreshOpenWindows();
+  });
+  body.querySelector("#rand-genes").addEventListener("click", () => {
+    genome = randomGenome(); expressGenome(); renderEditor(); if (openWins.dna) renderDNA();
+  });
+}
+
+/* ---------------- APP: DNA VIEWER ---------------- */
+let helixRAF = null;
+function renderDNA(){
+  const el = openWins.dna; if (!el) return;
+  const body = el.querySelector(".win-body");
+  const dna = genomeToDNA(genome);
+  body.innerHTML = `<canvas id="helix-cv" width="760" height="340"></canvas>
+    <p class="muted" style="margin-top:10px;font-size:11.5px">Genome serialized to base-4 —
+    ${GK.length} genes × 4 bases = ${dna.length} bp. This exact sequence <i>is</i> the OS you're looking at.</p>
+    <div class="seq">${[...dna].map((b,i) =>
+      `<b class="base-${b}">${b}</b>${(i+1)%4===0?" ":""}`).join("")}</div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="copy-dna">📋 Copy sequence</button>
+      <button class="btn" id="inject-dna">💉 Inject sequence…</button>
+    </div>`;
+  const cv = body.querySelector("#helix-cv"), ctx = cv.getContext("2d");
+  if (helixRAF) cancelAnimationFrame(helixRAF);
+  (function anim(){
+    if (!openWins.dna) return;
+    drawWall(ctx, cv.width, cv.height, {...genome, wallMode: 2/3 /* force helix habitat */},
+      performance.now()/1000);
+    helixRAF = requestAnimationFrame(anim);
+  })();
+  body.querySelector("#copy-dna").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(dna); toast("sequence copied"); } catch(e){ toast("copy blocked"); }
+  });
+  body.querySelector("#inject-dna").addEventListener("click", () => {
+    const s = prompt("Paste a " + dna.length + "bp ACGT sequence (or any text to use as a seed):");
+    if (!s) return;
+    const clean = s.trim().toUpperCase();
+    if (new RegExp(`^[ACGT]{${dna.length}}$`).test(clean)){
+      const g = {};
+      GK.forEach((k,i)=>{
+        let byte = 0;
+        for (let j = 0; j < 4; j++) byte = (byte << 2) | "ACGT".indexOf(clean[i*4+j]);
+        g[k] = byte / 255;
+      });
+      applyGenome(g, "injected sequence");
+    } else {
+      applyGenome(genomeFromSeed(s), `seeded from "${s.slice(0,24)}"`);
+    }
+    renderDNA();
+  });
+}
+
+/* ---------------- APP: LINEAGE ---------------- */
+function renderLineage(){
+  const el = openWins.lineage; if (!el) return;
+  const body = el.querySelector(".win-body");
+  body.innerHTML = `<p class="muted" style="margin-bottom:8px">Every generation this OS has ever been.
+    Tap one to resurrect it.</p>` +
+    [...lineage].reverse().map(item => {
+      const g = item.genome, hue = val(g,"hue"), acc = (hue + val(g,"accShift")) % 360, sat = val(g,"sat");
+      return `<div class="lin-item" style="cursor:pointer" data-gen="${item.gen}">
+        <span class="g">GEN ${String(item.gen).padStart(3,"0")}</span>
+        <span class="lin-swatch">
+          <i style="background:hsl(${hue},${sat}%,55%)"></i>
+          <i style="background:hsl(${acc},${sat}%,58%)"></i>
+          <i style="background:hsl(${hue},30%,${val(g,"bgLight")+5}%)"></i>
+        </span>
+        <small>${item.note || ""} · ${new Date(item.t).toLocaleString()}</small>
+      </div>`;
+    }).join("");
+  body.querySelectorAll(".lin-item").forEach(row => row.addEventListener("click", () => {
+    const item = lineage.find(x => x.gen === +row.dataset.gen);
+    if (item) applyGenome(item.genome, "resurrected GEN " + item.gen);
+  }));
+}
+
+/* ---------------- APP: TERMINAL ---------------- */
+const TERM_HELP =
+`  help              this
+  genome            print the current genome
+  dna               print the base-4 sequence
+  mutate [rate]     mutate + apply (default rate ${'`'}0.35${'`'})
+  evolve            open the evolution chamber
+  seed <text>       grow a genome from any text
+  load <gen>        resurrect a generation from the lineage
+  lineage           list all generations
+  reset             restore the genesis strain
+  clear             clear terminal`;
+function termPrint(out, html){ out.insertAdjacentHTML("beforeend", html + "\n"); out.parentElement.scrollTop = 1e6; }
+function renderTerminal(){
+  const el = openWins.terminal; if (!el) return;
+  const body = el.querySelector(".win-body");
+  body.innerHTML = `<div class="term"><div class="term-out" id="tout"><span class="t-hi">GENETIC OS bio-shell</span> — type <span class="t-acc">help</span>\n</div>
+    <div class="term-in"><b>🧬›</b><input id="tin" autocomplete="off" spellcheck="false" placeholder="command…"></div></div>`;
+  const out = body.querySelector("#tout"), inp = body.querySelector("#tin");
+  body.addEventListener("click", () => inp.focus());
+  inp.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    const line = inp.value.trim(); inp.value = "";
+    if (!line) return;
+    termPrint(out, `<span class="t-acc">🧬›</span> ${line.replace(/</g,"&lt;")}`);
+    const [cmd, ...args] = line.split(/\s+/);
+    switch (cmd.toLowerCase()){
+      case "help": termPrint(out, `<span class="t-dim">${TERM_HELP}</span>`); break;
+      case "genome":
+        termPrint(out, GENES.map(g =>
+          `  <span class="t-dim">${g.n.padEnd(16)}</span> <span class="t-hi">${g.fmt(val(genome,g.k))}${g.unit}</span>`).join("\n"));
+        break;
+      case "dna": termPrint(out, `<span class="t-hi">${genomeToDNA(genome)}</span>`); break;
+      case "mutate": {
+        const r = Math.min(1, Math.max(0, parseFloat(args[0]) || 0.35));
+        applyGenome(mutate(genome, r), `terminal mutate ${r}`);
+        termPrint(out, `<span class="t-dim">mutated at rate ${r} → now GEN ${generation}</span>`); break;
+      }
+      case "evolve": launch("chamber"); termPrint(out, `<span class="t-dim">chamber opened</span>`); break;
+      case "seed": {
+        const s = args.join(" ");
+        if (!s){ termPrint(out, `<span class="t-dim">usage: seed &lt;text&gt;</span>`); break; }
+        applyGenome(genomeFromSeed(s), `seeded from "${s.slice(0,24)}"`);
+        termPrint(out, `<span class="t-dim">grown from seed → GEN ${generation}</span>`); break;
+      }
+      case "load": {
+        const item = lineage.find(x => x.gen === +args[0]);
+        if (item){ applyGenome(item.genome, "resurrected GEN " + item.gen);
+          termPrint(out, `<span class="t-dim">GEN ${args[0]} resurrected → GEN ${generation}</span>`); }
+        else termPrint(out, `<span class="t-dim">no GEN ${args[0]} in lineage</span>`);
+        break;
+      }
+      case "lineage":
+        termPrint(out, lineage.map(x =>
+          `  <span class="t-hi">GEN ${String(x.gen).padStart(3,"0")}</span> <span class="t-dim">${x.note||""}</span>`).join("\n"));
+        break;
+      case "reset":
+        genome = {...GENESIS}; generation = 0;
+        lineage = [{gen:0, genome:GENESIS, t:Date.now(), note:"genesis strain"}];
+        expressGenome(); persist(); refreshOpenWindows();
+        termPrint(out, `<span class="t-dim">genesis strain restored</span>`); break;
+      case "clear": out.innerHTML = ""; break;
+      default: termPrint(out, `<span class="t-dim">unknown gene: ${cmd} — try help</span>`);
+    }
+  });
+  setTimeout(() => inp.focus(), 100);
+}
+
+/* ---------------- APP: ABOUT ---------------- */
+const ABOUT_HTML = `
+  <div style="text-align:center;padding:8px 0 14px"><div style="font-size:44px">🧬</div>
+  <h2 style="letter-spacing:.25em;font-weight:300;margin-top:6px">GENETIC OS</h2>
+  <p class="muted" style="font-size:12px">v1.0 · the operating system that evolves</p></div>
+  <p>Most operating systems are <i>designed</i>. This one is <b>bred</b>.</p>
+  <p style="margin-top:8px">Every visual trait on this screen — the palette, the glass, the corner radii,
+  the typography, the physics of the wallpaper behind you — is expressed from a
+  <b>14-gene genome</b>. Nothing is themed; everything is inherited.</p>
+  <p style="margin-top:8px">Open the <b>🧪 Evolution Chamber</b> and breed six offspring. Pick the two you
+  like — that's your fitness function — and breed again. Uniform crossover mixes their genes,
+  gaussian mutation keeps the gene pool weird, and when you find one worth living in, hit
+  <b>HATCH</b>. The OS becomes its own child, and the old self is archived in the <b>🌳 Lineage</b>.</p>
+  <p style="margin-top:8px" class="muted">Selection · Crossover · Mutation · Heredity — the whole Darwin
+  starter pack, running in your browser. Genome persists locally; no server, no accounts, no cloud.</p>`;
+
+/* ---------------- DOCK / LAUNCHER ---------------- */
+const APPS = [
+  {id:"chamber",  icon:"🧪", label:"Evolution Chamber", w:560, open(){ if (!brood.length) newBrood(); openWindow("chamber","🧪 Evolution Chamber","",{w:560}); renderChamber(); }},
+  {id:"editor",   icon:"🎛️", label:"Gene Editor",       w:460, open(){ openWindow("editor","🎛️ Gene Editor","",{w:460,h:560}); renderEditor(); }},
+  {id:"dna",      icon:"🧬", label:"DNA Viewer",        w:520, open(){ openWindow("dna","🧬 DNA Viewer","",{w:520}); renderDNA(); }},
+  {id:"lineage",  icon:"🌳", label:"Lineage",           w:440, open(){ openWindow("lineage","🌳 Lineage","",{w:440,h:480}); renderLineage(); }},
+  {id:"terminal", icon:"⌨️", label:"Bio-shell",         w:520, open(){ openWindow("terminal","⌨️ bio-shell","",{w:520,h:420}); renderTerminal(); }},
+  {id:"about",    icon:"ℹ️", label:"About",             w:420, open(){ openWindow("about","ℹ️ About Genetic OS", ABOUT_HTML, {w:430,h:520}); }},
+];
+function launch(id){ APPS.find(a => a.id === id).open(); }
+document.getElementById("dock").innerHTML = APPS.map(a =>
+  `<div class="dock-app" data-app="${a.id}"><span class="lbl">${a.label}</span>${a.icon}</div>`).join("");
+document.querySelectorAll(".dock-app").forEach(d => d.addEventListener("click", () => launch(d.dataset.app)));
+
+/* ---------------- TOAST ---------------- */
+function toast(msg){
+  const t = document.createElement("div");
+  t.textContent = msg;
+  t.style.cssText = `position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:900;
+    background:var(--chrome-solid);border:1px solid var(--line);color:var(--ink);
+    padding:8px 16px;border-radius:var(--radius);font-size:12px;opacity:0;transition:opacity .25s`;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.style.opacity = 1);
+  setTimeout(() => { t.style.opacity = 0; setTimeout(() => t.remove(), 300); }, 1800);
+}
+
+/* ---------------- CLOCK ---------------- */
+function tick(){
+  const d = new Date();
+  document.getElementById("clock").textContent =
+    d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+}
+setInterval(tick, 10000); tick();
+
+/* ---------------- OFFLINE (PWA) ---------------- */
+if ("serviceWorker" in navigator){
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+
+/* ---------------- BOOT SEQUENCE ---------------- */
+expressGenome();
+const BOOT_LINES = [
+  "sequencing genome … 14 genes found",
+  "transcribing phenotype …",
+  "folding interface proteins …",
+  "expressing habitat GEN " + String(generation).padStart(3,"0") + " …",
+  "organism viable ✓",
+];
+(function boot(){
+  const log = document.getElementById("boot-log"), fill = document.getElementById("boot-fill");
+  BOOT_LINES.forEach((line, i) => setTimeout(() => {
+    log.insertAdjacentHTML("beforeend", `<div>${line}</div>`);
+    fill.style.width = ((i + 1) / BOOT_LINES.length * 100) + "%";
+  }, 320 * i + 200));
+  setTimeout(() => {
+    document.getElementById("boot").classList.add("done");
+    // first-run welcome: open the chamber so evolution starts immediately
+    if (!store.get("visited", false)){ store.set("visited", true); launch("about"); launch("chamber"); }
+  }, 320 * BOOT_LINES.length + 700);
+})();
+</script>
+</body>
+</html>
