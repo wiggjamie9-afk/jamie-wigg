@@ -46,7 +46,11 @@ Verify after opening the repo in Claude Code:
 | **SpiralOS** | `TheHeurist/SpiralOS` (MIT) | Conceptual "operating system of knowing" — epistemic framework, schemas, docs. Clone to read; not a plugin. |
 | **NVIDIA audio models** | NVIDIA (mixed licenses) | Music/Audio Flamingo, ETTA, Fugatto, TangoFlux, BigVGAN-v2, etc. Model repos — relevant to the RHYTHMIX audio pipeline; licenses vary (MIT / NVIDIA non-commercial). |
 | **MarkItDown** | `microsoft/markitdown` (MIT) | File → Markdown converter (`pip install 'markitdown[all]'`). Handy for feeding docs to LLMs. |
-| Marketing / ad-tech link list · internship table · Awesome VuePress · KB-ALBERT | pasted lists | Reference bookmark collections — not tools. Ask if you want any rendered as a page under `sites/`. |
+| **Flow** (RL trading) | `yazanobeidi/flow` | Q-learning HF-trading sim. Reference + install/run steps in [`reference/flow-trading/`](reference/flow-trading/). Not runnable here; not financial advice. |
+| **French cyber dictionary** | M82-project | Built as a searchable page → [`sites/cyber-dictionnaire/`](sites/cyber-dictionnaire/) (section "F"). |
+| **CFC notebook** | Case-Studies-Python | Implemented as [`sites/brainwave-analyzer/`](sites/brainwave-analyzer/) §5 (phase-amplitude coupling). |
+| Joscha Bach notes · IVAN changelog | pasted | Persisted under [`reference/misc/`](reference/misc/) — reference only, unrelated to this repo. |
+| Marketing / ad-tech link list · internship table · Awesome VuePress · KB-ALBERT · NVIDIA audio · SpiralOS | pasted lists | Reference bookmark/README collections — not tools. Ask if you want any rendered as a page under `sites/`. |
 
 ## Caveats (read once)
 
