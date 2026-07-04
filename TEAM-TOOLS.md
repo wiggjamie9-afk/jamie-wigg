@@ -23,6 +23,7 @@ repo so it travels via git** — not installed onto any one machine.
 | **UI-UX Pro Max** — design-system generator (161 product types, 67 styles, palettes, type) | `nextlevelbuilder/ui-ux-pro-max-skill` | `ui-ux-pro-max@ui-ux-pro-max-skill` | [SETUP-UI-UX-PRO-MAX.md](SETUP-UI-UX-PRO-MAX.md) |
 | **Digital Marketing Pro** — 12-Part engagement methodology, 158 skills, 25 agents | `indranilbanerjee/neels-plugins` | `digital-marketing-pro@neels-plugins` | [SETUP-DIGITAL-MARKETING-PRO.md](SETUP-DIGITAL-MARKETING-PRO.md) |
 | **ECC** — agent-harness operating system (skills, agents, hooks, rules) | `affaan-m/ECC` | `ecc@ecc` | [SETUP-ECC.md](SETUP-ECC.md) |
+| **Superpowers** — auto-triggering dev methodology (brainstorm → plan → subagent TDD → review) | `obra/superpowers-marketplace` | `superpowers@superpowers-marketplace` | [SETUP-SUPERPOWERS.md](SETUP-SUPERPOWERS.md) |
 
 Verify after opening the repo in Claude Code:
 ```
