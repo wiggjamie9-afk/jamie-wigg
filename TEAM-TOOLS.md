@@ -53,6 +53,13 @@ Verify after opening the repo in Claude Code:
 | **taste-skill** — frontend design taste | `npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"` | [SETUP-TASTE-SKILL.md](SETUP-TASTE-SKILL.md) |
 | **the_silver_searcher** (`ag`) — fast recursive code/content grep | macOS: `brew install the_silver_searcher` · Debian/Ubuntu: `apt-get install silversearcher-ag` · from source: `ggreer/the_silver_searcher` | — |
 
+## Clone everything locally
+
+`bash scripts/clone-tools.sh` shallow-clones every clonable tool above into a
+**gitignored `vendor/`** (12 repos, ~660 MB; add `--all` for freeCodeCamp too).
+Idempotent — reruns update in place. Clones are per-machine/per-session; the script is
+the durable artifact.
+
 ## Resources / references (clone or read — not "installable" as plugins)
 
 | Item | Source | What it is |
