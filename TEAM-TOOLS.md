@@ -37,6 +37,7 @@ Verify after opening the repo in Claude Code:
 | **UI-UX Pro Max CLI** | `npm i -g ui-ux-pro-max-cli && uipro init --ai claude` | [SETUP-UI-UX-PRO-MAX.md](SETUP-UI-UX-PRO-MAX.md) |
 | **video-use** — edit videos with Claude Code | `git clone https://github.com/browser-use/video-use ~/Developer/video-use` + symlink into `~/.claude/skills/`; needs **full ffmpeg** | [SETUP-VIDEO-USE.md](SETUP-VIDEO-USE.md) |
 | **taste-skill** — frontend design taste | `npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"` | [SETUP-TASTE-SKILL.md](SETUP-TASTE-SKILL.md) |
+| **the_silver_searcher** (`ag`) — fast recursive code/content grep | macOS: `brew install the_silver_searcher` · Debian/Ubuntu: `apt-get install silversearcher-ag` · from source: `ggreer/the_silver_searcher` | — |
 
 ## Resources / references (clone or read — not "installable" as plugins)
 
@@ -51,6 +52,7 @@ Verify after opening the repo in Claude Code:
 | **French cyber dictionary** | M82-project | Built as a searchable page → [`sites/cyber-dictionnaire/`](sites/cyber-dictionnaire/) (section "F"). |
 | **CFC notebook** | Case-Studies-Python | Implemented as [`sites/brainwave-analyzer/`](sites/brainwave-analyzer/) §5 (phase-amplitude coupling). |
 | Joscha Bach notes · IVAN changelog | pasted | Persisted under [`reference/misc/`](reference/misc/) — reference only, unrelated to this repo. |
+| **Awesome Go (Korean-curated)** | pasted link collection | Curated Go learning/library links → [`reference/awesome-go-korean.md`](reference/awesome-go-korean.md) (representative index + note; ask to expand verbatim or render as a searchable `sites/awesome-go/` page). |
 | Marketing / ad-tech link list · internship table · Awesome VuePress · KB-ALBERT · NVIDIA audio · SpiralOS | pasted lists | Reference bookmark/README collections — not tools. Ask if you want any rendered as a page under `sites/`. |
 
 ## Caveats (read once)
