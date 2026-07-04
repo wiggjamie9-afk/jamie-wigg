@@ -54,7 +54,7 @@ Verify after opening the repo in Claude Code:
 | **CFC notebook** | Case-Studies-Python | Implemented as [`sites/brainwave-analyzer/`](sites/brainwave-analyzer/) §5 (phase-amplitude coupling). |
 | Joscha Bach notes · IVAN changelog | pasted | Persisted under [`reference/misc/`](reference/misc/) — reference only, unrelated to this repo. |
 | **Awesome Go (Korean-curated)** | pasted link collection | Curated Go learning/library links → [`reference/awesome-go-korean.md`](reference/awesome-go-korean.md) (representative index + note; ask to expand verbatim or render as a searchable `sites/awesome-go/` page). |
-| **freeCodeCamp.org** | `freeCodeCamp/freeCodeCamp` (BSD-3-Clause; curriculum © fCC) | Open-source learning platform + free-cert curriculum → [`reference/freecodecamp.md`](reference/freecodecamp.md). Reference/learning resource, not a tool — not wired in. |
+| **freeCodeCamp.org** | `freeCodeCamp/freeCodeCamp` (BSD-3-Clause; curriculum © fCC) | Open-source learning platform + free-cert curriculum → notes in [`reference/freecodecamp.md`](reference/freecodecamp.md); **fully designed landing page** built at [`sites/freecodecamp/`](sites/freecodecamp/) ("campfire in the dark" theme). Unofficial design tribute, not affiliated. |
 | Marketing / ad-tech link list · internship table · Awesome VuePress · KB-ALBERT · NVIDIA audio · SpiralOS | pasted lists | Reference bookmark/README collections — not tools. Ask if you want any rendered as a page under `sites/`. |
 
 ## Caveats (read once)
