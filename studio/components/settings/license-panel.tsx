@@ -3,13 +3,18 @@
 /**
  * License-key panel for /settings (R10).
  *
+ * The tier model (see `lib/license.ts`) now includes a free tier: no key
+ * means "free", not "locked out". This panel therefore renders one of two
+ * states:
+ *   - Free tier (default): a neutral FREE badge + an invitation to paste a
+ *     key, never a warning.
+ *   - Paid tier: the cached tier badge, masked key, and cache freshness.
+ *
  * The license Worker (T7) returns `{ valid: true, tier }` or
- * `{ valid: false, reason }`. We POST the key to its public endpoint, then:
- *   - On valid: cache `{ key, tier, validatedAt }` in `localStorage` under
- *     `rhythmix_license_v1` for 24 h. The same shape used elsewhere in the
- *     app (e.g. the route gate component to be wired by T7/T8) reads this
- *     to decide whether to re-validate.
- *   - On invalid: surface the reason and don't touch the cache.
+ * `{ valid: false, reason }` for paid keys. On valid we cache
+ * `{ key, tier, validatedAt }` in `localStorage` (shared helpers in
+ * `lib/license.ts`) for 24 h; on invalid we surface the reason and don't
+ * touch the cache.
  *
  * "Re-check now" forces a network hit even if cached data is still fresh —
  * useful when a user upgrades their tier on Gumroad and wants to see the
@@ -17,82 +22,29 @@
  *
  * Security:
  *   - We NEVER `console.log` the key.
- *   - On clear we wipe the cache entry only (no server call); cache loss is
- *     fine, the next gate check will re-validate on demand.
+ *   - On clear we wipe the cache entry only (no server call); the device
+ *     simply drops back to the free tier.
  */
 
 import { useCallback, useEffect, useState } from "react";
-
-const LICENSE_CACHE_KEY = "rhythmix_license_v1";
-const LICENSE_TTL_MS = 24 * 60 * 60 * 1000; // 24h (R10)
+import {
+  type CachedLicense,
+  type PaidTier,
+  clearCachedLicense,
+  isPaidTier,
+  licenseTtlRemainingMs,
+  maskLicenseKey,
+  readCachedLicense,
+  trialRemainingMs,
+  writeCachedLicense,
+} from "@/lib/license";
 
 const DEFAULT_LICENSE_URL =
   "https://license.studio.starlightmix.com/api/license";
 
-type Tier = "lifetime" | "monthly";
-
-type CachedLicense = {
-  key: string;
-  tier: Tier;
-  /** Epoch ms when the Worker last said `valid: true`. */
-  validatedAt: number;
-};
-
-type ValidateOk = { valid: true; tier: Tier };
+type ValidateOk = { valid: true; tier: PaidTier };
 type ValidateBad = { valid: false; reason?: string };
 type ValidateResp = ValidateOk | ValidateBad;
-
-function isTier(x: unknown): x is Tier {
-  return x === "lifetime" || x === "monthly";
-}
-
-function readCached(): CachedLicense | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(LICENSE_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<CachedLicense>;
-    if (
-      typeof parsed.key !== "string" ||
-      !isTier(parsed.tier) ||
-      typeof parsed.validatedAt !== "number"
-    ) {
-      return null;
-    }
-    return parsed as CachedLicense;
-  } catch {
-    return null;
-  }
-}
-
-function writeCached(entry: CachedLicense): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(LICENSE_CACHE_KEY, JSON.stringify(entry));
-  } catch {
-    /* quota / private mode — not fatal, gate will just re-validate next time */
-  }
-}
-
-function clearCached(): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(LICENSE_CACHE_KEY);
-  } catch {
-    /* ignore */
-  }
-}
-
-function ttlRemainingMs(entry: CachedLicense): number {
-  return entry.validatedAt + LICENSE_TTL_MS - Date.now();
-}
-
-function maskKey(key: string): string {
-  // Show first 4 + last 4, dots in the middle. Avoid leaking the full string
-  // in any rendered surface — defence in depth, the key is already on disk.
-  if (key.length <= 8) return "•".repeat(key.length);
-  return key.slice(0, 4) + "…" + key.slice(-4);
-}
 
 export function LicensePanel() {
   const [cached, setCached] = useState<CachedLicense | null>(null);
@@ -102,7 +54,7 @@ export function LicensePanel() {
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    setCached(readCached());
+    setCached(readCachedLicense());
   }, []);
 
   // Resolve the Worker URL once. Falls back to the production default.
@@ -131,13 +83,13 @@ export function LicensePanel() {
           setError("License server returned an unreadable response.");
           return;
         }
-        if (body.valid === true) {
+        if (body.valid === true && isPaidTier(body.tier)) {
           const entry: CachedLicense = {
             key,
             tier: body.tier,
             validatedAt: Date.now(),
           };
-          writeCached(entry);
+          writeCachedLicense(entry);
           setCached(entry);
           setKeyInput("");
           setInfo("License valid. Cached for 24 hours.");
@@ -179,12 +131,12 @@ export function LicensePanel() {
 
   const handleClear = useCallback(() => {
     const ok = window.confirm(
-      "Clear your stored license? You'll need to re-enter the key to use the studio.",
+      "Clear your stored license? This device will drop back to the free tier.",
     );
     if (!ok) return;
-    clearCached();
+    clearCachedLicense();
     setCached(null);
-    setInfo("License cleared.");
+    setInfo("License cleared. You're back on the free tier.");
     setError(null);
   }, []);
 
@@ -201,18 +153,13 @@ export function LicensePanel() {
           License key
         </h2>
         <p className="mt-1 text-sm text-starlightmix-text-soft">
-          Unlocks the studio routes. Validated against Gumroad and cached for
+          The studio works on the free tier without a key. Paste a Gumroad
+          license key to unlock a paid tier — validated once, then cached for
           24 hours.
         </p>
       </header>
 
-      {cached ? (
-        <CachedSummary entry={cached} />
-      ) : (
-        <p className="rounded-[var(--radius-rhythmix-md)] border border-starlightmix-warn/40 bg-[var(--color-rhythmix-warn-soft)] px-3 py-2 text-sm text-starlightmix-warn">
-          No valid license cached on this device.
-        </p>
-      )}
+      {cached ? <CachedSummary entry={cached} /> : <FreeTierSummary />}
 
       <form className="mt-4 space-y-3" onSubmit={handleValidate}>
         <label htmlFor="license-key-input" className="block min-w-0">
@@ -278,8 +225,31 @@ export function LicensePanel() {
   );
 }
 
+function FreeTierSummary() {
+  // Trial clock reads/stamps localStorage, so resolve it client-side only.
+  const [remainingDays, setRemainingDays] = useState<number | null>(null);
+  useEffect(() => {
+    setRemainingDays(Math.ceil(trialRemainingMs() / (24 * 60 * 60 * 1000)));
+  }, []);
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="inline-flex items-center rounded-full border border-starlightmix-border-strong bg-starlightmix-surface-2 px-3 py-1 font-starlightmix-mono text-xs font-semibold uppercase tracking-wider text-starlightmix-text-soft">
+        free
+      </span>
+      <span className="text-sm text-starlightmix-text-soft">
+        {remainingDays === null
+          ? "1-year free trial — no license key needed."
+          : remainingDays > 0
+            ? `1-year free trial — ~${remainingDays} day(s) left. No license key needed.`
+            : "Free trial ended — paste a license key to keep going."}
+      </span>
+    </div>
+  );
+}
+
 function CachedSummary({ entry }: { entry: CachedLicense }) {
-  const remainingMs = ttlRemainingMs(entry);
+  const remainingMs = licenseTtlRemainingMs(entry);
   const expired = remainingMs <= 0;
   const remainingHours = Math.max(0, Math.round(remainingMs / (60 * 60 * 1000)));
   const tierColour =
@@ -295,7 +265,7 @@ function CachedSummary({ entry }: { entry: CachedLicense }) {
           {entry.tier}
         </span>
         <span className="font-starlightmix-mono text-sm text-starlightmix-text-soft break-all">
-          {maskKey(entry.key)}
+          {maskLicenseKey(entry.key)}
         </span>
       </div>
       <p className="text-xs text-starlightmix-text-muted">
