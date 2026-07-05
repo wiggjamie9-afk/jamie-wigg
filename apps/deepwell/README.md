@@ -1,4 +1,4 @@
-# Fathom — Focus Sound (v0.1)
+# Deepwell — Focus Sound (v0.1)
 
 A focus timer whose engine is **live-generated adaptive sound** — not stock loops. Built as a
 self-contained, installable PWA. Standalone app (not RHYTHMIX-branded), per repo convention it
@@ -6,7 +6,7 @@ lives in `apps/`.
 
 ## The wedge
 
-Every other focus/ADHD app is a plain timer bolted to a stock playlist. Fathom's differentiator
+Every other focus/ADHD app is a plain timer bolted to a stock playlist. Deepwell's differentiator
 is the sound itself: three Web Audio soundscapes generated in the browser, each breathing on a slow
 LFO so it never loops audibly.
 
@@ -26,10 +26,10 @@ zero network calls at runtime — cheap to host, works offline.
 
 ## Run / deploy
 
-Local: `python3 -m http.server 8000 --directory apps/fathom` → open `http://localhost:8000`.
+Local: `python3 -m http.server 8000 --directory apps/deepwell` → open `http://localhost:8000`.
 (A service worker needs http/https, not `file://`.)
 
-Deploy: it's static — serve `apps/fathom/` from GitHub Pages or Cloudflare Pages. Add-to-home-screen
+Deploy: it's static — serve `apps/deepwell/` from GitHub Pages or Cloudflare Pages. Add-to-home-screen
 gives a full-screen standalone app on iOS/Android.
 
 ## Roadmap (post-validation)
