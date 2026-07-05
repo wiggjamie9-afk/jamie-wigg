@@ -15,6 +15,7 @@ need details about a specific tool; do not load it speculatively.
 - **context7** (live library docs) → HTTP `https://mcp.context7.com/mcp`, `CONTEXT7_API_KEY` in `.env`.
 - **openmanus** (LLM-driven browser agent: navigate/click/fill/extract/screenshot/search) → `python -m app.mcp.server` from `/tmp/OpenManus`. Install: `bash scripts/setup-openmanus.sh`. Guides: `SETUP-OPENMANUS.md`, `OPENMANUS-MCP-INTEGRATION.md`; configs in `config/openmanus-*.toml`.
 - **Supermetrics** (marketing data: Google Ads, Meta, TikTok, GA4, Shopify, 200+ sources) → hosted claude.ai connector, not in `.mcp.json`. See `SETUP-SUPERMETRICS.md`.
+- **obscura** (lightweight Rust headless browser: CDP server, parallel scrape, browser MCP tools) → `obscura mcp`; **not in `.mcp.json`** — binary can't be installed in cloud sessions (all download channels blocked; verified 2026-07-05). Local-machine tool only; no screenshots, so visual checks stay on Playwright. See `SETUP-OBSCURA.md`.
 
 ## Root reference / setup docs
 
@@ -27,6 +28,7 @@ need details about a specific tool; do not load it speculatively.
 - `SETUP-AGENT-TARS.md` — Agent TARS / UI-TARS vision-language GUI agent (click-stream automation; not a pipeline fit)
 - `SETUP-HERMES.md` — Hermes Agent CLI with Telegram/Discord gateways (drive renders from phone/cron)
 - `SETUP-OPENMANUS.md` / `OPENMANUS-MCP-INTEGRATION.md` — OpenManus browser-agent framework
+- `SETUP-OBSCURA.md` — Obscura Rust headless browser (cheap parallel fetch/scrape, CDP + MCP; not for HyperFrames renders or screenshots)
 - `SETUP-SD-WEBUI.md` — Stable Diffusion WebUI (GPU machine only; repo is cloud-first)
 - `SETUP-MINIMAX-01.md` — MiniMax-01 foundation models (use hosted API; self-host needs a GPU cluster)
 - `SETUP-DEEP-PLAYGROUND.md` — TensorFlow Deep Playground (teaching/demo, optionally vendor to `apps/playground/`)
