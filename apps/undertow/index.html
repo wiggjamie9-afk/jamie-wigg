@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>UNDERTOW — focus sound</title>
+<meta name="description" content="A focus timer with live-generated adaptive sound. Deep, Flow, Tide. Nothing streamed — the sound is built in your browser.">
+<meta name="theme-color" content="#0a0e13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Undertow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<style>
+  :root{
+    --ink:#0a0e13; --deep:#0f151d; --surface:#161f2a; --surface-2:#1c2735;
+    --line:#26323f; --text:#eef3f8; --muted:#8493a3; --faint:#55636f;
+    --ember:#ffb765; --ember-deep:#e8853a; --tide:#57d6c6;
+    --sans:ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--ink); color:var(--text); font-family:var(--sans);
+    display:flex; flex-direction:column; align-items:center; min-height:100dvh;
+    overflow:hidden; user-select:none;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    background-image:radial-gradient(90% 60% at 50% -10%, #14202c, transparent 70%);
+  }
+  header{width:100%; max-width:460px; padding:20px 22px 0; display:flex; align-items:center; gap:10px}
+  .word{font-weight:800; letter-spacing:.32em; font-size:.82rem}
+  .word b{color:var(--ember)}
+  .tagline{font-family:var(--mono); font-size:.62rem; letter-spacing:.24em;
+    color:var(--faint); text-transform:uppercase; margin-left:auto}
+  main{flex:1; width:100%; max-width:460px; padding:0 22px 26px; display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:26px}
+  .dial{position:relative; width:min(74vw,300px); aspect-ratio:1}
+  canvas{position:absolute; inset:0; width:100%; height:100%}
+  .center{position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:6px; pointer-events:none}
+  .time{font-family:var(--mono); font-variant-numeric:tabular-nums;
+    font-size:clamp(2.9rem,15vw,4rem); font-weight:600; letter-spacing:-.02em; line-height:1}
+  .state{font-family:var(--mono); font-size:.64rem; letter-spacing:.28em;
+    text-transform:uppercase; color:var(--muted)}
+  .state.on{color:var(--ember)}
+  .row{display:flex; gap:8px; width:100%; justify-content:center}
+  .seg{display:flex; gap:6px; background:var(--deep); border:1px solid var(--line);
+    padding:5px; border-radius:14px}
+  .seg button{appearance:none; background:transparent; border:none; cursor:pointer;
+    color:var(--muted); font-family:var(--mono); font-size:.72rem; letter-spacing:.06em;
+    padding:9px 14px; border-radius:10px; transition:.18s; min-width:44px}
+  .seg button[aria-pressed="true"]{background:var(--surface-2); color:var(--text)}
+  .seg.dur button[aria-pressed="true"]{color:var(--ember)}
+  .seg button:focus-visible{outline:2px solid var(--ember); outline-offset:2px}
+  .go{appearance:none; border:none; cursor:pointer; width:100%; max-width:300px; padding:19px;
+    border-radius:18px; font-family:var(--sans); font-weight:800; font-size:1.05rem;
+    letter-spacing:.02em; color:#20140a;
+    background:linear-gradient(180deg,var(--ember),var(--ember-deep));
+    box-shadow:0 12px 34px -12px rgba(255,183,101,.6); transition:.18s}
+  .go:active{transform:translateY(1px) scale(.995)}
+  .go.running{background:var(--surface-2); color:var(--text); box-shadow:none; border:1px solid var(--line)}
+  .go:focus-visible{outline:2px solid var(--ember); outline-offset:3px}
+  .vol{width:100%; max-width:300px; display:flex; align-items:center; gap:12px}
+  .vol label{font-family:var(--mono); font-size:.6rem; letter-spacing:.2em;
+    color:var(--faint); text-transform:uppercase}
+  .vol input{flex:1; appearance:none; height:4px; border-radius:4px; background:var(--surface-2); outline:none}
+  .vol input::-webkit-slider-thumb{appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--ember); cursor:pointer; box-shadow:0 0 0 5px rgba(255,183,101,.14)}
+  .vol input::-moz-range-thumb{width:18px; height:18px; border:none; border-radius:50%;
+    background:var(--ember); cursor:pointer}
+  footer{font-family:var(--mono); font-size:.58rem; letter-spacing:.16em; color:var(--faint);
+    text-transform:uppercase; padding-bottom:18px; text-align:center}
+  @media(prefers-reduced-motion:reduce){.go{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <span class="word">UNDER<b>TOW</b></span>
+  <span class="tagline">focus sound</span>
+</header>
+<main>
+  <div class="dial">
+    <canvas id="viz" width="600" height="600"></canvas>
+    <div class="center">
+      <div class="time" id="time">25:00</div>
+      <div class="state" id="state">ready</div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="seg mode" role="group" aria-label="Sound mode">
+      <button data-mode="deep" aria-pressed="true">Deep</button>
+      <button data-mode="flow" aria-pressed="false">Flow</button>
+      <button data-mode="tide" aria-pressed="false">Tide</button>
+    </div>
+    <div class="seg dur" role="group" aria-label="Session length">
+      <button data-min="25" aria-pressed="true">25</button>
+      <button data-min="50" aria-pressed="false">50</button>
+      <button data-min="90" aria-pressed="false">90</button>
+    </div>
+  </div>
+  <button class="go" id="go">Begin focus</button>
+  <div class="vol">
+    <label for="vol">Vol</label>
+    <input id="vol" type="range" min="0" max="100" value="55" aria-label="Volume">
+  </div>
+</main>
+<footer>Sound generated live · nothing streamed · v0.1</footer>
+<script>
+(function(){
+  "use strict";
+  var AC=window.AudioContext||window.webkitAudioContext;
+  var ctx=null,master=null,analyser=null,freqData=null,nodes=[];
+  var running=false,mode="deep",minutes=25,remaining=25*60,timerId=null,endAt=0;
+  var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
+  var timeEl=document.getElementById("time"),stateEl=document.getElementById("state");
+  var goEl=document.getElementById("go"),volEl=document.getElementById("vol");
+  var canvas=document.getElementById("viz"),g=canvas.getContext("2d");
+
+  function noiseBuffer(kind){
+    var len=ctx.sampleRate*4,buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0),last=0;
+    for(var i=0;i<len;i++){var w=Math.random()*2-1;
+      if(kind==="brown"){last=(last+0.02*w)/1.02; d[i]=last*3.5;}
+      else{last=0.96*last+0.04*w; d[i]=(w*0.4+last*0.9);}}
+    return buf;
+  }
+  function startAudio(){
+    master=ctx.createGain(); master.gain.value=0;
+    analyser=ctx.createAnalyser(); analyser.fftSize=256;
+    freqData=new Uint8Array(analyser.frequencyBinCount);
+    master.connect(analyser); analyser.connect(ctx.destination);
+    var cfg={deep:{kind:"brown",cut:480,lfoRate:0.05,lfoDepth:180,pulse:0,padHz:98},
+      flow:{kind:"pink",cut:1150,lfoRate:0.12,lfoDepth:420,pulse:1.0,padHz:0},
+      tide:{kind:"brown",cut:760,lfoRate:0.09,lfoDepth:520,pulse:0,padHz:110}}[mode];
+    var src=ctx.createBufferSource(); src.buffer=noiseBuffer(cfg.kind); src.loop=true;
+    var filt=ctx.createBiquadFilter(); filt.type="lowpass"; filt.frequency.value=cfg.cut; filt.Q.value=0.7;
+    var bed=ctx.createGain(); bed.gain.value=0.9;
+    src.connect(filt); filt.connect(bed); bed.connect(master); src.start(); nodes.push(src);
+    var lfo=ctx.createOscillator(); lfo.frequency.value=cfg.lfoRate;
+    var lg=ctx.createGain(); lg.gain.value=cfg.lfoDepth;
+    lfo.connect(lg); lg.connect(filt.frequency); lfo.start(); nodes.push(lfo);
+    if(cfg.pulse){var plfo=ctx.createOscillator(); plfo.frequency.value=cfg.pulse;
+      var pg=ctx.createGain(); pg.gain.value=0.22; plfo.connect(pg); pg.connect(bed.gain);
+      plfo.start(); nodes.push(plfo);}
+    if(cfg.padHz){var o1=ctx.createOscillator(); o1.type="sine"; o1.frequency.value=cfg.padHz;
+      var o2=ctx.createOscillator(); o2.type="sine"; o2.frequency.value=cfg.padHz*1.5;
+      var pad=ctx.createGain(); pad.gain.value=0.05; o1.connect(pad); o2.connect(pad); pad.connect(master);
+      o1.start(); o2.start(); nodes.push(o1); nodes.push(o2);}
+    var v=parseInt(volEl.value,10)/100;
+    master.gain.linearRampToValueAtTime(v,ctx.currentTime+1.2);
+  }
+  function stopAudio(){
+    if(!master) return;
+    try{master.gain.linearRampToValueAtTime(0,ctx.currentTime+0.5);}catch(e){}
+    var toStop=nodes.slice();
+    setTimeout(function(){toStop.forEach(function(n){try{n.stop();}catch(e){}});},560);
+    nodes=[];
+  }
+  function chime(){
+    if(!ctx) return;
+    [660,990].forEach(function(f,i){
+      var o=ctx.createOscillator(),gg=ctx.createGain(); o.type="sine"; o.frequency.value=f;
+      o.connect(gg); gg.connect(ctx.destination); var t=ctx.currentTime+i*0.14;
+      gg.gain.setValueAtTime(0,t); gg.gain.linearRampToValueAtTime(0.18,t+0.02);
+      gg.gain.exponentialRampToValueAtTime(0.0001,t+1.6); o.start(t); o.stop(t+1.7);});
+  }
+  function fmt(s){var m=Math.floor(s/60),ss=s%60;return (m<10?"0":"")+m+":"+(ss<10?"0":"")+ss;}
+  function tick(){remaining=Math.max(0,Math.round((endAt-Date.now())/1000));
+    timeEl.textContent=fmt(remaining); if(remaining<=0) finish();}
+  function finish(){clearInterval(timerId); timerId=null; running=false; stopAudio(); chime();
+    stateEl.textContent="done"; stateEl.classList.remove("on");
+    goEl.textContent="Begin focus"; goEl.classList.remove("running");
+    remaining=minutes*60; setTimeout(function(){timeEl.textContent=fmt(remaining);},1800);}
+  function begin(){if(!ctx) ctx=new AC(); if(ctx.state==="suspended") ctx.resume(); startAudio();
+    running=true; endAt=Date.now()+remaining*1000; timerId=setInterval(tick,250);
+    stateEl.textContent="in focus"; stateEl.classList.add("on");
+    goEl.textContent="Pause"; goEl.classList.add("running");}
+  function pause(){running=false; clearInterval(timerId); timerId=null; stopAudio();
+    stateEl.textContent="paused"; stateEl.classList.remove("on");
+    goEl.textContent="Resume"; goEl.classList.remove("running");}
+  goEl.addEventListener("click",function(){running?pause():begin();});
+  document.querySelectorAll(".seg.mode button").forEach(function(b){
+    b.addEventListener("click",function(){
+      document.querySelectorAll(".seg.mode button").forEach(function(x){x.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true"); mode=b.dataset.mode;
+      if(running){stopAudio(); nodes=[]; startAudio();}});});
+  document.querySelectorAll(".seg.dur button").forEach(function(b){
+    b.addEventListener("click",function(){ if(running) return;
+      document.querySelectorAll(".seg.dur button").forEach(function(x){x.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true"); minutes=parseInt(b.dataset.min,10);
+      remaining=minutes*60; timeEl.textContent=fmt(remaining);});});
+  volEl.addEventListener("input",function(){
+    if(master) master.gain.setTargetAtTime(parseInt(volEl.value,10)/100,ctx.currentTime,0.1);});
+  function draw(){
+    requestAnimationFrame(draw);
+    var W=canvas.width,H=canvas.height,cx=W/2,cy=H/2; g.clearRect(0,0,W,H);
+    var R=W*0.40,level=0;
+    if(analyser){analyser.getByteFrequencyData(freqData);
+      for(var i=0;i<freqData.length;i++) level+=freqData[i]; level=level/freqData.length/255;}
+    var t=Date.now()/1000, breathe=reduce?0.04:(0.06+0.05*Math.sin(t*0.5));
+    var pulse=R*(1+breathe+level*0.10), frac=1-remaining/(minutes*60);
+    g.lineWidth=W*0.012; g.lineCap="round"; g.strokeStyle="rgba(38,50,63,1)";
+    g.beginPath(); g.arc(cx,cy,R,0,Math.PI*2); g.stroke();
+    if(running||frac>0){var grad=g.createLinearGradient(0,0,W,H);
+      grad.addColorStop(0,"#ffb765"); grad.addColorStop(1,"#e8853a"); g.strokeStyle=grad;
+      g.beginPath(); g.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); g.stroke();}
+    var bars=64,ir=pulse*0.62;
+    for(var b=0;b<bars;b++){var ang=(b/bars)*Math.PI*2;
+      var amp=analyser?(freqData[b%freqData.length]/255):(0.25+0.15*Math.sin(t*1.3+b));
+      var len=ir*(0.10+amp*0.30);
+      var x1=cx+Math.cos(ang)*ir,y1=cy+Math.sin(ang)*ir;
+      var x2=cx+Math.cos(ang)*(ir+len),y2=cy+Math.sin(ang)*(ir+len);
+      g.strokeStyle="rgba(87,214,198,"+(0.18+amp*0.5)+")"; g.lineWidth=W*0.006;
+      g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();}
+    var glow=g.createRadialGradient(cx,cy,0,cx,cy,pulse*0.6), a=running?(0.22+level*0.25):0.10;
+    glow.addColorStop(0,"rgba(255,183,101,"+a+")"); glow.addColorStop(1,"rgba(255,183,101,0)");
+    g.fillStyle=glow; g.beginPath(); g.arc(cx,cy,pulse*0.6,0,Math.PI*2); g.fill();
+  }
+  draw();
+  if("serviceWorker" in navigator){window.addEventListener("load",function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});});}
+})();
+</script>
+</body>
+</html>
