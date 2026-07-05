@@ -1,0 +1,83 @@
+name: Higgsfield API probe
+
+on:
+  push:
+    branches: [claude/youtube-tv-research-fla0ts]
+    paths: [kids-channel/.higgsfield-probe-trigger]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Probe Higgsfield endpoints
+        env:
+          HF_KEY: ${{ secrets.HIGGSFIELD_API_KEY }}
+          HF_SECRET: ${{ secrets.HIGGSFIELD_SECRET }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, pathlib, urllib.request, urllib.error
+
+          KEY = os.environ.get("HF_KEY", "").strip()
+          SEC = os.environ.get("HF_SECRET", "").strip()
+          OUT = pathlib.Path("review/probe"); OUT.mkdir(parents=True, exist_ok=True)
+          lines = [f"key set: {bool(KEY)} (len={len(KEY)}), secret set: {bool(SEC)}"]
+
+          REF = ("https://raw.githubusercontent.com/wiggjamie9-afk/jamie-wigg/"
+                 "claude/youtube-tv-research-fla0ts/kids-channel/character/sonny-ref.jpg")
+
+          def post(url, body, headers):
+              req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                           headers={"Content-Type": "application/json", **headers})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      return r.status, r.read().decode()[:400]
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read().decode()[:400]
+              except Exception as e:
+                  return -1, f"{type(e).__name__}: {e}"
+
+          H = {"hf-api-key": KEY, "hf-secret": SEC}
+          candidates = [
+              # (label, url, body)
+              ("platform soul", "https://platform.higgsfield.ai/v1/text2image/soul",
+               {"params": {"prompt": "test", "width_and_height": "1536x864",
+                           "enhance_prompt": False, "batch_size": 1}}),
+              ("platform nano-banana", "https://platform.higgsfield.ai/v1/text2image/nano-banana",
+               {"params": {"prompt": "test", "aspect_ratio": "16:9",
+                           "input_images": [{"type": "image_url", "image_url": REF}]}}),
+              ("platform nano_banana", "https://platform.higgsfield.ai/v1/text2image/nano_banana",
+               {"params": {"prompt": "test", "aspect_ratio": "16:9"}}),
+              ("platform image2image nano-banana", "https://platform.higgsfield.ai/v1/image2image/nano-banana",
+               {"params": {"prompt": "test", "aspect_ratio": "16:9",
+                           "input_images": [{"type": "image_url", "image_url": REF}]}}),
+              ("legacy auth", "https://api.higgsfield.ai/v1/auth/token",
+               {"api_key": KEY, "secret": SEC}),
+          ]
+          for label, url, body in candidates:
+              code, resp = post(url, body, H)
+              lines.append(f"{label}: {code} {resp}")
+
+          report = "\n".join(lines)
+          (OUT / "HIGGSFIELD.txt").write_text(report + "\n")
+          print(report)
+          EOF
+
+      - name: Commit probe results
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          git add review/probe
+          if ! git diff --cached --quiet; then
+            git commit -m "probe: higgsfield endpoint results"
+            git pull --rebase origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
