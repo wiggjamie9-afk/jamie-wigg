@@ -1,4 +1,4 @@
-const CACHE = "undertow-v1";
+const CACHE = "fathom-v1";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon.svg"];
 
 self.addEventListener("install", (e) => {
