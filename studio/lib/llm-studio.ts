@@ -7,32 +7,37 @@
  * - Graceful fallback if free tiers are exhausted
  */
 
-import { getLLMClient, completeWithLLM, getActiveLLMMode } from "../../lib/llm-router";
+import {
+  getLLMClient,
+  type ChatMessage,
+  type LLMMode,
+  type ResolvedMode,
+} from "../../lib/llm-router";
 
 export type StudioTask =
-  | "caption"           // Low-value: generate video captions
-  | "narration"         // Low-value: narration text from script
-  | "metadata"          // Low-value: tags, descriptions, hashtags
-  | "suggestion"        // Low-value: UI suggestions, style ideas
-  | "onboarding"        // Low-value: help text, tooltips
-  | "reasoning"         // High-value: complex analysis
-  | "editing"           // High-value: edit instruction interpretation
-  | "creative"          // High-value: creative direction, feedback;
+  | "caption" // Low-value: generate video captions
+  | "narration" // Low-value: narration text from script
+  | "metadata" // Low-value: tags, descriptions, hashtags
+  | "suggestion" // Low-value: UI suggestions, style ideas
+  | "onboarding" // Low-value: help text, tooltips
+  | "reasoning" // High-value: complex analysis
+  | "editing" // High-value: edit instruction interpretation
+  | "creative"; // High-value: creative direction, feedback
 
-interface StudioLLMRequest {
+export interface StudioLLMRequest {
   task: StudioTask;
   prompt: string;
   options?: {
     temperature?: number;
     maxTokens?: number;
-    forceMode?: "free" | "paid";  // Override mode if needed
+    forceMode?: ResolvedMode; // Override mode if needed
   };
 }
 
-interface StudioLLMResponse {
+export interface StudioLLMResponse {
   text: string;
   provider: string;
-  mode: "free" | "paid";
+  mode: ResolvedMode;
   cached?: boolean;
 }
 
@@ -55,8 +60,8 @@ function getTaskPriority(task: StudioTask): "low" | "high" {
  */
 function selectMode(
   task: StudioTask,
-  forceMode?: "free" | "paid"
-): "free" | "paid" | "auto" {
+  forceMode?: ResolvedMode
+): LLMMode {
   if (forceMode) return forceMode;
 
   const priority = getTaskPriority(task);
@@ -74,7 +79,7 @@ function selectMode(
  */
 function selectModel(
   task: StudioTask,
-  mode: "free" | "paid" | "auto"
+  mode: LLMMode
 ): string {
   if (mode === "paid" || mode === "auto") {
     return "claude-opus-4-8";  // Full Claude for reasoning
@@ -115,6 +120,11 @@ export async function routeStudioTask(
   const model = selectModel(task, mode);
   const systemPrompt = getSystemPrompt(task);
 
+  const messages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: prompt },
+  ];
+
   try {
     const client = getLLMClient(mode);
 
@@ -122,22 +132,21 @@ export async function routeStudioTask(
       model,
       temperature,
       max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: prompt }],
+      messages,
     });
 
     const text = resp.choices[0]?.message?.content || "";
-    const provider = resp.headers?.get?.("x-routed-via") || "unknown";
-    const activeMode = getActiveLLMMode(mode);
+    const provider = resp.headers?.get?.("x-routed-via") || client.mode;
 
     return {
       text,
       provider,
-      mode: activeMode,
+      mode: client.mode,
     };
   } catch (error) {
-    // If free tier fails, try paid as fallback for critical tasks
-    if (mode === "free" && getTaskPriority(task) === "high") {
+    // If free tier fails, try paid as fallback for critical tasks. Only free
+    // and auto ever resolve to a free client; a forced "paid" wouldn't retry.
+    if (mode !== "paid" && getTaskPriority(task) === "high") {
       console.warn(`Free tier failed for ${task}, falling back to Claude`);
 
       const client = getLLMClient("paid");
@@ -145,8 +154,7 @@ export async function routeStudioTask(
         model: "claude-opus-4-8",
         temperature,
         max_tokens: maxTokens,
-        system: getSystemPrompt(task),
-        messages: [{ role: "user", content: prompt }],
+        messages,
       });
 
       return {
