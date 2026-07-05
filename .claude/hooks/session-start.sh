@@ -17,6 +17,15 @@ for dir in $MCP_DIRS; do
 done
 wait
 
+# --- Install personal global CLAUDE.md (ephemeral home is wiped each session) ---
+if [ -f docs/global-CLAUDE.md ]; then
+  mkdir -p "$HOME/.claude"
+  if ! cmp -s docs/global-CLAUDE.md "$HOME/.claude/CLAUDE.md"; then
+    cp docs/global-CLAUDE.md "$HOME/.claude/CLAUDE.md"
+    echo "🧭 installed global CLAUDE.md → ~/.claude/CLAUDE.md"
+  fi
+fi
+
 # --- Environment sanity ---
 if [ ! -f .env ]; then
   echo "⚠️  no .env at repo root — stepfun/zyloo/higgsfield MCP servers will not authenticate (copy .env.example)"
