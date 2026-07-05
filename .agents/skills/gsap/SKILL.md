@@ -5,6 +5,8 @@ description: GSAP animation reference for HyperFrames. Covers gsap.to(), from(),
 
 # GSAP
 
+For topics outside this HyperFrames-focused reference, use the official vendored skills: `gsap-plugins` (registration, ScrollTo, Flip, Draggable, SplitText, CustomEase, …), `gsap-scrolltrigger`, `gsap-utils`, `gsap-react`, `gsap-frameworks`, plus `gsap-core`/`gsap-timeline`/`gsap-performance` for deeper core coverage.
+
 ## Core Tween Methods
 
 - **gsap.to(targets, vars)** — animate from current state to `vars`. Most common.
