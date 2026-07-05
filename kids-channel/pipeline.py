@@ -1801,20 +1801,13 @@ def main():
             print(f"  ℹ Rescaled scene durations {scene_total}s → {new_total:.1f}s to match narration")
 
     # 3. Scene images + videos
-    # Priority: Higgsfield → FLUX (OpenMontage) → Stock photos → Pollinations → gradient
+    # Priority: Kontext + master ref → FLUX Dev → FAL → Pollinations → stock → PIL.
+    # The old Higgsfield Soul tier is retired: its api.higgsfield.ai endpoint is
+    # dead (521), and Soul ignores the locked character design — see
+    # kids-channel/MASTER.md ("never use Soul for Sunny"). Nano Banana (the
+    # approved Higgsfield model) is not exposed on the key-based platform API,
+    # so identity-locked generation on runners goes through Replicate Kontext.
     scene_videos = []
-    if not args.skip_video and HIGGSFIELD_API_KEY:
-        print("[3/6] Generating scene images and animations via Higgsfield...")
-        try:
-            token = get_higgsfield_token()
-            for scene in script["scenes"]:
-                img = generate_scene_image(scene["image_prompt"], scene["id"],
-                                           episode_dir, token)
-                vid = animate_scene(img, scene, episode_dir, token)
-                scene_videos.append(vid)
-        except Exception as e:
-            print(f"  ⚠ Higgsfield failed ({e}) — falling through to next image source...")
-
     if not scene_videos:
         # Diagnostic — always print token status so we can see it in the logs
         _tok_len = len(REPLICATE_API_TOKEN) if REPLICATE_API_TOKEN else 0
