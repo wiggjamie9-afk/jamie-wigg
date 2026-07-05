@@ -50,26 +50,32 @@ jobs:
               except Exception as e:
                   return -1, f"{type(e).__name__}: {e}"
 
+          def get(url, headers):
+              req = urllib.request.Request(url, headers={"User-Agent": UA,
+                                                         "Accept": "application/json", **headers})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      return r.status, r.read().decode()[:1500]
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read().decode()[:400]
+              except Exception as e:
+                  return -1, f"{type(e).__name__}: {e}"
+
           H = {"hf-api-key": KEY, "hf-secret": SEC}
-          candidates = [
-              # (label, url, body)
-              ("platform soul", "https://platform.higgsfield.ai/v1/text2image/soul",
-               {"params": {"prompt": "test", "width_and_height": "1536x864",
-                           "enhance_prompt": False, "batch_size": 1}}),
-              ("platform nano-banana", "https://platform.higgsfield.ai/v1/text2image/nano-banana",
-               {"params": {"prompt": "test", "aspect_ratio": "16:9",
-                           "input_images": [{"type": "image_url", "image_url": REF}]}}),
-              ("platform nano_banana", "https://platform.higgsfield.ai/v1/text2image/nano_banana",
-               {"params": {"prompt": "test", "aspect_ratio": "16:9"}}),
-              ("platform image2image nano-banana", "https://platform.higgsfield.ai/v1/image2image/nano-banana",
-               {"params": {"prompt": "test", "aspect_ratio": "16:9",
-                           "input_images": [{"type": "image_url", "image_url": REF}]}}),
-              ("legacy auth", "https://api.higgsfield.ai/v1/auth/token",
-               {"api_key": KEY, "secret": SEC}),
-          ]
-          for label, url, body in candidates:
-              code, resp = post(url, body, H)
+          for label, url in [
+              ("GET models", "https://platform.higgsfield.ai/v1/models"),
+              ("GET text2image models", "https://platform.higgsfield.ai/v1/text2image/models"),
+          ]:
+              code, resp = get(url, H)
               lines.append(f"{label}: {code} {resp}")
+
+          nb_params = {"prompt": "test", "aspect_ratio": "16:9", "resolution": "1k",
+                       "input_images": [{"type": "image_url", "image_url": REF}]}
+          for slug in ("nano_banana_2", "nano-banana-2", "nano_banana_pro",
+                       "nano-banana-pro", "nano-banana"):
+              code, resp = post(f"https://platform.higgsfield.ai/v1/text2image/{slug}",
+                                {"params": nb_params}, H)
+              lines.append(f"t2i {slug}: {code} {resp}")
 
           report = "\n".join(lines)
           (OUT / "HIGGSFIELD.txt").write_text(report + "\n")
