@@ -1,10 +1,11 @@
 # NEONDECK — Neon-Noir Dashboard UI Kit
 
-**Version 1.0.0**
+**Version 1.1.0 — Full-Stack Edition**
 
-Four production-grade dashboard templates in a hand-tuned neon-noir design system.
-Pure HTML + CSS + a tiny vanilla-JS chart library. **No frameworks, no build step, no dependencies.**
-Open any file in a browser and it works.
+Four production-grade dashboard templates in a hand-tuned neon-noir design system,
+plus a **zero-dependency local backend** that feeds them live data and powers a real
+login. Pure HTML + CSS + vanilla JS + plain Node.js. **No frameworks, no build step,
+no npm install.**
 
 ## What's included
 
@@ -15,19 +16,52 @@ neondeck/
 │   ├── analytics.html          ← "Pulse" — AI/product analytics dashboard
 │   ├── finance.html            ← "Ledger" — fintech / trading desk dashboard
 │   ├── agents.html             ← "Fleet" — AI agent fleet monitoring
-│   └── auth.html               ← "Access Console" — sign-in page
+│   └── auth.html               ← "Access Console" — working sign-in page
+├── server/
+│   └── server.js               ← zero-dependency Node API + static server
+├── data/
+│   ├── analytics.json          ← the data each dashboard displays —
+│   ├── finance.json            ←   edit these files, refresh the page,
+│   └── agents.json             ←   and the dashboards update
 ├── assets/
-│   ├── neondeck.css            ← the entire design system (~1 file, token-driven)
-│   └── neondeck-charts.js      ← 6 KB SVG chart library (line, donut, bars, sparkline)
+│   ├── neondeck.css            ← the entire design system (1 file, token-driven)
+│   ├── neondeck-charts.js      ← 6 KB SVG chart library (line, donut, bars, sparkline)
+│   └── neondeck-data.js        ← data binder: connects pages to the API
 ├── README.md
 └── LICENSE.txt
 ```
 
-## Quick start
+## Quick start — two ways to use it
 
-1. Unzip anywhere.
-2. Open `index.html` in a browser.
-3. Copy any template, delete what you don't need, drop your data in.
+**Static (no server):** open `index.html` in a browser. Every page renders
+with its built-in sample data. Perfect for design work and static hosting.
+
+**Full-stack (with the backend):** requires only Node.js (v16+, no packages):
+
+```bash
+node server/server.js
+# → http://localhost:4200
+```
+
+Now the dashboards are fed by the JSON files in `data/` — edit
+`data/analytics.json`, refresh, and the charts, stats and event feed update.
+The sign-in page performs a real login against the API
+(**demo account: any email + password `neondeck`**) and redirects on success.
+
+The pages detect the server automatically: with it they bind to the API,
+without it they fall back to their built-in sample data. Nothing breaks either way.
+
+## The API (server/server.js)
+
+| Route | Method | What it does |
+|---|---|---|
+| `/api/analytics` `/api/finance` `/api/agents` | GET | Returns the matching `data/*.json` |
+| `/api/login` | POST | `{email, password}` → session token (demo password: `neondeck`) |
+| `/api/me` | GET | Validates a `Bearer` token |
+| `/api/health` | GET | Uptime + session count |
+
+It's a starter backend in one dependency-free file: replace the JSON reads
+with your database queries when you wire in a real product.
 
 The only external requests are two Google Fonts families (Chakra Petch, IBM Plex Mono).
 To go fully offline, download the fonts and swap the `<link>` for `@font-face` rules —

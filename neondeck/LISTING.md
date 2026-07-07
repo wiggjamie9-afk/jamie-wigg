@@ -2,15 +2,15 @@
 (This file is for you, the seller — it is NOT included in the buyer ZIP.)
 
 ## Product name
-NEONDECK — Neon-Noir Dashboard UI Kit (HTML/CSS)
+NEONDECK — Neon-Noir Dashboard UI Kit (Full-Stack Edition)
 
 ## Suggested price
 $39 (launch at $29 for the first two weeks to get early sales + ratings,
 then raise to $39. Enable "pay what you want above minimum" — some buyers pay more.)
 
 ## Short summary (Gumroad subtitle field)
-4 production-grade cyberpunk dashboard templates. Pure HTML + CSS + a 6 KB
-chart library. No frameworks, no build step — open in a browser and ship.
+4 cyberpunk dashboard templates + a zero-dependency backend. Real login,
+live data from JSON files, working charts. No frameworks, no npm install.
 
 ## Description (paste into Gumroad)
 
@@ -31,6 +31,11 @@ browser and it just works.
 - 📱 **Responsive** — dense desktop layouts that collapse cleanly to mobile
 - 🌀 **Motion, considerately** — staggered load reveals and chart draw-ins,
   automatically disabled for users who prefer reduced motion
+- 🔌 **Backend included** — a zero-dependency Node.js server (one file, no
+  npm install) that feeds every dashboard live data from editable JSON files
+  and powers a real login flow on the sign-in page (`node server/server.js`
+  and you're running full-stack)
+
 - 📄 **Buyer README + plain-English commercial license**
 
 **Who it's for**
