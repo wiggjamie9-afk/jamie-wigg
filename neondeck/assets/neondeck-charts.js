@@ -105,12 +105,14 @@
       }
       var path = el("path", { d: d, fill: "none", stroke: color, "stroke-width": 2.2, "stroke-linecap": "round", filter: "url(#" + id + "-glow)" }, svg);
 
-      // draw-in animation
-      var len = path.getTotalLength();
-      path.style.strokeDasharray = len;
-      path.style.strokeDashoffset = len;
-      path.style.transition = "stroke-dashoffset 1.4s cubic-bezier(.3,.7,.2,1) " + (si * 0.2) + "s";
-      requestAnimationFrame(function () { requestAnimationFrame(function () { path.style.strokeDashoffset = 0; }); });
+      // draw-in animation (skipped for live re-renders, e.g. the Pulse Engine)
+      if (!host.hasAttribute("data-nd-noanim")) {
+        var len = path.getTotalLength();
+        path.style.strokeDasharray = len;
+        path.style.strokeDashoffset = len;
+        path.style.transition = "stroke-dashoffset 1.4s cubic-bezier(.3,.7,.2,1) " + (si * 0.2) + "s";
+        requestAnimationFrame(function () { requestAnimationFrame(function () { path.style.strokeDashoffset = 0; }); });
+      }
 
       // end-point dot
       el("circle", { cx: xs[xs.length - 1], cy: ys[ys.length - 1], r: 3.5, fill: color, filter: "url(#" + id + "-glow)" }, svg);

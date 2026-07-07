@@ -1,6 +1,6 @@
 # NEONDECK — Neon-Noir Dashboard UI Kit
 
-**Version 1.1.0 — Full-Stack Edition**
+**Version 1.2.0 — Full-Stack Edition + Pulse Engine**
 
 Four production-grade dashboard templates in a hand-tuned neon-noir design system,
 plus a **zero-dependency local backend** that feeds them live data and powers a real
@@ -26,7 +26,8 @@ neondeck/
 ├── assets/
 │   ├── neondeck.css            ← the entire design system (1 file, token-driven)
 │   ├── neondeck-charts.js      ← 6 KB SVG chart library (line, donut, bars, sparkline)
-│   └── neondeck-data.js        ← data binder: connects pages to the API
+│   ├── neondeck-data.js        ← data binder: connects pages to the API
+│   └── neondeck-sim.js         ← Pulse Engine: living-data simulation
 ├── README.md
 └── LICENSE.txt
 ```
@@ -62,6 +63,25 @@ without it they fall back to their built-in sample data. Nothing breaks either w
 
 It's a starter backend in one dependency-free file: replace the JSON reads
 with your database queries when you wire in a real product.
+
+## The Pulse Engine (assets/neondeck-sim.js)
+
+A living-data simulation that makes every dashboard breathe — no server
+needed, it runs in the browser. Honest simulation, not AI: it borrows the
+mathematics of living systems.
+
+- **Breathing metrics** — every stat follows a random walk with momentum
+  and mean-reversion, so values drift naturally and never explode
+- **Circadian rhythm** — a slow global load wave that all metrics feel
+- **Homeostasis** — occasional stress spikes are detected, flagged with a
+  red glow, narrated in the event feed, and recover on their own
+- **Heartbeat feed** — the terminal streams what the system is doing
+
+It auto-starts on dashboard pages (paused for visitors with reduced-motion
+preferences) and can be toggled with the floating PULSE ENGINE button.
+To remove it entirely, delete the neondeck-sim.js script tag or set
+`<body data-nd-sim="off">`. Perfect for client demos and portfolio pieces
+where a frozen dashboard would fall flat.
 
 The only external requests are two Google Fonts families (Chakra Petch, IBM Plex Mono).
 To go fully offline, download the fonts and swap the `<link>` for `@font-face` rules —

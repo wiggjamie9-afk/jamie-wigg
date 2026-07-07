@@ -9,8 +9,9 @@ $39 (launch at $29 for the first two weeks to get early sales + ratings,
 then raise to $39. Enable "pay what you want above minimum" — some buyers pay more.)
 
 ## Short summary (Gumroad subtitle field)
-4 cyberpunk dashboard templates + a zero-dependency backend. Real login,
-live data from JSON files, working charts. No frameworks, no npm install.
+4 cyberpunk dashboard templates + a zero-dependency backend + a living-data
+simulation engine. Real login, breathing charts, self-healing anomaly
+demos. No frameworks, no npm install.
 
 ## Description (paste into Gumroad)
 
@@ -35,6 +36,13 @@ browser and it just works.
   npm install) that feeds every dashboard live data from editable JSON files
   and powers a real login flow on the sign-in page (`node server/server.js`
   and you're running full-stack)
+
+- 🫀 **Pulse Engine included** — a living-data simulation that makes every
+  dashboard breathe: metrics drift on a circadian load wave, stress spikes
+  flare up and self-heal, and the event feed narrates it all. Runs in the
+  browser, one toggle to pause, one attribute to remove. Your client demos
+  will never look frozen again. (Honest simulation — we don't call it AI,
+  because it isn't.)
 
 - 📄 **Buyer README + plain-English commercial license**
 
