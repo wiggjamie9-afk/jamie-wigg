@@ -17,6 +17,17 @@ for dir in $MCP_DIRS; do
 done
 wait
 
+# --- jcode CLI (prebuilt binary cached in-repo; see tools/jcode/README.md) ---
+JCODE_PKG="tools/jcode/jcode-linux-x86_64.tar.gz"
+if [ -f "$JCODE_PKG" ] && [ "$(uname -sm)" = "Linux x86_64" ] && ! command -v jcode >/dev/null 2>&1; then
+  mkdir -p "$HOME/.local/bin"
+  if tar xzf "$JCODE_PKG" -C "$HOME/.local/bin" && chmod +x "$HOME/.local/bin/jcode"; then
+    echo "🧰 jcode installed → $HOME/.local/bin/jcode ($("$HOME/.local/bin/jcode" --version 2>/dev/null | head -1 || echo 'version unknown'))"
+  else
+    echo "⚠️  jcode install failed (tarball present but extraction errored)"
+  fi
+fi
+
 # --- Environment sanity ---
 if [ ! -f .env ]; then
   echo "⚠️  no .env at repo root — stepfun/zyloo/higgsfield MCP servers will not authenticate (copy .env.example)"
