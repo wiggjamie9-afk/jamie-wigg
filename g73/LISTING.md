@@ -32,6 +32,10 @@ pre-jump checklists, and the math that ties it all together.
 - 🚀 **Interactive Transit Calculator** — pick a real star, set a cruise
   velocity, get G-73 transit times, Chronos Offset and energy budgets —
   side by side with the *real* relativistic numbers
+- 🎲 **Mission Log Generator** — a seeded discrete-event simulation that
+  rolls every transit against the manual's operating limits and produces
+  a narrative-ready flight-recorder log. Same seed = same mission, so
+  seeds become shareable story hooks and session prep for GMs
 - ✅ **The honesty layer** — green REALITY CHECK panels separate actual
   physics (Alcubierre metric, time dilation, vacuum energy) from the
   fiction, claim by claim. Great for teaching; great for hard-SF cred
@@ -62,6 +66,7 @@ game master, FTL, space opera, lore bible, fiction writing
 1. g73-cover.png        (index.html hero — use as cover)
 2. g73-manual.png       (manual §3 with the 16-Pillar Spinner schematic)
 3. g73-calculator.png   (calculator with a solved Alpha Centauri run)
+3b. g73-generator.png   (mission log mid-scroll with a red LOCK LOST event)
 4. g73-reality.png      (close-up of a REALITY CHECK panel — the differentiator)
 5. g73-print.png        (manual in print/PDF view — shows the PDF deliverable)
 

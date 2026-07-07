@@ -16,6 +16,7 @@ g73/
 ├── index.html          ← pack overview / landing page
 ├── manual.html         ← FBL-G73-TM-001, the G-73 Technical Manual
 ├── calculator.html     ← interactive Transit Calculator
+├── generator.html      ← Mission Log Generator (seeded procedural logs)
 ├── assets/
 │   └── g73.css         ← the entire design system (token-driven)
 ├── README.md
@@ -75,6 +76,24 @@ All colors, fonts, and radii are CSS custom properties at the top of
 
 Edit that block to rebrand the entire pack. All motion respects
 `prefers-reduced-motion`.
+
+## The mission log generator
+
+`generator.html` is a discrete-event simulation, not a random text picker:
+
+1. A **seeded PRNG** (mulberry32) makes every mission reproducible — the same
+   seed always yields the identical log, so seeds are shareable story hooks.
+2. A **pillar-sync loop** brings the 16 pillars into octet lock with jittered
+   timing; a **lock-acquisition loop** climbs confidence to the 99.7% gate.
+3. The **cruise loop** marches the transit in 220 fixed time steps. Pillar
+   drift evolves as a bounded random walk; when state crosses a §3.2 operating
+   limit (drift > 0.4 mrad, lock loss > 120 ms, η > 0.011) the corresponding
+   event fires, with real consequences — a full lock loss drops the ship to
+   conventional velocity and pushes the ETA.
+
+GM usage: hit "Random seed" until a log has a complication you like, then hand
+players the log verbatim as a found document. Writers: the delay math is
+internally consistent, so quoted numbers survive scrutiny.
 
 ## The calculator's math
 
