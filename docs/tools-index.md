@@ -48,6 +48,7 @@ Skill descriptions auto-load every session — don't re-list them. Structure not
 - **Command wrappers** — `.claude/commands/*.md` are thin arg-hint wrappers that invoke same-named skills. Intentional, not duplicates.
 - **Hugging Face skills** — `hf-cli`, `huggingface-best`, `huggingface-papers`, `huggingface-datasets` synced from `huggingface/skills`.
 - **OpenClaw CLI skills** — install via `bash scripts/openclaw-install.sh` on unrestricted-egress machine (ClawHub blocked in sandbox). Queue: `ai-video-editor-motion-graphics`, `self-improving-agent`, `voice-wake-say`, `voice-ai-voices`, `azure-ai-voicelive-py`, `app-builder`, `deploy-agent`.
+- **Knowledge base** — `llm-wiki` skill operates `kb/` (persistent LLM-maintained wiki over immutable `kb/raw/` sources; ingest/query/lint). Schema and conventions: `kb/CLAUDE.md`. Wiki is git-tracked markdown, Obsidian-friendly.
 - **Zapier workflows** — `zapier-workflows` skill; dormant until the Zapier MCP is connected.
 - **n8n** — `/n8n-workflow-generator` converts workflow breakdowns into import-ready JSON under `automation/<slug>/`; worked examples: `automation/veo3-faceless-content-system/`, `automation/kling-social-pipeline/`.
 

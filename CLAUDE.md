@@ -19,6 +19,7 @@ detail lives in `docs/tools-index.md`; **read that (or the linked doc) on demand
 - **Landing page / microsite** → `/site-build <brief>` (4-stage pipeline → `sites/<slug>/`). RHYTHMIX-branded: `/rhythmix-site` (locks styleguide to `rhythmix-teaser-60s/DESIGN.md`). Single stages: `/site-sitemap` `/site-wireframe` `/site-styleguide` `/site-design`.
 - **Repurpose a Promo to portrait/square** → `promo-repurpose`. **Pre-publish gate** → `render-verify`. **Live-site smoke test** → `deploy-check`. Cadence map: `docs/AUTOMATION.md`.
 - **Marketing data Q&A** (ad spend, GA4, campaigns) → Supermetrics hosted connector, `SETUP-SUPERMETRICS.md`.
+- **Knowledge base** (ingest a source, ask the wiki, lint) → `llm-wiki` skill; schema in `kb/CLAUDE.md`.
 - **Script/story generation** → `stepfun` MCP (`flash_script`, `flash_chat`, `flash_episode_brief`). Episode/pitch-deck work: start with `flash_episode_brief`, feed into `/rhythmix-site` or `/site-build`.
 - **Brand identity** → `rhythmix-teaser-60s/DESIGN.md`. **Domain language + decisions** → `CONTEXT.md` + `docs/adr/` (ADR-0001: HyperFrames over Remotion — never "fix" the dormant `video/` setup).
 - **Canonical video example** → `rhythmix-overview-60s/` (60s landscape).
@@ -38,6 +39,7 @@ Live site: **rhythmixapp.com.au** — GitHub Pages serves the **repo root** (pus
 | `capacitor/` | Capacitor iOS wrapper for Studio (`studio/out/` → `www/`). |
 | `sites/<slug>/` | Site-build pipeline output. Promote to root `.html` when production-ready. |
 | `specs/<slug>/` | Spec folders (`requirements.md`/`design.md`/`tasks.md`, stable R#/T# IDs). See `specs/README.md`. |
+| `kb/` | LLM-maintained knowledge base (llm-wiki pattern): `raw/` sources (immutable) + `wiki/` pages. Schema: `kb/CLAUDE.md`. |
 | `video/` | Dormant Remotion starter — do not use (ADR-0001). |
 | `*.html` at root | Live marketing pages (full list in `docs/tools-index.md`). |
 | `.agents/skills/` → `.claude/skills/` | Skill sources → symlinks (+ local-only skills). Edit sources, never symlinks. |
