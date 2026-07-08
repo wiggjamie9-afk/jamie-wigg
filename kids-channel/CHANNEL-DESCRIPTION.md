@@ -7,29 +7,25 @@ community post, the website, Facebook page, or the KDP author page.
 
 ---
 
-## Short version (fits the YouTube About box)
+## Short version (897 characters — fits the YouTube 1,000-character About box)
 
-🌙 **Welcome to Sonny's Cozy Quokka Bedtime Tales** 🌙
+🌙 Calm bedtime stories for kids — the gentlest corner of YouTube.
 
-The gentlest corner of YouTube — calm, read-aloud bedtime stories that help little ones wind down, relax, and drift off to sleep.
+Every story follows Sunny, a kind little baby quokka, wandering the moonlit Australian bush and meeting a new animal friend each night — a sleepy wombat, a dozing koala, a little penguin, a green tree frog, a wise boobook owl and more. Every tale ends the same soothing way: everyone safe, everyone cosy, everyone asleep. 💤
 
-Every story follows **Sunny**, a small, kind-hearted baby quokka, as she wanders the moonlit Australian bush and meets a new animal friend each night — a sleepy wombat in his burrow, a koala dozing in the gum trees, a little penguin waddling home across the sand, a green tree frog singing by the pond, a wise boobook owl keeping watch over the night, and many more. Each tale ends the same soothing way: everyone safe, everyone cosy, everyone asleep. 💤
+🎨 Soft watercolour picture-book art — no flashing colours
+🗣️ A slow, gentle narrator paced for sleepy listening
+🎵 Quiet lullaby music under every story
+📖 Written specially for ages 1–5
+⏱️ 2–3 minutes — just right for bedtime
 
-**What makes our stories perfect for bedtime:**
-🎨 Soft hand-painted watercolour picture-book art — no flashing colours or fast cuts
-🗣️ A slow, gentle narrator's voice, paced for sleepy listening
-🎵 Quiet lullaby music underneath every story
-🐨 Real Australian animals, so little ones learn about nature while they settle
-📖 Simple, rhythmic storytelling written specially for ages 1–5
-⏱️ Just the right length (2–3 minutes) — long enough to settle, short enough for bedtime
+Perfect for bedtime, nap time, quiet time and wind-down routines. Pop a story on, dim the lights, and snuggle in together.
 
-**Perfect for:** bedtime, nap time, quiet time, wind-down routines, and calming an overtired little one. Parents and carers — pop a story on, dim the lights, and snuggle in together.
+New read-aloud bedtime tales added regularly — subscribe and tap the bell 🔔 so you never miss a story.
 
-New Sunny the Quokka bedtime tales added regularly. Subscribe and tap the bell 🔔 so you never miss a story.
+Sweet dreams, little one. 🌟
 
-From our sleepy corner of the bush to yours — sweet dreams, little one. 🌟
-
-*Written by Jamie Wigg.*
+Written by Jamie Wigg.
 
 ---
 
