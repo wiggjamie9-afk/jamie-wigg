@@ -1,4 +1,4 @@
-# Sunny the Quokka — YouTube SEO Pack (Books 1–10)
+# Sunny the Quokka — YouTube SEO Pack (Books 1–14)
 
 Copy-paste ready for manual upload. Channel: **Sonny's Cozy Quokka Bedtime Tales**.
 Category: **Education** (or People & Blogs). Audience: **Yes, made for kids**.
@@ -269,6 +269,110 @@ Sweet dreams, little one. 🌟
 
 **Tags:**
 `bedtime stories, bedtime story for kids, calm bedtime story, sleep story, quokka, sunny the quokka, little penguin, fairy penguin, australian animals, read aloud, toddler bedtime, preschool story, kids sleep, calming video for kids, lullaby, sleepy time story, gentle bedtime story, story time, nap time`
+
+---
+
+## Book 11 — Sunny and the Sleepy Koala
+
+**Title:**
+`Sunny and the Sleepy Koala 🐨 Calm Bedtime Story for Kids | Sonny's Cozy Quokka Bedtime Tales`
+
+**Description:**
+```
+Time to slow right down. 🌙 Tonight, Sunny the little quokka meets a fluffy koala dozing high in his gum tree, who teaches her that there's nothing nicer than a good long snooze.
+
+A soothing read-aloud picture book made to help little ones (ages 1–5) wind down, relax, and fall asleep. Soft watercolour art, a gentle voice, and quiet lullaby music.
+
+💤 Perfect for bedtime, nap time, or quiet time.
+🐨 New Sunny the Quokka bedtime stories every day.
+
+Subscribe and turn on the bell so you never miss a bedtime tale. 🔔
+
+Sweet dreams, little one. 🌟
+
+#bedtimestories #kids #koala
+```
+
+**Tags:**
+`bedtime stories, bedtime story for kids, calm bedtime story, sleep story, quokka, sunny the quokka, koala, sleepy koala, australian animals, read aloud, toddler bedtime, preschool story, kids sleep, calming video for kids, lullaby, sleepy time story, gentle bedtime story, story time, nap time`
+
+---
+
+## Book 12 — Sunny and the Boobook Owl
+
+**Title:**
+`Sunny and the Boobook Owl 🦉 Calm Bedtime Story for Kids | Sonny's Cozy Quokka Bedtime Tales`
+
+**Description:**
+```
+Someone gentle is watching over the night. 🌙 Tonight, Sunny the little quokka meets a soft brown boobook owl with big golden eyes, who sings the bush to sleep and keeps watch so all the little ones can safely dream.
+
+A soothing read-aloud picture book made to help little ones (ages 1–5) wind down, relax, and fall asleep. Soft watercolour art, a gentle voice, and quiet lullaby music.
+
+💤 Perfect for bedtime, nap time, or quiet time.
+🐨 New Sunny the Quokka bedtime stories every day.
+
+Subscribe and turn on the bell so you never miss a bedtime tale. 🔔
+
+Sweet dreams, little one. 🌟
+
+#bedtimestories #kids #owl
+```
+
+**Tags:**
+`bedtime stories, bedtime story for kids, calm bedtime story, sleep story, quokka, sunny the quokka, owl, boobook owl, night owl, australian animals, read aloud, toddler bedtime, preschool story, kids sleep, calming video for kids, lullaby, sleepy time story, gentle bedtime story, story time, nap time`
+
+---
+
+## Book 13 — Sunny and the Green Tree Frog
+
+**Title:**
+`Sunny and the Green Tree Frog 🐸 Calm Bedtime Story for Kids | Sonny's Cozy Quokka Bedtime Tales`
+
+**Description:**
+```
+The rain has stopped and the bush is fresh and clean. 🌙 Tonight, Sunny the little quokka meets a plump green tree frog singing his happy song by the moonlit pond — and together they drift off to the drip-drip of the leaves.
+
+A soothing read-aloud picture book made to help little ones (ages 1–5) wind down, relax, and fall asleep. Soft watercolour art, a gentle voice, and quiet lullaby music.
+
+💤 Perfect for bedtime, nap time, or quiet time.
+🐨 New Sunny the Quokka bedtime stories every day.
+
+Subscribe and turn on the bell so you never miss a bedtime tale. 🔔
+
+Sweet dreams, little one. 🌟
+
+#bedtimestories #kids #frog
+```
+
+**Tags:**
+`bedtime stories, bedtime story for kids, calm bedtime story, sleep story, quokka, sunny the quokka, tree frog, green tree frog, frog, pond, australian animals, read aloud, toddler bedtime, preschool story, kids sleep, calming video for kids, lullaby, sleepy time story, gentle bedtime story, story time, nap time`
+
+---
+
+## Book 14 — Sunny and the Pademelon
+
+**Title:**
+`Sunny and the Pademelon 🌿 Calm Bedtime Story for Kids | Sonny's Cozy Quokka Bedtime Tales`
+
+**Description:**
+```
+Shhh… someone shy is in the ferns. 🌙 Tonight, Sunny the little quokka meets a gentle pademelon — a tiny forest wallaby — at the misty fern-gully edge, and together they snuggle down in the cool green quiet.
+
+A soothing read-aloud picture book made to help little ones (ages 1–5) wind down, relax, and fall asleep. Soft watercolour art, a gentle voice, and quiet lullaby music.
+
+💤 Perfect for bedtime, nap time, or quiet time.
+🐨 New Sunny the Quokka bedtime stories every day.
+
+Subscribe and turn on the bell so you never miss a bedtime tale. 🔔
+
+Sweet dreams, little one. 🌟
+
+#bedtimestories #kids #wallaby
+```
+
+**Tags:**
+`bedtime stories, bedtime story for kids, calm bedtime story, sleep story, quokka, sunny the quokka, pademelon, wallaby, baby wallaby, rainforest, australian animals, read aloud, toddler bedtime, preschool story, kids sleep, calming video for kids, lullaby, sleepy time story, gentle bedtime story, story time, nap time`
 
 ---
 
