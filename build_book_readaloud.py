@@ -59,21 +59,29 @@ def main() -> None:
     if r.returncode != 0:
         raise RuntimeError("concat failed: " + r.stderr.decode()[-300:])
 
+    # loudnorm lifts the mix to streaming loudness (-16 LUFS); without it the
+    # narration lands around -32 LUFS, near-inaudible on phone speakers.
+    LOUDNORM = "loudnorm=I=-16:TP=-1.5:LRA=11"
     music = pipeline.generate_music(int(total), work)
     if music.is_file() and music.stat().st_size > 1000:
         r = subprocess.run([
             "ffmpeg", "-y", "-i", str(narrated), "-i", str(music),
             "-filter_complex",
             "[0:a]volume=1.0[narr];[1:a]volume=0.18[mus];"
-            "[narr][mus]amix=inputs=2:duration=first[aout]",
+            f"[narr][mus]amix=inputs=2:duration=first,{LOUDNORM}[aout]",
             "-map", "0:v", "-map", "[aout]",
-            "-c:v", "copy", "-c:a", "aac", "-movflags", "+faststart",
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-ac", "2",
+            "-movflags", "+faststart",
             str(out)], capture_output=True)
         if r.returncode != 0:
-            r = subprocess.run(["ffmpeg", "-y", "-i", str(narrated), "-c", "copy",
+            r = subprocess.run(["ffmpeg", "-y", "-i", str(narrated),
+                                "-af", LOUDNORM, "-c:v", "copy",
+                                "-c:a", "aac", "-b:a", "160k", "-ac", "2",
                                 "-movflags", "+faststart", str(out)], capture_output=True)
     else:
-        r = subprocess.run(["ffmpeg", "-y", "-i", str(narrated), "-c", "copy",
+        r = subprocess.run(["ffmpeg", "-y", "-i", str(narrated),
+                            "-af", LOUDNORM, "-c:v", "copy",
+                            "-c:a", "aac", "-b:a", "160k", "-ac", "2",
                             "-movflags", "+faststart", str(out)], capture_output=True)
 
     print(f"✅ Read-aloud video: {out} "
