@@ -28,6 +28,13 @@ if [ -f "$JCODE_PKG" ] && [ "$(uname -sm)" = "Linux x86_64" ] && ! command -v jc
   fi
 fi
 
+# --- Secret-scanning pre-commit guard (see .githooks/README.md) ---
+# Cloud sessions start from a fresh clone, so core.hooksPath must be re-set each time.
+if [ -x .githooks/pre-commit ]; then
+  git config core.hooksPath .githooks
+  echo "🔒 secret-scan pre-commit hook active (.githooks/)"
+fi
+
 # --- Environment sanity ---
 if [ ! -f .env ]; then
   echo "⚠️  no .env at repo root — stepfun/zyloo/higgsfield MCP servers will not authenticate (copy .env.example)"
