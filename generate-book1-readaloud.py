@@ -112,14 +112,16 @@ def main() -> None:
             "[0:a]volume=1.0[narr];[1:a]volume=0.18[mus];"
             "[narr][mus]amix=inputs=2:duration=first[aout]",
             "-map", "0:v", "-map", "[aout]",
-            "-c:v", "copy", "-c:a", "aac",
+            "-c:v", "copy", "-c:a", "aac", "-movflags", "+faststart",
             str(OUT)], capture_output=True)
         if r.returncode != 0:
             print("music mix failed — shipping narration-only:",
                   r.stderr.decode()[-200:])
-            OUT.write_bytes(narrated.read_bytes())
+            r = subprocess.run(["ffmpeg", "-y", "-i", str(narrated), "-c", "copy",
+                                "-movflags", "+faststart", str(OUT)], capture_output=True)
     else:
-        OUT.write_bytes(narrated.read_bytes())
+        r = subprocess.run(["ffmpeg", "-y", "-i", str(narrated), "-c", "copy",
+                            "-movflags", "+faststart", str(OUT)], capture_output=True)
 
     print(f"✅ Read-aloud video: {OUT} "
           f"({OUT.stat().st_size // (1024 * 1024)}MB, {total:.0f}s)")
