@@ -30,9 +30,9 @@ def main() -> None:
     out = REPO / f"book{num}" / "redesign" / f"{slug}-readaloud.mp4"
     work.mkdir(parents=True, exist_ok=True)
 
-    intro = (f"{title}. A Sonny's Cozy Quokka Bedtime Tale. "
-             "Snuggle in close, little one. Are you ready? Let's begin.")
-    outro = "The end. Sweet dreams, little one. Goodnight."
+    intro = spec.get("intro", f"{title}. A Sonny's Cozy Quokka Bedtime Tale. "
+                     "Snuggle in close, little one. Are you ready? Let's begin.")
+    outro = spec.get("outro", "The end. Sweet dreams, little one. Goodnight.")
 
     segments = [(pages_dir / f"BOOK-{num}-PAGE-01.png", intro)]
     for page in spec["pages"]:
