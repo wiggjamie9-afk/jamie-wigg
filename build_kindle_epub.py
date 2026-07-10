@@ -81,9 +81,9 @@ PAGE_XHTML = """<?xml version="1.0" encoding="UTF-8"?>
 <head>
 <title>Page {page}</title>
 <meta name="viewport" content="width={w}, height={h}"/>
-<style>html,body{{margin:0;padding:0;background:#000}}
-.page{{width:100%;height:100%}}
-img{{width:100%;height:100%;object-fit:contain;display:block}}</style>
+<style>html,body{{margin:0;padding:0;width:{w}px;height:{h}px;background:#f6efe0}}
+.page{{position:absolute;top:0;left:0;width:{w}px;height:{h}px}}
+img{{width:{w}px;height:{h}px;display:block}}</style>
 </head>
 <body>
 <div class="page"><img src="../images/page-{page:02d}.jpg" alt="Page {page}"/></div>
@@ -111,6 +111,12 @@ OPF = """<?xml version="1.0" encoding="UTF-8"?>
     <meta property="rendition:layout">pre-paginated</meta>
     <meta property="rendition:orientation">landscape</meta>
     <meta property="rendition:spread">none</meta>
+    <meta name="fixed-layout" content="true"/>
+    <meta name="original-resolution" content="{w}x{h}"/>
+    <meta name="orientation-lock" content="landscape"/>
+    <meta name="book-type" content="children"/>
+    <meta name="RegionMagnification" content="false"/>
+    <meta name="cover" content="img01"/>
   </metadata>
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
@@ -169,6 +175,7 @@ def build(num: int) -> pathlib.Path:
         spine.append(f'    <itemref idref="page{i:02d}"/>')
 
     opf = OPF.format(book_id=book_id, title=title, author=AUTHOR, series=SERIES,
+                      w=PAGE_W, h=PAGE_H,
                       items="\n".join(items), spine="\n".join(spine))
 
     if out_path.exists():
