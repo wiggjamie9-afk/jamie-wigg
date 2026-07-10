@@ -1,4 +1,4 @@
-# Sunny the Quokka — YouTube SEO Pack (Books 1–14)
+# Sunny the Quokka — YouTube SEO Pack (Books 1–28)
 
 Copy-paste ready for manual upload. Channel: **Sonny's Cozy Quokka Bedtime Tales**.
 Category: **Education** (or People & Blogs). Audience: **Yes, made for kids**.
@@ -385,3 +385,75 @@ Sweet dreams, little one. 🌟
 5. Add to playlist: **Sunny the Quokka Bedtime Stories**
 6. Thumbnail: the book's cover image
 7. Publish (or Schedule — e.g. one per evening)
+
+---
+
+## Book 15 — Sunny and the Little Numbat
+**YouTube title:** Sunny and the Little Numbat 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** Snuggle in for a gentle Australian bedtime story! Sunny the baby quokka meets a busy little numbat as the sun goes down over the bush. A calm, softly narrated read-aloud picture book that helps toddlers and preschoolers drift off to sleep. Beautiful watercolour art, soothing narration, and a gentle goodnight ending. Perfect for bedtime, nap time, or quiet time. Sonny's Cozy Quokka Bedtime Tales — Book 15. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, kids books, numbat, quokka, australian animals, sleep story for kids, calming story, toddler bedtime, preschool story, goodnight story, bedtime tales
+
+## Book 16 — Sunny and the Spotted Quoll
+**YouTube title:** Sunny and the Spotted Quoll 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** A starry-night bedtime tale from the Australian bush! Sunny the baby quokka follows tiny star-like spots to meet a gentle spotted quoll in the mossy forest. Softly narrated with dreamy watercolour pictures, this read-aloud story is made to settle little ones down for sleep. Sonny's Cozy Quokka Bedtime Tales — Book 16. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, quoll, quokka, australian animals, sleep story, calming bedtime, kids story, goodnight book, toddler story, preschool read aloud
+
+## Book 17 — Sunny and the Bandicoot
+**YouTube title:** Sunny and the Bandicoot 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** In the violet evening light, Sunny the baby quokka meets a busy little bandicoot digging his supper in the grass. A soft, slow bedtime read-aloud with hand-painted watercolour art and a soothing narrator — perfect for winding down before sleep. Sonny's Cozy Quokka Bedtime Tales — Book 17. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, bandicoot, quokka, australian animals, sleepy story, kids bedtime, calming story for toddlers, goodnight story, picture book read aloud
+
+## Book 18 — Sunny and the Dingo Puppy
+**YouTube title:** Sunny and the Dingo Puppy 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** On the warm red sand where the desert meets the bush, Sunny keeps a lost dingo puppy company until his mama comes home. A tender story about kindness and waiting, told in a calm bedtime voice with glowing desert-night watercolours. Sonny's Cozy Quokka Bedtime Tales — Book 18. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, dingo, puppy story, quokka, australian outback, kids sleep story, calming bedtime, toddler story, goodnight tale
+
+## Book 19 — Sunny and the Emu Chick
+**YouTube title:** Sunny and the Emu Chick 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** Out on the golden plain, Sunny meets a tiny striped emu chick and his big gentle dad, whose feathers make the warmest tent in all the bush. A soft read-aloud bedtime story with dreamy watercolour art and a sleepy goodnight ending. Sonny's Cozy Quokka Bedtime Tales — Book 19. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, emu, emu chick, quokka, australian animals, sleep story kids, calm bedtime story, toddler bedtime, goodnight book
+
+## Book 20 — Sunny and the Blue-tongue Lizard
+**YouTube title:** Sunny and the Blue-tongue Lizard 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** On the warm golden rocks at sunset, Sunny meets a chunky blue-tongue lizard with the best bedtime trick of all: soak up the day, then let it tuck you in. A gentle, funny, calming read-aloud for little ones. Sonny's Cozy Quokka Bedtime Tales — Book 20. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, blue tongue lizard, quokka, australian animals, funny bedtime story, calm kids story, sleep story, toddler read aloud, goodnight story
+
+## Book 21 — Sunny and the Pink Galah
+**YouTube title:** Sunny and the Pink Galah 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** When the whole sky turns pink, it's bedtime! Sunny watches a cheeky pink galah dance her last little dance before the flock settles into the old gum tree like soft pink flowers. A rosy, dreamy read-aloud for sleepy heads. Sonny's Cozy Quokka Bedtime Tales — Book 21. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, galah, pink galah, quokka, australian birds, kids sleep story, calming story, toddler bedtime, goodnight book
+
+## Book 22 — Sunny and the White Cockatoo
+**YouTube title:** Sunny and the White Cockatoo 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** High in the gum trees, a snowy white cockatoo preens every feather into place — because one must look tidy for one's dreams! Sunny watches him tuck his head beneath his wing like a little sleeping cloud. A gentle read-aloud bedtime tale. Sonny's Cozy Quokka Bedtime Tales — Book 22. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, cockatoo, sulphur crested cockatoo, quokka, australian birds, sleep story, calm bedtime, kids story, goodnight tale
+
+## Book 23 — Sunny and the Lyrebird
+**YouTube title:** Sunny and the Lyrebird 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** Deep in the cool fern gully, a lyrebird sings the evening's song — raindrops, the wind, the creek, and every bird's goodnight. Sunny listens until her eyes grow heavy. A musical, magical bedtime read-aloud. Sonny's Cozy Quokka Bedtime Tales — Book 23. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, lyrebird, quokka, australian birds, calming story, sleep story for kids, musical bedtime story, toddler read aloud, goodnight book
+
+## Book 24 — Sunny and the Sea Turtle
+**YouTube title:** Sunny and the Sea Turtle 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** By the moonlit bay, a wise old sea turtle teaches Sunny to breathe like the sea — in… and out… as slow as rolling waves. A calming bedtime story with gentle breathing built right in, perfect for helping little ones relax into sleep. Sonny's Cozy Quokka Bedtime Tales — Book 24. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, sea turtle, quokka, ocean bedtime story, calm breathing for kids, sleep story, relaxing kids story, toddler bedtime, goodnight tale
+
+## Book 25 — Sunny and the Seal Pup
+**YouTube title:** Sunny and the Seal Pup 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** On the silver rocks by the singing sea, Sunny meets a roly-poly seal pup who plays all day and sleeps to the lullaby of the waves. A soft ocean-side read-aloud with dreamy watercolours and a soothing narrator. Sonny's Cozy Quokka Bedtime Tales — Book 25. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, seal pup, quokka, ocean story for kids, sleep story, calming bedtime, cute animal story, toddler read aloud, goodnight book
+
+## Book 26 — Sunny and the Willie Wagtail
+**YouTube title:** Sunny and the Willie Wagtail 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** In the twilight garden, a cheeky willie wagtail dances one last dance before bed — swish, swish, swish — until the dance becomes a sleepy sway. Sunny curls up in rose petals as the crickets play. A sweet, gentle read-aloud for bedtime. Sonny's Cozy Quokka Bedtime Tales — Book 26. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, willie wagtail, quokka, australian birds, garden bedtime story, kids sleep story, calming story, toddler bedtime, goodnight tale
+
+## Book 27 — Sunny and the Glow Worms
+**YouTube title:** Sunny and the Glow Worms 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** On the darkest night of the year, Sunny finds a secret cave where hundreds of glow worms shine like stars. "The dark is where we shine," they twinkle — a gentle story for any little one who's unsure about the dark. Sonny's Cozy Quokka Bedtime Tales — Book 27. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, glow worms, quokka, afraid of the dark story, calming bedtime, night light story, kids sleep story, toddler read aloud, goodnight book
+
+## Book 28 — Sunny and the Brolga
+**YouTube title:** Sunny and the Brolga 🌙 Cozy Bedtime Story for Kids | Read Aloud
+**Description:** By the still billabong, a graceful brolga dances the day to sleep so the night can tiptoe in. Sunny watches the stars appear with every sweep of her silver wings. An elegant, dreamy bedtime read-aloud to end the day softly. Sonny's Cozy Quokka Bedtime Tales — Book 28. Written by Jamie Wigg.
+**Tags:** bedtime story, read aloud, brolga, quokka, australian birds, billabong story, calming kids story, sleep story, toddler bedtime, goodnight tale
