@@ -40,12 +40,20 @@ def main() -> None:
         segments.append((pages_dir / f"BOOK-{num}-PAGE-{n:02d}.png", " ".join(page["text"])))
     segments.append((pages_dir / f"BOOK-{num}-PAGE-17.png", outro))
 
+    narration = spec.get("narration", True)
+
     clips, total = [], 0.0
     for i, (img, text) in enumerate(segments):
         if not img.is_file():
             raise RuntimeError(f"missing page image: {img}")
         print(f"[{i + 1}/{len(segments)}] {img.name}")
-        audio = ra.tts_segment(text, work / f"seg_{i:02d}")
+        if narration:
+            audio = ra.tts_segment(text, work / f"seg_{i:02d}")
+        else:
+            audio = work / f"seg_{i:02d}.wav"
+            subprocess.run(["ffmpeg", "-y", "-f", "lavfi",
+                            "-i", "anullsrc=r=44100:cl=mono", "-t", "8",
+                            str(audio)], capture_output=True)
         clip = work / f"clip_{i:02d}.mp4"
         total += ra.page_clip(img, audio, clip)
         clips.append(clip)
@@ -67,7 +75,8 @@ def main() -> None:
         r = subprocess.run([
             "ffmpeg", "-y", "-i", str(narrated), "-i", str(music),
             "-filter_complex",
-            "[0:a]volume=1.0[narr];[1:a]volume=0.18[mus];"
+            "[0:a]volume=1.0[narr];"
+            f"[1:a]volume={'0.18' if narration else '1.0'}[mus];"
             f"[narr][mus]amix=inputs=2:duration=first,{LOUDNORM}[aout]",
             "-map", "0:v", "-map", "[aout]",
             "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-ac", "2",
