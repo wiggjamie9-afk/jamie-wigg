@@ -124,6 +124,17 @@ OPF = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
+def book_meta(num: int) -> tuple[str, str]:
+    if num in BOOKS:
+        return BOOKS[num]
+    spec_path = REPO / f"book{num}-spec.json"
+    if spec_path.exists():
+        import json
+        spec = json.loads(spec_path.read_text())
+        return spec["slug"], spec["title"]
+    raise KeyError(f"book {num}: not in BOOKS and no book{num}-spec.json")
+
+
 def find_pages(pages_dir: pathlib.Path, num: int) -> list[pathlib.Path]:
     plain = sorted(p for p in pages_dir.glob(f"BOOK-{num}-PAGE-*.png")
                    if "-REDESIGN" not in p.name)
@@ -134,7 +145,7 @@ def find_pages(pages_dir: pathlib.Path, num: int) -> list[pathlib.Path]:
 
 
 def build(num: int) -> pathlib.Path:
-    slug, title = BOOKS[num]
+    slug, title = book_meta(num)
     pages_dir = REPO / f"book{num}" / "redesign" / "pages"
     out_path = REPO / f"book{num}" / "redesign" / f"{slug}.epub"
     work = REPO / f"book{num}" / "redesign" / "epub-work"
