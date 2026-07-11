@@ -70,7 +70,9 @@ def main() -> None:
     # loudnorm lifts the mix to streaming loudness (-16 LUFS); without it the
     # narration lands around -32 LUFS, near-inaudible on phone speakers.
     LOUDNORM = "loudnorm=I=-16:TP=-1.5:LRA=11"
-    music = pipeline.generate_music(int(total), work)
+    # Narrated books are voice-only (no background music). Only melody-only
+    # books (narration=False) generate a music track.
+    music = pipeline.generate_music(int(total), work) if not narration else work / "none"
     if music.is_file() and music.stat().st_size > 1000:
         r = subprocess.run([
             "ffmpeg", "-y", "-i", str(narrated), "-i", str(music),
