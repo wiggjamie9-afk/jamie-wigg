@@ -79,18 +79,18 @@ def main() -> None:
             f"[1:a]volume={'0.18' if narration else '1.0'}[mus];"
             f"[narr][mus]amix=inputs=2:duration=first,{LOUDNORM}[aout]",
             "-map", "0:v", "-map", "[aout]",
-            "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-ac", "2",
+            "-c:v", "copy", "-c:a", "aac", "-ar", "44100", "-b:a", "160k", "-ac", "2",
             "-movflags", "+faststart",
             str(out)], capture_output=True)
         if r.returncode != 0:
             r = subprocess.run(["ffmpeg", "-y", "-i", str(narrated),
                                 "-af", LOUDNORM, "-c:v", "copy",
-                                "-c:a", "aac", "-b:a", "160k", "-ac", "2",
+                                "-c:a", "aac", "-ar", "44100", "-b:a", "160k", "-ac", "2",
                                 "-movflags", "+faststart", str(out)], capture_output=True)
     else:
         r = subprocess.run(["ffmpeg", "-y", "-i", str(narrated),
                             "-af", LOUDNORM, "-c:v", "copy",
-                            "-c:a", "aac", "-b:a", "160k", "-ac", "2",
+                            "-c:a", "aac", "-ar", "44100", "-b:a", "160k", "-ac", "2",
                             "-movflags", "+faststart", str(out)], capture_output=True)
 
     print(f"✅ Read-aloud video: {out} "
