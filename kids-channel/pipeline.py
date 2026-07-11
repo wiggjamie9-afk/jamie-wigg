@@ -1079,35 +1079,39 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
 # ── 5. Background music ────────────────────────────────────────────────────────────────
 
 def generate_music(duration_secs: int, episode_dir: Path) -> Path:
-    """Generate gentle lullaby music using ffmpeg sine tones — no API needed."""
+    """Generate a real gentle lullaby MELODY (actual notes, music-box style).
+
+    The earlier version layered three sustained sine tones, which droned like
+    static rather than sounding like music. This synthesises an actual tune
+    ("Twinkle, Twinkle") with per-note envelopes so it reads as a lullaby.
+    """
+    import importlib.util
+    music_wav = episode_dir / "music.wav"
     music_path = episode_dir / "music.mp3"
-    print("[4/6] Generating background music via ffmpeg...")
+    print("[4/6] Generating lullaby melody...")
     total = int(duration_secs) + 5
 
-    # Simple approach: layer 3 quiet sine tones (C4, G4, C5) for a calm hum
-    result = subprocess.run([
-        "ffmpeg", "-y",
-        "-f", "lavfi",
-        "-i", f"sine=frequency=261.63:duration={total}",
-        "-f", "lavfi",
-        "-i", f"sine=frequency=392.00:duration={total}",
-        "-f", "lavfi",
-        "-i", f"sine=frequency=523.25:duration={total}",
-        "-filter_complex",
-        "[0:a]volume=0.10[a0];"
-        "[1:a]volume=0.07[a1];"
-        "[2:a]volume=0.05[a2];"
-        "[a0][a1][a2]amix=inputs=3:duration=longest[aout];"
-        f"[aout]lowpass=f=2000,afade=t=in:st=0:d=3,afade=t=out:st={total-4}:d=4[final]",
-        "-map", "[final]",
-        "-c:a", "libmp3lame", "-q:a", "4",
-        str(music_path)
-    ], capture_output=True)
+    # load the stdlib melody synth living next to this pipeline module
+    lull_py = Path(__file__).parent / "lullaby.py"
+    spec = importlib.util.spec_from_file_location("lullaby", lull_py)
+    lull = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lull)
 
-    if result.returncode == 0 and music_path.exists() and music_path.stat().st_size > 1000:
-        print(f"  ✓ Lullaby music generated ({total}s)")
-    else:
-        print(f"  ⚠ Music generation failed: {result.stderr.decode()[-200:]} — continuing without music")
+    try:
+        lull.generate_lullaby_wav(music_wav, total)
+        # gentle low-pass for warmth, then encode to mp3
+        result = subprocess.run([
+            "ffmpeg", "-y", "-i", str(music_wav),
+            "-af", "lowpass=f=3200",
+            "-c:a", "libmp3lame", "-q:a", "4", str(music_path)
+        ], capture_output=True)
+        if result.returncode == 0 and music_path.exists() and music_path.stat().st_size > 1000:
+            print(f"  ✓ Lullaby melody generated ({total}s)")
+        else:
+            print(f"  ⚠ encode failed: {result.stderr.decode()[-200:]}")
+            music_path.write_bytes(b"")
+    except Exception as e:
+        print(f"  ⚠ Music generation failed: {e} — continuing without music")
         music_path.write_bytes(b"")
     return music_path
 
