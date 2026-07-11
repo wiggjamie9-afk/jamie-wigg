@@ -76,7 +76,7 @@ def main() -> None:
             "ffmpeg", "-y", "-i", str(narrated), "-i", str(music),
             "-filter_complex",
             "[0:a]volume=1.0[narr];"
-            f"[1:a]volume={'0.18' if narration else '1.0'}[mus];"
+            f"[1:a]volume={'0.10' if narration else '1.0'}[mus];"
             f"[narr][mus]amix=inputs=2:duration=first,{LOUDNORM}[aout]",
             "-map", "0:v", "-map", "[aout]",
             "-c:v", "copy", "-c:a", "aac", "-ar", "44100", "-b:a", "160k", "-ac", "2",
