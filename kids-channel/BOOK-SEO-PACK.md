@@ -457,3 +457,13 @@ Sweet dreams, little one. 🌟
 **YouTube title:** Sunny and the Brolga 🌙 Cozy Bedtime Story for Kids | Read Aloud
 **Description:** By the still billabong, a graceful brolga dances the day to sleep so the night can tiptoe in. Sunny watches the stars appear with every sweep of her silver wings. An elegant, dreamy bedtime read-aloud to end the day softly. Sonny's Cozy Quokka Bedtime Tales — Book 28. Written by Jamie Wigg.
 **Tags:** bedtime story, read aloud, brolga, quokka, australian birds, billabong story, calming kids story, sleep story, toddler bedtime, goodnight tale
+
+## Book 29 — Sunny and the Kangaroo Joey
+**YouTube title:** Sunny and the Kangaroo Joey 🌙 Relaxing Bedtime Story with Lullaby Music (No Narration)
+**Description:** Out on the moonlit plain, a sleepy kangaroo joey snuggles deep into his mother's pouch — the cosiest bed in all the bush. Sunny watches and learns that the safest place to sleep is close to someone who loves you. A gentle no-narration picture-book video with soft lullaby music, perfect for winding down. Sonny's Cozy Quokka Bedtime Tales — Book 29. Written by Jamie Wigg.
+**Tags:** bedtime story, lullaby music, kangaroo joey, quokka, calming video for kids, sleep music for kids, no narration bedtime, relaxing kids video, toddler wind down, goodnight book
+
+## Book 30 — Sunny and the Black Swan
+**YouTube title:** Sunny and the Black Swan 🌙 Relaxing Bedtime Story with Lullaby Music (No Narration)
+**Description:** On a mirror-still lake, a graceful black swan glides through the starlight, tucking her head under her velvet wing as the world goes quiet. Sunny curls up in the reeds beside her. A peaceful no-narration picture-book video with soft lullaby music — just pictures, melody, and sleep. Sonny's Cozy Quokka Bedtime Tales — Book 30. Written by Jamie Wigg.
+**Tags:** bedtime story, lullaby music, black swan, quokka, australian birds, calming video for kids, sleep music, no narration bedtime, relaxing toddler video, goodnight tale
