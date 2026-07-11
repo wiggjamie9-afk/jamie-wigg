@@ -42,10 +42,11 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           PIPER_VOICE_DIR: /tmp/piper-voices
         run: |
-          # render every "spec=..." line in the trigger (one checkout, many books)
-          grep -oP '^spec=\K.+' kids-channel/.book-readaloud-trigger | while read -r SPEC; do
+          # read specs into an array (NOT a pipe) so ffmpeg's stdin can't kill the loop
+          mapfile -t SPECS < <(grep -oP '^spec=\K.+' kids-channel/.book-readaloud-trigger)
+          for SPEC in "${SPECS[@]}"; do
             echo "::group::Building read-aloud for spec: $SPEC"
-            python build_book_readaloud.py "$SPEC"
+            python build_book_readaloud.py "$SPEC" < /dev/null
             echo "::endgroup::"
           done
 
@@ -53,7 +54,8 @@ jobs:
         run: |
           git config user.email "sunny-bot@rhythmixapp.com.au"
           git config user.name "Sunny Bot"
-          grep -oP '^spec=\K.+' kids-channel/.book-readaloud-trigger | while read -r SPEC; do
+          mapfile -t SPECS < <(grep -oP '^spec=\K.+' kids-channel/.book-readaloud-trigger)
+          for SPEC in "${SPECS[@]}"; do
             NUM=$(grep -oP '"num"\s*:\s*\K[0-9]+' "$SPEC")
             VID=$(ls book${NUM}/redesign/*-readaloud.mp4 2>/dev/null | head -1)
             [ -z "$VID" ] && continue
