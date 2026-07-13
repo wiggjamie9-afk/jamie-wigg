@@ -4,14 +4,16 @@ SONNY'S COZY QUOKKA BEDTIME TALES — Amazon KDP Paperback Interiors
 WHAT THESE FILES ARE
 --------------------
 One print-ready interior PDF per book (Books 1–35). Each PDF is the full
-17-page illustrated story — every watercolour page with its baked-in text —
-laid out as a real picture book you can sell as a PAPERBACK on Amazon KDP.
+full illustrated story — every watercolour page with its baked-in text —
+plus a title page, copyright page and end matter, laid out as a real picture
+book you can sell as a PAPERBACK on Amazon KDP.
 
 SPECS (every PDF)
 -----------------
   Trim size:  11" x 8.5" landscape   (a standard KDP children's-book trim)
   Resolution: 300 DPI (3300 x 2550 px per page) — print quality
-  Pages:      17 illustrated story pages
+  Pages:      24 (title + copyright + 17 story pages + end matter)
+              — meets Amazon's 24-page paperback minimum
   Layout:     each landscape illustration fills the page on a cream ground
 
 HOW TO PUBLISH ON AMAZON (paperback)
