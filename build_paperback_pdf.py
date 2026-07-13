@@ -19,8 +19,10 @@ OUT = REPO / "kdp-paperbacks"
 OUT.mkdir(exist_ok=True)
 
 DPI = 300
-TRIM_IN = 8.5                       # 8.5 x 8.5 square trim
-SIDE = int(TRIM_IN * DPI)           # 2550 px
+TRIM_W_IN = 11.0                    # 11 x 8.5 landscape trim (KDP standard)
+TRIM_H_IN = 8.5
+PAGE_W = int(TRIM_W_IN * DPI)       # 3300 px
+PAGE_H = int(TRIM_H_IN * DPI)       # 2550 px
 PAPER = (253, 251, 249)             # cream paper background sampled from art
 MARGIN = int(0.30 * DPI)            # 0.30" safe margin each side (KDP min 0.25")
 
@@ -47,15 +49,16 @@ def slug_for(num: int) -> str:
 
 
 def build_page(art: Image.Image) -> Image.Image:
-    """Place a 16:9 illustration centred on a square cream page."""
-    page = Image.new("RGB", (SIDE, SIDE), PAPER)
-    avail_w = SIDE - 2 * MARGIN
-    scale = avail_w / art.width
-    w = avail_w
+    """Place a 16:9 illustration centred on an 11x8.5 landscape cream page."""
+    page = Image.new("RGB", (PAGE_W, PAGE_H), PAPER)
+    avail_w = PAGE_W - 2 * MARGIN
+    avail_h = PAGE_H - 2 * MARGIN
+    scale = min(avail_w / art.width, avail_h / art.height)
+    w = int(art.width * scale)
     h = int(art.height * scale)
     art_r = art.resize((w, h), Image.LANCZOS)
-    x = (SIDE - w) // 2
-    y = (SIDE - h) // 2
+    x = (PAGE_W - w) // 2
+    y = (PAGE_H - h) // 2
     page.paste(art_r, (x, y))
     return page
 
@@ -77,7 +80,7 @@ def main() -> None:
     for num in nums:
         out = build_book(num)
         mb = out.stat().st_size / (1024 * 1024)
-        print(f"book{num:02d}: {out.name}  {mb:.1f}MB  ({SIDE}x{SIDE}px @ {DPI}dpi)")
+        print(f"book{num:02d}: {out.name}  {mb:.1f}MB  ({PAGE_W}x{PAGE_H}px @ {DPI}dpi)")
 
 
 if __name__ == "__main__":

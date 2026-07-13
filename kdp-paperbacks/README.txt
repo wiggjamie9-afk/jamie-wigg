@@ -9,10 +9,10 @@ laid out as a real picture book you can sell as a PAPERBACK on Amazon KDP.
 
 SPECS (every PDF)
 -----------------
-  Trim size:  8.5" x 8.5" square   (a standard KDP children's-book trim)
-  Resolution: 300 DPI (2550 x 2550 px per page) — print quality
+  Trim size:  11" x 8.5" landscape   (a standard KDP children's-book trim)
+  Resolution: 300 DPI (3300 x 2550 px per page) — print quality
   Pages:      17 illustrated story pages
-  Layout:     each landscape illustration centred on a cream page
+  Layout:     each landscape illustration fills the page on a cream ground
 
 HOW TO PUBLISH ON AMAZON (paperback)
 ------------------------------------
@@ -20,7 +20,7 @@ HOW TO PUBLISH ON AMAZON (paperback)
   2. Enter the title/description/keywords from  kids-channel/amazon-kdp/
      (there's a ready-made sheet per book, e.g. book01-...-KDP.txt).
   3. Print options:
-        Trim size ............ 8.5 x 8.5 in
+        Trim size ............ 11 x 8.5 in (landscape)
         Interior ............. Premium colour, white paper
         Bleed ................ No bleed
         Cover finish ......... Glossy

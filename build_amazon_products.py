@@ -90,7 +90,7 @@ PAPERBACK  (same info, print version)
  1. kdp.amazon.com  ->  Create  ->  Paperback
  2. Paste the same Title / Description / keywords from 05-LISTING.txt.
  3. Print options:
-        Trim size ..... 8.5 x 8.5 in
+        Trim size ..... 11 x 8.5 in (landscape)
         Interior ...... Premium colour, white paper
         Bleed ......... No bleed
         Cover finish .. Glossy

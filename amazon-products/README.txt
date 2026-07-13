@@ -8,7 +8,7 @@ title is right there. No hunting across the repo.
 WHAT'S IN EVERY BOOK FOLDER
   01-COVER-ebook.jpg .......... cover, 1600 x 2560 (Kindle + paperback front)
   02-COVER-print.png .......... print-resolution cover art
-  03-INTERIOR-paperback.pdf ... 8.5 x 8.5", 300 DPI, 17 illustrated pages
+  03-INTERIOR-paperback.pdf ... 11 x 8.5" landscape, 300 DPI, 17 illustrated pages
   04-KINDLE-ebook.epub ........ fixed-layout page-flip Kindle book
   05-LISTING.txt .............. title, subtitle, description, 7 keywords,
                                 categories, age range, price — copy & paste
