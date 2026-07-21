@@ -35,9 +35,11 @@ export function WaveformCanvas({
       try {
         const arrayBuffer = await blob.arrayBuffer();
         // Some Safari versions still need the webkit-prefixed constructor.
-        const Ctx: typeof AudioContext =
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          window.AudioContext ?? (window as any).webkitAudioContext;
+        const Ctx: typeof AudioContext | undefined =
+          window.AudioContext ??
+          (window as typeof window & {
+            webkitAudioContext?: typeof AudioContext;
+          }).webkitAudioContext;
         if (!Ctx) {
           throw new Error("Web Audio API is not supported in this browser.");
         }
