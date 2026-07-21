@@ -107,15 +107,17 @@ export async function completeWithLLM(
 
   const client = getLLMClient(mode);
 
-  const resp = await client.chat.completions.create({
-    model,
-    messages: [{ role: "user", content: prompt }],
-    temperature,
-    max_tokens: maxTokens,
-  });
+  const { data: resp, response: raw } = await client.chat.completions
+    .create({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature,
+      max_tokens: maxTokens,
+    })
+    .withResponse();
 
   const text = resp.choices[0]?.message?.content || "";
-  const provider = resp.headers?.get?.("x-routed-via") || "unknown";
+  const provider = raw.headers.get("x-routed-via") || "unknown";
 
   return { text, provider };
 }

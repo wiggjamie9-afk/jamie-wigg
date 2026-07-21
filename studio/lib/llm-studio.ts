@@ -29,7 +29,7 @@ interface StudioLLMRequest {
   };
 }
 
-interface StudioLLMResponse {
+export interface StudioLLMResponse {
   text: string;
   provider: string;
   mode: "free" | "paid";
@@ -118,16 +118,20 @@ export async function routeStudioTask(
   try {
     const client = getLLMClient(mode);
 
-    const resp = await client.chat.completions.create({
-      model,
-      temperature,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: prompt }],
-    });
+    const { data: resp, response: raw } = await client.chat.completions
+      .create({
+        model,
+        temperature,
+        max_tokens: maxTokens,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt },
+        ],
+      })
+      .withResponse();
 
     const text = resp.choices[0]?.message?.content || "";
-    const provider = resp.headers?.get?.("x-routed-via") || "unknown";
+    const provider = raw.headers.get("x-routed-via") || "unknown";
     const activeMode = getActiveLLMMode(mode);
 
     return {
@@ -145,8 +149,10 @@ export async function routeStudioTask(
         model: "claude-opus-4-8",
         temperature,
         max_tokens: maxTokens,
-        system: getSystemPrompt(task),
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: getSystemPrompt(task) },
+          { role: "user", content: prompt },
+        ],
       });
 
       return {

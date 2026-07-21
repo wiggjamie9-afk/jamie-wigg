@@ -60,7 +60,7 @@ export function MetadataGenerator({
   videoDescription: string;
 }) {
   const [metadata, setMetadata] = useState("");
-  const [mode, setMode] = useState<"free" | "paid">("auto");
+  const [mode, setMode] = useState<"free" | "paid">("free");
   const [loading, setLoading] = useState(false);
 
   const handleGenerateMetadata = async () => {
