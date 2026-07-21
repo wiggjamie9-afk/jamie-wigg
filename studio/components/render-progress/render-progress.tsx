@@ -417,7 +417,7 @@ export function RenderProgress({ planId }: { planId: string }) {
           });
         });
     },
-    [handleEvent, phase.kind],
+    [handleEvent, phase],
   );
 
   // ---- On completion: auto-download + history save ----
