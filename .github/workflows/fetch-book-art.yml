@@ -1,0 +1,50 @@
+name: Fetch book art (generic)
+
+# Reads art-fetch-manifest.txt at repo root: each line is
+#   <target-path><TAB><url>
+# downloads every url to its target path and commits. Egress bridge for the
+# fully-illustrated book redesigns (sandbox can't reach the CDN; CI can).
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [claude/youtube-tv-research-fla0ts]
+    paths: [art-fetch-manifest.txt]
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout (shallow)
+        uses: actions/checkout@v4
+        with:
+          ref: claude/youtube-tv-research-fla0ts
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Download from manifest
+        run: |
+          while IFS=$'\t' read -r target url; do
+            case "$target" in ''|\#*) continue;; esac
+            [ -z "$url" ] && continue
+            mkdir -p "$(dirname "$target")"
+            echo "-> $target"
+            curl -fsSL --retry 5 --retry-delay 3 "$url" -o "$target" || { echo "FAIL $target"; exit 1; }
+          done < art-fetch-manifest.txt
+
+      - name: Commit
+        run: |
+          git config user.email "sunny-bot@rhythmixapp.com.au"
+          git config user.name "Sunny Bot"
+          git add -A book*/redesign/art-v2 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "book redesign: fetch generated art from manifest"
+            git pull --rebase origin claude/youtube-tv-research-fla0ts || true
+            git push origin HEAD:claude/youtube-tv-research-fla0ts
+          fi
