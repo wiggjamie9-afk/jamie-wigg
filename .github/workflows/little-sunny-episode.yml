@@ -16,11 +16,6 @@ on:
     - cron: "0 21 * * *"   # 7 AM AEST every day
     - cron: "0 3 * * *"    # 1 PM AEST every day
     - cron: "0 9 * * *"    # 7 PM AEST every day
-  push:
-    # Test hook: pushing the trigger file on the rebuild branch starts a
-    # dry-run build (no upload, no queue advance). Scoped to that branch only.
-    branches: [claude/youtube-tv-research-fla0ts]
-    paths: [kids-channel/.dry-run-trigger]
 
 jobs:
   produce-episode:
@@ -28,17 +23,12 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
-    env:
-      # Push-triggered runs are always dry runs
-      DRY_RUN: ${{ github.event_name == 'push' || inputs.dry_run == true }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          # No ref pin: scheduled runs use main, manual dispatch uses the
-          # branch it was dispatched on — so workflow fixes can be tested
-          # from a feature branch before merging.
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: false
 
@@ -139,7 +129,6 @@ jobs:
           EOF
 
       - name: Write YouTube token
-        if: ${{ env.DRY_RUN != 'true' }}
         run: |
           python3 -c "
           import json, os
@@ -162,9 +151,6 @@ jobs:
           YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
 
       - name: Validate YouTube token (pre-flight)
-        # Dry runs never upload, so they must not be blocked by dead tokens —
-        # this is what lets us test the build pipeline while OAuth is broken.
-        if: ${{ env.DRY_RUN != 'true' }}
         env:
           YT_REFRESH: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
@@ -222,40 +208,26 @@ jobs:
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: |
           DRY_RUN_FLAG=""
-          if [ "$DRY_RUN" = "true" ]; then
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
           fi
           python kids-channel/pipeline.py \
             --script-file "${{ steps.pick-script.outputs.script }}" \
             $DRY_RUN_FLAG
 
-      - name: Persist character reference
-        # Commit the canonical Sonny reference even on dry runs — it is the
-        # seed-locked source of character consistency for every future episode.
-        if: steps.run-pipeline.conclusion == 'success'
-        run: |
-          git config user.email "sunny-bot@rhythmixapp.com.au"
-          git config user.name "Sunny Bot"
-          git add kids-channel/character/ 2>/dev/null || true
-          if ! git diff --cached --quiet; then
-            git commit -m "character: persist canonical Sonny reference"
-            git push origin HEAD:${{ github.ref_name }}
-          else
-            echo "Character reference unchanged — nothing to commit"
-          fi
-
       - name: Advance queue
-        # Never advance the queue on a dry run — nothing was published.
-        if: steps.pick-script.outputs.from_queue == 'true' && steps.run-pipeline.conclusion == 'success' && env.DRY_RUN != 'true'
+        if: steps.pick-script.outputs.from_queue == 'true' && steps.run-pipeline.conclusion == 'success'
         run: |
           git config user.email "sunny-bot@rhythmixapp.com.au"
           git config user.name "Sunny Bot"
           tail -n +2 kids-channel/queue.txt > kids-channel/queue_tmp.txt
           mv kids-channel/queue_tmp.txt kids-channel/queue.txt
           git add kids-channel/queue.txt
+          # Persist the canonical Sonny character reference the first time the
+          # pipeline generates it — keeps the character identical across runs
+          git add kids-channel/character/ 2>/dev/null || true
           git commit -m "queue: processed ${{ steps.pick-script.outputs.script }}"
-          git pull --rebase origin ${{ github.ref_name }} || true
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin main
 
       - name: Upload episode artifacts
         uses: actions/upload-artifact@v4

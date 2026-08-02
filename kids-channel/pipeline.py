@@ -394,12 +394,11 @@ def generate_scene_image_pollinations(prompt: str, scene_id: int, episode_dir: P
     img_path = episode_dir / f"scene_{scene_id:02d}.jpg"
     # Short prompt: URL-length safe, faster to process, professional watercolor focus
     short_prompt = (
-        f"Award-winning watercolour children's book illustration, adorable and heart-melting. "
-        f"Sonny: super cuddly chubby BABY quokka, plush-toy soft golden-brown fluffy fur, big round head, "
-        f"HUGE sparkling brown eyes with catchlights, rosy blush cheeks, tiny paws on cream tummy, sweetest sleepy smile, "
-        f"snuggled with a soft blanket. "
-        f"{prompt[:110]}. Dreamy moonlit Australian bush, glowing fireflies bokeh, twinkling stars, soft vignette. "
-        f"Hand-painted brushstrokes, textured paper, warm honey-gold and navy palette, no text, safe for toddlers."
+        f"Professional watercolour Beatrix Potter style children's book illustration. "
+        f"Sonny: chubby round quokka with warm golden-brown fur, big gentle brown eyes, sweet smile. "
+        f"Often in peaceful restful poses, sometimes with cozy blankets. "
+        f"{prompt[:120]}. Australian bush, moonlit night, stars, gum trees, soft warm palette. "
+        f"Hand-painted visible brushstrokes, textured paper, no text, safe for children."
     )
     encoded = requests.utils.quote(short_prompt)
     headers = {"User-Agent": "SonnyBot/1.0", "Accept": "image/*"}
@@ -620,30 +619,19 @@ def generate_scene_image_fal_direct(prompt: str, scene_id: int, episode_dir: Pat
 # draws Sonny. FLUX has no negative prompts, so this spells out what a quokka
 # IS rather than listing styles to avoid (listed "avoid" terms leak into the
 # image as content).
-# Matches the committed master artwork at kids-channel/character/sonny-ref.jpg
-# (user-chosen design) — fallback generators aim at this same look when the
-# Kontext reference path is unavailable.
 SONNY_CHARACTER = (
-    "Sonny the baby quokka: an ADORABLE, IRRESISTIBLY CUDDLY plush-toy-soft baby animal — "
-    "EXTREMELY CHUBBY and ROUND with baby proportions (big round head, plump huggable teddy-bear body), "
-    "thick fluffy WARM GOLDEN-BROWN fur that looks impossibly soft to touch (never dark, never grey), "
-    "BIG soft fluffy rounded ears with pale cream inner fur, "
-    "HUGE sparkling dark-brown eyes with bright catchlights, rosy warm blush cheeks, "
-    "a soft pale blaze down the bridge of the nose, little black button nose, "
-    "the sweetest gentle contented smile, fluffy cream-coloured chest and tummy, "
-    "tiny paws tucked adorably together against the tummy. "
-    "Always snuggly and peaceful: sitting curled and cosy, radiating warmth and safety."
+    "Sonny the quokka: EXTREMELY CHUBBY and ROUND (compact teddy-bear shape, plump rounded body), "
+    "WARM GOLDEN-BROWN soft fur (never dark, never grey), large gentle warm brown eyes with kind expression, "
+    "small round ears, short snout with a natural gentle smile, always appears cosy and peaceful. "
+    "Often sitting, lying down, or resting in calm poses. Sometimes wearing cozy details like pajamas or a blanket."
 )
 
 WATERCOLOUR_STYLE = (
-    "Award-winning watercolour children's picture book illustration, beautifully art-directed like a premium modern "
-    "storybook (Beatrix Potter warmth with contemporary polish). Hand-painted on textured cold-press paper with "
-    "visible brushstrokes, soft pigment bleeds, gentle colour washes, delicate linework. "
-    "Dreamy storybook composition: the character lovingly centred and softly lit, a gentle glowing vignette framing "
-    "the scene, twinkling hand-dotted stars, drifting fireflies with warm golden bokeh glow, soft moonbeams. "
-    "Warm cosy palette: honey golds, peachy creams, burnt siennas, soft sage greens, deep dreamy indigo-navy blues, "
-    "pale golden moonlight. Australian bush at night: moonlit meadows, graceful gum trees, tiny wildflowers, gentle streams. "
-    "Soft, safe, sleepy, heart-melting bedtime mood. No text or captions. Safe for toddlers ages 1-5."
+    "Professional watercolour children's picture book illustration, Beatrix Potter and Jill Barklem style. "
+    "Hand-painted on textured cold-press paper with visible brushstrokes, soft pigment bleeds, gentle colour washes, "
+    "loose sketchy linework. Warm cosy palette: warm golds, burnt siennas, soft sage greens, deep indigo-navy blues, "
+    "pale golden moonlight. Australian bush scenes at night: moonlit meadows, gum trees, wildflowers, gentle streams. "
+    "Soft, safe, calming bedtime mood. No text or captions. Safe for toddlers ages 1-5."
 )
 
 CHARACTER_REF_PATH = Path(__file__).parent / "character" / "sonny-ref.jpg"
@@ -1079,39 +1067,35 @@ def image_to_video(img_path: Path, duration: float, episode_dir: Path, scene_id:
 # ── 5. Background music ────────────────────────────────────────────────────────────────
 
 def generate_music(duration_secs: int, episode_dir: Path) -> Path:
-    """Generate a real gentle lullaby MELODY (actual notes, music-box style).
-
-    The earlier version layered three sustained sine tones, which droned like
-    static rather than sounding like music. This synthesises an actual tune
-    ("Twinkle, Twinkle") with per-note envelopes so it reads as a lullaby.
-    """
-    import importlib.util
-    music_wav = episode_dir / "music.wav"
+    """Generate gentle lullaby music using ffmpeg sine tones — no API needed."""
     music_path = episode_dir / "music.mp3"
-    print("[4/6] Generating lullaby melody...")
+    print("[4/6] Generating background music via ffmpeg...")
     total = int(duration_secs) + 5
 
-    # load the stdlib melody synth living next to this pipeline module
-    lull_py = Path(__file__).parent / "lullaby.py"
-    spec = importlib.util.spec_from_file_location("lullaby", lull_py)
-    lull = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(lull)
+    # Simple approach: layer 3 quiet sine tones (C4, G4, C5) for a calm hum
+    result = subprocess.run([
+        "ffmpeg", "-y",
+        "-f", "lavfi",
+        "-i", f"sine=frequency=261.63:duration={total}",
+        "-f", "lavfi",
+        "-i", f"sine=frequency=392.00:duration={total}",
+        "-f", "lavfi",
+        "-i", f"sine=frequency=523.25:duration={total}",
+        "-filter_complex",
+        "[0:a]volume=0.10[a0];"
+        "[1:a]volume=0.07[a1];"
+        "[2:a]volume=0.05[a2];"
+        "[a0][a1][a2]amix=inputs=3:duration=longest[aout];"
+        f"[aout]lowpass=f=2000,afade=t=in:st=0:d=3,afade=t=out:st={total-4}:d=4[final]",
+        "-map", "[final]",
+        "-c:a", "libmp3lame", "-q:a", "4",
+        str(music_path)
+    ], capture_output=True)
 
-    try:
-        lull.generate_lullaby_wav(music_wav, total)
-        # gentle low-pass for warmth, then encode to mp3
-        result = subprocess.run([
-            "ffmpeg", "-y", "-i", str(music_wav),
-            "-af", "lowpass=f=3200",
-            "-c:a", "libmp3lame", "-q:a", "4", str(music_path)
-        ], capture_output=True)
-        if result.returncode == 0 and music_path.exists() and music_path.stat().st_size > 1000:
-            print(f"  ✓ Lullaby melody generated ({total}s)")
-        else:
-            print(f"  ⚠ encode failed: {result.stderr.decode()[-200:]}")
-            music_path.write_bytes(b"")
-    except Exception as e:
-        print(f"  ⚠ Music generation failed: {e} — continuing without music")
+    if result.returncode == 0 and music_path.exists() and music_path.stat().st_size > 1000:
+        print(f"  ✓ Lullaby music generated ({total}s)")
+    else:
+        print(f"  ⚠ Music generation failed: {result.stderr.decode()[-200:]} — continuing without music")
         music_path.write_bytes(b"")
     return music_path
 
@@ -1516,8 +1500,8 @@ def assemble_video(scene_videos: list, narration: Path, music: Path,
         raise RuntimeError("ffmpeg concat failed")
 
     # Mix narration + music + video — try increasingly simple approaches
-    has_narration = narration.is_file() and narration.stat().st_size > 100
-    has_music = music.is_file() and music.stat().st_size > 100
+    has_narration = narration.exists() and narration.stat().st_size > 100
+    has_music = music.exists() and music.stat().st_size > 100
 
     def _try(cmd):
         return subprocess.run(cmd, capture_output=True)
@@ -1805,13 +1789,20 @@ def main():
             print(f"  ℹ Rescaled scene durations {scene_total}s → {new_total:.1f}s to match narration")
 
     # 3. Scene images + videos
-    # Priority: Kontext + master ref → FLUX Dev → FAL → Pollinations → stock → PIL.
-    # The old Higgsfield Soul tier is retired: its api.higgsfield.ai endpoint is
-    # dead (521), and Soul ignores the locked character design — see
-    # kids-channel/MASTER.md ("never use Soul for Sunny"). Nano Banana (the
-    # approved Higgsfield model) is not exposed on the key-based platform API,
-    # so identity-locked generation on runners goes through Replicate Kontext.
+    # Priority: Higgsfield → FLUX (OpenMontage) → Stock photos → Pollinations → gradient
     scene_videos = []
+    if not args.skip_video and HIGGSFIELD_API_KEY:
+        print("[3/6] Generating scene images and animations via Higgsfield...")
+        try:
+            token = get_higgsfield_token()
+            for scene in script["scenes"]:
+                img = generate_scene_image(scene["image_prompt"], scene["id"],
+                                           episode_dir, token)
+                vid = animate_scene(img, scene, episode_dir, token)
+                scene_videos.append(vid)
+        except Exception as e:
+            print(f"  ⚠ Higgsfield failed ({e}) — falling through to next image source...")
+
     if not scene_videos:
         # Diagnostic — always print token status so we can see it in the logs
         _tok_len = len(REPLICATE_API_TOKEN) if REPLICATE_API_TOKEN else 0
@@ -1877,8 +1868,7 @@ def main():
     # 4. Music — Pixabay royalty-free (OpenMontage) first, ffmpeg tones fallback
     total_secs = sum(s.get("duration", 8) for s in script.get("scenes", [])) + 15
     music = generate_music_pixabay(total_secs, episode_dir)
-    # Path("") resolves to "." (a directory), so is_file() is the real check here
-    if not music.is_file() or music.stat().st_size < 100:
+    if not music.exists() or music.stat().st_size < 100:
         music = generate_music(total_secs, episode_dir)
 
     # 5. Assemble

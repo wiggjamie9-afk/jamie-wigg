@@ -62,6 +62,8 @@ COVER_TITLES = {
 TITLE_F = FONTS / "Gloock-Regular.ttf"
 BODY_F = FONTS / "WorkSans-Regular.ttf"
 BODYB_F = FONTS / "WorkSans-Bold.ttf"
+SERIF_F = FONTS / "CrimsonPro-Regular.ttf"
+SERIF_I = FONTS / "CrimsonPro-Italic.ttf"
 
 
 def font(p, s):
@@ -158,54 +160,83 @@ def build(num):
     spine = spine.rotate(90, expand=True)
     img.alpha_composite(spine, (SPINE_X0, 0))
 
-    # ================= BACK PANEL =================
+    # ================= BACK PANEL (elegant, framed to match front) =========
     bx = BACK_X0
-    # series wordmark top
-    wf = font(TITLE_F, 62)
-    wln = draw.textlength(SERIES, wf)
-    while wln > PANEL_W - 200 and wf.size > 40:
-        wf = font(TITLE_F, wf.size - 4)
-        wln = draw.textlength(SERIES, wf)
-    draw.text((bx + (PANEL_W - wln) / 2, 120), SERIES, font=wf, fill=CREAM,
-              stroke_width=3, stroke_fill=NAVY)
 
-    # blurb in a soft cream panel
-    pf = font(BODY_F, 52)
-    inner = PANEL_W - 320
-    bl = wrap(draw, blurb, pf, inner)
-    blh = int(52 * 1.4)
-    ptop = 320
-    ph = blh * len(bl) + 130
-    img = soft_panel(img, [bx + 120, ptop, bx + PANEL_W - 120, ptop + ph],
-                     36, (250, 247, 238, 232))
+    def ctext(s, f, cy, fill, stroke=0, sfill=NAVY):
+        w = draw.textlength(s, font=f)
+        draw.text((bx + (PANEL_W - w) / 2, cy), s, font=f, fill=fill,
+                  stroke_width=stroke, stroke_fill=sfill)
+        return w
+
+    def flourish(cy, half=190):
+        """A slim gold rule with a centred diamond — echoes the front's trim."""
+        cx = bx + PANEL_W // 2
+        draw.line([cx - half, cy, cx - 26, cy], fill=GOLD, width=3)
+        draw.line([cx + 26, cy, cx + half, cy], fill=GOLD, width=3)
+        draw.polygon([(cx, cy - 11), (cx + 15, cy), (cx, cy + 11), (cx - 15, cy)],
+                     fill=GOLD)
+
+    # gold double-keyline frame with corner ticks (mirrors the front panel)
+    m = 46
+    draw.rounded_rectangle([m, m, PANEL_W - m, H - m], radius=26,
+                           outline=GOLD, width=6)
+    draw.rounded_rectangle([m + 16, m + 16, PANEL_W - m - 16, H - m - 16],
+                           radius=18, outline=(201, 162, 74, 150), width=2)
+
+    # cream banner with the series name in gold (same identity as the front)
+    bf = font(TITLE_F, 58)
+    lines = wrap(draw, SERIES, bf, PANEL_W - 300)
+    while len(lines) > 2 and bf.size > 40:
+        bf = font(TITLE_F, bf.size - 4); lines = wrap(draw, SERIES, bf, PANEL_W - 300)
+    lh = int(bf.size * 1.14)
+    bh = lh * len(lines) + 60
+    by0 = 132
+    img = soft_panel(img, [bx + 150, by0, bx + PANEL_W - 150, by0 + bh],
+                     26, (250, 247, 238, 240))
     draw = ImageDraw.Draw(img, "RGBA")
-    yy = ptop + 64
+    yy = by0 + 30
+    for ln in lines:
+        ctext(ln, bf, yy, (176, 132, 55)); yy += lh
+    flourish(by0 + bh + 60)
+
+    # blurb — elegant serif, centred, on a warm cream card with a gold keyline
+    pf = font(SERIF_F, 60)
+    inner = PANEL_W - 340
+    bl = wrap(draw, blurb, pf, inner)
+    blh = int(60 * 1.44)
+    ptop = by0 + bh + 120
+    ph = blh * len(bl) + 120
+    img = soft_panel(img, [bx + 130, ptop, bx + PANEL_W - 130, ptop + ph],
+                     30, (250, 247, 238, 235))
+    draw = ImageDraw.Draw(img, "RGBA")
+    draw.rounded_rectangle([bx + 130, ptop, bx + PANEL_W - 130, ptop + ph],
+                           radius=30, outline=(201, 162, 74, 170), width=3)
+    yy = ptop + 58
     for ln in bl:
-        draw.text((bx + 170, yy), ln, font=pf, fill=INK)
-        yy += blh
+        ctext(ln, pf, yy, INK); yy += blh
 
-    # closing line
-    cf = font(BODYB_F, 46)
-    closing = "A cosy bedtime tale for ages 1-5."
-    wln = draw.textlength(closing, cf)
-    draw.text((bx + (PANEL_W - wln) / 2, ptop + ph + 70), closing, font=cf,
-              fill=CREAM, stroke_width=3, stroke_fill=NAVY)
+    # closing tagline in gold serif italic
+    cf = font(SERIF_I, 54)
+    ctext("A cosy bedtime tale for little ones, ages 1–5.", cf,
+          ptop + ph + 66, GOLD, stroke=2, sfill=NAVY)
+    flourish(ptop + ph + 158)
 
-    # barcode placeholder box (KDP overlays the real barcode here)
-    bw, bh2 = 620, 360
-    bxx = bx + PANEL_W - bw - 110
-    byy = H - bh2 - 120
-    draw.rectangle([bxx, byy, bxx + bw, byy + bh2], fill=(255, 255, 255, 255))
-    draw.rectangle([bxx, byy, bxx + bw, byy + bh2], outline=(150, 150, 150, 255), width=3)
-    lf = font(BODY_F, 34)
+    # barcode placeholder — tidy card with a warm keyline, bottom-right
+    bw, bh2 = 560, 320
+    bxx = bx + PANEL_W - bw - 130
+    byy = H - bh2 - 150
+    draw.rounded_rectangle([bxx, byy, bxx + bw, byy + bh2], radius=14,
+                           fill=(255, 255, 255, 255), outline=(201, 162, 74, 200), width=3)
+    lf = font(SERIF_I, 34)
     for i, t in enumerate(["ISBN / barcode", "placed here by KDP"]):
-        wln = draw.textlength(t, lf)
-        draw.text((bxx + (bw - wln) / 2, byy + 120 + i * 46), t, font=lf,
-                  fill=(120, 120, 120, 255))
+        w = draw.textlength(t, font=lf)
+        draw.text((bxx + (bw - w) / 2, byy + 108 + i * 46), t, font=lf,
+                  fill=(150, 132, 96, 255))
 
-    # publisher wordmark bottom-left of back
-    pf2 = font(BODYB_F, 38)
-    draw.text((bx + 120, H - 130), "rhythmixapp.com.au", font=pf2, fill=CREAM,
+    # publisher wordmark, gold, bottom-left inside the frame
+    pf2 = font(TITLE_F, 40)
+    draw.text((bx + 130, H - 210), "rhythmixapp.com.au", font=pf2, fill=GOLD,
               stroke_width=2, stroke_fill=NAVY)
 
     out = img.convert("RGB")
