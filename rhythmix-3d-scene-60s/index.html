@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Scene - HyperFrames</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script async src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // HyperFrames 3D Scene Composition
+    // Renders a 3D animated character with camera pan + lighting effects
+
+    const canvas = document.querySelector('canvas') || document.createElement('canvas');
+    document.body.appendChild(canvas);
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, 1920 / 1080, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+
+    renderer.setSize(1920, 1080);
+    renderer.setClearColor(0x0a0a14);
+    renderer.shadowMap.enabled = true;
+
+    camera.position.set(3, 2, 5);
+    camera.lookAt(0, 0, 0);
+
+    // Gradient background
+    const scene2D = new THREE.Scene();
+    const canvas2D = document.createElement('canvas');
+    canvas2D.width = 256;
+    canvas2D.height = 256;
+    const ctx2D = canvas2D.getContext('2d');
+
+    const gradient = ctx2D.createLinearGradient(0, 0, 0, 256);
+    gradient.addColorStop(0, '#1a1a2e');
+    gradient.addColorStop(1, '#0a0a14');
+    ctx2D.fillStyle = gradient;
+    ctx2D.fillRect(0, 0, 256, 256);
+
+    const bgTexture = new THREE.CanvasTexture(canvas2D);
+    const bgGeometry = new THREE.PlaneGeometry(1920, 1080);
+    const bgMaterial = new THREE.MeshBasicMaterial({ map: bgTexture });
+    const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
+    bgMesh.position.z = -100;
+    scene.add(bgMesh);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0x64b5f6, 0.8);
+    directionalLight.position.set(10, 10, 10);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    const rimLight = new THREE.PointLight(0xff1493, 0.3);
+    rimLight.position.set(-10, 5, -10);
+    scene.add(rimLight);
+
+    // Ground
+    const groundGeometry = new THREE.PlaneGeometry(20, 20);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a1a2e,
+      metalness: 0.1,
+      roughness: 0.8
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Create main character (sphere with animation)
+    const geometry = new THREE.IcosahedronGeometry(1, 4);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x64b5f6,
+      metalness: 0.6,
+      roughness: 0.3,
+      emissive: 0x1a5f7a,
+      emissiveIntensity: 0.3
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.position.y = 0;
+    scene.add(mesh);
+
+    // Create orbiting secondary objects
+    const orbitObjects = [];
+    for (let i = 0; i < 3; i++) {
+      const geo = new THREE.OctahedronGeometry(0.4);
+      const mat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color().setHSL(i / 3, 0.8, 0.6),
+        metalness: 0.7,
+        roughness: 0.2
+      });
+      const obj = new THREE.Mesh(geo, mat);
+      obj.castShadow = true;
+      scene.add(obj);
+      orbitObjects.push({
+        mesh: obj,
+        angle: (i / 3) * Math.PI * 2,
+        radius: 3
+      });
+    }
+
+    // Animation function (called from HyperFrames clock)
+    let frameCount = 0;
+    const totalFrames = 1800; // 60 seconds at 30fps
+
+    function animate(elapsed) {
+      const t = elapsed / 1000; // Convert to seconds
+      frameCount = Math.floor(t * 30) % totalFrames; // Assume 30fps
+
+      // Main character rotation + scale pulse
+      mesh.rotation.x = t * 0.5;
+      mesh.rotation.y = t * 0.7;
+      const scale = 1 + Math.sin(t * 2) * 0.15;
+      mesh.scale.set(scale, scale, scale);
+
+      // Orbiting objects
+      orbitObjects.forEach((obj, i) => {
+        obj.angle += 0.02;
+        obj.mesh.position.x = Math.cos(obj.angle) * obj.radius;
+        obj.mesh.position.z = Math.sin(obj.angle) * obj.radius;
+        obj.mesh.position.y = Math.sin(t + i) * 0.5;
+        obj.mesh.rotation.x += 0.01;
+        obj.mesh.rotation.y += 0.015;
+      });
+
+      // Camera motion: slow pan + zoom
+      const camDistance = 5 + Math.sin(t * 0.5) * 0.5;
+      camera.position.x = Math.cos(t * 0.3) * camDistance;
+      camera.position.z = Math.sin(t * 0.3) * camDistance;
+      camera.position.y = 1.5 + Math.sin(t * 0.4) * 0.5;
+      camera.lookAt(0, 0.5, 0);
+
+      // Dynamic lighting
+      directionalLight.intensity = 0.8 + Math.sin(t * 1.5) * 0.2;
+      rimLight.intensity = 0.3 + Math.sin(t * 2) * 0.2;
+
+      renderer.render(scene, camera);
+    }
+
+    // HyperFrames integration: use requestAnimationFrame for smooth rendering
+    const startTime = performance.now();
+    function loop(currentTime) {
+      animate(currentTime - startTime);
+      requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+
+    // Handle window resize (for local preview)
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
